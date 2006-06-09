@@ -1,20 +1,32 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 
-
 class Category(models.Model):
+    temp_desc_str = models.TextField()
+    def __str__(self):
+        return str(self.temp_desc_str)
+    
     class Admin:
         pass
 
 class Subscription(models.Model):
+    user = models.ForeignKey(User)
+    category = models.ForeignKey(Category)
+
+    def __str__(self):
+        return str(self.user.username) + ': ' + str(self.category)
+
     class Admin:
         pass
-
+    
 class DatatreeNodeData(models.Model):
     title = models.CharField(maxlength=256)
     text_data = models.TextField(blank=True)
     file_data = models.FileField(upload_to='/esp/uploaded_data/', blank=True)
+    category = models.ForeignKey(Category, blank=True, null=True)
+
     def __str__(self):
         return self.title
 
@@ -124,3 +136,4 @@ class Datatree(models.Model):
 class SubTree(Datatree):
     class Admin:
         pass
+
