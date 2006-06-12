@@ -2,22 +2,26 @@ from django.db import models
 
 # Create your models here.
 
-root_path="/tmg/files"
+video_path='/tmg/video/web/kiosk/media/videos/'
+picture_path='/tmg/video/web/kiosk/media/pictures/'
 
 class Media(models.Model):
     size = models.IntegerField()
     format = models.TextField()
-    target_file = models.FileField(upload_to=root_path)
+
     def __str__(self):
         return str(self.target_file)
     class Admin:
         pass
 
 class Video(Media):
+    target_file = models.FileField(upload_to=video_path)
+    root_path = video_path
     class Admin:
         pass
 
 class Picture(Media):
+    target_file = models.FileField(upload_to=picture_path)
     class Admin:
         pass
 
@@ -25,6 +29,7 @@ class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
     sortorder = models.IntegerField(blank=True)
+    menu_thumbnail = models.ForeignKey(Picture)
     def __str__(self):
         return str(name)
     class Admin:

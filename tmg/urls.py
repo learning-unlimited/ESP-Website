@@ -6,4 +6,5 @@ urlpatterns = patterns('',
 
     # Uncomment this for admin:
      (r'^django-test/admin/', include('django.contrib.admin.urls')),
+     (r'^django-test/videokiosk/xml/', 'tmg.core.views.xml'),
 )

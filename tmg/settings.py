@@ -9,16 +9,21 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
+DATABASE_ENGINE = 'mysql'
+#DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
 DATABASE_NAME = 'tmg_internal'             # Or path to database file if using sqlite3.
-DATABASE_USER = 'daemon'             # Not used with sqlite3.
-DATABASE_PASSWORD = 'l47hm1d4'         # Not used with sqlite3.
-DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
+#DATABASE_USER = 'daemon'             # Not used with sqlite3.
+#DATABASE_PASSWORD = 'l47hm1d4'         # Not used with sqlite3.
+#DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
+#DATABASE_PORT = '5433'             # Set to empty string for default. Not used with sqlite3.
+DATABASE_USER = 'root'
+DATABASE_PASSWORD = ''
+DATABASE_HOST=''
+DATABASE_PORT=''
 
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/current/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
-TIME_ZONE = 'America/New_York'
+TIME_ZONE = 'America/Chicago'
 
 # Language code for this installation. All choices can be found here:
 # http://www.w3.org/TR/REC-html40/struct/dirlang.html#langcodes
@@ -29,11 +34,11 @@ SITE_ID = 1
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = ''
+MEDIA_ROOT = '/tmg/video/web/kiosk/media/'
 
 # URL that handles the media served from MEDIA_ROOT.
 # Example: "http://media.lawrence.com"
-MEDIA_URL = ''
+MEDIA_URL = 'http://tmg-video.media.mit.edu:8080/media/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
@@ -62,6 +67,7 @@ ROOT_URLCONF = 'tmg.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
+    '/tmg/shadow/internal/tmg_templates/',
 )
 
 INSTALLED_APPS = (
