@@ -10,12 +10,16 @@ class Media(models.Model):
     target_file = models.FileField(upload_to=root_path)
     def __str__(self):
         return str(self.target_file)
+    class Admin:
+        pass
 
 class Video(Media):
-    pass
+    class Admin:
+        pass
 
 class Picture(Media):
-    pass
+    class Admin:
+        pass
 
 class Project(models.Model):
     name = models.TextField()
@@ -23,11 +27,15 @@ class Project(models.Model):
     sortorder = models.IntegerField(blank=True)
     def __str__(self):
         return str(name)
+    class Admin:
+        pass
 
 class Person(models.Model):
     name = models.TextField()
     def __str__(self):
         return str(name)
+    class Admin:
+        pass
 
 class ProjectVideoThunk(models.Model):
     project = models.ForeignKey(Project)
@@ -37,6 +45,8 @@ class ProjectVideoThunk(models.Model):
     description = models.TextField()
     def __str__(self):
         return str(self.prject) + ': ' + str(self.video) + ' (' + str(self.description) + ')'
+    class Admin:
+        pass
 
 class ProjectAuthor(models.Model):
     person = models.ForeignKey(Person)
@@ -44,4 +54,5 @@ class ProjectAuthor(models.Model):
     sortorder = models.IntegerField(blank=True)
     def __str__(self):
         return str(self.project) + ': ' + str(self.person)
-
+    class Admin:
+        pass
