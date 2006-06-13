@@ -10,6 +10,4 @@ def xml(request):
     c = Context({
         'projects': projects,
         })
-    return HttpResponse(t.render(c))
-
-#    return HttpResponse("Hi World!")
+    return HttpResponse(t.render(c), mimetype='text/xml')

@@ -9,15 +9,15 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = 'mysql'
-#DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
+#DATABASE_ENGINE = 'mysql'
+DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
 DATABASE_NAME = 'tmg_internal'             # Or path to database file if using sqlite3.
-#DATABASE_USER = 'daemon'             # Not used with sqlite3.
-#DATABASE_PASSWORD = 'l47hm1d4'         # Not used with sqlite3.
+DATABASE_USER = 'daemon'             # Not used with sqlite3.
+DATABASE_PASSWORD = 'l47hm1d4'         # Not used with sqlite3.
 #DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
 #DATABASE_PORT = '5433'             # Set to empty string for default. Not used with sqlite3.
-DATABASE_USER = 'root'
-DATABASE_PASSWORD = ''
+#DATABASE_USER = 'root'
+#DATABASE_PASSWORD = ''
 DATABASE_HOST=''
 DATABASE_PORT=''
 

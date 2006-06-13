@@ -5,22 +5,25 @@ from django.db import models
 video_path='/tmg/video/web/kiosk/media/videos/'
 picture_path='/tmg/video/web/kiosk/media/pictures/'
 
-class Media(models.Model):
+class Video(models.Model):
     size = models.IntegerField()
     format = models.TextField()
 
     def __str__(self):
         return str(self.target_file)
-    class Admin:
-        pass
 
-class Video(Media):
     target_file = models.FileField(upload_to=video_path)
     root_path = video_path
     class Admin:
         pass
 
-class Picture(Media):
+class Picture(models.Model):
+    size = models.IntegerField()
+    format = models.TextField()
+
+    def __str__(self):
+        return str(self.target_file)
+
     target_file = models.FileField(upload_to=picture_path)
     class Admin:
         pass
@@ -28,17 +31,17 @@ class Picture(Media):
 class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
-    sortorder = models.IntegerField(blank=True)
+    sortorder = models.IntegerField(blank=True, null=True)
     menu_thumbnail = models.ForeignKey(Picture)
     def __str__(self):
-        return str(name)
+        return str(self.name)
     class Admin:
         pass
 
 class Person(models.Model):
     name = models.TextField()
     def __str__(self):
-        return str(name)
+        return str(self.name)
     class Admin:
         pass
 
@@ -46,10 +49,10 @@ class ProjectVideoThunk(models.Model):
     project = models.ForeignKey(Project)
     video = models.ForeignKey(Video)
     thumbnail = models.ForeignKey(Picture)
-    sortorder = models.IntegerField(blank=True)
-    description = models.TextField()
+    sortorder = models.IntegerField(blank=True, null=True)
+    short_description = models.TextField()
     def __str__(self):
-        return str(self.prject) + ': ' + str(self.video) + ' (' + str(self.description) + ')'
+        return str(self.project) + ': ' + str(self.video) + ' (' + str(self.short_description) + ')'
     class Admin:
         pass
 
