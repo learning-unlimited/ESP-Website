@@ -1,21 +1,21 @@
 <tmg>
 	{% for project in projects %}
-	<project id="{{ project.pk }}">
+	<project id="{{ project.id }}">
 		<p_name>{{ project.name }}</p_name>
 		<menu_thumbnail>{{ project.menu_thumbnail }}</menu_thumbnail>
 		<blurb>{{ project.description }}</blurb>
 		<credits>
-		{% for person in project.ProjectAuthor_set.all %}
+		{% for person in project.projectauthor_set.all %}
 			<name>{{ person.person.name }}</name>
 		{% endfor %}
 		</credits>
 		<movies>
-		{% for movie in project.ProjectVideoThunk_set.all %}
-		<movie>
-			<title>{{ project.description }}</title>
-			<src>{{ movie.video.target_file }}</src>
-			<thumb>{{ movie.thumbnail.target_file }}</thumb>
-		</movie>
+		{% for movie in project.projectvideothunk_set.all %}
+			<movie>
+				<title>{{ project.description }}</title>
+				<src>{{ movie.video.target_file }}</src>
+				<thumb>{{ movie.thumbnail.target_file }}</thumb>
+			</movie>
 		{% endfor %}
 		</movies>
 	</project>
