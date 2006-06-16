@@ -77,4 +77,6 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
     'tmg.core',
+    'tmg.media',
+    'tmg.publication',
 )
