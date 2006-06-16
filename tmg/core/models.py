@@ -1,58 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from tmg.media.models import Media, Picture, Video
 
 # Create your models here.
-
-video_path='/tmg/video/web/kiosk/media/videos/'
-picture_path='/tmg/video/web/kiosk/media/pictures/'
-
-class Video(models.Model):
-    """ Video media object
-    
-    This object should be a subclass of Media, except that subclassing is broken in Django.
-    Contains basic metadata for a Video.
-    """
-    size = models.IntegerField() # Size of the file, in bytes
-    format = models.TextField()  # Format string; should be human-readable (string format is currently unspecified)
-
-    def __str__(self):
-        return str(self.target_file)
-
-    target_file = models.FileField(upload_to=video_path) # Target media file
-    class Admin:
-        pass
-
-class Picture(models.Model):
-    """ Picture media object
-    
-    This object should be a subclass of Media, except that subclassing is broken in Django.
-    Contains basic metadata for a static picture.
-    """
-    size = models.IntegerField() # Size of the file, in bytes
-    format = models.TextField()  # Format string; should be human-readable (string format is currently unspecified)
-
-    def __str__(self):
-        return str(self.target_file)
-
-    target_file = models.FileField(upload_to=picture_path) # Target media file
-    class Admin:
-        pass
-
-class Paper(models.Model):
-    """ Paper media object
-    
-    This object should be a subclass of Media, except that subclassing is broken in Django.
-    Contains basic metadata for a paper, typically (though not necessarily) submitted to a conference or publication.
-    """
-    size = models.IntegerField() # Size of the file, in bytes
-    format = models.TextField()  # Format string; should be human-readable (string format is currently unspecified)
-
-    def __str__(self):
-        return str(self.target_file)
-
-    target_file = models.FileField(upload_to=picture_path) # Target media file
-    class Admin:
-        pass
 
 class Project(models.Model):
     """ A Video Kiosk 'Project'.  Contains, or is linked to by, all data needed by a Video Kiosk screen """

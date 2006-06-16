@@ -1,5 +1,5 @@
 from django.db import models
-from tmg.core.models import Person, Project, Video, Picture
+from tmg.media.models import Media
 
 # Create your models here.
 
@@ -15,6 +15,7 @@ class PublicationStatus(models.Model):
     """ A stage in the workflow of a Publication.  See 'PublicationStatusType' for the possible stages """
     publication = models.ForeignKey(Publication) # A one-to-many relationship with Publications
     status = models.ForeignKey(PublicationStatusType)
+    media_blob = models.ManyToManyField(Media)
 
 class PaperType(models.Model):
     """ A list of possible types of papers.  Each conference will typically have a set of types of papers that it accepts. """
@@ -33,13 +34,11 @@ class Venue(models.Model):
     name = models.TextField() # Name of the venue, ie. "Star Trek Spock Lookalike Convention"
     additional_bibtex_data = models.ForeignKey(BibTeXType) # A text field for BibTeX "key = value" entries
 
-class MediaType(models.Model):
-    """ A fake, hacked implementation of the 'Media' superclass for the various media types.  Also forces a one-to-many association with a Publicaiton """
-    target_publication = models.ForeignKey(PublicationStatus)
-    friendly_name = models.TextField() # Human-readable, not machine-parseable, description of the media format (ie. "QuickTime, 640x480, encoded at High Quality with the h.264 and AAC codecs)
-    mime_type = models.TextField()
-    file_extension = models.TextField() # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
-    # General note: We probably need more identifying information for some of the Media classes; could that information just go inside those Media classes?
+#class MediaBlob(models.Model):
+#    """  """
+#    target_publication = models.ForeignKey(PublicationStatus)
+#    friendly_name = models.TextField() # Human-readable, not machine-parseable, description of the media format (ie. "QuickTime, 640x480, encoded at High Quality with the h.264 and AAC codecs)
+    
 
 class PublicationAuthors(models.Model):
     """ Lists which people are authors to a particular publication.  A many-to-many relationship. """
