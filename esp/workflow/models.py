@@ -6,7 +6,7 @@ from esp.users.models import UserBit
 
 # Argh: No virtual classes in Python?
 class Controller:
-    def sync_to_db(self):
+    def sync_to_db():
         """ Record our name to the database table of Controllers.  Don't record a duplicate. """
         if Controller.objects.filter(controller=self.__name__).count() == 0:
             c = Controller()
