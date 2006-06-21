@@ -33,6 +33,7 @@ class DatatreeNodeData(models.Model):
     text_data = models.TextField(blank=True)
     file_data = models.FileField(upload_to='/esp/uploaded_data/', blank=True)
     category = models.ForeignKey(Category, blank=True, null=True)
+    heirarchical_top_down = models.BooleanField(default=True)
 
     def __str__(self):
         return self.title
@@ -54,9 +55,41 @@ class Datatree(models.Model):
     rangeend = models.IntegerField(editable=False, default=1)
     parent = models.ForeignKey('self', null=True, blank=True)
     node_data = models.ForeignKey(DatatreeNodeData, null=True, blank=True)
+    name = models.SlugField() # Node name; should be unique at any given level of the tree
+
+    def is_root(self):
+        """ Returns True if this node is the ROOT of a global tree, false otherwise """
+        return (parent == None & name == "ROOT")
+
+    def tree_decode(self, tree_nodenames):
+        """ Given a list of nodes leading from the current node to a direct descendant, return that descendant """
+        if tree_nodenames == []:
+            return self
+        else:
+            filtered = self.children().filter(name=tree_nodenames[0])
+            if filtered.count() != 1:
+                raise NoSuchNodeException(tree_nodenames[0])
+            else:
+                filtered[0].tree_decode(tree_nodenames[1:])
+
+    def tree_encode(self):
+        """  Return a list of the nodes leading from the root of the current tree (as determined by is_root()) to """
+        if self.is_root():
+            return []
+        else:
+            return parent.append(self.name)
+    
     def children(self):
         """ Returns a QuerySet of Datatrees of all children of this Datatree """
         return Datatree.objects.filter(parent__pk=self.id)
+
+    def is_descendant(self, node):
+        """ Return False if the specified node is not a descendant (child, child of a child, etc.) of this node, AND if the specified node is not this node """
+        return (node.rangestart >= self.rangestart & node.rangeend <= self.rangeend)
+
+    def is_antecedent(self, node):
+        """ Return False if the specified node is not an antecedent (parent, parent of a parent, etc.) of the current node, AND if the specified node is not this node """
+        return (node.rangestart <= self.rangestart & node.rangeend >= self.rangeend)
 
     def sizeof(self):
         """ Return the total capacity of this node, as a nested-set element """
@@ -160,6 +193,33 @@ class Datatree(models.Model):
                 t.refactor()
         else:
             self.refactor()
+
+class NoSuchNodeException(Exception):
+    """ Raised if a required node in a Datatree doesn't exist """
+    def __init__(self, value):
+        self.value = "No such node: " + str(value)    
+
+    def __str__(self):
+        return repr(self.value)
+
+class NoRootNodeException(NoSuchNodeException):
+    """ The Datatree must always contain a node named 'ROOT', with no parent.  Raise this exception \
+    if this is encountered. """
+    def __init__(self):
+        self.value = "No ROOT node in the Datatree"
+
+def StringToPerm(permstr):
+    """  """
+    root_nodes = Datatree.objects.filter(parent=None,name="ROOT")
+    if root_nodes.count() != 1:
+        raise NoRootNodeException()
+
+    root_node = root_node[0]
+
+    return root_node.tree_decode(permstr.split('/'))
+
+def PermToString(perm):
+    return "/".join(perm.tree_encode())
 
 
 # aseering: Dummy class, to be played with if/when Django subclassing works again.
