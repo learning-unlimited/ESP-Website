@@ -1,4 +1,4 @@
-from django.db import models
+sfrom django.db import models
 from django.contrib.auth.models import User
 
 from email.MIMEText import MIMEText
@@ -6,6 +6,7 @@ from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from datetime import datetime
 from email.Utils import formatdate
+from esp.lib.markdown import markdown
 
 import smtplib
 
@@ -98,10 +99,8 @@ class EmailController(Controller):
 
     # Blatant shell function
     def apply_smarttext(self, smartstr):
-        """ Takes either a plain string or a SmartText-encoded string.  Returns a plain string.
-
-        This function will eventually do whatever voodoo is necessary to interperet SmartText.  For now, it does nothing. """
-        return smartstr
+        """ Takes either a plain string or a SmartText-encoded string.  Returns a plain string.  """
+        return markdown.markdown(smartstr)
 
     def msgreq_to_emailreqs(self, msgreq):
         """ Accepts a MessageRequest.  Returns a list of EmailRequests.
