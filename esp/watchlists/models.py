@@ -209,7 +209,7 @@ class NoRootNodeException(NoSuchNodeException):
         self.value = "No ROOT node in the Datatree"
 
 def StringToPerm(permstr):
-    """  """
+    """ Given a list of Slugs whose names trace from the tree Root to  """
     root_nodes = Datatree.objects.filter(parent=None,name="ROOT")
     if root_nodes.count() != 1:
         raise NoRootNodeException()
@@ -228,3 +228,43 @@ class SubTree(Datatree):
     class Admin:
         pass
 
+
+def GetNode(nodename):
+    """ Get a Datatree node with the given slug; create it if it doesn't exist
+
+    Return a QuerySet of nodes if more than one exists.
+    """
+    nodes = Datatree.objects.filter(name=nodename)
+    if nodes.count < 1:
+        node = Datatree()
+        node.name = nodename
+        node.save()
+        return node
+    elif nodes.count == 1:
+        return nodes[0]
+    else:
+        return nodes
+    
+def PopulateInitialDatatree():
+    """ Populate the Datatree with values for the ESP site heirarchy:
+
+    ROOT
+     |- UserGroupTree
+     |- SiteTree
+    """
+    ROOT = GetNode('ROOT')
+    UserGroupTree = GetNode('UserGroupTree')
+    SiteTree = GetNode('SiteTree')
+
+    # aseering 6-25-2006: Write check to see if any are QuerySets
+
+    ROOT.parent = None
+    UserGroupTree.parent = ROOT
+    SiteTree.parent = ROOT
+
+    UserGroupTree.save()
+    SiteTree.save()
+    ROOT.save()
+
+    ROOT.refactor()
+    
