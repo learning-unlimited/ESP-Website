@@ -47,6 +47,7 @@ class TextOfEmail(models.Model):
     subject = models.TextField() # E-mail subject; plain text
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)
+    emailReq = models.OneToOneKey(EmailRequest)
 
     def __str__(self):
         return str(self.subject) + ' <' + str(self.send_to) + '>'
@@ -97,7 +98,6 @@ class EmailController(Controller):
 
         return user    
 
-    # Blatant shell function
     def apply_smarttext(self, smartstr):
         """ Takes either a plain string or a SmartText-encoded string.  Returns a plain string.  """
         return markdown.markdown(smartstr)
@@ -127,20 +127,24 @@ class EmailController(Controller):
         textreq.send_from = str(emailreq.msgreq.sender)
         textreq.subject = self.apply_smarttext(str(emailreq.msgreq.subject))
         textreq.msgtext = self.apply_smarttext(str(emailreq.msgreq.msgtext))
+        textreq.emailReq = emailreq
         textreq.save()
         return textreq
     
-    def run(self, data):
-        """ Accepts a MessageRequest.
-
-        Given a MessageRequest, generates and sends e-mails based on this request. """
+    def create_textreqs(self, data):
+        """ Create TextRequests to send (like run()), but don't actually send them """
         emailreqs = self.msgreq_to_emailreqs(data)
 
         textreqs = []
         for emailreq in emailreqs:
             textreqs.append(self.emailreq_to_textreq(emailreq))
 
-        # aseering: Comment this out, for debugging purposes; turn it on when it's known to be safe
+        return textreqs
+
+    def run(self, data):
+        """ Accepts a MessageRequest.
+
+        Given a MessageRequest, generates and sends e-mails based on this request. """
         # Do we want to send automatically/immediately?
-        #for textreq in textreqs:
-        #    textreq.send()
+        for textreq in self.create_textreqs(data):
+            textreq.send()
