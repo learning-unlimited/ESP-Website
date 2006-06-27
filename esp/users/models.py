@@ -1,9 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
-from esp.workflow.models import Controller
 from esp.watchlists.models import Datatree
 from peak.api import security, binding
-
+from esp.workflows.models import Controller
 
 # Create your models here.
 
@@ -29,3 +28,13 @@ class RecursiveTreeCheck(security.Context):
 
         return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
 
+def enforce_bits(controller_class, user):
+    def call(proc, *args):
+        """ Accepts a 'run' function, its associated Controller class (is there a way to getthat information automatically, from the function?), and a user; returns a function that runs the 'run' function and returns 'true' if the user can access this Controller class, and returns 'false' otherwise. """
+        proc(args)
+        return True
+
+    if UserBit.objects.filter(permission__controller=controller_class.__name__).filter(user_pk=user.id).count() != 0:
+        return decorator(call)
+    else:
+        return lambda : False

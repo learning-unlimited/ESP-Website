@@ -1,4 +1,4 @@
-sfrom django.db import models
+from django.db import models
 from django.contrib.auth.models import User
 
 from email.MIMEText import MIMEText
@@ -47,7 +47,7 @@ class TextOfEmail(models.Model):
     subject = models.TextField() # E-mail subject; plain text
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)
-    emailReq = models.OneToOneKey(EmailRequest)
+    emailReq = models.OneToOneField(EmailRequest)
 
     def __str__(self):
         return str(self.subject) + ' <' + str(self.send_to) + '>'

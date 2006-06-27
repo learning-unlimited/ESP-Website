@@ -1,8 +1,11 @@
 import unittest
 from esp.dbmail.models import MessageRequest, EmailRequest, TextOfEmail, EmailController
 from esp.lib.markdown import markdown
+from esp.unittest.users_test import UserBitsTest
 
-class EmailWorkflowTest(unittest.TestCase):
+
+class EmailWorkflowTest(UserBitsTest):
+    """ Prepare the database for a test that tests the E-mail workflow """
     m = None
     msg_subject = 'Sample Subject'
     msg_msgtext = 'Sample Message Text'
@@ -16,6 +19,7 @@ class EmailWorkflowTest(unittest.TestCase):
         self.m.msgtext = self.msg_msgtext
         self.m.special_headers = self.msg_special_headers
         self.m.sender = self.msg_sender
+        self.m.category = self.sitetree_nodes[0]
         self.m.save()
 
     def tearDown(self):
@@ -36,8 +40,7 @@ class CreateMessageRequest(EmailWorkflowTest):
             msgtext=self.msg_msgtext,
             special_headers=self.msg_special_headers,
             sender=self.msg_sender
-            ).count() == 1 ,
-            'Can\'t find saved message in ' + str(MessageRequest.objects.all())
+            ).count() == 1, 'Can\'t find saved message in ' + str(MessageRequest.objects.all())
 
 class RunEmailController(EmailWorkflowTest):
     def runTest(self):
@@ -68,8 +71,7 @@ class RunEmailController(EmailWorkflowTest):
 
             assert str(emailReq.textofemail.send_to) == str(emailReq.target.email), 'Email of target user (' + str(emailReq.target.email) + ') != target email (' + str(emailReq.textofemail.send_to) + ')'
 
-            assert str(emailReq.textofemail.send_from) == str(emailReq.sender),
-                'Email of sender (' + str(emailReq.sender) + ') != sent_from (' + str(emailReq.textofmail.send_from) + ')'
+            assert str(emailReq.textofemail.send_from) == str(emailReq.sender), 'Email of sender (' + str(emailReq.sender) + ') != sent_from (' + str(emailReq.textofmail.send_from) + ')'
 
             assert self.is_processed_SmartText(emailReq.textofemail.subject), 'Didn\'t process SmartText in the Subject line: ' + emailReq.textofemail.subject
 
@@ -78,3 +80,6 @@ class RunEmailController(EmailWorkflowTest):
             assert not(emailReq.textofemail.sent), 'WARNING: Message is listed as having been sent!'
 
         
+dbmailTestSuite = unittest.TestSuite()
+dbmailTestSuite.addTest(CreateMessageRequest)
+dbmailTestSuite.addTest(RunEmailController)

@@ -49,6 +49,34 @@ class IllegalTreeRefactor(Exception):
     def __str__(self):
         return repr(self.value)
 
+class NoSuchNodeException(Exception):
+    """ Raised if a required node in a Datatree doesn't exist """
+    def __init__(self, value):
+        self.value = "No such node: " + str(value)    
+
+    def __str__(self):
+        return repr(self.value)
+
+class NoRootNodeException(NoSuchNodeException):
+    """ The Datatree must always contain a node named 'ROOT', with no parent.  Raise this exception \
+    if this is encountered. """
+    def __init__(self):
+        self.value = "No ROOT node in the Datatree"
+
+def StringToPerm(permstr):
+    """ Given a list of Slugs whose names trace from the tree Root to  """
+    root_nodes = Datatree.objects.filter(parent=None,name="ROOT")
+    if root_nodes.count() != 1:
+        raise NoRootNodeException()
+
+    root_node = root_node[0]
+
+    return root_node.tree_decode(permstr.split('/'))
+
+def PermToString(perm):
+    return "/".join(perm.tree_encode())
+
+
 class Datatree(models.Model):
     """ An implementation of a nested-sets data tree, with data associated with each node """
     rangestart = models.IntegerField(editable=False, default=0)
@@ -56,10 +84,6 @@ class Datatree(models.Model):
     parent = models.ForeignKey('self', null=True, blank=True)
     node_data = models.ForeignKey(DatatreeNodeData, null=True, blank=True)
     name = models.SlugField() # Node name; should be unique at any given level of the tree
-
-    def is_root(self):
-        """ Returns True if this node is the ROOT of a global tree, false otherwise """
-        return (parent == None & name == "ROOT")
 
     def tree_decode(self, tree_nodenames):
         """ Given a list of nodes leading from the current node to a direct descendant, return that descendant """
@@ -70,7 +94,30 @@ class Datatree(models.Model):
             if filtered.count() != 1:
                 raise NoSuchNodeException(tree_nodenames[0])
             else:
-                filtered[0].tree_decode(tree_nodenames[1:])
+                return filtered[0].tree_decode(tree_nodenames[1:])
+
+    def tree_create(self, tree_nodenames):
+        """ Given a list of nodes leading from the current node to a direct descendant, return that descendant, creating it if it does not exist """
+        # This is blatant code copying from tree_decode(); anyone know
+        # of a good way to rewrite one based on the other?
+        if tree_nodenames == []:
+            return self
+        else:
+            filtered = self.children().filter(name=tree_nodenames[0])
+            if filtered.count() < 1:
+                newnode = Datatree()
+                newnode.parent = self
+                newnode.name = tree_nodenames[0]
+                newnode.save()
+
+                self.refactor()
+
+                return newnode.tree_create(tree_nodenames[1:])
+                
+            elif filtered.count() > 1:
+                raise NoSuchNodeException(tree_nodenames[0])
+            else:
+                return filtered[0].tree_decode(tree_nodenames[1:])
 
     def tree_encode(self):
         """  Return a list of the nodes leading from the root of the current tree (as determined by is_root()) to """
@@ -174,7 +221,7 @@ class Datatree(models.Model):
     class Admin:
         pass
 
-    # aseering: Including this line seems to break things badly, but excluding it makes node refactors unsafe
+    # aseering: Including this line seems to break things badly, but excluding it makes node refactors not thread-safe
 #    @transaction.commit_on_success
     def save(self):
         """ Save this node to the tree.
@@ -194,34 +241,6 @@ class Datatree(models.Model):
         else:
             self.refactor()
 
-class NoSuchNodeException(Exception):
-    """ Raised if a required node in a Datatree doesn't exist """
-    def __init__(self, value):
-        self.value = "No such node: " + str(value)    
-
-    def __str__(self):
-        return repr(self.value)
-
-class NoRootNodeException(NoSuchNodeException):
-    """ The Datatree must always contain a node named 'ROOT', with no parent.  Raise this exception \
-    if this is encountered. """
-    def __init__(self):
-        self.value = "No ROOT node in the Datatree"
-
-def StringToPerm(permstr):
-    """ Given a list of Slugs whose names trace from the tree Root to  """
-    root_nodes = Datatree.objects.filter(parent=None,name="ROOT")
-    if root_nodes.count() != 1:
-        raise NoRootNodeException()
-
-    root_node = root_node[0]
-
-    return root_node.tree_decode(permstr.split('/'))
-
-def PermToString(perm):
-    return "/".join(perm.tree_encode())
-
-
 # aseering: Dummy class, to be played with if/when Django subclassing works again.
 # In the meantime, it's not in use.
 class SubTree(Datatree):
@@ -230,20 +249,20 @@ class SubTree(Datatree):
 
 
 def GetNode(nodename):
-    """ Get a Datatree node with the given slug; create it if it doesn't exist
-
-    Return a QuerySet of nodes if more than one exists.
-    """
-    nodes = Datatree.objects.filter(name=nodename)
-    if nodes.count < 1:
+    """ Get a Datatree node with the given path; create it if it doesn't exist """
+    nodes = Datatree.objects.filter(name='ROOT', parent=None)
+    node = None
+    if nodes.count() < 1:
         node = Datatree()
-        node.name = nodename
+        node.name = 'ROOT'
+        node.parent = None
         node.save()
-        return node
     elif nodes.count == 1:
-        return nodes[0]
+        node = nodes[0]
     else:
-        return nodes
+        raise NoRootNodeException()
+
+    return node.tree_create(StringToPerm(nodename))
     
 def PopulateInitialDatatree():
     """ Populate the Datatree with values for the ESP site heirarchy:
@@ -252,19 +271,8 @@ def PopulateInitialDatatree():
      |- UserGroupTree
      |- SiteTree
     """
-    ROOT = GetNode('ROOT')
+
     UserGroupTree = GetNode('UserGroupTree')
     SiteTree = GetNode('SiteTree')
 
-    # aseering 6-25-2006: Write check to see if any are QuerySets
-
-    ROOT.parent = None
-    UserGroupTree.parent = ROOT
-    SiteTree.parent = ROOT
-
-    UserGroupTree.save()
-    SiteTree.save()
-    ROOT.save()
-
-    ROOT.refactor()
     
