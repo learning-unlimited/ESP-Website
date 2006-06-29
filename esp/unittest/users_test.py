@@ -1,7 +1,7 @@
 from esp.unittest.unittest import TestCase, TestSuite
 
 from esp.unittest.watchlists_test import TreeTest
-from esp.users.models import ESPUser, UserBit, RecursiveTreeCheck
+from esp.users.models import ESPUser, UserBit
 from django.contrib.auth.models import User
 
 class UserTest(TestCase):

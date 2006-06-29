@@ -17,16 +17,16 @@ class UserBit(models.Model):
     permission = models.ForeignKey(Datatree) # Controller to grant access to
     subject = models.ForeignKey(Datatree) # Do we want to use Subjects?
 
-class RecursiveTreeCheck(security.Context):
-    """ If a permission is heirarchical (parents have all the bits of their children), check this user against it """
-    [ security.hasPermission.when("perm.mode_data.heirarchical_top_down==True") ]
-    def espUserHasPerms(self, user, perm, subject):
-        for bit in user.userbit_all():
-            for perm in bit.permission:
-                if perm.permission.is_descendant(perm) & perm.subject.is_antecedent(subject):
-                    return True
+#class RecursiveTreeCheck:
+#    """ If a permission is heirarchical (parents have all the bits of their children), check this user against it """
+#    [ security.hasPermission.when("perm.mode_data.heirarchical_top_down==True") ]
+def espUserHasPerms(user, perm, subject):
+    for bit in user.userbit_all():
+        for perm in bit.permission:
+            if perm.permission.is_descendant(perm) & perm.subject.is_antecedent(subject):
+                return True
 
-        return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
+    return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
 
 def enforce_bits(controller_class, user):
     def call(proc, *args):
