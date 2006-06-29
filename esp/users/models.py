@@ -2,13 +2,13 @@ from django.db import models
 from django.contrib.auth.models import User
 from esp.watchlists.models import Datatree
 from peak.api import security, binding
-from esp.workflows.models import Controller
+from esp.workflow.models import Controller
 
 # Create your models here.
 
 class ESPUser(models.Model):
     """ Create a user of the ESP Website """
-    user = models.OneToOneKey(User) # Django user that we're connected to
+    user = models.OneToOneField(User) # Django user that we're connected to
 #    bits = models.ManyToMany(Datatree)
 
 class UserBit(models.Model):

@@ -1,8 +1,7 @@
+from esp.unittest.unittest import TestCase, TestSuite
+from esp.watchlists.models import Category, Subscription, DatatreeNodeData, Datatree, NoSuchNodeException, NoRootNodeException, models, GetNode
 
-import unittest
-from esp.watchlists.models import Category, Subscription, DatatreeNodeData, Datatree, NoSuchNodeException, NoRootNodeException, models
-
-class TreeTest(unittest.TestCase):
+class TreeTest(TestCase):
     usergrouptree_nodes = (
         'UserGroupTree/Users/Admins/Gods',
         'UserGroupTree/Users/Admins',
@@ -74,7 +73,7 @@ class Test_DatatreeFunctions(TreeTest):
             assert node.is_antecedent(self.root) & self.root.is_descendant(node), 'Node ' + str(node) + ' is not registered in the tree, post- refactor()'
 
 
-watchlistsTestSuite = unittest.TestSuite()
+watchlistsTestSuite = TestSuite()
 watchlistsTestSuite.addTest(OnlyOneRootNode)
 watchlistsTestSuite.addTest(AllNodesExist)
 watchlistsTestSuite.addTest(Test_DatatreeFunctions)

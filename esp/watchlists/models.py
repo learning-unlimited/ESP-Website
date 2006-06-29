@@ -60,20 +60,15 @@ class NoSuchNodeException(Exception):
 class NoRootNodeException(NoSuchNodeException):
     """ The Datatree must always contain a node named 'ROOT', with no parent.  Raise this exception \
     if this is encountered. """
-    def __init__(self):
-        self.value = "No ROOT node in the Datatree"
+    def __init__(self, NumOfRootNodes):
+        self.value = str(NumOfRootNodes) + " ROOT nodes in the Datatree"
 
 def StringToPerm(permstr):
-    """ Given a list of Slugs whose names trace from the tree Root to  """
-    root_nodes = Datatree.objects.filter(parent=None,name="ROOT")
-    if root_nodes.count() != 1:
-        raise NoRootNodeException()
-
-    root_node = root_node[0]
-
-    return root_node.tree_decode(permstr.split('/'))
+    """ Convert a permission from 'a/b/c' format to [a, b, c] format """
+    return permstr.split('/')
 
 def PermToString(perm):
+    """ Convert a permission from [a, b, c] format to 'a/b/c' format """
     return "/".join(perm.tree_encode())
 
 
@@ -252,15 +247,15 @@ def GetNode(nodename):
     """ Get a Datatree node with the given path; create it if it doesn't exist """
     nodes = Datatree.objects.filter(name='ROOT', parent=None)
     node = None
-    if nodes.count() < 1:
+    if nodes.count() < 1L:
         node = Datatree()
         node.name = 'ROOT'
         node.parent = None
         node.save()
-    elif nodes.count == 1:
+    elif nodes.count() == 1L:
         node = nodes[0]
     else:
-        raise NoRootNodeException()
+        raise NoRootNodeException(nodes.count())
 
     return node.tree_create(StringToPerm(nodename))
     

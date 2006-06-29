@@ -1,10 +1,10 @@
-import unittest
+from esp.unittest.unittest import TestCase, TestSuite
 
 from esp.unittest.watchlists_test import TreeTest
 from esp.users.models import ESPUser, UserBit, RecursiveTreeCheck
 from django.contrib.auth.models import User
 
-class UserTest(unittest.TestCase):
+class UserTest(TestCase):
     users = (
         ('test1', 'pass1'),
         ('test2', 'pass2'),

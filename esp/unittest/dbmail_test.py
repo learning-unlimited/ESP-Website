@@ -1,4 +1,4 @@
-import unittest
+from esp.unittest.unittest import TestCase, TestSuite
 from esp.dbmail.models import MessageRequest, EmailRequest, TextOfEmail, EmailController
 from esp.lib.markdown import markdown
 from esp.unittest.users_test import UserBitsTest
@@ -80,6 +80,6 @@ class RunEmailController(EmailWorkflowTest):
             assert not(emailReq.textofemail.sent), 'WARNING: Message is listed as having been sent!'
 
         
-dbmailTestSuite = unittest.TestSuite()
+dbmailTestSuite = TestSuite()
 dbmailTestSuite.addTest(CreateMessageRequest)
 dbmailTestSuite.addTest(RunEmailController)
