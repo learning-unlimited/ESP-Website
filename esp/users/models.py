@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
 from esp.watchlists.models import Datatree
 from peak.api import security, binding
 from esp.workflow.models import Controller
@@ -21,12 +21,20 @@ class UserBit(models.Model):
 #    """ If a permission is heirarchical (parents have all the bits of their children), check this user against it """
 #    [ security.hasPermission.when("perm.mode_data.heirarchical_top_down==True") ]
 def espUserHasPerms(user, perm, subject):
-    for bit in user.userbit_all():
-        for perm in bit.permission:
-            if perm.permission.is_descendant(perm) & perm.subject.is_antecedent(subject):
+    """ Given a user, a permission, and a subject, return True if the user, or all users, has been Granted [subject] on [permission]; False otherwise """
+    if user != None:
+        for bit in user.userbit_all():
+            if bit.permission.permission.is_descendant(perm) & bit.permission.subject.is_antecedent(subject):
                 return True
 
+    # This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
+    for bit in UserBit.objects.filter(user_pk=AnonymousUser().id):
+        if bit.permission.permission.is_descendant(perm) & bit.permission.subject.is_antecedent(subject):
+            return True
+
+    # security.Denial() evaluates to False as necessary; it also makes peak happy, though we're not using peak any more
     return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
+
 
 def enforce_bits(controller_class, user):
     def call(proc, *args):

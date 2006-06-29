@@ -11,7 +11,7 @@ class EmailWorkflowTest(UserBitsTest):
     msg_msgtext = 'Sample Message Text'
     msg_special_headers = 'X-Sample-Test-Message="True"'
     msg_sender = 'test@esp.mit.edu'
-    
+
     def setUp(self):
         """ Create a generic sample message """
         self.m = MessageRequest()
