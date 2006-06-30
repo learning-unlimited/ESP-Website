@@ -62,6 +62,7 @@ ROOT_URLCONF = 'esp.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
+    '/esp/esp/templates'
 )
 
 INSTALLED_APPS = (
