@@ -8,10 +8,10 @@
 <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
 <!-- Copyright (C) 2005 Massachusetts Institute of Technology -->
 {% block javascript %}
-<script language="JavaScript" type="text/javascript" src="/web/scripts/dwcode.js"> </script>
+<script language="JavaScript" type="text/javascript" src="/media/scripts/dwcode.js"> </script>
 {% endblock %}
 {% block stylesheets %}
-<link rel="stylesheet" href="/web/styles/level3.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/level3.css" type="text/css" />
 {% endblock %}
 <body onload="MM_preloadImages( {% for img in preload_images %}{% if not forloop.last %}'{{ img }}'{% endif %}{% endfor %})">
 
