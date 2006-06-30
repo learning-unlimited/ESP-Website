@@ -21,7 +21,7 @@ class Event(models.Model):
     
 class Program(models.Model):
     """ An ESP program, ie. HSSP, Splash, etc. """
-    event = models.OneToOneKey(Event)
+    event = models.OneToOneField(Event)
 
 class CalendarHook(models.Model):
     """ A hook that binds an arbitrary controller to the start of an event """
@@ -36,7 +36,7 @@ class EmailReminder(models.Model):
     """ A reminder, associated with an Event, that is to be sent by e-mail """
     event = models.ForeignKey(Event)
     email = models.ForeignKey(MessageRequest)
-    date_to_send = models.DateTimeFiel()
+    date_to_send = models.DateTimeField()
     sent = models.BooleanField(default=True)
 
 

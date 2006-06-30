@@ -30,7 +30,7 @@ class WorkflowDescriptor(models.Model):
         class Admin:
             pass
 
-class Controller(models.Model):
+class ControllerDB(models.Model):
     """ A registry of the names of all known subclasses of Controller.  Used by the auth system as unique identifiers of these controllers. """
     contr_name = models.SlugField(blank=False)
     # Name of the relevant controller class (value of its __name__ field).  Note that this forces Controller classes to have universally unique names.
