@@ -1,18 +1,13 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<title>MIT ESP - What You Can Teach</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<meta name="description" content="" />
-<meta name="keywords" content="" lang="en-us" xml:lang="en-us" />
-<!-- Copyright (C) 2005 Massachusetts Institute of Technology -->
-<script language="JavaScript" type="text/javascript" src="/web/scripts/dwcode.js"> </script>
+{% extends "elements/html" %}
 
-<link rel="stylesheet" href="/web/styles/level3.css" type="text/css" />
+{% block title %}What You Can Teach{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
 <link rel="stylesheet" href="/web/styles/level3/volunteertoteach.css" type="text/css" /></head>
-<body onload="MM_preloadImages('/web/img/level3/nav/home_ro.gif','/web/img/level3/nav/discoveresp_ro.gif','/web/img/level3/nav/takeaclass_ro.gif','/web/img/level3/nav/volunteertoteach_ro.gif','/web/img/level3/nav/getinvolved_ro.gif','/web/img/level3/nav/archivesresources_ro.gif','/web/img/level3/nav/myesp_ro.gif','/web/img/level3/nav/contactinfo_ro.gif')">
+{% endblock %}
 
+{% block body %}
 <!-- skip link -->
 <div class="offscreen">
 <a href="#startcontent" accesskey="x"><img src="/web/img/spacer.gif" width="1" height="1" border="0" alt="Skip to content" /></a>
@@ -347,12 +342,4 @@
     </tr>
   </table>
 </div>
-
-<div class="offscreen">
-<!-- Web Reporting -->
-<img src="http://counter.mit.edu/tally" width="1" height="1" alt="" />
-<!-- End Web Reporting -->
-</div>
-
-</body>
-</html>
+{% endblock %}
