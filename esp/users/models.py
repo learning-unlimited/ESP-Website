@@ -14,8 +14,8 @@ class ESPUser(models.Model):
 class UserBit(models.Model):
     """ Grant a user bits to a controller """
     user = models.ForeignKey(ESPUser) # User to give this permission
-    permission = models.ForeignKey(Datatree) # Controller to grant access to
-    subject = models.ForeignKey(Datatree) # Do we want to use Subjects?
+    permission = models.ForeignKey(Datatree, related_name='permission_related_field') # Controller to grant access to
+    subject = models.ForeignKey(Datatree, related_name='subject_related_field') # Do we want to use Subjects?
 
 #class RecursiveTreeCheck:
 #    """ If a permission is heirarchical (parents have all the bits of their children), check this user against it """
