@@ -1,24 +1,20 @@
 from esp.unittest.unittest import TestCase, TestSuite
 from esp.watchlists.models import Category, Subscription, DatatreeNodeData, Datatree, NoSuchNodeException, NoRootNodeException, models, GetNode
+from esp.setup.TreeMap import PopulateInitialDataTree, TreeMap
 
 class TreeTest(TestCase):
-    usergrouptree_nodes = (
-        'UserGroupTree/Users/Admins/Gods',
-        'UserGroupTree/Users/Admins',
-        'UserGroupTree/Users/Teachers',
-        'UserGroupTree/Users/Students',
-        'UserGroupTree/Registrar/ClassReg',
-        )
-
-    sitetree_nodes = (
-        'SiteTree/Classes',
-        'SiteTree/Programs/Splash/2006/Classes/SPAM/Documents/Homework/Page1/Paragraph2/Sentence5/Word3/Character1',
-        'SiteTree/Classes/ChooseYourOwnAdventure',
-        )
+    usergrouptree_nodes = []
+    sitetree_nodes = []
     
     def setUp(self):
         """ Create a generic basic testing Datatree, with relevant node data """
-        models.PopulateInitialDataTree()
+        for st in TreeMap:
+            if 'QualSeriesCategory' in st:
+                self.sitetree_nodes.append( st )
+            if 'Verb' in st:
+                self.usergrouptree_nodes.append( st )
+        
+        PopulateInitialDataTree()
 
         for i in self.usergrouptree_nodes:
             GetNode(i)
@@ -35,7 +31,7 @@ class TreeTest(TestCase):
 class OnlyOneRootNode(TreeTest):
     """ Verify that there is only one ROOT node """
     def runTest(self):
-        numOfRootNodes = Datatree.objects.filter(parent=NONE,name="ROOT").count()
+        numOfRootNodes = Datatree.objects.filter(parent=None,name="ROOT").count()
         assert numOfRootNodes == 1, 'There can only be one ROOT node.  There are ' + str(numOfRootNodes) + '.'
         
 class AllNodesExist(TreeTest):
@@ -45,7 +41,11 @@ class AllNodesExist(TreeTest):
         # (maybe it should be?)
         root = GetNode('')
 
-        for node in self.nodes:
+        for node in self.usergrouptree_nodes:
+            # Raises a NoSuchNodeException if the node doesn't exist
+            root.tree_decode(node)
+
+        for node in self.sitetree_nodes:
             # Raises a NoSuchNodeException if the node doesn't exist
             root.tree_decode(node)
 

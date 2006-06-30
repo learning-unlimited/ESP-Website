@@ -1,4 +1,9 @@
+from esp.watchlists.models import GetNode
 
+def PopulateInitialDataTree():
+    for i in TreeMap:
+        GetNode(i)
+    
 
 TreeMap = (
     'QualSeriesCategory',

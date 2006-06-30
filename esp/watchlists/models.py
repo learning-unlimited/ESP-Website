@@ -112,7 +112,7 @@ class Datatree(models.Model):
             elif filtered.count() > 1:
                 raise NoSuchNodeException(tree_nodenames[0])
             else:
-                return filtered[0].tree_decode(tree_nodenames[1:])
+                return filtered[0].tree_create(tree_nodenames[1:])
 
     def tree_encode(self):
         """  Return a list of the nodes leading from the root of the current tree (as determined by is_root()) to """
