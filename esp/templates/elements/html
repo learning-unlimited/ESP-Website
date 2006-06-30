@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>MIT ESP - {% block title %}{% endblock %}</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta name="description" content="{% block description %}{% endblock %}" />
+<meta name="keywords" content="{% block keywords %}" lang="en-us" xml:lang="en-us" />
+<!-- Copyright (C) 2005 Massachusetts Institute of Technology -->
+{% block javascript %}
+<script language="JavaScript" type="text/javascript" src="/web/scripts/dwcode.js"> </script>
+{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="/web/styles/level3.css" type="text/css" />
+{% endblock %}
+<body onload="MM_preloadImages( {% for img in preload_images %}{% if ! forloop.last %}'{{ img }}'{% endif %}{% endfor %})">
+
+{% block body %}{% endblock %}
+
+{% block counter %}
+<div class="offscreen">
+<!-- Web Reporting -->
+<img src="http://counter.mit.edu/tally" width="1" height="1" alt="" />
+<!-- End Web Reporting -->
+</div>
+{% endblock %}
+</body>
+</html>
