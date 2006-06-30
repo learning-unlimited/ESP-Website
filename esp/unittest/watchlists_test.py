@@ -40,13 +40,16 @@ class AllNodesExist(TreeTest):
         # Hack to get the root node easily; this isn't currently defined behavhior
         # (maybe it should be?)
         root = GetNode('')
+        print '*' * 20 + root.name
 
         for node in self.usergrouptree_nodes:
             # Raises a NoSuchNodeException if the node doesn't exist
+            print '#'*20 + str(root.children())
             root.tree_decode(StringToPerm(node))
 
         for node in self.sitetree_nodes:
             # Raises a NoSuchNodeException if the node doesn't exist
+            print '#'*20 + str(root.children())
             root.tree_decode(StringToPerm(node))
 
 class Test_DatatreeFunctions(TreeTest):

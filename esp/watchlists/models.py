@@ -88,6 +88,8 @@ class Datatree(models.Model):
             return self
         else:
             filtered = self.children().filter(name=tree_nodenames[0])
+
+            print '*'*15 + str(filtered.count()) + str(self.children())
             if filtered.count() != 1:
                 raise NoSuchNodeException(tree_nodenames[0])
             else:
