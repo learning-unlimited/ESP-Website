@@ -5,7 +5,7 @@ urlpatterns = patterns('',
     # (r'^esp/', include('esp.apps.foo.urls.foo')),
 
     # The default
-    (r'^$', 'esp.views.index'),
+    (r'^$', 'esp.web.index'),
 
     # Uncomment this for admin:
      (r'^admin/', include('django.contrib.admin.urls')),

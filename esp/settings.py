@@ -74,5 +74,5 @@ INSTALLED_APPS = (
     'esp.watchlists',
     'esp.workflow',
     'esp.dbmail',
-    'esp.views',
+    'esp.web',
 )
