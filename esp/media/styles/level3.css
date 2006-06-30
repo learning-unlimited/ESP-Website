@@ -179,7 +179,7 @@ form {
 
 /* secondary navigation link */
 .divsecondarynavlink {
-  background-image: url(../img/dashedline.gif);
+  background-image: url(/media/images/dashedline.gif);
   background-repeat: no-repeat;
   padding: 6px 20px 5px 36px;
   font-family: Arial, Lucida, Helvetica, sans-serif;
@@ -486,7 +486,7 @@ form {
 #divquotelarge {
   width: 154px;
   height: 370px;
-  background-image: url(../img/quote/large/top.gif);
+  background-image: url(/media/images/quote/large/top.gif);
   background-repeat: no-repeat;
 }
 #divquotelarge td {
@@ -496,13 +496,13 @@ form {
 #divquotelargebot {
   width: 154px;
   height: 100px;
-  background-image: url(../img/quote/large/bot.gif);
+  background-image: url(/media/images/quote/large/bot.gif);
   background-repeat: no-repeat;
 }
 #divquotemedium {
   width: 154px;
   height: 370px;
-  background-image: url(../img/quote/medium/top.gif);
+  background-image: url(/media/images/quote/medium/top.gif);
   background-repeat: no-repeat;
 }
 #divquotemedium td {
@@ -512,13 +512,13 @@ form {
 #divquotemediumbot {
   width: 154px;
   height: 100px;
-  background-image: url(../img/quote/medium/bot.gif);
+  background-image: url(/media/images/quote/medium/bot.gif);
   background-repeat: no-repeat;
 }
 #divquotesmall {
   width: 154px;
   height: 370px;
-  background-image: url(../img/quote/small/top.gif);
+  background-image: url(/media/images/quote/small/top.gif);
   background-repeat: no-repeat;
 }
 #divquotesmall td {
@@ -528,7 +528,7 @@ form {
 #divquotesmallbot {
   width: 154px;
   height: 100px;
-  background-image: url(../img/quote/small/bot.gif);
+  background-image: url(/media/images/quote/small/bot.gif);
   background-repeat: no-repeat;
 }
 #divquotenone {
@@ -562,7 +562,7 @@ form {
 #divfooter {
   width: 772px;
   height: 100px;
-  background-image: url(../img/bandaid3.gif);
+  background-image: url(/media/images/bandaid3.gif);
   background-repeat: no-repeat;
 }
 #divfooter table {
