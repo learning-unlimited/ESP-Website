@@ -1,5 +1,5 @@
 from esp.unittest.unittest import TestCase, TestSuite
-from esp.watchlists.models import Category, Subscription, DatatreeNodeData, Datatree, NoSuchNodeException, NoRootNodeException, models, GetNode
+from esp.watchlists.models import Category, Subscription, DatatreeNodeData, Datatree, NoSuchNodeException, NoRootNodeException, models, GetNode, StringToPerm, PermToString
 from esp.setup.TreeMap import PopulateInitialDataTree, TreeMap
 
 class TreeTest(TestCase):
@@ -43,11 +43,11 @@ class AllNodesExist(TreeTest):
 
         for node in self.usergrouptree_nodes:
             # Raises a NoSuchNodeException if the node doesn't exist
-            root.tree_decode(node)
+            root.tree_decode(StringToPerm(node))
 
         for node in self.sitetree_nodes:
             # Raises a NoSuchNodeException if the node doesn't exist
-            root.tree_decode(node)
+            root.tree_decode(StringToPerm(node))
 
 class Test_DatatreeFunctions(TreeTest):
     root = GetNode('')

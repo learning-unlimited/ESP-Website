@@ -82,6 +82,8 @@ class Datatree(models.Model):
 
     def tree_decode(self, tree_nodenames):
         """ Given a list of nodes leading from the current node to a direct descendant, return that descendant """
+        print '*** TREE NODE *** ' + str(tree_nodenames) + '  ' + str(type(tree_nodenames))
+
         if tree_nodenames == []:
             return self
         else:
@@ -139,11 +141,9 @@ class Datatree(models.Model):
 
     def move(self, newstart):
         """ Accepts an integer, as a location.  Moves the range of this nested-set node to start at this location; refactors the subtree if it is necessary to shift sub-node locations. """
-        print "Moving..." + str(self)
         curr_size = self.sizeof()
         self.rangestart = newstart
         self.rangeend = self.rangestart + curr_size
-        print str(self) + ' ' + str(newstart) + ' '
         super(Datatree, self).save()
         self.refactor()
         
@@ -223,7 +223,6 @@ class Datatree(models.Model):
 
         If this node is its own parent, set its parent to 'None'.
         If this node doesn't fit into the tree that it's being saved into, refactor that tree to make it fit."""
-        print "Saved"
         # Ugly hack to prevent loop trees
         if self.parent == self:
             self.parent = None
