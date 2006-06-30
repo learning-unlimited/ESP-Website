@@ -2,28 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 
 # Create your models here.
-
-class Category(models.Model):
-    """ A permissions category, associated with a node in a permissions tree.
-
-    It will eventually contain more details about what permissions it holds/requires/etc. """
-    temp_desc_str = models.TextField()
-    def __str__(self):
-        return str(self.temp_desc_str)
-    
-    class Admin:
-        pass
-
-class Subscription(models.Model):
-    """ Allows a user to 'subscribe', to watch for e-mail notices from, a particular category; the EmailController workflow handles the logic to check for this """
-    user = models.ForeignKey(User)
-    category = models.ForeignKey(Category)
-
-    def __str__(self):
-        return str(self.user.username) + ': ' + str(self.category)
-
-    class Admin:
-        pass
     
 class DatatreeNodeData(models.Model):
     """ The data associated with a node in a Datatree
@@ -32,7 +10,6 @@ class DatatreeNodeData(models.Model):
     title = models.CharField(maxlength=256)
     text_data = models.TextField(blank=True)
     file_data = models.FileField(upload_to='/esp/uploaded_data/', blank=True)
-    category = models.ForeignKey(Category, blank=True, null=True)
     heirarchical_top_down = models.BooleanField(default=True)
 
     def __str__(self):
@@ -235,12 +212,17 @@ class Datatree(models.Model):
         else:
             self.refactor()
 
-# aseering: Dummy class, to be played with if/when Django subclassing works again.
-# In the meantime, it's not in use.
-class SubTree(Datatree):
+
+class Subscription(models.Model):
+    """ Allows a user to 'subscribe', to watch for e-mail notices from, a particular category; the EmailController workflow handles the logic to check for this """
+    user = models.ForeignKey(User)
+    category = models.ForeignKey(Datatree)
+
+    def __str__(self):
+        return str(self.user.username) + ': ' + str(self.category)
+
     class Admin:
         pass
-
 
 def GetNode(nodename):
     """ Get a Datatree node with the given path; create it if it doesn't exist """

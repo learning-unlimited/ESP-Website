@@ -1,5 +1,5 @@
 from esp.unittest.unittest import TestCase, TestSuite
-from esp.watchlists.models import Category, Subscription, DatatreeNodeData, Datatree, NoSuchNodeException, NoRootNodeException, models, GetNode, StringToPerm, PermToString
+from esp.watchlists.models import Subscription, DatatreeNodeData, Datatree, NoSuchNodeException, NoRootNodeException, models, GetNode, StringToPerm, PermToString
 from esp.setup.TreeMap import PopulateInitialDataTree, TreeMap
 
 class TreeTest(TestCase):

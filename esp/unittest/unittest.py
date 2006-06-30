@@ -49,4 +49,4 @@ class TextTestRunner:
                 print "Error in tearDown: " + str(t.__doc__)
                 raise
 
-            print t.__doc__ + " successful!"
+            print str(t.__doc__) + " successful!"

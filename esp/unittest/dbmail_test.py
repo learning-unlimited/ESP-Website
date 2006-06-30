@@ -1,5 +1,6 @@
 from esp.unittest.unittest import TestCase, TestSuite
 from esp.dbmail.models import MessageRequest, EmailRequest, TextOfEmail, EmailController
+from esp.watchlists.models import GetNode
 from esp.lib.markdown import markdown
 from esp.unittest.users_test import UserBitsTest
 
@@ -19,12 +20,12 @@ class EmailWorkflowTest(UserBitsTest):
         self.m.msgtext = self.msg_msgtext
         self.m.special_headers = self.msg_special_headers
         self.m.sender = self.msg_sender
-        self.m.category = self.sitetree_nodes[0]
+        self.m.category = GetNode(self.sitetree_nodes[0])
         self.m.save()
 
     def tearDown(self):
         """ Delete our sample method """
-        m.delete()
+        self.m.delete()
 
     def is_processed_SmartText(self, str):
         """ Returns False if str contains any unprocessed SmartText """
