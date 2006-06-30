@@ -82,16 +82,14 @@ class Datatree(models.Model):
 
     def tree_decode(self, tree_nodenames):
         """ Given a list of nodes leading from the current node to a direct descendant, return that descendant """
-        print '*** TREE NODE *** ' + str(tree_nodenames) + '  ' + str(type(tree_nodenames))
 
         if tree_nodenames == []:
             return self
         else:
             filtered = self.children().filter(name=tree_nodenames[0])
 
-            print '*'*15 + str(filtered.count()) + str(self.children())
-            if filtered.count() != 1:
-                raise NoSuchNodeException(tree_nodenames[0])
+            if filtered.count() != 1L:
+                raise NoSuchNodeException(self.name)
             else:
                 return filtered[0].tree_decode(tree_nodenames[1:])
 
@@ -258,7 +256,11 @@ def GetNode(nodename):
     else:
         raise NoRootNodeException(nodes.count())
 
-    return node.tree_create(StringToPerm(nodename))
+    perm = StringToPerm(nodename)
+    if nodename == '':
+        perm = []
+        
+    return node.tree_create(perm)
     
 def PopulateInitialDatatree():
     """ Populate the Datatree with values for the ESP site heirarchy:
