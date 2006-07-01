@@ -1,6 +1,6 @@
 
 
-class TestCase:
+class TestCase(object):
     """ Yay, it's a hacked minimal implementation of TestCase! """
     def runTest(self):
         print "no Run"
@@ -10,7 +10,7 @@ class TestCase:
         print "no tearDown"
 
 
-class TestSuite:
+class TestSuite(object):
     testList = []
     def __init__(self, arg=[]):
         self.addTest(arg)
@@ -18,15 +18,21 @@ class TestSuite:
         self.testList.append(test)
 
 
-class TextTestRunner:
+class TextTestRunner(object):
     def run(self, tests):
+        print "Running Test: " + str(tests)
         if type(tests) == type([]):
+            print "Branching on a list"
             for t in tests:
-                self.run(t)
+                if t != tests:
+                    self.run(t)
         elif type(tests) == type(TestSuite()):
+            print "Branching"
             for t in tests.testList:
-                self.run(t)
+                if t != tests.testList:
+                    self.run(t)
         else:
+            print "Running!"
             t = tests()
             print str(tests)
             print str(t)

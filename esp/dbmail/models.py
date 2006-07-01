@@ -11,7 +11,8 @@ from esp.lib.markdown import markdown
 import smtplib
 
 from esp.workflow.models import Controller
-from esp.watchlists.models import Subscription, Datatree
+from esp.watchlists.models import Datatree, GetNode, StringToPerm, PermToString
+from esp.users.models import UserBit
 
 smtp_server = 'outgoing.mit.edu'
 
@@ -82,25 +83,10 @@ class EmailController(Controller):
     - Process the SmartText in the EmailRequests, and generate a corresponding list of TextOfEmails
     - Send the TextOfEmails
     """
-    def users_subscribed_to(self, category):
-        """ Make a list of each user subscribed to this category
-
-        Specifically:
-        - Get the tree node corresponding to the category
-        - Get all nodes that are at or under that node in the tree
-        - Get all subscriptions associated with this node
-        - Get the user for each of these subscriptions, and append it ot a list"""
-        user = []
-        for orig_node in Datatree.objects.filter(node_data__category__pk=category.id):
-            for node in Datatree.objects.filter(rangestart__gte=orig_node.rangestart, rangeend__lte=orig_node.rangeend):
-                for sub in Subscription.objects.filter(category__pk=node.node_data.category.id):
-                    user.append(sub.user)
-
-        return user    
 
     def apply_smarttext(self, smartstr):
         """ Takes either a plain string or a SmartText-encoded string.  Returns a plain string.  """
-        return markdown.markdown(smartstr)
+        return markdown(smartstr)
 
     def msgreq_to_emailreqs(self, msgreq):
         """ Accepts a MessageRequest.  Returns a list of EmailRequests.
@@ -108,10 +94,9 @@ class EmailController(Controller):
         Given a MessageRequest, get the users subscribed to it, and return a set of EmailRequests that bind each of those users to the specified MessageRequest """
         emailreqs = []
 
-        # Is there a way to do this that doesn't require a temp variable?
-        for user in self.users_subscribed_to(msgreq.category):
+        for user in UserBit.bits_get_users(msgreq.category, GetNode('Verb/dbmail/Subscribe')):
             temp_emailreq = EmailRequest()
-            temp_emailreq.target = user
+            temp_emailreq.target = user.user.user
             temp_emailreq.msgreq = msgreq
             temp_emailreq.save()
             emailreqs.append(temp_emailreq)

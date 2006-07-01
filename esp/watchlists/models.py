@@ -46,7 +46,10 @@ def StringToPerm(permstr):
 
 def PermToString(perm):
     """ Convert a permission from [a, b, c] format to 'a/b/c' format """
-    return "/".join(perm.tree_encode())
+    if perm == []:
+        return ''
+    else:
+        return "/".join(perm)
 
 
 class Datatree(models.Model):
@@ -95,10 +98,12 @@ class Datatree(models.Model):
 
     def tree_encode(self):
         """  Return a list of the nodes leading from the root of the current tree (as determined by is_root()) to """
-        if self.is_root():
+        if self.parent == None:
             return []
         else:
-            return parent.append(self.name)
+            stack = self.parent.tree_encode()
+            stack.append(self.name) 
+            return stack
     
     def children(self):
         """ Returns a QuerySet of Datatrees of all children of this Datatree """
@@ -125,13 +130,8 @@ class Datatree(models.Model):
         self.refactor()
         
     def __str__(self):
-        """ Returns a string
-        
-        If we have any associated data, display it in our string representation; otherwise, don't. """
-        try:
-            return str(self.rangestart) + ' .. ' + str(self.rangeend) + ' <' + str(self.node_data) + '>'
-        except Exception:
-            return str(self.rangestart) + ' .. ' + str(self.rangeend)
+        """ Returns a string """
+        return str(self.rangestart) + ' .. ' + str(self.rangeend) + ' <' + str(self.name) + '>'
 
     def total_size_of_children(self):
         """ Return the total nested-set size of all subnodes.  Should, in theory, always be less than self.sizeof(). """

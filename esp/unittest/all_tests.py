@@ -4,7 +4,9 @@ from esp.unittest.dbmail_test import dbmailTestSuite
 #from esp.unittest.workflow_test import dbmailTestSuite
 from esp.unittest.watchlists_test import watchlistsTestSuite
 
-all_tests = TestSuite((dbmailTestSuite, watchlistsTestSuite))
+all_tests = TestSuite()
+all_tests.addTest(dbmailTestSuite)
+all_tests.addTest(watchlistsTestSuite)
 
 
 #if __name__ == "__main__":
