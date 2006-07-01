@@ -1,44 +1,47 @@
 {% extends "elements/html" %}
 
-{% block title %}What You Can Teach{% endblock %}
-
 {% block stylesheets %}
-{{ block.super }}
-<link rel="stylesheet" href="/media/styles/level3/volunteertoteach.css" type="text/css" /></head>
+<link rel="stylesheet" href="/media/styles/level3.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/series-3.css" type="text/css" />
 {% endblock %}
 
 {% block body %}
+
 <!-- skip link -->
 <div class="offscreen">
-<a href="#startcontent" accesskey="x"><img src="/web/img/spacer.gif" width="1" height="1" border="0" alt="Skip to content" /></a>
+{% block skiplinks %}
+<a href="#startcontent" accesskey="x"><img src="/media/images/spacer.gif" width="1" height="1" border="0" alt="Skip to content" /></a>
+{% endblock %}
 </div>
 
 <!-- backgrounds  at top of page -->
+{% block banner_backgrounds %}
 <div id="divbkg1">
-  <img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div>
+  <img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div>
 <div id="divbkg2">
-  <img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div>
+  <img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div>
 <div id="divbkg3">
-  <img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div>
+  <img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div>
 <div id="divbkg4">
-  <img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div>
-
+  <img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div>
+{% endblock %}
 
 <!-- site title -->
 <div id="divtitle">
-  <img src="/web/img/volunteertoteach/level3/sitetitle.gif" border="0" alt="Educational Studies Program" title="" /></div>
+{% block section_title %}<img src="/media/images/volunteertoteach/level3/sitetitle.gif" border="0" alt="Educational Studies Program" title="" />{% endblock %}
+</div>
 <!-- image size may vary -->
 
-
+{% block banner_nav %}
 <div id="divnavh">
-<a href="/web/home/index.html" onmouseover="MM_swapImage('home','','/web/img/level3/nav/home_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/web/img/level3/nav/home.gif" border="0" alt="Home" title="" name="home" id="home" /></a></div>
+<a href="/web/home/index.html" onmouseover="MM_swapImage('home','','/media/images/level3/nav/home_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/level3/nav/home.gif" border="0" alt="Home" title="" name="home" id="home" /></a></div>
 
 <div id="divnav0">
 
 
-<a href="/web/discoveresp/index.html" onmouseover="MM_swapImage('discoveresp','','/web/img/level3/nav/discoveresp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/web/img/level3/nav/discoveresp.gif" border="0" alt="Discover ESP" title="" name="discoveresp" id="discoveresp" />
+<a href="/web/discoveresp/index.html" onmouseover="MM_swapImage('discoveresp','','/media/images/level3/nav/discoveresp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/level3/nav/discoveresp.gif" border="0" alt="Discover ESP" title="" name="discoveresp" id="discoveresp" />
 </a>
 </div>
 
@@ -46,8 +49,8 @@
 <div id="divnav1">
 
 
-<a href="/web/takeaclass/index.html" onmouseover="MM_swapImage('takeaclass','','/web/img/level3/nav/takeaclass_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/web/img/level3/nav/takeaclass.gif" border="0" alt="Take a Class" title="" name="takeaclass" id="takeaclass" />
+<a href="/web/takeaclass/index.html" onmouseover="MM_swapImage('takeaclass','','/media/images/level3/nav/takeaclass_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/level3/nav/takeaclass.gif" border="0" alt="Take a Class" title="" name="takeaclass" id="takeaclass" />
 </a>
 </div>
 
@@ -55,8 +58,8 @@
 <div id="divnav2">
 
 
-<a href="/web/volunteertoteach/index.html" onmouseover="MM_swapImage('volunteertoteach','','/web/img/level3/nav/volunteertoteach_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/web/img/level3/nav/volunteertoteach.gif" border="0" alt="Volunteer To Teach" title="" name="volunteertoteach" id="volunteertoteach" />
+<a href="/web/volunteertoteach/index.html" onmouseover="MM_swapImage('volunteertoteach','','/media/images/level3/nav/volunteertoteach_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/level3/nav/volunteertoteach.gif" border="0" alt="Volunteer To Teach" title="" name="volunteertoteach" id="volunteertoteach" />
 </a>
 </div>
 
@@ -64,8 +67,8 @@
 <div id="divnav3">
 
 
-<a href="/web/getinvolved/index.html" onmouseover="MM_swapImage('getinvolved','','/web/img/level3/nav/getinvolved_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/web/img/level3/nav/getinvolved.gif" border="0" alt="Get Involved" title="" name="getinvolved" id="getinvolved" />
+<a href="/web/getinvolved/index.html" onmouseover="MM_swapImage('getinvolved','','/media/images/level3/nav/getinvolved_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/level3/nav/getinvolved.gif" border="0" alt="Get Involved" title="" name="getinvolved" id="getinvolved" />
 </a>
 </div>
 
@@ -73,8 +76,8 @@
 <div id="divnav4">
 
 
-<a href="/web/archivesresources/index.html" onmouseover="MM_swapImage('archivesresources','','/web/img/level3/nav/archivesresources_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/web/img/level3/nav/archivesresources.gif" border="0" alt="Archives / Resources" title="" name="archivesresources" id="archivesresources" />
+<a href="/web/archivesresources/index.html" onmouseover="MM_swapImage('archivesresources','','/media/images/level3/nav/archivesresources_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/level3/nav/archivesresources.gif" border="0" alt="Archives / Resources" title="" name="archivesresources" id="archivesresources" />
 </a>
 </div>
 
@@ -82,8 +85,8 @@
 <div id="divnav5">
 
 
-<a href="/web/myesp/index.html" onmouseover="MM_swapImage('myesp','','/web/img/level3/nav/myesp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/web/img/level3/nav/myesp.gif" border="0" alt="myESP" title="" name="myesp" id="myesp" />
+<a href="/web/myesp/index.html" onmouseover="MM_swapImage('myesp','','/media/images/level3/nav/myesp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/level3/nav/myesp.gif" border="0" alt="myESP" title="" name="myesp" id="myesp" />
 </a>
 </div>
 
@@ -91,128 +94,44 @@
 <div id="divnav6">
 
 
-<a href="/web/contactinfo/index.html" onmouseover="MM_swapImage('contactinfo','','/web/img/level3/nav/contactinfo_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/web/img/level3/nav/contactinfo.gif" border="0" alt="Contact Info" title="" name="contactinfo" id="contactinfo" />
+<a href="/web/contactinfo/index.html" onmouseover="MM_swapImage('contactinfo','','/media/images/level3/nav/contactinfo_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/level3/nav/contactinfo.gif" border="0" alt="Contact Info" title="" name="contactinfo" id="contactinfo" />
 </a>
 </div>
 
 </div>
-	
+
+{% endblock %}
+
 <!-- section name -->
 <div id="divsectionname">
-  <a href="/web/home/index.html"><img src="/web/img/volunteertoteach/level3/sectionname.gif" border="0" alt="What You Can Teach" title="" /></a></div>
+  <a href="/web/home/index.html"><img src="/media/images/volunteertoteach/level3/sectionname.gif" border="0" alt="What You Can Teach" title="" /></a></div>
 <!-- image sizes may vary -->
 
 
+{% block secondary_nav %}
 <!-- secondary nav -->
 <div id="divsecondarynav">
-	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/what-to-teach.html">What You Can Teach</a>
-	  	  </p>
-	  </div>
-       		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/prev-classes.html">Previous Classes</a>
-	  	  </p>
-	  </div>
-       		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/teaching-time.html">Time Commitments</a>
-	  	  </p>
-	  </div>
-       		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/training.html">Teacher Training</a>
-	  	  </p>
-	  </div>
-       		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/ta.html">Become a TA</a>
-	  	  </p>
-	  </div>
-       		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/coteach.html">Co-Teach</a>
-	  	  </p>
-	  </div>
-       		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/reimburse.html">Reimbursements</a>
-	  	  </p>
-	  </div>
-       		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/teachhssp.html">HSSP</a>
-	  	  </p>
-	  </div>
-                <div class="divtertiarynavlink">
-	    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="bullet">- </span>
-         <a href="/web/volunteertoteach/hsspclsetup.html">Class Registration</a>
-							              </p>
-          </div>
-    	           <div class="divtertiarynavlink">
-	    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="bullet">- </span>
-         <a href="/web/volunteertoteach/teacherinformation.html">Teacher Information</a>
-							              </p>
-          </div>
-    	  		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/summerhssp.html">Summer HSSP</a>
-	  	  </p>
-	  </div>
-                <div class="divtertiarynavlink">
-	    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="bullet">- </span>
-         <a href="/web/volunteertoteach/hsspcs.html">Class Registration</a>
-							              </p>
-          </div>
-    	  		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/firehose.html">Firehose</a>
-	  	  </p>
-	  </div>
-       		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/teachjunction.html">JUNCTION</a>
-	  	  </p>
-	  </div>
-                <div class="divtertiarynavlink">
-	    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="bullet">- </span>
-         <a href="/web/volunteertoteach/junctioncs.html">Class Registration</a>
-							              </p>
-          </div>
-    	  		  	  <div class="divsecondarynavlink">
-	  <p><span class="bullet">- </span>
-	  <a href="/web/volunteertoteach/delve.html">DELVE (AP Program)</a>
-	  	  </p>
-	  </div>
-       		    
-
+{% for nav_entry in navbar_list %}
+{% if nav_entry.indent %}
+  <div class="divtertiarynavlink">
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="bullet">- </span>
+{% else %}
+  <div class="divsecondarynavlink">
+    <p><span class="bullet">- </span>
+{% endif %}
+      <a href="{{ nav_entry.link }}">{{ nav_entry.text }}</a>
+    </p>
+  </div>
+{% endfor %}
   <div class="divsecondarynavlink"><!-- final dashed line -->
     <p>&nbsp;</p>
   </div>
 </div>
-<!-- quicklinks -->
-<div id="divquicklinks">
-  <form name="quicklinkform" id="quicklinkform" method="get" action="" onsubmit="return false;">
-    <table border="0" cellpadding="0" cellspacing="0" summary=" ">
-      <tr>
-        <td><div class="divformcol1">&nbsp;</div></td>
-        <td><div class="divformcol2">
-          <!-- select name="quicklinks" id="quicklinks" class="selectbox" onchange="MM_jumpMenu('parent',this,0)" -->
-          <select name="quicklinks" id="quicklinks" class="selectbox">
-		    <option value="#">Quick Links</option>
-		    <option value="/web/takeaclass/splash.html">Splash!</option>
-		    <option value="/web/takeaclass/delve.html">Delve</option>
-		    <option value="/web/takeaclass/hssp.html">HSSP</option>
-		    <option value="/web/takeaclass/satprep.html">SATP</option>
-		  </select>
-        </div></td>
-        <td><div class="divformcol3"><input type="image" name="goquick" id="goquick" src="/web/img/home/go.gif" class="gobutton" alt="Go" onclick="MM_jumpMenuGo('quicklinks','parent',0)" /></div></td>
-      </tr>
-    </table>
-  </form>
-</div><!-- search -->
+{% endblock %}
+
+{% block search %}
+<!-- search -->
 <div id="divsearch">
   <form name="searchform" id="searchform" method="get" action="http://gb-server.mit.edu/search">
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
@@ -226,11 +145,13 @@
 						<td width="100%"><div class="divformcol1">&nbsp;</div></td>
 				<td class="rightalign"><div class="divformcol3"><label for="q">Search:</label></div></td>
 				<td><div class="divformcol4"><input type="text" name="q" id="q" size="8" value="" maxlength="255" class="inputbox" accesskey="s" /></div></td>
-				<td><div class="divformcol5"><input type="image" name="gosearch" id="gosearch" src="/web/img/go1.gif" class="gobutton" alt="Go" title="" /></div></td>
+				<td><div class="divformcol5"><input type="image" name="gosearch" id="gosearch" src="/media/images/go1.gif" class="gobutton" alt="Go" title="" /></div></td>
 	          </tr>
     </table>
-  </form>
-</div>	<div id="divlogin">
+  </form></div>	
+{% endblock %}
+{% block login %}
+<div id="divlogin">
 <form name="loginform" id="loginform" method="post" action="/web/myesp/login.html">
 <input type="hidden" name="op" value="login" />
 <input type="hidden" name="here" value="/web/volunteertoteach/what-to-teach.html" />
@@ -242,7 +163,7 @@
   <td><div class="divformcol2"><input type="text" name="user" id="user" size="8" value="" maxlength="255" class="inputbox" /></div></td>
   <td class="rightalign"><div class="divformcol3">&nbsp;&nbsp;<label for="pass">Password:</label></div></td>
   <td><div class="divformcol4"><input type="password" name="password" id="pass" size="8" value="" maxlength="255" class="inputbox" /></div></td>
-  <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="/web/img/go2.gif" class="gobutton" alt="Go" title="" /></div></td>
+  <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="/media/images/go2.gif" class="gobutton" alt="Go" title="" /></div></td>
 </tr>
 <tr>
   <td width="100%"><div class="divformcol1">&nbsp;</div></td>
@@ -258,9 +179,12 @@
 </table>
 </form>
 </div>
+{% endblock %}
+
 <!-- subsection name -->
 <div id="divsubsectionname">
-  <img src="/web/img/discoveresp/welcome.gif" border="0" alt="Welcome" title="" /></div>
+{% block subsection_name %}{% endblock %}
+</div>
 <!-- image sizes may vary -->
 
 <!-- content, quote, and footer -->
@@ -269,30 +193,18 @@
   <table border="0" cellpadding="0" cellspacing="0" summary=" " id="maintable">
     <!-- skip row 1 - no longer needed -->
     <tr><!-- alignment and space -->
-      <td><div class="row2 col1"><img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col2"><img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col3"><img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col4"><img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col5"><img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td><div class="row2 col1"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row2 col2"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row2 col3"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row2 col4"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row2 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr>
     <tr><!-- content -->
-      <td align="right" valign="bottom"><img src="/web/img/bandaid1.gif" width="28" height="46" alt="" /></td>
-      <td align="left" valign="bottom" class="paper"><img src="/web/img/bandaid2.gif" width="43" height="35" alt="" /></td>
+      <td align="right" valign="bottom"><img src="/media/images/bandaid1.gif" width="28" height="46" alt="" /></td>
+      <td align="left" valign="bottom" class="paper"><img src="/media/images/bandaid2.gif" width="43" height="35" alt="" /></td>
       <td align="left" valign="top" class="paper">
         <div id="divmaintext">
-		    <h1 style="text-align:center">What can I teach?</h1><br>
-
-<p><b>What does "teach anything" really mean?</b></p>
-
-<p>It means you're allowed - actually, strongly encouraged - to go out on a limb and pick those wacko subjects you never thought you could have a class about.  Splash and HSSP teachers go wild with the most off-the-wall, difficult, esoteric and funny classes they can imagine.  We will do everything we can to help you arrange musical instruments, spaces for dancing and performing, and inexpensive craft/building materials if you want to use them.  </p>
-
-<p>Of course, you can also teach a more "normal" class, like calculus, creative writing, programming, etc.  Our students are always looking forward to a new perspective on those subjects too!</p>
-
-<p>To get an idea, take a look at some of the other classes people have taught in the past!  You can go directly to this year's Splash catalog, and the most recent HSSP catalogs: spring 2005 and summer 2005.  Or, come up with something completely new!</p>
-
-<p><b>What about SAT Prep and Delve?</b></p>
-
-<p>As an SAT Prep or Delve teacher, you will follow our general curriculum (since in those program there are some objectives we have to achieve!) but have the freedom to create your own lesson plans and activities with the help of the ESP staff.</p>
+{% block content %}{% endblock %}
         </div>
       </td>
       <td align="left" valign="bottom" class="paper">
@@ -304,7 +216,7 @@
           </td></tr></table>
         </div>
       </td>
-      <td class="paper"><div class="row3 col5"><img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row3 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr>
     <tr><!-- footer -->
       <td colspan="3" align="left" valign="top">
@@ -314,7 +226,7 @@
     <tr>
       <td><!-- mit logo -->
         <div id="divfootercol1">
-          <a href="http://web.mit.edu/" accesskey="m"><img src="/web/img/mit.gif" width="42" height="24" border="0" alt="MIT home" title="MIT home" /></a></div>
+          <a href="http://web.mit.edu/" accesskey="m"><img src="/media/images/mit.gif" width="42" height="24" border="0" alt="MIT home" title="MIT home" /></a></div>
       </td>
       <td><!-- mit -->
         <div id="divfootercol2">
@@ -332,13 +244,13 @@
       </td>
       <td><!-- email bubble -->
         <div id="divfootercol5">
-          <img src="/web/img/emailbubble.gif" width="25" height="21" border="0" alt="" /></div>
+          <img src="/media/images/emailbubble.gif" width="25" height="21" border="0" alt="" /></div>
       </td>
     </tr>
   </table>
 </div>      </td>
-      <td><div id="divquotenonebot"><img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td><div class="row4 col5"><img src="/web/img/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td><div id="divquotenonebot"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td><div class="row4 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr>
   </table>
 </div>

@@ -11,8 +11,8 @@
 <script language="JavaScript" type="text/javascript" src="/media/scripts/dwcode.js"> </script>
 {% endblock %}
 {% block stylesheets %}
-<link rel="stylesheet" href="/media/styles/level3.css" type="text/css" />
 {% endblock %}
+</head>
 <body onload="MM_preloadImages( {% for img in preload_images %}{% if not forloop.last %}'{{ img }}'{% endif %}{% endfor %})">
 
 {% block body %}{% endblock %}
