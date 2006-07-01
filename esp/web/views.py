@@ -73,3 +73,7 @@ class home(navbar,preloader):
 				'navbar_list': navbar_data,
 				'preload_images': preload_images
 			})
+
+
+def index(request):
+	return home.index(request)
