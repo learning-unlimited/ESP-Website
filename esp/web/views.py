@@ -71,5 +71,5 @@ class home(navbar,preloader):
 		latest_event_list = Event.objects.filter().order_by('-start')
 		return render_to_response('index.html', {
 				'navbar_list': navbar_data,
-				'preload_images', preload_images
+				'preload_images': preload_images
 			})
