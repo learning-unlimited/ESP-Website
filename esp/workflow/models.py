@@ -35,3 +35,6 @@ class ControllerDB(models.Model):
     contr_name = models.SlugField(blank=False)
     # Name of the relevant controller class (value of its __name__ field).  Note that this forces Controller classes to have universally unique names.
 
+    class Admin:
+        pass
+    

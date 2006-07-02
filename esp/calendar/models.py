@@ -10,10 +10,15 @@ class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
 
+    class Admin:
+        pass
+
 class Series(models.Model):
     """ A container object for grouping Events.  Can be nested. """
     description = models.TextField()
-    parent = models.ForeignKey('self', blank=True, null=True)
+    target = models.ForeignKey(Datatree) # location for this Series in the datatree
+    class Admin:
+        pass
 
     def is_happening(self, time=datetime.now()):
         """ Returns True if any Event contained by this Series, or any event contained by any Series nested beneath this Series, returns is_happening(time)==True """
@@ -40,10 +45,16 @@ class Event(models.Model):
     def is_happening(self, time=datetime.now()):
         """ Return True if the specified time is between start and end """
         return (time > start and time < end)
+
+    class Admin:
+        pass
     
 class Program(models.Model):
     """ An ESP program, ie. HSSP, Splash, etc. """
     event = models.OneToOneField(Event)
+
+    class Admin:
+        pass
 
 class CalendarHook(models.Model):
     """ A hook that binds an arbitrary controller to the start of an event """
@@ -54,6 +65,9 @@ class CalendarHook(models.Model):
     event = models.ForeignKey(Event) # The event to trigger off of
     trigger_time = models.DateTimeField(blank=True, null=True, default=None) # The time to trigger the specified event.  If null, trigger at the start time of the associated Event instance.
 
+    class Admin:
+        pass
+
 class EmailReminder(models.Model):
     """ A reminder, associated with an Event, that is to be sent by e-mail """
     event = models.ForeignKey(Event)
@@ -61,6 +75,8 @@ class EmailReminder(models.Model):
     date_to_send = models.DateTimeField()
     sent = models.BooleanField(default=True)
 
+    class Admin:
+        pass
 
 class CalendarGenericHook(Controller):
     """ Run all generic hooks whose time has come """

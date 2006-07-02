@@ -8,11 +8,17 @@ class ProgramType(models.Model):
     """ A list of all possible types of program, such as HSSP, Splash, Delve, etc. """
     program_name = models.TextField()
 
+    class Admin:
+        pass
+
 class Program(models.Model):
     """ An ESP Program, such as HSSP, Splash, Delve, etc. """
     programSchedule = models.ForeignKey(Series) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     programType = models.ForeignKey(ProgramType)
     programIdentifier = models.TextField(blank=True) # Human-readable, per-instance identifier.  For example, for HSSP, this might be "Summer 2006".  This doesn't need to be unique, nor even non-blank.
+
+    class Admin:
+        pass
 
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
@@ -21,12 +27,18 @@ class ClassCategories(models.Model):
     """
     category = models.TextField()
 
+    class Admin:
+        pass
+
 class EquipmentType(models.Model):
     """ A type of equipment that is available for classes to use
 
     Equipment types include projectors, classrooms with desks, Athena labs, and the like """
     equipment = models.TextField() # Human-readable name of the element of equipment
     numAvailable = models.IntegerField() # Number of this item of equipment owned by ESP
+
+    class Admin:
+        pass
 
 class Class(models.Model):
     """ A Class, as taught as part of an ESP program """
@@ -42,4 +54,6 @@ class Class(models.Model):
     class_size_max = models.IntegerField()
     parent_program = models.ForeignKey(Program)
     schedule = models.ForeignKey(Series)
-    
+
+    class Admin:
+        pass

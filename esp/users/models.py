@@ -10,7 +10,9 @@ from datetime import datetime
 class ESPUser(models.Model):
     """ Create a user of the ESP Website """
     user = models.OneToOneField(User) # Django user that we're connected to
-#    bits = models.ManyToMany(Datatree)
+
+    class Admin:
+        pass
 
 class UserBit(models.Model):
     """ Grant a user bits to a controller """
@@ -94,3 +96,7 @@ class UserBit(models.Model):
     def has_bits(queryset):
         """ Returns False if there are no elements in queryset """
         return ( queryset.count() > 0 )
+
+    class Admin:
+        pass
+    
