@@ -10,6 +10,23 @@ class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
 
+class Series(models.Model):
+    """ A container object for grouping Events.  Can be nested. """
+    description = models.TextField()
+    parent = models.ForeignKey('self', blank=True, null=True)
+
+    def is_happening(self, time=datetime.now()):
+        """ Returns True if any Event contained by this Series, or any event contained by any Series nested beneath this Series, returns is_happening(time)==True """
+        for event in self.event_set.all():
+            if event.is_happening(time):
+                return True
+
+        for series in self.series_set.all():
+            if series.is_happening(time):
+                return True;
+
+        return False;
+
 class Event(models.Model):
     """ A unit calendar entry.
 
@@ -18,6 +35,11 @@ class Event(models.Model):
     end = models.DateTimeField() # Event end time
     description = models.TextField() # Event textual description; not computer-parseable
     event_type = models.ForeignKey(EventType) # The tyoe of event.  This implies, though does not require, the types of data that are keyed to this event.
+    container_series = models.ForeignKey(Series, blank=True, null=True)
+
+    def is_happening(self, time=datetime.now()):
+        """ Return True if the specified time is between start and end """
+        return (time > start and time < end)
     
 class Program(models.Model):
     """ An ESP program, ie. HSSP, Splash, etc. """

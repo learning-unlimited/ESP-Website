@@ -4,7 +4,7 @@ from esp.watchlists.models import Datatree, DatatreeNodeData
 # Create your models here.
 
 # Argh: No virtual classes in Python?
-class Controller:
+class Controller(object):
     def sync_to_db():
         """ Record our name to the database table of Controllers.  Don't record a duplicate. """
         if Controller.objects.filter(controller=self.__name__).count() == 0:
