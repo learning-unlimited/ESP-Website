@@ -26,11 +26,11 @@ navbar_data = [
 	{ 'link': '/programs/hssp/teach.html',
 	  'text': 'HSSP',
 	  'indent': False },
-	{ 'link': '/teach/teacherinformation.html',
-	  'text': 'Teacher Information',
-	  'indent': True },
 	{ 'link': '/programs/hssp/classreg.html',
 	  'text': 'Class Registration',
+	  'indent': True },
+	{ 'link': '/teach/teacherinformation.html',
+	  'text': 'Teacher Information',
 	  'indent': True },
 	{ 'link': '/programs/hssp/summerhssp.html',
 	  'text': 'Summer HSSP',
@@ -48,7 +48,7 @@ navbar_data = [
 	  'text': 'Class Registration',
 	  'indent': True },
 	{ 'link': '/programs/delve/teach.html',
-	  'text': 'Delve (AP Program)',
+	  'text': 'DELVE (AP Program)',
 	  'indent': False }
 ]
 
