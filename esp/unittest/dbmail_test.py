@@ -46,7 +46,7 @@ class CreateMessageRequest(EmailWorkflowTest):
             msgtext=self.msg_msgtext,
             special_headers=self.msg_special_headers,
             sender=self.msg_sender
-            ).count() == 1, 'Can\'t find saved message in ' + str(MessageRequest.objects.all())
+            ).count() >= 1, 'Can\'t find saved message in ' + str(MessageRequest.objects.all())
 
 class RunEmailController(EmailWorkflowTest):
     def runTest(self):
@@ -64,7 +64,7 @@ class RunEmailController(EmailWorkflowTest):
 
         # This e-mail should be associated with three users.
         # aseering 6-25-2006: ERROR: haven't yet written user test cases, so this won't work
-        emailReqs = EmailRequest.objects.filter(msgreq_pk=msg.id)
+        emailReqs = EmailRequest.objects.filter(msgreq__pk=msg.id)
         assert emailReqs.count() >= 1, 'Didn\'t create three e-mail requests: ' + str(emailReqs)
     
         for emailReq in emailReqs:
