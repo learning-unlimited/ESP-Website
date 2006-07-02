@@ -20,8 +20,8 @@ class UserBit(models.Model):
     qsc = models.ForeignKey(Datatree, related_name='permission_related_field') # Controller to grant access to
     verb = models.ForeignKey(Datatree, related_name='subject_related_field') # Do we want to use Subjects?
 
-    startdate = models.DateTimeField(default=datetime.min)
-    enddate = models.DateTimeField(default=datetime.max)
+    startdate = models.DateTimeField(blank=True, null=True)
+    enddate = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         curr_user = '?'
@@ -50,12 +50,12 @@ class UserBit(models.Model):
         user = self
         
         if user != None:
-            for bit in user.userbit_all().filter(startdate_lt=now, enddate_gt=now):
+            for bit in user.userbit_all().filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now))
                 if bit.qsc.is_descendant(qsc) & bit.verb.is_antecedent(verb):
                     return True
 
             # This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
-            for bit in UserBit.objects.filter(user_pk=AnonymousUser().id, startdate_lt=now, enddate_gt=now):
+            for bit in UserBit.objects.filter(user_pk=AnonymousUser().id).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now)):
                 if bit.qsc.is_descendant(qsc) & bit.verb.is_antecedent(verb):
                     return True
 
@@ -78,18 +78,18 @@ class UserBit(models.Model):
     def bits_get_users(qsc, verb, now = datetime.now()):
         """ Return all users who have been granted 'verb' on 'qsc' """
         now = datetime.now()
-        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend, verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend).exclude(startdate__gt=now).exclude(enddate__lt=now)
+        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend, verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now))
 
     @staticmethod
     def bits_get_qsc(user, verb, now = datetime.now()):
         """  Return all qsc structures to which 'user' has been granted 'verb' """
         now = datetime.now()
-        return UserBit.objects.filter(verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend, user_pk=user.id).exclude(startdate__gt=now).exclude(enddate__lt=now)
+        return UserBit.objects.filter(verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend, user_pk=user.id).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now))
 
     @staticmethod
     def bits_get_verb(user, qsc, now = datetime.now()):
         """ Return all verbs that 'user' has been granted on 'qsc' """        
-        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend, user_pk=user.id).exclude(startdate__gt=now).exclude(enddate__lt=now)
+        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend, user_pk=user.id).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now))
 
 
     @staticmethod
