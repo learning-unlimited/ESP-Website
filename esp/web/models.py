@@ -13,7 +13,7 @@ class QuasiStaticData(models.Model):
 	class Admin:
 		pass
 
-	def html();
+	def html():
 		return markdown.markdown(content)
 
 	@staticmethod
