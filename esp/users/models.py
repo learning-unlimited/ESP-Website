@@ -7,16 +7,16 @@ from datetime import datetime
 
 # Create your models here.
 
-class ESPUser(models.Model):
-    """ Create a user of the ESP Website """
-    user = models.OneToOneField(User) # Django user that we're connected to
-
-    class Admin:
-        pass
+#class ESPUser(models.Model):
+#    """ Create a user of the ESP Website """
+#    user = models.OneToOneField(User) # Django user that we're connected to
+#
+#    class Admin:
+#        pass
 
 class UserBit(models.Model):
     """ Grant a user bits to a controller """
-    user = models.ForeignKey(ESPUser) # User to give this permission
+    user = models.ForeignKey(User) # User to give this permission
     qsc = models.ForeignKey(Datatree, related_name='permission_related_field') # Controller to grant access to
     verb = models.ForeignKey(Datatree, related_name='subject_related_field') # Do we want to use Subjects?
 
