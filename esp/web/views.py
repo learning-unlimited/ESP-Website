@@ -77,7 +77,7 @@ def qsd(request, url):
 	return render_to_response('qsd.html', {
 			'navbar_list': navbar_data,
 			'preload_images': preload_images,
-			'title': qsd_rec.title
+			'title': qsd_rec.title,
 			'content': qsd_rec.html()
 		})
 
