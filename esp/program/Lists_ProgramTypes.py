@@ -1,6 +1,6 @@
 from esp.program.models import ProgramType
 
-ProgramTypesOptions = (
+ProgramTypeOptions = (
     'Splash!',
     'HSSP',
     'Delve',
