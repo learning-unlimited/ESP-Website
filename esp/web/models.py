@@ -1,5 +1,5 @@
 from django.db import models
-from esp.watchlists.models import Datatree
+from esp.watchlists.models import Datatree, GetNode
 from esp.lib.markdown import markdown
 
 # Create your models here.
@@ -23,7 +23,7 @@ class QuasiStaticData(models.Model):
 	def find_by_url_parts(parts):
 		""" Fetch a QSD record by its url parts """
 		# Get the Q_Web root
-		Q_Web = Datatree.GetNode('Q/Web')
+		Q_Web = GetNode('Q/Web')
 
 		# Extract the last part
 		filename = parts.pop()
