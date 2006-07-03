@@ -10,11 +10,14 @@ class QuasiStaticData(models.Model):
 	content = models.TextField()
 	name = models.SlugField()
 
+	def __str__(self):
+		return ( self.path.tree_encode  + ':' + self.name + '.html' )
+
 	class Admin:
 		pass
 
-	def html():
-		return markdown.markdown(content)
+	def html(self):
+		return markdown.markdown(self.content)
 
 	@staticmethod
 	def find_by_url_parts(parts):
