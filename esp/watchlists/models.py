@@ -209,6 +209,7 @@ class Datatree(models.Model):
         if t != None and t != self:
             if t.space_available_after(self) < self.sizeof():
                 t.refactor()
+                self.refactor()
         else:
             self.refactor()
 

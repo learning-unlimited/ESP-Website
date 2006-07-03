@@ -50,7 +50,7 @@ class UserBit(models.Model):
         user = self
         
         if user != None:
-            for bit in user.userbit_all().filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now))
+            for bit in user.userbit_all().filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now)):
                 if bit.qsc.is_descendant(qsc) & bit.verb.is_antecedent(verb):
                     return True
 
