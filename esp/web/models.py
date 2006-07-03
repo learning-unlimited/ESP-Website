@@ -30,7 +30,10 @@ class QuasiStaticData(models.Model):
 		filename = parts.pop()
 
 		# Find the branch
-		branch = Q_Web.tree_decode( parts )
+		try:
+			branch = Q_Web.tree_decode( parts )
+		except Datatree.NoSuchNodeException:
+			raise QuasiStaticData.DoesNotExist
 
 		# Find the record
 		qsd = QuasiStaticData.objects.filter( path = branch, name = filename )
