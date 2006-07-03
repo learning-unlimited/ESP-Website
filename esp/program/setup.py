@@ -1,7 +1,7 @@
 from esp.watchlists.models import GetNode
 from esp.program.Lists_ClassCategories import populate as populate_LCC
 from esp.program.Lists_EquipmentTypes import populate as populate_LET
-from esp.program.Lists_ProgramTypes import populate populate_LPT
+from esp.program.Lists_ProgramTypes import populate as populate_LPT
 
 def PopulateProgram(program_node):
 	for sub_node in ProgramTemplate:
