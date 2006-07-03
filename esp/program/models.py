@@ -20,6 +20,9 @@ class Program(models.Model):
     programType = models.ForeignKey(ProgramType)
     programIdentifier = models.TextField(blank=True) # Human-readable, per-instance identifier.  For example, for HSSP, this might be "Summer 2006".  This doesn't need to be unique, nor even non-blank.
 
+    def __str__(self):
+        return str(self.programType) + ' ' + str(programIdentifier)
+
     class Admin:
         pass
 
@@ -30,6 +33,9 @@ class ClassCategories(models.Model):
     """
     category = models.TextField()
 
+    def __str__(self):
+        return str(self.category)
+
     class Admin:
         pass
 
@@ -39,6 +45,9 @@ class EquipmentType(models.Model):
     Equipment types include projectors, classrooms with desks, Athena labs, and the like """
     equipment = models.TextField() # Human-readable name of the element of equipment
     numAvailable = models.IntegerField() # Number of this item of equipment owned by ESP
+
+    def __str__(self):
+        return str(equipment)
 
     class Admin:
         pass
@@ -57,6 +66,9 @@ class Class(models.Model):
     class_size_max = models.IntegerField()
     parent_program = models.ForeignKey(Program)
     schedule = models.ForeignKey(Series)
+
+    def __str__(self):
+        return str(title)
 
     class Admin:
         pass
