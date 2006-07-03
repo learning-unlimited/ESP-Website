@@ -19,6 +19,27 @@
 {% if form.category.errors %}*** {{ form.category.errors|join:", " }}{% endif %}</p>
 <p><label for="id_teachers">Teachers:</label> {{ form.teachers }}
 {% if form.teachers.errors %}*** {{ form.teachers.errors|join:", " }}{% endif %}</p>
+<p><label for="id_class_info">Class Info:</label> {{ form.class_info }}
+{% if form.class_info.errors %}*** {{ form.class_info.errors|join:", " }}{% endif %}</p>
+<p><label for="id_equipment_needed">Equipment Needed:</label> {{ form.equipment_needed }}
+{% if form.equipment_needed.errors %}*** {{ form.equipment_needed.errors|join:", " }}{% endif %}</p>
+<p><label for="id_message_for_directors">Message for the Directors:</label> {{ form.message_for_directors }}
+{% if form.message_for_directors.errors %}*** {{ form.message_for_directors.errors|join:", " }}{% endif %}</p>
+<p><label for="id_grade_min">Minimum Grade Level:</label> {{ form.grade_min }}
+{% if form.grade_min.errors %}*** {{ form.grade_min.errors|join:", " }}{% endif %}</p>
+<p><label for="id_grade_max">Maximum Grade Level:</label> {{ form.grade_max }}
+{% if form.grade_max.errors %}*** {{ form.grade_max.errors|join:", " }}{% endif %}</p>
+<p><label for="id_class_size_min">Minimum Class Size:</label> {{ form.class_size_min }}
+{% if form.class_size_min.errors %}*** {{ form.class_size_min.errors|join:", " }}{% endif %}</p>
+<p><label for="id_class_size_max">Maximum Class Size:</label> {{ form.class_size_max }}
+{% if form.class_size_max.errors %}*** {{ form.class_size_max.errors|join:", " }}{% endif %}</p>
+<p><label for="id_parent_program">Parent Program:</label> {{ form.parent_program }}
+{% if form.parent_program.errors %}*** {{ form.parent_program.errors|join:", " }}{% endif %}</p>
+<p><label for="id_schedule">Schedule:</label> {{ form.schedule }}
+{% if form.schedule.errors %}*** {{ form.schedule.errors|join:", " }}{% endif %}</p>
+<input type="submit" />
+
+
 </form>
 
 {% endblock %}
