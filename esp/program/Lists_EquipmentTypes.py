@@ -1,4 +1,4 @@
-from esp.program.models import EquipmentTypes
+from esp.program.models import EquipmentType
 
 EquipmentTypeOptions = (
     # Format is: ('Name', NumberOfItemAvailable),
