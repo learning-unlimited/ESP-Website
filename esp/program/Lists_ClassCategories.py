@@ -10,9 +10,9 @@ ClassCategoryOptions = (
     'Zocial Zcience',
     )
 
-for c_desc in ClassCategoryOptions:
-    if ClassCategories.objects.filter(category=c_desc).count() == 0:
-        c = ClassCategories()
-        c.category = c_desc
-        c.save()
-
+def populate():
+	for c_desc in ClassCategoryOptions:
+	    if ClassCategories.objects.filter(category=c_desc).count() == 0:
+	        c = ClassCategories()
+	        c.category = c_desc
+	        c.save()

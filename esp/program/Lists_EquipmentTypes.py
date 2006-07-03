@@ -8,10 +8,9 @@ EquipmentTypeOptions = (
     ('Classroom with working space for students',  15),
     )
 
-for eq_stuff in EquipmentTypeOptions:
-    if EquipmentTypes.objects.filter(equipment=eq_stuff[0]).count() == 0:
-        e = EquipmentTypes()
-        e.equipment = eq_stuff[0]
-        e.numAvailable = eq_stuff[1]
-        
-        
+def populate():
+	for eq_stuff in EquipmentTypeOptions:
+	    if EquipmentTypes.objects.filter(equipment=eq_stuff[0]).count() == 0:
+	        e = EquipmentTypes()
+	        e.equipment = eq_stuff[0]
+	        e.numAvailable = eq_stuff[1]
