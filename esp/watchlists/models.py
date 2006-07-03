@@ -193,6 +193,9 @@ class Datatree(models.Model):
     class Admin:
         pass
 
+    class Meta:
+	    ordering = ['rangestart']
+
     # aseering: Including this line seems to break things badly, but excluding it makes node refactors not thread-safe
 #    @transaction.commit_on_success
     def save(self):
