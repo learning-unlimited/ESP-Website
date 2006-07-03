@@ -29,7 +29,7 @@ class QuasiStaticData(models.Model):
 		filename = parts.pop()
 
 		# Find the branch
-		branch = Q_Web.tree_decode( filename )
+		branch = Q_Web.tree_decode( parts )
 
 		# Find the record
 		qsd = QuasiStaticData.objects.filter( path = branch, name = filename )
