@@ -7,8 +7,9 @@ from esp.lib.markdown import markdown
 class QuasiStaticData(models.Model):
 	""" A Markdown-encoded web page """
 	path = models.ForeignKey(Datatree)
-	content = models.TextField()
 	name = models.SlugField()
+	title = models.CharField(maxlength=256)
+	content = models.TextField()
 
 	def __str__(self):
 		return ( '/'.join(self.path.tree_encode())  + ':' + self.name + '.html' )
