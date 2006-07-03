@@ -71,7 +71,7 @@ def index(request):
 			'preload_images': preload_images
 		})
 
-def qsd(request, url)
+def qsd(request, url):
 	qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
 	return render_to_response('qsd.html', {
 			'navbar_list': navbar_data,
