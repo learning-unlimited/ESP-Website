@@ -8,6 +8,9 @@ class ProgramType(models.Model):
     """ A list of all possible types of program, such as HSSP, Splash, Delve, etc. """
     program_name = models.TextField()
 
+    def __str__(self):
+	    return self.program_name
+
     class Admin:
         pass
 
