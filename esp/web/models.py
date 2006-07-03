@@ -1,5 +1,5 @@
 from django.db import models
-from esp.watchlists.models import Datatree, GetNode
+from esp.watchlists.models import Datatree, GetNode, NoSuchNodeException
 from esp.lib.markdown import markdown
 
 # Create your models here.
@@ -32,7 +32,7 @@ class QuasiStaticData(models.Model):
 		# Find the branch
 		try:
 			branch = Q_Web.tree_decode( parts )
-		except Datatree.NoSuchNodeException:
+		except NoSuchNodeException:
 			raise QuasiStaticData.DoesNotExist
 
 		# Find the record
