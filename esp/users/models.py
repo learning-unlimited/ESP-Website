@@ -16,7 +16,7 @@ from datetime import datetime
 
 class UserBit(models.Model):
     """ Grant a user bits to a controller """
-    user = models.ForeignKey(User) # User to give this permission
+    user = models.ForeignKey(User, blank=True, null=True) # User to give this permission
     qsc = models.ForeignKey(Datatree, related_name='permission_related_field') # Controller to grant access to
     verb = models.ForeignKey(Datatree, related_name='subject_related_field') # Do we want to use Subjects?
 
@@ -55,9 +55,9 @@ class UserBit(models.Model):
                     return True
 
             # This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
-            for bit in UserBit.objects.filter(user_pk=AnonymousUser().id).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now)):
-                if bit.qsc.is_descendant(qsc) & bit.verb.is_antecedent(verb):
-                    return True
+        for bit in UserBit.objects.filter(user=None).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now)):
+            if bit.qsc.is_descendant(qsc) & bit.verb.is_antecedent(verb):
+                return True
 
         # security.Denial() evaluates to False as necessary; it also makes peak happy, though we're not using peak any more
         return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
@@ -84,13 +84,12 @@ class UserBit(models.Model):
     def bits_get_qsc(user, verb, now = datetime.now()):
         """  Return all qsc structures to which 'user' has been granted 'verb' """
         now = datetime.now()
-        return UserBit.objects.filter(verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend, user_pk=user.id).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now))
+        return UserBit.objects.filter(verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend).filter(Q(user=None)|Q(user__pk=user.id)).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now))
 
     @staticmethod
     def bits_get_verb(user, qsc, now = datetime.now()):
         """ Return all verbs that 'user' has been granted on 'qsc' """        
-        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend, user_pk=user.id).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now))
-
+        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend).filter(Q(user=None)|Q(user__pk=user.id)).filter(Q(startdate=None) | Q(startdate__gt=now), Q(enddate=None) | Q(enddate__lt=now))
 
     @staticmethod
     def has_bits(queryset):
