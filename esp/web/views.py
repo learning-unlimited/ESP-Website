@@ -1,7 +1,7 @@
 from django.shortcuts import render_to_response
 from esp.calendar.models import Event
 from esp.web.models import QuasiStaticData
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 
 navbar_data = [
 	{ 'link': '/teach/what-to-teach.html',
@@ -73,7 +73,10 @@ def index(request):
 		})
 
 def qsd(request, url):
-	qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
+	try:
+		qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
+	except QuasiStaticData.DoesNotExist:
+		raise Http404
 	return render_to_response('qsd.html', {
 			'navbar_list': navbar_data,
 			'preload_images': preload_images,
@@ -82,5 +85,8 @@ def qsd(request, url):
 		})
 
 def qsd_raw(requeste, url):
-	qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
+	try:
+		qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
+	except QuasiStaticData.DoesNotExist:
+		raise Http404
 	return HttpResponse(qsd_rec.content, mimetype='text/plain')
