@@ -1,4 +1,4 @@
-from esp.program.models import ProgramTypes
+from esp.program.models import ProgramType
 
 ProgramTypesOptions = (
     'Splash!',
