@@ -11,7 +11,7 @@ class QuasiStaticData(models.Model):
 	name = models.SlugField()
 
 	def __str__(self):
-		return ( self.path.tree_encode  + ':' + self.name + '.html' )
+		return ( '/'.join(self.path.tree_encode())  + ':' + self.name + '.html' )
 
 	class Admin:
 		pass
