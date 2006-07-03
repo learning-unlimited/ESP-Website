@@ -34,6 +34,8 @@ class QuasiStaticData(models.Model):
 
 		# Find the record
 		qsd = QuasiStaticData.objects.filter( path = branch, name = filename )
+		if len(qsd) < 1:
+			raise QuasiStaticData.DoesNotExist
 
 		# Operation Complete!
 		return qsd[0]
