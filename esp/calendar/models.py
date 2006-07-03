@@ -10,6 +10,9 @@ class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
 
+    def __str__(self):
+        return str(self.description)
+
     class Admin:
         pass
 
@@ -19,6 +22,9 @@ class Series(models.Model):
     target = models.ForeignKey(Datatree) # location for this Series in the datatree
     class Admin:
         pass
+
+    def __str__(self):
+        return str(self.description)
 
     def is_happening(self, time=datetime.now()):
         """ Returns True if any Event contained by this Series, or any event contained by any Series nested beneath this Series, returns is_happening(time)==True """
@@ -42,6 +48,9 @@ class Event(models.Model):
     event_type = models.ForeignKey(EventType) # The tyoe of event.  This implies, though does not require, the types of data that are keyed to this event.
     container_series = models.ForeignKey(Series, blank=True, null=True)
 
+    def __str__(self):
+        return str(self.description)
+
     def is_happening(self, time=datetime.now()):
         """ Return True if the specified time is between start and end """
         return (time > start and time < end)
@@ -52,6 +61,9 @@ class Event(models.Model):
 class Program(models.Model):
     """ An ESP program, ie. HSSP, Splash, etc. """
     event = models.OneToOneField(Event)
+
+    def __str__(self):
+        return str(self.event)
 
     class Admin:
         pass
@@ -74,6 +86,9 @@ class EmailReminder(models.Model):
     email = models.ForeignKey(MessageRequest)
     date_to_send = models.DateTimeField()
     sent = models.BooleanField(default=True)
+
+    def __str__(self):
+        return str(event) ': ' + str(email)
 
     class Admin:
         pass

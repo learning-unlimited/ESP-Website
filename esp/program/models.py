@@ -21,7 +21,7 @@ class Program(models.Model):
     programIdentifier = models.TextField(blank=True) # Human-readable, per-instance identifier.  For example, for HSSP, this might be "Summer 2006".  This doesn't need to be unique, nor even non-blank.
 
     def __str__(self):
-        return str(self.programType) + ' ' + str(programIdentifier)
+        return str(self.programType) + ' ' + str(self.programIdentifier)
 
     class Admin:
         pass
@@ -58,7 +58,7 @@ class Class(models.Model):
     category = models.ForeignKey(ClassCategories)
     teachers = models.ManyToManyField(User)
     class_info = models.TextField()
-    equipment_needed = models.ManyToManyField(EquipmentType)
+    equipment_needed = models.ManyToManyField(EquipmentType, blank=True, null=True)
     message_for_directors = models.TextField()
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
