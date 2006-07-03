@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from esp.watchlists.models import Datatree, PermToString
-from peak.api import security, binding
+#from peak.api import security, binding
 from esp.workflow.models import Controller
 from datetime import datetime
 
@@ -60,8 +60,9 @@ class UserBit(models.Model):
                 return True
 
         # security.Denial() evaluates to False as necessary; it also makes peak happy, though we're not using peak any more
-        return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
-
+        #return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
+        return False
+    
     @staticmethod
     def enforce_bits(controller_class, user):
         def call(proc, *args):
