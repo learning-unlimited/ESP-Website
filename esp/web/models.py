@@ -35,4 +35,4 @@ class QuasiStaticData(models.Model):
 		qsd = QuasiStaticData.objects.filter( path = branch, name = filename )
 
 		# Operation Complete!
-		return qsd
+		return qsd[0]
