@@ -12,7 +12,7 @@ ProgramTypesOptions = (
 
 def populate():
 	for p_desc in ProgramTypeOptions:
-	    if ProgramTypes.objects.filter(program_name=p_desc).count()==0:
-	        p = ProgramTypes()
+	    if ProgramType.objects.filter(program_name=p_desc).count()==0:
+	        p = ProgramType()
 	        p.program_name = p_desc
 	        p.save()
