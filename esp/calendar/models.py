@@ -88,7 +88,7 @@ class EmailReminder(models.Model):
     sent = models.BooleanField(default=True)
 
     def __str__(self):
-        return str(event) ': ' + str(email)
+        return str(self.event) + ': ' + str(self.email)
 
     class Admin:
         pass
