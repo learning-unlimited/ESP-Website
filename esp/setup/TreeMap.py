@@ -3,19 +3,12 @@ from esp.watchlists.models import GetNode
 def PopulateInitialDataTree():
     for i in TreeMap:
         GetNode(i)
-    
+
 # Q = Qualifier/Series/Category
 # V = Verb
 TreeMap = (
     'Q',
     'Q/Programs',
-    'Q/Programs/_template',
-    'Q/Programs/_template/Prospectives',
-    'Q/Programs/_template/Prospectives/Teachers',
-    'Q/Programs/_template/Prospectives/Students',
-    'Q/Programs/_template/Prospectives/Volunteers',
-    'Q/Programs/_template/Classes',
-    'Q/Programs/_template/Subprograms',
     'Q/Administrivia',
     'Q/Administrivia/Meetings',
     'Q/Administrivia/OrganizationalProjects',
