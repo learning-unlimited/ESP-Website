@@ -17,7 +17,7 @@ class QuasiStaticData(models.Model):
 		pass
 
 	def html(self):
-		return markdown.markdown(self.content)
+		return markdown(self.content)
 
 	@staticmethod
 	def find_by_url_parts(parts):
