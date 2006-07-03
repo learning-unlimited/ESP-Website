@@ -1,5 +1,6 @@
 from django.shortcuts import render_to_response
 from esp.calendar.models import Event
+from esp.web.models import QuasiStaticData
 
 navbar_data = [
 	{ 'link': '/teach/what-to-teach.html',
@@ -68,4 +69,12 @@ def index(request):
 	return render_to_response('index.html', {
 			'navbar_list': navbar_data,
 			'preload_images': preload_images
+		})
+
+def qsd(request, url)
+	qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
+	return render_to_response('qsd.html', {
+			'navbar_list': navbar_data,
+			'preload_images': preload_images,
+			'content': qsd_rec.html()
 		})
