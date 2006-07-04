@@ -1,5 +1,5 @@
 from django.db import models
-from esp.watchlists.models import Datatree, DatatreeNodeData
+from esp.datatree.models import DataTree
 
 # Create your models here.
 
@@ -24,7 +24,7 @@ class WorkflowDescriptor(models.Model):
 
         Links each workflow to a node in the permissions tree. """
 
-        tree = models.ForeignKey(DatatreeNodeData) # Tree node that this workflow belongs to
+        tree = models.ForeignKey(DataTree) # Tree node that this workflow belongs to
         controller = models.SlugField()
 
         class Admin:
