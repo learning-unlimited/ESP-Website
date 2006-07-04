@@ -73,7 +73,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'esp.datatree',
     'esp.users',
-    'esp.watchlists',
     'esp.workflow',
     'esp.dbmail',
     'esp.web',
