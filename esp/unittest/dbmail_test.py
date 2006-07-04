@@ -1,6 +1,6 @@
 from esp.unittest.unittest import TestCase, TestSuite
 from esp.dbmail.models import MessageRequest, EmailRequest, TextOfEmail, EmailController
-from esp.watchlists.models import GetNode
+from esp.datatree.models import GetNode
 from esp.lib.markdown import markdown
 from esp.unittest.users_test import UserBitsTest
 

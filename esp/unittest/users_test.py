@@ -2,7 +2,7 @@ from esp.unittest.unittest import TestCase, TestSuite
 
 from esp.unittest.datatree_test import TreeTest
 from esp.users.models import UserBit
-from esp.watchlists.models import GetNode
+from esp.datatree.models import GetNode
 from django.contrib.auth.models import User
 
 class UserTest(TestCase):
