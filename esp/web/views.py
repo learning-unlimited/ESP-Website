@@ -72,6 +72,13 @@ def index(request):
 			'preload_images': preload_images
 		})
 
+def contact(request):
+	latest_event_list = Event.objects.filter().order_by('-start')
+	return render_to_response('contact.html', {
+			'navbar_list': navbar_data,
+			'preload_images': preload_images
+		})
+
 def myesp(request, module):
 	pass
 		
