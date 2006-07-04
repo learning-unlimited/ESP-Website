@@ -1,5 +1,5 @@
 from esp.unittest.unittest import TestCase, TestSuite
-from esp.watchlists.models import DatatreeNodeData, Datatree, NoSuchNodeException, NoRootNodeException, models, GetNode, StringToPerm, PermToString
+from esp.datatree.models import DataTree, GetNode, StringToPerm, PermToString
 from esp.setup.TreeMap import PopulateInitialDataTree, TreeMap
 
 class TreeTest(TestCase):
@@ -7,7 +7,7 @@ class TreeTest(TestCase):
     sitetree_nodes = []
     
     def setUp(self):
-        """ Create a generic basic testing Datatree, with relevant node data """
+        """ Create a generic basic testing DataTree, with relevant node data """
         for st in TreeMap:
             if 'QualSeriesCategory' in st:
                 self.sitetree_nodes.append( st )
@@ -31,7 +31,7 @@ class TreeTest(TestCase):
 class OnlyOneRootNode(TreeTest):
     """ Verify that there is only one ROOT node """
     def runTest(self):
-        numOfRootNodes = Datatree.objects.filter(parent=None,name="ROOT").count()
+        numOfRootNodes = DataTree.objects.filter(parent=None,name="ROOT").count()
         assert numOfRootNodes == 1, 'There can only be one ROOT node.  There are ' + str(numOfRootNodes) + '.'
         
 class AllNodesExist(TreeTest):
@@ -49,31 +49,31 @@ class AllNodesExist(TreeTest):
             # Raises a NoSuchNodeException if the node doesn't exist
             root.tree_decode(StringToPerm(node))
 
-class Test_DatatreeFunctions(TreeTest):
+class Test_DataTreeFunctions(TreeTest):
     root = GetNode('')
 
     def testChildren(self):
-        """  Test the 'children()' procedure in Datatree """
-        assert self.root.children == Datatree.objects.filter(parent_pk=self.root.id), 'ROOT node\'s children don\t match root.children()'
+        """  Test the 'children()' procedure in DataTree """
+        assert self.root.children == DataTree.objects.filter(parent_pk=self.root.id), 'ROOT node\'s children don\t match root.children()'
 
         # Pick an arbitrary subnode to test
         # I suppose we should care *which* subnode gets tested.  Oh well.
         arbitrary_subnode = self.root.children()[-1]
 
-        assert arbitrary_subnode.children == Datatree.objects.filter(parent_pk=arbitrary_subnode.id)
+        assert arbitrary_subnode.children == DataTree.objects.filter(parent_pk=arbitrary_subnode.id)
 
     def testRefactor(self):
         """ See if all nodes in the tree are still in the tree after a refactor() """
-        for node in Datatree.objects.all():
+        for node in DataTree.objects.all():
             assert node.is_antecedent(self.root) & self.root.is_descendant(node), 'Node ' + str(node) + ' is not registered in the tree'
 
         self.root.refactor()
         
-        for node in Datatree.objects.all():
+        for node in DataTree.objects.all():
             assert node.is_antecedent(self.root) & self.root.is_descendant(node), 'Node ' + str(node) + ' is not registered in the tree, post- refactor()'
 
 
-watchlistsTestSuite = TestSuite()
-watchlistsTestSuite.addTest(OnlyOneRootNode)
-watchlistsTestSuite.addTest(AllNodesExist)
-watchlistsTestSuite.addTest(Test_DatatreeFunctions)
+datatreeTestSuite = TestSuite()
+datatreeTestSuite.addTest(OnlyOneRootNode)
+datatreeTestSuite.addTest(AllNodesExist)
+datatreeTestSuite.addTest(Test_DataTreeFunctions)
