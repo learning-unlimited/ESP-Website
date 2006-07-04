@@ -11,8 +11,7 @@ from esp.lib.markdown import markdown
 import smtplib
 
 from esp.workflow.models import Controller
-from esp.watchlists.models import GetNode, StringToPerm, PermToString
-from esp.datatree.models import DataTree
+from esp.datatree.models import DataTree, GetNode, StringToPerm, PermToString
 from esp.users.models import UserBit
 
 smtp_server = 'outgoing.mit.edu'
