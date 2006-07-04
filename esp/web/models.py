@@ -12,7 +12,7 @@ class QuasiStaticData(models.Model):
 	content = models.TextField()
 
 	def __str__(self):
-		return ( '/'.join(self.path.tree_encode())  + ':' + self.name + '.html' )
+		return ( self.path.full_name() + ':' + self.name + '.html' )
 
 	class Admin:
 		pass
