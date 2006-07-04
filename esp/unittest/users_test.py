@@ -29,23 +29,23 @@ class UserTest(TestCase):
                 django_user.is_staff = False
                 django_user.is_superuser = False
                 django_user.save()
-                
-                espuser = User()
+
+                """espuser = User()
                 espuser.user = django_user
                 espuser.save()
             
-                self.saved_users.append( [django_user, espuser] )
+                self.saved_users.append( [django_user, espuser] )"""
             else:
                 print 'Error creating user ' + u[0] + '; user already exists.'
 
-                possible_users = User.objects.filter(username=u[0])
+                """possible_users = User.objects.filter(username=u[0])
                 if len(possible_users) == 1:
                     django_user = possible_users[0]
 
                     possible_espusers = User.objects.filter(user__pk=django_user.id)
                     if possible_espusers.count() == 1:
                         espuser = possible_espusers[0]
-                        self.saved_users.append( [django_user, espuser] )
+                        self.saved_users.append( [django_user, espuser] )"""
 
     def tearDown(self):
         """ Remove our sample users """

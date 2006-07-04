@@ -9,9 +9,9 @@ class TreeTest(TestCase):
     def setUp(self):
         """ Create a generic basic testing DataTree, with relevant node data """
         for st in TreeMap:
-            if 'QualSeriesCategory' in st:
+            if 'Q' in st:
                 self.sitetree_nodes.append( st )
-            if 'Verb' in st:
+            if 'V' in st:
                 self.usergrouptree_nodes.append( st )
         
         PopulateInitialDataTree()
