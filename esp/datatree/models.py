@@ -188,7 +188,7 @@ class DataTree(models.Model):
 	        return repr(self.value)
 
     class NoSuchNodeException(Exception):
-	    """ Raised if a required node in a DataTree doesn't exist """
+        """ Raised if a required node in a DataTree doesn't exist """
         def __init__(self, value):
             self.value = "No such node: " + str(value)    
 
