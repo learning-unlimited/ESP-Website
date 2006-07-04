@@ -95,7 +95,7 @@ class EmailController(Controller):
         Given a MessageRequest, get the users subscribed to it, and return a set of EmailRequests that bind each of those users to the specified MessageRequest """
         emailreqs = []
 
-        for user in UserBit.bits_get_users(msgreq.category, GetNode('Verb/dbmail/Subscribe')):
+        for user in UserBit.bits_get_users(msgreq.category, GetNode('V/dbmail/Subscribe')):
             temp_emailreq = EmailRequest()
             temp_emailreq.target = user.user.user
             temp_emailreq.msgreq = msgreq
