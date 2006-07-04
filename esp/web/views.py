@@ -2,7 +2,6 @@ from django.shortcuts import render_to_response
 from esp.calendar.models import Event
 from esp.web.models import QuasiStaticData
 from django.http import HttpResponse, Http404
-from django.core.template import Context
 
 navbar_data = [
 	{ 'link': '/teach/what-to-teach.html',
@@ -68,22 +67,26 @@ preload_images = [
 	  
 def index(request):
 	latest_event_list = Event.objects.filter().order_by('-start')
-	return render_to_response('index.html', Context({
+	return render_to_response('index.html', {
 			'navbar_list': navbar_data,
 			'preload_images': preload_images
-		}))
+		})
+
+def myesp(request, module):
+	pass
+		
 
 def qsd(request, url):
 	try:
 		qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
 	except QuasiStaticData.DoesNotExist:
 		raise Http404
-	return render_to_response('qsd.html', Context({
+	return render_to_response('qsd.html', {
 			'navbar_list': navbar_data,
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.html()
-		}))
+		})
 
 def qsd_raw(requeste, url):
 	try:
