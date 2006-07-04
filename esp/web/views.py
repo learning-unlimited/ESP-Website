@@ -72,15 +72,19 @@ def index(request):
 			'preload_images': preload_images
 		})
 
-def contact(request):
-	latest_event_list = Event.objects.filter().order_by('-start')
-	return render_to_response('contact.html', {
-			'navbar_list': navbar_data,
-			'preload_images': preload_images
-		})
-
 def myesp(request, module):
-	pass
+	if module == "login":
+		return render_to_response('users/login', {'Problem': False})
+	if module == "finish":
+		for thing in []:
+			if not request.POST.has_key(thing): return render_to_response('users/login', {Problem: True})
+		if User.objects.filter(request.POST['username']).count() == 0:
+			django_user = User()
+			django_user.username = u[0]
+			django_user.set_password(u[1])
+			django_user.is_staff = False
+			django_user.is_superuser = False
+			django_user.save()
 		
 
 def qsd(request, url):
