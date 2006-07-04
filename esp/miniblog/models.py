@@ -7,6 +7,7 @@ from esp.lib.markdown import markdown
 class Entry(models.Model):
 	""" A Markdown-encoded miniblog entry """
 	anchor = models.ForeignKey(DataTree)
+	title = models.CharField(maxlength=256)
 	timestamp = models.DateTimeField(auto_now=True)
 	content = models.TextField()
 
