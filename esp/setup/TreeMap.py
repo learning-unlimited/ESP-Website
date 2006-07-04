@@ -1,4 +1,4 @@
-from esp.watchlists.models import GetNode
+from esp.datatree.models import GetNode
 
 def PopulateInitialDataTree():
     for i in TreeMap:

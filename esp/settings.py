@@ -71,6 +71,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
+    'esp.datatree',
     'esp.users',
     'esp.watchlists',
     'esp.workflow',

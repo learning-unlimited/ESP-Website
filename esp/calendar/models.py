@@ -1,5 +1,5 @@
 from django.db import models
-from esp.watchlists.models import Datatree, DatatreeNodeData
+from esp.datatree.models import DataTree
 from esp.dbmail.models import MessageRequest
 from esp.workflow.models import Controller, ControllerDB
 from datetime import datetime
@@ -19,7 +19,7 @@ class EventType(models.Model):
 class Series(models.Model):
     """ A container object for grouping Events.  Can be nested. """
     description = models.TextField()
-    target = models.ForeignKey(Datatree) # location for this Series in the datatree
+    target = models.ForeignKey(DataTree) # location for this Series in the datatree
     class Admin:
         pass
 

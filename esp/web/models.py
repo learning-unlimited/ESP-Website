@@ -1,12 +1,12 @@
 from django.db import models
-from esp.watchlists.models import Datatree, GetNode, NoSuchNodeException
+from esp.datatree.models import DataTree, GetNode
 from esp.lib.markdown import markdown
 
 # Create your models here.
 
 class QuasiStaticData(models.Model):
 	""" A Markdown-encoded web page """
-	path = models.ForeignKey(Datatree)
+	path = models.ForeignKey(DataTree)
 	name = models.SlugField()
 	title = models.CharField(maxlength=256)
 	content = models.TextField()
@@ -32,7 +32,7 @@ class QuasiStaticData(models.Model):
 		# Find the branch
 		try:
 			branch = Q_Web.tree_decode( parts )
-		except NoSuchNodeException:
+		except DataTree.NoSuchNodeException:
 			raise QuasiStaticData.DoesNotExist
 
 		# Find the record

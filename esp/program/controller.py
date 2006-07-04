@@ -1,4 +1,4 @@
-from esp.calendar.models import Event, Series
+from esp.calendar.models import Event
 from esp.program.models import Program, Class
 from datetime import datetime
 

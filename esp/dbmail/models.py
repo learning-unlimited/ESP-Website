@@ -11,7 +11,8 @@ from esp.lib.markdown import markdown
 import smtplib
 
 from esp.workflow.models import Controller
-from esp.watchlists.models import Datatree, GetNode, StringToPerm, PermToString
+from esp.watchlists.models import GetNode, StringToPerm, PermToString
+from esp.datatree.models import DataTree
 from esp.users.models import UserBit
 
 smtp_server = 'outgoing.mit.edu'
@@ -24,7 +25,7 @@ class MessageRequest(models.Model):
     subject = models.TextField() # Message "Subject" line, can be SmartText
     msgtext = models.TextField() # Text of the message; can be SmartText
     special_headers = models.TextField(blank=True) # Any special e-mail headers, formatted so that they can be concatenated into the message
-    category = models.ForeignKey(Datatree) # Category of users who should receive this message.  Note that it's not possible to specify a specific user, unless we implement per-user categories.
+    category = models.ForeignKey(DataTree) # Category of users who should receive this message.  Note that it's not possible to specify a specific user, unless we implement per-user categories.
     sender = models.TextField() # E-mail sender; should be a valid SMTP sender string
     def __str__(self):
         return str(self.subject)

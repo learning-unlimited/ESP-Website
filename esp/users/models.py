@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
-from esp.watchlists.models import Datatree, PermToString
+from esp.datatree.models import DataTree, PermToString
 #from peak.api import security, binding
 from esp.workflow.models import Controller
 from datetime import datetime
@@ -17,8 +17,8 @@ from datetime import datetime
 class UserBit(models.Model):
     """ Grant a user bits to a controller """
     user = models.ForeignKey(User, blank=True, null=True) # User to give this permission
-    qsc = models.ForeignKey(Datatree, related_name='permission_related_field') # Controller to grant access to
-    verb = models.ForeignKey(Datatree, related_name='subject_related_field') # Do we want to use Subjects?
+    qsc = models.ForeignKey(DataTree, related_name='permission_related_field') # Controller to grant access to
+    verb = models.ForeignKey(DataTree, related_name='subject_related_field') # Do we want to use Subjects?
 
     startdate = models.DateTimeField(blank=True, null=True)
     enddate = models.DateTimeField(blank=True, null=True)
