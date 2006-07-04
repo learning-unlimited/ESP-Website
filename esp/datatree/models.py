@@ -94,7 +94,7 @@ class DataTree(models.Model):
         
     def full_name(self):
         """ Returns the full, slash-delimited name of a node """
-        return ( '/'.join(self.tree_encode() )
+        return ( '/'.join(self.tree_encode()))
 
     def __str__(self):
         """ Returns a string """
