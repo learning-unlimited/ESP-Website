@@ -1,7 +1,7 @@
 from esp.unittest.unittest import TestCase, TestSuite
 
 from esp.unittest.watchlists_test import TreeTest
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import UserBit
 from esp.watchlists.models import GetNode
 from django.contrib.auth.models import User
 
@@ -30,7 +30,7 @@ class UserTest(TestCase):
                 django_user.is_superuser = False
                 django_user.save()
                 
-                espuser = ESPUser()
+                espuser = User()
                 espuser.user = django_user
                 espuser.save()
             
@@ -42,7 +42,7 @@ class UserTest(TestCase):
                 if len(possible_users) == 1:
                     django_user = possible_users[0]
 
-                    possible_espusers = ESPUser.objects.filter(user__pk=django_user.id)
+                    possible_espusers = User.objects.filter(user__pk=django_user.id)
                     if possible_espusers.count() == 1:
                         espuser = possible_espusers[0]
                         self.saved_users.append( [django_user, espuser] )

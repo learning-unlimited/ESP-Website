@@ -20,6 +20,7 @@ smtp_server = 'outgoing.mit.edu'
 
 class MessageRequest(models.Model):
     """ An initial request to broadcast an e-mail message """
+    # I'm a bit confused on how you get two different pieces of text from models.TextField() - Catherine
     subject = models.TextField() # Message "Subject" line, can be SmartText
     msgtext = models.TextField() # Text of the message; can be SmartText
     special_headers = models.TextField(blank=True) # Any special e-mail headers, formatted so that they can be concatenated into the message
