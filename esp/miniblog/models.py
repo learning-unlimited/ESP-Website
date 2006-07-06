@@ -13,7 +13,7 @@ class Entry(models.Model):
 	content = models.TextField()
 
 	def __str__(self):
-		return ( self.anchor.full_name() + ' (' + self.timestamp + ')' )
+		return ( self.anchor.full_name() + ' (' + str(self.timestamp) + ')' )
 	
 	def html(self):
 		return markdown(self.content)
