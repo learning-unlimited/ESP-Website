@@ -19,22 +19,22 @@ class Program(models.Model):
     class Admin:
         pass
     
-    def find_by_perms(self, user, verb):
+    @staticmethod
+    def find_by_perms(user, verb):
     	""" Fetch a list of relevant programs for a given user and verb """
     	q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
 
-    		# FIXME: This code should be compressed into a single DB query
-    		# ...using the extra() QuerySet method.
+    	# FIXME: This code should be compressed into a single DB query
+    	# ...using the extra() QuerySet method.
 
-    		# Extract entries associated with a particular branch
-    		res = []
-    		for q in q_list:
-    			for entry in Program.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
-     				res.append( entry )
-		
-    		# Operation Complete!
-    		return res
-
+    	# Extract entries associated with a particular branch
+    	res = []
+    	for q in q_list:
+    		for entry in Program.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
+     			res.append( entry )
+	
+    	# Operation Complete!
+    	return res
 
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
