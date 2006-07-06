@@ -35,3 +35,6 @@ class Entry(models.Model):
 		
 		# Operation Complete!
 		return res
+	
+	class Admin:
+		pass
