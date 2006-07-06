@@ -152,26 +152,37 @@
 {% endblock %}
 {% block login %}
 <div id="divlogin">
-<form name="loginform" id="loginform" method="post" action="/web/myesp/login.html">
+<form name="loginform" id="loginform" method="post" action="/myesp/logfin/">
 <input type="hidden" name="op" value="login" />
 <input type="hidden" name="here" value="/web/volunteertoteach/what-to-teach.html" />
 <table border="0" cellpadding="0" cellspacing="0" summary=" ">
 <tr>
+  {% if not logged_in %}
 <tr>
   <td width="100%"><div class="divformcol1">&nbsp;</div></td>
   <td class="rightalign"><div class="divformcol1"><label for="user">Login:</label></div></td>
-  <td><div class="divformcol2"><input type="text" name="user" id="user" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+  <td><div class="divformcol2"><input type="text" name="username" id="username" size="8" value="" maxlength="255" class="inputbox" /></div></td>
   <td class="rightalign"><div class="divformcol3">&nbsp;&nbsp;<label for="pass">Password:</label></div></td>
   <td><div class="divformcol4"><input type="password" name="password" id="pass" size="8" value="" maxlength="255" class="inputbox" /></div></td>
   <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="/media/images/go2.gif" class="gobutton" alt="Go" title="" /></div></td>
 </tr>
+{% endif %}
 <tr>
   <td width="100%"><div class="divformcol1">&nbsp;</div></td>
   <td style="text-align:left">
-		<div class="divformcol1" style="text-align:left"><a href="/web/myesp/register/">Join ESP!</a></div>
+  {% if logged_in %}
+		<div class="divformcol1" style="text-align:left"><a href="/myesp/manage/">Manage Subscriptions</a></div>
+  {% else %}
+		<div class="divformcol1" style="text-align:left"><a href="/myesp/register/">Join ESP!</a></div>
+  {% endif %}
 	</td>
-	<td style="text-align:right">							  
-	    <div class="divformcol2" style="text-align:right"><a href="/web/myesp/recover.html?op=recover">Forgot Login</a></div>							  
+	<td style="text-align:right">
+  {% if logged_in %}
+	    <div class="divformcol2" style="text-align:right"><a href="/myesp/signout/">Sign Out</a></div>	
+  {% else %}
+		<div class="divformcol1" style="text-align:left"><a href="/myesp/emaillist/">Join our mailing list</a></div>
+
+    {% endif %}					  
 	</td>
 	<td colspan="3"> </td>
 </tr>

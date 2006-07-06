@@ -3,6 +3,8 @@ from esp.calendar.models import Event
 from esp.web.models import QuasiStaticData
 from django.http import HttpResponse, Http404
 
+from django.contrib.auth.models import User
+
 navbar_data = [
 	{ 'link': '/teach/what-to-teach.html',
 	  'text': 'What You Can Teach',
@@ -66,28 +68,105 @@ preload_images = [
 ]
 	  
 def index(request):
+	# Catherine: This does nothing
 	latest_event_list = Event.objects.filter().order_by('-start')
+	user_id = request.session.get('user_id', False)
+	if user_id != False: user_id = True
 	return render_to_response('index.html', {
 			'navbar_list': navbar_data,
-			'preload_images': preload_images
+			'preload_images': preload_images,
+			'logged_in': user_id
 		})
 
 def myesp(request, module):
-	if module == "login":
-		return render_to_response('users/login', {'Problem': False})
+	user_id = request.session.get('user_id', False)
+	if user_id != False: user_id = True
+	if module == "register":
+		return render_to_response('users/newuser', {'Problem': False,
+			'logged_in': user_id})
 	if module == "finish":
-		for thing in []:
-			if not request.POST.has_key(thing): return render_to_response('users/login', {Problem: True})
-		if User.objects.filter(request.POST['username']).count() == 0:
+		for thing in ['confirm', 'password', 'username', 'email']:
+			if not request.POST.has_key(thing):
+				return render_to_response('users/newuser', {'Problem': True,
+									  'logged_in': user_id})
+		if User.objects.filter(username=request.POST['username']).count() == 0:
+			
+			if request.POST['password'] != request.POST['confirm']:
+				render_to_response('users/newuser', {'Problem': True,
+								   'logged_in': user_id})
+			if User.objects.filter(email=request.POST['email']) > 0:
+				email_user = User.objects.filter(email=request.POST['email'])[0]
+				email_user.username = request.POST['username']
+				email_user.set_password(request.POST['password'])
+				email_user.save()
+				q = email_user.id
+				request.session['user_id'] = q
+				return render_to_response('users/regdone', {'logged_in': True})				
+			
 			django_user = User()
-			django_user.username = u[0]
-			django_user.set_password(u[1])
+			django_user.username = request.POST['username']
+			django_user.set_password(request.POST['password'])
+			django_user.email = request.POST['email']
 			django_user.is_staff = False
 			django_user.is_superuser = False
 			django_user.save()
+			q = django_user.id
+			request.session['user_id'] = q
+			return render_to_response('users/regdone', {'logged_in': True})
+	if module == "emaillist":
+		return render_to_response('users/email', {'logged_in': False})
+	if module == "emailfin":
+		if not request.POST.has_key('email'):
+			assert False, 1
+			return render_to_response('users/newuser', {'Problem': True,
+								    'logged_in': user_id})
+		if User.objects.filter(email=request.POST['email']).count() == 0:
+			if User.objects.filter(email=request.POST['email']).count() > 0:
+				return render_to_response('index.html', {
+					'navbar_list': navbar_data,
+					'preload_images': preload_images,
+					'logged_in': False})
+			
+			email_user = User()
+			email_user.email = request.POST['email']
+			email_user.is_staff = False
+			email_user.is_superuser = False
+			email_user.save()
+			return render_to_response('index.html', {
+				'navbar_list': navbar_data,
+				'preload_images': preload_images,
+				'logged_in': False})
 		
+	if module == "signout":
+		try: del request.session['user_id']
+		except KeyError: pass
+		return render_to_response('users/logout', {'logged_in': False})
+
+	if module == "login":
+		return render_to_response('users/login', {'logged_in': False})
+	if module == "logfin":
+		for thing in ['password', 'username']:
+			if not request.POST.has_key(thing):
+				return render_to_response('users/login', {'Problem': True,
+									  'logged_in': user_id})
+		curUser = User.objects.filter(username=request.POST['username'])[0]
+		if curUser.check_password(request.POST['password']):
+			render_to_response('users/login', {'Problem': True,
+							   'logged_in': False})
+			q = curUser.id
+			request.session['user_id'] = q
+			return render_to_response('index.html', {
+				'navbar_list': navbar_data,
+				'preload_images': preload_images,
+				'logged_in': True
+				})
+		else:
+			return render_to_response('users/login', {'Problem': True})
+	return render_to_response('users/construction', {'logged_in': user_id})
 
 def qsd(request, url):
+	user_id = request.session.get('user_id', False)
+	if user_id != False: user_id = True
 	try:
 		qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
 	except QuasiStaticData.DoesNotExist:
@@ -96,12 +175,17 @@ def qsd(request, url):
 			'navbar_list': navbar_data,
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
-			'content': qsd_rec.html()
-		})
+			'content': qsd_rec.html(),
+			'logged_in': user_id})
+	     
 
-def qsd_raw(requeste, url):
+def qsd_raw(request, url):
+	user_id = request.session.get('user_id', False)
+	if user_id != False: user_id = True
 	try:
 		qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
 	except QuasiStaticData.DoesNotExist:
 		raise Http404
 	return HttpResponse(qsd_rec.content, mimetype='text/plain')
+
+

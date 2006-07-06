@@ -9,7 +9,7 @@ urlpatterns = patterns('',
     # The default
     (r'^$', 'esp.web.views.index'),
     (r'^contact.html$', 'esp.web.views.contact'),
-    (r'^web/myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),                       
+    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),                       
     (r'^(?P<url>.*)\.html$', 'esp.web.views.qsd'),
     (r'^(?P<url>.*)\.text$', 'esp.web.views.qsd_raw'),
 
