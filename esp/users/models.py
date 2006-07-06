@@ -80,7 +80,7 @@ class UserBit(models.Model):
     def bits_get_users(qsc, verb, now = datetime.now()):
         """ Return all users who have been granted 'verb' on 'qsc' """
         now = datetime.now()
-        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend, verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend).filter(Q(startdate__isnull=True) | Q(startdate__gt=now), Q(enddate__isnull=True) | Q(enddate__lt=now))
+        return UserBit.objects.filter(qsc__rangestart__lte=qsc.rangestart, qsc__rangeend__gte=qsc.rangeend, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend).filter(Q(startdate__isnull=True) | Q(startdate__gt=now), Q(enddate__isnull=True) | Q(enddate__lt=now))
 
     @staticmethod
     def bits_get_qsc(user, verb, now = datetime.now()):
@@ -97,6 +97,23 @@ class UserBit(models.Model):
     def has_bits(queryset):
         """ Returns False if there are no elements in queryset """
         return ( queryset.count() > 0 )
+
+    @staticmethod
+    def find_by_anchor_perms(module,user,verb):
+    	""" Fetch a list of relevant items for a given user and verb in a module that has an anchor foreign key into the DataTree """
+    	q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
+
+    	# FIXME: This code should be compressed into a single DB query
+    	# ...using the extra() QuerySet method.
+
+    	# Extract entries associated with a particular branch
+    	res = []
+    	for q in q_list:
+    		for entry in module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
+     			res.append( entry )
+	
+	# Operation Complete!
+	return res
 
     class Admin:
         pass
