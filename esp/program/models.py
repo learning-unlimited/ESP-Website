@@ -22,19 +22,7 @@ class Program(models.Model):
     @staticmethod
     def find_by_perms(user, verb):
     	""" Fetch a list of relevant programs for a given user and verb """
-    	q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
-
-    	# FIXME: This code should be compressed into a single DB query
-    	# ...using the extra() QuerySet method.
-
-    	# Extract entries associated with a particular branch
-    	res = []
-    	for q in q_list:
-    		for entry in Program.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
-     			res.append( entry )
-	
-    	# Operation Complete!
-    	return res
+	return UserBit.find_by_anchor_perms(Program,user,verb)
 
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
