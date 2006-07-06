@@ -67,6 +67,8 @@ class Class(models.Model):
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
+    schedule = models.TextField()
+    enrollment = models.IntegerField()
 
     def __str__(self):
         return str(title)
