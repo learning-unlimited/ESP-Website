@@ -22,7 +22,7 @@ class Entry(models.Model):
 	def find_posts_by_perms(self, user, verb):
 		""" Fetch a list of relevant posts for a given user and verb """
 		# Get the QuerySet for the specified user and verb
-		q_list = UserBit.bits_get_qsc( user, verb )
+		q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
 
 		# FIXME: This code should be compressed into a single DB query
 		# ...using the extra() QuerySet method.
