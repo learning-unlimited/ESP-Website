@@ -30,7 +30,7 @@ class Entry(models.Model):
 		# Extract entries associated with a particular branch
 		res = []
 		for q in q_list:
-			for entry in Entry.objects.filter(anchor__gte = q.rangestart, anchor__lt = q.rangeend):
+			for entry in Entry.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
 				res.push( entry )
 		
 		# Operation Complete!
