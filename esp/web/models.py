@@ -52,7 +52,7 @@ class NavBarEntry(models.Model):
 	indent = models.BooleanField()
 
 	def __str__(self):
-		return ( self.path.full_name() + ':' + str(self.sort_order) + ' (' + self.name + ')'  )
+		return ( self.path.full_name() + ':' + str(self.sort_rank) + ' (' + self.name + ')'  )
 	
 	class Admin:
 		pass
