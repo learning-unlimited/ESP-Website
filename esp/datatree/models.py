@@ -32,7 +32,7 @@ class DataTree(models.Model):
             filtered = self.children().filter(name=tree_nodenames[0])
 
             if filtered.count() != 1L:
-                raise NoSuchNodeException(self.name)
+                raise DataTree.NoSuchNodeException(self.name)
             else:
                 return filtered[0].tree_decode(tree_nodenames[1:])
 
@@ -55,7 +55,7 @@ class DataTree(models.Model):
                 return newnode.tree_create(tree_nodenames[1:])
                 
             elif filtered.count() > 1:
-                raise NoSuchNodeException(tree_nodenames[0])
+                raise DataTree.NoSuchNodeException(tree_nodenames[0])
             else:
                 return filtered[0].tree_create(tree_nodenames[1:])
 
@@ -199,7 +199,7 @@ class DataTree(models.Model):
         def __str__(self):
             return repr(self.value)
 
-    class NoRootNodeException(NoSuchNodeException):
+    class NoRootNodeException(DataTree.NoSuchNodeException):
         """ The DataTree must always contain a node named 'ROOT', with no parent.  Raise this exception \
         if this is encountered. """
         def __init__(self, NumOfRootNodes):
@@ -217,7 +217,7 @@ def GetNode(nodename):
     elif nodes.count() == 1L:
         node = nodes[0]
     else:
-        raise NoRootNodeException(nodes.count())
+        raise DataTree.NoRootNodeException(nodes.count())
 
     perm = StringToPerm(nodename)
     if nodename == '':
