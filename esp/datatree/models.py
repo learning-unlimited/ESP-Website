@@ -32,7 +32,7 @@ class DataTree(models.Model):
             filtered = self.children().filter(name=tree_nodenames[0])
 
             if filtered.count() != 1L:
-                raise NoSuchNodeException(self.name)
+                raise self.NoSuchNodeException(self.name)
             else:
                 return filtered[0].tree_decode(tree_nodenames[1:])
 
@@ -55,7 +55,7 @@ class DataTree(models.Model):
                 return newnode.tree_create(tree_nodenames[1:])
                 
             elif filtered.count() > 1:
-                raise NoSuchNodeException(tree_nodenames[0])
+                raise self.NoSuchNodeException(tree_nodenames[0])
             else:
                 return filtered[0].tree_create(tree_nodenames[1:])
 
