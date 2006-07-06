@@ -54,24 +54,24 @@ class EquipmentType(models.Model):
 # which grades (Q/Community/6_12/*) are permitted to join the class, though
 # the UI should make it as clean as two numbers, at least initially.
 class Class(models.Model):
-    """ A Class, as taught as part of an ESP program """
-    anchor = models.ForeignKey(DataTree)
-    parent_program = models.ForeignKey(Program)
-    title = models.TextField()
-    category = models.ForeignKey(ClassCategories)
-    teachers = models.ManyToManyField(User)
-    class_info = models.TextField()
-    equipment_needed = models.ManyToManyField(EquipmentType, blank=True, null=True)
-    message_for_directors = models.TextField()
-    grade_min = models.IntegerField()
-    grade_max = models.IntegerField()
-    class_size_min = models.IntegerField()
-    class_size_max = models.IntegerField()
-    schedule = models.TextField()
-    enrollment = models.IntegerField()
+	""" A Class, as taught as part of an ESP program """
+	anchor = models.ForeignKey(DataTree)
+	parent_program = models.ForeignKey(Program)
+	title = models.TextField()
+	category = models.ForeignKey(ClassCategories)
+	teachers = models.ManyToManyField(User)
+	class_info = models.TextField()
+	equipment_needed = models.ManyToManyField(EquipmentType, blank=True, null=True)
+	message_for_directors = models.TextField()
+	grade_min = models.IntegerField()
+	grade_max = models.IntegerField()
+	class_size_min = models.IntegerField()
+	class_size_max = models.IntegerField()
+	schedule = models.TextField()
+	enrollment = models.IntegerField()
 
-    def __str__(self):
-        return str(title)
+	def __str__(self):
+		return str(title)
 
-    class Admin:
-        pass
+	class Admin:
+		pass
