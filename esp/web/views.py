@@ -4,6 +4,7 @@ from esp.web.models import QuasiStaticData
 from django.http import HttpResponse, Http404
 
 from django.contrib.auth.models import User
+from esp.web.models import NavBarEntry
 
 navbar_data = [
 	{ 'link': '/teach/what-to-teach.html',
@@ -73,9 +74,9 @@ def index(request):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
 	return render_to_response('index.html', {
-			'navbar_list': navbar_data,
-			'preload_images': preload_images,
-			'logged_in': user_id
+		'navbar_list': navbar_data,
+		'preload_images': preload_images,
+		'logged_in': user_id
 		})
 
 def myesp(request, module):
@@ -123,7 +124,7 @@ def myesp(request, module):
 		if User.objects.filter(email=request.POST['email']).count() == 0:
 			if User.objects.filter(email=request.POST['email']).count() > 0:
 				return render_to_response('index.html', {
-					'navbar_list': navbar_data,
+					'navbar_list': _makeNavBar(request.path),
 					'preload_images': preload_images,
 					'logged_in': False})
 			
@@ -133,7 +134,7 @@ def myesp(request, module):
 			email_user.is_superuser = False
 			email_user.save()
 			return render_to_response('index.html', {
-				'navbar_list': navbar_data,
+				'navbar_list': _makeNavBar(request.path),
 				'preload_images': preload_images,
 				'logged_in': False})
 		
@@ -156,7 +157,7 @@ def myesp(request, module):
 			q = curUser.id
 			request.session['user_id'] = q
 			return render_to_response('index.html', {
-				'navbar_list': navbar_data,
+				'navbar_list': _makeNavBar(request.path),
 				'preload_images': preload_images,
 				'logged_in': True
 				})
@@ -172,7 +173,7 @@ def qsd(request, url):
 	except QuasiStaticData.DoesNotExist:
 		raise Http404
 	return render_to_response('qsd.html', {
-			'navbar_list': navbar_data,
+			'navbar_list': _makeNavBar(request.path),
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.html(),
@@ -189,3 +190,16 @@ def qsd_raw(request, url):
 	return HttpResponse(qsd_rec.content, mimetype='text/plain')
 
 
+def _makeNavBar(url):
+	urlL = url.split('/')
+	urlL = [x for x in urlL if x != '']
+	qsdTree = NavBarEntry.find_by_url_parts(urlL)
+	navbar_data = []
+	for entry in qsdTree:
+		qd = {}
+		qd['link'] = entry.link
+		qd['text'] = entry.text
+		qd['indent'] = entry.indent
+		navbar_data.append(qd)
+	return navbar_data
+	
