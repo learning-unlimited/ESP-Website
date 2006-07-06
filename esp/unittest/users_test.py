@@ -77,7 +77,7 @@ class UserBitsTest(UserTest, TreeTest):
             bit = UserBit()
             bit.user = self.saved_users[i][1]
             bit.qsc = GetNode(self.sitetree_nodes[ i % len(self.sitetree_nodes) ] )
-            bit.verb = GetNode('Verb/dbmail/Subscribe')
+            bit.verb = GetNode('V/dbmail/Subscribe')
             bit.save()
 
             self.bits.append(bit)
