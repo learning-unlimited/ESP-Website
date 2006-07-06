@@ -19,7 +19,7 @@ class Entry(models.Model):
 		return markdown(self.content)
 	
 	@staticmethod
-	def find_posts_by_perms(self, user, verb):
+	def find_posts_by_perms(user, verb):
 		""" Fetch a list of relevant posts for a given user and verb """
 		# Get the QuerySet for the specified user and verb
 		q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
