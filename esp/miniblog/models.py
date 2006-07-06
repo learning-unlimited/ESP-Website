@@ -31,7 +31,7 @@ class Entry(models.Model):
 		res = []
 		for q in q_list:
 			for entry in Entry.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
-				res.push( entry )
+				res.append( entry )
 		
 		# Operation Complete!
 		return res
