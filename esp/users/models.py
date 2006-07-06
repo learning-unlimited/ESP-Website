@@ -30,7 +30,7 @@ class UserBit(models.Model):
         curr_verb = '?'
 
         try:
-            curr_user = str(self.user.user)
+            curr_user = str(self.user)
         except Exception:
             pass
 
@@ -99,7 +99,7 @@ class UserBit(models.Model):
         return ( queryset.count() > 0 )
 
     @staticmethod
-    def find_by_anchor_perms(module,user,verb):
+    def find_by_anchor_perms(module,user,verb,qsc=None):
     	""" Fetch a list of relevant items for a given user and verb in a module that has an anchor foreign key into the DataTree """
     	q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
 
@@ -110,6 +110,9 @@ class UserBit(models.Model):
     	res = []
     	for q in q_list:
     		for entry in module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
+			if qsc is not None:
+				if entry.anchor.rangestart > qsc.rangestart or entry.anchor.rangeend >= gsc.rangeend:
+				continue
      			res.append( entry )
 	
 	# Operation Complete!
