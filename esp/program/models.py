@@ -75,3 +75,11 @@ class Class(models.Model):
 
 	class Admin:
 		pass
+	
+	class InvalidClassProposal(Exception):
+		cause = ""
+		def __init__(self, new_cause):
+			cause = new_cause
+	
+	@staticmethod
+	def create_via_proposal(proposal):

@@ -46,6 +46,15 @@ def PopulateProgram(program_node,
 		admin_perm.user = director
 		admin_perm.qsc = anchor
 		admin_perm.verb = admin_verb
+	
+	# Create the publishing authorizations
+	publish_verb = GetNode( 'V/Publish' )
+	publish = UserBit()
+	publish.user = None
+	publish.qsc = anchor
+	publish.verb = publish_verb
+	publish.startdate = program_term[0]
+	publish.enddate = program_term[1]
 		
 
 def populate():
