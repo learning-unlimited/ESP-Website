@@ -1,0 +1,14 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}MyESP{% endblock %}
+
+{% block subsection_name %}My Announcements{% endblock %}
+
+{% block content %}
+<ul>
+{% for ann in announcements %}
+	<li> {{ ann }} </li>
+{% endfor %}
+</ul>
+
+{% endblock %}

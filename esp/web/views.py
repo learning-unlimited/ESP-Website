@@ -1,6 +1,8 @@
 from django.shortcuts import render_to_response
 from esp.calendar.models import Event
 from esp.web.models import QuasiStaticData
+from esp.datatree.models import GetNode
+from esp.miniblog.models import Entry
 from django.http import HttpResponse, Http404
 
 from django.contrib.auth.models import User
@@ -86,7 +88,7 @@ def myesp(request, module):
 		return render_to_response('users/newuser', {'Problem': False,
 			'logged_in': user_id})
 	if module == "finish":
-		for thing in ['confirm', 'password', 'username', 'email']:
+		for thing in ['confirm', 'password', 'username', 'email', "last_name", "first_name"]:
 			if not request.POST.has_key(thing):
 				return render_to_response('users/newuser', {'Problem': True,
 									  'logged_in': user_id})
@@ -95,9 +97,11 @@ def myesp(request, module):
 			if request.POST['password'] != request.POST['confirm']:
 				render_to_response('users/newuser', {'Problem': True,
 								   'logged_in': user_id})
-			if User.objects.filter(email=request.POST['email']) > 0:
+			if len(User.objects.filter(email=request.POST['email'])) > 0:
 				email_user = User.objects.filter(email=request.POST['email'])[0]
 				email_user.username = request.POST['username']
+				email_user.last_name = request.POST['last_name']
+				email_user.first_name = request.POST['first_name']
 				email_user.set_password(request.POST['password'])
 				email_user.save()
 				q = email_user.id
@@ -106,6 +110,8 @@ def myesp(request, module):
 			
 			django_user = User()
 			django_user.username = request.POST['username']
+			django_user.last_name = request.POST['last_name']
+			django_user.first_name = request.POST['first_name']
 			django_user.set_password(request.POST['password'])
 			django_user.email = request.POST['email']
 			django_user.is_staff = False
@@ -163,6 +169,13 @@ def myesp(request, module):
 				})
 		else:
 			return render_to_response('users/login', {'Problem': True})
+	if module == "home":
+		q = request.session.get('user_id', None)
+		curUser = User.objects.filter(id=q)[0]
+		sub = GetNode('V/Subscribe')
+		ann = Entry.find_posts_by_perms(curUser, sub)
+		ann = [x.html() for x in ann]
+		return render_to_response('display/battlescreen', {'announcements': ann, 'logged_in': user_id})
 	return render_to_response('users/construction', {'logged_in': user_id})
 
 def qsd(request, url):

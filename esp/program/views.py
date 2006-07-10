@@ -10,7 +10,7 @@ from esp.web.models import NavBarEntry
 
 def courseCatalogue(request, one, two):
     treeItem = "Q/Programs/" + one + "/" + two 
-    prog = GetNode(treeItem)
-    classes = prog.program_set.all()
-    
-    assert False
+    prog = GetNode(treeItem).program_set.all()[0]
+    clas = prog.claus_set.all().order_by('category')
+    return render_to_response('program/catalogue', {'Program': one + " " + two,
+			'courses': clas})
