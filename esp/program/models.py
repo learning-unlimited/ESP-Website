@@ -83,3 +83,4 @@ class Class(models.Model):
 	
 	@staticmethod
 	def create_via_proposal(proposal):
+		pass
