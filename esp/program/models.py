@@ -121,7 +121,7 @@ class RegistrationProfile(models.Model):
 	contact_emergency = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency')
 
 	def __str__(self):
-		return '<Registration for ' + str(user) + ' in ' + str(self.program) + '>'
+		return '<Registration for ' + str(self.user) + ' in ' + str(self.program) + '>'
 	
 	def preregistered_classes(self):
 		v = GetNode( 'V/Preregister' )
