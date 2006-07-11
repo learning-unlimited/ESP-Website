@@ -51,6 +51,19 @@ class EquipmentType(models.Model):
     class Admin:
         pass
 
+class TimeSlot(models.Model):
+	program = models.ForeignKey(Program)
+	name = models.CharField(maxlength=256)
+	time_start = models.TimeField()
+	time_stop = models.TimeField()
+	
+	def __str__(self):
+		return str( self.time_start ) + "-" + str( self.time_stop ) + " (" + self.name + ")"
+	
+	class Admin:
+		pass
+		
+	
 # FIXME: The Class object should use the permissions system to control
 # which grades (Q/Community/6_12/*) are permitted to join the class, though
 # the UI should make it as clean as two numbers, at least initially.
