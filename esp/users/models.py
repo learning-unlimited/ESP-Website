@@ -130,7 +130,7 @@ def ContactInfo(models.Model):
 	e_mail = models.EmailField()
 	phone_day = models.PhoneNumberField()
 	phone_cell = models.PhoneNumberField()
-	phone_evening = models.PhoneNumberField()
+	phone_even = models.PhoneNumberField()
 	address_street = models.CharField(maxlength=100)
 	address_city = models.CharFied(maxlength=50)
 	address_state = models.USStateField()
