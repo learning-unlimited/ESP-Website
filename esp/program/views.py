@@ -11,7 +11,7 @@ from esp.web.models import NavBarEntry
 def courseCatalogue(request, one, two):
     treeItem = "Q/Programs/" + one + "/" + two 
     prog = GetNode(treeItem).program_set.all()[0]
-    clas = list(prog.claus_set.all().order_by('category'))
+    clas = list(prog.class_set.all().order_by('category'))
     p = one + " " + two
     return render_to_response('program/catalogue', {'Program': p.replace("_", " "),
 			'courses': clas })
