@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from esp.calendar.models import Event
 from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit
+from esp.lib.markdown import markdown
 
 # Create your models here.
 
@@ -89,7 +90,18 @@ class Claus(models.Model):
 	
 	@staticmethod
 	def create_via_proposal(proposal):
+		pass
 
 class TeacherBio(models.Model):
 	""" A biography of an ESP teacher """
-	pass
+	user = models.ForeignKey(User)
+	content = models.TextField()
+
+	def __str__(self):
+		return self.user.first_name + ' ' + self.user.last_name + ', a Biography'
+	
+	def html(self):
+		return markdown(self.content)
+	
+	class Admin:
+		pass
