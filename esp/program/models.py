@@ -76,7 +76,7 @@ class Class(models.Model):
 		return str(self.title)
 
 	def title(self):
-		return self.anchor.friendly_name()
+		return self.anchor.friendly_name
 	
 	def teachers(self):
 		v = GetNode( 'V/Administer/Program/Class' )
