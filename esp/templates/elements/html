@@ -13,7 +13,7 @@
 {% block stylesheets %}
 {% endblock %}
 </head>
-<body onload="MM_preloadImages( {% for img in preload_images %}{% if not forloop.last %}'{{ img }}'{% endif %}{% endfor %})">
+<body onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
 
 {% block body %}{% endblock %}
 
