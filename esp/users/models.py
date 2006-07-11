@@ -121,3 +121,22 @@ class UserBit(models.Model):
     class Admin:
         pass
     
+def ContactInfo(models.Model):
+	""" ESP-specific contact information for (possibly) a specific user """
+	user = models.ForeignKey(User, blank=True, null=True)
+	full_name = models.CharField(maxlength=256)
+	dob = models.DateField(blank=True, null=True)
+	graduation_year = models.PositiveIntegerField()
+	e_mail = models.EmailField()
+	phone_day = models.PhoneNumberField()
+	phone_cell = models.PhoneNumberField()
+	phone_evening = models.PhoneNumberField()
+	address_street = models.CharField(maxlength=100)
+	address_city = models.CharFied(maxlength=50)
+	address_state = models.USStateField()
+
+	def __str__(self):
+		return full_name + ' (' + user.username + ')'
+	
+	class Admin:
+		pass
