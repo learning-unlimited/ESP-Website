@@ -207,7 +207,7 @@ def qsd(request, url):
 			'logged_in': user_id})
 	     
 
-def program(request, one, two, module):
+def program(request, tl, one, two, module):
     q = request.session.get('user_id', False)
     user_id = q
     if user_id != False: user_id = True
@@ -222,6 +222,8 @@ def program(request, one, two, module):
 	    
 	    context = {'logged_in': user_id}
 	    context['student'] = curUser
+	    context['one'] = one
+	    context['two'] = two
 	    contactInfo = curUser.contactinfo_set.all()
 	    if len(contactInfo) < 1:
 		    return render_to_response('users/profile', context)
@@ -233,6 +235,43 @@ def program(request, one, two, module):
 	    context['emerg'] = regprof.contact_emergency
 	    context['guard'] = regprof.contact_guardian
 	    return render_to_response('users/profile', context)
+
+    if module == "updateprofile":
+	    if q is None: return render_to_response('users/login', {'logged_in': False})
+	    curUser = User.objects.filter(id=q)[0]
+	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
+	    curUser.first_name = request.POST['first']
+	    curUser.last_name = request.POST['last']
+	    curUser.email = request.POST['email']
+	    regprof.contact_student.grad = request.POST['grad']
+	    regprof.contact_student.street = request.POST['street']
+	    regprof.contact_student.city = request.POST['city']
+	    regprof.contact_student.state = request.POST['state']
+	    regprof.contact_student.zip = request.POST['zip']
+	    regprof.contact_student.phone_day = request.POST['phone_day']
+	    regprof.contact_student.phone_cell = request.POST['phone_cell']
+	    regprof.contact_student.phone_even = request.POST['phone_even']
+
+	    regprof.contact_guardian.name = request.POST['guard_name']
+	    regprof.contact_guardian.email = request.POST['guard_email']
+	    regprof.contact_guardian.phone_day = request.POST['guard_phone_day']
+	    regprof.contact_guardian.phone_cell = request.POST['guard_phone_cell']
+	    regprof.contact_guardian.phone_even = request.POST['guard_phone_even']
+
+	    regprof.contact_emergency.name = request.POST['emerg_name']
+	    regprof.contact_emergency.email = request.POST['emerg_email']
+	    regprof.contact_emergency.street = request.POST['emerg_street']
+	    regprof.contact_emergency.city = request.POST['emerg_city']
+	    regprof.contact_emergency.state = request.POST['emerg_state']
+	    regprof.contact_emergency.zip = request.POST['emerg_zip']
+	    regprof.contact_emergency.phone_day = request.POST['emerg_phone_day']
+	    regprof.contact_emergency.phone_cell = request.POST['emerg_phone_cell']
+	    regprof.contact_emergency.phone_even = request.POST['emerg_phone_even']
+	    
+	    curUser.save()
+	    regprof.save()
+	    return render_to_response('users/construction', {'logged_in': user_id})
+    return render_to_response('users/construction', {'logged_in': user_id})
 
 def qsd_raw(request, url):
 	user_id = request.session.get('user_id', False)

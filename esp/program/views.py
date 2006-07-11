@@ -15,6 +15,7 @@ def courseCatalogue(request, one, two):
     prog = GetNode(treeItem).program_set.all()
     if len(prog) < 1:
         return render_to_response('users/construction', {'logged_in': user_id})
+    prog = prog[0]
     clas = list(prog.class_set.all().order_by('category'))
     p = one + " " + two
     return render_to_response('program/catalogue', {'Program': p.replace("_", " "),

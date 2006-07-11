@@ -7,10 +7,10 @@
 {% block content %}
 	<br /><br />
        <div id="divmaintext">	
-	<h2>Hi {{username}}!</h2>
+	<h2>Hi {{student.username}}!</h2>
 	<h2>Please tell us a bit about yourself!</h2>
   	    														  
-	<form action='http://esp-devel.hackorp.com/myesp/updateprofile/' method="post">
+	<form action='http://esp-devel.hackorp.com/Program/{{one}}/{{two}}/updateprofile' method="post">
 	<table cellpadding='2' align='center' border='0'>
 
 <tr>
@@ -24,13 +24,13 @@
  <td align='right'><small><i>last</i></small></td>
  <td align='left'><input type='text' name='last' value='{{student.last_name}}' size='30'></td>
 </tr>
-
+<!-- 
 <tr>
  <td><b>D.O.B.:</b></td>
  <td align='left' colspan='2'><table boarders=none><tr><td><input type='text' name='dobmonth' value='{{dob.0}}' size='5'></td><td><input type='text' name='dobday' value='{{dob.1}}' size='5'></td><td><input type='text' name='dobyear' value='{{dob.2}}' size='8'></td></tr></table>
 <small> Example 2/29/1994 </small> 
 </tr>
-
+-->
 <tr>
  <td><b>Year of high school graduation:</b></td>
 <td><input type='text' name='grad' value='{{grad}}' size='8'></td>
