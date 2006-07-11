@@ -3,7 +3,9 @@ from esp.calendar.models import Event
 from esp.web.models import QuasiStaticData
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
+from esp.program.models import RegistrationProfile
 from django.http import HttpResponse, Http404
+
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
@@ -205,7 +207,7 @@ def qsd(request, url):
 			'logged_in': user_id})
 	     
 
-def program(request, one, two, thing):
+def program(request, one, two, module):
     q = request.session.get('user_id', False)
     user_id = q
     if user_id != False: user_id = True
@@ -219,9 +221,7 @@ def program(request, one, two, thing):
 	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
 	    
 	    context = {'logged_in': user_id}
-	    context['username'] = curUser.username
-	    context['first_name'] =curUser.first_name
-	    context['last_name'] =curUser.last_name
+	    context['student'] = curUser
 	    contactInfo = curUser.contactinfo_set.all()
 	    if len(contactInfo) < 1:
 		    return render_to_response('users/profile', context)
