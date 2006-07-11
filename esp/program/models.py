@@ -62,7 +62,6 @@ class Claus(models.Model):
 	# class number drawn from anchor.name
 	category = models.ForeignKey(ClassCategories)
 	# teachers are drawn from permissions table
-	teachers = models.ManyToManyField(User)
 	class_info = models.TextField()
 	equipment_needed = models.ManyToManyField(EquipmentType, blank=True, null=True)
 	message_for_directors = models.TextField()
@@ -78,7 +77,8 @@ class Claus(models.Model):
 
 	def teachers(self):
 		v = GetNode( 'V/Administer/Program/Class' )
-		return UserBit.bits_get_users( self.anchor, v )
+		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
+
 	class Admin:
 		pass
 	
