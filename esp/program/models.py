@@ -54,12 +54,11 @@ class EquipmentType(models.Model):
 # FIXME: The Class object should use the permissions system to control
 # which grades (Q/Community/6_12/*) are permitted to join the class, though
 # the UI should make it as clean as two numbers, at least initially.
-class Claus(models.Model):
+class Class(models.Model):
 	""" A Class, as taught as part of an ESP program """
 	anchor = models.ForeignKey(DataTree)
 	parent_program = models.ForeignKey(Program)
 	# title drawn from anchor.friendly_name
-	title = models.TextField()
 	# class number drawn from anchor.name
 	category = models.ForeignKey(ClassCategories)
 	# teachers are drawn from permissions table
@@ -76,6 +75,9 @@ class Claus(models.Model):
 	def __str__(self):
 		return str(self.title)
 
+	def title(self):
+		return self.anchor.friendly_name()
+	
 	def teachers(self):
 		v = GetNode( 'V/Administer/Program/Class' )
 		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
@@ -83,15 +85,6 @@ class Claus(models.Model):
 	class Admin:
 		pass
 	
-	class InvalidClassProposal(Exception):
-		cause = ""
-		def __init__(self, new_cause):
-			cause = new_cause
-	
-	@staticmethod
-	def create_via_proposal(proposal):
-		pass
-
 class TeacherBio(models.Model):
 	""" A biography of an ESP teacher """
 	user = models.ForeignKey(User)
