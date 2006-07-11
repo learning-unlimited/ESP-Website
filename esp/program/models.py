@@ -73,7 +73,7 @@ class Class(models.Model):
 	enrollment = models.IntegerField()
 
 	def __str__(self):
-		return str(self.title)
+		return self.title()
 
 	def title(self):
 		return self.anchor.friendly_name
