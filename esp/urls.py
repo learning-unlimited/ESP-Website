@@ -1,8 +1,8 @@
 from django.conf.urls.defaults import *
-from esp.program.models import Claus
+from esp.program.models import Class
 
 urlpatterns = patterns('',
-    (r'^startaclass/', 'django.views.generic.create_update.create_object', { 'model': Claus } ),
+    (r'^startaclass/', 'django.views.generic.create_update.create_object', { 'model': Class } ),
     # Example:
     # (r'^esp/', include('esp.apps.foo.urls.foo')),
 
