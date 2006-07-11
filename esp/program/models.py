@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, ContactInfo
 from esp.calendar.models import Event
 from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit
@@ -95,6 +95,20 @@ class TeacherBio(models.Model):
 	
 	def html(self):
 		return markdown(self.content)
+	
+	class Admin:
+		pass
+
+class RegistrationProfile(models.Model):
+	""" A student registration form """
+	user = models.ForeignKey(User)
+	program = models.ForeignKey(Program)
+	contact_student = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_student')
+	contact_guardian = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian')
+	contact_emergency = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency')
+
+	def __str__(self):
+		return '<Registration for ' + str(user) + ' in ' + str(self.program) + '>'
 	
 	class Admin:
 		pass
