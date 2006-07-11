@@ -8,7 +8,7 @@
 {% block content %}
 <br />
 <p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center;'><b>Adding a Class</b></p>
-<p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center;'>Listing Classes For {{ts.name}}<br/><b>Saturday: {{ts.time_start}} to {{ts.time_stop</b></p>
+<p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center;'>Listing Classes For {{ts.name}}<br/><b>Saturday: {{ts.time_start}} to {{ts.time_stop}}</b></p>
 
 <p style="text-align: center"><a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/studentreg/">Back to My Schedule</a></p>
 

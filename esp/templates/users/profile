@@ -13,7 +13,7 @@
 	Field with * are required.
 
 	{% if oops %}
-<h2>Please make sure to fill in all the required fields.  Thanks! </h2>
+<h2 style="color:red">Please make sure to fill in all the required fields.  Thanks! </h2>
 {% endif %}
 
 	<form action='http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/updateprofile/' method="post">
@@ -30,13 +30,12 @@
  <td align='right'><small><i>last</i></small></td>
  <td align='left'><input type='text' name='last' value='{{student.last_name}}' size='30'></td>
 </tr>
-<!-- 
 <tr>
  <td><b>D.O.B.:</b></td>
  <td align='left' colspan='2'><table boarders=none><tr><td><input type='text' name='dobmonth' value='{{dob.0}}' size='5'></td><td><input type='text' name='dobday' value='{{dob.1}}' size='5'></td><td><input type='text' name='dobyear' value='{{dob.2}}' size='8'></td></tr></table>
-<small> Example 2/29/1994 </small> 
+<small> Example 02/29/1994 </small> 
 </tr>
--->
+
 <tr>
  <td><b>Year of high school graduation: *</b></td>
 <td><input type='text' name='grad' value='{{grad}}' size='8'></td>
@@ -55,38 +54,44 @@
 <tr>
 
  <td align='right'><small><i>street</i></small></td>
- <td colspan='2'><input type='text' name='street' value='{{student.street}}' size='50'></td>
+ <td colspan='2'><input type='text' name='street' value='{{studentc.address_street}}' size='50'></td>
 </tr>
 
 <tr>
  <td align='right'><small><i>city</i></small></td>
- <td colspan='2'><input type='text' name='city' value='{{student.city}}'  size='20'>
+ <td colspan='2'><input type='text' name='city' value='{{studentc.address_city}}'  size='20'>
  <select name="state">
 
+
+
 {% for thing in statenames %}
-<option value='{{thing}}'>{{thing}}</option>
+<option value='{{thing}}'
+{% ifequal thing studentc.address_state %}
+ selected
+{% endifequal %}
+>{{thing}}</option>
 {% endfor %}
 </select>  
-<small><i>&nbsp; &nbsp; zip <input type='text' name='zip' value='{{ student.zip}}' size='5'>
+<small><i>&nbsp; &nbsp; zip <input type='text' name='zip' value='{{ studentc.address_zip}}' size='5' >
 
  </td>
 </tr>
 <tr>
  <td><b>Phone: *</b></td>
  <td align='right'><small><i>day</i></small></td>
- <td align='left'><input type='text' name='phone_day' value='{{ student.phone_day }}' size='30'></td>
+ <td align='left'><input type='text' name='phone_day' value='{{ studentc.phone_day }}' size='30'></td>
 </tr>
 <tr>
  <td></td>
  <td align='right'><small><i>cell</i></small></td>
 
- <td align='left'><input type='text' name='phone_cell' value='{{ student.phone_cell}}' size='30'></td>
+ <td align='left'><input type='text' name='phone_cell' value='{{ studentc.phone_cell}}' size='30'></td>
 </tr>
 
 <tr>
  <td></td>
  <td align='right'><small><i>evening</i></small></td>
- <td><input type='text' name='phone_even' value=' {{ student.phone_even }}' size='30'></td>
+ <td><input type='text' name='phone_even' value=' {{ studentc.phone_even }}' size='30'></td>
 </tr>
 
 
@@ -101,13 +106,13 @@
 
 <tr>
  <td><b>Full Name: *</b></td>
- <td colspan='2'><input type='text' name='guard_name' value='{{ guard.name}}' size='50'></td>
+ <td colspan='2'><input type='text' name='guard_name' value='{{ guard.full_name}}' size='50'></td>
 </tr>
 
 
 <tr>
  <td><b>Email:</b></td>
- <td colspan='2'><input type='text' name='guard_email' value='{{ guard.email }}' size='50'></td>
+ <td colspan='2'><input type='text' name='guard_email' value='{{ guard.e_mail }}' size='50'></td>
 </tr>
 <tr>
  <td><b>Phone: *</b></td>
@@ -138,13 +143,13 @@
 
 <tr>
  <td><b>Full Name: *</b></td>
- <td colspan='2'><input type='text' name='emerg_name' value=' {{ emerg.name }}' size='50'></td>
+ <td colspan='2'><input type='text' name='emerg_name' value=' {{ emerg.full_name }}' size='50'></td>
 </tr>
 
 
 <tr>
  <td><b>Email:</b></td>
- <td colspan='2'><input type='text' name='emerg_email' value=' {{emerg.email }}' size='50'></td>
+ <td colspan='2'><input type='text' name='emerg_email' value=' {{emerg.e_mail }}' size='50'></td>
 </tr>
 
 <tr>
@@ -153,20 +158,24 @@
 
 <tr>
  <td align='right'><small><i>street</i></small></td>
- <td colspan='2'><input type='text' name='emerg_street' value='{{emerg.street}}' size='50'></td>
+ <td colspan='2'><input type='text' name='emerg_street' value='{{emerg.address_street}}' size='50'></td>
 </tr>
 
 <tr>
  <td align='right'><small><i>city</i></small></td>
 
- <td colspan='2'><input type='text' name='emerg_city' value='{{emerg.city}}'  size='20'>
+ <td colspan='2'><input type='text' name='emerg_city' value='{{emerg.address_city}}'  size='20'>
 
- <select name="state">
+ <select name="emerg_state">
 {% for thing in statenames %}
-<option value='{{thing}}' >{{thing}}</option>
+<option value='{{thing}}' 
+{% ifequal thing emerg.address_state %}
+ selected
+{% endifequal %}
+>{{thing}}</option>
 {% endfor %}
 </select>  
-<small><i>&nbsp; &nbsp; zip <input type='text' name='zip' value='{{ emerg.zip}}' size='5'>
+<small><i>&nbsp; &nbsp; zip <input type='text' name='zip' value='{{ emerg.address_zip}}' size='5'>
 
  </td>
 </tr>

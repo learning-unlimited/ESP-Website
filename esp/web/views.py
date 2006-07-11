@@ -4,7 +4,7 @@ from esp.web.models import QuasiStaticData
 from esp.users.models import ContactInfo
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, TimeSlot
+from esp.program.models import RegistrationProfile, TimeSlot, Class
 from django.http import HttpResponse, Http404
 
 
@@ -221,22 +221,25 @@ def program(request, tl, one, two, module, extra = None):
         return render_to_response('users/construction', {'logged_in': user_id})
     prog = prog[0]
     if module == "profile":
-	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
+	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)[0]
 	    
 	    context = {'logged_in': user_id}
 	    context['student'] = curUser
 	    context['one'] = one
+	    if extra == "oops":
+		    context['oops'] = True
 	    context['two'] = two
 	    context['statenames'] = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL'  ,'IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  ,'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada']
-	    ci = curUser.contactinfo_set.all()
+	    contactInfo = curUser.contactinfo_set.all()
 	    if len(contactInfo) < 1:
 		    return render_to_response('users/profile', context)
+	    contactInfo = contactInfo[0]
 #	    dob = ()
 #	    datef = contactInfo.dob
 #	    context['dob'] = dob
 
-	    context['grad'] = contactInfo.grad
-	    context['student'] = regprof.contact_student
+	    context['grad'] = contactInfo.graduation_year
+	    context['studentc'] = regprof.contact_student
 	    context['emerg'] = regprof.contact_emergency
 	    context['guard'] = regprof.contact_guardian
 	    return render_to_response('users/profile', context)
@@ -290,9 +293,27 @@ def program(request, tl, one, two, module, extra = None):
 	    classes = ts.class_set.all()
 	    context['courses'] = classes
 	    return render_to_response('program/timeslot', context)
+
+    if module == "addclass":
+	    classid = request.POST['class']
+	    cobj = Class.objects.filter(id=classid)[0]
+	    assert False
     
     if module == "updateprofile":
 	    if q is None: return render_to_response('users/login', {'logged_in': False})
+	    for thing in ['first', 'last', 'email', 'street', 'guard_name', 'emerg_name', 'emerg_street']:
+		    if not request.POST.has_key(thing) and request.POST[thing].strip() != "": return program(request, tl, one, two, "profile", extra = "oops")
+	    sphone = False
+	    gphone = False
+	    ephone = False
+	    
+	    for phone in ['phone_even', 'phone_cell', 'phone_day']:
+		    if request.POST.has_key(phone) and request.POST[phone].strip() != "": sphone = True
+	    for phone in ['guard_phone_day', 'guard_phone_cell', 'guard_phone_even']:
+		    if request.POST.has_key(phone) and request.POST[phone].strip() != "": gphone = True
+	    for phone in ['emerg_phone_day', 'emerg_phone_cell', 'emerg_phone_even']:
+		    if request.POST.has_key(phone) and request.POST[phone].strip() != "": ephone = True
+	    if not (sphone and gphone and ephone): return program(request, tl, one, two, "profile", extra = "oops")
 	    curUser = User.objects.filter(id=q)[0]
 	    regprof = RegistrationProfile.objects.filter(user__exact=curUser,program__exact=prog)
 	    if len(regprof) < 1:
@@ -304,57 +325,69 @@ def program(request, tl, one, two, module, extra = None):
 	    curUser.first_name = request.POST['first']
 	    curUser.last_name = request.POST['last']
 	    curUser.email = request.POST['email']
-	    lala = regprof.contact_student
 	    if regprof.contact_student is None:
-		    q = ContactInfo()
-		    q.user = curUser
-		    q.save()
-		    regprof.contact_student = q
-		    lala = regprof.contact_student
-	    regprof.contact_student.grad = request.POST.get('grad', "")
-	    regprof.contact_student.street = request.POST.get('street', "")
-	    regprof.contact_student.city = request.POST.get('city', "")
-	    regprof.contact_student.state = request.POST.get('state', "")
-	    regprof.contact_student.zip = request.POST.get('zip', "")
-	    regprof.contact_student.phone_day = request.POST.get('phone_day', "")
-	    regprof.contact_student.phone_cell = request.POST.get('phone_cell', "")
-	    regprof.contact_student.phone_even = request.POST.get('phone_even', "")
-
+		    c1 = ContactInfo()
+		    c1.user = curUser
+		    c1.save()
+	    else:
+		    c1 = regprof.contact_student
+	    c1.grad = request.POST.get('grad', "")
+	    c1.e_mail = curUser.email
+	    c1.full_name = curUser.first_name + " " + curUser.last_name
+	    c1.address_street = request.POST.get('street', "")
+	    c1.address_city = request.POST.get('city', "")
+	    c1.address_state = request.POST.get('state', "")
+	    c1.address_zip = request.POST.get('zip', "")
+	    c1.phone_day = request.POST.get('phone_day', "")
+	    c1.phone_cell = request.POST.get('phone_cell', "")
+	    c1.phone_even = request.POST.get('phone_even', "")
+	    c1.save()
+	    regprof.contact_student = c1	    
 	    if regprof.contact_guardian is None:
-		    q = ContactInfo()
-		    q.user = curUser
-		    q.save()
-		    regprof.contact_guardian = q
-	    regprof.contact_guardian.full_name = request.POST.get('guard_name', "")
-	    regprof.contact_guardian.email = request.POST.get('guard_email', "")
-	    regprof.contact_guardian.phone_day = request.POST.get('guard_phone_day', "")
-	    regprof.contact_guardian.phone_cell = request.POST.get('guard_phone_cell', "")
-	    regprof.contact_guardian.phone_even = request.POST.get('guard_phone_even', "")
-
+		    c2 = ContactInfo()
+		    c2.user = curUser
+		    c2.save()
+	    else:
+		    c2 = regprof.contact_guardian
+	    c2.full_name = request.POST.get('guard_name', "")
+	    c2.e_mail = request.POST.get('guard_email', "")
+	    q = c2.e_mail
+	    p = c2.full_name
+	    c2.phone_day = request.POST.get('guard_phone_day', "")
+	    c2.phone_cell = request.POST.get('guard_phone_cell', "")
+	    c2.phone_even = request.POST.get('guard_phone_even', "")
+	    c2.address_street = c1.address_street
+	    c2.address_city = c1.address_city
+	    c2.address_state = c1.address_state
+	    c2.address_zip = c1.address_zip
+	    c2.save()
+	    regprof.contact_guardian = c2
 	    if regprof.contact_emergency is None:
-		    q = ContactInfo()
-		    q.user = curUser
-		    q.save()
-		    regprof.contact_emergency = q
-	    regprof.contact_emergency.full_name = request.POST.get('emerg_name', "")
-	    regprof.contact_emergency.email = request.POST.get('emerg_email', "")
-	    regprof.contact_emergency.street = request.POST.get('emerg_street', "")
-	    regprof.contact_emergency.city = request.POST.get('emerg_city', "")
-	    regprof.contact_emergency.state = request.POST.get('emerg_state', "")
-	    regprof.contact_emergency.zip = request.POST.get('emerg_zip', "")
-	    regprof.contact_emergency.phone_day = request.POST.get('emerg_phone_day', "")
-	    regprof.contact_emergency.phone_cell = request.POST.get('emerg_phone_cell', "")
-	    regprof.contact_emergency.phone_even = request.POST.get('emerg_phone_even', "")
-	    
+		    c3 = ContactInfo()
+		    c3.user = curUser
+		    c3.save()
+	    else:
+		    c3 = regprof.contact_emergency
+	    c3.full_name = request.POST.get('emerg_name', "")
+	    c3.e_mail = request.POST.get('emerg_email', "")
+	    c3.address_street = request.POST.get('emerg_street', "")
+	    c3.address_city = request.POST.get('emerg_city', "")
+	    c3.address_state = request.POST.get('emerg_state', "")
+	    c3.address_zip = request.POST.get('emerg_zip', "")
+	    c3.phone_day = request.POST.get('emerg_phone_day', "")
+	    c3.phone_cell = request.POST.get('emerg_phone_cell', "")
+	    c3.phone_even = request.POST.get('emerg_phone_even', "")
+	    c3.save()
+	    regprof.contact_emergency = c3	    
 	    curUser.save()
 	    regprof.save()
-	    return render_to_response('users/studentreg', {'logged_in': user_id})
+	    return program(request, tl, one, two, "studentreg", extra = None)
     return render_to_response('users/construction', {'logged_in': user_id})
 
 def validateContactInfo(ci):
 	if ci is None: return False
 	if ci.full_name == "" or ci.full_name is None: return False
-	if ci.street == "" or ci.street is None: return False
+	if ci.address_street == "" or ci.address_street is None: return False
 	if (ci.phone_day != "" and ci.phone_day is not None) or (ci.phone_cell != "" or ci.phone_cell is not None) and not (ci.phone_even != "" or ci.phone_even is not None): return True
 	return False
 
