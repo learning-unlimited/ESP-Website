@@ -132,7 +132,7 @@ class ContactInfo(models.Model):
 	phone_cell = models.PhoneNumberField()
 	phone_even = models.PhoneNumberField()
 	address_street = models.CharField(maxlength=100)
-	address_city = models.CharFied(maxlength=50)
+	address_city = models.CharField(maxlength=50)
 	address_state = models.USStateField()
 
 	def __str__(self):
