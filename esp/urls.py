@@ -9,6 +9,7 @@ urlpatterns = patterns('',
     # The default
     (r'^$', 'esp.web.views.index'),
     (r'^contact.html$', 'esp.web.views.contact'),
+    (r'^Learn/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/bio.html$', 'esp.web.views.bio'),
     (r'^Programs/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/catalogue/?$', 'esp.program.views.courseCatalogue'),
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),                       
     (r'^(?P<url>.*)\.html$', 'esp.web.views.qsd'),

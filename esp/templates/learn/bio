@@ -1,0 +1,21 @@
+
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{Program}}{% endblock %}
+
+{% block subsection_name %}Course Catalogue{% endblock %}
+
+{% block content %}
+
+<table width="90%" cellpadding="5" style='text-align: left'>
+<tr>
+<td style='background-color: #a6cedf' align="left">
+<b>{{ name }}</b>
+
+</td></tr>
+
+<tr><td>
+{{ bio }}
+</td></tr></table>
+
+{% endblock %}

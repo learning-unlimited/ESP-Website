@@ -12,5 +12,6 @@ def courseCatalogue(request, one, two):
     treeItem = "Q/Programs/" + one + "/" + two 
     prog = GetNode(treeItem).program_set.all()[0]
     clas = list(prog.claus_set.all().order_by('category'))
-    return render_to_response('program/catalogue', {'Program': one + " " + two,
+    p = one + " " + two
+    return render_to_response('program/catalogue', {'Program': p.replace("_", " "),
 			'courses': clas })

@@ -81,6 +81,14 @@ def index(request):
 		'logged_in': user_id
 		})
 
+def bio(request, last, first):
+	user_id = request.session.get('user_id', False)
+	if user_id != False: user_id = True
+	user = User.objects.filter(last_name=last, first_name=first)
+	if user.count < 1: return render_to_response('users/construction', {'logged_in': user_id})
+	bio = user[0].teacherbio_set.all()[0].html()
+	return render_to_response('learn/bio', {'name': first + " " + last, 'bio': bio, 'logged_in': user_id})
+
 def myesp(request, module):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
