@@ -121,7 +121,7 @@ class UserBit(models.Model):
     class Admin:
         pass
     
-def ContactInfo(models.Model):
+class ContactInfo(models.Model):
 	""" ESP-specific contact information for (possibly) a specific user """
 	user = models.ForeignKey(User, blank=True, null=True)
 	full_name = models.CharField(maxlength=256)
