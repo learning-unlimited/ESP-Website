@@ -5,16 +5,22 @@
 {% block subsection_name %}Life, the universe, and everything.{% endblock %}
 
 {% block content %}
+
 	<br /><br />
        <div id="divmaintext">	
 	<h2>Hi {{student.username}}!</h2>
-	<h2>Please tell us a bit about yourself!</h2>
-  	    														  
-	<form action='http://esp-devel.hackorp.com/Program/{{one}}/{{two}}/updateprofile' method="post">
+	<h2>Please tell us a bit about yourself!</h2> 
+	Field with * are required.
+
+	{% if oops %}
+<h2>Please make sure to fill in all the required fields.  Thanks! </h2>
+{% endif %}
+
+	<form action='http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/updateprofile/' method="post">
 	<table cellpadding='2' align='center' border='0'>
 
 <tr>
- <td><b>Name:</b></td>
+ <td><b>Name: *</b></td>
  <td align='right'><small><i>first</i></small></td>
  <td align='left'><input type='text' name='first' value='{{student.first_name}}' size='30'></td>
 </tr>
@@ -32,7 +38,7 @@
 </tr>
 -->
 <tr>
- <td><b>Year of high school graduation:</b></td>
+ <td><b>Year of high school graduation: *</b></td>
 <td><input type='text' name='grad' value='{{grad}}' size='8'></td>
 </tr>
 
@@ -43,7 +49,7 @@
 </tr>
 <tr>
 
- <td colspan='3'><b>Address:</b></td>
+ <td colspan='3'><b>Address: *</b></td>
 </tr>
 
 <tr>
@@ -56,12 +62,9 @@
  <td align='right'><small><i>city</i></small></td>
  <td colspan='2'><input type='text' name='city' value='{{student.city}}'  size='20'>
  <select name="state">
-{% for state in statenames %}
-<option value='{{state}}' 
-{% ifequal state student.state %}
- selected  
-{% endifequal %}
->{{state}}</option>
+
+{% for thing in statenames %}
+<option value='{{thing}}'>{{thing}}</option>
 {% endfor %}
 </select>  
 <small><i>&nbsp; &nbsp; zip <input type='text' name='zip' value='{{ student.zip}}' size='5'>
@@ -69,7 +72,7 @@
  </td>
 </tr>
 <tr>
- <td><b>Phone:</b></td>
+ <td><b>Phone: *</b></td>
  <td align='right'><small><i>day</i></small></td>
  <td align='left'><input type='text' name='phone_day' value='{{ student.phone_day }}' size='30'></td>
 </tr>
@@ -97,7 +100,7 @@
 </tr>
 
 <tr>
- <td><b>Full Name:</b></td>
+ <td><b>Full Name: *</b></td>
  <td colspan='2'><input type='text' name='guard_name' value='{{ guard.name}}' size='50'></td>
 </tr>
 
@@ -107,7 +110,7 @@
  <td colspan='2'><input type='text' name='guard_email' value='{{ guard.email }}' size='50'></td>
 </tr>
 <tr>
- <td><b>Phone:</b></td>
+ <td><b>Phone: *</b></td>
  <td align='right'><small><i>day</i></small></td>
  <td align='left'><input type='text' name='guard_phone_day' value='{{ guard.phone_day }}' size='30'></td>
 
@@ -134,7 +137,7 @@
 </tr>
 
 <tr>
- <td><b>Full Name:</b></td>
+ <td><b>Full Name: *</b></td>
  <td colspan='2'><input type='text' name='emerg_name' value=' {{ emerg.name }}' size='50'></td>
 </tr>
 
@@ -145,7 +148,7 @@
 </tr>
 
 <tr>
- <td colspan='3'><b>Address:</b></td>
+ <td colspan='3'><b>Address: *</b></td>
 </tr>
 
 <tr>
@@ -159,12 +162,8 @@
  <td colspan='2'><input type='text' name='emerg_city' value='{{emerg.city}}'  size='20'>
 
  <select name="state">
-{% for state in statenames %}
-<option value='{{state}}' 
-{% ifequal state emerg.state %}
- selected  
-{% endifequal %}
->{{state}}</option>
+{% for thing in statenames %}
+<option value='{{thing}}' >{{thing}}</option>
 {% endfor %}
 </select>  
 <small><i>&nbsp; &nbsp; zip <input type='text' name='zip' value='{{ emerg.zip}}' size='5'>
@@ -172,7 +171,7 @@
  </td>
 </tr>
 <tr>
- <td><b>Phone:</b></td>
+ <td><b>Phone: *</b></td>
  <td align='right'><small><i>day</i></small></td>
  <td align='left'><input type='text' name='emerg_phone_day' value='{{ emerg.phone_day }}' size='30'></td>
 </tr>
@@ -196,4 +195,5 @@
 <center><input type='submit' value='Update your Information!'></center><br>
 </form>
         </div>
+
 {% endblock %}

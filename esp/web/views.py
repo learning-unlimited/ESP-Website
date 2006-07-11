@@ -1,9 +1,10 @@
 from django.shortcuts import render_to_response
 from esp.calendar.models import Event
 from esp.web.models import QuasiStaticData
+from esp.users.models import ContactInfo
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile
+from esp.program.models import RegistrationProfile, TimeSlot
 from django.http import HttpResponse, Http404
 
 
@@ -207,71 +208,155 @@ def qsd(request, url):
 			'logged_in': user_id})
 	     
 
-def program(request, tl, one, two, module):
+def program(request, tl, one, two, module, extra = None):
     q = request.session.get('user_id', False)
     user_id = q
     if user_id != False: user_id = True
+    if q is None: return render_to_response('users/login', {'logged_in': False})
+    curUser = User.objects.filter(id=q)[0]
+
     treeItem = "Q/Programs/" + one + "/" + two 
     prog = GetNode(treeItem).program_set.all()
     if len(prog) < 1:
         return render_to_response('users/construction', {'logged_in': user_id})
+    prog = prog[0]
     if module == "profile":
-	    if q is None: return render_to_response('users/login', {'logged_in': False})
-	    curUser = User.objects.filter(id=q)[0]
 	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
 	    
 	    context = {'logged_in': user_id}
 	    context['student'] = curUser
 	    context['one'] = one
 	    context['two'] = two
-	    contactInfo = curUser.contactinfo_set.all()
+	    context['statenames'] = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL'  ,'IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  ,'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada']
+	    ci = curUser.contactinfo_set.all()
 	    if len(contactInfo) < 1:
 		    return render_to_response('users/profile', context)
-	    dob = ()
-	    datef = contactInfo.dob
-	    context['dob'] = dob
+#	    dob = ()
+#	    datef = contactInfo.dob
+#	    context['dob'] = dob
+
 	    context['grad'] = contactInfo.grad
 	    context['student'] = regprof.contact_student
 	    context['emerg'] = regprof.contact_emergency
 	    context['guard'] = regprof.contact_guardian
 	    return render_to_response('users/profile', context)
 
+    if module == "catalog":
+	    treeItem = "Q/Programs/" + one + "/" + two 
+	    prog = GetNode(treeItem).program_set.all()
+	    if len(prog) < 1:
+		    return render_to_response('users/construction', {'logged_in': user_id})
+	    prog = prog[0]
+	    clas = list(prog.class_set.all().order_by('category'))
+	    p = one + " " + two
+	    return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas })
+
+    if module == "studentreg":
+	    curUser = User.objects.filter(id=q)[0]
+	    if q is None: return render_to_response('users/login', {'logged_in': False})
+	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
+	    if len(regprof) < 1:
+		    regprof = RegistrationProfile()
+		    regprof.user = curUser
+		    regprof.program = prog
+	    else:
+		    regprof = regprof[0]
+	    curUser = User.objects.filter(id=q)[0]
+	    context = {'logged_in': user_id}
+	    context['program'] = one + " " + two
+	    context['program'] = context['program'].replace("_", " ")
+	    context['one'] = one
+	    context['two'] = two
+	    profile_done = False
+	    for thing in [regprof.contact_student, regprof.contact_student, regprof.contact_emergency]:
+		    foo = validateContactInfo(thing)
+		    if foo:
+			    profile_done = True
+			    break
+	    if profile_done: context['profile_graphic'] = "checkmark"
+	    else: context['profile_graphic'] = "nocheckmark"
+	    context['select_graphic'] = "nocheckmark"
+	    context['student'] = curUser.first_name + " " + curUser.last_name
+	    context['timeslots'] = list(prog.timeslot_set.all())
+	    regprof.save()
+	    return render_to_response('users/studentreg', context)
+
+    if module == "fillslot":
+	    ts = TimeSlot.objects.filter(id=extra)[0]
+	    context = {'logged_in': user_id}
+	    context['ts'] = ts
+	    context['one'] = one
+	    context['two'] = two
+	    classes = ts.class_set.all()
+	    context['courses'] = classes
+	    return render_to_response('program/timeslot', context)
+    
     if module == "updateprofile":
 	    if q is None: return render_to_response('users/login', {'logged_in': False})
 	    curUser = User.objects.filter(id=q)[0]
-	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
+	    regprof = RegistrationProfile.objects.filter(user__exact=curUser,program__exact=prog)
+	    if len(regprof) < 1:
+		    regprof = RegistrationProfile()
+		    regprof.user = curUser
+		    regprof.program = prog
+	    else:
+		    regprof = regprof[0]
 	    curUser.first_name = request.POST['first']
 	    curUser.last_name = request.POST['last']
 	    curUser.email = request.POST['email']
-	    regprof.contact_student.grad = request.POST['grad']
-	    regprof.contact_student.street = request.POST['street']
-	    regprof.contact_student.city = request.POST['city']
-	    regprof.contact_student.state = request.POST['state']
-	    regprof.contact_student.zip = request.POST['zip']
-	    regprof.contact_student.phone_day = request.POST['phone_day']
-	    regprof.contact_student.phone_cell = request.POST['phone_cell']
-	    regprof.contact_student.phone_even = request.POST['phone_even']
+	    lala = regprof.contact_student
+	    if regprof.contact_student is None:
+		    q = ContactInfo()
+		    q.user = curUser
+		    q.save()
+		    regprof.contact_student = q
+		    lala = regprof.contact_student
+	    regprof.contact_student.grad = request.POST.get('grad', "")
+	    regprof.contact_student.street = request.POST.get('street', "")
+	    regprof.contact_student.city = request.POST.get('city', "")
+	    regprof.contact_student.state = request.POST.get('state', "")
+	    regprof.contact_student.zip = request.POST.get('zip', "")
+	    regprof.contact_student.phone_day = request.POST.get('phone_day', "")
+	    regprof.contact_student.phone_cell = request.POST.get('phone_cell', "")
+	    regprof.contact_student.phone_even = request.POST.get('phone_even', "")
 
-	    regprof.contact_guardian.name = request.POST['guard_name']
-	    regprof.contact_guardian.email = request.POST['guard_email']
-	    regprof.contact_guardian.phone_day = request.POST['guard_phone_day']
-	    regprof.contact_guardian.phone_cell = request.POST['guard_phone_cell']
-	    regprof.contact_guardian.phone_even = request.POST['guard_phone_even']
+	    if regprof.contact_guardian is None:
+		    q = ContactInfo()
+		    q.user = curUser
+		    q.save()
+		    regprof.contact_guardian = q
+	    regprof.contact_guardian.full_name = request.POST.get('guard_name', "")
+	    regprof.contact_guardian.email = request.POST.get('guard_email', "")
+	    regprof.contact_guardian.phone_day = request.POST.get('guard_phone_day', "")
+	    regprof.contact_guardian.phone_cell = request.POST.get('guard_phone_cell', "")
+	    regprof.contact_guardian.phone_even = request.POST.get('guard_phone_even', "")
 
-	    regprof.contact_emergency.name = request.POST['emerg_name']
-	    regprof.contact_emergency.email = request.POST['emerg_email']
-	    regprof.contact_emergency.street = request.POST['emerg_street']
-	    regprof.contact_emergency.city = request.POST['emerg_city']
-	    regprof.contact_emergency.state = request.POST['emerg_state']
-	    regprof.contact_emergency.zip = request.POST['emerg_zip']
-	    regprof.contact_emergency.phone_day = request.POST['emerg_phone_day']
-	    regprof.contact_emergency.phone_cell = request.POST['emerg_phone_cell']
-	    regprof.contact_emergency.phone_even = request.POST['emerg_phone_even']
+	    if regprof.contact_emergency is None:
+		    q = ContactInfo()
+		    q.user = curUser
+		    q.save()
+		    regprof.contact_emergency = q
+	    regprof.contact_emergency.full_name = request.POST.get('emerg_name', "")
+	    regprof.contact_emergency.email = request.POST.get('emerg_email', "")
+	    regprof.contact_emergency.street = request.POST.get('emerg_street', "")
+	    regprof.contact_emergency.city = request.POST.get('emerg_city', "")
+	    regprof.contact_emergency.state = request.POST.get('emerg_state', "")
+	    regprof.contact_emergency.zip = request.POST.get('emerg_zip', "")
+	    regprof.contact_emergency.phone_day = request.POST.get('emerg_phone_day', "")
+	    regprof.contact_emergency.phone_cell = request.POST.get('emerg_phone_cell', "")
+	    regprof.contact_emergency.phone_even = request.POST.get('emerg_phone_even', "")
 	    
 	    curUser.save()
 	    regprof.save()
-	    return render_to_response('users/construction', {'logged_in': user_id})
+	    return render_to_response('users/studentreg', {'logged_in': user_id})
     return render_to_response('users/construction', {'logged_in': user_id})
+
+def validateContactInfo(ci):
+	if ci is None: return False
+	if ci.full_name == "" or ci.full_name is None: return False
+	if ci.street == "" or ci.street is None: return False
+	if (ci.phone_day != "" and ci.phone_day is not None) or (ci.phone_cell != "" or ci.phone_cell is not None) and not (ci.phone_even != "" or ci.phone_even is not None): return True
+	return False
 
 def qsd_raw(request, url):
 	user_id = request.session.get('user_id', False)

@@ -1,0 +1,78 @@
+
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{Program}}{% endblock %}
+
+{% block subsection_name %}Course Catalogue{% endblock %}
+
+{% block content %}
+<br />
+<p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center;'><b>Adding a Class</b></p>
+<p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center;'>Listing Classes For {{ts.name}}<br/><b>Saturday: {{ts.time_start}} to {{ts.time_stop</b></p>
+
+<p style="text-align: center"><a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/studentreg/">Back to My Schedule</a></p>
+
+<p style='text-align: center;'>
+
+<table style='text-align: center; margin: auto;' width='60%' border='0'>
+ <tr>
+  <td align='center' colspan='2' style='font-family: arial; font-size:110%'>
+   <a name='top'></a>Categories<hr />
+  </td>
+ </tr>
+
+<tr><td style='width: 50%' valign='top' align='center'>
+	<a href='#cat1'>Computer Science</a><br /><a href='#cat2'>Hobbies</a><br /><a href='#cat4'>Liberal Arts</a><br /></td><td valign='top' align='center'><a href='#cat5'>Mathematics</a><br /><a href='#cat6'>Performing Arts</a><br /><a href='#cat7'>Science</a><br /><a href='#cat8'>Zocial Zcience</a><br /></td></tr></table><br />
+
+{% if courses %}
+
+{% for aclass in courses %}
+
+{% ifchanged %}<hr /><p style='font-family: arial; font-size:125%; text-align: center; margin-bottom: 0'><a name='{{ aclass.category }}'></a><b>{{ aclass.category}}</b></p><p style='text-align: center; margin-top: 0'><a href='#top'><small>[ Return to Category List ]</small></a></p> {% endifchanged %}
+
+<div class="show_class">
+<table cellpadding="5" style="text-align: center; margin: auto; width: 620px">
+<tr><td colspan="2" style="background-color: #a6cedf" align="left"><b>
+{{ aclass.title }}</b><br />
+<i>
+{% for teacher in aclass.teachers %}
+<a href="/Learn/teachers/{{ teacher.last_name }}/{{ teacher.first_name }}/bio.html">{{ teacher.first_name}} {{teacher.last_name}}</a>
+{% if not forloop.last %}
+,
+{% endif %}
+{% endfor %}
+</i></td></tr>
+<tr>
+<td colspan='2' style='text-align: left; background-color: #FFFFFF'> {{ aclass.class_info }}
+<br/></td>
+</tr>
+<tr><td valign='top' align='center'><b>Meeting Time</b><br/>
+{{ aclass.schedule }}<br /></td>
+<td style='width: 40%' align='left'><b>Grades:</b>{{ aclass.grade_min }} - {{ aclass.grade_max }}<br/>
+<b>Enrollment:</b> {{aclass.enrollment}} (max {{aclass.class_size_max}})</td></tr>
+    
+<tr>
+<td colspan='2'>
+
+
+<hr/>
+
+
+<form action='http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/addclass/' method='post'>
+<input type='hidden' name='class' value='{{aclass.id}}'>
+<center><input type='submit' value='Add This Class!'></center>
+</form>
+
+
+
+</td>
+</tr></table>
+
+
+</table></div><br />
+
+{% endfor %}
+{% else %}
+There are strangely no classes for this time block.  Sorry.
+{% endif %}
+{% endblock %}

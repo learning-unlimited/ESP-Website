@@ -136,7 +136,7 @@ class ContactInfo(models.Model):
 	address_state = models.USStateField()
 
 	def __str__(self):
-		return full_name + ' (' + user.username + ')'
+		return self.full_name + ' (' + user.username + ')'
 	
 	class Admin:
 		pass

@@ -28,6 +28,6 @@
 </tr>
 </table>
 
-<p style="text-align: center"><input type='submit' value='-  Login  -'></p>
+<p style="text-align: center"><input type='submit' value='-  Subscribe!  -'></p>
 </form>
 {% endblock %}
