@@ -96,6 +96,12 @@ class Class(models.Model):
 		v = GetNode( 'V/Administer/Program/Class' )
 		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
 
+	def preregister_student(self, user):
+		prereg = UserBit()
+		prereg.user = user
+		prereg.qsc = self.anchor
+		prereg.verb = GetNode( 'V/Preregister' )
+
 	class Admin:
 		pass
 	
