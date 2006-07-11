@@ -9,8 +9,12 @@ from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 
 def courseCatalogue(request, one, two):
+    user_id = request.session.get('user_id', False)
+    if user_id != False: user_id = True
     treeItem = "Q/Programs/" + one + "/" + two 
-    prog = GetNode(treeItem).program_set.all()[0]
+    prog = GetNode(treeItem).program_set.all()
+    if len(prog) < 1:
+        return render_to_response('users/construction', {'logged_in': user_id})
     clas = list(prog.class_set.all().order_by('category'))
     p = one + " " + two
     return render_to_response('program/catalogue', {'Program': p.replace("_", " "),

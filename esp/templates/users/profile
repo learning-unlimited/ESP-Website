@@ -5,12 +5,12 @@
 {% block subsection_name %}Life, the universe, and everything.{% endblock %}
 
 {% block content %}
+	<br /><br />
        <div id="divmaintext">	
 	<h2>Hi {{username}}!</h2>
 	<h2>Please tell us a bit about yourself!</h2>
   	    														  
 	<form action='http://esp-devel.hackorp.com/myesp/updateprofile/' method="post">
-	<center><input type='submit' value='Update your Information!'></center><br>
 	<table cellpadding='2' align='center' border='0'>
 
 <tr>
@@ -27,13 +27,13 @@
 
 <tr>
  <td><b>D.O.B.:</b></td>
- <td align='left' colspan='2'><table boarders=none><tr><input type='text' name='dobmonth' value='{{dob.0}}' size='5'></td><td><input type='text' name='dobday' value='{{dob.1}}' size='5'></td><td><input type='text' name='dobyear' value='{{dob.2}}' size='8'></td></tr></table>
+ <td align='left' colspan='2'><table boarders=none><tr><td><input type='text' name='dobmonth' value='{{dob.0}}' size='5'></td><td><input type='text' name='dobday' value='{{dob.1}}' size='5'></td><td><input type='text' name='dobyear' value='{{dob.2}}' size='8'></td></tr></table>
 <small> Example 2/29/1994 </small> 
 </tr>
 
 <tr>
  <td><b>Year of high school graduation:</b></td>
-<input type='text' name='grad' value='{{grad}}' size='8'>
+<td><input type='text' name='grad' value='{{grad}}' size='8'></td>
 </tr>
 
 
@@ -42,6 +42,7 @@
  <td colspan='2'><input type='text' name='email' value='{{student.email}}' size='50'></td>
 </tr>
 <tr>
+
  <td colspan='3'><b>Address:</b></td>
 </tr>
 

@@ -85,8 +85,10 @@ def bio(request, last, first):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
 	user = User.objects.filter(last_name=last, first_name=first)
-	if user.count < 1: return render_to_response('users/construction', {'logged_in': user_id})
-	bio = user[0].teacherbio_set.all()[0].html()
+	if len(user) < 1: return render_to_response('users/construction', {'logged_in': user_id})
+	bio = user[0].teacherbio_set.all()
+	if len(bio) < 1: return render_to_response('users/construction', {'logged_in': user_id})
+	bio = bio[0].html()
 	return render_to_response('learn/bio', {'name': first + " " + last, 'bio': bio, 'logged_in': user_id})
 
 def myesp(request, module):
@@ -130,6 +132,8 @@ def myesp(request, module):
 			return render_to_response('users/regdone', {'logged_in': True})
 	if module == "emaillist":
 		return render_to_response('users/email', {'logged_in': False})
+
+	
 	if module == "emailfin":
 		if not request.POST.has_key('email'):
 			assert False, 1
@@ -200,6 +204,35 @@ def qsd(request, url):
 			'content': qsd_rec.html(),
 			'logged_in': user_id})
 	     
+
+def program(request, one, two, thing):
+    q = request.session.get('user_id', False)
+    user_id = q
+    if user_id != False: user_id = True
+    treeItem = "Q/Programs/" + one + "/" + two 
+    prog = GetNode(treeItem).program_set.all()
+    if len(prog) < 1:
+        return render_to_response('users/construction', {'logged_in': user_id})
+    if module == "profile":
+	    if q is None: return render_to_response('users/login', {'logged_in': False})
+	    curUser = User.objects.filter(id=q)[0]
+	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
+	    
+	    context = {'logged_in': user_id}
+	    context['username'] = curUser.username
+	    context['first_name'] =curUser.first_name
+	    context['last_name'] =curUser.last_name
+	    contactInfo = curUser.contactinfo_set.all()
+	    if len(contactInfo) < 1:
+		    return render_to_response('users/profile', context)
+	    dob = ()
+	    datef = contactInfo.dob
+	    context['dob'] = dob
+	    context['grad'] = contactInfo.grad
+	    context['student'] = regprof.contact_student
+	    context['emerg'] = regprof.contact_emergency
+	    context['guard'] = regprof.contact_guardian
+	    return render_to_response('users/profile', context)
 
 def qsd_raw(request, url):
 	user_id = request.session.get('user_id', False)
