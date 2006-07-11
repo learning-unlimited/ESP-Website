@@ -1,12 +1,12 @@
 
 {% extends "outlines/series-3.html" %}
 
-{% block title %}{{Program}}{% endblock %}
+{% block title %}{{ name }}{% endblock %}
 
-{% block subsection_name %}Course Catalogue{% endblock %}
+{% block subsection_name %}Teacher Biography{% endblock %}
 
 {% block content %}
-
+<br /><br />
 <table width="90%" cellpadding="5" style='text-align: left'>
 <tr>
 <td style='background-color: #a6cedf' align="left">
