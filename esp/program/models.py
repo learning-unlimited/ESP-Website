@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from esp.calendar.models import Event
-from esp.datatree.models import DataTree
+from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit
 
 # Create your models here.
@@ -89,4 +89,7 @@ class Claus(models.Model):
 	
 	@staticmethod
 	def create_via_proposal(proposal):
-		pass
+
+class TeacherBio(models.Model):
+	""" A biography of an ESP teacher """
+	pass
