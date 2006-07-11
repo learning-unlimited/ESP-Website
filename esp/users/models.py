@@ -134,6 +134,7 @@ class ContactInfo(models.Model):
 	address_street = models.CharField(maxlength=100)
 	address_city = models.CharField(maxlength=50)
 	address_state = models.USStateField()
+	address_zip = models.CharField(maxlength=5)
 
 	def __str__(self):
 		return self.full_name + ' (' + user.username + ')'
