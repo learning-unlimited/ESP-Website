@@ -99,7 +99,7 @@ class DataTree(models.Model):
     def __str__(self):
         """ Returns a string """
         res = str(self.rangestart) + ' .. ' + str(self.rangeend) + ' <' + str(self.name) + '>'
-	if self.friendly_name is not null:
+	if self.friendly_name is not None:
 		res = res + ' (' + self.friendly_name + ')'
 	return res
 
