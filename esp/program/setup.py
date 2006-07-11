@@ -56,7 +56,6 @@ def PopulateProgram(program_node,
 	publish.startdate = program_term[0]
 	publish.enddate = program_term[1]
 		
-
 def populate():
 	populate_LCC()
 	populate_LET()
