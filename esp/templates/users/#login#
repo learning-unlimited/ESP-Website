@@ -1,0 +1,49 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Login!{% endblock %}
+
+{% block subsection_name %}Welcome Back{% endblock %}
+
+{% block content %}
+<h2 style='text-align: center'>Welcome back to ESP?</h2>
+<h1 style='text-align: center; margin-bottom: 0px'>Cool!</h1>
+
+<p style="text-align: center; color: #FF0000; margin-bottom: 0px;">
+ <b>NOTE: You must have cookies enabled to login to this website.<br/>
+ </b>
+</p>
+<hr/>
+{% if Problem %}
+<h2 color="red">Sorry!  Check your username and password and try again.</h2>
+{% endif %}
+<form action='http://esp-devel.hackorp.com/myesp/logfin/' method="post">
+<table width='65%' cellpadding='2' align='center' border='0'>
+
+<tr>
+ <td style="vertical-align: top"><b>Username:</b></td>
+ <td><input type='text' name='username' size='30' value=''><br/>
+ </td>
+</tr>
+
+<tr>
+ <td></td>
+ <td>
+
+ </td>
+</tr>
+
+<tr>
+ <td><b>Password:</b></td>
+ <td><input type='password' name='password' size='30' value=''></td>
+</tr>
+
+<tr>
+ <td></td>
+ <td>
+ </td>
+</tr>
+</table>
+
+<p style="text-align: center"><input type='submit' value='-  Login  -'></p>
+</form>
+{% endblock %}

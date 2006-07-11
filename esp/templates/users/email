@@ -1,0 +1,33 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Join our Mailing List{% endblock %}
+
+{% block subsection_name %}Join our Mailing List{% endblock %}
+
+{% block content %}
+<h2 style='text-align: center'>Join our mailing list!</h2>
+<h1 style='text-align: center; margin-bottom: 0px'>Get information on ESP!</h1>
+
+<p style="text-align: center; color: #FF0000; margin-bottom: 0px;">
+</p>
+<hr/>
+{% if Problem %}
+<h2 color="red">Sorry!  You need to enter an email address.</h2>
+{% endif %}
+<form action='/myesp/emailfin/' method="post">
+<table width='65%' cellpadding='2' align='center' border='0'>
+<tr>
+ <td><b>Email:</b></td>
+ <td><input type='email' name='email' size='30' value=''></td>
+</tr>
+
+<tr>
+ <td></td>
+ <td>
+ </td>
+</tr>
+</table>
+
+<p style="text-align: center"><input type='submit' value='-  Login  -'></p>
+</form>
+{% endblock %}

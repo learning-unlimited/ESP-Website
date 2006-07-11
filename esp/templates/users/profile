@@ -1,0 +1,198 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Profile{% endblock %}
+
+{% block subsection_name %}Life, the universe, and everything.{% endblock %}
+
+{% block content %}
+       <div id="divmaintext">	
+	<h2>Hi {{username}}!</h2>
+	<h2>Please tell us a bit about yourself!</h2>
+  	    														  
+	<form action='http://esp-devel.hackorp.com/myesp/updateprofile/' method="post">
+	<center><input type='submit' value='Update your Information!'></center><br>
+	<table cellpadding='2' align='center' border='0'>
+
+<tr>
+ <td><b>Name:</b></td>
+ <td align='right'><small><i>first</i></small></td>
+ <td align='left'><input type='text' name='first' value='{{student.first_name}}' size='30'></td>
+</tr>
+
+<tr>
+ <td align='left'>&nbsp;</td>
+ <td align='right'><small><i>last</i></small></td>
+ <td align='left'><input type='text' name='last' value='{{student.last_name}}' size='30'></td>
+</tr>
+
+<tr>
+ <td><b>D.O.B.:</b></td>
+ <td align='left' colspan='2'><table boarders=none><tr><input type='text' name='dobmonth' value='{{dob.0}}' size='5'></td><td><input type='text' name='dobday' value='{{dob.1}}' size='5'></td><td><input type='text' name='dobyear' value='{{dob.2}}' size='8'></td></tr></table>
+<small> Example 2/29/1994 </small> 
+</tr>
+
+<tr>
+ <td><b>Year of high school graduation:</b></td>
+<input type='text' name='grad' value='{{grad}}' size='8'>
+</tr>
+
+
+<tr>
+ <td><b>Email:</b></td>
+ <td colspan='2'><input type='text' name='email' value='{{student.email}}' size='50'></td>
+</tr>
+<tr>
+ <td colspan='3'><b>Address:</b></td>
+</tr>
+
+<tr>
+
+ <td align='right'><small><i>street</i></small></td>
+ <td colspan='2'><input type='text' name='street' value='{{student.street}}' size='50'></td>
+</tr>
+
+<tr>
+ <td align='right'><small><i>city</i></small></td>
+ <td colspan='2'><input type='text' name='city' value='{{student.city}}'  size='20'>
+ <select name="state">
+{% for state in statenames %}
+<option value='{{state}}' 
+{% ifequal state student.state %}
+ selected  
+{% endifequal %}
+>{{state}}</option>
+{% endfor %}
+</select>  
+<small><i>&nbsp; &nbsp; zip <input type='text' name='zip' value='{{ student.zip}}' size='5'>
+
+ </td>
+</tr>
+<tr>
+ <td><b>Phone:</b></td>
+ <td align='right'><small><i>day</i></small></td>
+ <td align='left'><input type='text' name='phone_day' value='{{ student.phone_day }}' size='30'></td>
+</tr>
+<tr>
+ <td></td>
+ <td align='right'><small><i>cell</i></small></td>
+
+ <td align='left'><input type='text' name='phone_cell' value='{{ student.phone_cell}}' size='30'></td>
+</tr>
+
+<tr>
+ <td></td>
+ <td align='right'><small><i>evening</i></small></td>
+ <td><input type='text' name='phone_even' value=' {{ student.phone_even }}' size='30'></td>
+</tr>
+
+
+
+<tr>
+
+ <td colspan='3'>
+   <br>
+<p style='font-family: arial; font-size:110%'><b>Parent/Guardian</b></p>
+ </td>
+</tr>
+
+<tr>
+ <td><b>Full Name:</b></td>
+ <td colspan='2'><input type='text' name='guard_name' value='{{ guard.name}}' size='50'></td>
+</tr>
+
+
+<tr>
+ <td><b>Email:</b></td>
+ <td colspan='2'><input type='text' name='guard_email' value='{{ guard.email }}' size='50'></td>
+</tr>
+<tr>
+ <td><b>Phone:</b></td>
+ <td align='right'><small><i>day</i></small></td>
+ <td align='left'><input type='text' name='guard_phone_day' value='{{ guard.phone_day }}' size='30'></td>
+
+</tr>
+<tr>
+ <td></td>
+ <td align='right'><small><i>cell</i></small></td>
+ <td align='left'><input type='text' name='guard_phone_cell' value=' {{ guard.phone_cell }}' size='30'></td>
+</tr>
+
+<tr>
+ <td></td>
+ <td align='right'><small><i>evening</i></small></td>
+
+ <td><input type='text' name='guard_phone_even' value=' {{ guard.phone_even }}' size='30'></td>
+</tr>
+
+
+<tr>
+ <td colspan='3'>
+   <br>
+<p style='font-family: arial; font-size:110%'><b>Emergency Contact</b> (Other than parent/guardian)</p>
+ </td>
+</tr>
+
+<tr>
+ <td><b>Full Name:</b></td>
+ <td colspan='2'><input type='text' name='emerg_name' value=' {{ emerg.name }}' size='50'></td>
+</tr>
+
+
+<tr>
+ <td><b>Email:</b></td>
+ <td colspan='2'><input type='text' name='emerg_email' value=' {{emerg.email }}' size='50'></td>
+</tr>
+
+<tr>
+ <td colspan='3'><b>Address:</b></td>
+</tr>
+
+<tr>
+ <td align='right'><small><i>street</i></small></td>
+ <td colspan='2'><input type='text' name='emerg_street' value='{{emerg.street}}' size='50'></td>
+</tr>
+
+<tr>
+ <td align='right'><small><i>city</i></small></td>
+
+ <td colspan='2'><input type='text' name='emerg_city' value='{{emerg.city}}'  size='20'>
+
+ <select name="state">
+{% for state in statenames %}
+<option value='{{state}}' 
+{% ifequal state emerg.state %}
+ selected  
+{% endifequal %}
+>{{state}}</option>
+{% endfor %}
+</select>  
+<small><i>&nbsp; &nbsp; zip <input type='text' name='zip' value='{{ emerg.zip}}' size='5'>
+
+ </td>
+</tr>
+<tr>
+ <td><b>Phone:</b></td>
+ <td align='right'><small><i>day</i></small></td>
+ <td align='left'><input type='text' name='emerg_phone_day' value='{{ emerg.phone_day }}' size='30'></td>
+</tr>
+<tr>
+ <td></td>
+ <td align='right'><small><i>cell</i></small></td>
+
+ <td align='left'><input type='text' name='emerg_phone_cell' value=' {{emerg.phone_cell }}' size='30'></td>
+</tr>
+
+<tr>
+ <td></td>
+ <td align='right'><small><i>evening</i></small></td>
+ <td><input type='text' name='emerg_phone_even' value=' {{emerg.phone_even }}' size='30'></td>
+</tr>
+
+
+</table>
+
+<br>
+<center><input type='submit' value='Update your Information!'></center><br>
+</form>
+        </div>
+{% endblock %}

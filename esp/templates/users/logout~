@@ -1,0 +1,10 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Goodbye{% endblock %}
+
+{% block subsection_name %}Come back soon.{% endblock %}
+
+{% block content %}
+<h1 style="text-align: center">So long and thanks for all the fish!</h1>
+<h2 style="text-align: center"><a href='/'>Return to the homepage</a></h2>
+{% endblock %}

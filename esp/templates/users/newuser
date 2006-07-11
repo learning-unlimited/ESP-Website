@@ -1,0 +1,98 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Join ESP!{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block content %}
+<h2 style='text-align: center'>Ready to join ESP?</h2>
+<h1 style='text-align: center; margin-bottom: 0px'>Cool!</h1>
+<h3 style="text-align: center; font-weight: normal; margin-top: 0px">Please begin by choosing a username and password for your account on our system.<br/>
+
+ Your account will be your portal for all of ESP's programs! </h3>
+
+<p style="text-align: center; color: #FF0000; margin-bottom: 0px;">
+ <b>NOTE: You must have cookies enabled to login to this website.<br/>
+ </b>
+</p>
+<hr/>
+{% if Problem %}
+<h2 color="red">Hey - There was a problem with your registration.  Please try again, either your passwords didn't match or your account exists already. </h2>
+{% endif %}
+<form action='http://esp-devel.hackorp.com/myesp/finish/' method="post">
+<input type='hidden' name='op' value='register'>
+<table width='65%' cellpadding='2' align='center' border='0'>
+
+<tr>
+ <td style="vertical-align: top"><b>First Name:</b></td>
+ <td><input type='text' name='first_name' size='30' value=''><br/>
+ </td>
+</tr>
+
+<tr>
+ <td style="vertical-align: top"><b>Last Name:</b></td>
+ <td><input type='text' name='last_name' size='30' value=''><br/>
+ </td>
+</tr>
+
+<tr>
+ <td style="vertical-align: top"><b>Username:</b></td>
+ <td><input type='text' name='username' size='30' value=''><br/>
+     <small>Username must be between 4 and 12 characters.</small>
+ </td>
+</tr>
+
+<tr>
+ <td></td>
+ <td>
+
+ </td>
+</tr>
+
+<tr>
+ <td><b>Password:</b></td>
+ <td><input type='password' name='password' size='30' value=''></td>
+</tr>
+
+<tr>
+ <td></td>
+ <td>
+
+   <small>Password must be between 4 and 12<br/>characters, and is cAsE-SenSiTiVe.</small>
+ </td>
+</tr>
+<tr>
+ <td style="vertical-align: top"><b>Confirm<br/>Password:</b></td>
+ <td><input type='password' name='confirm' size='30' value=''></td>
+</tr>
+
+<tr>
+ <td></td>
+ <td>
+
+ </td>
+</tr>
+
+ </td>
+</tr>
+
+<tr>
+ <td><b>Email:</b></td>
+ <td><input type='text' name='email' size='30' value=''></td>
+</tr>
+
+<tr>
+ <td></td>
+ <td>
+
+   <small>Please provide a valid email address.  We won't spam you.</small>
+ </td>
+</tr>
+
+
+
+</table>
+
+<p style="text-align: center"><input type='submit' value='-  Sign Up!  -'></p>
+</form>
+{% endblock %}
