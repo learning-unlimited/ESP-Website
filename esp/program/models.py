@@ -83,6 +83,7 @@ class Class(models.Model):
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
 	schedule = models.TextField()
+	slot = models.ForeignKey(TimeSlot)
 	enrollment = models.IntegerField()
 
 	def __str__(self):
