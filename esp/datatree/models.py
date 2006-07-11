@@ -98,7 +98,10 @@ class DataTree(models.Model):
 
     def __str__(self):
         """ Returns a string """
-        return str(self.rangestart) + ' .. ' + str(self.rangeend) + ' <' + str(self.name) + '>'
+        res = str(self.rangestart) + ' .. ' + str(self.rangeend) + ' <' + str(self.name) + '>'
+	if self.friendly_name is not null:
+		res = res + ' (' + self.friendly_name + ')'
+	return res
 
     def total_size_of_children(self):
         """ Return the total nested-set size of all subnodes.  Should, in theory, always be less than self.sizeof(). """
