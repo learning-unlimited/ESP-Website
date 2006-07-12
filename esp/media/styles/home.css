@@ -326,7 +326,7 @@ form {
   border-left: thin solid black;
   border-right: thin solid black;
 */
-  background-image: url(../img/home/bullet.gif);
+  background-image: url(/media/images/home/bullet.gif);
   background-repeat: no-repeat;
   background-position: 0px 0.5em;
 }
