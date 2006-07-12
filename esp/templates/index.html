@@ -6,6 +6,31 @@
 <link rel="stylesheet" href="/media/styles/home.css" type="text/css" />
 {% endblock %}
 
+{% block javascript %}
+{{ block.super }}
+<script language="JavaScript" type="text/javascript">
+<!--
+//
+// random backgrounds
+//
+var randbkgs = new Array(
+  "/media/images/home/pagebkg1.jpg",
+  "/media/images/home/pagebkg2.jpg",
+  "/media/images/home/pagebkg3.jpg"
+);
+var nbkg = Math.floor(Math.random()*randbkgs.length);    // pick one at random
+
+// write CSS for background
+document.writeln("<style type='text/css'>");
+
+document.writeln("html, body { background-image: url("+randbkgs[nbkg]+") }");
+
+document.writeln("</style>");
+
+// -->
+</script>
+{% endblock %}
+
 {% block body %}
 
 <!-- skip link -->
