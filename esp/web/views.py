@@ -208,6 +208,19 @@ def qsd(request, url):
 			'logged_in': user_id})
 	     
 
+def redirect(request, tl, one, two, three):
+	Q_Prog = GetNode('Q/Programs')
+	try:
+		branch = Q_Prog.tree_decode( [one, two])
+	except DataTree.NoSuchNodeException:
+		return qsd(request, [one, two, three].join("/")+".html")
+	
+	qsd = QuasiStaticData.objects.filter( path = branch, name = three )
+	if len(qsd) < 1:
+		return qsd(request, [one, two, three].join("/")+".html")
+	return qsd[0]
+
+
 def program(request, tl, one, two, module, extra = None):
     q = request.session.get('user_id', False)
     user_id = q
@@ -281,13 +294,30 @@ def program(request, tl, one, two, module, extra = None):
 			    break
 	    if profile_done: context['profile_graphic'] = "checkmark"
 	    else: context['profile_graphic'] = "nocheckmark"
-	    context['select_graphic'] = "nocheckmark"
 	    context['student'] = curUser.first_name + " " + curUser.last_name
-	    context['timeslots'] = list(prog.timeslot_set.all())
+	    ts = list(prog.timeslot_set.all())
+
 	    pre = regprof.preregistered_classes()
-	    assert False
+	    prerl = []
+	    for time in ts:
+		    then = [x for x in pre if x.slot == time]
+		    if then == []: prerl.append((time, None))
+		    else: prerl.append((time, then[0]))
+	    context['timeslots'] = prerl
+
+	    if pre != []: context['select_graphic'] = "checkmark"
+	    else: context['select_graphic'] = "nocheckmark"
+	    
 	    regprof.save()
 	    return render_to_response('users/studentreg', context)
+
+    if module == "finishstudentreg":
+	    pass
+
+
+    if module == "teacherreg":
+	    pass
+
 
     if module == "fillslot":
 	    ts = TimeSlot.objects.filter(id=extra)[0]
