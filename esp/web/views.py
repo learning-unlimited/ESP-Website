@@ -221,8 +221,8 @@ def redirect(request, tl, one, three):
 	return render_to_response('qsd.html', {
 		'navbar_list': _makeNavBar(request.path),
 		'preload_images': preload_images,
-		'title': qsd_rec.title,
-		'content': qsd_rec.html(),
+		'title': qsd_rec[0].title,
+		'content': qsd_rec[0].html(),
 		'logged_in': user_id})
 
 def program(request, tl, one, two, module, extra = None):
