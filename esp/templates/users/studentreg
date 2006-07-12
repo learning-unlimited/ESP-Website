@@ -1,0 +1,85 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program}} classes.{% endblock %}
+
+
+{% block content %}
+<br /><br />
+<h2 style="text-align: center">Welcome!</h2><br />
+<b style="text-align: center">Student registration for {{program}} </b>
+
+<p style="text-align: center">There are two steps to registration. You must complete both to be fully
+registered for {{program}}</p>
+
+<center><table style="text-align: center">
+<tr><th>What to do?</th><th>Done?</th></tr>
+<tr>
+ <td><a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/profile/">Update Contact Info</a></td>
+ <td style="text-align: center"><img src="http://esp.mit.edu/web/img/{{profile_graphic}}.gif"
+{% ifequal profile_graphic "nocheckmark" %}
+border = 1
+{% endifequal %}
+></td>
+</tr>
+
+<tr>
+ <td><a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/studentreg/">Select Your Classes</a></td>
+ <td style="text-align: center"><img src="http://esp.mit.edu/web/img/{{select_graphic}}.gif"
+{% ifequal select_graphic "nocheckmark" %}
+border = 1
+{% endifequal %}
+></td>
+</tr>
+
+</table></center>
+<br /><hr><br />
+
+<p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center'><b>Select Your {{one}} Classes</p></b></center>
+<p style='font-family: arial; margin-left:10px; text-align: center'>
+ <b style="text-align: center">Classes for {{student}}</b>
+
+</p>
+
+<p style="text-align: center">
+<a target="_blank" href='http://esp-devel.hackorp.com/teach/{{one}}/{{two}}/catalog/'>
+Open Full Catalog in a Separate Window
+</a>
+</p>
+
+<br/>
+
+  	
+
+ <table style="width: 600px; margin: auto" border=1>
+{% for timeslot in timeslots %}
+
+<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.name }} </td>
+	{% if timeslot.1 %}
+	<td>{{timeslot.1.title}}</td>
+        <td width='20%' align='center'>
+	Thank you!
+	{% else %}
+   <td>Nothing Selected</td>
+  <td width='20%' align='center'>
+  <a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
+	{% endif %}	
+  </td></tr>
+
+{% endfor %}
+</table> 
+<br/>
+
+<form action="sumreg.html" method="post">
+<p style="text-align: center">
+<input type="submit" value="Save!">
+</p>
+</form>
+
+<i style="text-align: center">
+Please note that you can come back and change your class selections later, up until 2 days before {{program}} begins!
+</i>
+
+
+{% endblock %}

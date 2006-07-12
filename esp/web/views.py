@@ -399,7 +399,7 @@ def program(request, tl, one, two, module, extra = None):
 	    cobj.category = cat
 	    cobj.enrollment = 0
 	    cobj.save()
-	    assert False
+	    return render_to_response('program/registered', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})	    
     
     if module == "updateprofile":
 	    if q is None: return render_to_response('users/login', {'logged_in': False})
