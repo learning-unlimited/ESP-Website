@@ -1,10 +1,10 @@
 from django.shortcuts import render_to_response
 from esp.calendar.models import Event
 from esp.web.models import QuasiStaticData
-from esp.users.models import ContactInfo
+from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, TimeSlot, Class
+from esp.program.models import RegistrationProfile, TimeSlot, Class, ClassCategories
 from django.http import HttpResponse, Http404
 import datetime
 
@@ -332,9 +332,25 @@ def program(request, tl, one, two, module, extra = None):
 
 
     if module == "teacherreg":
-	    pass
-
-
+	    context = {'logged_in': user_id}
+	    context['navbar_list'] = _makeNavBar(request.path)
+	    context['preload_images'] =  preload_images
+	    context['one'] = one
+	    context['two'] = two
+	    context['teacher'] = curUser
+	    v = GetNode('V/Administer/Program/Class')
+	    q = prog.anchor
+	    cobj = UserBit.find_by_anchor_perms(Class, curUser, v, q)
+	    if cobj == [] or cobj is None: cobj = Class()
+	    else: cobj = cobj[0]
+	    context['class'] = cobj
+	    ts = list(prog.timeslot_set.all())
+	    cat = list(ClassCategories.objects.all())
+	    context['cat'] = cat
+	    context['ts'] = ts
+	    
+	    return render_to_response('program/teacherreg', context)
+    
     if module == "fillslot":
 	    ts = TimeSlot.objects.filter(id=extra)[0]
 	    context = {'logged_in': user_id}
@@ -343,7 +359,6 @@ def program(request, tl, one, two, module, extra = None):
 	    context['two'] = two
 	    classes = ts.class_set.all()
 	    context['courses'] = classes
-
 	    context['navbar_list'] = _makeNavBar(request.path)
 	    context['preload_images'] =  preload_images
 	    return render_to_response('program/timeslot', context)
@@ -353,23 +368,55 @@ def program(request, tl, one, two, module, extra = None):
 	    cobj = Class.objects.filter(id=classid)[0]
 	    cobj.preregister_student(curUser)
 	    return program(request, tl, one, two, "studentreg")
+
+    if module == "makeclass":
+	    if q is None: return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+	    for thing in ['title', 'class_info', 'class_size_min', 'class_size_max', 'grade_min', 'grade_max']:
+		    if not request.POST.has_key(thing) and request.POST[thing].strip() != "":
+			    return program(request, tl, one, two, "teacherreg", extra = "oops")
+	    aid = request.POST.get('id', None)
+	    if aid is None:
+		    cobj = Class()
+	    else:
+		    theclass = Class.objects.filter(id=aid)
+		    if theclass == [] or theclass is None:
+			    cobj = Class()
+		    else:
+			    cobj = theclass[0]
+	    title = request.POST['title']
+	    cobj.grade_max = int(request.POST["grade_max"])
+	    cobj.grade_min = int(request.POST["grade_min"])
+	    cobj.class_size_min = int(request.POST['class_size_min'])
+	    cobj.class_size_max = int(request.POST['class_size_max'])
+	    cobj.class_info = request.POST['class_info']
+	    cobj.parent_program = prog
+	    # Jason Check
+	    cobj.anchor = prog.anchor.tree_create(['Classes', "".join(title.split(" "))])
+	    cobj.anchor.name = title
+	    timeslot = TimeSlot.objects.filter(id=request.POST['Time'])[0]
+	    cobj.slot = timeslot
+	    cat = ClassCategories.objects.filter(id=request.POST['Catigory'])[0]
+	    cobj.category = cat
+	    cobj.enrollment = 0
+	    cobj.save()
+	    assert False
     
     if module == "updateprofile":
 	    if q is None: return render_to_response('users/login', {'logged_in': False})
 	    for thing in ['first', 'last', 'email', 'street', 'guard_name', 'emerg_name', 'emerg_street']:
 		    if not request.POST.has_key(thing) and request.POST[thing].strip() != "":
-			    assert False, 1
+#			    assert False, 1
 			    return program(request, tl, one, two, "profile", extra = "oops")
 	    sphone = False
 	    gphone = False
 	    ephone = False
 	    if request.has_key('dobmonth'):
 		    if len(request.POST['dobmonth']) not in [1,2]:
-			    assert False, 2
+#			    assert False, 2
 			    return program(request, tl, one, two, "profile", extra = "oops")
 	    if request.has_key('dobday'):
 		    if len(request.POST['dobday']) not in [1,2]:
-			    assert False, 3
+#			    assert False, 3
 			    return program(request, tl, one, two, "profile", extra = "oops")
 	    if request.has_key('dobyear'):
 		    if len(request.POST['dobyear']) != 4:
@@ -380,7 +427,7 @@ def program(request, tl, one, two, module, extra = None):
 			    if aphone.strip() == "None": continue
 			    aphone = aphone.split("-")
 			    if len(aphone) != 3 or len(aphone[0]) != 3 or len(aphone[1]) != 3 or len(aphone[2]) != 4:
-				    assert False, 5
+#				    assert False, 5
 				    return program(request, tl, one, two, "profile", extra = "oops")
 			    sphone = True
 	    for phone in ['guard_phone_day', 'guard_phone_cell', 'guard_phone_even']:
@@ -389,7 +436,7 @@ def program(request, tl, one, two, module, extra = None):
 			    if aphone.strip() == "None": continue
 			    aphone = aphone.split("-")
 			    if len(aphone) != 3 or len(aphone[0]) != 3 or len(aphone[1]) != 3 or len(aphone[2]) != 4:
-				    assert False, 6
+#				    assert False, 6
 				    return program(request, tl, one, two, "profile", extra = "oops")
 			    gphone = True
 	    for phone in ['emerg_phone_day', 'emerg_phone_cell', 'emerg_phone_even']:
@@ -398,11 +445,11 @@ def program(request, tl, one, two, module, extra = None):
 			    if aphone.strip() == "None": continue
 			    aphone = aphone.split("-")
 			    if len(aphone) != 3 or len(aphone[0]) != 3 or len(aphone[1]) != 3 or len(aphone[2]) != 4:
-				    assert False, 7
+#				    assert False, 7
 				    return program(request, tl, one, two, "profile", extra = "oops")
 			    ephone = True
 	    if not (sphone and gphone and ephone):
-		    assert False, 8
+#		    assert False, 8
 		    return program(request, tl, one, two, "profile", extra = "oops")
 	    curUser = User.objects.filter(id=q)[0]
 	    regprof = RegistrationProfile.objects.filter(user__exact=curUser,program__exact=prog)
