@@ -5,7 +5,6 @@
 {% block subsection_name %}Life, the universe, and everything.{% endblock %}
 
 {% block content %}
-
 	<br /><br />
        <div id="divmaintext">	
 	<h2>Hi {{student.username}}!</h2>
@@ -32,13 +31,13 @@
 </tr>
 <tr>
  <td><b>D.O.B.:</b></td>
- <td align='left' colspan='2'><table boarders=none><tr><td><input type='text' name='dobmonth' value='{{dob.0}}' size='5'></td><td><input type='text' name='dobday' value='{{dob.1}}' size='5'></td><td><input type='text' name='dobyear' value='{{dob.2}}' size='8'></td></tr></table>
+ <td align='left' colspan='2'><table boarders=none><tr><td><input type='text' name='dobmonth' value='{{studentc.dob.month}}' size='5'></td><td><input type='text' name='dobday' value='{{studentc.dob.day}}' size='5'></td><td><input type='text' name='dobyear' value='{{studentc.dob.year}}' size='8'></td></tr></table>
 <small> Example 02/29/1994 </small> 
 </tr>
 
 <tr>
  <td><b>Year of high school graduation: *</b></td>
-<td><input type='text' name='grad' value='{{grad}}' size='8'></td>
+<td><input type='text' name='grad' value='{{studentc.graduation_year}}' size='8'></td>
 </tr>
 
 

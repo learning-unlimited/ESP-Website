@@ -6,7 +6,7 @@ from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
 from esp.program.models import RegistrationProfile, TimeSlot, Class
 from django.http import HttpResponse, Http404
-
+import datetime
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
@@ -232,11 +232,14 @@ def program(request, tl, one, two, module, extra = None):
 	    context['statenames'] = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL'  ,'IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  ,'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada']
 	    contactInfo = curUser.contactinfo_set.all()
 	    if len(contactInfo) < 1:
+		    empty = ContactInfo()
+		    empty.user = curUser
+		    context['grad'] = empty
+		    context['studentc'] = empty
+		    context['emerg'] = empty
+		    context['guard'] = empty
 		    return render_to_response('users/profile', context)
 	    contactInfo = contactInfo[0]
-#	    dob = ()
-#	    datef = contactInfo.dob
-#	    context['dob'] = dob
 
 	    context['grad'] = contactInfo.graduation_year
 	    context['studentc'] = regprof.contact_student
@@ -281,6 +284,8 @@ def program(request, tl, one, two, module, extra = None):
 	    context['select_graphic'] = "nocheckmark"
 	    context['student'] = curUser.first_name + " " + curUser.last_name
 	    context['timeslots'] = list(prog.timeslot_set.all())
+	    pre = regprof.preregistered_classes()
+	    assert False
 	    regprof.save()
 	    return render_to_response('users/studentreg', context)
 
@@ -297,23 +302,59 @@ def program(request, tl, one, two, module, extra = None):
     if module == "addclass":
 	    classid = request.POST['class']
 	    cobj = Class.objects.filter(id=classid)[0]
-	    assert False
+	    cobj.preregister_student(curUser)
+	    return program(request, tl, one, two, "studentreg")
     
     if module == "updateprofile":
 	    if q is None: return render_to_response('users/login', {'logged_in': False})
 	    for thing in ['first', 'last', 'email', 'street', 'guard_name', 'emerg_name', 'emerg_street']:
-		    if not request.POST.has_key(thing) and request.POST[thing].strip() != "": return program(request, tl, one, two, "profile", extra = "oops")
+		    if not request.POST.has_key(thing) and request.POST[thing].strip() != "":
+			    assert False, 1
+			    return program(request, tl, one, two, "profile", extra = "oops")
 	    sphone = False
 	    gphone = False
 	    ephone = False
-	    
+	    if request.has_key('dobmonth'):
+		    if len(request.POST['dobmonth']) not in [1,2]:
+			    assert False, 2
+			    return program(request, tl, one, two, "profile", extra = "oops")
+	    if request.has_key('dobday'):
+		    if len(request.POST['dobday']) not in [1,2]:
+			    assert False, 3
+			    return program(request, tl, one, two, "profile", extra = "oops")
+	    if request.has_key('dobyear'):
+		    if len(request.POST['dobyear']) != 4:
+			    return program(request, tl, one, two, "profile", extra = "oops")
 	    for phone in ['phone_even', 'phone_cell', 'phone_day']:
-		    if request.POST.has_key(phone) and request.POST[phone].strip() != "": sphone = True
+		    if request.POST.has_key(phone) and request.POST[phone].strip() != "":
+			    aphone = request.POST[phone]
+			    if aphone.strip() == "None": continue
+			    aphone = aphone.split("-")
+			    if len(aphone) != 3 or len(aphone[0]) != 3 or len(aphone[1]) != 3 or len(aphone[2]) != 4:
+				    assert False, 5
+				    return program(request, tl, one, two, "profile", extra = "oops")
+			    sphone = True
 	    for phone in ['guard_phone_day', 'guard_phone_cell', 'guard_phone_even']:
-		    if request.POST.has_key(phone) and request.POST[phone].strip() != "": gphone = True
+		    if request.POST.has_key(phone) and request.POST[phone].strip() != "":
+			    aphone = request.POST[phone]
+			    if aphone.strip() == "None": continue
+			    aphone = aphone.split("-")
+			    if len(aphone) != 3 or len(aphone[0]) != 3 or len(aphone[1]) != 3 or len(aphone[2]) != 4:
+				    assert False, 6
+				    return program(request, tl, one, two, "profile", extra = "oops")
+			    gphone = True
 	    for phone in ['emerg_phone_day', 'emerg_phone_cell', 'emerg_phone_even']:
-		    if request.POST.has_key(phone) and request.POST[phone].strip() != "": ephone = True
-	    if not (sphone and gphone and ephone): return program(request, tl, one, two, "profile", extra = "oops")
+		    if request.POST.has_key(phone) and request.POST[phone].strip() != "":
+			    aphone = request.POST[phone]
+			    if aphone.strip() == "None": continue
+			    aphone = aphone.split("-")
+			    if len(aphone) != 3 or len(aphone[0]) != 3 or len(aphone[1]) != 3 or len(aphone[2]) != 4:
+				    assert False, 7
+				    return program(request, tl, one, two, "profile", extra = "oops")
+			    ephone = True
+	    if not (sphone and gphone and ephone):
+		    assert False, 8
+		    return program(request, tl, one, two, "profile", extra = "oops")
 	    curUser = User.objects.filter(id=q)[0]
 	    regprof = RegistrationProfile.objects.filter(user__exact=curUser,program__exact=prog)
 	    if len(regprof) < 1:
@@ -338,6 +379,8 @@ def program(request, tl, one, two, module, extra = None):
 	    c1.address_city = request.POST.get('city', "")
 	    c1.address_state = request.POST.get('state', "")
 	    c1.address_zip = request.POST.get('zip', "")
+	    if request.has_key('dobmonth') and request.has_key('dobday') and request.has_key('dobyear'):
+		    c1.dob =  datetime.date(int(request.POST['dobyear']), int(request.POST['dobmonth']), int(request.POST['dobday']))
 	    c1.phone_day = request.POST.get('phone_day', "")
 	    c1.phone_cell = request.POST.get('phone_cell', "")
 	    c1.phone_even = request.POST.get('phone_even', "")
