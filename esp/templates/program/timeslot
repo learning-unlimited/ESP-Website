@@ -24,7 +24,6 @@
 <tr><td style='width: 50%' valign='top' align='center'>
 	<a href='#cat1'>Computer Science</a><br /><a href='#cat2'>Hobbies</a><br /><a href='#cat4'>Liberal Arts</a><br /></td><td valign='top' align='center'><a href='#cat5'>Mathematics</a><br /><a href='#cat6'>Performing Arts</a><br /><a href='#cat7'>Science</a><br /><a href='#cat8'>Zocial Zcience</a><br /></td></tr></table><br />
 
-{% if courses %}
 
 {% for aclass in courses %}
 
@@ -35,12 +34,14 @@
 <tr><td colspan="2" style="background-color: #a6cedf" align="left"><b>
 {{ aclass.title }}</b><br />
 <i>
+{% if aclass.teachers %}
 {% for teacher in aclass.teachers %}
 <a href="/Learn/teachers/{{ teacher.last_name }}/{{ teacher.first_name }}/bio.html">{{ teacher.first_name}} {{teacher.last_name}}</a>
 {% if not forloop.last %}
 ,
 {% endif %}
 {% endfor %}
+{% endif %}
 </i></td></tr>
 <tr>
 <td colspan='2' style='text-align: left; background-color: #FFFFFF'> {{ aclass.class_info }}
@@ -55,15 +56,12 @@
 <td colspan='2'>
 
 
-<hr/>
-
-
 <form action='http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/addclass/' method='post'>
 <input type='hidden' name='class' value='{{aclass.id}}'>
-<center><input type='submit' value='Add This Class!'></center>
+<center><input type='submit' value='Add This Class!'></center><hr />
 </form>
-
-
+<br /><br /><br /><br /><br />
+{% endfor %}
 
 </td>
 </tr></table>
@@ -71,8 +69,4 @@
 
 </table></div><br />
 
-{% endfor %}
-{% else %}
-There are strangely no classes for this time block.  Sorry.
-{% endif %}
 {% endblock %}

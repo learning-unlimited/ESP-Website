@@ -24,8 +24,9 @@
 <textarea id="class_info"  name="class_info" rows="10" cols="40">{{course.class_info}}</textarea>
 <br /><br /><br />
 
-<b>Course Catigory: </b>
+<b>Course Category: </b>
  <select name="Catigory">
+{% if class.category %}
 {% for thing in cat %}
 <option value='{{thing.id}}'
 {% ifequal thing class.category.category %}
@@ -33,13 +34,14 @@
 {% endifequal %}
 >{{thing}}</option>
 {% endfor %}
+{% endif %}
 </select>  
 <br /><br />
 <b>Course Information:</b><br /><br />
-<small><i>Maximum Grade Level: </i></small>
-<input type='text' name='grade_max' value='{{class.grade_max }}' size='30'><br />
 <small><i>Minimum Grade Level: </i></small>
 <input type='text' name='grade_min' value='{{class.grade_min }}' size='30'><br />
+<small><i>Maximum Grade Level: </i></small>
+<input type='text' name='grade_max' value='{{class.grade_max }}' size='30'><br />
 <small><i>Minimum Class Size: </i></small>
 <input type='text' name='class_size_min' value='{{class.class_size_min }}' size='30'><br />
 <small><i>Maximum Class Size: </i></small>

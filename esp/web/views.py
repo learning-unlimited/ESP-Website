@@ -358,6 +358,7 @@ def program(request, tl, one, two, module, extra = None):
 	    context['one'] = one
 	    context['two'] = two
 	    classes = ts.class_set.all()
+
 	    context['courses'] = classes
 	    context['navbar_list'] = _makeNavBar(request.path)
 	    context['preload_images'] =  preload_images
@@ -390,9 +391,16 @@ def program(request, tl, one, two, module, extra = None):
 	    cobj.class_size_max = int(request.POST['class_size_max'])
 	    cobj.class_info = request.POST['class_info']
 	    cobj.parent_program = prog
-	    # Jason Check
 	    cobj.anchor = prog.anchor.tree_create(['Classes', "".join(title.split(" "))])
-	    cobj.anchor.name = title
+	    cobj.anchor.friendly_name = title
+
+	    cobj.anchor.save()
+	    v = GetNode( 'V/Administer/Program/Class')
+	    ub = UserBit()
+	    ub.user = curUser
+	    ub.qsc = cobj.anchor
+	    ub.verb = v
+	    ub.save()
 	    timeslot = TimeSlot.objects.filter(id=request.POST['Time'])[0]
 	    cobj.slot = timeslot
 	    cat = ClassCategories.objects.filter(id=request.POST['Catigory'])[0]

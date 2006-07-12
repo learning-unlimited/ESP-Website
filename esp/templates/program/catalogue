@@ -41,7 +41,7 @@
 <br/></td>
 </tr>
 <tr><td valign='top' align='center'><b>Meeting Time</b><br/>
-{{ aclass.schedule }}<br /></td>
+{{ aclass.slot }}<br /></td>
 <td style='width: 40%' align='left'><b>Grades:</b>{{ aclass.grade_min }} - {{ aclass.grade_max }}<br/>
 <b>Enrollment:</b> {{aclass.enrollment}} (max {{aclass.class_size_max}})</td></tr></table></div><br />
 
