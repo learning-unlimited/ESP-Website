@@ -208,18 +208,22 @@ def qsd(request, url):
 			'logged_in': user_id})
 	     
 
-def redirect(request, tl, one, two, three):
+def redirect(request, tl, one, three):
 	Q_Prog = GetNode('Q/Programs')
 	try:
-		branch = Q_Prog.tree_decode( [one, two])
+		branch = Q_Prog.tree_decode(one.split("/"))
 	except DataTree.NoSuchNodeException:
-		return qsd(request, [one, two, three].join("/")+".html")
-	
-	qsd = QuasiStaticData.objects.filter( path = branch, name = tl +  "-" + three )
-	if len(qsd) < 1:
-		return qsd(request, [one, two, three].join("/")+".html")
-	return qsd[0]
+		return qsd(request, one + "/" +three+".html")
 
+	qsd_rec = QuasiStaticData.objects.filter( path = branch, name = tl +  "-" + three )
+	if len(qsd_rec) < 1:
+		return qsd(request, one + "/" +three+".html")
+	return render_to_response('qsd.html', {
+		'navbar_list': _makeNavBar(request.path),
+		'preload_images': preload_images,
+		'title': qsd_rec.title,
+		'content': qsd_rec.html(),
+		'logged_in': user_id})
 
 def program(request, tl, one, two, module, extra = None):
     q = request.session.get('user_id', False)
