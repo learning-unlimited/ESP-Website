@@ -215,7 +215,7 @@ def redirect(request, tl, one, two, three):
 	except DataTree.NoSuchNodeException:
 		return qsd(request, [one, two, three].join("/")+".html")
 	
-	qsd = QuasiStaticData.objects.filter( path = branch, name = three )
+	qsd = QuasiStaticData.objects.filter( path = branch, name = tl +  "-" + three )
 	if len(qsd) < 1:
 		return qsd(request, [one, two, three].join("/")+".html")
 	return qsd[0]
