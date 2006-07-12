@@ -166,6 +166,8 @@ def myesp(request, module):
 		return render_to_response('users/logout', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 
 	if module == "login":
+		q = request.session.get('user_id', None)
+		if q is not None: render_to_response('users/duh', {'logged_in': True, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 		return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	if module == "logfin":
 		for thing in ['password', 'username']:
@@ -279,7 +281,7 @@ def program(request, tl, one, two, module, extra = None):
 	    prog = prog[0]
 	    clas = list(prog.class_set.all().order_by('category'))
 	    p = one + " " + two
-	    return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+	    return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'logged_in': user_id})
 
     if module == "studentreg":
 	    curUser = User.objects.filter(id=q)[0]
