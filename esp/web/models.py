@@ -69,7 +69,9 @@ class NavBarEntry(models.Model):
 		# Find the branch
 		try:
 			branch = Q_Web.tree_decode( parts )
-		except DataTree.NoSuchNodeException:
+		except DataTree.NoSuchNodeException, ex:
+			branch = ex.anchor
+		if branch is None:
 			raise NavBarEntry.DoesNotExist
 		
 		# Find the valid entries

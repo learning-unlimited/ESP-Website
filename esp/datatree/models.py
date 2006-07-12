@@ -196,8 +196,9 @@ class DataTree(models.Model):
 
     class NoSuchNodeException(Exception):
         """ Raised if a required node in a DataTree doesn't exist """
-        def __init__(self, value):
-            self.value = "No such node: " + str(value)    
+        def __init__(self, value, anchor):
+            self.value = "No such node: " + str(value)
+	    self.anchor = anchor
 
         def __str__(self):
             return repr(self.value)
@@ -206,6 +207,7 @@ class DataTree(models.Model):
         """ The DataTree must always contain a node named 'ROOT', with no parent.  Raise this exception \
         if this is encountered. """
         def __init__(self, NumOfRootNodes):
+           NoSuchNodeException.__init__(self, 'ROOT', None)
            self.value = str(NumOfRootNodes) + " ROOT nodes in the DataTree"
 
 def GetNode(nodename):
