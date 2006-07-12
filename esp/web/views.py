@@ -209,6 +209,8 @@ def qsd(request, url):
 	     
 
 def redirect(request, tl, one, three):
+	user_id = request.session.get('user_id', False)
+	if user_id != False: user_id = True
 	Q_Prog = GetNode('Q/Programs')
 	try:
 		branch = Q_Prog.tree_decode(one.split("/"))
