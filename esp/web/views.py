@@ -84,22 +84,21 @@ def index(request):
 		'logged_in': user_id
 		})
 
-def bio(request, last, first):
+def bio(request, tl, last, first):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
 	user = User.objects.filter(last_name=last, first_name=first)
-	if len(user) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+	if len(user) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'tl': tl})
 	bio = user[0].teacherbio_set.all()
-	if len(bio) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+	if len(bio) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'tl': tl})
 	bio = bio[0].html()
-	return render_to_response('learn/bio', {'name': first + " " + last, 'bio': bio, 'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+	return render_to_response('learn/bio', {'name': first + " " + last, 'bio': bio, 'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'tl': tl})
 
 def myesp(request, module):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
 	if module == "register":
-		if user_id:
-			render_to_response('users/duh', {'logged_in': True, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+		if user_id: return render_to_response('users/duh', {'logged_in': True, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 		return render_to_response('users/newuser', {'Problem': False,
 			'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	if module == "finish":
@@ -283,7 +282,7 @@ def program(request, tl, one, two, module, extra = None):
 	    prog = prog[0]
 	    clas = list(prog.class_set.all().order_by('category'))
 	    p = one + " " + two
-	    return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'logged_in': user_id})
+	    return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'logged_in': user_id, 'tl': tl})
 
     if module == "studentreg":
 	    curUser = User.objects.filter(id=q)[0]

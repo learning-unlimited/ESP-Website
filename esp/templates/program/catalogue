@@ -30,7 +30,7 @@
 {{ aclass.title }}</b><br />
 <i>
 {% for teacher in aclass.teachers %}
-<a href="/Learn/teachers/{{ teacher.last_name }}/{{ teacher.first_name }}/bio.html">{{ teacher.first_name}} {{teacher.last_name}}</a>
+<a href="/{{tl}}/teachers/{{ teacher.last_name }}/{{ teacher.first_name }}/bio.html">{{ teacher.first_name}} {{teacher.last_name}}</a>
 {% if not forloop.last %}
 ,
 {% endif %}
