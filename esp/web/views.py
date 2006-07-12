@@ -88,28 +88,29 @@ def bio(request, last, first):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
 	user = User.objects.filter(last_name=last, first_name=first)
-	if len(user) < 1: return render_to_response('users/construction', {'logged_in': user_id})
+	if len(user) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	bio = user[0].teacherbio_set.all()
-	if len(bio) < 1: return render_to_response('users/construction', {'logged_in': user_id})
+	if len(bio) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	bio = bio[0].html()
-	return render_to_response('learn/bio', {'name': first + " " + last, 'bio': bio, 'logged_in': user_id})
+	return render_to_response('learn/bio', {'name': first + " " + last, 'bio': bio, 'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 
 def myesp(request, module):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
 	if module == "register":
 		return render_to_response('users/newuser', {'Problem': False,
-			'logged_in': user_id})
+			'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	if module == "finish":
 		for thing in ['confirm', 'password', 'username', 'email', "last_name", "first_name"]:
 			if not request.POST.has_key(thing):
 				return render_to_response('users/newuser', {'Problem': True,
-									  'logged_in': user_id})
+									  'logged_in': user_id, 'navbar_list': _makeNavBar(request.path),
+									    'preload_images': preload_images})
 		if User.objects.filter(username=request.POST['username']).count() == 0:
 			
 			if request.POST['password'] != request.POST['confirm']:
 				render_to_response('users/newuser', {'Problem': True,
-								   'logged_in': user_id})
+								   'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 			if len(User.objects.filter(email=request.POST['email'])) > 0:
 				email_user = User.objects.filter(email=request.POST['email'])[0]
 				email_user.username = request.POST['username']
@@ -119,7 +120,7 @@ def myesp(request, module):
 				email_user.save()
 				q = email_user.id
 				request.session['user_id'] = q
-				return render_to_response('users/regdone', {'logged_in': True})				
+				return render_to_response('users/regdone', {'logged_in': True, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})				
 			
 			django_user = User()
 			django_user.username = request.POST['username']
@@ -132,16 +133,16 @@ def myesp(request, module):
 			django_user.save()
 			q = django_user.id
 			request.session['user_id'] = q
-			return render_to_response('users/regdone', {'logged_in': True})
+			return render_to_response('users/regdone', {'logged_in': True, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	if module == "emaillist":
-		return render_to_response('users/email', {'logged_in': False})
+		return render_to_response('users/email', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 
 	
 	if module == "emailfin":
 		if not request.POST.has_key('email'):
 			assert False, 1
 			return render_to_response('users/newuser', {'Problem': True,
-								    'logged_in': user_id})
+								    'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 		if User.objects.filter(email=request.POST['email']).count() == 0:
 			if User.objects.filter(email=request.POST['email']).count() > 0:
 				return render_to_response('index.html', {
@@ -162,19 +163,19 @@ def myesp(request, module):
 	if module == "signout":
 		try: del request.session['user_id']
 		except KeyError: pass
-		return render_to_response('users/logout', {'logged_in': False})
+		return render_to_response('users/logout', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 
 	if module == "login":
-		return render_to_response('users/login', {'logged_in': False})
+		return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	if module == "logfin":
 		for thing in ['password', 'username']:
 			if not request.POST.has_key(thing):
 				return render_to_response('users/login', {'Problem': True,
-									  'logged_in': user_id})
+									  'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 		curUser = User.objects.filter(username=request.POST['username'])[0]
 		if curUser.check_password(request.POST['password']):
 			render_to_response('users/login', {'Problem': True,
-							   'logged_in': False})
+							   'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 			q = curUser.id
 			request.session['user_id'] = q
 			return render_to_response('index.html', {
@@ -183,7 +184,7 @@ def myesp(request, module):
 				'logged_in': True
 				})
 		else:
-			return render_to_response('users/login', {'Problem': True})
+			return render_to_response('users/login', {'Problem': True, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	if module == "home":
 		q = request.session.get('user_id', None)
 		curUser = User.objects.filter(id=q)[0]
@@ -191,7 +192,7 @@ def myesp(request, module):
 		ann = Entry.find_posts_by_perms(curUser, sub)
 		ann = [x.html() for x in ann]
 		return render_to_response('display/battlescreen', {'announcements': ann, 'logged_in': user_id})
-	return render_to_response('users/construction', {'logged_in': user_id})
+	return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 
 def qsd(request, url):
 	user_id = request.session.get('user_id', False)
@@ -231,13 +232,13 @@ def program(request, tl, one, two, module, extra = None):
     q = request.session.get('user_id', False)
     user_id = q
     if user_id != False: user_id = True
-    if q is None: return render_to_response('users/login', {'logged_in': False})
+    if q is None: return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
     curUser = User.objects.filter(id=q)[0]
 
     treeItem = "Q/Programs/" + one + "/" + two 
     prog = GetNode(treeItem).program_set.all()
     if len(prog) < 1:
-        return render_to_response('users/construction', {'logged_in': user_id})
+        return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
     prog = prog[0]
     if module == "profile":
 	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)[0]
@@ -257,6 +258,8 @@ def program(request, tl, one, two, module, extra = None):
 		    context['studentc'] = empty
 		    context['emerg'] = empty
 		    context['guard'] = empty
+		    context['navbar_list'] = _makeNavBar(request.path)
+		    context['preload_images'] =  preload_images
 		    return render_to_response('users/profile', context)
 	    contactInfo = contactInfo[0]
 
@@ -264,21 +267,23 @@ def program(request, tl, one, two, module, extra = None):
 	    context['studentc'] = regprof.contact_student
 	    context['emerg'] = regprof.contact_emergency
 	    context['guard'] = regprof.contact_guardian
+	    context['navbar_list'] = _makeNavBar(request.path)
+	    context['preload_images'] =  preload_images
 	    return render_to_response('users/profile', context)
 
     if module == "catalog":
 	    treeItem = "Q/Programs/" + one + "/" + two 
 	    prog = GetNode(treeItem).program_set.all()
 	    if len(prog) < 1:
-		    return render_to_response('users/construction', {'logged_in': user_id})
+		    return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	    prog = prog[0]
 	    clas = list(prog.class_set.all().order_by('category'))
 	    p = one + " " + two
-	    return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas })
+	    return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 
     if module == "studentreg":
 	    curUser = User.objects.filter(id=q)[0]
-	    if q is None: return render_to_response('users/login', {'logged_in': False})
+	    if q is None: return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
 	    if len(regprof) < 1:
 		    regprof = RegistrationProfile()
@@ -292,6 +297,8 @@ def program(request, tl, one, two, module, extra = None):
 	    context['program'] = context['program'].replace("_", " ")
 	    context['one'] = one
 	    context['two'] = two
+	    context['navbar_list'] = _makeNavBar(request.path)
+	    context['preload_images'] =  preload_images
 	    profile_done = False
 	    for thing in [regprof.contact_student, regprof.contact_student, regprof.contact_emergency]:
 		    foo = validateContactInfo(thing)
@@ -333,6 +340,9 @@ def program(request, tl, one, two, module, extra = None):
 	    context['two'] = two
 	    classes = ts.class_set.all()
 	    context['courses'] = classes
+
+	    context['navbar_list'] = _makeNavBar(request.path)
+	    context['preload_images'] =  preload_images
 	    return render_to_response('program/timeslot', context)
 
     if module == "addclass":
@@ -461,7 +471,7 @@ def program(request, tl, one, two, module, extra = None):
 	    curUser.save()
 	    regprof.save()
 	    return program(request, tl, one, two, "studentreg", extra = None)
-    return render_to_response('users/construction', {'logged_in': user_id})
+    return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 
 def validateContactInfo(ci):
 	if ci is None: return False
