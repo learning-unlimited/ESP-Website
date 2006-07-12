@@ -31,8 +31,10 @@ class DataTree(models.Model):
         else:
             filtered = self.children().filter(name=tree_nodenames[0])
 
-            if filtered.count() != 1L:
-                raise self.NoSuchNodeException(self.name)
+            if filtered.count() < 1L:
+                raise self.NoSuchNodeException(tree_nodenames[0],self)
+            elif filtered.count() > 1L:
+                raise self.DuplicateNodeException(tree_nodenames[0],self)
             else:
                 return filtered[0].tree_decode(tree_nodenames[1:])
 
@@ -55,7 +57,7 @@ class DataTree(models.Model):
                 return newnode.tree_create(tree_nodenames[1:])
                 
             elif filtered.count() > 1:
-                raise self.NoSuchNodeException(tree_nodenames[0])
+                raise self.DuplicateNodeException(tree_nodenames[0],self)
             else:
                 return filtered[0].tree_create(tree_nodenames[1:])
 
@@ -202,6 +204,14 @@ class DataTree(models.Model):
 
         def __str__(self):
             return repr(self.value)
+
+    class DuplicateNodeException(Exception):
+	    """ Raised if trying to traverse a DataTree with ambiguous child names """
+	    def __init__(self, value, anchor):
+		    self.value = "no such node: " + str(value)
+		    self.anchor = anchor
+	    def __str__(self):
+		    return repr(self.value)
 
     class NoRootNodeException(NoSuchNodeException):
         """ The DataTree must always contain a node named 'ROOT', with no parent.  Raise this exception \
