@@ -111,7 +111,7 @@ class UserBit(models.Model):
     	for q in q_list:
     		for entry in module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
 			if qsc is not None:
-				if entry.anchor.rangestart > qsc.rangestart or entry.anchor.rangeend >= qsc.rangeend:
+				if entry.anchor.rangestart < qsc.rangestart or entry.anchor.rangeend >= qsc.rangeend:
 					continue
      			res.append( entry )
 	
