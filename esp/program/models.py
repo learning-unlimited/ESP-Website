@@ -132,7 +132,7 @@ class RegistrationProfile(models.Model):
 	
 	def preregistered_classes(self):
 		v = GetNode( 'V/Preregister' )
-		return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode('Classes'))
+		return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode(['Classes']))
 	def registered_classes(self):
 		v = GetNode( 'V/Subscribe' )
 		return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode(['Classes']))
