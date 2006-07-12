@@ -341,14 +341,15 @@ def program(request, tl, one, two, module, extra = None):
 	    v = GetNode('V/Administer/Program/Class')
 	    q = prog.anchor
 	    cobj = UserBit.find_by_anchor_perms(Class, curUser, v, q)
-	    if cobj == [] or cobj is None: cobj = Class()
-	    else: cobj = cobj[0]
-	    context['class'] = cobj
+	    if cobj == [] or cobj is None:
+		    cobj = Class()
+	    else:
+		    cobj = cobj[0]
+		    context['class'] = cobj
 	    ts = list(prog.timeslot_set.all())
 	    cat = list(ClassCategories.objects.all())
 	    context['cat'] = cat
 	    context['ts'] = ts
-	    
 	    return render_to_response('program/teacherreg', context)
     
     if module == "fillslot":

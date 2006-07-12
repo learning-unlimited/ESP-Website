@@ -24,6 +24,7 @@
 <textarea id="class_info"  name="class_info" rows="10" cols="40">{{course.class_info}}</textarea>
 <br /><br /><br />
 
+{% if class %}
 <b>Course Category: </b>
  <select name="Catigory">
 {% if class.category %}
@@ -36,6 +37,15 @@
 {% endfor %}
 {% endif %}
 </select>  
+{% else %}
+<b>Course Category: </b>
+ <select name="Catigory">
+{% for thing in cat %}
+<option value='{{thing.id}}'>{{thing}}</option>
+{% endfor %}
+</select>
+{% endif %}
+
 <br /><br />
 <b>Course Information:</b><br /><br />
 <small><i>Minimum Grade Level: </i></small>
@@ -47,6 +57,8 @@
 <small><i>Maximum Class Size: </i></small>
 <input type='text' name='class_size_max' value='{{class.class_size_max }}' size='30'><br />
 <br /><br />
+
+{% if class %}
 <b> Class Time: </b><br />
  <select name="Time">
 {% for thing in ts %}
@@ -56,6 +68,15 @@
 {% endifequal %}
 >{{thing}}</option>
 {% endfor %}
+{% else %}
+<b> Class Time: </b><br />
+ <select name="Time">
+{% for thing in ts %}
+<option value='{{thing.id}}'>{{thing}}</option>
+{% endfor %}
+{% endif %}
+
+
 </select>  
 
 <br><br /><br />

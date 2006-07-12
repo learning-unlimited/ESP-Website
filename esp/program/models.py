@@ -87,7 +87,9 @@ class Class(models.Model):
 	enrollment = models.IntegerField()
 
 	def __str__(self):
+            if self.title() is not None:
 		return self.title()
+            return ""
 
 	def title(self):
 		return self.anchor.friendly_name
