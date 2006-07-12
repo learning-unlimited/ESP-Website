@@ -101,6 +101,7 @@ class Class(models.Model):
 		prereg.user = user
 		prereg.qsc = self.anchor
 		prereg.verb = GetNode( 'V/Preregister' )
+		prereg.save()
 
 	class Admin:
 		pass
