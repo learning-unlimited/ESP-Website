@@ -98,6 +98,8 @@ def myesp(request, module):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
 	if module == "register":
+		if user_id:
+			render_to_response('users/duh', {'logged_in': True, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 		return render_to_response('users/newuser', {'Problem': False,
 			'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	if module == "finish":
