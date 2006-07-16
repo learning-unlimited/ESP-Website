@@ -174,7 +174,7 @@
 >{{thing}}</option>
 {% endfor %}
 </select>  
-<small><i>&nbsp; &nbsp; zip <input type='text' name='zip' value='{{ emerg.address_zip}}' size='5'>
+<small><i>&nbsp; &nbsp; zip <input type='text' name='emerg_zip' value='{{ emerg.address_zip}}' size='5'>
 
  </td>
 </tr>
