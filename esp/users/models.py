@@ -137,7 +137,11 @@ class ContactInfo(models.Model):
 	address_zip = models.CharField(maxlength=5)
 
 	def __str__(self):
-		return self.full_name + ' (' + self.user.username + ')'
+            username = ""
+            if self.user != None:
+                username = self.user.username
+                
+            return self.full_name + ' (' + username + ')'
 	
 	class Admin:
 		pass
