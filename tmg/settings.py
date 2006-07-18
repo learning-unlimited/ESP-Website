@@ -18,7 +18,7 @@ DATABASE_PASSWORD = 'l47hm1d4'         # Not used with sqlite3.
 #DATABASE_PORT = '5433'             # Set to empty string for default. Not used with sqlite3.
 #DATABASE_USER = 'root'
 #DATABASE_PASSWORD = ''
-DATABASE_HOST=''
+DATABASE_HOST='tmg-shadow'
 DATABASE_PORT=''
 
 # Local time zone for this installation. All choices can be found here:
@@ -67,7 +67,7 @@ ROOT_URLCONF = 'tmg.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
-    '/tmg/shadow/internal/tmg_templates/',
+    '/Library/WebServer/DjangoApps/tmg_templates/',
 )
 
 INSTALLED_APPS = (
