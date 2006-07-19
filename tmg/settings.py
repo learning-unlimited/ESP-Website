@@ -34,11 +34,11 @@ SITE_ID = 1
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = '/tmg/video/web/kiosk/media/'
+MEDIA_ROOT = '/Library/WebServer/DjangoApps/BigHonkingBin/'
 
 # URL that handles the media served from MEDIA_ROOT.
 # Example: "http://media.lawrence.com"
-MEDIA_URL = 'http://tmg-video.media.mit.edu:8080/media/'
+MEDIA_URL = 'http://tmg-orchard.media.mit.edu/tmg_media/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
