@@ -1,17 +1,17 @@
 <tmg>
 	{% for project in projects %}
-	<project id="{{ project.id }}">
+	<project id="{{ project.id }}" order="{{ project.sortorder}}">
 		<p_name>{{ project.name }}</p_name>
 		<menu_thumbnail>{{ project.menu_thumbnail }}</menu_thumbnail>
 		<blurb>{{ project.description }}</blurb>
 		<credits>
 		{% for person in project.projectauthor_set.all %}
-			<name>{{ person.person.name }}</name>
+			<name order="{{ person.sortorder }}">{{ person.person.name }}</name>
 		{% endfor %}
 		</credits>
 		<movies>
 		{% for movie in project.projectvideothunk_set.all %}
-			<movie>
+			<movie order="{{ movie.sortorder }}">
 				<title>{{ project.description }}</title>
 				<src>{{ movie.video.target_file }}</src>
 				<thumb>{{ movie.thumbnail.target_file }}</thumb>
