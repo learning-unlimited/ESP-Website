@@ -54,8 +54,8 @@ class EquipmentType(models.Model):
 class TimeSlot(models.Model):
 	program = models.ForeignKey(Program)
 	name = models.CharField(maxlength=256)
-	time_start = models.TimeField()
-	time_stop = models.TimeField()
+
+        series = models.ForeignKey(DataTree)
 	
 	def __str__(self):
 		return str( self.time_start ) + "-" + str( self.time_stop ) + " (" + self.name + ")"
@@ -83,9 +83,13 @@ class Class(models.Model):
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
 	schedule = models.TextField()
-	slot = models.ForeignKey(TimeSlot)
+	event_template = models.ForeignKey(DataTree)
 	enrollment = models.IntegerField()
 
+        def PopulateEvents(self):
+            """ Given this instance's event_template, generate a series of events that define this class's schedule """
+            pass
+        
 	def __str__(self):
             if self.title() is not None:
 		return self.title()
