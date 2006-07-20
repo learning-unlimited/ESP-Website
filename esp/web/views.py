@@ -218,7 +218,7 @@ def qsd(request, url):
 	
 	# Fetch the QSD object
 	try:
-		qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
+		qsd_rec = QuasiStaticData.find_by_url_parts(url_parts)
 	except QuasiStaticData.DoesNotExist:
 		if url_verb != 'create': raise Http404
 	
