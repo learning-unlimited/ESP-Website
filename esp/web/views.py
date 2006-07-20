@@ -226,9 +226,8 @@ def qsd(request, url):
 		if url_verb != 'create': raise Http404
 	
 	# Detect edit authorizations
-	user = User.objects.filter(id=user_id)
-	if user.count() > 0:
-		user = user[0]
+	if user_id is not None:
+		user = User.objects.filter(id=user_id)[0]
 	else:
 		user = None
 	have_edit = UserBit.UserHasPerms( user, qsd_rec.path, GetNode('V/Administer') )
