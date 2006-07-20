@@ -76,11 +76,11 @@ class DataTree(models.Model):
 
     def is_descendant(self, node):
         """ Return False if the specified node is not a descendant (child, child of a child, etc.) of this node, AND if the specified node is not this node """
-        return (node.rangestart >= self.rangestart & node.rangeend <= self.rangeend)
+        return (node.rangestart >= self.rangestart and node.rangeend <= self.rangeend)
 
     def is_antecedent(self, node):
         """ Return False if the specified node is not an antecedent (parent, parent of a parent, etc.) of the current node, AND if the specified node is not this node """
-        return (node.rangestart <= self.rangestart & node.rangeend >= self.rangeend)
+        return (node.rangestart <= self.rangestart and node.rangeend >= self.rangeend)
 
     def sizeof(self):
         """ Return the total capacity of this node, as a nested-set element """
