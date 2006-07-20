@@ -50,7 +50,7 @@ class UserBit(models.Model):
     def UserHasPerms(user, qsc, verb, now = datetime.now()):
         """ Given a user, a permission, and a subject, return True if the user, or all users, has been Granted [subject] on [permission]; False otherwise """
         if user != None:
-            for bit in user.userbit_all().filter(Q(startdate__isnull=True) | Q(startdate__gt=now), Q(enddate__isnull=True) | Q(enddate__lt=now)):
+            for bit in user.userbit_set.all().filter(Q(startdate__isnull=True) | Q(startdate__gt=now), Q(enddate__isnull=True) | Q(enddate__lt=now)):
                 if bit.qsc.is_descendant(qsc) & bit.verb.is_antecedent(verb):
                     return True
 
