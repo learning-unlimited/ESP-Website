@@ -228,7 +228,7 @@ def qsd(request, url):
 		user = user[0]
 	else:
 		user = None
-	have_edit = UserBit.UserHasPerms( user, qsd_rec.anchor, GetNode('V/Administer') )
+	have_edit = UserBit.UserHasPerms( user, qsd_rec.path, GetNode('V/Administer') )
 
 	# FIXME: the create verb is NOT implemented
 
