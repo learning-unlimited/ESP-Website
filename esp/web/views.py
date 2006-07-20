@@ -246,7 +246,7 @@ def qsd(request, url):
 		else:
 			# Render an edit form
 			return render_to_response('qsd_edit.html', {
-				'navbar_list': _makeNavbar(request.path),
+				'navbar_list': _makeNavBar(request.path),
 				'preload_images': preload_images,
 				'title': qsd_rec.title,
 				'content': qsd_rec.content,
