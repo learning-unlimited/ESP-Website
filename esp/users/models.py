@@ -85,10 +85,17 @@ class UserBit(models.Model):
         return UserBit.objects.filter(qsc__rangestart__lte=qsc.rangestart, qsc__rangeend__gte=qsc.rangeend, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend).filter(Q(startdate__isnull=True) | Q(startdate__gt=now), Q(enddate__isnull=True) | Q(enddate__lt=now))
 
     @staticmethod
-    def bits_get_qsc(user, verb, now = datetime.now()):
-        """  Return all qsc structures to which 'user' has been granted 'verb' """
+    def bits_get_qsc(user, verb, now = datetime.now(), qsc_root=None):
+        """  Return all qsc structures to which 'user' has been granted 'verb'
+
+        If 'qsc_root' is specified, only return qsc structures at or below the specified node """
         now = datetime.now()
-        return UserBit.objects.filter(verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True) | Q(startdate__gt=now), Q(enddate__isnull=True) | Q(enddate__lt=now))
+        qscs = UserBit.objects.filter(verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True) | Q(startdate__gt=now), Q(enddate__isnull=True) | Q(enddate__lt=now))
+
+        if qsc_root == None:
+            return qscs
+        else:
+            return qscs.filter(qsc__rangestart__gte=qsc_root.rangestart, qsc__rangeend__lte=qsc_root.rangeend)
 
     @staticmethod
     def bits_get_verb(user, qsc, now = datetime.now()):

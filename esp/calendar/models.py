@@ -42,8 +42,11 @@ class Event(models.Model):
     """ A unit calendar entry.
 
     All calendar entries are events; all data for the event that doesn't fit into the event field is keyed in from a remote class. """
+    anchor = models.ForeignKey(DataTree)
+
     start = models.DateTimeField() # Event start time
     end = models.DateTimeField() # Event end time
+    short_description = models.TextField() # Event short description
     description = models.TextField() # Event textual description; not computer-parseable
     event_type = models.ForeignKey(EventType) # The tyoe of event.  This implies, though does not require, the types of data that are keyed to this event.
 #    container_series = models.ForeignKey(Series, blank=True, null=True)

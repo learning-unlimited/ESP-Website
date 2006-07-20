@@ -83,12 +83,20 @@ class Class(models.Model):
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
 	schedule = models.TextField()
-	event_template = models.ForeignKey(DataTree)
+	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set')
 	enrollment = models.IntegerField()
 
         def PopulateEvents(self):
             """ Given this instance's event_template, generate a series of events that define this class's schedule """
-            pass
+            for e in event_template.event_set.all():
+                newevent = Event()
+                newevent.start = e.start
+                newevent.end = e.end
+                newevent.short_description = e.short_description
+                newevent.description = e.description
+                newevent.event_type = e.event_type
+                newevent.anchor = self.anchor
+                newevent.save()
         
 	def __str__(self):
             if self.title() is not None:

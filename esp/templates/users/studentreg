@@ -71,7 +71,7 @@ Open Full Catalog in a Separate Window
 </table> 
 <br/>
 
-<form action="sumreg.html" method="post">
+<form action="http://esp-devel.hackorp.com/" method="post">
 <p style="text-align: center">
 <input type="submit" value="Save!">
 </p>

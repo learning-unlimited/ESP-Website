@@ -110,7 +110,7 @@ def myesp(request, module):
 		if User.objects.filter(username=request.POST['username']).count() == 0:
 			
 			if request.POST['password'] != request.POST['confirm']:
-				render_to_response('users/newuser', {'Problem': True,
+				return render_to_response('users/newuser', {'Problem': True,
 								   'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 			if len(User.objects.filter(email=request.POST['email'])) > 0:
 				email_user = User.objects.filter(email=request.POST['email'])[0]
@@ -153,6 +153,7 @@ def myesp(request, module):
 			
 			email_user = User()
 			email_user.email = request.POST['email']
+			email_user.username = request.POST['email']
 			email_user.is_staff = False
 			email_user.is_superuser = False
 			email_user.save()
@@ -295,7 +296,18 @@ def program(request, tl, one, two, module, extra = None):
     q = request.session.get('user_id', False)
     user_id = q
     if user_id != False: user_id = True
-    if q is None: return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+    if module == "catalog":
+	   treeItem = "Q/Programs/" + one + "/" + two 
+	   prog = GetNode(treeItem).program_set.all()
+	   if len(prog) < 1:
+		   return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+	   prog = prog[0]
+	   clas = list(prog.class_set.all().order_by('category'))
+	   p = one + " " + two
+	   return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'logged_in': user_id, 'tl': tl})
+   
+
+    if not q : return render_to_response('users/pleaselogin', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
     curUser = User.objects.filter(id=q)[0]
 
     treeItem = "Q/Programs/" + one + "/" + two 
@@ -334,19 +346,10 @@ def program(request, tl, one, two, module, extra = None):
 	    context['preload_images'] =  preload_images
 	    return render_to_response('users/profile', context)
 
-    if module == "catalog":
-	    treeItem = "Q/Programs/" + one + "/" + two 
-	    prog = GetNode(treeItem).program_set.all()
-	    if len(prog) < 1:
-		    return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
-	    prog = prog[0]
-	    clas = list(prog.class_set.all().order_by('category'))
-	    p = one + " " + two
-	    return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'logged_in': user_id, 'tl': tl})
 
     if module == "studentreg":
+	    if not user_id: return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	    curUser = User.objects.filter(id=q)[0]
-	    if q is None: return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	    regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
 	    if len(regprof) < 1:
 		    regprof = RegistrationProfile()
@@ -392,6 +395,7 @@ def program(request, tl, one, two, module, extra = None):
 
 
     if module == "teacherreg":
+	    if not user_id: return render_to_response('users/pleaselogin', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 	    context = {'logged_in': user_id}
 	    context['navbar_list'] = _makeNavBar(request.path)
 	    context['preload_images'] =  preload_images
@@ -593,6 +597,7 @@ def program(request, tl, one, two, module, extra = None):
     return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 
 def validateContactInfo(ci):
+	return True
 	if ci is None: return False
 	if ci.full_name == "" or ci.full_name is None: return False
 	if ci.address_street == "" or ci.address_street is None: return False
@@ -621,4 +626,22 @@ def _makeNavBar(url):
 		qd['indent'] = entry.indent
 		navbar_data.append(qd)
 	return navbar_data
-	
+
+def contact(request):
+	        return render_to_response('contact.html')
+
+def contact_submit(request):
+	for key in ['name', 'email', 'relation', 'publicity', 'program', 'comment']:
+		if not request.POST.has_key(key):
+			raise Http404
+
+	t = loader.get_template('email/comment')
+	c = Context({ 'name': request.POST['name'], 'email': request.POST['email'], 'relation': request.POST['relation'], 'publicity': request.POST['publicity'], 'program': request.POST['program'], 'comment': request.POST['comment'] }
+
+	m = MessageRequest()
+	m.subject = 'User Comment: ' + request.POST['name']
+
+	m.msgtext = t.render(c)
+	m.sender = request.POST['email']
+	m.category = GetNode('')
+									    
