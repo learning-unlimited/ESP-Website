@@ -5,7 +5,10 @@ from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
 from esp.program.models import RegistrationProfile, TimeSlot, Class, ClassCategories
+from esp.dbmail.models import MessageRequest
+from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
+from django.template import loader, Context
 import datetime
 
 from django.contrib.auth.models import User
@@ -628,20 +631,33 @@ def _makeNavBar(url):
 	return navbar_data
 
 def contact(request):
-	        return render_to_response('contact.html')
+	return render_to_response('contact.html', { 'programs': UserBit.bits_get_qsc(AnonymousUser(), GetNode('V/Publish'), qsc_root=GetNode('Q/Programs')) })
 
 def contact_submit(request):
+	# I think we want to accept comments as long as they're submitted, regardless of what they contain. - aseering 7-20-2006
 	for key in ['name', 'email', 'relation', 'publicity', 'program', 'comment']:
 		if not request.POST.has_key(key):
-			raise Http404
+			request.POST[key] = '(none)'
+			#raise Http404
 
 	t = loader.get_template('email/comment')
-	c = Context({ 'name': request.POST['name'], 'email': request.POST['email'], 'relation': request.POST['relation'], 'publicity': request.POST['publicity'], 'program': request.POST['program'], 'comment': request.POST['comment'] }
 
 	m = MessageRequest()
 	m.subject = 'User Comment: ' + request.POST['name']
-
-	m.msgtext = t.render(c)
+	
+	m.msgtext = t.render({
+		'name': request.POST['name'],
+		'email': request.POST['email'],
+		'relation': request.POST['relation'],
+		'publicity': request.POST['publicity'],
+		'program': request.POST['program'],
+		'comment': request.POST['comment'] })
 	m.sender = request.POST['email']
-	m.category = GetNode('')
-									    
+	if not request.POST['program'] in GetNode('Q/Programs').children():
+		m.category = GetNode('Q/ESP/Committees/Executive')
+	else:
+	        m.category = GetNode('Q/Programs/' + request.POST['program'])
+		
+	m.save()
+
+	return qsd(request, 'contact/thanks')

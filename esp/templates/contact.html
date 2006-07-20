@@ -10,7 +10,7 @@
 <p>Fill out this form to send a quick e-mail to the ESP office. We will get back to you as soon as possible (usually within a day). Submitting this form does not add you to our mailing list.</p>
 
 <p>
-<form>
+<form action="submit.html" method="post">
 <table>
 
 <tr><th><label for="name">Name:</label></th>
@@ -42,6 +42,10 @@
 <tr><th><label for="program">Program of Interest:</label></th>
 <td>
 <select name="program">
+{% for prog in programs %}
+<option value="{{ prog.qsc.name }}">{{ prog.qsc.friendly_name }}</option>
+{% endfor %}
+<option value="">(none)</option>
 </select>
 </td></tr>
 <th colspan="2"><label for="comment">
