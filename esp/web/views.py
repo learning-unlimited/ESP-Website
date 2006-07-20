@@ -5,7 +5,7 @@ from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
 from esp.program.models import RegistrationProfile, TimeSlot, Class, ClassCategories
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 import datetime
 
 from django.contrib.auth.models import User
@@ -237,23 +237,25 @@ def qsd(request, url):
 		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
 		if not have_edit: raise Http404
 		
-		# Detect POST
-		if request.POST.has_key('post_edit'):
-			qsd_rec.content = request.POST['content']
-			qsd_rec.title = request.POST['title']
-			qsd_rec.save()
-			url_verb = 'read'
-		else:
-			# Render an edit form
-			return render_to_response('qsd_edit.html', {
-				'navbar_list': _makeNavBar(request.path),
-				'preload_images': preload_images,
-				'title': qsd_rec.title,
-				'content': qsd_rec.content,
-				'logged_in': logged_in})
+		# Render an edit form
+		return render_to_response('qsd_edit.html', {
+			'navbar_list': _makeNavBar(request.path),
+			'preload_images': preload_images,
+			'title': qsd_rec.title,
+			'content': qsd_rec.content,
+			'logged_in': logged_in})
 			
 	# Detect the standard read verb
 	if url_verb == 'read':
+		# Detect POST
+		if request.POST.has_key('post_edit'):
+			# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
+			if not have_edit: return HttpResponseNotAllowed(['GET'])
+		
+			qsd_rec.content = request.POST['content']
+			qsd_rec.title = request.POST['title']
+			qsd_rec.save()
+
 		# Render response
 		return render_to_response('qsd.html', {
 				'navbar_list': _makeNavBar(request.path),
@@ -264,6 +266,7 @@ def qsd(request, url):
 				'have_edit': have_edit})
 	
 	# Operation Complete!
+	raise Http404
 
 def redirect(request, tl, one, three):
 	user_id = request.session.get('user_id', False)
