@@ -49,18 +49,22 @@ class UserBit(models.Model):
     @staticmethod
     def UserHasPerms(user, qsc, verb, now = datetime.now()):
         """ Given a user, a permission, and a subject, return True if the user, or all users, has been Granted [subject] on [permission]; False otherwise """
+	test = []
         if user != None:
             for bit in user.userbit_set.all().filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now)):
+                test.append(bit)
                 if bit.qsc.is_descendant(qsc) and bit.verb.is_antecedent(verb):
                     return True
 
             # This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
         for bit in UserBit.objects.filter(user__isnull=True).filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now)):
+            test.append(bit)
             if bit.qsc.is_descendant(qsc) and bit.verb.is_antecedent(verb):
                 return True
 
         # security.Denial() evaluates to False as necessary; it also makes peak happy, though we're not using peak any more
         #return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
+	assert False
         return False
     
     @staticmethod
