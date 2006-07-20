@@ -261,8 +261,8 @@ def qsd(request, url):
 				'title': qsd_rec.title,
 				'content': qsd_rec.html(),
 				'logged_in': logged_in,
-				'have_edit', have_edit})
-
+				'have_edit': have_edit})
+	
 	# Operation Complete!
 
 def redirect(request, tl, one, three):
