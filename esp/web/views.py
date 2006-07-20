@@ -226,7 +226,7 @@ def qsd(request, url):
 		if url_verb != 'create': raise Http404
 	
 	# Detect edit authorizations
-	if not user_id is None:
+	if user_id:
 		user = User.objects.filter(id=user_id)[0]
 	else:
 		user = None
