@@ -198,19 +198,72 @@ def myesp(request, module):
 	return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
 
 def qsd(request, url):
+	# Fetch user login state
 	user_id = request.session.get('user_id', False)
-	if user_id != False: user_id = True
+	logged_in = user_id
+	if logged_in != False: logged_in = True
+
+	# Extract URL parts
+	url_parts = url.split('/')
+
+	# Detect verb
+	url_verb = url_parts.pop()
+	url_verb_parts = url_verb.split('.')
+	if url_verb_parts.len() > 2:
+		url_verb = url_verb_parts[1]
+		url_parts.append(url_verb_parts[0] + url_verb_parts[2])
+	else:
+		url_parts.append(url_verb)
+		url_verb = 'read'
+	
+	# Fetch the QSD object
 	try:
 		qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
 	except QuasiStaticData.DoesNotExist:
-		raise Http404
-	return render_to_response('qsd.html', {
-			'navbar_list': _makeNavBar(request.path),
-			'preload_images': preload_images,
-			'title': qsd_rec.title,
-			'content': qsd_rec.html(),
-			'logged_in': user_id})
-	     
+		if url_verb != 'create': raise Http404
+	
+	# Detect edit authorizations
+	user = user.filter(id=user_id)
+	if user.count() > 0:
+		user = user[0]
+	else:
+		user = None
+	have_edit = UserBit.UserHasPerms( user, qsd_rec.anchor, GetNode('V/Administer') )
+
+	# FIXME: the create verb is NOT implemented
+
+	# Detect the edit verb
+	if url_verb == 'edit':
+		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
+		if not have_edit: raise Http404
+		
+		# Detect POST
+		if request.POST.has_key('post_edit'):
+			qsd_rec.content = request.POST['content']
+			qsd_rec.title = request.POST['title']
+			qsd_rec.save()
+			url_verb = 'read'
+		else:
+			# Render an edit form
+			return render_to_response('qsd_edit.html', {
+				'navbar_list': _makeNavbar(request.path),
+				'preload_images': preload_images,
+				'title': qsd_rec.title,
+				'content': qsd_rec.content,
+				'logged_in': logged_in})
+			
+	# Detect the standard read verb
+	if url_verb == 'read':
+		# Render response
+		return render_to_response('qsd.html', {
+				'navbar_list': _makeNavBar(request.path),
+				'preload_images': preload_images,
+				'title': qsd_rec.title,
+				'content': qsd_rec.html(),
+				'logged_in': logged_in,
+				'have_edit', have_edit})
+
+	# Operation Complete!
 
 def redirect(request, tl, one, three):
 	user_id = request.session.get('user_id', False)

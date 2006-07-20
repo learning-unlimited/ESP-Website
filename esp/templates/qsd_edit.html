@@ -1,0 +1,13 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{ title }} - EDIT{% endblock %}
+
+{% block subsection_name %}QSD Editor{% endblock %}
+
+{% block content %}
+<form method="POST">
+  Title: <input type="text" name="title" value="{{ title }}" size="64" /><br>
+  Content: <textarea name="content">{{ content }}</textarea><br>
+  <input type="submit" name="post_edit" value="Submit!" />
+</form>
+{% endblock %}

@@ -46,10 +46,9 @@ class UserBit(models.Model):
         
         return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc
 
-    def espUserHasPerms(self, qsc, verb, now = datetime.now()):
+    @staticmethod
+    def UserHasPerms(user, qsc, verb, now = datetime.now()):
         """ Given a user, a permission, and a subject, return True if the user, or all users, has been Granted [subject] on [permission]; False otherwise """
-        user = self
-        
         if user != None:
             for bit in user.userbit_all().filter(Q(startdate__isnull=True) | Q(startdate__gt=now), Q(enddate__isnull=True) | Q(enddate__lt=now)):
                 if bit.qsc.is_descendant(qsc) & bit.verb.is_antecedent(verb):
