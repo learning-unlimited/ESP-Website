@@ -211,9 +211,12 @@ def qsd(request, url):
 	url_verb_parts = url_verb.split('.')
 	if len(url_verb_parts) > 1:
 		url_verb = url_verb_parts.pop()
-		url_parts.append('.'.join(url_verb_parts))
+		other_url = '.'.join(url_verb_parts)
+		url_parts.append(other_url)
+		other_url = other_url + '.html'
 	else:
 		url_parts.append(url_verb)
+		other_url = url_verb + '.edit.html'
 		url_verb = 'read'
 	
 	# Fetch the QSD object
@@ -243,7 +246,8 @@ def qsd(request, url):
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.content,
-			'logged_in': logged_in})
+			'logged_in': logged_in,
+			'target_url': other_url })
 			
 	# Detect the standard read verb
 	if url_verb == 'read':
@@ -263,7 +267,8 @@ def qsd(request, url):
 				'title': qsd_rec.title,
 				'content': qsd_rec.html(),
 				'logged_in': logged_in,
-				'have_edit': have_edit})
+				'have_edit': have_edit,
+				'edit_url': other_url})
 	
 	# Operation Complete!
 	raise Http404

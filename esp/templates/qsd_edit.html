@@ -5,7 +5,7 @@
 {% block subsection_name %}QSD Editor{% endblock %}
 
 {% block content %}
-<form method="POST">
+<form method="POST" target="{{ target_url }}">
   <h1>Title</h1>
   <input type="text" name="title" value="{{ title }}" size="64" /><br><br>
   <h1>Content</h1>
