@@ -209,7 +209,7 @@ def qsd(request, url):
 	# Detect verb
 	url_verb = url_parts.pop()
 	url_verb_parts = url_verb.split('.')
-	if url_verb_parts.len() > 2:
+	if len(url_verb_parts) > 2:
 		url_verb = url_verb_parts[1]
 		url_parts.append(url_verb_parts[0] + url_verb_parts[2])
 	else:
