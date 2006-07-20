@@ -223,7 +223,7 @@ def qsd(request, url):
 		if url_verb != 'create': raise Http404
 	
 	# Detect edit authorizations
-	user = user.filter(id=user_id)
+	user = User.objects.filter(id=user_id)
 	if user.count() > 0:
 		user = user[0]
 	else:
