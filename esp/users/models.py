@@ -64,7 +64,6 @@ class UserBit(models.Model):
 
         # security.Denial() evaluates to False as necessary; it also makes peak happy, though we're not using peak any more
         #return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
-	assert False
         return False
     
     @staticmethod
