@@ -6,10 +6,10 @@
 
 {% block content %}
 <form method="POST">
-  <h1>Title:</h1>
-  <input type="text" name="title" value="{{ title }}" size="64" /><br>
+  <h1>Title</h1>
+  <input type="text" name="title" value="{{ title }}" size="64" /><br><br>
   <h1>Content</h1>
-  <textarea name="content" rows="20" cols="100">{{ content }}</textarea><br>
+  <textarea name="content" rows="20" cols="75">{{ content }}</textarea><br>
   <input type="submit" name="post_edit" value="Submit!" />
 </form>
 {% endblock %}
