@@ -9,6 +9,7 @@ from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from django.template import loader, Context
+from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
 
 from django.contrib.auth.models import User
@@ -661,3 +662,20 @@ def contact_submit(request):
 	m.save()
 
 	return qsd(request, 'contact/thanks')
+
+
+
+def iCalFeed(request):
+	""" Creates an iCal calendar file based on the Events table """
+	cal = Calendar()
+	cal.add('version', '2.0')
+
+	for e in Event.objects.all():
+		cal_event = CalEvent()
+		cal_event.add('summary', e.short_description)
+		cal_event.add('description', e.description)
+		cal_event.add('dtstart', e.start)
+		cal_event.add('dtend', e.end)
+		cal.add_component(cal_event)
+
+	return cal.as_string()

@@ -8,6 +8,7 @@ urlpatterns = patterns('',
 
     # The default
     (r'^$', 'esp.web.views.index'),
+    (r'^beta/calendar.ics$', 'esp.web.views.iCalFeed'),
     (r'^contact/contact.html$', 'esp.web.views.contact'),
     (r'^contact/submit.html$', 'esp.web.views.contact_submit'),
     (r'^(teach|learn)/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/bio.html$', 'esp.web.views.bio'),
