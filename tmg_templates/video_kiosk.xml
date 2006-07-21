@@ -2,7 +2,7 @@
 	{% for project in projects %}
 	<project id="{{ project.id }}" order="{{ project.sortorder}}">
 		<p_name>{{ project.name }}</p_name>
-		<menu_thumbnail>{{ project.menu_thumbnail }}</menu_thumbnail>
+		<menu_thumbnail>{{ project.menu_thumbnail.media.get_target_file_relative_url }}</menu_thumbnail>
 		<blurb>{{ project.description }}</blurb>
 		<credits>
 		{% for person in project.projectauthor_set.all %}
