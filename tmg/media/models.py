@@ -14,6 +14,9 @@ class Media(models.Model):
     mime_type = models.CharField(blank=True, null=True, maxlength=256)
     file_extension = models.TextField(blank=True, null=True, maxlength=16) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
 
+    def get_target_file_relative_url(self):
+        return str(self.target_file)[ len(root_file_path): ]
+
     def __str__(self):
         return str(self.friendly_name)
 
