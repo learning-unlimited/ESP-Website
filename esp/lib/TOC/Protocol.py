@@ -118,7 +118,7 @@ class FLAPConnection:
                         self.inSequence = self.header.sequence
                     else:
                         self.inSequence += 1
-						self.inSequence %= 0xFFFF
+                        self.inSequence %= 0xFFFF
                         if self.header.sequence != self.inSequence:
                             raise BadFLAPHeader("Bad sequence number - " \
 												"Got %d, " \
