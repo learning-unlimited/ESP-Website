@@ -1,0 +1,28 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}ESP Blog{% endblock %}
+
+{% block subsection_name %}ESP Blog{% endblock %}
+
+{% block content %}
+
+<h1><font color='red'>{{ extramsg }}</font></h1>
+
+{% for entry in entries %}
+<p><h3>{{ entry.title }}</h3></p>
+<p>{{ entry.html }}</p>
+<p></p>
+{% endfor %}
+
+{% if canpost %}
+<form action='http://esp-devel.hackorp.com/blog/{{ webnode }}/post.scm' method='post'>
+<form method="POST" action="the-plan.html">
+  <h1>Title</h1>
+  <input type="text" name="title" value="New Blog Entry" size="64" /><br><br>
+  <h1>Content</h1>
+  <textarea name="content" rows="20" cols="75"></textarea>
+  <input type="submit" name="post_edit" value="Submit!" />
+</form>
+{% endif %}
+
+{% endblock %}

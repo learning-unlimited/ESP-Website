@@ -15,7 +15,10 @@ urlpatterns = patterns('',
     (r'^(teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.program'),
     (r'^(teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.program'),
     (r'^(learn|teach)/([-A-Za-z0-9/_ ]+)/([-A-Za-z0-9_ ]+).html$', 'esp.web.views.redirect'),
-    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),                       
+    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),
+    (r'^blog/(?P<url>.*)/post.scm$', 'esp.miniblog.views.post_miniblog'),
+    (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog'),
+
     (r'^(?P<url>.*)\.html$', 'esp.web.views.qsd'),
     (r'^(?P<url>.*)\.text$', 'esp.web.views.qsd_raw'),
 

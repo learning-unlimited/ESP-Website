@@ -794,7 +794,7 @@ class CorePatterns :
 RE = CorePatterns()
 
 
-class Markdown:
+class Markdown(object):
     """ Markdown formatter class for creating an html document from
         Markdown text """
 
