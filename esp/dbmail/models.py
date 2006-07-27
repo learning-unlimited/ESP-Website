@@ -24,7 +24,7 @@ class MessageRequest(models.Model):
     subject = models.TextField() # Message "Subject" line, can be SmartText
     msgtext = models.TextField() # Text of the message; can be SmartText
     special_headers = models.TextField(blank=True) # Any special e-mail headers, formatted so that they can be concatenated into the message
-    category = models.ForeignKey(DataTree) # Category of users who should receive this message.  Note that it's not possible to specify a specific user, unless we implement per-user categories.
+    category = models.ForeignKey(DataTree, null=True, blank=True) # Category of users who should receive this message.  Note that it's not possible to specify a specific user, unless we implement per-user categories.
     sender = models.TextField() # E-mail sender; should be a valid SMTP sender string
     def __str__(self):
         return str(self.subject)
@@ -95,12 +95,15 @@ class EmailController(Controller):
         Given a MessageRequest, get the users subscribed to it, and return a set of EmailRequests that bind each of those users to the specified MessageRequest """
         emailreqs = []
 
-        for user in UserBit.bits_get_users(msgreq.category, GetNode('V/dbmail/Subscribe')):
-            temp_emailreq = EmailRequest()
-            temp_emailreq.target = user.user.user
-            temp_emailreq.msgreq = msgreq
-            temp_emailreq.save()
-            emailreqs.append(temp_emailreq)
+        if msgreq.category == None:
+            emailreqs = EmailRequest.objects.filter(msgreq=msgreq)
+        else:
+            for user in UserBit.bits_get_users(msgreq.category, GetNode('V/dbmail/Subscribe')):
+                temp_emailreq = EmailRequest()
+                temp_emailreq.target = user.user.user
+                temp_emailreq.msgreq = msgreq
+                temp_emailreq.save()
+                emailreqs.append(temp_emailreq)
 
         return emailreqs
 
