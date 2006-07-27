@@ -291,7 +291,6 @@ class HeaderPreprocessor :
 
         return lines
 
-HEADER_PREPROCESSOR = HeaderPreprocessor()
 
 class LinePreprocessor :
     """Deals with HR lines (needs to be done before processing lists)"""
@@ -315,7 +314,6 @@ class LinePreprocessor :
         else:
             return 0
 
-LINE_PREPROCESSOR = LinePreprocessor()
 
 
 class LineBreaksPreprocessor :
@@ -328,7 +326,6 @@ class LineBreaksPreprocessor :
                 lines[i] += "<br />"
         return lines
 
-LINE_BREAKS_PREPROCESSOR = LineBreaksPreprocessor()
 
 
 class HtmlBlockPreprocessor :
@@ -350,8 +347,6 @@ class HtmlBlockPreprocessor :
                 new_blocks.append(block)
         return "\n\n".join(new_blocks).split("\n")
 
-HTML_BLOCK_PREPROCESSOR = HtmlBlockPreprocessor()
-
 
 class ReferencePreprocessor :
 
@@ -367,7 +362,7 @@ class ReferencePreprocessor :
                 new_text.append(line)
         return new_text #+ "\n"
 
-REFERENCE_PREPROCESSOR = ReferencePreprocessor()
+
 
 """
 ======================================================================
@@ -598,32 +593,6 @@ class AutomailPattern (BasePattern):
         el.setAttribute('href', mailto)
         return el
 
-ESCAPE_PATTERN          = SimpleTextPattern(ESCAPE_RE)
-NOT_STRONG_PATTERN      = SimpleTextPattern(NOT_STRONG_RE)
-
-BACKTICK_PATTERN        = BacktickPattern(BACKTICK_RE)
-DOUBLE_BACKTICK_PATTERN = BacktickPattern(DOUBLE_BACKTICK_RE)
-STRONG_PATTERN          = SimpleTagPattern(STRONG_RE, 'strong')
-STRONG_PATTERN_2        = SimpleTagPattern(STRONG_2_RE, 'strong')
-EMPHASIS_PATTERN        = SimpleTagPattern(EMPHASIS_RE, 'em')
-EMPHASIS_PATTERN_2      = SimpleTagPattern(EMPHASIS_2_RE, 'em')
-
-STRONG_EM_PATTERN       = DoubleTagPattern(STRONG_EM_RE, 'strong,em')
-STRONG_EM_PATTERN_2     = DoubleTagPattern(STRONG_EM_2_RE, 'strong,em')
-
-LINK_PATTERN            = LinkPattern(LINK_RE)
-LINK_ANGLED_PATTERN     = LinkPattern(LINK_ANGLED_RE)
-IMAGE_LINK_PATTERN      = ImagePattern(IMAGE_LINK_RE)
-IMAGE_REFERENCE_PATTERN = ImageReferencePattern(IMAGE_REFERENCE_RE)
-REFERENCE_PATTERN       = ReferencePattern(REFERENCE_RE)
-
-HTML_PATTERN            = HtmlPattern(HTML_RE)
-ENTITY_PATTERN          = HtmlPattern(ENTITY_RE)
-
-AUTOLINK_PATTERN        = AutolinkPattern(AUTOLINK_RE)
-AUTOMAIL_PATTERN        = AutomailPattern(AUTOMAIL_RE)
-
-
 """
 ======================================================================
 ========================== POST-PROCESSORS ===========================
@@ -798,6 +767,37 @@ class Markdown(object):
     """ Markdown formatter class for creating an html document from
         Markdown text """
 
+    ESCAPE_PATTERN          = SimpleTextPattern(ESCAPE_RE)
+    NOT_STRONG_PATTERN      = SimpleTextPattern(NOT_STRONG_RE)
+
+    BACKTICK_PATTERN        = BacktickPattern(BACKTICK_RE)
+    DOUBLE_BACKTICK_PATTERN = BacktickPattern(DOUBLE_BACKTICK_RE)
+    STRONG_PATTERN          = SimpleTagPattern(STRONG_RE, 'strong')
+    STRONG_PATTERN_2        = SimpleTagPattern(STRONG_2_RE, 'strong')
+    EMPHASIS_PATTERN        = SimpleTagPattern(EMPHASIS_RE, 'em')
+    EMPHASIS_PATTERN_2      = SimpleTagPattern(EMPHASIS_2_RE, 'em')
+    
+    STRONG_EM_PATTERN       = DoubleTagPattern(STRONG_EM_RE, 'strong,em')
+    STRONG_EM_PATTERN_2     = DoubleTagPattern(STRONG_EM_2_RE, 'strong,em')
+    
+    LINK_PATTERN            = LinkPattern(LINK_RE)
+    LINK_ANGLED_PATTERN     = LinkPattern(LINK_ANGLED_RE)
+    IMAGE_LINK_PATTERN      = ImagePattern(IMAGE_LINK_RE)
+    IMAGE_REFERENCE_PATTERN = ImageReferencePattern(IMAGE_REFERENCE_RE)
+    REFERENCE_PATTERN       = ReferencePattern(REFERENCE_RE)
+    
+    HTML_PATTERN            = HtmlPattern(HTML_RE)
+    ENTITY_PATTERN          = HtmlPattern(ENTITY_RE)
+    
+    AUTOLINK_PATTERN        = AutolinkPattern(AUTOLINK_RE)
+    AUTOMAIL_PATTERN        = AutomailPattern(AUTOMAIL_RE)
+    
+    HTML_BLOCK_PREPROCESSOR   = HtmlBlockPreprocessor()
+    REFERENCE_PREPROCESSOR    = ReferencePreprocessor()
+    LINE_BREAKS_PREPROCESSOR  = LineBreaksPreprocessor()
+    LINE_PREPROCESSOR         = LinePreprocessor()
+    HEADER_PREPROCESSOR       = HeaderPreprocessor()
+    
 
     def __init__(self, source=None):
         """Creates a new Markdown instance.
@@ -811,13 +811,13 @@ class Markdown(object):
         self.registeredExtensions = []
         self.stripTopLevelTags = 1
 
-        self.preprocessors = [ HEADER_PREPROCESSOR,
-                               LINE_PREPROCESSOR,
-                               HTML_BLOCK_PREPROCESSOR,
-                               LINE_BREAKS_PREPROCESSOR,
+        self.preprocessors = [ self.HEADER_PREPROCESSOR,
+                               self.LINE_PREPROCESSOR,
+                               self.HTML_BLOCK_PREPROCESSOR,
+                               self.LINE_BREAKS_PREPROCESSOR,
                                # A footnote preprocessor will
                                # get inserted here
-                               REFERENCE_PREPROCESSOR ]
+                               self.REFERENCE_PREPROCESSOR ]
 
 
         self.postprocessors = [] # a footnote postprocessor will get
@@ -826,25 +826,25 @@ class Markdown(object):
         self.prePatterns = []
         
 
-        self.inlinePatterns = [ DOUBLE_BACKTICK_PATTERN,
-                                BACKTICK_PATTERN,
-                                ESCAPE_PATTERN,
-                                IMAGE_LINK_PATTERN,
-                                IMAGE_REFERENCE_PATTERN,
-                                REFERENCE_PATTERN,
-                                LINK_ANGLED_PATTERN,
-                                LINK_PATTERN,
-                                AUTOLINK_PATTERN,
-                                AUTOMAIL_PATTERN,
-                                HTML_PATTERN,
-                                ENTITY_PATTERN,
-                                NOT_STRONG_PATTERN,
-                                STRONG_EM_PATTERN,
-                                STRONG_EM_PATTERN_2,
-                                STRONG_PATTERN,
-                                STRONG_PATTERN_2,
-                                EMPHASIS_PATTERN,
-                                EMPHASIS_PATTERN_2
+        self.inlinePatterns = [ self.DOUBLE_BACKTICK_PATTERN,
+                                self.BACKTICK_PATTERN,
+                                self.ESCAPE_PATTERN,
+                                self.IMAGE_LINK_PATTERN,
+                                self.IMAGE_REFERENCE_PATTERN,
+                                self.REFERENCE_PATTERN,
+                                self.LINK_ANGLED_PATTERN,
+                                self.LINK_PATTERN,
+                                self.AUTOLINK_PATTERN,
+                                self.AUTOMAIL_PATTERN,
+                                self.HTML_PATTERN,
+                                self.ENTITY_PATTERN,
+                                self.NOT_STRONG_PATTERN,
+                                self.STRONG_EM_PATTERN,
+                                self.STRONG_EM_PATTERN_2,
+                                self.STRONG_PATTERN,
+                                self.STRONG_PATTERN_2,
+                                self.EMPHASIS_PATTERN,
+                                self.EMPHASIS_PATTERN_2
                                 # The order of the handlers matters!!!
                                 ]
 
