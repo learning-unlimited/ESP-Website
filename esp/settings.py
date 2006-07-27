@@ -82,4 +82,5 @@ INSTALLED_APPS = (
     'esp.lib',
     'esp.setup',
     'esp.unittest',
+    'esp.esp_local',
 )
