@@ -44,7 +44,10 @@ class UserBit(models.Model):
         except Exception:
             pass
         
-        return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc
+        if self.startdate != None and self.enddate != None:
+            return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc + ' <' + str(self.startdate) + ' - ' + str(self.enddate) + '>'
+        else:
+            return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc
 
     @staticmethod
     def UserHasPerms(user, qsc, verb, now = datetime.now()):

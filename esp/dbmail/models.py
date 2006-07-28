@@ -8,7 +8,9 @@ from datetime import datetime
 from email.Utils import formatdate
 from esp.lib.markdown import markdown
 
-import smtplib
+#import smtplib
+
+from django.core.mail import send_mail
 
 from esp.workflow.models import Controller
 from esp.datatree.models import DataTree, GetNode, StringToPerm, PermToString
@@ -57,13 +59,20 @@ class TextOfEmail(models.Model):
     def send(self):  # Code flagrantly pulled from http://www.bigbold.com/snippets/posts/show/2038
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
         now = datetime.now()
-        message = MIMEMultipart()
-        message['To'] = str(self.send_to)
-        message['From'] = str(self.send_from)
-        message['Date'] = formatdate(localtime=True, timeval=now)
-        message['Subject'] = str(self.subject)
-        message.attach( MIMEText(str(self.msgtext)) )
-        print str(self.send_from) + ' | ' + str(self.send_to) + ' | ' + message.as_string() + "\n"
+
+        send_mail(str(self.subject),
+                  '<html>' + str(self.msgtext) + '</html>',
+                  str(self.send_from),
+                  [ str(self.send_to) ],
+                  fail_silently=False )
+
+        #message = MIMEMultipart()
+        #message['To'] = str(self.send_to)
+        #message['From'] = str(self.send_from)
+        #message['Date'] = formatdate(localtime=True, timeval=now)
+        #message['Subject'] = str(self.subject)
+        #message.attach( MIMEText(str(self.msgtext)) )
+        #print str(self.send_from) + ' | ' + str(self.send_to) + ' | ' + message.as_string() + "\n"
         # aseering: Code currently commented out because we're debugging this.  It might break and, say, spam esp-webmasters.  That would be bad.
         #sendvia_smtp = smtplib.SMTP(smtp_server)
         #sendvia_smtp.sendmail(str(self.send_from), str(self.send_to), message.as_string())
@@ -114,7 +123,7 @@ class EmailController(Controller):
         textreq = TextOfEmail()
         textreq.send_to = str(emailreq.target.email)
         textreq.send_from = str(emailreq.msgreq.sender)
-        textreq.subject = self.apply_smarttext(str(emailreq.msgreq.subject))
+        textreq.subject = str(emailreq.msgreq.subject)
         textreq.msgtext = self.apply_smarttext(str(emailreq.msgreq.msgtext))
         textreq.emailReq = emailreq
         textreq.save()
