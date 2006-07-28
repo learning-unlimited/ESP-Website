@@ -88,7 +88,7 @@ class Class(models.Model):
 
         def PopulateEvents(self):
             """ Given this instance's event_template, generate a series of events that define this class's schedule """
-            for e in event_template.event_set.all():
+            for e in self.event_template.event_set.all():
                 newevent = Event()
                 newevent.start = e.start
                 newevent.end = e.end
