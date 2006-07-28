@@ -1,3 +1,12 @@
+from esp.web.models import QuasiStaticData
+from django.contrib.auth.models import User
+from esp.users.models import ContactInfo, UserBit
+from esp.datatree.models import GetNode
+from django.shortcuts import render_to_response
+from esp.esp_local.navBar import makeNavBar
+from esp.esp_local.data import navbar_data, preload_images
+from django.http import HttpResponse, Http404, HttpResponseNotAllowed
+
 def qsd_raw(request, url):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
@@ -51,7 +60,7 @@ def qsd(request, url):
 		
 		# Render an edit form
 		return render_to_response('qsd_edit.html', {
-			'navbar_list': _makeNavBar(request.path),
+			'navbar_list': makeNavBar(request.path),
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.content,
@@ -71,7 +80,7 @@ def qsd(request, url):
 
 		# Render response
 		return render_to_response('qsd.html', {
-				'navbar_list': _makeNavBar(request.path),
+				'navbar_list': makeNavBar(request.path),
 				'preload_images': preload_images,
 				'title': qsd_rec.title,
 				'content': qsd_rec.html(),

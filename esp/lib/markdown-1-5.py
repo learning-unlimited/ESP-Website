@@ -859,12 +859,12 @@ class Markdown(object):
         self.references={}
         self.htmlStash = HtmlStash()
 
-        HTML_BLOCK_PREPROCESSOR.stash = self.htmlStash
-        REFERENCE_PREPROCESSOR.references = self.references
-        HTML_PATTERN.stash = self.htmlStash
-        ENTITY_PATTERN.stash = self.htmlStash
-        REFERENCE_PATTERN.references = self.references
-        IMAGE_REFERENCE_PATTERN.references = self.references
+        self.HTML_BLOCK_PREPROCESSOR.stash = self.htmlStash
+        self.REFERENCE_PREPROCESSOR.references = self.references
+        self.HTML_PATTERN.stash = self.htmlStash
+        self.ENTITY_PATTERN.stash = self.htmlStash
+        self.REFERENCE_PATTERN.references = self.references
+        self.IMAGE_REFERENCE_PATTERN.references = self.references
 
         for extension in self.registeredExtensions :
             extension.reset()

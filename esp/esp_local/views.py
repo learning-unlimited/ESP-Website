@@ -1,6 +1,8 @@
 from django.shortcuts import render_to_response
+from esp.esp_local.navBar import makeNavBar
 from esp.calendar.models import Event
 from esp.web.models import QuasiStaticData
+from esp.web.views import qsd, qsd_raw
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
@@ -17,7 +19,7 @@ from esp.web.models import NavBarEntry
 
 from esp.esp_local.data import navbar_data, preload_images
 from esp.esp_local.myesp import myesp_handlers
-from esp.esp_local.programs import program_handlers
+from esp.esp_local.program import program_handlers
 	  
 def index(request):
 	""" Displays a generic "index" page """
@@ -37,11 +39,11 @@ def bio(request, tl, last, first):
 	user_id = request.session.get('user_id', False)
 	if user_id != False: user_id = True
 	user = User.objects.filter(last_name=last, first_name=first)
-	if len(user) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'tl': tl})
+	if len(user) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images, 'tl': tl})
 	bio = user[0].teacherbio_set.all()
-	if len(bio) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'tl': tl})
+	if len(bio) < 1: return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images, 'tl': tl})
 	bio = bio[0].html()
-	return render_to_response('learn/bio', {'name': first + " " + last, 'bio': bio, 'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'tl': tl})
+	return render_to_response('learn/bio', {'name': first + " " + last, 'bio': bio, 'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images, 'tl': tl})
 
 
 
@@ -53,7 +55,7 @@ def myesp(request, module):
 	if myesp_handlers.has_key(module):
 		myesp_handlers[module](request, module, user_id)
 
-	return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+	return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
 
 def redirect(request, tl, one, three):
 	user_id = request.session.get('user_id', False)
@@ -68,53 +70,35 @@ def redirect(request, tl, one, three):
 	if len(qsd_rec) < 1:
 		return qsd(request, one + "/" +three+".html")
 	return render_to_response('qsd.html', {
-		'navbar_list': _makeNavBar(request.path),
+		'navbar_list': makeNavBar(request.path),
 		'preload_images': preload_images,
 		'title': qsd_rec[0].title,
 		'content': qsd_rec[0].html(),
 		'logged_in': user_id})
 
 def program(request, tl, one, two, module, extra = None):
-	user_id = request.session.get('user_id', False)
-        #if user_id != False: user_id = True
+	p = request.session.get('user_id', False)
+	user_id = p
+        if user_id != False: user_id = True
 
+        curUser = User.objects.filter(id=p)[0]
+	
 
-        #if not user_id : return render_to_response('users/pleaselogin', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+        #if not user_id : return render_to_response('users/pleaselogin', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
         #curUser = User.objects.filter(id=user_id)[0]
 
 	treeItem = "Q/Programs/" + one + "/" + two 
 	prog = GetNode(treeItem).program_set.all()
 	if len(prog) < 1:
-		return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+		return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
 	prog = prog[0]
 
 	if program_handlers.has_key(module):
 		# aseering: Welcome to the deep, dark, magical world of lambda expressions!
-		return program_handlers[module](request, tl, one, two, module, extra, user_id, prog)
+		return program_handlers[module](request, tl, one, two, module, extra, user_id, p, curUser, prog)
 
-	return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+	return render_to_response('users/construction', {'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
 
-def validateContactInfo(ci):
-	return True
-	if ci is None: return False
-	if ci.full_name == "" or ci.full_name is None: return False
-	if ci.address_street == "" or ci.address_street is None: return False
-	if (ci.phone_day != "" and ci.phone_day is not None) or (ci.phone_cell != "" or ci.phone_cell is not None) and not (ci.phone_even != "" or ci.phone_even is not None): return True
-	return False
-
-
-def _makeNavBar(url):
-	urlL = url.split('/')
-	urlL = [x for x in urlL if x != '']
-	qsdTree = NavBarEntry.find_by_url_parts(urlL)
-	navbar_data = []
-	for entry in qsdTree:
-		qd = {}
-		qd['link'] = entry.link
-		qd['text'] = entry.text
-		qd['indent'] = entry.indent
-		navbar_data.append(qd)
-	return navbar_data
 
 def contact(request):
 	return render_to_response('contact.html', { 'programs': UserBit.bits_get_qsc(AnonymousUser(), GetNode('V/Publish'), qsc_root=GetNode('Q/Programs')) })

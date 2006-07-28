@@ -1,14 +1,36 @@
+from django.shortcuts import render_to_response
+from esp.esp_local.navBar import makeNavBar
+from django.shortcuts import render_to_response
+from esp.calendar.models import Event
+from esp.web.models import QuasiStaticData
+from esp.users.models import ContactInfo, UserBit
+from esp.datatree.models import GetNode
+from esp.miniblog.models import Entry
+from esp.program.models import RegistrationProfile, TimeSlot, Class, ClassCategories
+from esp.dbmail.models import MessageRequest
+from django.contrib.auth.models import User, AnonymousUser
+from django.http import HttpResponse, Http404, HttpResponseNotAllowed
+from django.template import loader, Context
+from icalendar import Calendar, Event as CalEvent, UTC
+import datetime
 
+from django.contrib.auth.models import User
+from esp.web.models import NavBarEntry
 
-def program_catalog(request, tl, one, two, module, extra, user_id, prog):
+from esp.esp_local.data import navbar_data, preload_images
+
+from django.contrib.auth.decorators import login_required
+
+def program_catalog(request, tl, one, two, module, extra, user_id, p, curUser, prog):
 	clas = list(prog.class_set.all().order_by('category'))
 	p = one + " " + two
-	return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images, 'logged_in': user_id, 'tl': tl})
+	return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images, 'logged_in': user_id, 'tl': tl})
 
-def program_profile(request, tl, one, two, module, extra, user_id, prog):
+@login_required
+def program_profile(request, tl, one, two, module, extra, user_id, p, curUser, prog):
 	regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)[0]
-	   
-	context = {'logged_in': user_id}
+
+	context = {'logged_in': user_id }
 	context['student'] = curUser
 	context['one'] = one
 	if extra == "oops":
@@ -23,7 +45,7 @@ def program_profile(request, tl, one, two, module, extra, user_id, prog):
 		context['studentc'] = empty
 		context['emerg'] = empty
 		context['guard'] = empty
-		context['navbar_list'] = _makeNavBar(request.path)
+		context['navbar_list'] = makeNavBar(request.path)
 		context['preload_images'] =  preload_images
 		return render_to_response('users/profile', context)
 	contactInfo = contactInfo[0]
@@ -32,13 +54,14 @@ def program_profile(request, tl, one, two, module, extra, user_id, prog):
 	context['studentc'] = regprof.contact_student
 	context['emerg'] = regprof.contact_emergency
 	context['guard'] = regprof.contact_guardian
-	context['navbar_list'] = _makeNavBar(request.path)
+	context['navbar_list'] = makeNavBar(request.path)
 	context['preload_images'] =  preload_images
 	return render_to_response('users/profile', context)
 
-def program_studentreg(request, tl, one, two, module, extra, user_id, prog):
-	if not user_id: return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
-	curUser = User.objects.filter(id=q)[0]
+@login_required
+def program_studentreg(request, tl, one, two, module, extra, user_id, p, curUser, prog):
+	if not user_id: return render_to_response('users/login', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
+	curUser = User.objects.filter(id=p)[0]
 	regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
 	if len(regprof) < 1:
 		regprof = RegistrationProfile()
@@ -46,13 +69,13 @@ def program_studentreg(request, tl, one, two, module, extra, user_id, prog):
 		regprof.program = prog
 	else:
 		regprof = regprof[0]
-	curUser = User.objects.filter(id=q)[0]
-	context = {'logged_in': user_id}
+	curUser = User.objects.filter(id=p)[0]
+	context = {'logged_in': user_id }
 	context['program'] = one + " " + two
 	context['program'] = context['program'].replace("_", " ")
 	context['one'] = one
 	context['two'] = two
-	context['navbar_list'] = _makeNavBar(request.path)
+	context['navbar_list'] = makeNavBar(request.path)
 	context['preload_images'] =  preload_images
 	profile_done = False
 	for thing in [regprof.contact_student, regprof.contact_student, regprof.contact_emergency]:
@@ -79,14 +102,15 @@ def program_studentreg(request, tl, one, two, module, extra, user_id, prog):
 	regprof.save()
 	return render_to_response('users/studentreg', context)
 
-def program_finishstudentreg(request, tl, one, two, module, extra, user_id, prog):
+@login_required
+def program_finishstudentreg(request, tl, one, two, module, extra, user_id, p, curUser, prog):
 	pass
 	
-
-def program_teacherreg(request, tl, one, two, module, extra, user_id, prog):
-	if not user_id: return render_to_response('users/pleaselogin', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
-	context = {'logged_in': user_id}
-	context['navbar_list'] = _makeNavBar(request.path)
+@login_required
+def program_teacherreg(request, tl, one, two, module, extra, user_id, p, curUser, prog):
+	if not user_id: return render_to_response('users/pleaselogin', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
+	context = {'logged_in': user_id }
+	context['navbar_list'] = makeNavBar(request.path)
 	context['preload_images'] =  preload_images
 	context['one'] = one
 	context['two'] = two
@@ -104,8 +128,9 @@ def program_teacherreg(request, tl, one, two, module, extra, user_id, prog):
 	context['cat'] = cat
 	context['ts'] = ts
 	return render_to_response('program/teacherreg', context)
-	
-def program_fillslot(request, tl, one, two, module, extra, user_id, prog):
+
+@login_required
+def program_fillslot(request, tl, one, two, module, extra, user_id, p, curUser, prog):
 	ts = TimeSlot.objects.filter(id=extra)[0]
 	context = {'logged_in': user_id}
 	context['ts'] = ts
@@ -114,18 +139,20 @@ def program_fillslot(request, tl, one, two, module, extra, user_id, prog):
 	classes = ts.class_set.all()
 	
 	context['courses'] = classes
-	context['navbar_list'] = _makeNavBar(request.path)
+	context['navbar_list'] = makeNavBar(request.path)
 	context['preload_images'] =  preload_images
 	return render_to_response('program/timeslot', context)
-	    
-def program_addclass(request, tl, one, two, module, extra, user_id, prog):
+
+@login_required
+def program_addclass(request, tl, one, two, module, extra, user_id, p, curUser, prog):
 	classid = request.POST['class']
 	cobj = Class.objects.filter(id=classid)[0]
 	cobj.preregister_student(curUser)
 	return program(request, tl, one, two, "studentreg")
-	    
-def program_makeaclass(request, tl, one, two, module, extra, user_id, prog):
-	if q is None: return render_to_response('users/login', {'logged_in': False, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})
+
+@login_required
+def program_makeaclass(request, tl, one, two, module, extra, user_id, p, curUser, prog):
+	if q is None: return render_to_response('users/login', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
 	for thing in ['title', 'class_info', 'class_size_min', 'class_size_max', 'grade_min', 'grade_max']:
 		if not request.POST.has_key(thing) and request.POST[thing].strip() != "":
 			return program(request, tl, one, two, "teacherreg", extra = "oops")
@@ -161,9 +188,9 @@ def program_makeaclass(request, tl, one, two, module, extra, user_id, prog):
 	cobj.category = cat
 	cobj.enrollment = 0
 	cobj.save()
-	return render_to_response('program/registered', {'logged_in': user_id, 'navbar_list': _makeNavBar(request.path), 'preload_images': preload_images})	    
-
-def program_updateprofile(request, tl, one, two, module, extra, user_id, prog):
+	return render_to_response('program/registered', {'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})	    
+@login_required
+def program_updateprofile(request, tl, one, two, module, extra, user_id, p, curUser, prog):
 	if user_id is None:
 		return render_to_response('users/login', {'logged_in': False})
 	for thing in ['first', 'last', 'email', 'street', 'guard_name', 'emerg_name', 'emerg_street']:
@@ -294,6 +321,19 @@ program_handlers = {'catalog': program_catalog,
 		    'teacherreg': program_teacherreg,
 		    'fillslot': program_fillslot,
 		    'addclass': program_addclass,
-		    'makeclass': program_makeclass,
+		    'makeaclass': program_makeaclass,
 		    'updateprofile': program_updateprofile,
 		    }
+
+
+
+
+def validateContactInfo(ci):
+	if ci is None: return False
+	if ci.full_name == "" or ci.full_name is None: return False
+	if ci.address_street == "" or ci.address_street is None: return False
+	if ((ci.phone_day != "" and ci.phone_day is not None)
+	    or (ci.phone_cell != "" or ci.phone_cell is not None)
+	    and not (ci.phone_even != "" or ci.phone_even is not None)):
+		return True
+	return False
