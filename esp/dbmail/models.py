@@ -61,7 +61,7 @@ class TextOfEmail(models.Model):
         now = datetime.now()
 
         send_mail(str(self.subject),
-                  '<html>' + str(self.msgtext) + '</html>',
+                  str(self.msgtext),
                   str(self.send_from),
                   [ str(self.send_to) ],
                   fail_silently=False )
@@ -124,7 +124,8 @@ class EmailController(Controller):
         textreq.send_to = str(emailreq.target.email)
         textreq.send_from = str(emailreq.msgreq.sender)
         textreq.subject = str(emailreq.msgreq.subject)
-        textreq.msgtext = self.apply_smarttext(str(emailreq.msgreq.msgtext))
+        #textreq.msgtext = self.apply_smarttext(str(emailreq.msgreq.msgtext))
+        textreq.msgtext = str(emailreq.msgreq.msgtext)
         textreq.emailReq = emailreq
         textreq.save()
         return textreq
