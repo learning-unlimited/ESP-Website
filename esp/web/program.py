@@ -1,8 +1,8 @@
 from django.shortcuts import render_to_response
-from esp.esp_local.navBar import makeNavBar
+from esp.web.navBar import makeNavBar
 from django.shortcuts import render_to_response
 from esp.calendar.models import Event
-from esp.web.models import QuasiStaticData
+from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
@@ -17,7 +17,7 @@ import datetime
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 
-from esp.esp_local.data import navbar_data, preload_images
+from esp.web.data import navbar_data, preload_images
 
 from django.contrib.auth.decorators import login_required
 

@@ -780,9 +780,9 @@ class Markdown(object):
     STRONG_EM_PATTERN       = DoubleTagPattern(STRONG_EM_RE, 'strong,em')
     STRONG_EM_PATTERN_2     = DoubleTagPattern(STRONG_EM_2_RE, 'strong,em')
     
+    IMAGE_LINK_PATTERN      = ImagePattern(IMAGE_LINK_RE)
     LINK_PATTERN            = LinkPattern(LINK_RE)
     LINK_ANGLED_PATTERN     = LinkPattern(LINK_ANGLED_RE)
-    IMAGE_LINK_PATTERN      = ImagePattern(IMAGE_LINK_RE)
     IMAGE_REFERENCE_PATTERN = ImageReferencePattern(IMAGE_REFERENCE_RE)
     REFERENCE_PATTERN       = ReferencePattern(REFERENCE_RE)
     

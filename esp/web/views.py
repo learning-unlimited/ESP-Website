@@ -1,8 +1,8 @@
 from django.shortcuts import render_to_response
-from esp.esp_local.navBar import makeNavBar
+from esp.web.navBar import makeNavBar
 from esp.calendar.models import Event
-from esp.web.models import QuasiStaticData
-from esp.web.views import qsd, qsd_raw
+from esp.qsd.models import QuasiStaticData
+from esp.qsd.views import qsd, qsd_raw
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
@@ -17,10 +17,10 @@ import datetime
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 
-from esp.esp_local.data import navbar_data, preload_images
-from esp.esp_local.myesp import myesp_handlers
-from esp.esp_local.program import program_handlers
-	  
+from esp.web.data import navbar_data, preload_images
+from esp.web.myesp import myesp_handlers
+from esp.web.program import program_handlers
+
 def index(request):
 	""" Displays a generic "index" page """
 	# Catherine: This does nothing

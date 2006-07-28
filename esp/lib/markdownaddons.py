@@ -1,11 +1,11 @@
-from esp.lib.markdown import ImagePattern, LinkPattern, Markdown
+from esp.lib.markdown import ImagePattern, LinkPattern, Markdown, LINK_RE, LINK_ANGLED_RE, IMAGE_LINK_RE
 
 class ESPImagePattern (ImagePattern):
     """ Track if detected images are known or unknown to media{} """
     media = { }
 
     def handleMatch(self, m, doc):
-        el = super(self, ImagePattern).handleMatch(m, doc)
+        el = super(ImagePattern, self).handleMatch(m, doc)
 
         src = el.getAttribute('src')
 
@@ -20,7 +20,7 @@ class ESPLinkPattern (LinkPattern):
     media = { }
 
     def handleMatch(self, m, doc):
-        el = super(self, ImagePattern).handleMatch(m, doc)
+        el = super(ImagePattern, self).handleMatch(m, doc)
 
         src = el.getAttribute('src')
 
@@ -69,17 +69,18 @@ class ESPMarkdown(Markdown):
         return used_links
         
 
-    def __init__(self, source=None):
+    def __init__(self, source=None, media={}):
         """ Handle objects that have been overloaded to deal with the media dictionary """
+        self.media = media
 
-        self.LINK_PATTERN = ESPLinkPattern(LINK_RE)
-        self.LINK_ANGLED_PATTERN = ESPLinkPAttern(LINK_ANGLED_RE)
         self.IMAGE_LINK_PATTERN = ESPImagePattern(IMAGE_LINK_RE)
+        self.LINK_PATTERN = ESPLinkPattern(LINK_RE)
+        self.LINK_ANGLED_PATTERN = ESPLinkPattern(LINK_ANGLED_RE)
 
-        super(self, Markdown).__init__(source)
+        super(Markdown, self).__init__(source)
 
-        for i in [ IMAGE_LINK_PATTERN,
-                   LINK_PATTERN,
-                   LINK_ANGLED_PATTERN ]:
+        for i in [ self.IMAGE_LINK_PATTERN,
+                   self.LINK_PATTERN,
+                   self.LINK_ANGLED_PATTERN ]:
             i.media = media
         

@@ -1,11 +1,12 @@
-from esp.web.models import QuasiStaticData
+from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from django.shortcuts import render_to_response
-from esp.esp_local.navBar import makeNavBar
-from esp.esp_local.data import navbar_data, preload_images
+from esp.web.navBar import makeNavBar
+from esp.web.data import navbar_data, preload_images
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
+from esp.lib.markdownaddons import ESPMarkdown
 
 def qsd_raw(request, url):
 	user_id = request.session.get('user_id', False)
@@ -43,7 +44,18 @@ def qsd(request, url):
 		qsd_rec = QuasiStaticData.find_by_url_parts(url_parts)
 	except QuasiStaticData.DoesNotExist:
 		if url_verb != 'create': raise Http404
-	
+		else:
+			url_part = url_parts.pop()
+			qsd_rec = QuasiStaticData()
+			qsd_rec.path = GetNode('Q/Web/' + url_part)
+			qsd_rec.name = url_part
+			qsd_rec.title = 'New Page'
+			qsd_rec.content = 'Please insert your text here'
+			qsd_rec.save()
+
+			url_verb = 'edit'
+
+			
 	# Detect edit authorizations
 	if user_id:
 		user = User.objects.filter(id=user_id)[0]
@@ -51,12 +63,12 @@ def qsd(request, url):
 		user = None
 	have_edit = UserBit.UserHasPerms( user, qsd_rec.path, GetNode('V/Administer') )
 
-	# FIXME: the create verb is NOT implemented
-
 	# Detect the edit verb
 	if url_verb == 'edit':
 		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
 		if not have_edit: raise Http404
+
+		m = ESPMarkdown(qsd_rec.content, media={})
 		
 		# Render an edit form
 		return render_to_response('qsd_edit.html', {
@@ -64,6 +76,7 @@ def qsd(request, url):
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.content,
+			'missing_files': m.BrokenLinks(),
 			'logged_in': logged_in,
 			'target_url': other_url })
 			
