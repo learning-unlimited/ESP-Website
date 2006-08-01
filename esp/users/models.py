@@ -84,7 +84,7 @@ class UserBit(models.Model):
     @staticmethod
     def bits_get_users(qsc, verb, now = datetime.now()):
         """ Return all users who have been granted 'verb' on 'qsc' """
-        return UserBit.objects.filter(qsc__rangestart__lte=qsc.rangestart, qsc__rangeend__gte=qsc.rangeend, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend).filter(Q(startdate__isnull=True) | Q(startdate__lt=now), Q(enddate__isnull=True) | Q(enddate__gt=now))
+        return UserBit.objects.filter(qsc__rangestart__lte=qsc.rangestart, qsc__rangeend__gte=qsc.rangeend, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend).filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gte=now))
 
     @staticmethod
     def bits_get_qsc(user, verb, now = datetime.now(), qsc_root=None):
@@ -92,7 +92,7 @@ class UserBit(models.Model):
 
         If 'qsc_root' is specified, only return qsc structures at or below the specified node """
         now = datetime.now()
-        qscs = UserBit.objects.filter(verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True) | Q(startdate__lt=now), Q(enddate__isnull=True) | Q(enddate__gt=now))
+        qscs = UserBit.objects.filter(verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gte=now))
 
         if qsc_root == None:
             return qscs
@@ -102,7 +102,7 @@ class UserBit(models.Model):
     @staticmethod
     def bits_get_verb(user, qsc, now = datetime.now()):
         """ Return all verbs that 'user' has been granted on 'qsc' """        
-        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnul=True) | Q(startdate__lt=now), Q(enddate__isnull=True) | Q(enddate__gt=now))
+        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnul=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gte=now))
 
     @staticmethod
     def has_bits(queryset):

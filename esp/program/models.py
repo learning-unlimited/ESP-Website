@@ -93,7 +93,7 @@ class Class(models.Model):
                 newevent.start = e.start
                 newevent.end = e.end
                 newevent.short_description = e.short_description
-                newevent.description = e.description
+                newevent.description = e.description.replace('[event]', e.anchor.friendly_name) # Allow for the insertion of event names, so that the templates are less generic/nonspecific
                 newevent.event_type = e.event_type
                 newevent.anchor = self.anchor
                 newevent.save()

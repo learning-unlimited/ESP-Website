@@ -65,7 +65,7 @@ class TextOfEmail(models.Model):
                   str(self.send_from),
                   [ str(self.send_to) ],
                   fail_silently=False )
-
+        
         #message = MIMEMultipart()
         #message['To'] = str(self.send_to)
         #message['From'] = str(self.send_from)
@@ -77,6 +77,7 @@ class TextOfEmail(models.Model):
         #sendvia_smtp = smtplib.SMTP(smtp_server)
         #sendvia_smtp.sendmail(str(self.send_from), str(self.send_to), message.as_string())
         #sendvia_smtp.close()
+
         self.sent = now
         self.save()
         
