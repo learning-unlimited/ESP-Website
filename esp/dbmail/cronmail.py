@@ -11,7 +11,7 @@ def send_event_notice(event_start, event_end):
     user_events = { }
 
     for e in Event.objects.filter(start__lte=event_end, end__gte=event_start):
-        for u in UserBit.bits_get_users(e.anchor, GetNode('V/Subscribe'), now = e.start).filter(startdate__lt=e.end, enddate__gt=e.start):
+        for u in UserBit.bits_get_users(e.anchor, GetNode('V/Subscribe'), now = e.start, end_of_now = e.end).filter(startdate__lt=e.end, enddate__gt=e.start):
             if not user_events.has_key(u.user.id):
                 user_events[u.user.id] = []
 
