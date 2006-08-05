@@ -5,11 +5,15 @@
 {% block subsection_name %}QSD Editor{% endblock %}
 
 {% block content %}
-<form method="POST" action="{{ target_url }}">
+<form method="POST" action="{{ target_url }}" enctype="multipart/form-data">
   <h1>Title</h1>
   <input type="text" name="title" value="{{ title }}" size="64" /><br><br>
   <h1>Content</h1>
-  <textarea name="content" rows="20" cols="75">{{ content }}</textarea><br>
-  <input type="submit" name="post_edit" value="Submit!" /> <a href="{{ target_url }}">Cancel</a>
+  <p><textarea name="content" rows="20" cols="75">{{ content }}</textarea></p>
+  {% for file in missing_files %}
+  <p><label target="file_{{ file }}">File: {{ file }}</label><input type="file" name="file_{{ file }}" /></p>
+  {% endfor %}
+  <p><input type="submit" name="post_edit" value="Submit!" /> <a href="{{ target_url }}">Cancel</a></p>
+
 </form>
 {% endblock %}

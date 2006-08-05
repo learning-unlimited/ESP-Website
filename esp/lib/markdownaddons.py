@@ -2,36 +2,39 @@ from esp.lib.markdown import ImagePattern, LinkPattern, Markdown, LINK_RE, LINK_
 
 class ESPImagePattern (ImagePattern):
     """ Track if detected images are known or unknown to media{} """
-    media = { }
+    media_src = None
 
     def handleMatch(self, m, doc):
-        el = super(ImagePattern, self).handleMatch(m, doc)
+        el = super(ESPImagePattern, self).handleMatch(m, doc)
 
         src = el.getAttribute('src')
 
-        if media.has_key(src):
-            media[src] = True
-        else:
-            media[src] = False
+        if src[:6] == 'media/':
+            if self.media_src.media.has_key(src):
+                self.media_src.media[src] = True
+            else:
+                self.media_src.media[src] = False
 
+        return el
 
 class ESPLinkPattern (LinkPattern):
     """ Track if detected URLs are known or unknown to media{}, if they are under a relevant path """
-    media = { }
+    media_src = None
 
     def handleMatch(self, m, doc):
-        el = super(ImagePattern, self).handleMatch(m, doc)
+        el = super(ESPLinkPattern, self).handleMatch(m, doc)
 
-        src = el.getAttribute('src')
+        src = el.getAttribute('href')
 
         # Links can point to non- web media content;
         # only get ones that do point to media that we're managing
         if src[:6] == 'media/':
-            if media.has_key(src):
-                media[src] = True
+            if self.media_src.media.has_key(src):
+                self.media_src.media_src.media[src] = True
             else:
-                media[src] = False
+                self.media_src.media_src.media[src] = False
 
+        return el
 
 class ESPMarkdown(Markdown):
     """ Markdown formatter class, with ESP-customized modifications """
@@ -77,10 +80,9 @@ class ESPMarkdown(Markdown):
         self.LINK_PATTERN = ESPLinkPattern(LINK_RE)
         self.LINK_ANGLED_PATTERN = ESPLinkPattern(LINK_ANGLED_RE)
 
-        super(Markdown, self).__init__(source)
-
         for i in [ self.IMAGE_LINK_PATTERN,
                    self.LINK_PATTERN,
                    self.LINK_ANGLED_PATTERN ]:
-            i.media = media
-        
+            i.media_src = self
+
+        super(ESPMarkdown, self).__init__(source)

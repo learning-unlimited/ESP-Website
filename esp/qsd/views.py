@@ -69,6 +69,7 @@ def qsd(request, url):
 		if not have_edit: raise Http404
 
 		m = ESPMarkdown(qsd_rec.content, media={})
+		m.toString()
 		
 		# Render an edit form
 		return render_to_response('qsd_edit.html', {

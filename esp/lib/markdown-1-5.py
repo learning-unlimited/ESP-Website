@@ -146,6 +146,10 @@ class Element :
 
         self.attribute_values[attr] = value
 
+    # aseering 8-5-2006: Added because it's needed by ESP*Pattern
+    def getAttribute(self, attr):
+         return self.attribute_values[attr]
+
     def insertChild(self, position, child) :
         self.childNodes.insert(position, child)
         child.parent = self
@@ -440,7 +444,7 @@ AUTOMAIL_RE = r'<([^> ]*@[^> ]*)>'               # <me@example.com>
 HTML_RE = r'(\<[^\>]*\>)'                        # <...>
 ENTITY_RE = r'(&[\#a-zA-Z0-9]*;)'                # &amp;
 
-class BasePattern:
+class BasePattern(object):
 
     def __init__ (self, pattern) :
         self.pattern = pattern
@@ -1195,7 +1199,6 @@ class Markdown(object):
         #    return [self.doc.createTextNode(' ')]
 
         for pattern in self.inlinePatterns :
-
             #print
             #print self.inlinePatterns.index(pattern)
 
