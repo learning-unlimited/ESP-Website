@@ -120,10 +120,10 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 	context['preload_images'] =  preload_images
 	context['one'] = one
 	context['two'] = two
-	context['teacher'] = curUser
+	context['teacher'] = request.user
 	v = GetNode('V/Administer/Program/Class')
 	q = prog.anchor
-	cobj = UserBit.find_by_anchor_perms(Class, curUser, v, q)
+	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
 	if cobj == [] or cobj is None:
 		cobj = Class()
 	else:
@@ -155,7 +155,7 @@ def program_addclass(request, tl, one, two, module, extra, prog):
 	""" Preregister a student for the specified class, then return to the studentreg page """
 	classid = request.POST['class']
 	cobj = Class.objects.filter(id=classid)[0]
-	cobj.preregister_student(curUser)
+	cobj.preregister_student(request.user)
 	return program(request, tl, one, two, "studentreg")
 
 @login_required

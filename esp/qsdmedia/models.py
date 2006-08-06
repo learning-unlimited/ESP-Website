@@ -1,5 +1,5 @@
 from django.db import models
-from esp.datatree.models import Datatree
+from esp.datatree.models import DataTree
 
 # Create your models here.
 
@@ -8,7 +8,7 @@ root_file_path = '/Library/WebServer/DjangoApps/BigHonkingBin/'
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
-    anchor = models.ForeignKey(Datatree) # Relevant node in the tree
+    anchor = models.ForeignKey(DataTree) # Relevant node in the tree
 
     friendly_name = models.TextField() # Human-readable description of the media
     target_file = models.FilePathField(path=root_file_path, recursive=True) # Target media file

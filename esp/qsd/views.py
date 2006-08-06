@@ -1,7 +1,7 @@
 from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, UserBit
-from esp.datatree.models import GetNode
+from esp.datatree.models import GetNode, DataTree
 from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
 from esp.web.data import navbar_data, preload_images

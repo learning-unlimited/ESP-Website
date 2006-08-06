@@ -19,8 +19,8 @@ urlpatterns = patterns('',
     (r'^blog/(?P<url>.*)/post.scm$', 'esp.miniblog.views.post_miniblog'),
     (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog'),
 
-    (r'^(?P<url>.*)\.html$', 'esp.web.views.qsd'),
-    (r'^(?P<url>.*)\.text$', 'esp.web.views.qsd_raw'),
+    (r'^(?P<url>.*)\.html$', 'esp.qsd.views.qsd'),
+    (r'^(?P<url>.*)\.text$', 'esp.qsd.views.qsd_raw'),
 
     # Uncomment this for admin:
     (r'^admin/', include('django.contrib.admin.urls')),

@@ -135,7 +135,7 @@ def myesp_logfin(request, module):
 							 'logged_in': True
 							 })
 	
-def myesp_home(request, module, user_id):
+def myesp_home(request, module):
 	""" Draw the ESP home page """
 	curUser = request.user
 	sub = GetNode('V/Subscribe')
