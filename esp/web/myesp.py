@@ -1,4 +1,5 @@
-from django.contrib.auth import logout
+from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
 from django.shortcuts import render_to_response
@@ -21,23 +22,35 @@ from esp.web.models import NavBarEntry
 from esp.web.data import navbar_data, preload_images
 
 
-def myesp_register(request, module, user_id):
-	if user_id: return render_to_response('users/duh', {'logged_in': True, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-	return render_to_response('users/newuser', {'Problem': False,
-		'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-	
+def myesp_register(request, module):
+	""" Return a user-registration page """
+	if request.user.is_authenticated():
+		return render_to_response('users/duh', {'logged_in': True,
+							'navbar_list': makeNavBar(request.path),
+							'preload_images': preload_images})
 
-def myesp_finish(request, module, user_id):
+	return render_to_response('users/newuser', {'Problem': False,
+						    'logged_in': request.user.is_authenticated(),
+						    'navbar_list': makeNavBar(request.path),
+						    'preload_images': preload_images})
+
+def myesp_finish(request, module):
+	""" Complete a user registration """
 	for thing in ['confirm', 'password', 'username', 'email', "last_name", "first_name"]:
 		if not request.POST.has_key(thing):
 			return render_to_response('users/newuser', {'Problem': True,
-								  'logged_in': user_id, 'navbar_list': makeNavBar(request.path),
+								    'logged_in': request.user.is_authenticated(),
+								    'navbar_list': makeNavBar(request.path),
 								    'preload_images': preload_images})
+
 	if User.objects.filter(username=request.POST['username']).count() == 0:
 			
 		if request.POST['password'] != request.POST['confirm']:
 			return render_to_response('users/newuser', {'Problem': True,
-								   'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
+								   'logged_in': request.user.is_authenticated(),
+								    'navbar_list': makeNavBar(request.path),
+								    'preload_images': preload_images})
+
 		if len(User.objects.filter(email=request.POST['email'])) > 0:
 			email_user = User.objects.filter(email=request.POST['email'])[0]
 			email_user.username = request.POST['username']
@@ -45,10 +58,10 @@ def myesp_finish(request, module, user_id):
 			email_user.first_name = request.POST['first_name']
 			email_user.set_password(request.POST['password'])
 			email_user.save()
-			q = email_user.id
-			request.session['user_id'] = q
-			return render_to_response('users/regdone', {'logged_in': True, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})				
-			
+			login(request, email_user)
+			return render_to_response('users/regdone', {'logged_in': request.user.is_authenticated(),
+								    'navbar_list': makeNavBar(request.path),
+								    'preload_images': preload_images})							
 		django_user = User()
 		django_user.username = request.POST['username']
 		django_user.last_name = request.POST['last_name']
@@ -58,19 +71,25 @@ def myesp_finish(request, module, user_id):
 		django_user.is_staff = False
 		django_user.is_superuser = False
 		django_user.save()
-		q = django_user.id
-		request.session['user_id'] = q
-		return render_to_response('users/regdone', {'logged_in': True, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
+		login(request, django_user)
+		return render_to_response('users/regdone', {'logged_in': request.user.is_authenticated(),
+							    'navbar_list': makeNavBar(request.path),
+							    'preload_images': preload_images})
 
+def myesp_emaillist(request, module):
+	""" Present the subscribe-to-emaillist page """
+	return render_to_response('users/email', {'logged_in': False,
+						  'navbar_list': makeNavBar(request.path),
+						  'preload_images': preload_images})
 
-def myesp_emaillist(request, module, user_id):
-	return render_to_response('users/email', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-
-def myesp_emailfin(request, module, user_id):
+def myesp_emailfin(request, module):
+	""" Subscribe a user to an e-mail list """
 	if not request.POST.has_key('email'):
-		assert False, 1
 		return render_to_response('users/newuser', {'Problem': True,
-								    'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
+							    'logged_in': request.user.is_authenticated(),
+							    'navbar_list': makeNavBar(request.path),
+							    'preload_images': preload_images})
+	
 	if User.objects.filter(email=request.POST['email']).count() == 0:
 		if User.objects.filter(email=request.POST['email']).count() > 0:
 			return render_to_response('index.html', {
@@ -89,42 +108,41 @@ def myesp_emailfin(request, module, user_id):
 			'preload_images': preload_images,
 			'logged_in': False})
 	
-def myesp_signout(request, module, user_id):
+def myesp_signout(request, module):
+	""" Deauthenticate a user """
 	logout(request)
-	return render_to_response('users/logout', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
+	return render_to_response('users/logout', {'logged_in': request.user.is_authenticated(),
+						   'navbar_list': makeNavBar(request.path),
+						   'preload_images': preload_images})
 
+@login_required
+def myesp_login(request, module):
+	""" Force a login
+	Note that the decorator does this, we're just a redirect function """
+	return myesp_logfin(request, module)
 
-def myesp_login(request, module, user_id):
-	q = request.session.get('user_id', None)
-	if q is not None: render_to_response('users/duh', {'logged_in': True, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-	return render_to_response('users/login', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-	
-def myesp_logfin(request, module, user_id):
-	for thing in ['password', 'username']:	
-		if not request.POST.has_key(thing):
-			return render_to_response('users/login', {'Problem': True,
-									  'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-	curUser = User.objects.filter(username=request.POST['username'])[0]
-	if curUser.check_password(request.POST['password']):
-		render_to_response('users/login', {'Problem': True,
-							   'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-		q = curUser.id
-		request.session['user_id'] = q
-		return render_to_response('index.html', {
-			'navbar_list': makeNavBar(request.path),
-			'preload_images': preload_images,
-			'logged_in': True
-			})
+@login_required
+def myesp_logfin(request, module):
+	""" Display the "You have successfully logged in" page (or not, if login failed) """
+	if not request.user.is_authenticated():
+		return render_to_response('users/login', {'Problem': True,
+								  'logged_in': request.user.is_authenticated(),
+								  'navbar_list': makeNavBar(request.path),
+								  'preload_images': preload_images})
 	else:
-		return render_to_response('users/login', {'Problem': True, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-
+		return render_to_response('index.html', {'navbar_list': makeNavBar(request.path),
+							 'preload_images': preload_images,
+							 'logged_in': True
+							 })
+	
 def myesp_home(request, module, user_id):
-	q = request.session.get('user_id', None)
-	curUser = User.objects.filter(id=q)[0]
+	""" Draw the ESP home page """
+	curUser = request.user
 	sub = GetNode('V/Subscribe')
 	ann = Entry.find_posts_by_perms(curUser, sub)
 	ann = [x.html() for x in ann]
-	return render_to_response('display/battlescreen', {'announcements': ann, 'logged_in': user_id})
+	return render_to_response('display/battlescreen', {'announcements': ann,
+							   'logged_in': request.user.is_authenticated() })
 						
 
 myesp_handlers = { 'register': myesp_register,

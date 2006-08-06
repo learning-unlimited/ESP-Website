@@ -9,8 +9,7 @@ from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.lib.markdownaddons import ESPMarkdown
 
 def qsd_raw(request, url):
-	user_id = request.session.get('user_id', False)
-	if user_id != False: user_id = True
+	""" Return raw QSD data as a text file """
 	try:
 		qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
 	except QuasiStaticData.DoesNotExist:
@@ -18,11 +17,6 @@ def qsd_raw(request, url):
 	return HttpResponse(qsd_rec.content, mimetype='text/plain')
 
 def qsd(request, url):
-	# Fetch user login state
-	user_id = request.session.get('user_id', False)
-	logged_in = user_id
-	if logged_in != False: logged_in = True
-
 	# Extract URL parts
 	url_parts = url.split('/')
 
@@ -57,11 +51,7 @@ def qsd(request, url):
 
 			
 	# Detect edit authorizations
-	if user_id:
-		user = User.objects.filter(id=user_id)[0]
-	else:
-		user = None
-	have_edit = UserBit.UserHasPerms( user, qsd_rec.path, GetNode('V/Administer') )
+	have_edit = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Administer') )
 
 	# Detect the edit verb
 	if url_verb == 'edit':
@@ -78,7 +68,7 @@ def qsd(request, url):
 			'title': qsd_rec.title,
 			'content': qsd_rec.content,
 			'missing_files': m.BrokenLinks(),
-			'logged_in': logged_in,
+			'logged_in': request.user.is_authenticated(),
 			'target_url': other_url })
 			
 	# Detect the standard read verb
@@ -98,7 +88,7 @@ def qsd(request, url):
 				'preload_images': preload_images,
 				'title': qsd_rec.title,
 				'content': qsd_rec.html(),
-				'logged_in': logged_in,
+				'logged_in': request.user.is_authenticated(),
 				'have_edit': have_edit,
 				'edit_url': other_url})
 	

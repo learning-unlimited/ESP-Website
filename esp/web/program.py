@@ -21,26 +21,33 @@ from esp.web.data import navbar_data, preload_images
 
 from django.contrib.auth.decorators import login_required
 
-def program_catalog(request, tl, one, two, module, extra, user_id, p, curUser, prog):
+def program_catalog(request, tl, one, two, module, extra, prog):
+	""" Return the program class catalog """
 	clas = list(prog.class_set.all().order_by('category'))
 	p = one + " " + two
-	return render_to_response('program/catalogue', {'Program': p.replace("_", " "), 'courses': clas , 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images, 'logged_in': user_id, 'tl': tl})
+	return render_to_response('program/catalogue', {'Program': p.replace("_", " "),
+							'courses': clas ,
+							'navbar_list': makeNavBar(request.path),
+							'preload_images': preload_images,
+							'logged_in': request.user.is_authenticated(),
+							'tl': tl})
 
 @login_required
-def program_profile(request, tl, one, two, module, extra, user_id, p, curUser, prog):
-	regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)[0]
+def program_profile(request, tl, one, two, module, extra, prog):
+	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+	regprof = RegistrationProfile.objects.filter(user=request.user,program=prog)[0]
 
-	context = {'logged_in': user_id }
-	context['student'] = curUser
+	context = {'logged_in': request.user.is_authenticated() }
+	context['student'] = request.user
 	context['one'] = one
 	if extra == "oops":
 		context['oops'] = True
 	context['two'] = two
 	context['statenames'] = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL'  ,'IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  ,'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada']
-	contactInfo = curUser.contactinfo_set.all()
+	contactInfo = request.user.contactinfo_set.all()
 	if len(contactInfo) < 1:
 		empty = ContactInfo()
-		empty.user = curUser
+		empty.user = request.user
 		context['grad'] = empty
 		context['studentc'] = empty
 		context['emerg'] = empty
@@ -59,9 +66,9 @@ def program_profile(request, tl, one, two, module, extra, user_id, p, curUser, p
 	return render_to_response('users/profile', context)
 
 @login_required
-def program_studentreg(request, tl, one, two, module, extra, user_id, p, curUser, prog):
-	if not user_id: return render_to_response('users/login', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-	curUser = User.objects.filter(id=p)[0]
+def program_studentreg(request, tl, one, two, module, extra, prog):
+	""" Display a student reg page """
+	curUser = request.user
 	regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
 	if len(regprof) < 1:
 		regprof = RegistrationProfile()
@@ -69,8 +76,7 @@ def program_studentreg(request, tl, one, two, module, extra, user_id, p, curUser
 		regprof.program = prog
 	else:
 		regprof = regprof[0]
-	curUser = User.objects.filter(id=p)[0]
-	context = {'logged_in': user_id }
+	context = {'logged_in': request.user.is_authenticated() }
 	context['program'] = one + " " + two
 	context['program'] = context['program'].replace("_", " ")
 	context['one'] = one
@@ -79,8 +85,7 @@ def program_studentreg(request, tl, one, two, module, extra, user_id, p, curUser
 	context['preload_images'] =  preload_images
 	profile_done = False
 	for thing in [regprof.contact_student, regprof.contact_student, regprof.contact_emergency]:
-		foo = validateContactInfo(thing)
-		if foo:
+		if validateContactInfo(thing):
 			profile_done = True
 			break
 	if profile_done: context['profile_graphic'] = "checkmark"
@@ -103,13 +108,14 @@ def program_studentreg(request, tl, one, two, module, extra, user_id, p, curUser
 	return render_to_response('users/studentreg', context)
 
 @login_required
-def program_finishstudentreg(request, tl, one, two, module, extra, user_id, p, curUser, prog):
+def program_finishstudentreg(request, tl, one, two, module, extra, prog):
+	""" Finish student registration for a program """
 	pass
 	
 @login_required
-def program_teacherreg(request, tl, one, two, module, extra, user_id, p, curUser, prog):
-	if not user_id: return render_to_response('users/pleaselogin', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
-	context = {'logged_in': user_id }
+def program_teacherreg(request, tl, one, two, module, extra, prog):
+	""" Display the registration page to allow a teacher to register for a program """
+	context = {'logged_in': request.user.is_authenticated() }
 	context['navbar_list'] = makeNavBar(request.path)
 	context['preload_images'] =  preload_images
 	context['one'] = one
@@ -130,9 +136,10 @@ def program_teacherreg(request, tl, one, two, module, extra, user_id, p, curUser
 	return render_to_response('program/teacherreg', context)
 
 @login_required
-def program_fillslot(request, tl, one, two, module, extra, user_id, p, curUser, prog):
+def program_fillslot(request, tl, one, two, module, extra, prog):
+	""" Display the page to fill the timeslot for a program """
 	ts = TimeSlot.objects.filter(id=extra)[0]
-	context = {'logged_in': user_id}
+	context = {'logged_in': request.user.is_authenticated() }
 	context['ts'] = ts
 	context['one'] = one
 	context['two'] = two
@@ -144,15 +151,16 @@ def program_fillslot(request, tl, one, two, module, extra, user_id, p, curUser, 
 	return render_to_response('program/timeslot', context)
 
 @login_required
-def program_addclass(request, tl, one, two, module, extra, user_id, p, curUser, prog):
+def program_addclass(request, tl, one, two, module, extra, prog):
+	""" Preregister a student for the specified class, then return to the studentreg page """
 	classid = request.POST['class']
 	cobj = Class.objects.filter(id=classid)[0]
 	cobj.preregister_student(curUser)
 	return program(request, tl, one, two, "studentreg")
 
 @login_required
-def program_makeaclass(request, tl, one, two, module, extra, user_id, p, curUser, prog):
-	if q is None: return render_to_response('users/login', {'logged_in': False, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
+def program_makeaclass(request, tl, one, two, module, extra, prog):
+	""" Create a new class """
 	for thing in ['title', 'class_info', 'class_size_min', 'class_size_max', 'grade_min', 'grade_max']:
 		if not request.POST.has_key(thing) and request.POST[thing].strip() != "":
 			return program(request, tl, one, two, "teacherreg", extra = "oops")
@@ -178,7 +186,7 @@ def program_makeaclass(request, tl, one, two, module, extra, user_id, p, curUser
 	cobj.anchor.save()
 	v = GetNode( 'V/Administer/Program/Class')
 	ub = UserBit()
-	ub.user = curUser
+	ub.user = request.user
 	ub.qsc = cobj.anchor
 	ub.verb = v
 	ub.save()
@@ -188,25 +196,25 @@ def program_makeaclass(request, tl, one, two, module, extra, user_id, p, curUser
 	cobj.category = cat
 	cobj.enrollment = 0
 	cobj.save()
-	return render_to_response('program/registered', {'logged_in': user_id, 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})	    
+	return render_to_response('program/registered', {'logged_in': request.user.is_authenticated(),
+							 'navbar_list': makeNavBar(request.path),
+							 'preload_images': preload_images})	    
+
 @login_required
-def program_updateprofile(request, tl, one, two, module, extra, user_id, p, curUser, prog):
-	if user_id is None:
-		return render_to_response('users/login', {'logged_in': False})
+def program_updateprofile(request, tl, one, two, module, extra, prog):
+	""" Update a user profile """
 	for thing in ['first', 'last', 'email', 'street', 'guard_name', 'emerg_name', 'emerg_street']:
 		if not request.POST.has_key(thing) and request.POST[thing].strip() != "":
-			# assert False, 1
 			return program(request, tl, one, two, "profile", extra = "oops")
+
 	sphone = False
 	gphone = False
 	ephone = False
 	if request.has_key('dobmonth'):
 		if len(request.POST['dobmonth']) not in [1,2]:
-			# assert False, 2
 			return program(request, tl, one, two, "profile", extra = "oops")
 	if request.has_key('dobday'):
 		if len(request.POST['dobday']) not in [1,2]:
-			# assert False, 3
 			return program(request, tl, one, two, "profile", extra = "oops")
 	if request.has_key('dobyear'):
 		if len(request.POST['dobyear']) != 4:
@@ -241,7 +249,7 @@ def program_updateprofile(request, tl, one, two, module, extra, user_id, p, curU
 	if not (sphone and gphone and ephone):
 		# assert False, 8
 		return program(request, tl, one, two, "profile", extra = "oops")
-	curUser = User.objects.filter(id=q)[0]
+	curUser = request.user
 	regprof = RegistrationProfile.objects.filter(user__exact=curUser,program__exact=prog)
 	if len(regprof) < 1:
 		regprof = RegistrationProfile()
@@ -313,6 +321,17 @@ def program_updateprofile(request, tl, one, two, module, extra, user_id, p, curU
 	return program(request, tl, one, two, "studentreg", extra = None)
 
 
+def validateContactInfo(ci):
+	""" Confirm that all necessary contact information is attached to the specified object """
+	if ci is None: return False
+	if ci.full_name == "" or ci.full_name is None: return False
+	if ci.address_street == "" or ci.address_street is None: return False
+	if ((ci.phone_day != "" and ci.phone_day is not None)
+	    or (ci.phone_cell != "" or ci.phone_cell is not None)
+	    and not (ci.phone_even != "" or ci.phone_even is not None)):
+		return True
+	return False
+
 
 program_handlers = {'catalog': program_catalog,
 		    'profile': program_profile,
@@ -325,15 +344,3 @@ program_handlers = {'catalog': program_catalog,
 		    'updateprofile': program_updateprofile,
 		    }
 
-
-
-
-def validateContactInfo(ci):
-	if ci is None: return False
-	if ci.full_name == "" or ci.full_name is None: return False
-	if ci.address_street == "" or ci.address_street is None: return False
-	if ((ci.phone_day != "" and ci.phone_day is not None)
-	    or (ci.phone_cell != "" or ci.phone_cell is not None)
-	    and not (ci.phone_even != "" or ci.phone_even is not None)):
-		return True
-	return False

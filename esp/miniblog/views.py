@@ -7,19 +7,9 @@ from datetime import datetime
 
 def show_miniblog(request, url, extramsg=''):
     """ Shows a miniblog based on the specified node """
-    user_id = request.session.get('user_id', False)
+    user = request.user
 
     node = 'Q/' + str(url)
-
-    if user_id == False:
-        user = AnonymousUser()
-    else:
-        users = User.objects.filter(pk=user_id)
-        # Should redirect to login page here
-        assert users.count() == 1, "Logged in as a user that does not exist"
-
-        user = users[0]
-
     qsc = GetNode(node)
         
     entries = Entry.find_posts_by_perms(user, GetNode('V/Subscribe'), qsc=qsc)
@@ -36,16 +26,7 @@ def post_miniblog(request, url):
         if not request.POST.has_key(thing):
             return show_miniblog(request, url, extramsg='Error: Failed post.  Please contact the server administrators.')
 
-    user_id = request.session.get('user_id', False)
-
-    if user_id == False:
-        user = AnonymousUser()
-    else:
-        users = User.objects.filter(pk=user_id)
-        # Should redirect to login page here
-        assert users.count() == 1, "Logged in as a user that does not exist"
-
-        user = users[0]
+    user = request.user
 
     qsc = GetNode('Q/' + str(url))
 

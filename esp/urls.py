@@ -23,5 +23,7 @@ urlpatterns = patterns('',
     (r'^(?P<url>.*)\.text$', 'esp.web.views.qsd_raw'),
 
     # Uncomment this for admin:
-     (r'^admin/', include('django.contrib.admin.urls')),
+    (r'^admin/', include('django.contrib.admin.urls')),
+    # Uncomment this for @login_required:
+    (r'^accounts/login/$', 'django.contrib.auth.views.login'),
 )
