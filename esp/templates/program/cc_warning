@@ -1,0 +1,19 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}ESP Payment System{% endblock %}
+
+{% block subsection_name %} {% endblock %}
+
+{% block content %}
+<br/>
+<h3 style="font-size: 100%">Welcome!</h3>
+<br/>
+
+When you are done and have printed your receipt,
+please close this window to return to registration.
+<br/><br/>
+Be sure to only submit the form only once!
+<br/>
+<form action="cardpay.html" method="get">
+<input type="submit" value="Continue --&gt;">
+{% endblock %}
