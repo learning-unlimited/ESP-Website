@@ -11,7 +11,7 @@
   <h1>Content</h1>
   <p><textarea name="content" rows="20" cols="75">{{ content }}</textarea></p>
   {% for file in missing_files %}
-  <p><label target="file_{{ file }}">File: {{ file }}</label> &nbsp; <input type="file" name="file_{{ file }}" /></p>
+  <p><label target="{{ file }}">File: {{ file }}</label> &nbsp; <input type="file" name="{{ file }}" /></p>
   {% endfor %}
   <p><input type="submit" name="post_edit" value="Submit!" /> <a href="{{ target_url }}">Cancel</a></p>
 

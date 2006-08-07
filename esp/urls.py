@@ -21,6 +21,7 @@ urlpatterns = patterns('',
 
     (r'^(?P<url>.*)\.html$', 'esp.qsd.views.qsd'),
     (r'^(?P<url>.*)\.text$', 'esp.qsd.views.qsd_raw'),
+    (r'^qsdmedia/(?P<url>.*)\.*$', 'esp.qsdmedia.views.qsdmedia'),
 
     # Uncomment this for admin:
     (r'^admin/', include('django.contrib.admin.urls')),

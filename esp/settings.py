@@ -29,11 +29,11 @@ SITE_ID = 1
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = ''
+MEDIA_ROOT = '/esp/esp/media/uploaded/'
 
 # URL that handles the media served from MEDIA_ROOT.
 # Example: "http://media.lawrence.com"
-MEDIA_URL = ''
+MEDIA_URL = 'http://esp-devel.hackorp.com/media/uploaded/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
@@ -84,6 +84,7 @@ INSTALLED_APPS = (
     'esp.unittest',
     'esp.web',
     'esp.qsd',
+    'esp.qsdmedia',
 )
 
 EMAIL_HOST = 'outgoing.media.mit.edu'

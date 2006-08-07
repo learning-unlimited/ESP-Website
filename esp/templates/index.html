@@ -164,17 +164,17 @@ document.writeln("</style>");
 {% block login %}
 <div id="divlogin">
 <form name="loginform" id="loginform" method="post" action="/accounts/login/?next=/myesp/logfin/">
-<input type="hidden" name="op" value="login" />
+<input type="hidden" name="next" value="/myesp/logfin/" />
 <table border="0" cellpadding="0" cellspacing="0" summary=" ">
   {% if not logged_in %}
   <tr>
     <td><div class="divformcol1"><label for="user">Login:</label></div></td>
-    <td><div class="divformcol2"><input type="text" name="user" id="user" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+    <td><div class="divformcol2"><input type="text" id="id_username" class="vTextField required" name="username" size="15" value="" maxlength="30" />
     <td><div class="divformcol3">&nbsp;</div></td>
   </tr>
   <tr>
     <td><div class="divformcol1"><label for="pass">Password:</label></div></td>
-    <td><div class="divformcol2"><input type="password" name="password" id="pass" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+    <td><div class="divformcol2"><input type="password" id="id_password" class="vPasswordField required" name="password" size="15" value="" maxlength="30" />
     <td><div class="divformcol3"><input type="image" name="gologin" id="gologin" src="/media/images/home/go.gif" class="gobutton" alt="Go" title="" /></div></td>
   </tr>
   {% endif %}

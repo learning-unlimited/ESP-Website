@@ -160,11 +160,11 @@
   {% if not logged_in %}
 <tr>
   <td width="100%"><div class="divformcol1">&nbsp;</div></td>
-  <td class="rightalign"><div class="divformcol1"><label for="user">Login:</label></div></td>
-  <td><div class="divformcol2"><input type="text" name="username" id="username" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+  <td class="rightalign"><div class="divformcol1"><label for="user">Username:</label></div></td>
+  <td><div class="divformcol2"><input type="text" id="id_username" class="vTextField required" name="username" size="15" value="" maxlength="30" /></div></td>
   <td class="rightalign"><div class="divformcol3">&nbsp;&nbsp;<label for="pass">Password:</label></div></td>
-  <td><div class="divformcol4"><input type="password" name="password" id="pass" size="8" value="" maxlength="255" class="inputbox" /></div></td>
-  <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="/media/images/go2.gif" class="gobutton" alt="Go" title="" /></div></td>
+  <td><div class="divformcol4"><input type="password" id="id_password" class="vPasswordField required" name="password" size="15" value="" maxlength="30" /></div></td>
+  <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="/media/images/go2.gif" class="gobutton" alt="Go" title="" /><input type="hidden" name="next" value="/myesp/logfin/" /></div></td>
 </tr>
 {% endif %}
 <tr>

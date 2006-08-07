@@ -1,17 +1,18 @@
 from django.db import models
-from esp.datatree.models import DataTree
+from esp.datatree.models import DataTree, GetNode
+from esp.settings import MEDIA_ROOT
 
 # Create your models here.
 
 # The folder that Media files are saved to
-root_file_path = '/Library/WebServer/DjangoApps/BigHonkingBin/'
+root_file_path = MEDIA_ROOT + "%y_%m/"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
     anchor = models.ForeignKey(DataTree) # Relevant node in the tree
 
     friendly_name = models.TextField() # Human-readable description of the media
-    target_file = models.FilePathField(path=root_file_path, recursive=True) # Target media file
+    target_file = models.FileField(upload_to=root_file_path) # Target media file
     size = models.IntegerField(blank=True, null=True) # Size of the file, in bytes
     format = models.TextField(blank=True, null=True)  # Format string; should be human-readable (string format is currently unspecified)
     mime_type = models.CharField(blank=True, null=True, maxlength=256)
@@ -25,6 +26,30 @@ class Media(models.Model):
 
     class Admin:
         pass
+    
+    @staticmethod
+    def find_by_url_parts(parts):
+        """ Fetch a QSD record by its url parts """
+        # Get the Q_Web root
+        Q_Web = GetNode('Q/Web')
+
+        # Extract the last part
+        filename = parts.pop()
+
+        # Find the branch
+        try:
+            branch = Q_Web.tree_decode( parts )
+        except DataTree.NoSuchNodeException:
+            raise Media.DoesNotExist
+
+        # Find the record
+        media = Media.objects.filter( anchor = branch, friendly_name = filename )
+        if len(media) < 1:
+            raise Media.DoesNotExist
+        
+        # Operation Complete!
+        return media[0]
+
 
 class Video(models.Model):
     """ Video media object
