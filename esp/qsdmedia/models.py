@@ -5,7 +5,7 @@ from esp.settings import MEDIA_ROOT
 # Create your models here.
 
 # The folder that Media files are saved to
-root_file_path = MEDIA_ROOT + "%y_%m/"
+root_file_path = "%y_%m/"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
@@ -28,13 +28,10 @@ class Media(models.Model):
         pass
     
     @staticmethod
-    def find_by_url_parts(parts):
+    def find_by_url_parts(parts, filename):
         """ Fetch a QSD record by its url parts """
         # Get the Q_Web root
         Q_Web = GetNode('Q/Web')
-
-        # Extract the last part
-        filename = parts.pop()
 
         # Find the branch
         try:
@@ -57,7 +54,7 @@ class Video(models.Model):
     This object should be a subclass of Media, except that subclassing is broken in Django.
     Contains basic metadata for a Video.
     """
-    media = models.OneToOneField(Media, core=True, edit_inline=models.STACKED) # the Media "superclass" instance; should be one-to-one
+    media = models.OneToOneField(Media) # the Media "superclass" instance; should be one-to-one
 
     container_format = models.TextField(blank=True, null=True) # This may become a ForeignKey to a list of known types; in the meantime, just enter the standard abbreviation for the type
     audio_codec = models.TextField(blank=True, null=True) # This may become a ForeignKey to a list of known types; in the meantime, just enter the standard abbreviation for the type
@@ -79,7 +76,7 @@ class Picture(models.Model):
     This object should be a subclass of Media, except that subclassing is broken in Django.
     Contains basic metadata for a static picture.
     """
-    media = models.OneToOneField(Media, core=True, edit_inline=models.STACKED) # the Media "superclass" instance; should be one-to-one
+    media = models.OneToOneField(Media) # the Media "superclass" instance; should be one-to-one
 
     is_arbitrarily_resizable_format = models.BooleanField() # is the image a bitmap-based or vector-based format?
 
@@ -112,7 +109,7 @@ class Paper(models.Model):
     is_mutable_text = models.BooleanField() # Is the text alterable?, or is it in a locked format like a PDF or a locked MS Office document
     type = models.ForeignKey(PaperType) # Type of the paper, from a list of officially-acknowledged "types"
 
-    media = models.OneToOneField(Media, core=True, edit_inline=models.STACKED)
+    media = models.OneToOneField(Media)
 
     def __str__(self):
         return str(self.media)

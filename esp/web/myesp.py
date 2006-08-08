@@ -115,25 +115,24 @@ def myesp_signout(request, module):
 						   'navbar_list': makeNavBar(request.path),
 						   'preload_images': preload_images})
 
-@login_required
 def myesp_login(request, module):
 	""" Force a login
 	Note that the decorator does this, we're just a redirect function """
+	user = authenticate(username=request.POST['username'], password=request.POST['password'])
+
+	if user is not None:
+		login(request, user)
+
 	return myesp_logfin(request, module)
 
 @login_required
 def myesp_logfin(request, module):
-	""" Display the "You have successfully logged in" page (or not, if login failed) """
-	if not request.user.is_authenticated():
-		return render_to_response('users/login', {'Problem': True,
-								  'logged_in': request.user.is_authenticated(),
-								  'navbar_list': makeNavBar(request.path),
-								  'preload_images': preload_images})
-	else:
-		return render_to_response('index.html', {'navbar_list': makeNavBar(request.path),
-							 'preload_images': preload_images,
-							 'logged_in': True
-							 })
+	""" Display the "You have successfully logged in" page """
+
+	return render_to_response('index.html', {'navbar_list': makeNavBar(request.path),
+						 'preload_images': preload_images,
+						 'logged_in': True
+						 })
 	
 def myesp_home(request, module):
 	""" Draw the ESP home page """

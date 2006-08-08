@@ -4,10 +4,10 @@ from esp.users.models import UserBit
 from esp.datatree.models import GetNode
 
 
-def qsdmedia(request, url):
+def qsdmedia(request, url, filename):
     """ Return a redirect to a media file """
     try:
-        media_rec = Media.find_by_url_parts(url.split('/'))
+        media_rec = Media.find_by_url_parts(url.split('/'), filename)
     except Media.DoesNotExist:
         raise Http404
     
@@ -16,4 +16,4 @@ def qsdmedia(request, url):
     if have_view:
         return HttpResponseRedirect(media_rec.get_target_file_url())
     else:
-        return Http404
+        raise Http404
