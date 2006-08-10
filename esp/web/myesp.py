@@ -142,7 +142,7 @@ def myesp_home(request, module):
 	ann = [x.html() for x in ann]
 	return render_to_response('display/battlescreen', {'announcements': ann,
 							   'logged_in': request.user.is_authenticated() })
-						
+
 
 myesp_handlers = { 'register': myesp_register,
 		   'finish': myesp_finish,
@@ -151,5 +151,5 @@ myesp_handlers = { 'register': myesp_register,
 		   'signout': myesp_signout,
 		   'login': myesp_login,
 		   'logfin': myesp_logfin,
-		   'home': myesp_home
+		   'home': myesp_home,
 		   }

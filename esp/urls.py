@@ -2,17 +2,20 @@ from django.conf.urls.defaults import *
 from esp.program.models import Class
 
 urlpatterns = patterns('',
-    (r'^startaclass/', 'django.views.generic.create_update.create_object', { 'model': Class } ),
     # Example:
     # (r'^esp/', include('esp.apps.foo.urls.foo')),
 
     # The default
     (r'^$', 'esp.web.views.index'),
 
+    # Generic view for starting a class
+    (r'^startaclass/', 'django.views.generic.create_update.create_object', { 'model': Class } ),
+
     # aseering - Features that are decidedly not done, but are still useable, will end up under "beta/"
     (r'^beta/calendar.ics$', 'esp.web.views.iCalFeed'),
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
+    # Contact Us! pages
     (r'^contact/contact.html$', 'esp.web.views.contact'),
     (r'^contact/submit.html$', 'esp.web.views.contact_submit'),
 
@@ -21,8 +24,15 @@ urlpatterns = patterns('',
     (r'^(teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.program'),
     (r'^(learn|teach)/([-A-Za-z0-9/_ ]+)/([-A-Za-z0-9_ ]+).html$', 'esp.web.views.redirect'),
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),
+
+    # Mini-Blog pages
     (r'^blog/(?P<url>.*)/post.scm$', 'esp.miniblog.views.post_miniblog'),
     (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog'),
+
+    # Event-generation
+    (r'^events/create/$', 'esp.calendar.views.createevent'),
+    (r'^events/edit/$', 'esp.calendar.views.updateevent'),
+    (r'^events/edit/(?P<id>\d+)/$', 'esp.calendar.views.updateevent'),
 
     # DB-generated QSD pages: HTML or plaintext
     (r'^(?P<url>.*)\.html$', 'esp.qsd.views.qsd'),
