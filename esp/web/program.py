@@ -6,7 +6,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, TimeSlot, Class, ClassCategories
+from esp.program.models import RegistrationProfile, Class, ClassCategories
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
@@ -70,7 +70,7 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 	""" Display a student reg page """
 	curUser = request.user
 	regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
-	if len(regprof) < 1:
+	if regprof.count() < 1:
 		regprof = RegistrationProfile()
 		regprof.user = curUser
 		regprof.program = prog
@@ -91,12 +91,12 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 	if profile_done: context['profile_graphic'] = "checkmark"
 	else: context['profile_graphic'] = "nocheckmark"
 	context['student'] = curUser.first_name + " " + curUser.last_name
-	ts = list(prog.timeslot_set.all())
+	ts = list(prog.anchor.tree_decode(['Templates', 'TimeSlots']).children())
 
 	pre = regprof.preregistered_classes()
 	prerl = []
 	for time in ts:
-		then = [x for x in pre if x.slot == time]
+		then = [x for x in pre if x.event_template == time]
 		if then == []: prerl.append((time, None))
 		else: prerl.append((time, then[0]))
 	context['timeslots'] = prerl
@@ -125,10 +125,30 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 	q = prog.anchor
 	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
 	if cobj == [] or cobj is None:
-		cobj = Class()
+		return program_teacherreg2(request, tl, one, two, module, extra, prog)
 	else:
-		cobj = cobj[0]
-		context['class'] = cobj
+		context['classes'] = cobj
+		return render_to_response('program/selectclass', context)
+		
+def program_teacherreg2(request, tl, one, two, module, extra, prog):
+	context = {'logged_in': request.user.is_authenticated() }
+	context['navbar_list'] = makeNavBar(request.path)
+	context['preload_images'] =  preload_images
+	context['one'] = one
+	context['two'] = two
+	context['teacher'] = request.user
+	v = GetNode('V/Administer/Program/Class')
+	q = prog.anchor
+	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
+	if request.POST.has_key('cname'):
+		cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
+		for pclass in cobj:
+			if pclass.title == request.POST['cname']:
+				cobj = pclass
+				break
+	else:
+		cobj = Class()
+	context['class'] = cobj
 	ts = list(prog.timeslot_set.all())
 	cat = list(ClassCategories.objects.all())
 	context['cat'] = cat
@@ -138,12 +158,13 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 @login_required
 def program_fillslot(request, tl, one, two, module, extra, prog):
 	""" Display the page to fill the timeslot for a program """
-	ts = TimeSlot.objects.filter(id=extra)[0]
+	#ts = TimeSlot.objects.filter(id=extra)[0]
+	ts = DataTree.objects.filter(id=extra)[0]
 	context = {'logged_in': request.user.is_authenticated() }
 	context['ts'] = ts
 	context['one'] = one
 	context['two'] = two
-	classes = ts.class_set.all()
+	classes = prog.anchor.class_set.all()
 	
 	context['courses'] = classes
 	context['navbar_list'] = makeNavBar(request.path)
@@ -190,8 +211,8 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	ub.qsc = cobj.anchor
 	ub.verb = v
 	ub.save()
-	timeslot = TimeSlot.objects.filter(id=request.POST['Time'])[0]
-	cobj.slot = timeslot
+	#TimeSlot
+	cobj.event_template = DataTree.objects.filter(id=request.POST['Time'])
 	cat = ClassCategories.objects.filter(id=request.POST['Catigory'])[0]
 	cobj.category = cat
 	cobj.enrollment = 0
@@ -337,7 +358,8 @@ program_handlers = {'catalog': program_catalog,
 		    'profile': program_profile,
 		    'studentreg': program_studentreg,
 		    'finishstudentreg': program_finishstudentreg,
-		    'teacherreg': program_teacherreg,
+		    'selectclass': program_teacherreg,
+		    'teacherreg': program_teacherreg2,
 		    'fillslot': program_fillslot,
 		    'addclass': program_addclass,
 		    'makeaclass': program_makeaclass,

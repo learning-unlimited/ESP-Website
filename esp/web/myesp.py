@@ -8,7 +8,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, TimeSlot, Class, ClassCategories
+from esp.program.models import RegistrationProfile, Class, ClassCategories
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
@@ -118,8 +118,12 @@ def myesp_signout(request, module):
 def myesp_login(request, module):
 	""" Force a login
 	Note that the decorator does this, we're just a redirect function """
-	user = authenticate(username=request.POST['username'], password=request.POST['password'])
 
+	if request.POST.has_key('username') and request.POST.has_key('password'):
+		user = authenticate(username=request.POST['username'], password=request.POST['password'])
+	else:
+		user = None
+	
 	if user is not None:
 		login(request, user)
 

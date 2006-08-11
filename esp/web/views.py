@@ -8,7 +8,7 @@ from esp.qsd.views import qsd, qsd_raw
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, TimeSlot, Class, ClassCategories
+from esp.program.models import RegistrationProfile, Class, ClassCategories
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
