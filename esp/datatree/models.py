@@ -32,9 +32,9 @@ class DataTree(models.Model):
             filtered = self.children().filter(name=tree_nodenames[0])
 
             if filtered.count() < 1L:
-                raise self.NoSuchNodeException(tree_nodenames[0],self)
+                raise self.NoSuchNodeException(self,tree_nodenames)
             elif filtered.count() > 1L:
-                raise self.DuplicateNodeException(tree_nodenames[0],self)
+                raise self.DuplicateNodeException(self,tree_nodenames)
             else:
                 return filtered[0].tree_decode(tree_nodenames[1:])
 
@@ -57,7 +57,7 @@ class DataTree(models.Model):
                 return newnode.tree_create(tree_nodenames[1:])
                 
             elif filtered.count() > 1:
-                raise self.DuplicateNodeException(tree_nodenames[0],self)
+                raise self.DuplicateNodeException(self,tree_nodenames)
             else:
                 return filtered[0].tree_create(tree_nodenames[1:])
 
@@ -198,17 +198,17 @@ class DataTree(models.Model):
 
     class NoSuchNodeException(Exception):
         """ Raised if a required node in a DataTree doesn't exist """
-        def __init__(self, value, anchor):
-            self.value = "No such node: " + str(value)
+        def __init__(self, anchor, remainder):
 	    self.anchor = anchor
+	    self.remainder = remainder
 
         def __str__(self):
-            return repr(self.value)
+            return "Node not found: " + repr(remainder[0])
 
     class DuplicateNodeException(Exception):
 	    """ Raised if trying to traverse a DataTree with ambiguous child names """
 	    def __init__(self, value, anchor):
-		    self.value = "no such node: " + str(value)
+		    self.value = "duplicate node: " + str(value)
 		    self.anchor = anchor
 	    def __str__(self):
 		    return repr(self.value)
@@ -217,8 +217,10 @@ class DataTree(models.Model):
         """ The DataTree must always contain a node named 'ROOT', with no parent.  Raise this exception \
         if this is encountered. """
         def __init__(self, NumOfRootNodes):
-           NoSuchNodeException.__init__(self, 'ROOT', None)
+           NoSuchNodeException.__init__(self, None, ['ROOT'])
            self.value = str(NumOfRootNodes) + " ROOT nodes in the DataTree"
+	def __str__(self):
+		return repr(self.value)
 
 def GetNode(nodename):
     """ Get a DataTree node with the given path; create it if it doesn't exist """
