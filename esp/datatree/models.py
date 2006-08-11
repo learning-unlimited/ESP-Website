@@ -203,7 +203,7 @@ class DataTree(models.Model):
 	    self.remainder = remainder
 
         def __str__(self):
-            return "Node not found: " + repr(remainder[0])
+            return "Node not found: " + repr(self.remainder[0])
 
     class DuplicateNodeException(Exception):
 	    """ Raised if trying to traverse a DataTree with ambiguous child names """
