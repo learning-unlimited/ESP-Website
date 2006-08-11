@@ -14,7 +14,7 @@ from os.path import basename, dirname
 def qsd_raw(request, url):
 	""" Return raw QSD data as a text file """
 	try:
-		qsd_rec = QuasiStaticData.find_by_url_parts(url.split('/'))
+		qsd_rec = QuasiStaticData.find_by_url_parts(GetNode('Q/Web'),url.split('/'))
 	except QuasiStaticData.DoesNotExist:
 		raise Http404
 
@@ -44,7 +44,7 @@ def qsd(request, url):
 	
 	# Fetch the QSD object
 	try:
-		qsd_rec = QuasiStaticData.find_by_url_parts(url_parts)
+		qsd_rec = QuasiStaticData.find_by_url_parts(GetNode('Q/Web'),url_parts)
 	except QuasiStaticData.DoesNotExist:
 		if url_verb != 'create': raise Http404
 		else:

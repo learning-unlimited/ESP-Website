@@ -21,17 +21,14 @@ class QuasiStaticData(models.Model):
 		return markdown(self.content)
 
 	@staticmethod
-	def find_by_url_parts(parts):
+	def find_by_url_parts(base, parts):
 		""" Fetch a QSD record by its url parts """
-		# Get the Q_Web root
-		Q_Web = GetNode('Q/Web')
-
 		# Extract the last part
 		filename = parts.pop()
 
 		# Find the branch
 		try:
-			branch = Q_Web.tree_decode( parts )
+			branch = base.tree_decode( parts )
 		except DataTree.NoSuchNodeException:
 			raise QuasiStaticData.DoesNotExist
 
