@@ -1,0 +1,11 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Confirmation Page{% endblock %}
+
+{% block subsection_name %}(Please print and bring to registration){% endblock %}
+
+{% block content %}
+<br /><br />
+<h1 style="text-align: center">Thanks for teaching.  Your class has been registered and you'll hear from us shortly.</h1>
+<h2 style="text-align: center"><a href='/'>Return to the homepage</a></h2>
+{% endblock %}

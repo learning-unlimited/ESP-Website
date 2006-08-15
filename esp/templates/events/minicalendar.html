@@ -1,0 +1,89 @@
+<table border="3">
+{% for eventset in events_by_week %}
+<tr>
+<td {% if eventset.6 %}bgcolor="grey"{% else %}bgcolor="lightgrey"{% endif %} title="{% for event in eventset.6.continuing_events %}{{ event.short_description }} (until {{ event.end }}):
+
+{{ event.description }}
+
+
+{% endfor %}{% for event in eventset.6.day_events %}{{ event.short_description }} ({{ event.start }} - {{ event.end }})
+
+{{ event.description }}
+
+
+{% endfor %}">{{ eventset.6.date.day }}</td>
+<td {% if eventset.6 %}bgcolor="grey"{% else %}bgcolor="lightgrey"{% endif %} title="{% for event in eventset.6.continuing_events %}{{ event.short_description }} (until {{ event.end }}):
+
+{{ event.description }}
+
+
+{% endfor %}{% for event in eventset.6.day_events %}{{ event.short_description }} ({{ event.start }} - {{ event.end }})
+
+{{ event.description }}
+
+
+{% endfor %}">{{ eventset.6.date.day }}</td>
+<td {% if eventset.6 %}bgcolor="grey"{% else %}bgcolor="lightgrey"{% endif %} title="{% for event in eventset.6.continuing_events %}{{ event.short_description }} (until {{ event.end }}):
+
+{{ event.description }}
+
+
+{% endfor %}{% for event in eventset.6.day_events %}{{ event.short_description }} ({{ event.start }} - {{ event.end }})
+
+{{ event.description }}
+
+
+{% endfor %}">{{ eventset.6.date.day }}</td>
+<td {% if eventset.6 %}bgcolor="grey"{% else %}bgcolor="lightgrey"{% endif %} title="{% for event in eventset.6.continuing_events %}{{ event.short_description }} (until {{ event.end }}):
+
+{{ event.description }}
+
+
+{% endfor %}{% for event in eventset.6.day_events %}{{ event.short_description }} ({{ event.start }} - {{ event.end }})
+
+{{ event.description }}
+
+
+{% endfor %}">{{ eventset.6.date.day }}</td>
+<td {% if eventset.6 %}bgcolor="grey"{% else %}bgcolor="lightgrey"{% endif %} title="{% for event in eventset.6.continuing_events %}{{ event.short_description }} (until {{ event.end }}):
+
+{{ event.description }}
+
+
+{% endfor %}{% for event in eventset.6.day_events %}{{ event.short_description }} ({{ event.start }} - {{ event.end }})
+
+{{ event.description }}
+
+
+{% endfor %}">{{ eventset.6.date.day }}</td>
+<td {% if eventset.6 %}bgcolor="grey"{% else %}bgcolor="lightgrey"{% endif %} title="{% for event in eventset.6.continuing_events %}{{ event.short_description }} (until {{ event.end }}):
+
+{{ event.description }}
+
+
+{% endfor %}{% for event in eventset.6.day_events %}{{ event.short_description }} ({{ event.start }} - {{ event.end }})
+
+{{ event.description }}
+
+
+{% endfor %}">{{ eventset.6.date.day }}</td>
+<td {% if eventset.6 %}bgcolor="grey"{% else %}bgcolor="lightgrey"{% endif %} title="{% for event in eventset.6.continuing_events %}{{ event.short_description }} (until {{ event.end }}):
+
+{{ event.description }}
+
+
+{% endfor %}{% for event in eventset.6.day_events %}{{ event.short_description }} ({{ event.start }} - {{ event.end }})
+
+{{ event.description }}
+
+
+{% endfor %}">{{ eventset.6.date.day }}</td>
+</tr>
+{% endfor %}
+{% for event in eventset.continuing_events %}
+<div title="{{ event.description }}">{{ event.short_description }} <i>(until {{ event.end }})</i></div><br />
+{% endfor %}
+{% for event in eventset.day_events %}
+<div title="{{ event.description }}">{{ event.short_description }} <i>({{ event.start }} - {{ event.end }})</i></div><br />
+{% endfor %}
+{% endfor %}

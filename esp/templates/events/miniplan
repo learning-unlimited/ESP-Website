@@ -1,0 +1,10 @@
+{% for eventset in events_by_day %}
+<p>
+<h2>{{ eventset.date }}</h2>
+{% for event in eventset.continuing_events %}
+<div title="{{ event.description }}">{{ event.short_description }} <i>(until {{ event.end }})</i></div><br />
+{% endfor %}
+{% for event in eventset.day_events %}
+<div title="{{ event.description }}">{{ event.short_description }} <i>({{ event.start }} - {{ event.end }})</i></div><br />
+{% endfor %}
+{% endfor %}

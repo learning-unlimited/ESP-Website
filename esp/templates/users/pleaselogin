@@ -1,0 +1,10 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Log In{% endblock %}
+
+{% block subsection_name %}{% endblock %}
+
+{% block content %}
+<h1 style="text-align: center">Please <a href="http://esp-devel.hackorp.com/myesp/login/">log in</a> to access this functionality.</h1>
+<h2 style="text-align: center"><a href='/'>Return to the homepage</a></h2>
+{% endblock %}
