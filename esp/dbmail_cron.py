@@ -1,10 +1,10 @@
-#!/sw/bin/python
+#!/usr/bin/python
 
 import sys
-sys.path += ['/Library/WebServer/DjangoApps/']
+sys.path += ['/esp/']
 
 import os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'tmg.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 import manage
 from esp.dbmail.cronmail import send_event_notices_for_day

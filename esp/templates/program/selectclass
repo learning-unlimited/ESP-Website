@@ -1,0 +1,28 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Teacher Signup{% endblock %}
+
+{% block subsection_name %}Teach for {{one}}{% endblock %}
+
+{% block content %}
+	<br /><br />
+       <div id="divmaintext">	
+	<h2>Hi {{teacher.first_name}}!</h2>
+	<h2>Thank you for teaching for {{one}}!</h2> 
+	<br /><br />
+
+	{% if oops %}
+<h2 style="color:red">Please make sure to fill in all the fields.  Thanks! </h2>
+{% endif %}
+
+	<form action='http://esp-devel.hackorp.com/teach/{{one}}/{{two}}/teacherreg/' method="post">
+
+ <b>Please choose a course to edit:</b><br />
+{% for class in classes %}
+	<input type="radio" name="cname" value="{{class}}"> {{class}}<br/>
+{% endfor %}
+<input type="radio" name="cname" value="CatherineIsLazy"> Create a new class<br/>
+<center><input type='submit' value='Continue'></center><br>
+</form></div>
+
+{% endblock %}

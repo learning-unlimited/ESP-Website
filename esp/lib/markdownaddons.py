@@ -30,9 +30,9 @@ class ESPLinkPattern (LinkPattern):
         # only get ones that do point to media that we're managing
         if src[:6] == 'media/':
             if self.media_src.media.has_key(src):
-                self.media_src.media_src.media[src] = True
+                self.media_src.media[src] = True
             else:
-                self.media_src.media_src.media[src] = False
+                self.media_src.media[src] = False
 
         return el
 

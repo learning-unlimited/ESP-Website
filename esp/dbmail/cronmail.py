@@ -1,51 +1,38 @@
 from esp.calendar.models import Event
-from esp.dbmail.models import MessageRequest, EmailRequest, EmailController
+from esp.dbmail.models import MessageRequest, EmailRequest
+from esp.dbmail.controllers import EmailController
 from esp.users.models import UserBit
 from esp.datatree.models import GetNode
 from datetime import datetime, timedelta
 from django.db.models import Q
 from django.contrib.auth.models import User
 
+
+def event_to_message(event):
+    m = MessageRequest()
+    m.subject = "Event Notification"
+    m.category = GetNode('Q/Event')
+    m.sender = 'esp@mit.edu'
+    m.msgtext = 'Event Reminder: ' + event.short_description + '\n\n' + event.description
+    m.save()
+    return m
+    
+def user_to_email(message, user):
+    req = EmailRequest()
+
 def send_event_notice(event_start, event_end):
     """ Send event reminders for all events, if any fraction of an event occurs in the given time range.  Send to all users who are subscribed to each event. """
-    user_events = { }
+    messages = []
 
     for e in Event.objects.filter(start__lte=event_end, end__gte=event_start):
-        for u in UserBit.bits_get_users(e.anchor, GetNode('V/Subscribe'), now = e.start, end_of_now = e.end).filter(startdate__lt=e.end, enddate__gt=e.start):
-            if not user_events.has_key(u.user.id):
-                user_events[u.user.id] = []
-
-            user_events[u.user.id].append(e)
-            print 'Appended ' + str(e) + ' to user ' + str(u.user) + ' (' + str(u) + ')'
-        print '\n\n\n'
-
-    print user_events
-
-    for user_id in user_events.keys():
-        u = User.objects.filter(pk=user_id)[0]
+        m = event_to_message(e)
+        messages.append(m)
         
-        m = MessageRequest()
-        m.subject = 'Daily Schedule Digest'
-        m.category = None
-        m.sender = 'oz@media.mit.edu'
+        for u in UserBit.bits_get_users(e.anchor, GetNode('V/Subscribe'), now = e.start, end_of_now = e.end).filter(startdate__lt=e.end, enddate__gt=e.start):
+            user_to_email(m, u)
 
-        m.msgtext = 'Your Schedule Reminders for the day:\n\n' + '='*50 + '\n\n'
-
-        for e in user_events[user_id]:
-            m.msgtext += e.short_description + '\n' + e.description + '\n\n' + 'Time range: ' + str(e.start) + ' to ' + str(e.end) + '\n\n\n' + '-'*50 + '\n\n'
-
-        print "Generated message: " + str(m)
-        m.save()
-
-        req = EmailRequest()
-        req.target = u
-        req.msgreq = m
-        req.save()
-
-        print "Generated EmailRequest: " + str(req)
-
-        EmailController().run(m)
-
+    EmailController().run(messages)        
+            
 
 def send_event_notices_for_date(day):
     """ Send event reminders for all events that occur in any part on "day" """

@@ -91,7 +91,7 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 	if profile_done: context['profile_graphic'] = "checkmark"
 	else: context['profile_graphic'] = "nocheckmark"
 	context['student'] = curUser.first_name + " " + curUser.last_name
-	ts = list(prog.anchor.tree_decode(['Templates', 'TimeSlots']).children())
+	ts = list(prog.anchor.tree_create(['Templates', 'TimeSlots']).children())
 
 	pre = regprof.preregistered_classes()
 	prerl = []
@@ -136,6 +136,7 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog):
 	context['preload_images'] =  preload_images
 	context['one'] = one
 	context['two'] = two
+	context['oops'] = False
 	context['teacher'] = request.user
 	v = GetNode('V/Administer/Program/Class')
 	q = prog.anchor
@@ -143,13 +144,16 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog):
 	if request.POST.has_key('cname'):
 		cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
 		for pclass in cobj:
-			if pclass.title == request.POST['cname']:
+			eee = [x.title() for x in cobj]
+			ffff = [(x.title() == request.POST['cname']) for x in cobj]
+			if pclass.title() == request.POST['cname']:
 				cobj = pclass
 				break
 	else:
 		cobj = Class()
-	context['class'] = cobj
-	ts = list(prog.timeslot_set.all())
+		cobj.title = ""
+	context['course'] = cobj
+	ts = list(prog.anchor.tree_create(['Templates','TimeSlots']).children())
 	cat = list(ClassCategories.objects.all())
 	context['cat'] = cat
 	context['ts'] = ts

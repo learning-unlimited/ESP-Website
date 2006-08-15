@@ -1,0 +1,53 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Create an Event{% endblock %}
+
+{% block subsection_name %}Event{% endblock %}
+
+{% block content %}
+<script type="text/javascript" src="/admin/jsi18n/"></script>
+<script type="text/javascript" src="/admin/media/js/core.js"></script>
+<script type="text/javascript" src="/admin/media/js/admin/RelatedObjectLookups.js"></script>
+<script type="text/javascript" src="/admin/media/js/calendar.js"></script>
+<script type="text/javascript" src="/admin/media/js/admin/DateTimeShortcuts.js"></script>
+
+<h1>Create an Event:</h1>
+
+{% if form.has_errors %}
+<h2>Please correct the following error(s):</h2>
+<p>{{ form.error_dict|pluralize }}</p>
+{% endif %}
+
+<form method="post" action=".">
+<p>
+    <label for="id_short_description">Event:</label><br />
+    <input id="id_short_description" class="vTextField required" name="short_description" value="{{ form.short_description.value }}" />
+    {% if form.short_description.errors %}*** {{ form.short_description.errors|join:", " }}{% endif %}
+</p>
+<p>
+    <label for="id_description">Description:</label><br />{{ form.description }}
+    {% if form.description.errors %}*** {{ form.description.errors|join:", " }}{% endif %}
+</p>
+<p class="datetime">
+	<label for="id_start_date">Start Time:</label> {{ form.start_date }} {{ form.start_time }}
+        {% if form.start_date.errors %}*** {{ form.start_date.errors|join:", " }}{% endif %}
+        {% if form.start_time.errors %}*** {{ form.start_time.errors|join:", " }}{% endif %}
+</p>
+<p class="datetime">
+        <label for="id_end">End Time:</label> {{ form.end_date }} {{ form.end_time }}
+        {% if form.end_date.errors %}*** {{ form.end_date.errors|join:", " }}{% endif %}
+        {% if form.end_time.errors %}*** {{ form.end_time.errors|join:", " }}{% endif %}
+</p>
+<p>
+    <label for="id_anchor">Association:</label><br />{{ form.anchor }}
+    {% if form.anchor.errors %}*** {{ form.anchor.errors|join:", " }}{% endif %}
+</p>
+<p>
+    <label for="id_event_type">Event Type:</label><br />{{ form.event_type }}
+    {% if form.event_type.errors %}*** {{ form.event_type.errors|join:", " }}{% endif %}
+</p>
+
+<p><input type="submit" /></p>
+</form>
+
+{% endblock %}

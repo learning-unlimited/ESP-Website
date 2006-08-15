@@ -4,6 +4,7 @@
 
 {% block subsection_name %}Teach for {{one}}{% endblock %}
 
+
 {% block content %}
 	<br /><br />
        <div id="divmaintext">	
@@ -15,22 +16,22 @@
 <h2 style="color:red">Please make sure to fill in all the fields.  Thanks! </h2>
 {% endif %}
 
-	<form action='http://esp-devel.hackorp.com/teach/{{one}}/{{two}}/makeclass/' method="post">
+	<form action='http://esp-devel.hackorp.com/teach/{{one}}/{{two}}/makecourse/' method="post">
 
  <b>Course Title:</b><br />
  <input type='text' name='title' value='{{course.title}}' size='30'>
 <br /><br /><br /> 
 <b>Course Description:</b><br />
-<textarea id="class_info"  name="class_info" rows="10" cols="40">{{course.class_info}}</textarea>
+<textarea id="course_info"  name="course_info" rows="10" cols="40">{{course.class_info}}</textarea>
 <br /><br /><br />
 
-{% if class %}
+{% if course %}
 <b>Course Category: </b>
  <select name="Catigory">
-{% if class.category %}
+{% if course.category %}
 {% for thing in cat %}
 <option value='{{thing.id}}'
-{% ifequal thing class.category.category %}
+{% ifequal thing course.category.category %}
  selected
 {% endifequal %}
 >{{thing}}</option>
@@ -49,30 +50,30 @@
 <br /><br />
 <b>Course Information:</b><br /><br />
 <small><i>Minimum Grade Level: </i></small>
-<input type='text' name='grade_min' value='{{class.grade_min }}' size='30'><br />
+<input type='text' name='grade_min' value='{{course.grade_min }}' size='30'><br />
 <small><i>Maximum Grade Level: </i></small>
-<input type='text' name='grade_max' value='{{class.grade_max }}' size='30'><br />
-<small><i>Minimum Class Size: </i></small>
-<input type='text' name='class_size_min' value='{{class.class_size_min }}' size='30'><br />
-<small><i>Maximum Class Size: </i></small>
-<input type='text' name='class_size_max' value='{{class.class_size_max }}' size='30'><br />
+<input type='text' name='grade_max' value='{{course.grade_max }}' size='30'><br />
+<small><i>Minimum Course Size: </i></small>
+<input type='text' name='course_size_min' value='{{course.class_size_min }}' size='30'><br />
+<small><i>Maximum Course Size: </i></small>
+<input type='text' name='course_size_max' value='{{course.class_size_max }}' size='30'><br />
 <br /><br />
 
-{% if class %}
-<b> Class Time: </b><br />
+{% if course %}
+<b> Course Time: </b><br />
  <select name="Time">
 {% for thing in ts %}
 <option value='{{thing.id}}'
-{% ifequal thing class.slot %}
+{% ifequal thing course.event_template %}
  selected
 {% endifequal %}
->{{thing}}</option>
+>{{thing.friendly_name}}</option>
 {% endfor %}
 {% else %}
-<b> Class Time: </b><br />
+<b> Course Time: </b><br />
  <select name="Time">
 {% for thing in ts %}
-<option value='{{thing.id}}'>{{thing}}</option>
+<option value='{{thing.id}}'>{{thing.friendly_name}}</option>
 {% endfor %}
 {% endif %}
 
