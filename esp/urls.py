@@ -23,7 +23,7 @@ urlpatterns = patterns('',
     (r'^(teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.program'),
     (r'^(teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.program'),
     #(r'^(learn|teach)/([-A-Za-z0-9/_ ]+)/([-A-Za-z0-9_ ]+).html$', 'esp.web.views.redirect'),
-    (r'^(?P<subsection>(learn|teach))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section': 'Program' } )
+    (r'^(?P<subsection>(learn|teach))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section': 'Programs' } ),
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),
 
     # Mini-Blog pages
@@ -36,8 +36,8 @@ urlpatterns = patterns('',
     (r'^events/edit/(?P<id>\d+)/$', 'esp.calendar.views.updateevent'),
 
     # DB-generated QSD pages: HTML or plaintext
-    (r'^(?P<url>.*)\.html$', 'esp.qsd.views.qsd'),
-    (r'^(?P<url>.*)\.text$', 'esp.qsd.views.qsd_raw'),
+    (r'^(?P<url>.*)\.html$', 'esp.web.views.redirect'),
+    #(r'^(?P<url>.*)\.text$', 'esp.qsd.views.qsd_raw'),
 
     # aseering 8-8-2006: How's this for a definition of a media url?
     # Possibly overspecific, possibly too general.

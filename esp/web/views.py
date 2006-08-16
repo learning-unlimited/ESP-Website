@@ -6,7 +6,7 @@ from esp.qsd.views import qsd, qsd_raw
 
 
 from esp.users.models import ContactInfo, UserBit
-from esp.datatree.models import GetNode
+from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
 from esp.program.models import RegistrationProfile, Class, ClassCategories
 from esp.dbmail.models import MessageRequest
@@ -95,29 +95,34 @@ def redirect(request, url, section = 'Web', subsection = None):
 
 	if len(url_address_parts) == 1: # We know the name; use the default verb
 		qsd_name = url_address_parts[0]
-		qsd_verb = 'view'
+		qsd_verb = 'read'
 	elif len(url_address_parts) > 1: # We're given both pieces; hopefully that's all we're given (we're ignoring extra data here)
 		qsd_name = url_address_parts[0]
 		qsd_verb = url_address_parts[1]
 	else: # In case someone breaks urls.py and "foo/.html" is allowed through
 		qsd_name = 'index'
-		qsd_verb = 'view'
-
+		qsd_verb = 'read'
 
 	# If we have a subsection, descend into a node by that name
-	if subsection == None:
-		target_node = url
-	else:
-		target_node = url.append(subsection)
+	target_node = url_parts
+	if subsection != None:
+		target_node.append(subsection)
 
 	# Get the node in question.  If it doesn't exist, deal with whether or not this user can create it.
 	try:
 		branch = node.tree_decode(target_node)
 	except DataTree.NoSuchNodeException:
 		# Check for permissions; if we have write bits here, create this node; otherwise return Http404
-		return Http404
+		raise Http404
 
-	return qsd(request, branch, qsd_name, qsd_verb)
+	if subsection == None:
+		subsection_str = ''
+	else:
+		subsection_str = subsection + "/"
+
+	edit_url = "http://esp-devel.hackorp.com/" + subsection_str + url + "/" + qsd_name + ".edit.html"
+
+	return qsd(request, branch, qsd_name, qsd_verb, edit_url)
 	
 
 def program(request, tl, one, two, module, extra = None):

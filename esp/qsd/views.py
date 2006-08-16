@@ -25,11 +25,11 @@ def qsd_raw(request, url):
 	else:
 		return Http404
 	
-def qsd(request, branch, url_name, url_verb):
+def qsd(request, branch, url_name, url_verb, edit_url):
 	
 	# Fetch the QSD object
 	try:
-		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = name )
+		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name )
 		if qsd_recs.count() < 1:
 			raise QuasiStaticData.DoesNotExist
 
@@ -39,15 +39,15 @@ def qsd(request, branch, url_name, url_verb):
 		else:
 			url_part = url_parts.pop()
 			qsd_rec = QuasiStaticData()
-			qsd_rec.path = GetNode('Q/Web/' + url_part)
-			qsd_rec.name = url_part
+			qsd_rec.path = branch
+			qsd_rec.name = url_name
 			qsd_rec.title = 'New Page'
 			qsd_rec.content = 'Please insert your text here'
 			qsd_rec.save()
 
 			url_verb = 'edit'
 
-			
+
 	# Detect edit authorizations
 	have_edit = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Administer') )
 	have_read = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
@@ -125,7 +125,7 @@ def qsd(request, branch, url_name, url_verb):
 				'content': qsd_rec.html(),
 				'logged_in': request.user.is_authenticated(),
 				'have_edit': have_edit,
-				'edit_url': other_url})
+				'edit_url': edit_url })
 	
 	# Operation Complete!
 	raise Http404
