@@ -69,6 +69,9 @@ class DataTree(models.Model):
             stack = self.parent.tree_encode()
             stack.append(self.name) 
             return stack
+
+    def depth(self):
+        return len(self.tree_encode())
     
     def children(self):
         """ Returns a QuerySet of DataTrees of all children of this DataTree """
@@ -100,7 +103,7 @@ class DataTree(models.Model):
 
     def __str__(self):
         """ Returns a string """
-        res = str(self.rangestart) + ' .. ' + str(self.rangeend) + ' <' + str(self.name) + '>'
+        res = str(self.rangestart) + ' .. ' + str(self.rangeend) + ' '*self.depth() + ' <' + str(self.full_name()) + '>'
 	if self.friendly_name is not None:
 		res = res + ' (' + self.friendly_name + ')'
 	return res

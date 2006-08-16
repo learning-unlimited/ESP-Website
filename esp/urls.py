@@ -22,7 +22,8 @@ urlpatterns = patterns('',
     (r'^(teach|learn)/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/bio.html$', 'esp.web.views.bio'),
     (r'^(teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.program'),
     (r'^(teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.program'),
-    (r'^(learn|teach)/([-A-Za-z0-9/_ ]+)/([-A-Za-z0-9_ ]+).html$', 'esp.web.views.redirect'),
+    #(r'^(learn|teach)/([-A-Za-z0-9/_ ]+)/([-A-Za-z0-9_ ]+).html$', 'esp.web.views.redirect'),
+    (r'^(?P<subsection>(learn|teach))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section': 'Program' } )
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),
 
     # Mini-Blog pages
