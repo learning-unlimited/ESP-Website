@@ -117,7 +117,7 @@ def redirect(request, url, section = 'Web', subsection = None):
 		# Check for permissions; if we have write bits here, create this node; otherwise return Http404
 		return Http404
 
-	
+	return qsd(request, branch, qsd_name, qsd_verb)
 	
 
 def program(request, tl, one, two, module, extra = None):

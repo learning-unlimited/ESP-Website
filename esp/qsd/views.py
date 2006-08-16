@@ -25,26 +25,15 @@ def qsd_raw(request, url):
 	else:
 		return Http404
 	
-def qsd(request, url):
-	# Extract URL parts
-	url_parts = url.split('/')
-
-	# Detect verb
-	url_verb = url_parts.pop()
-	url_verb_parts = url_verb.split('.')
-	if len(url_verb_parts) > 1:
-		url_verb = url_verb_parts.pop()
-		other_url = '.'.join(url_verb_parts)
-		url_parts.append(other_url)
-		other_url = other_url + '.html'
-	else:
-		url_parts.append(url_verb)
-		other_url = url_verb + '.edit.html'
-		url_verb = 'read'
+def qsd(request, branch, url_name, url_verb):
 	
 	# Fetch the QSD object
 	try:
-		qsd_rec = QuasiStaticData.find_by_url_parts(GetNode('Q/Web'),url_parts)
+		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = name )
+		if qsd_recs.count() < 1:
+			raise QuasiStaticData.DoesNotExist
+
+		qsd_rec = qsd_recs[0]
 	except QuasiStaticData.DoesNotExist:
 		if url_verb != 'create': raise Http404
 		else:
