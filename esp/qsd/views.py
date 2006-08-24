@@ -1,6 +1,6 @@
 from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
-from esp.users.models import ContactInfo, UserBit
+from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
 from esp.datatree.models import GetNode, DataTree
 from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
@@ -25,8 +25,7 @@ def qsd_raw(request, url):
 	else:
 		return Http404
 	
-def qsd(request, branch, url_name, url_verb, edit_url):
-	
+def qsd(request, branch, url_name, url_verb, base_url):
 	# Fetch the QSD object
 	try:
 		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name )
@@ -35,23 +34,63 @@ def qsd(request, branch, url_name, url_verb, edit_url):
 
 		qsd_rec = qsd_recs[0]
 	except QuasiStaticData.DoesNotExist:
-		if url_verb != 'create': raise Http404
-		else:
-			url_part = url_parts.pop()
-			qsd_rec = QuasiStaticData()
-			qsd_rec.path = branch
-			qsd_rec.name = url_name
-			qsd_rec.title = 'New Page'
-			qsd_rec.content = 'Please insert your text here'
-			qsd_rec.save()
-
-			url_verb = 'edit'
+		#if url_verb != 'create': raise Http404
+		#else:
+		qsd_rec = QuasiStaticData()
+		qsd_rec.path = branch
+		qsd_rec.name = url_name
+		qsd_rec.title = 'New Page'
+		qsd_rec.content = 'Please insert your text here'
+		qsd_rec.save()
+		
+		url_verb = 'edit'
 
 
 	# Detect edit authorizations
 	have_edit = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Administer') )
 	have_read = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
 	
+	# Detect POST
+	if request.POST.has_key('post_edit'):
+		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
+		if not have_edit:
+			return HttpResponseNotAllowed(['GET'])
+		
+		qsd_rec.content = request.POST['content']
+		qsd_rec.title = request.POST['title']
+		qsd_rec.save()
+
+		# If any files were uploaded, save them
+		for FILE in request.FILES.keys():
+			m = Media()
+
+			# Strip "media/" from FILE, and strip the file name; just return the path
+			path = dirname(FILE[6:])
+			if path == '':
+				m.anchor = qsd_rec.path
+			else:
+				m.anchor = GetNode('Q/' + dirname(FILE))
+				
+			m.mime_type = request.FILES[FILE]['content-type']
+			# Do we want a better/manual mechanism for setting friendly_name?
+			m.friendly_name = basename(FILE)
+			m.size = len(request.FILES[FILE]['content'])
+			
+			splitname = basename(FILE).split('.')
+			if len(splitname) > 1:
+				m.file_extension = splitname[-1]
+			else:
+				m.file_extension = ''
+
+			m.format = ''
+
+			local_filename = FILE
+			if FILE[:6] == 'media/':
+				local_filename = FILE[6:]
+					
+			m.save_target_file_file(local_filename, request.FILES[FILE]['content'])
+			m.save()
+
 
 	# Detect the edit verb
 	if url_verb == 'edit':
@@ -63,69 +102,31 @@ def qsd(request, branch, url_name, url_verb, edit_url):
 		
 		# Render an edit form
 		return render_to_response('qsd_edit.html', {
-			'navbar_list': makeNavBar(request.path),
+			'request': request,
+			'navbar_list': makeNavBar(request.user, branch),
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.content,
 			'missing_files': m.BrokenLinks(),
 			'logged_in': request.user.is_authenticated(),
-			'target_url': other_url })
+			'target_url': base_url + ".edit.html",
+			'return_to_view': base_url + ".html" })
 
 	# Detect the standard read verb
 	if url_verb == 'read':		
-		# Detect POST
-		if request.POST.has_key('post_edit'):
-			# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
-			if not have_edit:
-				return HttpResponseNotAllowed(['GET'])
-		
-			qsd_rec.content = request.POST['content']
-			qsd_rec.title = request.POST['title']
-			qsd_rec.save()
-
-			# If any files were uploaded, save them
-			for FILE in request.FILES.keys():
-				m = Media()
-
-				# Strip "media/" from FILE, and strip the file name; just return the path
-				path = dirname(FILE[6:])
-				if path == '':
-					m.anchor = qsd_rec.path
-				else:
-					m.anchor = GetNode('Q/' + dirname(FILE))
-
-				m.mime_type = request.FILES[FILE]['content-type']
-				# Do we want a better/manual mechanism for setting friendly_name?
-				m.friendly_name = basename(FILE)
-				m.size = len(request.FILES[FILE]['content'])
-
-				splitname = basename(FILE).split('.')
-				if len(splitname) > 1:
-					m.file_extension = splitname[-1]
-				else:
-					m.file_extension = ''
-
-				m.format = ''
-
-				local_filename = FILE
-				if FILE[:6] == 'media/':
-					local_filename = FILE[6:]
-					
-				m.save_target_file_file(local_filename, request.FILES[FILE]['content'])
-				m.save()
-
 		if not have_read:
 			raise Http404
 
 		# Render response
 		return render_to_response('qsd.html', {
-				'navbar_list': makeNavBar(request.path),
-				'preload_images': preload_images,
-				'title': qsd_rec.title,
-				'content': qsd_rec.html(),
-				'logged_in': request.user.is_authenticated(),
-				'have_edit': have_edit,
-				'edit_url': edit_url })
+			'request': request,
+			'navbar_list': makeNavBar(request.user, branch),
+			'preload_images': preload_images,
+			'title': qsd_rec.title,
+			'content': qsd_rec.html(),
+			'logged_in': request.user.is_authenticated(),
+			'have_edit': have_edit,
+			'edit_url': base_url + ".edit.html" })
 	
 	# Operation Complete!
 	raise Http404

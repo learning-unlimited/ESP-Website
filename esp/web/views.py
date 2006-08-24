@@ -4,9 +4,8 @@ from esp.calendar.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.views import qsd, qsd_raw
 
-
-from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode, DataTree
+from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
 from esp.miniblog.models import Entry
 from esp.program.models import RegistrationProfile, Class, ClassCategories
 from esp.dbmail.models import MessageRequest
@@ -29,6 +28,7 @@ def index(request):
 	# aseering: Yay.
 	latest_event_list = Event.objects.filter().order_by('-start')
 	return render_to_response('index.html', {
+		'request': request,
 		'navbar_list': navbar_data,
 		'preload_images': preload_images,
 		'logged_in': request.user.is_authenticated()
@@ -37,16 +37,18 @@ def index(request):
 def bio(request, tl, last, first):
 	""" Displays a teacher bio """
 	bio = request.user.teacherbio_set.all()
-	if len(bio) < 1: return render_to_response('users/construction', {'logged_in': request.user.is_authenticated(),
-									  'navbar_list': makeNavBar(request.path),
+	if len(bio) < 1: return render_to_response('users/construction', {'request': request,
+									  'logged_in': request.user.is_authenticated(),
+									  'navbar_list': makeNavBar(request.user, GetNode('Q/Web/Bio')),
 									  'preload_images': preload_images,
 									  'tl': tl})
 
 	bio = bio[0].html()
-	return render_to_response('learn/bio', {'name': first + " " + last,
+	return render_to_response('learn/bio', {'request': request,
+						'name': first + " " + last,
 						'bio': bio,
 						'logged_in': request.user.is_authenticated(),
-						'navbar_list': makeNavBar(request.path),
+						'navbar_list': makeNavBar(request.user, GetNode('Q/Web/Bio')),
 						'preload_images': preload_images,
 						'tl': tl})
 
@@ -57,7 +59,10 @@ def myesp(request, module):
 	if myesp_handlers.has_key(module):
 		return myesp_handlers[module](request, module)
 
-	return render_to_response('users/construction', {'logged_in': request.user.is_authenticated(), 'navbar_list': makeNavBar(request.path), 'preload_images': preload_images})
+	return render_to_response('users/construction', {'request': request,
+							 'logged_in': request.user.is_authenticated(),
+							 'navbar_list': makeNavBar(request.user, GetNode('Q/Web')),
+							 'preload_images': preload_images})
 
 #def redirect(request, tl, one, three):
 #	Q_Prog = GetNode('Q/Programs')
@@ -82,7 +87,6 @@ def redirect(request, url, section = 'Web', subsection = None):
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
-	node = GetNode('Q/' + section)
 
 	# URLs will be of the form "path/to/file.verb", or "path/to/file".
 	# In the latter case, assume that verb = view
@@ -105,14 +109,14 @@ def redirect(request, url, section = 'Web', subsection = None):
 
 	# If we have a subsection, descend into a node by that name
 	target_node = url_parts
-	if subsection != None:
+	if subsection != None and subsection != 'program': # Hack to make "program" toggle not render subnodes
 		target_node.append(subsection)
 
 	# Get the node in question.  If it doesn't exist, deal with whether or not this user can create it.
+
 	try:
-		branch = node.tree_decode(target_node)
+		branch = GetNodeOrNoBits('Q/' + section + '/' + "/".join(target_node), user=request.user)
 	except DataTree.NoSuchNodeException:
-		# Check for permissions; if we have write bits here, create this node; otherwise return Http404
 		raise Http404
 
 	if subsection == None:
@@ -120,9 +124,9 @@ def redirect(request, url, section = 'Web', subsection = None):
 	else:
 		subsection_str = subsection + "/"
 
-	edit_url = "http://esp-devel.hackorp.com/" + subsection_str + url + "/" + qsd_name + ".edit.html"
+	root_url = "http://esp-devel.hackorp.com/" + "/".join(url_parts) + "/" + qsd_name
 
-	return qsd(request, branch, qsd_name, qsd_verb, edit_url)
+	return qsd(request, branch, qsd_name, qsd_verb, root_url)
 	
 
 def program(request, tl, one, two, module, extra = None):
@@ -130,8 +134,9 @@ def program(request, tl, one, two, module, extra = None):
 	treeItem = "Q/Programs/" + one + "/" + two
 	prog = GetNode(treeItem).program_set.all()
 	if len(prog) < 1:
-		return render_to_response('users/construction', {'logged_in': request.user.is_authenticated(),
-								 'navbar_list': makeNavBar(request.path),
+		return render_to_response('users/construction', {'request': request,
+								 'logged_in': request.user.is_authenticated(),
+								 'navbar_list': makeNavBar(request.user, GetNode('Q/Program')),
 								 'preload_images': preload_images})
 
 	prog = prog[0]
@@ -140,14 +145,16 @@ def program(request, tl, one, two, module, extra = None):
 		# aseering: Welcome to the deep, dark, magical world of lambda expressions!
 		return program_handlers[module](request, tl, one, two, module, extra, prog)
 
-	return render_to_response('users/construction', {'logged_in': request.user.is_authenticated(),
-							 'navbar_list': makeNavBar(request.path),
+	return render_to_response('users/construction', {'request': request,
+							 'logged_in': request.user.is_authenticated(),
+							 'navbar_list': makeNavBar(request.user, GetNode('Q/Program')),
 							 'preload_images': preload_images})
 
 
 def contact(request):
 	return render_to_response('contact.html',
-				  {'programs': UserBit.bits_get_qsc(AnonymousUser(),
+				  {'request': request,
+				   'programs': UserBit.bits_get_qsc(AnonymousUser(),
 								    GetNode('V/Publish'),
 								    qsc_root=GetNode('Q/Programs')) })
 

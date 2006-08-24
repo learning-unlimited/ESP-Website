@@ -1,6 +1,5 @@
 from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
-from django.shortcuts import render_to_response
 from esp.calendar.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
@@ -25,9 +24,10 @@ def program_catalog(request, tl, one, two, module, extra, prog):
 	""" Return the program class catalog """
 	clas = list(prog.class_set.all().order_by('category'))
 	p = one + " " + two
-	return render_to_response('program/catalogue', {'Program': p.replace("_", " "),
+	return render_to_response('program/catalogue', {'request': request,
+							'Program': p.replace("_", " "),
 							'courses': clas ,
-							'navbar_list': makeNavBar(request.path),
+							'navbar_list': makeNavBar(request.user, prog.anchor),
 							'preload_images': preload_images,
 							'logged_in': request.user.is_authenticated(),
 							'tl': tl})
@@ -52,8 +52,9 @@ def program_profile(request, tl, one, two, module, extra, prog):
 		context['studentc'] = empty
 		context['emerg'] = empty
 		context['guard'] = empty
-		context['navbar_list'] = makeNavBar(request.path)
+		context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 		context['preload_images'] =  preload_images
+		context['request'] = request
 		return render_to_response('users/profile', context)
 	contactInfo = contactInfo[0]
 
@@ -61,8 +62,9 @@ def program_profile(request, tl, one, two, module, extra, prog):
 	context['studentc'] = regprof.contact_student
 	context['emerg'] = regprof.contact_emergency
 	context['guard'] = regprof.contact_guardian
-	context['navbar_list'] = makeNavBar(request.path)
+	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 	context['preload_images'] =  preload_images
+	context['request'] = request
 	return render_to_response('users/profile', context)
 
 @login_required
@@ -81,7 +83,7 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 	context['program'] = context['program'].replace("_", " ")
 	context['one'] = one
 	context['two'] = two
-	context['navbar_list'] = makeNavBar(request.path)
+	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 	context['preload_images'] =  preload_images
 	profile_done = False
 	for thing in [regprof.contact_student, regprof.contact_student, regprof.contact_emergency]:
@@ -103,7 +105,9 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 
 	if pre != []: context['select_graphic'] = "checkmark"
 	else: context['select_graphic'] = "nocheckmark"
-	    
+
+
+	context['request'] = request
 	regprof.save()
 	return render_to_response('users/studentreg', context)
 
@@ -116,11 +120,12 @@ def program_finishstudentreg(request, tl, one, two, module, extra, prog):
 def program_teacherreg(request, tl, one, two, module, extra, prog):
 	""" Display the registration page to allow a teacher to register for a program """
 	context = {'logged_in': request.user.is_authenticated() }
-	context['navbar_list'] = makeNavBar(request.path)
+	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 	context['preload_images'] =  preload_images
 	context['one'] = one
 	context['two'] = two
 	context['teacher'] = request.user
+	context['request'] = request
 	v = GetNode('V/Administer/Program/Class')
 	q = prog.anchor
 	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
@@ -132,7 +137,7 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 		
 def program_teacherreg2(request, tl, one, two, module, extra, prog):
 	context = {'logged_in': request.user.is_authenticated() }
-	context['navbar_list'] = makeNavBar(request.path)
+	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 	context['preload_images'] =  preload_images
 	context['one'] = one
 	context['two'] = two
@@ -157,6 +162,7 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog):
 	cat = list(ClassCategories.objects.all())
 	context['cat'] = cat
 	context['ts'] = ts
+	context['request'] = request
 	return render_to_response('program/teacherreg', context)
 
 @login_required
@@ -171,8 +177,9 @@ def program_fillslot(request, tl, one, two, module, extra, prog):
 	classes = prog.anchor.class_set.all()
 	
 	context['courses'] = classes
-	context['navbar_list'] = makeNavBar(request.path)
+	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 	context['preload_images'] =  preload_images
+	context['request'] = request
 	return render_to_response('program/timeslot', context)
 
 @login_required
@@ -221,8 +228,9 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	cobj.category = cat
 	cobj.enrollment = 0
 	cobj.save()
-	return render_to_response('program/registered', {'logged_in': request.user.is_authenticated(),
-							 'navbar_list': makeNavBar(request.path),
+	return render_to_response('program/registered', {'request': request,
+							 'logged_in': request.user.is_authenticated(),
+							 'navbar_list': makeNavBar(request.user, prog.anchor),
 							 'preload_images': preload_images})	    
 
 @login_required

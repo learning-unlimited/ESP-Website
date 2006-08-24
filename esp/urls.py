@@ -5,6 +5,8 @@ urlpatterns = patterns('',
     # Example:
     # (r'^esp/', include('esp.apps.foo.urls.foo')),
 
+    (r'^beta/satprep.csv$', 'esp.satprep.views.satprep_csv'),
+
     # The default
     (r'^$', 'esp.web.views.index'),
 
@@ -23,7 +25,9 @@ urlpatterns = patterns('',
     (r'^(teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.program'),
     (r'^(teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.program'),
     #(r'^(learn|teach)/([-A-Za-z0-9/_ ]+)/([-A-Za-z0-9_ ]+).html$', 'esp.web.views.redirect'),
-    (r'^(?P<subsection>(learn|teach))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section': 'Programs' } ),
+    (r'^program/Template/$', 'esp.program.views.programTemplateEditor'),
+    (r'^program/(?P<program>[-A-Za-z0-9_ ]+)/(?P<session>[-A-Za-z0-9_ ]+)/Classes/Template/$', 'esp.program.views.classTemplateEditor'),
+    (r'^(?P<subsection>(learn|teach|program))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section': 'Programs' } ),
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),
 
     # Mini-Blog pages
@@ -42,6 +46,9 @@ urlpatterns = patterns('',
     # aseering 8-8-2006: How's this for a definition of a media url?
     # Possibly overspecific, possibly too general.
     (r'^(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'esp.qsdmedia.views.qsdmedia'),
+
+    # Update navbar
+    (r'^navbar/edit.scm', 'esp.web.navBar.updateNavBar'),
 
     # Uncomment this for admin:
     (r'^admin/', include('django.contrib.admin.urls')),

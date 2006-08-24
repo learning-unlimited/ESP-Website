@@ -13,7 +13,7 @@
   {% for file in missing_files %}
   <p><label target="{{ file }}">File: {{ file }}</label> &nbsp; <input type="file" name="{{ file }}" /></p>
   {% endfor %}
-  <p><input type="submit" name="post_edit" value="Submit!" /> <a href="{{ target_url }}">Cancel</a></p>
+  <p><input type="submit" name="post_edit" value="Save Changes!" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
 
 </form>
 {% endblock %}

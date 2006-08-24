@@ -16,7 +16,8 @@ def show_miniblog(request, url, tree_prefix='', extramsg=''):
         
     entries = Entry.find_posts_by_perms(user, GetNode('V/Subscribe'), qsc=qsc)
 
-    return render_to_response('miniblog.html', { 'entries': entries,
+    return render_to_response('miniblog.html', { 'request': request,
+                                                 'entries': entries,
                                                  'canpost': UserBit.UserHasPerms(user, qsc, GetNode('V/Post')),
                                                  'webnode': str(url),
                                                  'extramsg': extramsg })

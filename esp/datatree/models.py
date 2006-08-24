@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
 
 # Create your models here.
     
@@ -244,6 +244,7 @@ def GetNode(nodename):
         perm = []
         
     return node.tree_create(perm)
+
     
 def PopulateInitialDataTree():
     """ Populate the DataTree with values for the ESP site hierarchy:

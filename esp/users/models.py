@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
-from esp.datatree.models import DataTree, PermToString
+from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm
 #from peak.api import security, binding
 from esp.workflow.models import Controller
 from datetime import datetime
@@ -65,8 +65,6 @@ class UserBit(models.Model):
             if bit.qsc.is_descendant(qsc) and bit.verb.is_antecedent(verb):
                 return True
 
-        # security.Denial() evaluates to False as necessary; it also makes peak happy, though we're not using peak any more
-        #return security.Denial("User " + str(user) + " doesn't have the permission " + str(perm))
         return False
     
     @staticmethod
@@ -161,3 +159,31 @@ class ContactInfo(models.Model):
 	
 	class Admin:
 		pass
+
+def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = GetNode('V/Create')):
+    """ Get the specified node.  Create it only if the specified user has create bits on it """
+
+    nodes = DataTree.objects.filter(name='ROOT', parent=None)
+    node = None
+    if nodes.count() < 1L:
+        node = DataTree()
+        node.name = 'ROOT'
+        node.parent = None
+        node.save()
+    elif nodes.count() == 1L:
+        node = nodes[0]
+    else:
+        raise DataTree.NoRootNodeException(nodes.count())
+    
+    perm = StringToPerm(nodename)
+    if nodename == '':
+        perm = []
+
+    try:
+        return node.tree_decode(perm)
+    except DataTree.NoSuchNodeException, e:
+        if UserBit.UserHasPerms(user, e.anchor, verb):
+            return e.anchor.tree_create(e.remainder)
+        else:
+            raise
+
