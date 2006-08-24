@@ -86,6 +86,7 @@ INSTALLED_APPS = (
     'esp.qsd',
     'esp.qsdmedia',
     'esp.satprep',
+    'esp.money',
 )
 
 EMAIL_HOST = 'outgoing.media.mit.edu'

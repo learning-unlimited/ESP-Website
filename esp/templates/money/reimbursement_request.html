@@ -1,0 +1,53 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Reimbursement Request Form{% endblock %}
+
+{% block subsection_name %}Reimbursement Request{% endblock %}
+
+{% block content %}
+
+<br /><br />
+
+{% if form.has_errors %}
+<p><h2><font color="red">Please correct the following error{{ form.error_dict|pluralize }}:</font></h2></p>
+<br /><br />
+{% endif %}
+
+<form method="post" action=".">
+
+<p>
+    <label for="id_amount">Amount Paid:</label> {{ form.amount }}
+    {% if form.amount.errors %}<font color="red">{{ form.amunt.errors|join:", " }}</font>{% endif %}
+</p>
+
+<p>
+    <label for="id_line_item">Line Item:</label><br />
+    {{ form.line_item }}<br />
+    {% if form.line_item.errors %}<font color="red">{{ form.line_item.errors|join:", " }}</font>{% endif %}
+</p>
+
+<p>
+    <label for="id_payer">Paid by:</label><br />
+    {{ form.payer }}
+    {% if form.payer.errors %}<br /><font color="red">{{ form.payer.errors|join:", "}}</font>{% endif %}<br />
+    <label for="id_payer">Paid on behalf of: (blank if same as "Paid By")</label><br />
+    {{ form.fbo }}
+    {% if form.payer.errors %}<br /><font color="red">{{ form.payer.errors|join:", "}}</font>{% endif %}
+</p>
+
+<br>
+
+<p>
+    <label for="id_payment_type">Payment Method:</label> {{ form.payment_type }}
+    {% if form.payment_type.errors %}<font color=red> {{ form.payment.errors|join:", " }}</font>{% endif %}
+
+<p>
+    <label for="id_anchor">ESP Associated Account:</label> {{ form.anchor }}
+    {% if form.anchor.errors %}<font color="red">{{ form.anchor.errors|join:", " }}</font>{% endif %}
+</p>
+
+<input type="submit" value="Submit!" />
+
+</form>
+
+{% endblock %}

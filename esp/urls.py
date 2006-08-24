@@ -50,6 +50,9 @@ urlpatterns = patterns('',
     # Update navbar
     (r'^navbar/edit.scm', 'esp.web.navBar.updateNavBar'),
 
+    # Reimbursement requests
+    (r'^money/reimbursement/$', 'esp.money.views.create_reimbursement'),
+
     # Uncomment this for admin:
     (r'^admin/', include('django.contrib.admin.urls')),
 
