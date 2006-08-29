@@ -1,10 +1,10 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}Create a Class{% endblock %}
+{% block title %}{% if edit %}Edit{% else %}Create{% endif %} a Class{% endblock %}
 
 {% block content %}
 
-<h1>Create a Class:</h1>
+<h1>{% if edit %}Edit{% else %}Create{% endif %} a Class:</h1>
 
 {% if form.has_errors %}
 <p><h2>Please correct the following errors:</h2><br>
@@ -13,12 +13,10 @@
 {% endif %}
 
 <form method="post" action=".">
-<p><label for="id_title">Title:</label> {{ form.title }}
+<p><label for="id_title">Title:</label> {{ orig_class.anchor.friendly_name }}
 {% if form.title.errors %}*** {{ form.title.errors|join:", " }}{% endif %}</p>
 <p><label for="id_category">Category:</label> {{ form.category }}
 {% if form.category.errors %}*** {{ form.category.errors|join:", " }}{% endif %}</p>
-<p><label for="id_teachers">Teachers:</label> {{ form.teachers }}
-{% if form.teachers.errors %}*** {{ form.teachers.errors|join:", " }}{% endif %}</p>
 <p><label for="id_class_info">Class Info:</label> {{ form.class_info }}
 {% if form.class_info.errors %}*** {{ form.class_info.errors|join:", " }}{% endif %}</p>
 <p><label for="id_equipment_needed">Equipment Needed:</label> {{ form.equipment_needed }}
@@ -33,12 +31,17 @@
 {% if form.class_size_min.errors %}*** {{ form.class_size_min.errors|join:", " }}{% endif %}</p>
 <p><label for="id_class_size_max">Maximum Class Size:</label> {{ form.class_size_max }}
 {% if form.class_size_max.errors %}*** {{ form.class_size_max.errors|join:", " }}{% endif %}</p>
+{% if edit %}<p><label for="id_enrollment">Current Enrollment:</label> {{ form.enrollment }}
+{% if form.schedule.errors %}*** {{ form.enrollment.errors|join:", " }}{% endif %}</p>{% endif %}
 <p><label for="id_parent_program">Parent Program:</label> {{ form.parent_program }}
 {% if form.parent_program.errors %}*** {{ form.parent_program.errors|join:", " }}{% endif %}</p>
 <p><label for="id_schedule">Schedule:</label> {{ form.schedule }}
 {% if form.schedule.errors %}*** {{ form.schedule.errors|join:", " }}{% endif %}</p>
 
-<input type="submit" />
+<input type="hidden" name="anchor" value="{{ orig_class.anchor.id }}" />
+<input type="hidden" name="event_template" value="{{ orig_class.event_template.id }}" />
+
+<input type="submit" value="{% if edit %}Save Changes!{% else %}Create!{% endif%}"/>
 
 </form>
 

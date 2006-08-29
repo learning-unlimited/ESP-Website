@@ -1,5 +1,3 @@
-Needs: one, two, student, credit-name, amount_dollar, amount_cents
-
 {% extends "outlines/series-3.html" %}
 
 {% block title %}Pay by Credit Card{% endblock %}
@@ -8,6 +6,7 @@ Needs: one, two, student, credit-name, amount_dollar, amount_cents
 
 {% block content %}
 Payment for {{one}} {{two}} Registration<br/><br/>
+
 Student:&nbsp;&nbsp; {{student.first_name}} {{student.last_name}}
 
 </h2>
@@ -15,8 +14,8 @@ Student:&nbsp;&nbsp; {{student.first_name}} {{student.last_name}}
 <br/>
 <h1 style="text-align: center">Card Information</h1>
 <form action="https://shopmit.mit.edu/payment/esp_form" method="post">
-<input type="hidden" name="OrderComments" value="{{credit-name}}">
-<input type="hidden" name="ChargeAmount" value="{{amount_dollar}}.{{amount_cents}}">
+<input type="hidden" name="OrderComments" value="{{credit_name}}">
+<input type="hidden" name="ChargeAmount" value="{{amount}}.00">
 
 <table class="payproc1">
 <tr>
@@ -129,7 +128,7 @@ Student:&nbsp;&nbsp; {{student.first_name}} {{student.last_name}}
 
 <tr>
 <td><b>TOTAL CHARGE</b></td>
-<td>${{amount_dollars}}.{{amount_cents}}</td>
+<td>${{amount}}.00</td>
 </tr>
 
 </table>

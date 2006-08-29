@@ -43,7 +43,20 @@
 <tr><td valign='top' align='center'><b>Meeting Time</b><br/>
 {{ aclass.slot }}<br /></td>
 <td style='width: 40%' align='left'><b>Grades:</b>{{ aclass.grade_min }} - {{ aclass.grade_max }}<br/>
-<b>Enrollment:</b> {{aclass.enrollment}} (max {{aclass.class_size_max}})</td></tr></table></div><br />
+<b>Enrollment:</b> {{aclass.enrollment}} (max {{aclass.class_size_max}})</td></tr></table><br />
 
+{% if can_edit_classes or can_approve_classes %}
+<form name="edit_class" action=".">
+<input type="hidden" name="class_id" value="{{ aclass.id }}">
+{% if can_edit_classes %}
+<input type="submit" name="action" value="Edit">
+{% endif %}
+{% if can_aprove_classes %}
+<input type="submit" name="action" value="Accept">
+{% endif %}
+</form><br /><br />
+{% endif %}
+
+</div>
 {% endfor %}
 {% endblock %}
