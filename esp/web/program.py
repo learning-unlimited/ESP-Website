@@ -22,7 +22,28 @@ from django.contrib.auth.decorators import login_required
 
 def program_catalog(request, tl, one, two, module, extra, prog):
 	""" Return the program class catalog """
-	clas = list(prog.class_set.all().order_by('category'))
+	# aseering 8/25/2006: We can post to this page to approve a class, or redirect to an edit page
+	if request.POST:
+		for i in [ 'class_id' 'action' ]:
+			if not request.POST.has_key(i):
+				return HttpResponseNotAllowed()
+
+		if request.POST['action'] == 'Edit':
+			return HttpResponseRedirect('') # We need to redirect to the class edit page
+		
+		if request.POST['action'] == 'Approve':
+			u = UserBit()
+			u.user = None
+			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
+			u.verb = GetNode('V/Publish')
+			u.save()
+
+
+	can_edit_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
+	can_approve_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
+	
+	clas = [x for x in prog.class_set.all().order_by('category') if can_edit_classes or can_approve_classes or UserBit.UserHasPerms(request.user, x.anchor, GetNode('V/Publish')) ]
+	
 	p = one + " " + two
 	return render_to_response('program/catalogue', {'request': request,
 							'Program': p.replace("_", " "),
@@ -30,7 +51,9 @@ def program_catalog(request, tl, one, two, module, extra, prog):
 							'navbar_list': makeNavBar(request.user, prog.anchor),
 							'preload_images': preload_images,
 							'logged_in': request.user.is_authenticated(),
-							'tl': tl})
+							'tl': tl,
+							'can_edit_classes': can_edit_classes,
+							'can_approve_classes': can_approve_classes })
 
 @login_required
 def program_profile(request, tl, one, two, module, extra, prog):
@@ -93,9 +116,10 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 	if profile_done: context['profile_graphic'] = "checkmark"
 	else: context['profile_graphic'] = "nocheckmark"
 	context['student'] = curUser.first_name + " " + curUser.last_name
-	ts = list(prog.anchor.tree_create(['Templates', 'TimeSlots']).children())
+	ts = list(GetNode('Q/Programs/' + one + '/' + two + '/Templates/TimeSlots').children())
 
 	pre = regprof.preregistered_classes()
+	z = [x.event_template for x in pre]
 	prerl = []
 	for time in ts:
 		then = [x for x in pre if x.event_template == time]
@@ -136,6 +160,7 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 		return render_to_response('program/selectclass', context)
 		
 def program_teacherreg2(request, tl, one, two, module, extra, prog):
+	""" Actually load a specific class or a new class for editing"""
 	context = {'logged_in': request.user.is_authenticated() }
 	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 	context['preload_images'] =  preload_images
@@ -353,7 +378,6 @@ def program_updateprofile(request, tl, one, two, module, extra, prog):
 	regprof.save()
 	return program(request, tl, one, two, "studentreg", extra = None)
 
-
 def validateContactInfo(ci):
 	""" Confirm that all necessary contact information is attached to the specified object """
 	if ci is None: return False
@@ -365,6 +389,28 @@ def validateContactInfo(ci):
 		return True
 	return False
 
+@login_required
+def finishedTeacher(request, tl, one, two, module, extra, prog):
+	""" The page that is shown once the user saves their student reg, giving them the option of printing a confirmation """
+	return render_to_response('program/savescreen', {'request': request,
+							 'logged_in': request.user.is_authenticated(),
+							 'navbar_list': makeNavBar(request.user, prog.anchor),
+							 'preload_images': preload_images,
+							 })
+
+@login_required
+def program_display_credit(request, tl, one, two, module, extra, prog):
+	""" Displays the credit card form to feed to OMAR """
+	# Catherine: I've manually hard-coded the amount of the program
+	return render_to_response('program/creditcard', {'request': request,
+							 'logged_in': request.user.is_authenticated(),
+							 'navbar_list': makeNavBar(request.user, prog.anchor),
+							 'preload_images': preload_images,
+							 'credit_name': two + ' ' + one, 
+							 'one': one,
+							 'two': two,
+							 'student': request.user,
+							 'amount': '30'})
 
 program_handlers = {'catalog': program_catalog,
 		    'profile': program_profile,
@@ -376,5 +422,8 @@ program_handlers = {'catalog': program_catalog,
 		    'addclass': program_addclass,
 		    'makeaclass': program_makeaclass,
 		    'updateprofile': program_updateprofile,
+		    'startpay': program_display_credit,
+		    'finishedStudent': studentRegDecision, 
+		    
 		    }
 

@@ -33,6 +33,15 @@ border = 1
 ></td>
 </tr>
 
+<tr>
+ <td><a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/startpay/">Pay Online</a> (Optional)</td>
+ <td style="text-align: center"><img src="http://esp.mit.edu/web/img/{{pay_graphic}}.gif"
+{% ifequal select_graphic "nocheckmark" %}
+border = 1
+{% endifequal %}
+></td>
+</tr>
+
 </table></center>
 <br /><hr><br />
 
@@ -48,9 +57,7 @@ Open Full Catalog in a Separate Window
 </a>
 </p>
 
-<br/>
-
-  	
+<br/>  	
 
  <table style="width: 600px; margin: auto" border=1>
 {% for timeslot in timeslots %}
@@ -71,7 +78,7 @@ Open Full Catalog in a Separate Window
 </table> 
 <br/>
 
-<form action="http://esp-devel.hackorp.com/" method="post">
+<form action="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/finishedStudent" method="post">
 <p style="text-align: center">
 <input type="submit" value="Save!">
 </p>

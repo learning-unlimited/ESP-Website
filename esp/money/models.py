@@ -22,6 +22,8 @@ class Transaction(models.Model):
     line_item = models.TextField() # Description of the reason for this payment
     payment_type = models.ForeignKey(PaymentType) # Type of payment; ie. credit card, check, cash, etc.
 
+    transaction_id = models.CharField(maxlength=128) # Identifier of the transaction; check number, or that sort of information.  Should probably not contain credit card numbers; possibly a hash of the last four digits?, or not at all?
+
     executed = models.BooleanField() # Has this transaction taken place?
 
     def __str__(self):

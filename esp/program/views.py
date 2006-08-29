@@ -3,11 +3,47 @@ from esp.calendar.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
-from django.http import HttpResponse, Http404
+from django.http import HttpResponseRedirect, HttpResponse, Http404
 from esp.users.models import UserBit, GetNodeOrNoBits
+from esp.program.models import Class
+from django import forms
 
 from django.contrib.auth.models import User, AnonymousUser
 from esp.web.models import NavBarEntry
+
+def updateClass(request, id):
+    """ An update-class form """
+    try:
+        manipulator = Class.ChangeManipulator(id)
+    except Class.DoesNotExist:
+        raise Http404
+
+    orig_class = manipulator.original_object
+
+    #errors = None
+
+    if request.POST:
+        new_data = request.POST.copy()
+        # We're not letting users change these.  Admins only, and only via the Admin interface.
+        new_data['anchor'] = str(orig_class.anchor.id)
+        new_data['parent_program'] = str(orig_class.parent_program.id)
+
+
+        errors = manipulator.get_validation_errors(new_data)
+
+        if not errors:
+            manipulator.do_html2python(new_data)
+
+            manipulator.save(new_data)
+
+            return HttpResponseRedirect(".")
+    else:
+        errors = {}
+        new_data = orig_class.__dict__
+
+    form = forms.FormWrapper(manipulator, new_data, errors)
+    return render_to_response('program/class_form.html', {'form': form, 'class': orig_class, 'edit': True, 'orig_class': orig_class, 'errors': str(errors)})
+
 
 def courseCatalogue(request, one, two):
     treeItem = "Q/Programs/" + one + "/" + two 

@@ -67,6 +67,9 @@ def navBarUp(request, navbar, node):
 	"""
 	navbarList = NavBarEntry.objects.filter(path=navbar.path).order_by('sort_rank')
 
+	if not navbar.indent:
+		navbarList = navbarList.filter(indent=False)
+
 	last_n = None
 
 	for n in navbarList:
@@ -87,6 +90,9 @@ def navBarDown(request, navbar, node):
 	Fail silently if this is not possible
 	"""
 	navbarList = NavBarEntry.objects.filter(path=navbar.path).order_by('sort_rank')
+
+	if not navbar.indent:
+		navbarList = navbarList.filter(indent=False)
 
 	last_n = None
 
@@ -113,10 +119,12 @@ def navBarNew(request, navbar, node):
 	new_sort_rank = max_sort_rank + 100
 
 	try:
+		url = request.POST['url']
+
 		entry = NavBarEntry()
 		entry.path = node
 		entry.sort_rank = new_sort_rank
-		entry.link = request.POST['url']
+		entry.link = url
 		entry.text = request.POST['text']
 		entry.indent = request.POST['indent']
 

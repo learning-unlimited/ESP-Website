@@ -16,7 +16,7 @@ from django.db.models import Q
 #        pass
 
 class UserBit(models.Model):
-    """ Grant a user bits to a controller """
+    """ Grant a user a bit on a Q """
     user = models.ForeignKey(User, blank=True, null=True) # User to give this permission
     qsc = models.ForeignKey(DataTree, related_name='permission_related_field') # Controller to grant access to
     verb = models.ForeignKey(DataTree, related_name='subject_related_field') # Do we want to use Subjects?

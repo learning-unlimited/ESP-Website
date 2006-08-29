@@ -58,4 +58,7 @@ urlpatterns = patterns('',
 
     # Uncomment this for @login_required:
     (r'^accounts/login/$', 'django.contrib.auth.views.login'),
+
+    # Class-edit interface
+    (r'^classes/edit/(?P<id>[0-9]*)/$', 'esp.program.views.updateClass')
 )
