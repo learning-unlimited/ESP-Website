@@ -91,4 +91,4 @@ INSTALLED_APPS = (
 )
 
 EMAIL_HOST = 'outgoing.media.mit.edu'
-
+APPEND_SLASH=False

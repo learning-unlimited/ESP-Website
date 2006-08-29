@@ -42,7 +42,7 @@ def updateClass(request, id):
         new_data = orig_class.__dict__
 
     form = forms.FormWrapper(manipulator, new_data, errors)
-    return render_to_response('program/class_form.html', {'form': form, 'class': orig_class, 'edit': True, 'orig_class': orig_class, 'errors': str(errors)})
+    return render_to_response('program/class_form.html', {'form': form, 'class': orig_class, 'edit': True, 'orig_class': orig_class })
 
 
 def courseCatalogue(request, one, two):

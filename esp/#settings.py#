@@ -86,16 +86,9 @@ INSTALLED_APPS = (
     'esp.qsd',
     'esp.qsdmedia',
     'esp.satprep',
+    'esp.money',
+    'esp.resources',
 )
 
 EMAIL_HOST = 'outgoing.media.mit.edu'
-
-# aseering 8-20-2006:
-# Added per <http://www.djangoproject.com/documentation/authentication/>
-# Provides templates with "request.*" by default
-TEMPLATE_CONTEXT_PROCESSORS = (
-    "django.core.context_processors.request",
-    "django.core.context_processors.auth",
-    "django.core.context_processors.debug",
-    "django.core.context_processors.i18n",
-)
+APPEND_SLASH=False

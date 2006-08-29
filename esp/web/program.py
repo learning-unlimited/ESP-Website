@@ -29,7 +29,7 @@ def program_catalog(request, tl, one, two, module, extra, prog):
 				return HttpResponseNotAllowed()
 
 		if request.POST['action'] == 'Edit':
-			return HttpResponseRedirect('') # We need to redirect to the class edit page
+			return HttpResponseRedirect('/classes/edit/' + request.POST['class_id'] + '/') # We need to redirect to the class edit page
 		
 		if request.POST['action'] == 'Approve':
 			u = UserBit()
@@ -376,7 +376,7 @@ def program_updateprofile(request, tl, one, two, module, extra, prog):
 	regprof.contact_emergency = c3	    
 	curUser.save()
 	regprof.save()
-	return program(request, tl, one, two, "studentreg", extra = None)
+	return program_updateprofile(request, tl, one, two, "studentreg", extra, prog)
 
 def validateContactInfo(ci):
 	""" Confirm that all necessary contact information is attached to the specified object """
@@ -390,13 +390,37 @@ def validateContactInfo(ci):
 	return False
 
 @login_required
-def finishedTeacher(request, tl, one, two, module, extra, prog):
+def studentRegDecision(request, tl, one, two, module, extra, prog):
 	""" The page that is shown once the user saves their student reg, giving them the option of printing a confirmation """
-	return render_to_response('program/savescreen', {'request': request,
-							 'logged_in': request.user.is_authenticated(),
-							 'navbar_list': makeNavBar(request.user, prog.anchor),
-							 'preload_images': preload_images,
-							 })
+	curUser = request.user
+	regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
+	if regprof.count() < 1:
+		regprof = RegistrationProfile()
+		regprof.user = curUser
+		regprof.program = prog
+	else:
+		regprof = regprof[0]
+	context = {'logged_in': request.user.is_authenticated() }
+	context['program'] = one + " " + two
+	context['program'] = context['program'].replace("_", " ")
+	context['one'] = one
+	context['two'] = two
+	context['request'] = request
+	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
+	context['preload_images'] =  preload_images
+	profile_done = False
+	for thing in [regprof.contact_student, regprof.contact_student, regprof.contact_emergency]:
+		if validateContactInfo(thing):
+			profile_done = True
+			break
+	if profile_done:
+		context['printConfirm'] = True
+		pre = regprof.preregistered_classes()
+		if pre != []:
+			context['printConfirm'] = True
+		else: context['printConfirm'] = False
+	else: context['printConfirm'] = False
+	return render_to_response('program/savescreen', context)
 
 @login_required
 def program_display_credit(request, tl, one, two, module, extra, prog):

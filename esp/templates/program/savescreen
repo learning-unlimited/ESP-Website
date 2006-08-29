@@ -1,19 +1,22 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}ESP Payment System{% endblock %}
+{% block title %}Thank you{% endblock %}
 
 {% block subsection_name %} {% endblock %}
 
 {% block content %}
-<br/>
-<h3 style="font-size: 100%">Welcome!</h3>
-<br/>
-
-When you are done and have printed your receipt,
-please close this window to return to registration.
-<br/><br/>
-Be sure to only submit the form only once!
-<br/>
-<form action="cardpay.html" method="get">
-<input type="submit" value="Continue --&gt;">
+<br>
+<h3 style="font-size: 100%">Thank you for your interest in {{one}}!</h3>
+<br>
+Your class selection has been saved.  <br>You can come back and change your class selections later, up until 2 days before {{one}} begins.
+<br>
+{% if printConfirm %}
+You may <a href="printconfirm">print</a> your confirmation letter now.  You should print this letter and bring it with you to the program's registration and/or first day of class.
+{% else %}
+However, you are not completely finished with registration.  You should come back later and finish your registration.  
+{% endif %}
+<br>
+Thanks!
+<br>
+<div textalign="center"><a href="http://esp-devel.hackorp.com/">Go back to the front page.</a></div>
 {% endblock %}
