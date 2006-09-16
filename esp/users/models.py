@@ -160,8 +160,10 @@ class ContactInfo(models.Model):
 	class Admin:
 		pass
 
-def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = GetNode('V/Create')):
+def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
+    if verb == None:
+        verb = GetNode("V/Create")
 
     nodes = DataTree.objects.filter(name='ROOT', parent=None)
     node = None
