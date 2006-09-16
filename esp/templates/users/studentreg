@@ -62,11 +62,11 @@ Open Full Catalog in a Separate Window
  <table style="width: 600px; margin: auto" border=1>
 {% for timeslot in timeslots %}
 
-<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.name }} </td>
+<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.friendly_name }} </td>
 	{% if timeslot.1 %}
 	<td>{{timeslot.1.title}}</td>
         <td width='20%' align='center'>
-	Thank you!
+	<a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change]</a>
 	{% else %}
    <td>Nothing Selected</td>
   <td width='20%' align='center'>

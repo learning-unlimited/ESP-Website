@@ -3,12 +3,12 @@ from esp.web.navBar import makeNavBar
 from esp.calendar.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
-from esp.datatree.models import GetNode
+from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
 from esp.program.models import RegistrationProfile, Class, ClassCategories
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
-from django.http import HttpResponse, Http404, HttpResponseNotAllowed
+from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
@@ -20,30 +20,35 @@ from esp.web.data import navbar_data, preload_images
 
 from django.contrib.auth.decorators import login_required
 
-def program_catalog(request, tl, one, two, module, extra, prog):
+def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 	""" Return the program class catalog """
 	# aseering 8/25/2006: We can post to this page to approve a class, or redirect to an edit page
 	if request.POST:
-		for i in [ 'class_id' 'action' ]:
+		for i in [ 'class_id', 'action' ]:
 			if not request.POST.has_key(i):
-				return HttpResponseNotAllowed()
+				assert False, i
+				#raise Http404()
 
 		if request.POST['action'] == 'Edit':
 			return HttpResponseRedirect('/classes/edit/' + request.POST['class_id'] + '/') # We need to redirect to the class edit page
 		
-		if request.POST['action'] == 'Approve':
+		if request.POST['action'] == 'Accept':
 			u = UserBit()
 			u.user = None
 			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-			u.verb = GetNode('V/Publish')
+			u.verb = GetNode('V/Approved')
 			u.save()
 
 
 	can_edit_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
 	can_approve_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
 	
-	clas = [x for x in prog.class_set.all().order_by('category') if can_edit_classes or can_approve_classes or UserBit.UserHasPerms(request.user, x.anchor, GetNode('V/Publish')) ]
-	
+	clas = [ {'class': x, 'accepted': UserBit.UserHasPerms(request.user, x.anchor, GetNode('V/Approved')) }
+		 for x in prog.class_set.all().order_by('category')
+		 if (can_edit_classes or can_approve_classes
+		 or UserBit.UserHasPerms(request.user, x.anchor, GetNode('V/Approved')) )
+		 and (timeslot == None or x.event_template == timeslot) ]
+
 	p = one + " " + two
 	return render_to_response('program/catalogue', {'request': request,
 							'Program': p.replace("_", " "),
@@ -195,17 +200,8 @@ def program_fillslot(request, tl, one, two, module, extra, prog):
 	""" Display the page to fill the timeslot for a program """
 	#ts = TimeSlot.objects.filter(id=extra)[0]
 	ts = DataTree.objects.filter(id=extra)[0]
-	context = {'logged_in': request.user.is_authenticated() }
-	context['ts'] = ts
-	context['one'] = one
-	context['two'] = two
-	classes = prog.anchor.class_set.all()
-	
-	context['courses'] = classes
-	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
-	context['preload_images'] =  preload_images
-	context['request'] = request
-	return render_to_response('program/timeslot', context)
+
+	return program_catalog(request, tl, one, two, module, extra, prog, timeslot=ts)
 
 @login_required
 def program_addclass(request, tl, one, two, module, extra, prog):

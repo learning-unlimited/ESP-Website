@@ -22,14 +22,14 @@
 
 {% for aclass in courses %}
 
-{% ifchanged %}<hr /><p style='font-family: arial; font-size:125%; text-align: center; margin-bottom: 0'><a name='{{ aclass.category }}'></a><b>{{ aclass.category}}</b></p><p style='text-align: center; margin-top: 0'><a href='#top'><small>[ Return to Category List ]</small></a></p> {% endifchanged %}
+{% ifchanged %}<hr /><p style='font-family: arial; font-size:125%; text-align: center; margin-bottom: 0'><a name='{{ aclass.class.category }}'></a><b>{{ aclass.class.category}}</b></p><p style='text-align: center; margin-top: 0'><a href='#top'><small>[ Return to Category List ]</small></a></p> {% endifchanged %}
 
 <div class="show_class">
 <table cellpadding="5" style="text-align: center; margin: auto; width: 620px">
 <tr><td colspan="2" style="background-color: #a6cedf" align="left"><b>
-{{ aclass.title }}</b><br />
+{{ aclass.class.title }}</b><br />
 <i>
-{% for teacher in aclass.teachers %}
+{% for teacher in aclass.class.teachers %}
 <a href="/{{tl}}/teachers/{{ teacher.last_name }}/{{ teacher.first_name }}/bio.html">{{ teacher.first_name}} {{teacher.last_name}}</a>
 {% if not forloop.last %}
 ,
@@ -37,22 +37,24 @@
 {% endfor %}
 </i></td></tr>
 <tr>
-<td colspan='2' style='text-align: left; background-color: #FFFFFF'> {{ aclass.class_info }}
+<td colspan='2' style='text-align: left; background-color: #FFFFFF'> {{ aclass.class.class_info }}
 <br/></td>
 </tr>
 <tr><td valign='top' align='center'><b>Meeting Time</b><br/>
-{{ aclass.slot }}<br /></td>
-<td style='width: 40%' align='left'><b>Grades:</b>{{ aclass.grade_min }} - {{ aclass.grade_max }}<br/>
-<b>Enrollment:</b> {{aclass.enrollment}} (max {{aclass.class_size_max}})</td></tr></table><br />
+{{ aclass.class.event_template.friendly_name }}<br /></td>
+<td style='width: 40%' align='left'><b>Grades:</b>{{ aclass.class.grade_min }} - {{ aclass.class.grade_max }}<br/>
+<b>Enrollment:</b> {{aclass.class.enrollment}} (max {{aclass.class.class_size_max}})</td></tr></table><br />
 
 {% if can_edit_classes or can_approve_classes %}
-<form name="edit_class" action=".">
-<input type="hidden" name="class_id" value="{{ aclass.id }}">
+<form name="edit_class" method="post" action=".">
+<input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
 {% if can_edit_classes %}
-<input type="submit" name="action" value="Edit">
+<input type="submit" name="action" value="Edit" />
 {% endif %}
-{% if can_aprove_classes %}
-<input type="submit" name="action" value="Accept">
+{% if can_approve_classes %}
+{% if not aclass.accepted %}
+<input type="submit" name="action" value="Accept" />
+{% endif %}
 {% endif %}
 </form><br /><br />
 {% endif %}

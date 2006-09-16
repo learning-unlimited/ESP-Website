@@ -45,21 +45,25 @@ def updateClass(request, id):
     return render_to_response('program/class_form.html', {'form': form, 'class': orig_class, 'edit': True, 'orig_class': orig_class })
 
 
-def courseCatalogue(request, one, two):
-    treeItem = "Q/Programs/" + one + "/" + two 
-    prog = GetNode(treeItem).program_set.all()
-    if len(prog) < 1:
-        return render_to_response('users/construction', {'request': request,
-                                                         'logged_in': request.user.is_authenticated() })
-    prog = prog[0]
-    clas = list(prog.class_set.all().order_by('category'))
-    p = one + " " + two
-    return render_to_response('program/catalogue', {'request': request,
-                                                    'Program': p.replace("_", " "),
-			'courses': clas })
+#def courseCatalogue(request, one, two):
+#    """ aseering 9-1-2006 : This function appears to not be used by anything; esp.web.program contains its equivalent.
+#        If nothing breaks by commenting this out, it should probably be deleted. """
+#    treeItem = "Q/Programs/" + one + "/" + two 
+#    prog = GetNode(treeItem).program_set.all()
+#    if len(prog) < 1:
+#        return render_to_response('users/construction', {'request': request,
+#                                                         'logged_in': request.user.is_authenticated() })
+#    prog = prog[0]
+#    clas = list(prog.class_set.all().order_by('category'))
+#    p = one + " " + two
+#    return render_to_response('program/catalogue', {'request': request,
+#                                                    'Program': p.replace("_", " "),
+#			'courses': clas })
 
 
 def programTemplateEditor(request):
+    """ Generate and display a listing of all QSD pages in the Programs template
+    (QSD pages that are created automatically when a new program is created) """
     qsd_pages = []
 
     template_node = GetNode('Q/Programs/Template')
@@ -75,6 +79,8 @@ def programTemplateEditor(request):
                                                             'qsd_pages': qsd_pages, 'have_create': have_create })
 
 def classTemplateEditor(request, program, session):
+    """ Generate and display a listing of all QSD pages in the Class template within the specified program
+    (QSD pages that are created automatically when a new class is created) """
     qsd_pages = []
 
     try:
@@ -92,3 +98,7 @@ def classTemplateEditor(request, program, session):
     return render_to_response('display/qsd_listing.html', { 'request': request,
                                                             'qsd_pages': qsd_pages,
                                                             'have_create': have_create })
+
+
+def programBattlescreen(request):
+    """ Generate a display of an assortment of useful information for a specified program """

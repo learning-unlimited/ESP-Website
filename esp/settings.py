@@ -5,8 +5,8 @@ TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     ('Adam Seering', 'aseering@mit.edu'),
+    ('Mike Axiak', 'axiak@mit.edu')
 )
-
 MANAGERS = ADMINS
 
 DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
@@ -90,5 +90,5 @@ INSTALLED_APPS = (
     'esp.resources',
 )
 
-EMAIL_HOST = 'outgoing.media.mit.edu'
+EMAIL_HOST = 'outgoing.mit.edu'
 APPEND_SLASH=False
