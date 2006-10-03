@@ -4,6 +4,7 @@ from esp.calendar.models import Event
 from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit, ContactInfo
 from esp.lib.markdown import markdown
+from esp.qsd.models import QuasiStaticData
 
 # Create your models here.
 
@@ -58,6 +59,9 @@ class Class(models.Model):
 	schedule = models.TextField(blank=True)
 	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set')
 	enrollment = models.IntegerField()
+
+	def got_qsd(self):
+		return (QuasiStaticData.objects.filter(path = self.anchor).count() > 0)
 
         def PopulateEvents(self):
             """ Given this instance's event_template, generate a series of events that define this class's schedule """

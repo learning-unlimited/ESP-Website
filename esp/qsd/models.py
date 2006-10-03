@@ -1,6 +1,8 @@
 from django.db import models
 from esp.datatree.models import DataTree, GetNode
 from esp.lib.markdown import markdown
+from django.contrib.auth.models import User
+from datetime import datetime
 
 # Create your models here.
 
@@ -11,6 +13,10 @@ class QuasiStaticData(models.Model):
 	title = models.CharField(maxlength=256)
 	content = models.TextField()
 
+	create_date = models.DateTimeField(default=datetime.now())
+	author = models.ForeignKey(User)
+	disabled = models.BooleanField(default=False)
+	
 	def __str__(self):
 		return ( self.path.full_name() + ':' + self.name + '.html' )
 

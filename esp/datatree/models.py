@@ -14,7 +14,6 @@ def PermToString(perm):
     else:
         return "/".join(perm)
 
-
 class DataTree(models.Model):
     """ An implementation of a nested-sets data tree, with data associated with each node """
     rangestart = models.IntegerField(editable=False, default=0)
