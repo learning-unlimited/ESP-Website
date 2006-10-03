@@ -2,6 +2,16 @@ from django.db import models
 from django.contrib.auth.models import User
 from esp.datatree.models import DataTree
 
+class LineItem(models.Model):
+	value = models.FloatField(max_digits = 10, decimal_places = 2)
+	label = models.TextField()
+	
+	def __str__(self):
+		return str(self.label) + str(self.value)
+		
+	class Admin:
+		pass
+
 class PaymentType(models.Model):
     """ A list of payment methods: Check, Credit Card, etc. """
     description = models.TextField() # Description, ie. "Check", "Credit Card", etc.
