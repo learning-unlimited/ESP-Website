@@ -1,0 +1,80 @@
+
+{% extends "outlines/series-3.html" %}
+
+{% block stylesheets %}
+{{block.super}}
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+{% endblock %}
+
+{% block title %}MyESP: Student Home Page{% endblock %}
+
+{% block content %}
+
+
+
+{% for b in blocks %}
+	
+<table width="450" border="0" cellpadding="0" cellspacing="0">
+<tr height="25">
+<td width="2" bgcolor="#9999FF"></td> 
+<td align="center" colspan="2" bgcolor="#333399">
+<div class="header1">
+{{b.title}}
+</div>
+</td>
+<td width="2" bgcolor="#9999FF"></td> 
+</tr>
+<tr><td width="2" bgcolor="#9999FF"></td> 
+<td colspan="2" bgcolor="#FFFFEE">
+
+{% for h in b.headers %}
+
+<div class="class_stuff">
+- {{ h }}
+</div>
+
+{% endfor %}
+
+{% for s in b.sections %}
+
+<div class="header">
+&nbsp; {{ s.header }}
+</div>
+
+<table border="0" cellpadding="0" cellspacing="0">
+
+{% for i in s.items %}
+
+<tr><td width="325">
+<div class="class_stuff">{{ i[0] }}</div>
+</td>
+<td width="120" align="center">
+<div class="admin_options">{{ i[1] }}</div>
+</td></tr>
+
+{% endfor %}
+
+<!-- Stuff at the end -->
+<tr height="8"><td colspan="2">
+</td></tr>
+<tr height="16"><td colspan="2">
+<div class="class_stuff">
+&nbsp; {{ s.footer }}
+</div>
+</td></tr>
+<tr height="4"><td colspan="2">
+</td></tr>
+</table>
+<!-- End of a program -->
+
+{% endfor %}
+
+</td>
+<td width="3" bgcolor="#9999FF">&nbsp; </td> </tr>
+<tr height="10"><td colspan="4" bgcolor="#9999FF"> </td></tr>
+</table>	
+	
+{% endfor %}
+
+
+{% endblock %}

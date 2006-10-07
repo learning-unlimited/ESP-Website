@@ -159,6 +159,104 @@ def myesp_home(request, module):
 							   'announcements': ann,
 							   'logged_in': request.user.is_authenticated() })
 
+#	Format for battlescreens 			Michael P
+#	----------------------------------------------
+#	The battle screen template is good for drawing individual blocks of helpful stuff.
+#	So, it passes the template an array called blocks.
+
+#	Each variable in the blocks array has:
+#	-	title
+#	-	array of 'header' html strings 
+#		(in case you don't want to use separate sections)
+#	-	array of sections
+
+#	Each variable in the sections array has
+#	-	header text including links
+#	-	array of list items
+#	-	footer text including links
+
+#	The list item is displayed with a wide cell on the left followed by a narrow cell on the right.
+#	The wide cell is like the name of some object to deal with,
+#	and the narrow cell is like the administrative actions that can be applied to the object.
+#	For example, the wide cell might have "Michael Price: Audio and Speakerbuilding" and the narrow cell
+#	might be "Approve / Reject". 
+
+#	So a list item is a plain array of size 2, containing
+#	-	left-hand (wide) cell html including links but not formatting
+#	-	right-hand (narrow) cell html including links but not formatting
+
+#	That hopefully completes the array structure needed for this thing.
+
+def myesp_battlescreen_student(request, module):
+	curUser = request.user
+	sub = GetNode('V/Subscribe')
+	ann = Entry.find_posts_by_perms(curUser, sub)
+	ann = [x.html() for x in ann]
+	
+	block_ann = 	{	'title' : 'Announcements',
+						'headers' : ['Announcement 1', 'Announcement 2', 'Announcement 3'],
+						'sections' : None }
+				
+	block_signup = {	'title' : 'Register For ESP Programs',
+						'headers' : ['Follow the links below to get started.'].
+						'sections' :
+							[{	'header' : 'Splash Fall 2006',
+								'items' : 	[['Information Page', None],
+											['Class Catalog', None],
+											['Registration', 'Help']]
+							}]
+					}
+					
+	block_surveys = {	'title' : 'Online Surveys',
+						'headers' : ['We\'re looking for your feedback so we can improve:'],
+						'sections' : 
+							[{	'header' : 'Splash Fall 2005',
+								'items' : 	[['General Survey', None],
+											['Class 1 Survey', None],
+											['Class 2 Survey', None]]
+							},
+							{	'header' : 'Delve 2005 - 2006',
+								'items' :	[['General Survey', None]]
+							}]
+					}
+						
+	blocks = [block_ann, block_signup, block_surveys]
+	
+	return render_to_response('battlescreens/student', {'request': request,
+							   'blocks': blocks,
+							   'logged_in': request.user.is_authenticated() }) 
+
+def myesp_battlescreen_teacher(request, module):
+	curUser = request.user
+	sub = GetNode('V/Subscribe')
+	ann = Entry.find_posts_by_perms(curUser, sub)
+	ann = [x.html() for x in ann]
+	
+	block_ann = 	{	'title' : 'Announcements',
+						'headers' : ['Announcement 1', 'Announcement 2', 'Announcement 3'],
+						'sections' : None }
+						
+	blocks = [block_ann]
+						
+	return render_to_response('battlescreens/teacher', {'request': request,
+							   'blocks': blocks,
+							   'logged_in': request.user.is_authenticated() })
+							   
+def myesp_battlescreen_admin(request, module):
+	curUser = request.user
+	sub = GetNode('V/Subscribe')
+	ann = Entry.find_posts_by_perms(curUser, sub)
+	ann = [x.html() for x in ann]
+	
+	block_ann = 	{	'title' : 'Announcements',
+						'headers' : ['Announcement 1', 'Announcement 2', 'Announcement 3'],
+						'sections' : None }
+						
+	blocks = [block_ann]
+					
+	return render_to_response('battlescreens/admin', {'request': request,
+							   'blocks': blocks,
+							   'logged_in': request.user.is_authenticated() })
 
 myesp_handlers = { 'register': myesp_register,
 		   'finish': myesp_finish,
@@ -168,4 +266,7 @@ myesp_handlers = { 'register': myesp_register,
 		   'login': myesp_login,
 		   'logfin': myesp_logfin,
 		   'home': myesp_home,
+		   'student': myesp_battlescreen_student,
+		   'teacher': myesp_battlescreen_teacher,
+		   'admin': myesp_battlescreen_admin
 		   }

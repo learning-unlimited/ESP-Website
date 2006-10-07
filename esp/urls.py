@@ -28,6 +28,8 @@ urlpatterns = patterns('',
     (r'^program/Template/$', 'esp.program.views.programTemplateEditor'),
     (r'^program/(?P<program>[-A-Za-z0-9_ ]+)/(?P<session>[-A-Za-z0-9_ ]+)/Classes/Template/$', 'esp.program.views.classTemplateEditor'),
     (r'^(?P<subsection>(learn|teach|program))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section': 'Programs' } ),
+	
+	#	This same URL pattern also handles the battlescreen  -Michael
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),
 
     # Mini-Blog pages

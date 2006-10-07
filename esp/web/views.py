@@ -53,7 +53,6 @@ def bio(request, tl, last, first):
 						'tl': tl})
 
 
-
 def myesp(request, module):
 	""" Return page handled by myESP (generally, a user-specific page) """
 	if myesp_handlers.has_key(module):

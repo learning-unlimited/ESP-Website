@@ -1,0 +1,35 @@
+.header1 {
+font-family: Verdana;
+font-size: 15px;
+font-weight: bold;
+color: #FFFFCC;
+}
+.header {
+font-family: Arial;
+font-size: 14px;
+font-weight: bold;
+color: #000000;
+padding-top: 3px;
+padding-bottom: 2px;
+}
+td {
+font-family: Arial;
+font-size: 12px;
+}
+table {
+border-color: #333399;
+border-style: solid;
+}
+.class_stuff {
+text-indent: 20px;
+font-family: Arial;
+font-size: 12px;
+}
+.admin_options {
+text-indent: 0px;
+font-family: Arial;
+font-size: 12px;
+}
+.class_title {
+color: #006600;
+}

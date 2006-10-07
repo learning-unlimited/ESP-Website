@@ -38,6 +38,15 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
 			u.verb = GetNode('V/Approved')
 			u.save()
+			
+		#	We should be able to reject classes too    -Michael P
+		
+		#	if request.POST['action'] == 'Reject':
+		#		u = UserBit()
+		#		u.user = None
+		#		u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
+		#		u.verb = GetNode('V/Rejected')
+		#		u.save()
 
 
 	can_edit_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
@@ -447,3 +456,7 @@ program_handlers = {'catalog': program_catalog,
 		    
 		    }
 
+@login_required
+def program_battlescreen():
+	pass
+	
