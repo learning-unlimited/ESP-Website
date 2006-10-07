@@ -4,6 +4,12 @@ font-size: 15px;
 font-weight: bold;
 color: #FFFFCC;
 }
+.header_dark {
+font-family: Verdana;
+font-size: 15px;
+font-weight: bold;
+color: #000000;
+}
 .header {
 font-family: Arial;
 font-size: 14px;
