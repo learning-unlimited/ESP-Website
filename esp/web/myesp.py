@@ -200,7 +200,7 @@ def myesp_battlescreen_student(request, module):
 								'items' : [['<a href="' + p.url() + '">Information Page</a>', ''],
 										['<a href="' + p.url() + '/catalog/">Class Catalog</a>', ''],
 										['<a href="' + p.url() + '/studentreg/">Registration</a>', 'Help']]
-								}
+								})
 	
 	block_ann = 	{	'title' : 'Announcements',
 						'headers' : ann,
