@@ -24,6 +24,8 @@ class UserBit(models.Model):
     startdate = models.DateTimeField(blank=True, null=True)
     enddate = models.DateTimeField(blank=True, null=True)
 
+    recursive = models.BooleanField(default=True)
+
     def __str__(self):
         curr_user = '?'
         curr_qsc = '?'
@@ -56,13 +58,13 @@ class UserBit(models.Model):
         if user != None and type(user) != AnonymousUser:
             for bit in user.userbit_set.all().filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now)):
                 test.append(bit)
-                if bit.qsc.is_descendant(qsc) and bit.verb.is_antecedent(verb):
+                if ((bit.recursive and bit.qsc.is_descendant(qsc)) or bit.qsc == qsc) and ((bit.recursive and bit.verb.is_descendant(verb)) or bit.verb == verb):
                     return True
 
             # This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
         for bit in UserBit.objects.filter(user__isnull=True).filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now)):
             test.append(bit)
-            if bit.qsc.is_descendant(qsc) and bit.verb.is_antecedent(verb):
+            if ((bit.recursive and bit.qsc.is_descendant(qsc)) or bit.qsc == qsc) and ((bit.recursive and bit.verb.is_descendant(verb)) or bit.verb == verb):
                 return True
 
         return False
@@ -84,7 +86,7 @@ class UserBit(models.Model):
         """ Return all users who have been granted 'verb' on 'qsc' """
         if end_of_now == None: end_of_now = now
         
-        return UserBit.objects.filter(qsc__rangestart__lte=qsc.rangestart, qsc__rangeend__gte=qsc.rangeend, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend).filter(Q(startdate__isnull=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
+        return UserBit.objects.filter(Q(recursive=True, qsc__rangestart__lte=qsc.rangestart, qsc__rangeend__gte=qsc.rangeend, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend) | Q(qsc__id=qsc.pk, verb__id=verb.pk)).filter(Q(startdate__isnull=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
 
     @staticmethod
     def bits_get_qsc(user, verb, now = datetime.now(), end_of_now = None, qsc_root=None):
@@ -93,7 +95,7 @@ class UserBit(models.Model):
         If 'qsc_root' is specified, only return qsc structures at or below the specified node """
         if end_of_now == None: end_of_now = now
 
-        qscs = UserBit.objects.filter(verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
+        qscs = UserBit.objects.filter(Q(recursive=True, verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend) | Q(verb__id=verb.pk)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
 
         if qsc_root == None:
             return qscs
@@ -105,7 +107,7 @@ class UserBit(models.Model):
         """ Return all verbs that 'user' has been granted on 'qsc' """
         if end_of_now == None: end_of_now = now
         
-        return UserBit.objects.filter(qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnul=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
+        return UserBit.objects.filter(Q(recursive=True, qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend) | Q(qsc__id=qsc.pk)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnul=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
 
     @staticmethod
     def has_bits(queryset):
@@ -123,11 +125,17 @@ class UserBit(models.Model):
     	# Extract entries associated with a particular branch
     	res = []
     	for q in q_list:
-    		for entry in module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
-			if qsc is not None:
-				if entry.anchor.rangestart < qsc.rangestart or entry.anchor.rangeend > qsc.rangeend:
-					continue
-     			res.append( entry )
+            
+            if q.recursive:
+                entry_list = module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend)
+            else:
+                entry_list = module.objects.filter(anchor__id=q.pk)
+                
+            for entry in entry_list:
+                if qsc is not None:
+                    if (entry.anchor.recursive and (entry.anchor.rangestart < qsc.rangestart or entry.anchor.rangeend > qsc.rangeend)) or entry.anchor == qsc:
+                        continue
+                    res.append( entry )
 	
 	# Operation Complete!
 	return res
