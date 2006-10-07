@@ -198,7 +198,7 @@ def myesp_battlescreen_student(request, module):
 						'sections' : None }
 				
 	block_signup = {	'title' : 'Register For ESP Programs',
-						'headers' : ['Follow the links below to get started.'].
+						'headers' : ['Follow the links below to get started.'],
 						'sections' :
 							[{	'header' : 'Splash Fall 2006',
 								'items' : 	[['Information Page', None],
