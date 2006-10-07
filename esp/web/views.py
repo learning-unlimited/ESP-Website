@@ -7,12 +7,13 @@ from esp.qsd.views import qsd
 from esp.datatree.models import GetNode, DataTree
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, Class, ClassCategories
+from esp.program.models import RegistrationProfile, Class, ClassCategories, TeacherBio
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
+
 import datetime
 
 from django.contrib.auth.models import User
@@ -36,7 +37,9 @@ def index(request):
 
 def bio(request, tl, last, first):
 	""" Displays a teacher bio """
-	bio = request.user.teacherbio_set.all()
+	founduser = User.objects.filter(last_name = last, first_name = first)
+	if len(founduser) < 1: raise Http404
+	bio = founduser[0].teacherbio_set.all()
 	if len(bio) < 1: return render_to_response('users/construction', {'request': request,
 									  'logged_in': request.user.is_authenticated(),
 									  'navbar_list': makeNavBar(request.user, GetNode('Q/Web/Bio')),
