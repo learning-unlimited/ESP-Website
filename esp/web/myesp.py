@@ -264,7 +264,7 @@ def myesp_battlescreen_admin(request, module):
 	if request.POST:
 		#	If you clicked a button to approve or reject, first clear the "proposed" bit
 		#	by setting the end date to now.
-		if (request.POST['action'] == 'Approve' || request.POST['action'] == 'Reject'):
+		if (request.POST['action'] == 'Approve' or request.POST['action'] == 'Reject'):
 				u = UserBit()
 				u.user = None
 				u.end_date = datetime.now()
