@@ -77,7 +77,7 @@ This is your ESP "battle screen," from which you can sign up for programs, get i
 <!--	Now for the actual sections -->
 <tr>
 <td width="2" bgcolor="#9999FF"></td> 
-<td align="center" colspan="2" bgcolor="#FFFFEE">
+<td align="left" colspan="2" bgcolor="#FFFFEE">
 
 {% for s in b.sections %}
 

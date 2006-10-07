@@ -202,8 +202,8 @@ def myesp_battlescreen_student(request, module):
 						'headers' : ['Follow the links below to get started.'],
 						'sections' :
 							[{	'header' : 'Splash Fall 2006',
-								'items' : 	[['Information Page', None],
-											['Class Catalog', None],
+								'items' : 	[['Information Page', ''],
+											['Class Catalog', ''],
 											['Registration', 'Help']]
 							}]
 					}
@@ -212,12 +212,12 @@ def myesp_battlescreen_student(request, module):
 						'headers' : ['We\'re looking for your feedback so we can improve:'],
 						'sections' : 
 							[{	'header' : 'Splash Fall 2005',
-								'items' : 	[['General Survey', None],
-											['Class 1 Survey', None],
-											['Class 2 Survey', None]]
+								'items' : 	[['General Survey', ''],
+											['Class 1 Survey', ''],
+											['Class 2 Survey', '']]
 							},
 							{	'header' : 'Delve 2005 - 2006',
-								'items' :	[['General Survey', None]]
+								'items' :	[['General Survey', '']]
 							}]
 					}
 						
