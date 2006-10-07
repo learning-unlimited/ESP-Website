@@ -126,10 +126,10 @@ class UserBit(models.Model):
     	res = []
     	for q in q_list:
             
-            if q.recursive:
-                entry_list = module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend)
-            else:
-                entry_list = module.objects.filter(anchor__pk=q.id)
+            #	if q.recursive:
+            entry_list = module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend)
+            #	else:
+            #	    entry_list = module.objects.filter(anchor__pk=q.id)
                 
             for entry in entry_list:
                 if qsc is not None:
