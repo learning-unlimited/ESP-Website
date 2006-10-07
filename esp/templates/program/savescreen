@@ -18,5 +18,5 @@ However, you are not completely finished with registration.  You should come bac
 <br>
 Thanks!
 <br>
-<div textalign="center"><a href="http://esp-devel.hackorp.com/">Go back to the front page.</a></div>
+<div textalign="center"><a href="/">Go back to the front page.</a></div>
 {% endblock %}

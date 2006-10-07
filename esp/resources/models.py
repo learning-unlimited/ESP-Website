@@ -9,6 +9,9 @@ class ResourceType(models.Model):
     description = models.TextField() # In as few words as possible, preferably one or two, what is this resource?
     consumable = models.BooleanField() # Does this resource get used up?
 
+    class Admin:
+        pass
+
 class Resource(models.Model):
     """ An instance of a ResourceType.  If the office has four projectors, it'll have a 'Projector' ResourceType, and four Resource instances with type 'Projector' """
     resource_type = models.ForeignKey(ResourceType)
@@ -19,6 +22,8 @@ class Resource(models.Model):
 
     # anchor = models.ForeignKey(DataTree) # We're not anchoring to the tree directly; we're using a userbit-esque system.
 
+    class Admin:
+        pass
 
 # aseering 8/25/2006: This is really the wrong way to do this; it's basically a straight Copy'n'Paste from the UserBits table.
 # The right way might be a Universal ForeignKey in that table; I'm not sure.

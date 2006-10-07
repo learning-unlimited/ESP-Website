@@ -10,7 +10,7 @@
 <p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center;'><b>Adding a Class</b></p>
 <p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center;'>Listing Classes For {{ts.friendly_name}}:</p>
 
-<p style="text-align: center"><a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/studentreg/">Back to My Schedule</a></p>
+<p style="text-align: center"><a href="/learn/{{one}}/{{two}}/studentreg/">Back to My Schedule</a></p>
 
 <p style='text-align: center;'>
 
@@ -56,7 +56,7 @@
 <td colspan='2'>
 
 
-<form action='http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/addclass/' method='post'>
+<form action='/learn/{{one}}/{{two}}/addclass/' method='post'>
 <input type='hidden' name='class' value='{{aclass.id}}'>
 <center><input type='submit' value='Add This Class!'></center><hr />
 </form>

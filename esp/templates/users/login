@@ -16,7 +16,7 @@
 {% if Problem %}
 <h2 color="red">Sorry!  Check your username and password and try again.</h2>
 {% endif %}
-<form action='http://esp-devel.hackorp.com/myesp/login/' method="post">
+<form action='/myesp/login/' method="post">
 <table width='65%' cellpadding='2' align='center' border='0'>
 
 <tr>

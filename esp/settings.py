@@ -13,7 +13,7 @@ DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or '
 DATABASE_NAME = 'django'             # Or path to database file if using sqlite3.
 DATABASE_USER = 'esp'             # Not used with sqlite3.
 DATABASE_PASSWORD = 'password'         # Not used with sqlite3.
-DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
+DATABASE_HOST = 'esp-devel.hackorp.com'             # Set to empty string for localhost. Not used with sqlite3.
 DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
 
 # Local time zone for this installation. All choices can be found here:
@@ -33,7 +33,7 @@ MEDIA_ROOT = '/esp/esp/media/uploaded/'
 
 # URL that handles the media served from MEDIA_ROOT.
 # Example: "http://media.lawrence.com"
-MEDIA_URL = 'http://esp-devel.hackorp.com/media/uploaded/'
+MEDIA_URL = '/media/uploaded/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
@@ -76,7 +76,6 @@ INSTALLED_APPS = (
     'esp.users',
     'esp.workflow',
     'esp.dbmail',
-    'esp.web',
     'esp.program',
     'esp.calendar',
     'esp.lib',

@@ -11,54 +11,64 @@ from esp.lib.markdownaddons import ESPMarkdown
 from esp.settings import MEDIA_ROOT, MEDIA_URL
 from os.path import basename, dirname
 
-def qsd_raw(request, url):
-	""" Return raw QSD data as a text file """
-	try:
-		qsd_rec = QuasiStaticData.find_by_url_parts(GetNode('Q/Web'),url.split('/'))
-	except QuasiStaticData.DoesNotExist:
-		raise Http404
-
-	# aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Publish on this node
-	have_view = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
-	if have_view:
-		return HttpResponse(qsd_rec.content, mimetype='text/plain')
-	else:
-		return Http404
+#def qsd_raw(request, url):
+#	""" Return raw QSD data as a text file """
+#	try:
+#		qsd_rec = QuasiStaticData.find_by_url_parts(GetNode('Q/Web'),url.split('/'))
+#	except QuasiStaticData.DoesNotExist:
+#		raise Http404
+#
+#	# aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Publish on this node
+#	have_view = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
+#	if have_view:
+#		return HttpResponse(qsd_rec.content, mimetype='text/plain')
+#	else:
+#		return Http404
 	
 def qsd(request, branch, url_name, url_verb, base_url):
+	# Detect edit authorizations
+	have_edit = UserBit.UserHasPerms( request.user, branch, GetNode('V/Administer') )
+	have_read = UserBit.UserHasPerms( request.user, branch, GetNode('V/Publish') )
+
 	# Fetch the QSD object
 	try:
-		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name )
+		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name ).order_by('-create_date')
 		if qsd_recs.count() < 1:
 			raise QuasiStaticData.DoesNotExist
 
 		qsd_rec = qsd_recs[0]
+
 	except QuasiStaticData.DoesNotExist:
-		#if url_verb != 'create': raise Http404
-		#else:
-		qsd_rec = QuasiStaticData()
-		qsd_rec.path = branch
-		qsd_rec.name = url_name
-		qsd_rec.title = 'New Page'
-		qsd_rec.content = 'Please insert your text here'
+		if have_edit and url_verb == 'create':
+			qsd_rec = QuasiStaticData()
+			qsd_rec.path = branch
+			qsd_rec.name = url_name
+			qsd_rec.title = 'New Page'
+			qsd_rec.content = 'Please insert your text here'
+
+			url_verb = 'edit'
+		else:
+			raise Http404
+
+	if url_verb == 'create':
 		qsd_rec.save()
-		
 		url_verb = 'edit'
-
-
-	# Detect edit authorizations
-	have_edit = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Administer') )
-	have_read = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
-	
+			
 	# Detect POST
 	if request.POST.has_key('post_edit'):
 		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
 		if not have_edit:
 			return HttpResponseNotAllowed(['GET'])
 		
-		qsd_rec.content = request.POST['content']
-		qsd_rec.title = request.POST['title']
-		qsd_rec.save()
+		qsd_rec_new = QuasiStaticData()
+		qsd_rec_new.path = branch
+		qsd_rec_new.name = url_name
+		qsd_rec_new.author = request.user
+		qsd_rec_new.content = request.POST['content']
+		qsd_rec_new.title = request.POST['title']
+		qsd_rec_new.save()
+
+		qsd_rec = qsd_rec_new
 
 		# If any files were uploaded, save them
 		for FILE in request.FILES.keys():

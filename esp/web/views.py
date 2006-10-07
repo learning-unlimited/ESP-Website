@@ -2,7 +2,7 @@ from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
 from esp.calendar.models import Event
 from esp.qsd.models import QuasiStaticData
-from esp.qsd.views import qsd, qsd_raw
+from esp.qsd.views import qsd
 
 from esp.datatree.models import GetNode, DataTree
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
@@ -123,7 +123,7 @@ def redirect(request, url, section = 'Web', subsection = None):
 	else:
 		subsection_str = subsection + "/"
 
-	root_url = "http://esp-devel.hackorp.com/" + "/".join(url_parts) + "/" + qsd_name
+	root_url = "/" + "/".join(url_parts) + "/" + qsd_name
 
 	return qsd(request, branch, qsd_name, qsd_verb, root_url)
 	

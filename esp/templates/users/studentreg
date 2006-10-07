@@ -16,8 +16,8 @@ registered for {{program}}</p>
 <center><table style="text-align: center">
 <tr><th>What to do?</th><th>Done?</th></tr>
 <tr>
- <td><a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/profile/">Update Contact Info</a></td>
- <td style="text-align: center"><img src="http://esp.mit.edu/web/img/{{profile_graphic}}.gif"
+ <td><a href="/learn/{{one}}/{{two}}/profile/">Update Contact Info</a></td>
+ <td style="text-align: center"><img src="/media/images/{{profile_graphic}}.gif"
 {% ifequal profile_graphic "nocheckmark" %}
 border = 1
 {% endifequal %}
@@ -25,8 +25,8 @@ border = 1
 </tr>
 
 <tr>
- <td><a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/studentreg/">Select Your Classes</a></td>
- <td style="text-align: center"><img src="http://esp.mit.edu/web/img/{{select_graphic}}.gif"
+ <td><a href="/learn/{{one}}/{{two}}/studentreg/">Select Your Classes</a></td>
+ <td style="text-align: center"><img src="/media/images/{{select_graphic}}.gif"
 {% ifequal select_graphic "nocheckmark" %}
 border = 1
 {% endifequal %}
@@ -34,8 +34,8 @@ border = 1
 </tr>
 
 <tr>
- <td><a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/startpay/">Pay Online</a> (Optional)</td>
- <td style="text-align: center"><img src="http://esp.mit.edu/web/img/{{pay_graphic}}.gif"
+ <td><a href="/learn/{{one}}/{{two}}/startpay/">Pay Online</a> (Optional)</td>
+ <td style="text-align: center"><img src="/media/images/{{pay_graphic}}.gif"
 {% ifequal select_graphic "nocheckmark" %}
 border = 1
 {% endifequal %}
@@ -52,7 +52,7 @@ border = 1
 </p>
 
 <p style="text-align: center">
-<a target="_blank" href='http://esp-devel.hackorp.com/teach/{{one}}/{{two}}/catalog/'>
+<a target="_blank" href='/teach/{{one}}/{{two}}/catalog/'>
 Open Full Catalog in a Separate Window
 </a>
 </p>
@@ -66,11 +66,11 @@ Open Full Catalog in a Separate Window
 	{% if timeslot.1 %}
 	<td>{{timeslot.1.title}}</td>
         <td width='20%' align='center'>
-	<a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change]</a>
+	<a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change]</a>
 	{% else %}
    <td>Nothing Selected</td>
   <td width='20%' align='center'>
-  <a href="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
+  <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
 	{% endif %}	
   </td></tr>
 
@@ -78,7 +78,7 @@ Open Full Catalog in a Separate Window
 </table> 
 <br/>
 
-<form action="http://esp-devel.hackorp.com/learn/{{one}}/{{two}}/finishedStudent" method="post">
+<form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">
 <p style="text-align: center">
 <input type="submit" value="Save!">
 </p>

@@ -16,7 +16,7 @@
 <h2 style="color:red">Please make sure to fill in all the fields.  Thanks! </h2>
 {% endif %}
 
-	<form action='http://esp-devel.hackorp.com/teach/{{one}}/{{two}}/makecourse/' method="post">
+	<form action='/teach/{{one}}/{{two}}/makecourse/' method="post">
 
  <b>Course Title:</b><br />
  <input type='text' name='title' value='{{course.title}}' size='30'>

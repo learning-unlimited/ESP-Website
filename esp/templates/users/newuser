@@ -19,7 +19,7 @@
 {% if Problem %}
 <h2 color="red">Hey - There was a problem with your registration.  Please try again, either your passwords didn't match or your account exists already. </h2>
 {% endif %}
-<form action='http://esp-devel.hackorp.com/myesp/finish/' method="post">
+<form action='/myesp/finish/' method="post">
 <input type='hidden' name='op' value='register'>
 <table width='65%' cellpadding='2' align='center' border='0'>
 
