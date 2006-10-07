@@ -181,8 +181,9 @@ def myesp_home(request, module):
 #	For example, the wide cell might have "Michael Price: Audio and Speakerbuilding" and the narrow cell
 #	might be "Approve / Reject". 
 
-#	So a list item is a plain array of size 2, containing
-#	-	left-hand (wide) cell html including links but not formatting
+#	So a list item is a plain array of 3 containing
+#	-	left-hand (wide) cell text 
+#	-	left-hand (wide) cell url
 #	-	right-hand (narrow) cell html including links but not formatting
 
 #	That hopefully completes the array structure needed for this thing.
@@ -199,9 +200,9 @@ def myesp_battlescreen_student(request, module):
 	
 	for p in programs_current:
 		signup_sections.append({'header' : str(p), 
-								'items' : [['<a href="/learn/' + p.url() + '/index.html">Information Page</a>', ''],
-										['<a href="/learn/' + p.url() + '/catalog/">Class Catalog</a>', ''],
-										['<a href="/learn/' + p.url() + '/studentreg/">Registration</a>', 'Help']]
+								'items' : [['Information Page', '/learn/' + p.url() + '/index.html', ''],
+										['Class Catalog', '/learn/' + p.url() + '/catalog/', ''],
+										['Register for Classes', '/learn/' + p.url() + '/studentreg/', 'Help']]
 								})
 	
 	block_ann = 	{	'title' : 'Announcements',
@@ -214,16 +215,17 @@ def myesp_battlescreen_student(request, module):
 						'sections' : signup_sections
 					}
 					
+	#	The survey engine doesn't exist yet, and that's why the URLs are None.
 	block_surveys = {	'title' : 'Online Surveys',
 						'headers' : ['We\'re looking for your feedback so we can improve:'],
 						'sections' : 
 							[{	'header' : 'Splash Fall 2005',
-								'items' : 	[['General Survey', ''],
-											['Class 1 Survey', ''],
-											['Class 2 Survey', '']]
+								'items' : 	[['General Survey', None, ''],
+											['Class 1 Survey', None, ''],
+											['Class 2 Survey', None, '']]
 							},
 							{	'header' : 'Delve 2005 - 2006',
-								'items' :	[['General Survey', '']]
+								'items' :	[['General Survey', None, '']]
 							}]
 					}
 						
@@ -259,7 +261,23 @@ def myesp_battlescreen_admin(request, module):
 						'headers' : ['Announcement 1', 'Announcement 2', 'Announcement 3'],
 						'sections' : None }
 						
-	blocks = [block_ann]
+	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Program'));
+	
+	approval_sections = []
+	program_classes = []
+	
+	for p in programs_current:
+		program_classes = []
+		for c in Class.objects.filter(parent_program = p)
+			program_classes.append([str(c), '/learn/' + c.url() + '/index.html', 'Approve / Reject'])
+		approval_sections.append({'header' : str(p), 'items' : program_classes})
+		
+						
+	block_approve = {	'title' : 'Approve Classes',
+						'headers' : None,
+						'sections' : approval_sections }
+						
+	blocks = [block_ann, block_approve]
 					
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,

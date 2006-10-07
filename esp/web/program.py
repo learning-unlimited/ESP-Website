@@ -455,8 +455,3 @@ program_handlers = {'catalog': program_catalog,
 		    'finishedStudent': studentRegDecision, 
 		    
 		    }
-
-@login_required
-def program_battlescreen():
-	pass
-	

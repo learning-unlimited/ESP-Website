@@ -64,6 +64,10 @@ class Class(models.Model):
 	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set')
 	enrollment = models.IntegerField()
 
+    def url(self):
+        str_array = self.anchor.tree_encode()
+        return '/'.join(str_array[2:])
+
 	def got_qsd(self):
 		return (QuasiStaticData.objects.filter(path = self.anchor).count() > 0)
 

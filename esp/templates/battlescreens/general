@@ -90,10 +90,12 @@ This is your ESP "battle screen," from which you can sign up for programs, get i
 {% for i in s.items %}
 
 <tr><td width="325">
-<div class="class_stuff">{{ i.0 }}</div>
+<div class="class_stuff"><a href="{{ i.0 }}">{{ i.1 }}</a></div>
 </td>
 <td width="120" align="center">
-<div class="admin_options">{{ i.1 }}</div>
+<div class="admin_options">
+{{ i.2 }}
+</div>
 </td></tr>
 
 {% endfor %}
