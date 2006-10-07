@@ -223,7 +223,7 @@ def myesp_battlescreen_student(request, module):
 						
 	blocks = [block_ann, block_signup, block_surveys]
 	
-	return render_to_response('battlescreens/student', {'request': request,
+	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
 							   'logged_in': request.user.is_authenticated() }) 
 
