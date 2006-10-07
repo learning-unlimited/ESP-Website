@@ -114,7 +114,7 @@ class UserBit(models.Model):
         """ Returns False if there are no elements in queryset """
         return ( queryset.count() > 0 )
 
-    @staticmethod
+        @staticmethod
     def find_by_anchor_perms(module,user,verb,qsc=None):
     	""" Fetch a list of relevant items for a given user and verb in a module that has an anchor foreign key into the DataTree """
     	q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
@@ -125,17 +125,11 @@ class UserBit(models.Model):
     	# Extract entries associated with a particular branch
     	res = []
     	for q in q_list:
-            
-            #	if q.recursive:
-            entry_list = module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend)
-            #	else:
-            #	    entry_list = module.objects.filter(anchor__pk=q.id)
-                
-            for entry in entry_list:
-                if qsc is not None:
-                    if (entry.anchor.recursive and (entry.anchor.rangestart < qsc.rangestart or entry.anchor.rangeend > qsc.rangeend)) or entry.anchor == qsc:
-                        continue
-                    res.append( entry )
+    		for entry in module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
+			if qsc is not None:
+				if entry.anchor.rangestart < qsc.rangestart or entry.anchor.rangeend > qsc.rangeend:
+					continue
+     			res.append( entry )
 	
 	# Operation Complete!
 	return res
