@@ -230,9 +230,11 @@ def myesp_battlescreen_student(request, module):
 					}
 						
 	blocks = [block_ann, block_signup, block_surveys]
+	welcome_msg = 'This is your ESP "battle screen," from which you can sign up for our programs, get in touch with teachers and administrators, and review your history of interactions with ESP.'
 	
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
+							   'welcome_msg': welcome_msg,
 							   'logged_in': request.user.is_authenticated() }) 
 
 def myesp_battlescreen_teacher(request, module):
@@ -246,9 +248,11 @@ def myesp_battlescreen_teacher(request, module):
 						'sections' : None }
 						
 	blocks = [block_ann]
+	welcome_msg = 'This is your ESP "battle screen," where you can sign up to teach, modify your class information, get in touch with your students, and review your history of interactions with ESP.'
 						
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
+							   'welcome_msg': welcome_msg, 
 							   'logged_in': request.user.is_authenticated() })
 							   
 def myesp_battlescreen_admin(request, module):
@@ -258,18 +262,20 @@ def myesp_battlescreen_admin(request, module):
 	ann = [x.html() for x in ann]
 	
 	block_ann = 	{	'title' : 'Announcements',
-						'headers' : ['Announcement 1', 'Announcement 2', 'Announcement 3'],
+						'headers' : ann,
 						'sections' : None }
 						
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Program'));
 	
 	approval_sections = []
+	approval_headers = []
 	program_classes = []
 	
 	for p in programs_current:
 		program_classes = []
 		for c in Class.objects.filter(parent_program = p):
-			program_classes.append([str(c), '/learn/' + c.url() + '/index.html', 'Approve / Reject'])
+			program_classes.append([str(c), '/learn/' + c.url() + '/index.html',
+				'Approve / Reject'])
 		approval_sections.append({'header' : str(p), 'items' : program_classes})
 		
 						
@@ -278,9 +284,11 @@ def myesp_battlescreen_admin(request, module):
 						'sections' : approval_sections }
 						
 	blocks = [block_ann, block_approve]
+	welcome_msg = 'This is your ESP "battle screen."  Have fun and don\'t break anything.'
 					
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
+							   'welcome_msg': welcome_msg, 
 							   'logged_in': request.user.is_authenticated() })
 
 myesp_handlers = { 'register': myesp_register,

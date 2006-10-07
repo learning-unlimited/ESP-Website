@@ -21,7 +21,8 @@ Welcome, {{ request.user.first_name }}
 </td></tr><tr><td bgcolor="#FFFFFF">
 
 <div class="admin_options"><center>
-This is your ESP "battle screen," from which you can sign up for programs, get in touch with your ESP teachers and administrators, and review your history of interactions with ESP.</center></div>
+{{ welcome_msg }}
+</center></div>
 
 </td>
 </tr>
