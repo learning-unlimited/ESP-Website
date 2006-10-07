@@ -195,6 +195,8 @@ def myesp_battlescreen_student(request, module):
 	
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Publish'));
 	
+	signup_sections = []
+	
 	for p in programs_current:
 		signup_sections.append({'header' : str(p), 
 								'items' : [['<a href="' + p.url() + '">Information Page</a>', ''],
