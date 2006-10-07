@@ -199,9 +199,9 @@ def myesp_battlescreen_student(request, module):
 	
 	for p in programs_current:
 		signup_sections.append({'header' : str(p), 
-								'items' : [['<a href="/' + p.url() + '/index.html">Information Page</a>', ''],
-										['<a href="/' + p.url() + '/catalog/">Class Catalog</a>', ''],
-										['<a href="/' + p.url() + '/studentreg/">Registration</a>', 'Help']]
+								'items' : [['<a href="/learn/' + p.url() + '/index.html">Information Page</a>', ''],
+										['<a href="/learn/' + p.url() + '/catalog/">Class Catalog</a>', ''],
+										['<a href="/learn/' + p.url() + '/studentreg/">Registration</a>', 'Help']]
 								})
 	
 	block_ann = 	{	'title' : 'Announcements',
