@@ -12,6 +12,10 @@ class Program(models.Model):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     anchor = models.ForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
 
+	def url(self):
+		str_array = self.anchor.tree_encode()
+		return '/'.join(str_array[2:])
+
     def __str__(self):
         return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
 

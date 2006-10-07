@@ -7,7 +7,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, Class, ClassCategories
+from esp.program.models import Program, RegistrationProfile, Class, ClassCategories
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
@@ -193,19 +193,23 @@ def myesp_battlescreen_student(request, module):
 	ann = Entry.find_posts_by_perms(curUser, sub)
 	ann = [x.html() for x in ann]
 	
+	programs_current = find_by_anchor_perms(Program, curUser, 'V/Publish');
+	
+	for p in programs_current:
+		signup_sections.append({'header' : str(p), 
+								'items' : [['<a href="' + p.url() + '">Information Page</a>', ''],
+										['<a href="' + p.url() + '/catalog/">Class Catalog</a>', ''],
+										['<a href="' + p.url() + '/studentreg/">Registration</a>', 'Help']]
+								}
+	
 	block_ann = 	{	'title' : 'Announcements',
-						'headers' : ['Announcement 1', 'Announcement 2', 'Announcement 3'],
+						'headers' : ann,
 						'sections' : []
 					}
 				
-	block_signup = {	'title' : 'Register For ESP Programs',
+	block_signup =  {	'title' : 'Register For ESP Programs',
 						'headers' : ['Follow the links below to get started.'],
-						'sections' :
-							[{	'header' : 'Splash Fall 2006',
-								'items' : 	[['Information Page', ''],
-											['Class Catalog', ''],
-											['Registration', 'Help']]
-							}]
+						'sections' : signup_sections
 					}
 					
 	block_surveys = {	'title' : 'Online Surveys',
