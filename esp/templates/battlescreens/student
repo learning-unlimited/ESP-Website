@@ -46,10 +46,10 @@
 {% for i in s.items %}
 
 <tr><td width="325">
-<div class="class_stuff">{{ i[0] }}</div>
+<div class="class_stuff">{{ i.0 }}</div>
 </td>
 <td width="120" align="center">
-<div class="admin_options">{{ i[1] }}</div>
+<div class="admin_options">{{ i.1 }}</div>
 </td></tr>
 
 {% endfor %}
