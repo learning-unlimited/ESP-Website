@@ -293,7 +293,7 @@ def myesp_battlescreen_admin(request, module):
 		program_classes = []
 		proposed_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Class/Proposed'))
 		for c in proposed_classes:
-			if UserBit.UserHasPerms(curUser, c.anchor, 'V/Class/Proposed'):
+			if UserBit.UserHasPerms(curUser, c.anchor, GetNode('V/Class/Proposed')):
 				program_classes.append([str(c), '/learn/' + c.url() + '/index.html',
 					'<input type="submit" value="Approve"> / <input type="submit" value="Reject">'])
 		approval_sections.append({'header' : str(p), 'items' : program_classes})
