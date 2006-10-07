@@ -25,7 +25,7 @@
 <td width="2" bgcolor="#9999FF"></td> 
 </tr>
 <tr><td width="2" bgcolor="#9999FF"></td> 
-<td colspan="2" bgcolor="#FFFFEE">
+<td colspan="2" bgcolor="#FFFFEE" style="padding-top: 2px, padding-bottom: 2px">
 
 {% for h in b.headers %}
 
@@ -62,8 +62,7 @@
 &nbsp; {{ s.footer }}
 </div>
 </td></tr>
-<tr height="4"><td colspan="2">
-</td></tr>
+<!-- <tr height="4"><td colspan="2"></td></tr> -->
 </table>
 <!-- End of a program -->
 
@@ -76,5 +75,6 @@
 	
 {% endfor %}
 
+<br>
 
 {% endblock %}
