@@ -239,7 +239,7 @@ def myesp_battlescreen_teacher(request, module):
 						
 	blocks = [block_ann]
 						
-	return render_to_response('battlescreens/teacher', {'request': request,
+	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
 							   'logged_in': request.user.is_authenticated() })
 							   
@@ -255,7 +255,7 @@ def myesp_battlescreen_admin(request, module):
 						
 	blocks = [block_ann]
 					
-	return render_to_response('battlescreens/admin', {'request': request,
+	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
 							   'logged_in': request.user.is_authenticated() })
 
