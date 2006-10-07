@@ -268,7 +268,7 @@ def myesp_battlescreen_admin(request, module):
 	
 	for p in programs_current:
 		program_classes = []
-		for c in Class.objects.filter(parent_program = p)
+		for c in Class.objects.filter(parent_program = p):
 			program_classes.append([str(c), '/learn/' + c.url() + '/index.html', 'Approve / Reject'])
 		approval_sections.append({'header' : str(p), 'items' : program_classes})
 		
