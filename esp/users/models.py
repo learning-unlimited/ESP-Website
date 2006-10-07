@@ -114,7 +114,7 @@ class UserBit(models.Model):
         """ Returns False if there are no elements in queryset """
         return ( queryset.count() > 0 )
 
-        @staticmethod
+    @staticmethod
     def find_by_anchor_perms(module,user,verb,qsc=None):
     	""" Fetch a list of relevant items for a given user and verb in a module that has an anchor foreign key into the DataTree """
     	q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
