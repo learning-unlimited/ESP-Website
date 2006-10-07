@@ -195,7 +195,8 @@ def myesp_battlescreen_student(request, module):
 	
 	block_ann = 	{	'title' : 'Announcements',
 						'headers' : ['Announcement 1', 'Announcement 2', 'Announcement 3'],
-						'sections' : None }
+						'sections' : []
+					}
 				
 	block_signup = {	'title' : 'Register For ESP Programs',
 						'headers' : ['Follow the links below to get started.'],
