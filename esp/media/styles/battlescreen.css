@@ -39,3 +39,12 @@ font-size: 12px;
 .class_title {
 color: #006600;
 }
+input
+{
+   color:#000000;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   font-weight:bold;
+   border: 0px;
+   background-color: ffeeee;
+}

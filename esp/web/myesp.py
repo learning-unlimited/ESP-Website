@@ -244,7 +244,7 @@ def myesp_battlescreen_teacher(request, module):
 	ann = [x.html() for x in ann]
 	
 	block_ann = 	{	'title' : 'Announcements',
-						'headers' : ['Announcement 1', 'Announcement 2', 'Announcement 3'],
+						'headers' : ann,
 						'sections' : None }
 						
 	blocks = [block_ann]
@@ -261,11 +261,29 @@ def myesp_battlescreen_admin(request, module):
 	ann = Entry.find_posts_by_perms(curUser, sub)
 	ann = [x.html() for x in ann]
 	
+	if request.POST:
+		#	If you clicked a button to approve or reject, first clear the "proposed" bit
+		#	by setting the end date to now.
+		if (request.POST['action'] == 'Approve' || request.POST['action'] == 'Reject'):
+				u = UserBit()
+				u.user = None
+				u.end_date = datetime.now()
+				u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
+				u.verb = GetNode('V/Class/Proposed')
+				u.save()
+		#	And, if the class was approved, grant the Approved verb to it.		
+		if request.POST['action'] == 'Approve':
+				u = UserBit()
+				u.user = None
+				u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
+				u.verb = GetNode('V/Class/Approved')
+				u.save()
+	
 	block_ann = 	{	'title' : 'Announcements',
 						'headers' : ann,
 						'sections' : None }
 						
-	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Program'));
+	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Program'))
 	
 	approval_sections = []
 	approval_headers = []
@@ -273,9 +291,10 @@ def myesp_battlescreen_admin(request, module):
 	
 	for p in programs_current:
 		program_classes = []
-		for c in Class.objects.filter(parent_program = p):
+		proposed_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Class/Proposed'))
+		for c in proposed_classes.filter(parent_program = p):
 			program_classes.append([str(c), '/learn/' + c.url() + '/index.html',
-				'Approve / Reject'])
+				'<input type="submit" value="Approve"> / <input type="submit" value="Reject">'])
 		approval_sections.append({'header' : str(p), 'items' : program_classes})
 		
 						
