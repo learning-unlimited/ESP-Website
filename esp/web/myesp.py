@@ -182,9 +182,11 @@ def myesp_home(request, module):
 #	For example, the wide cell might have "Michael Price: Audio and Speakerbuilding" and the narrow cell
 #	might be "Approve / Reject". 
 
-#	An input item is a plain array of 2 containing
+#	An input item is a plain array of 4 containing
 #	-	label text
-#	-	button value
+#	-	text value (request.POST[value] = input_text)
+#	-	button label
+#	-	button value (request.POST['action'] = value)
 
 #	So a list item is a plain array of 3 containing
 #	-	left-hand (wide) cell text 
@@ -272,25 +274,31 @@ def myesp_battlescreen_admin(request, module):
 		#	If you clicked a button to approve or reject, first clear the "proposed" bit
 		#	by setting the end date to now.
 		if (request.POST['action'] == 'Approve' or request.POST['action'] == 'Reject'):
-				u = UserBit()
-				u.user = None
-				u.end_date = datetime.now()
-				u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-				u.verb = GetNode('V/Flags/Class/Proposed')
-				u.save()
+			u = UserBit()
+			u.user = None
+			u.end_date = datetime.now()
+			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
+			u.verb = GetNode('V/Flags/Class/Proposed')
+			u.save()
 		#	And, if the class was approved, grant the Approved verb to it.		
 		if request.POST['action'] == 'Approve':
-				u = UserBit()
-				u.user = None
-				u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-				u.verb = GetNode('V/Flags/Class/Approved')
-				u.save()
+			u = UserBit()
+			u.user = None
+			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
+			u.verb = GetNode('V/Flags/Class/Approved')
+			u.save()
+		if request.POST['action'] == 'AddAnnouncement':
+			e = Entry()
+			e.title = request.POST['anntext']
+			#	We don't necessarily want to make these one liners!
+			e.content = e.title
+			e.save()
 	
 	block_ann = 	{	'title' : 'Announcements',
 						'headers' : ann,
 						'sections' : [{	'header' : 'Announcements Control',
 										'items' : None,
-										'input_items' : [['Add Announcement', 'AddAnnouncement']]}]}
+										'input_items' : [['Add Announcement', 'anntext', 'Add', 'AddAnnouncement']]}]}
 						
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Program'))
 	
@@ -304,7 +312,7 @@ def myesp_battlescreen_admin(request, module):
 		for c in proposed_classes:
 			if UserBit.UserHasPerms(curUser, c.anchor, GetNode('V/Flags/Class/Proposed')):
 				program_classes.append([str(c), '/learn/' + c.url() + '/index.html',
-					'<input type="submit" value="Approve"> / <input type="submit" value="Reject">'])
+					'<input class="button" type="submit" value="Approve"> / <input class="button" type="submit" value="Reject">'])
 		approval_sections.append({'header' : str(p), 'items' : program_classes})
 						
 	block_approve = {	'title' : 'Approve Classes',

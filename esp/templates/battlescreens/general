@@ -106,10 +106,10 @@ Welcome, {{ request.user.first_name }}
 {% for i in s.input_items %}
 
 <tr><td width="325">
-<div class="class_stuff">{{ i.0 }}: <input type="text" width="40"></div>
+<div class="class_stuff">{{ i.0 }}: <input name="{{ i.1 }}" type="text" class="text" width="40"></div>
 </td>
 <td width="120" align="center">
-<input type="submit" value="{{ i.1 }}">
+<input class="button" type="submit" value="{{ i.3 }}" label="{{ i.2 }}">
 </td></tr>
 
 {% endfor %}

@@ -39,7 +39,7 @@ font-size: 12px;
 .class_title {
 color: #006600;
 }
-input
+input.button
 {
    color:#000000;
    font-family:Arial,helvetica,sans-serif;
@@ -47,4 +47,12 @@ input
    font-weight:bold;
    border: 0px;
    background-color: ffeeee;
+}
+input.text
+{
+   color:#000000;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   border: 1px;
+   background-color: ffffff;
 }
