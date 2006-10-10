@@ -54,5 +54,6 @@ input.text
    font-family:Arial,helvetica,sans-serif;
    font-size:12px;
    border: 1px;
+   border-color: 000000;
    background-color: ffffff;
 }
