@@ -109,7 +109,7 @@ Welcome, {{ request.user.first_name }}
 <div class="class_stuff">{{ i.0 }}: <input name="{{ i.1 }}" type="text" class="text" width="40"></div>
 </td>
 <td width="120" align="center">
-<input class="button" type="submit" value="{{ i.3 }}" name="{{ i.2 }}">
+<input class="button" type="submit" value="{{ i.2 }}">
 </td></tr>
 
 {% endfor %}

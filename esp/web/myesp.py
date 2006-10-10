@@ -287,18 +287,19 @@ def myesp_battlescreen_admin(request, module):
 			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
 			u.verb = GetNode('V/Flags/Class/Approved')
 			u.save()
-		if request.POST['action'] == 'AddAnnouncement':
-			e = Entry()
-			e.title = request.POST['anntext']
-			#	We don't necessarily want to make these one liners!
-			e.content = e.title
-			e.save()
+		if request.POST['Add']:
+			if request.POST['Add'] == 'Announcement':
+				e = Entry()
+				e.title = request.POST['anntext']
+				#	We don't necessarily want to make these one liners!
+				e.content = e.title
+				e.save()
 	
 	block_ann = 	{	'title' : 'Announcements',
 						'headers' : ann,
 						'sections' : [{	'header' : 'Announcements Control',
 										'items' : None,
-										'input_items' : [['Add Announcement', 'anntext', 'Add', 'AddAnnouncement']]}]}
+										'input_items' : [['Add Announcement', 'anntext', 'Add', 'Announcement']]}]}
 						
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Program'))
 	
