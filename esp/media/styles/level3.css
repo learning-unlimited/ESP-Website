@@ -394,6 +394,9 @@ form {
 #divmaintext {
   padding: 0px 6px 20px 0px;
 }
+#divmainqsddatetimestamp {
+  font-size: 0.75em;
+}
 #divmaintext p, #divmaintext li {
   font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
