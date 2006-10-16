@@ -57,3 +57,36 @@ def post_miniblog(request, url, tree_prefix=''):
 
     return show_miniblog(request, url)
 
+
+#	Function for previewing announcements  - Michael P
+#	Generates the block structure used by battle screens
+def preview_miniblog(request):
+	curUser = request.user
+	sub = GetNode('V/Subscribe')
+	ann_posts = Entry.find_posts_by_perms(curUser, sub)
+	ann_posts.sort(key=lambda obj:obj.timestamp)
+	
+	ann_items = []
+	
+	if ann_posts:
+		#	Show only the 5 [or whatever] most recent announcements
+		max_announcements = 5;
+		if (len(ann_posts) < max_announcements):
+			max_announcements = len(ann_posts)
+		
+		for i in range(len(ann_posts) - max_announcements - 1, len(ann_posts) - 1):
+			x = ann_posts[i]
+			ann_items.append(['<a href="/blog/' + str(x.anchor)[2:] + '">' + x.title + '</a>', None, '']);
+			
+		#	I've put a link in here to an all-announcements page that I didn't make yet.  Hold tight.
+		if len(ann_posts) > 5:
+			ann_items.append(['<b>' + str(len(ann_posts)) + ' total... </b><a href="/blog/announcements">see all</a>', None, ''])
+	else:
+		ann_items = [['No current announcements', None, '']]
+	
+	block_ann = 	{	'title' : 'Your Announcements',
+						'headers' : None,
+						'sections' : [{	'header': 'Recent Announcements',
+										'items': ann_items}]}
+	
+	return block_ann

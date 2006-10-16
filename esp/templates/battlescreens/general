@@ -59,9 +59,7 @@ Welcome, {{ request.user.first_name }}
 {% for h in b.headers %}
 
 <div class="class_stuff">
-<b>
 {{ h }}
-</b>
 </div>
 
 {% endfor %}
@@ -93,7 +91,15 @@ Welcome, {{ request.user.first_name }}
 {% for i in s.items %}
 
 <tr><td width="325">
-<div class="class_stuff"><a href="{{ i.1 }}">{{ i.0 }}</a></div>
+<div class="class_stuff">
+
+{% if i.1 %}
+<a href="{{ i.1 }}">{{ i.0 }}</a>
+{% else %}
+{{ i.0 }}
+{% endif %}
+
+</div>
 </td>
 <td width="120" align="center">
 <div class="admin_options">
@@ -106,7 +112,7 @@ Welcome, {{ request.user.first_name }}
 {% for i in s.input_items %}
 
 <tr><td width="325">
-<div class="class_stuff">{{ i.0 }}: <input name="{{ i.1 }}" type="text" class="text" width="40"></div>
+<div class="class_stuff">{{ i.0 }}: <input name="{{ i.1 }}" type="text" class="text" size="32"></div>
 </td>
 <td width="120" align="center">
 <input class="button" type="submit" value="{{ i.2 }}">

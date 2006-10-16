@@ -7,6 +7,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
+from esp.miniblog.views import preview_miniblog
 from esp.program.models import Program, RegistrationProfile, Class, ClassCategories
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
@@ -174,7 +175,7 @@ def myesp_home(request, module):
 #	-	header text including links
 #	-	array of list items
 #	-	list of input items
-#	-	footer text including links
+#	-	footer text including links / form items
 
 #	The list item is displayed with a wide cell on the left followed by a narrow cell on the right.
 #	The wide cell is like the name of some object to deal with,
@@ -212,10 +213,7 @@ def myesp_battlescreen_student(request, module):
 										['Register for Classes', '/learn/' + p.url() + '/studentreg/', 'Help']]
 								})
 	
-	block_ann = 	{	'title' : 'Announcements',
-						'headers' : ann,
-						'sections' : []
-					}
+	block_ann = 	preview_miniblog(request)
 				
 	block_signup =  {	'title' : 'Register For ESP Programs',
 						'headers' : ['Follow the links below to get started.'],
@@ -246,13 +244,8 @@ def myesp_battlescreen_student(request, module):
 
 def myesp_battlescreen_teacher(request, module):
 	curUser = request.user
-	sub = GetNode('V/Subscribe')
-	ann = Entry.find_posts_by_perms(curUser, sub)
-	ann = [x.html() for x in ann]
 	
-	block_ann = 	{	'title' : 'Announcements',
-						'headers' : ann,
-						'sections' : None }
+	block_ann = preview_miniblog(request)
 						
 	blocks = [block_ann]
 	welcome_msg = 'This is your ESP "battle screen," where you can sign up to teach, modify your class information, get in touch with your students, and review your history of interactions with ESP.'
@@ -264,42 +257,45 @@ def myesp_battlescreen_teacher(request, module):
 							   
 def myesp_battlescreen_admin(request, module):
 	curUser = request.user
-	sub = GetNode('V/Subscribe')
-	ann = Entry.find_posts_by_perms(curUser, sub)
-	ann = [x.html() for x in ann]
+	
+	block_ann = preview_miniblog(request)
 	
 	#	Admins see: read announcements, post announcements, approve/reject classes, program administration, create program
 	
 	if request.POST:
 		#	If you clicked a button to approve or reject, first clear the "proposed" bit
 		#	by setting the end date to now.
-		if (request.POST['action'] == 'Approve' or request.POST['action'] == 'Reject'):
-			u = UserBit()
-			u.user = None
-			u.end_date = datetime.now()
-			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-			u.verb = GetNode('V/Flags/Class/Proposed')
-			u.save()
-		#	And, if the class was approved, grant the Approved verb to it.		
-		if request.POST['action'] == 'Approve':
-			u = UserBit()
-			u.user = None
-			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-			u.verb = GetNode('V/Flags/Class/Approved')
-			u.save()
-		if request.POST['Add']:
-			if request.POST['Add'] == 'Announcement':
+		if request.POST.has_key('action'):
+			if (request.POST['action'] == 'Approve' or request.POST['action'] == 'Reject'):
+				u = UserBit()
+				u.user = None
+				u.end_date = datetime.now()
+				u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
+				u.verb = GetNode('V/Flags/Class/Proposed')
+				u.save()
+			#	And, if the class was approved, grant the Approved verb to it.		
+			if request.POST['action'] == 'Approve':
+				u = UserBit()
+				u.user = None
+				u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
+				u.verb = GetNode('V/Flags/Class/Approved')
+				u.save()
+
+		if request.POST.has_key('anntext'):
+			#	Temporary anchor for now... I'm not sure where it should be
+			qsc = GetNode('Q/ESP')
+			has_perms = UserBit.UserHasPerms(request.user, qsc, GetNode('V/Post'))
+			if has_perms:
 				e = Entry()
+				e.anchor = qsc
 				e.title = request.POST['anntext']
 				#	We don't necessarily want to make these one liners!
 				e.content = e.title
 				e.save()
 	
-	block_ann = 	{	'title' : 'Announcements',
-						'headers' : ann,
-						'sections' : [{	'header' : 'Announcements Control',
-										'items' : None,
-										'input_items' : [['Add Announcement', 'anntext', 'Add', 'Announcement']]}]}
+	block_ann['sections'].append({'header' : 'Announcements Control',
+								'items' : None,
+								'input_items' : [['Add Announcement', 'anntext', 'Add', 'Announcement']]})
 						
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Program'))
 	
