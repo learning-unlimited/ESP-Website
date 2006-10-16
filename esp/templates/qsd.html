@@ -4,4 +4,4 @@
 
 {% block subsection_name %}Welcome{% endblock %}
 
-{% block content %}{{ content }}{% if have_edit %}<a href="{{ edit_url }}">Edit this page</a>{% endif %}{% endblock %}
+{% block content %}{{ content }}<br /><br /><p><font size=-3>Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date }}</font></p>{% if have_edit %}<a href="{{ edit_url }}">Edit this page</a>{% endif %}{% endblock %}

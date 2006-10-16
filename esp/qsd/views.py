@@ -117,6 +117,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.content,
+			'qsdrec': qsd_rec,
 			'missing_files': m.BrokenLinks(),
 			'logged_in': request.user.is_authenticated(),
 			'target_url': base_url + ".edit.html",
@@ -134,6 +135,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.html(),
+			'qsdrec': qsd_rec,
 			'logged_in': request.user.is_authenticated(),
 			'have_edit': have_edit,
 			'edit_url': base_url + ".edit.html" })
