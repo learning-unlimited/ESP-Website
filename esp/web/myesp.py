@@ -246,8 +246,40 @@ def myesp_battlescreen_teacher(request, module):
 	curUser = request.user
 	
 	block_ann = preview_miniblog(request)
+	
+	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Publish'))
+	
+	class_sections = []
+	class_headers = []
+	program_classes = []
+	
+	teacher_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Administer/Edit'))
+	
+	
+	for p in programs_current:
+		program_class_list = []
+	
+		for a in teacher_classes:
+			if (a.parent_program == p):
+				program_class_list.append(a)
+				
+		program_classes = []
+		
+		for i in range(0, min(5, len(program_class_list))):
+			c = program_class_list[i]
+			program_classes.append([str(c), '/teach/' + c.url() + '/index.html', '<input class="button" type="submit" value="Edit">'])
+		if (len(program_class_list) > 5):
+			program_classes.append([str(len(program_class_list)) + ' total... see all', '', ''])
+			
+		class_sections.append({'header' : str(p), 'items' : program_classes,
+								'footer': 'Add New Class'})
 						
-	blocks = [block_ann]
+	block_classes = {	'title' : 'Manage Your Classes',
+						'headers' : ['You have the ability to edit the following classes:'],
+						'sections' : class_sections }
+						
+	blocks = [block_ann, block_classes]
+	
 	welcome_msg = 'This is your ESP "battle screen," where you can sign up to teach, modify your class information, get in touch with your students, and review your history of interactions with ESP.'
 						
 	return render_to_response('battlescreens/general', {'request': request,
@@ -292,12 +324,12 @@ def myesp_battlescreen_admin(request, module):
 				#	We don't necessarily want to make these one liners!
 				e.content = e.title
 				e.save()
-	
+
 	block_ann['sections'].append({'header' : 'Announcements Control',
 								'items' : None,
 								'input_items' : [['Add Announcement', 'anntext', 'Add', 'Announcement']]})
 						
-	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Program'))
+	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Edit'))
 	
 	approval_sections = []
 	approval_headers = []

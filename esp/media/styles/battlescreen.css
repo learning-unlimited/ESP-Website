@@ -46,7 +46,16 @@ input.button
    font-size:12px;
    font-weight:bold;
    border: 0px;
-   background-color: ffeeee;
+   background-color: #cccccc;
+}
+input.button:hover
+{
+   color:#0000cc;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   font-weight:bold;
+   border: black 1px solid;
+   background-color: #ccffcc;
 }
 input.text
 {
