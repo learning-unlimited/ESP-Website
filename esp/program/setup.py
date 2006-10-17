@@ -48,7 +48,7 @@ def PopulateProgram(program_node,
 		admin_perm.verb = admin_verb
 	
 	# Create the publishing authorizations
-	publish_verb = GetNode( 'V/Publish' )
+	publish_verb = GetNode( 'V/Flags/Public' )
 	publish = UserBit()
 	publish.user = None
 	publish.qsc = anchor
@@ -73,17 +73,13 @@ ProgramTemplate = (
     )
 
 VerbNodes = (
-		'V/Publish',
+		'V/Flags/Public',
 		'V/Deadline/Registration/Student',
 		'V/Deadline/Registration/Teacher',
-		'V/Administer/Edit',
-		'V/Administer/Edit/Use',
-		'V/Flags/Registration/Preliminary',
-		'V/Flags/Registration/Confirmed',
-		'V/Flags/Registration/Teacher',
-		'V/Flags/Class/Proposed',
-		'V/Flags/Class/Approved'
+		'V/Administer/Program',
+		'V/Administer/Program/Class',
+		'V/Preregister'
 	    )
-# NOTE: V/Publish grants authorization to view a Q branch.
+# NOTE: V/Flag/Public grants authorization to view a Q branch.
 # V/Deadline/Registration/Student enforces the student registration deadline for a program.
 # V/Deadline/Registration/Teacher enforces the teacher registration deadline for a program.
