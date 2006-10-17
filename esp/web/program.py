@@ -22,6 +22,7 @@ from django.contrib.auth.decorators import login_required
 
 def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 	""" Return the program class catalog """
+	dt_approved = GetNode( 'V/Flags/Class/Approved' )
 	# aseering 8/25/2006: We can post to this page to approve a class, or redirect to an edit page
 	if request.POST:
 		for i in [ 'class_id', 'action' ]:
@@ -36,7 +37,7 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 			u = UserBit()
 			u.user = None
 			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-			u.verb = GetNode('V/Approved')
+			u.verb = dt_approved
 			u.save()
 			
 		#	We should be able to reject classes too    -Michael P
@@ -52,10 +53,10 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 	can_edit_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
 	can_approve_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
 	
-	clas = [ {'class': x, 'accepted': UserBit.UserHasPerms(request.user, x.anchor, GetNode('V/Approved')) }
+	clas = [ {'class': x, 'accepted': UserBit.UserHasPerms(request.user, x.anchor, dt_approved) }
 		 for x in prog.class_set.all().order_by('category')
 		 if (can_edit_classes or can_approve_classes
-		 or UserBit.UserHasPerms(request.user, x.anchor, GetNode('V/Approved')) )
+		 or UserBit.UserHasPerms(request.user, x.anchor, dt_approved) )
 		 and (timeslot == None or x.event_template == timeslot) ]
 
 	p = one + " " + two

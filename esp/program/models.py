@@ -99,7 +99,7 @@ class Class(models.Model):
 		prereg = UserBit()
 		prereg.user = user
 		prereg.qsc = self.anchor
-		prereg.verb = GetNode( 'V/Preregister' )
+		prereg.verb = GetNode( 'V/Flags/Registration/Preliminary' )
 		prereg.save()
 
 	class Admin:
@@ -131,7 +131,7 @@ class RegistrationProfile(models.Model):
 		return '<Registration for ' + str(self.user) + ' in ' + str(self.program) + '>'
 	
 	def preregistered_classes(self):
-		v = GetNode( 'V/Preregister' )
+		v = GetNode( 'V/Flags/Registration/Preliminary' )
 		return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode(['Classes']))
 	def registered_classes(self):
 		v = GetNode( 'V/Subscribe' )

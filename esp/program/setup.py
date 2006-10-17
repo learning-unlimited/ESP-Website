@@ -76,9 +76,13 @@ VerbNodes = (
 		'V/Publish',
 		'V/Deadline/Registration/Student',
 		'V/Deadline/Registration/Teacher',
-		'V/Administer/Program',
-		'V/Administer/Program/Class',
-		'V/Preregister'
+		'V/Administer/Edit',
+		'V/Administer/Edit/Use',
+		'V/Flags/Registration/Preliminary',
+		'V/Flags/Registration/Confirmed',
+		'V/Flags/Registration/Teacher',
+		'V/Flags/Class/Proposed',
+		'V/Flags/Class/Approved'
 	    )
 # NOTE: V/Publish grants authorization to view a Q branch.
 # V/Deadline/Registration/Student enforces the student registration deadline for a program.
