@@ -28,14 +28,14 @@ def PopulateProgram(program_node,
 		deadline_student = UserBit()
 		deadline_student.user = None
 		deadline_student.qsc = anchor
-		deadline_student.verb = GetNode( 'V/Deadline/StudentRegistration' )
+		deadline_student.verb = GetNode( 'V/Deadline/Registration/Student' )
 		deadline_student.startdate = student_reg_range[0]
 		deadline_student.enddate = student_reg_range[1]
 	if teacher_reg_range is not null:
 		deadline_teacher = UserBit()
 		deadline_teacher.user = None
 		deadline_teacher.qsc = anchor
-		deadline_teacher.verb = GetNode( 'V/Deadline/TeacherRegistration' )
+		deadline_teacher.verb = GetNode( 'V/Deadline/Registration/Teacher' )
 		deadline_teacher.startdate = teacher_reg_range[0]
 		deadline_teacher.enddate = teacher_reg_range[1]
 
@@ -74,12 +74,12 @@ ProgramTemplate = (
 
 VerbNodes = (
 		'V/Publish',
-		'V/Deadline/StudentRegistration',
-		'V/Deadline/TeacherRegistration',
+		'V/Deadline/Registration/Student',
+		'V/Deadline/Registration/Teacher',
 		'V/Administer/Program',
 		'V/Administer/Program/Class',
 		'V/Preregister'
 	    )
 # NOTE: V/Publish grants authorization to view a Q branch.
-# V/Deadline/StudentRegistration enforces the student registration deadline for a program.
-# V/Deadline/TeacherRegistration enforces the teacher registration deadline for a program.
+# V/Deadline/Registration/Student enforces the student registration deadline for a program.
+# V/Deadline/Registration/Teacher enforces the teacher registration deadline for a program.
