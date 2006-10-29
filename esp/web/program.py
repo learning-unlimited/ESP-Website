@@ -165,7 +165,7 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 	context['two'] = two
 	context['teacher'] = request.user
 	context['request'] = request
-	v = GetNode('V/Administer/Program/Class')
+	v = GetNode('V/Administer/Edit')
 	q = prog.anchor
 	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
 	if cobj == [] or cobj is None:
@@ -183,7 +183,7 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog):
 	context['two'] = two
 	context['oops'] = False
 	context['teacher'] = request.user
-	v = GetNode('V/Administer/Program/Class')
+	v = GetNode('V/Administer/Edit')
 	q = prog.anchor
 	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
 	if request.POST.has_key('cname'):
@@ -247,7 +247,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	cobj.anchor.friendly_name = title
 	
 	cobj.anchor.save()
-	v = GetNode( 'V/Administer/Program/Class')
+	v = GetNode( 'V/Administer/Edit')
 	ub = UserBit()
 	ub.user = request.user
 	ub.qsc = cobj.anchor

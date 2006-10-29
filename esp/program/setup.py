@@ -40,7 +40,7 @@ def PopulateProgram(program_node,
 		deadline_teacher.enddate = teacher_reg_range[1]
 
 	# Create the administration authorizations
-	admin_verb = GetNode( 'V/Administer/Program' )
+	admin_verb = GetNode( 'V/Administer' )
 	for director in program_admins:
 		admin_perm = UserBit()
 		admin_perm.user = director
@@ -76,9 +76,10 @@ VerbNodes = (
 		'V/Flags/Public',
 		'V/Deadline/Registration/Student',
 		'V/Deadline/Registration/Teacher',
-		'V/Administer/Program',
-		'V/Administer/Program/Class',
-		'V/Preregister'
+		'V/Administer',
+		'V/Administer/Edit',
+		'V/Flags/Registration/Preliminary',
+		'V/Flags/Registration/Confirmed'
 	    )
 # NOTE: V/Flag/Public grants authorization to view a Q branch.
 # V/Deadline/Registration/Student enforces the student registration deadline for a program.

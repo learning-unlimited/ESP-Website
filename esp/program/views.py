@@ -73,7 +73,7 @@ def programTemplateEditor(request):
                             'view_url': qsd.name + ".html",
                             'page': qsd } )
 
-    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Program/Class'))
+    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
 
     return render_to_response('display/qsd_listing.html', { 'request': request,
                                                             'qsd_pages': qsd_pages, 'have_create': have_create })
@@ -93,7 +93,7 @@ def classTemplateEditor(request, program, session):
                             'view_url': qsd.name + ".html",
                             'page': qsd } )
 
-    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Program/Class'))
+    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
 
     return render_to_response('display/qsd_listing.html', { 'request': request,
                                                             'qsd_pages': qsd_pages,

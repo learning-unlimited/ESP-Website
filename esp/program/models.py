@@ -92,7 +92,7 @@ class Class(models.Model):
 		return self.anchor.friendly_name
 	
 	def teachers(self):
-		v = GetNode( 'V/Administer/Program/Class' )
+		v = GetNode( 'V/Administer' )
 		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
 
 	def preregister_student(self, user):
