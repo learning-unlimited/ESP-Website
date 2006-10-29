@@ -148,4 +148,3 @@ class ResourceBit(models.Model):
                 
     class Admin:
         pass
-                                                                                                                                                            
