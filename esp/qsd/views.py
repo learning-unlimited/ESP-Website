@@ -27,8 +27,8 @@ from os.path import basename, dirname
 	
 def qsd(request, branch, url_name, url_verb, base_url):
 	# Detect edit authorizations
-	have_edit = UserBit.UserHasPerms( request.user, branch, GetNode('V/Administer') )
-	have_read = UserBit.UserHasPerms( request.user, branch, GetNode('V/Publish') )
+	have_edit = UserBit.UserHasPerms( request.user, branch, GetNode('V/Administer/Edit') )
+	have_read = UserBit.UserHasPerms( request.user, branch, GetNode('V/Flags/Public') )
 
 	# Fetch the QSD object
 	try:
