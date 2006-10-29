@@ -5,25 +5,31 @@ from esp.datatree.models import GetNode
 from esp.users.models import UserBit
 from esp.dbmail.models import MessageRequest, EmailRequest
 from esp.dbmail.controllers import EmailController
+from esp.web.navBar import makeNavBar
 from datetime import datetime
 
-def show_miniblog(request, url, tree_prefix='', extramsg=''):
+def show_miniblog(request, url, subsection = None, section_redirect_keys = {}, extramsg=''):
     """ Shows a miniblog based on the specified node """
     user = request.user
+	
+    tree_branch = section_redirect_keys[subsection]
 
-    node = 'Q/' + tree_prefix + str(url)
+    node = 'Q/' + tree_branch + '/' + str(url)
     qsc = GetNode(node)
         
     entries = Entry.find_posts_by_perms(user, GetNode('V/Subscribe'), qsc=qsc)
+    assert False
 
     return render_to_response('miniblog.html', { 'request': request,
                                                  'entries': entries,
                                                  'canpost': UserBit.UserHasPerms(user, qsc, GetNode('V/Post')),
+												 'navbar_list': makeNavBar(request.user, qsc),
                                                  'webnode': str(url),
+												 'logged_in': request.user.is_authenticated(),
                                                  'extramsg': extramsg })
 
 
-def post_miniblog(request, url, tree_prefix=''):
+def post_miniblog(request, url, tree_prefix = ''):
     """ Add a post to a miniblog, then re-render the miniblog """
     for thing in ['title', 'content']:
         if not request.POST.has_key(thing):
@@ -60,7 +66,7 @@ def post_miniblog(request, url, tree_prefix=''):
 
 #	Function for previewing announcements  - Michael P
 #	Generates the block structure used by battle screens
-def preview_miniblog(request):
+def preview_miniblog(request, section):
 	curUser = request.user
 	sub = GetNode('V/Subscribe')
 	ann_posts = Entry.find_posts_by_perms(curUser, sub)
@@ -76,7 +82,7 @@ def preview_miniblog(request):
 		
 		for i in range(len(ann_posts) - max_announcements - 1, len(ann_posts) - 1):
 			x = ann_posts[i]
-			ann_items.append(['<a href="/blog/' + str(x.anchor)[2:] + '">' + x.title + '</a>', None, '']);
+			ann_items.append(['<a href="/' + section + '/' + '/'.join(x.anchor.tree_encode()[2:]) + '/blog/">' + x.title + '</a>', None, '']);
 			
 		#	I've put a link in here to an all-announcements page that I didn't make yet.  Hold tight.
 		if len(ann_posts) > 5:

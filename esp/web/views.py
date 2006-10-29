@@ -84,11 +84,13 @@ def myesp(request, module):
 #		'content': qsd_rec[0].html(),
 #		'logged_in': request.user.is_authenticated() })
 
-def redirect(request, url, section = 'Web', subsection = None):
+def redirect(request, url, subsection = None, section_redirect_keys = {}):
 	""" Universal mapping function between urls.py entries and QSD pages
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
+
+	tree_branch = section_redirect_keys[subsection]
 
 	# URLs will be of the form "path/to/file.verb", or "path/to/file".
 	# In the latter case, assume that verb = view
@@ -111,13 +113,13 @@ def redirect(request, url, section = 'Web', subsection = None):
 
 	# If we have a subsection, descend into a node by that name
 	target_node = url_parts
+
+	# Get the node in question.  If it doesn't exist, deal with whether or not this user can create it.
 	if subsection != None and subsection != 'program': # Hack to make "program" toggle not render subnodes
 		target_node.append(subsection)
 
-	# Get the node in question.  If it doesn't exist, deal with whether or not this user can create it.
-
 	try:
-		branch = GetNodeOrNoBits('Q/' + section + '/' + "/".join(target_node), user=request.user)
+		branch = GetNodeOrNoBits('Q/' + tree_branch + '/' + "/".join(target_node), user=request.user)
 	except DataTree.NoSuchNodeException:
 		raise Http404
 

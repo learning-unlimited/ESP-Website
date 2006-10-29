@@ -48,6 +48,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 
 			url_verb = 'edit'
 		else:
+			assert False, 'Could not find QSD entry'
 			raise Http404
 
 	if url_verb == 'create':
@@ -105,7 +106,9 @@ def qsd(request, branch, url_name, url_verb, base_url):
 	# Detect the edit verb
 	if url_verb == 'edit':
 		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
-		if not have_edit: raise Http404
+		if not have_edit:
+			assert False, 'Insufficient permissions for QSD edit'
+			raise Http404
 
 		m = ESPMarkdown(qsd_rec.content, media={})
 		m.toString()
@@ -126,6 +129,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 	# Detect the standard read verb
 	if url_verb == 'read':		
 		if not have_read:
+			assert False, 'Insufficient permissions for QSD read'
 			raise Http404
 
 		# Render response
@@ -141,4 +145,5 @@ def qsd(request, branch, url_name, url_verb, base_url):
 			'edit_url': base_url + ".edit.html" })
 	
 	# Operation Complete!
+	assert False, 'Unexpected QSD operation'
 	raise Http404

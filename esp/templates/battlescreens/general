@@ -6,11 +6,9 @@
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 {% endblock %}
 
-{% block title %}MyESP: Student Home Page{% endblock %}
+{% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-
-<form name="battlescreen" action="." method="post">
 
 <table width="450" border="0" cellpadding="0" cellspacing="0">
 <tr height="25">
@@ -81,7 +79,7 @@ Welcome, {{ request.user.first_name }}
 <td align="left" colspan="2" bgcolor="#FFFFEE">
 
 {% for s in b.sections %}
-
+<hr size="1">
 <div class="header">
 &nbsp; {{ s.header }}
 </div>
@@ -111,12 +109,14 @@ Welcome, {{ request.user.first_name }}
 
 {% for i in s.input_items %}
 
+<form name="battlescreen_{{ i.0 }}" action="{{ i.3 }}" method="post">
 <tr><td width="325">
 <div class="class_stuff">{{ i.0 }}: <input name="{{ i.1 }}" type="text" class="text" size="32"></div>
 </td>
 <td width="120" align="center">
 <input class="button" type="submit" value="{{ i.2 }}">
 </td></tr>
+</form>
 
 {% endfor %}
 
@@ -126,7 +126,7 @@ Welcome, {{ request.user.first_name }}
 &nbsp; {{ s.footer }}
 </div>
 </td></tr>
-<!-- <tr height="4"><td colspan="2"></td></tr> -->
+<tr height="10"><td colspan="2"></td></tr>
 </table>
 <!-- End of a program -->
 
@@ -140,7 +140,5 @@ Welcome, {{ request.user.first_name }}
 <p> &nbsp; </p>
 	
 {% endfor %}
-
-</form>
 
 {% endblock %}

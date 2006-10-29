@@ -186,8 +186,8 @@ def myesp_home(request, module):
 #	An input item is a plain array of 4 containing
 #	-	label text
 #	-	text value (request.POST[value] = input_text)
-#	-	button label
-#	-	button value (request.POST['action'] = value)
+#	-	button label (value)
+#	-	form action (what URL the data is submitted to)
 
 #	So a list item is a plain array of 3 containing
 #	-	left-hand (wide) cell text 
@@ -196,6 +196,7 @@ def myesp_home(request, module):
 
 #	That hopefully completes the array structure needed for this thing.
 
+@login_required
 def myesp_battlescreen_student(request, module):
 	curUser = request.user
 	sub = GetNode('V/Subscribe')
@@ -213,7 +214,7 @@ def myesp_battlescreen_student(request, module):
 										['Register for Classes', '/learn/' + p.url() + '/studentreg/', 'Help']]
 								})
 	
-	block_ann = 	preview_miniblog(request)
+	block_ann = 	preview_miniblog(request, 'learn')
 				
 	block_signup =  {	'title' : 'Register For ESP Programs',
 						'headers' : ['Follow the links below to get started.'],
@@ -239,13 +240,15 @@ def myesp_battlescreen_student(request, module):
 	
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
+							   'page_title': 'MyESP: Student Home Page',
 							   'welcome_msg': welcome_msg,
 							   'logged_in': request.user.is_authenticated() }) 
 
+@login_required
 def myesp_battlescreen_teacher(request, module):
 	curUser = request.user
 	
-	block_ann = preview_miniblog(request)
+	block_ann = preview_miniblog(request, 'teach')
 	
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Publish'))
 	
@@ -269,10 +272,10 @@ def myesp_battlescreen_teacher(request, module):
 			c = program_class_list[i]
 			program_classes.append([str(c), '/teach/' + c.url() + '/index.html', '<input class="button" type="submit" value="Edit">'])
 		if (len(program_class_list) > 5):
-			program_classes.append([str(len(program_class_list)) + ' total... see all', '', ''])
+			program_classes.append(['<b>' + str(len(program_class_list)) + ' total</b>... <a href="/teach/' + p.url() + '/selectclass/">see all</a>', '', ''])
 			
 		class_sections.append({'header' : str(p), 'items' : program_classes,
-								'footer': 'Add New Class'})
+								'footer': '<b><a href="/teach/' + p.url() + '/teacherreg/">Add New Class for ' + str(p) + '</a></b>'})
 						
 	block_classes = {	'title' : 'Manage Your Classes',
 						'headers' : ['You have the ability to edit the following classes:'],
@@ -284,13 +287,15 @@ def myesp_battlescreen_teacher(request, module):
 						
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
+							   'page_title': 'MyESP: Teacher Home Page',
 							   'welcome_msg': welcome_msg, 
 							   'logged_in': request.user.is_authenticated() })
-							   
+
+@login_required							   
 def myesp_battlescreen_admin(request, module):
 	curUser = request.user
 	
-	block_ann = preview_miniblog(request)
+	block_ann = preview_miniblog(request, 'teach')
 	
 	#	Admins see: read announcements, post announcements, approve/reject classes, program administration, create program
 	
@@ -353,6 +358,7 @@ def myesp_battlescreen_admin(request, module):
 					
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
+							   'page_title': 'MyESP: Administrator Home Page',
 							   'welcome_msg': welcome_msg, 
 							   'logged_in': request.user.is_authenticated() })
 

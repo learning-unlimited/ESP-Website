@@ -1,6 +1,13 @@
 from django.conf.urls.defaults import *
 from esp.program.models import Class
 
+#	This is a lookup for the redirector, to insert a certain string for the tree node 
+section_redirect_keys = {'teach': 'Programs',
+						'learn': 'Programs',
+						'program': 'Programs',
+						'help': 'ESP/Committees',
+						None: 'Web'}
+
 urlpatterns = patterns('',
     # Example:
     # (r'^esp/', include('esp.apps.foo.urls.foo')),
@@ -16,6 +23,11 @@ urlpatterns = patterns('',
     # aseering - Features that are decidedly not done, but are still useable, will end up under "beta/"
     (r'^beta/calendar.ics$', 'esp.web.views.iCalFeed'),
 
+    # Mini-Blog pages
+	(r'^(?P<subsection>teach|learn|help)/(?P<url>.*)/blog/$', 'esp.miniblog.views.show_miniblog', {'section_redirect_keys': section_redirect_keys}),
+    (r'^blog/(?P<url>.*)/post.scm$', 'esp.miniblog.views.post_miniblog'),
+    (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog'),
+
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
     (r'^contact/contact.html$', 'esp.web.views.contact'),
@@ -27,14 +39,11 @@ urlpatterns = patterns('',
     #(r'^(learn|teach)/([-A-Za-z0-9/_ ]+)/([-A-Za-z0-9_ ]+).html$', 'esp.web.views.redirect'),
     (r'^program/Template/$', 'esp.program.views.programTemplateEditor'),
     (r'^program/(?P<program>[-A-Za-z0-9_ ]+)/(?P<session>[-A-Za-z0-9_ ]+)/Classes/Template/$', 'esp.program.views.classTemplateEditor'),
-    (r'^(?P<subsection>(learn|teach|program))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section': 'Programs' } ),
+	
+    (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys } ),
 	
 	#	This same URL pattern also handles the battlescreen  -Michael
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),
-
-    # Mini-Blog pages
-    (r'^blog/(?P<url>.*)/post.scm$', 'esp.miniblog.views.post_miniblog'),
-    (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog'),
 
     # Event-generation
     (r'^events/create/$', 'esp.calendar.views.createevent'),
@@ -42,10 +51,9 @@ urlpatterns = patterns('',
     (r'^events/edit/(?P<id>\d+)/$', 'esp.calendar.views.updateevent'),
 
     # DB-generated QSD pages: HTML or plaintext
-    (r'^(?P<url>.*)\.html$', 'esp.web.views.redirect'),
+    (r'^(?P<url>.*)\.html$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys } ),
     #(r'^(?P<url>.*)\.text$', 'esp.qsd.views.qsd_raw'),
 
-    # aseering 8-8-2006: How's this for a definition of a media url?
     # Possibly overspecific, possibly too general.
     (r'^(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'esp.qsdmedia.views.qsdmedia'),
 
@@ -63,4 +71,6 @@ urlpatterns = patterns('',
 
     # Class-edit interface
     (r'^classes/edit/(?P<id>[0-9]*)/$', 'esp.program.views.updateClass')
+	
+
 )

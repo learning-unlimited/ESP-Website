@@ -45,7 +45,7 @@ input.button
    font-family:Arial,helvetica,sans-serif;
    font-size:12px;
    font-weight:bold;
-   border: 0px;
+   border: #cccccc 1px solid;
    background-color: #cccccc;
 }
 input.button:hover
@@ -54,7 +54,7 @@ input.button:hover
    font-family:Arial,helvetica,sans-serif;
    font-size:12px;
    font-weight:bold;
-   border: black 1px solid;
+   border: #000000 1px solid;
    background-color: #ccffcc;
 }
 input.text
