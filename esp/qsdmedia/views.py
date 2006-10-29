@@ -11,8 +11,8 @@ def qsdmedia(request, url, filename):
     except Media.DoesNotExist:
         raise Http404
     
-    # aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Publish on this node
-    have_view = UserBit.UserHasPerms( request.user, media_rec.anchor, GetNode('V/Publish') )
+    # aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Flags/Public on this node
+    have_view = UserBit.UserHasPerms( request.user, media_rec.anchor, GetNode('V/Flags/Public') )
     if have_view:
         return HttpResponseRedirect(media_rec.get_target_file_url())
     else:
