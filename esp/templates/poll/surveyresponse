@@ -1,0 +1,8 @@
+<table>
+<tr><td><h1>{{ survey.title }}</h1></td></tr>
+{% for q in survey.question_set.all %}
+<tr><td>
+{{ q.to_html }}
+</td></tr>
+{% endfor %}
+</table>

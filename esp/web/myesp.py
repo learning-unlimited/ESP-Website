@@ -203,7 +203,7 @@ def myesp_battlescreen_student(request, module):
 	ann = Entry.find_posts_by_perms(curUser, sub)
 	ann = [x.html() for x in ann]
 	
-	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Publish'));
+	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Flags/Public'));
 	
 	signup_sections = []
 	

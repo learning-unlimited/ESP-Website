@@ -1,0 +1,3 @@
+{{ qfield.label }}
+{% if qfield.wants_text %}<input name="qfield_{{ qfield.id }}_question" value="{{ qfield__qresponse__response_text }}"/>{% endif %}
+{% if qfield.val %}<input type="hidden" name="qfield_{{ qfield.id }}_val" value="{{ qfield.val }}">{% endif %}

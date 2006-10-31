@@ -87,6 +87,7 @@ INSTALLED_APPS = (
     'esp.satprep',
     'esp.money',
     'esp.resources',
+    'esp.poll',
 )
 
 EMAIL_HOST = 'outgoing.mit.edu'
