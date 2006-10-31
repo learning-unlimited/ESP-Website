@@ -26,7 +26,7 @@ urlpatterns = patterns('',
     # Mini-Blog pages
 	(r'^(?P<subsection>teach|learn|help)/(?P<url>.*)/blog/$', 'esp.miniblog.views.show_miniblog', {'section_redirect_keys': section_redirect_keys}),
     (r'^blog/(?P<url>.*)/post.scm$', 'esp.miniblog.views.post_miniblog'),
-    (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog'),
+    (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog_entry'),
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages

@@ -22,8 +22,27 @@ def show_miniblog(request, url, subsection = None, section_redirect_keys = {}, e
 
     return render_to_response('miniblog.html', { 'request': request,
                                                  'entries': entries,
-                                                 'canpost': UserBit.UserHasPerms(user, qsc, GetNode('V/Post')),
+                                                 'canpost': UserBit.UserHasPerms(user, qsc, GetNode('V/Administer/Edit/Use')),
 												 'navbar_list': makeNavBar(request.user, qsc),
+                                                 'webnode': str(url),
+												 'logged_in': request.user.is_authenticated(),
+                                                 'extramsg': extramsg })
+
+def show_miniblog_entry(request, url, extramsg=''):
+    """ Shows a miniblog based on the specified id """
+    user = request.user
+    entries = Entry.objects.filter(pk=int(url))
+
+    # Assert permissions
+    verb = GetNode( 'V/Subscribe' )
+    for e in entries:
+	    branch = e.anchor
+	    if not UserBit.UserHasPerms( user, branch, verb ): assert False, "Insufficient permissions to view record"
+
+    return render_to_response('miniblog.html', { 'request': request,
+                                                 'entries': entries,
+                                                 'canpost': UserBit.UserHasPerms(user, branch, GetNode('V/Administer/Edit/Use')),
+												 'navbar_list': makeNavBar(request.user, branch),
                                                  'webnode': str(url),
 												 'logged_in': request.user.is_authenticated(),
                                                  'extramsg': extramsg })
@@ -39,7 +58,7 @@ def post_miniblog(request, url, tree_prefix = ''):
 
     qsc = GetNode('Q/' + tree_prefix + str(url))
 
-    has_perms = UserBit.UserHasPerms(user, qsc, GetNode('V/Post'))
+    has_perms = UserBit.UserHasPerms(user, qsc, GetNode('V/Administer/Edit/Use'))
 
     if has_perms:
         e = Entry()
