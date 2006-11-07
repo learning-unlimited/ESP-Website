@@ -1,0 +1,103 @@
+ V/Subscribe 			dbmail/controllers.py miniblog/views.py dbmail/cronmail.py program/models.py web/myesp.py
+ V/Digest 			dbmail/controllers.py
+ V/Post				miniblog/views.py
+
+ V/Administer			qsd/views.py web/navBar.py web/program.py
+ V/Administer/Program		program/setup.py
+ V/Administer/Program/Class	program/models.py program/setup.py web/program.py
+ V/Preregister			program/models.py program/setup.py
+ V/Deadline/StudentRegistration	program/setup.py
+ V/Deadline/TeacherRegistration	program/setup.py
+
+ V/Publish			program/setup.py qsd/views.py qsdmedia/views.py web/views.py
+ V/Create			program/views.py users/models.py
+
+ V/MIT				setup/TreeMap.py
+-V/dbmail			setup/TreeMap.py
+ V/dbmail/Subscribe		setup/TreeMap.py unittest/users_test.py
+-V/registrar			setup/TreeMap.py
+-V/registrar/Deadline		setup/TreeMap.py
+-V/registrar/Administer		setup/TreeMap.py
+ V/Approved			web/program.py
+
+==
+
+V/Deadline/Registration/Student		[V/Deadline/StudentRegistration]
+V/Deadline/Registration/Teacher		[V/Deadline/TeacherRegistration]
+V/Flags/Registration/Preliminary	[V/Preregister]
+V/Flags/Registration/Confirmed		[]
+V/Flags/Registration/Teacher		[]
+V/Flags/Class/Proposed			[]
+V/Flags/Class/Approved			[V/Approved]
+V/Flags/Public				[V/Publish]
+V/Administer				[V/Administer]
+V/Administer/Edit			[V/Administer/Program V/Administer/Program/Class V/Create]
+V/Administer/Edit/Use			[V/Post]
+V/Subscribe				[V/Subscribe V/dbmail/Subscribe]
+V/Preference/Digest			[V/Digest]
+V/Community/MIT				[V/MIT]
+
+dbmail/controllers.py:            for user in UserBit.bits_get_users(msgreq.category, GetNode('V/Subscribe')):
+dbmail/controllers.py:            if UserBit.UserHasPerms(emailreq.target, node, GetNode('V/Digest')):
+dbmail/cronmail.py:        for u in UserBit.bits_get_users(e.anchor, GetNode('V/Subscribe'), now = e.start, end_of_now = e.end).filter(startdate__lt=e.end, enddate__gt=e.start):
+Binary file media/images/home/pagebkg1.jpg matches
+Binary file media/images/series-3/bkg1.jpg matches
+miniblog/views.py:    entries = Entry.find_posts_by_perms(user, GetNode('V/Subscribe'), qsc=qsc)
+miniblog/views.py:                                                 'canpost': UserBit.UserHasPerms(user, qsc, GetNode('V/Post')),
+miniblog/views.py:    has_perms = UserBit.UserHasPerms(user, qsc, GetNode('V/Post'))
+program/models.py:		v = GetNode( 'V/Administer/Program/Class' )
+program/models.py:		prereg.verb = GetNode( 'V/Preregister' )
+program/models.py:		v = GetNode( 'V/Preregister' )
+program/models.py:		v = GetNode( 'V/Subscribe' )
+program/setup.py:		deadline_student.verb = GetNode( 'V/Deadline/StudentRegistration' )
+program/setup.py:		deadline_teacher.verb = GetNode( 'V/Deadline/TeacherRegistration' )
+program/setup.py:	admin_verb = GetNode( 'V/Administer/Program' )
+program/setup.py:	publish_verb = GetNode( 'V/Publish' )
+program/setup.py:		'V/Publish',
+program/setup.py:		'V/Deadline/StudentRegistration',
+program/setup.py:		'V/Deadline/TeacherRegistration',
+program/setup.py:		'V/Administer/Program',
+program/setup.py:		'V/Administer/Program/Class',
+program/setup.py:		'V/Preregister'
+program/setup.py:# NOTE: V/Publish grants authorization to view a Q branch.
+program/setup.py:# V/Deadline/StudentRegistration enforces the student registration deadline for a program.
+program/setup.py:# V/Deadline/TeacherRegistration enforces the teacher registration deadline for a program.
+program/views.py:    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Create'))
+program/views.py:    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Create'))
+qsd/views.py:	# aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Publish on this node
+qsd/views.py:	have_view = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
+qsd/views.py:	have_edit = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Administer') )
+qsd/views.py:	have_read = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
+qsd/views.py.mine:	# aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Publish on this node
+qsd/views.py.mine:	have_view = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
+qsd/views.py.mine:	have_edit = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Administer') )
+qsd/views.py.mine:	have_read = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
+qsd/views.py.r360:	# aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Publish on this node
+qsd/views.py.r360:	have_view = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
+qsd/views.py.r360:	have_edit = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Administer') )
+qsd/views.py.r360:	have_read = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
+qsd/views.py.r367:	# aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Publish on this node
+qsd/views.py.r367:	have_view = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
+qsd/views.py.r367:	have_edit = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Administer') )
+qsd/views.py.r367:	have_read = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
+qsdmedia/views.py:    # aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Publish on this node
+qsdmedia/views.py:    have_view = UserBit.UserHasPerms( request.user, media_rec.anchor, GetNode('V/Publish') )
+setup/TreeMap.py:    'V/MIT',
+setup/TreeMap.py:    'V/dbmail',
+setup/TreeMap.py:    'V/dbmail/Subscribe',
+setup/TreeMap.py:    'V/registrar',
+setup/TreeMap.py:    'V/registrar/Deadline',
+setup/TreeMap.py:    'V/registrar/Administer',
+unittest/users_test.py:            bit.verb = GetNode('V/dbmail/Subscribe')
+users/models.py:        verb = GetNode("V/Create")
+web/myesp.py:	sub = GetNode('V/Subscribe')
+web/navBar.py:		 'has_edit_bits': UserBit.UserHasPerms(user, node, GetNode('V/Administer')),
+web/program.py:			u.verb = GetNode('V/Approved')
+web/program.py:	can_edit_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
+web/program.py:	can_approve_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
+web/program.py:	clas = [ {'class': x, 'accepted': UserBit.UserHasPerms(request.user, x.anchor, GetNode('V/Approved')) }
+web/program.py:		 or UserBit.UserHasPerms(request.user, x.anchor, GetNode('V/Approved')) )
+web/program.py:	v = GetNode('V/Administer/Program/Class')
+web/program.py:	v = GetNode('V/Administer/Program/Class')
+web/program.py:	v = GetNode( 'V/Administer/Program/Class')
+web/views.py:								    GetNode('V/Publish'),
