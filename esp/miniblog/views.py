@@ -18,7 +18,6 @@ def show_miniblog(request, url, subsection = None, section_redirect_keys = {}, e
     qsc = GetNode(node)
         
     entries = Entry.find_posts_by_perms(user, GetNode('V/Subscribe'), qsc=qsc)
-    assert False
 
     return render_to_response('miniblog.html', { 'request': request,
                                                  'entries': entries,
@@ -47,6 +46,26 @@ def show_miniblog_entry(request, url, extramsg=''):
 												 'logged_in': request.user.is_authenticated(),
                                                  'extramsg': extramsg })
 
+
+def create_miniblog(request, url, tree_prefix = ''):
+	user = request.user
+	qsc = GetNode('Q/' + tree_prefix + str(url))
+	
+	has_perms = UserBit.UserHasPerms(user, qsc, GetNode('V/Administer/Edit/Use'))
+	
+	if has_perms:
+		initial_title = ''
+		if (request.POST and request.POST.has_key('anntext')):
+			initial_title = request.POST['anntext']
+		create_form = {'sections': [{'headers': ['Create Announcement: ' + initial_title],
+									'lineitems': [{'label': 'Announcement Title', 'variable': 'title'},
+													{'label': 'Announcement Content', 'variable': 'content'}]}],
+						'action': '/blog/post/'}
+		return render_to_response('battlescreens/editor', {'request': request,
+															'navbar_list': makeNavBar(request.user, qsc),
+															'blocks': [create_form]})
+	else:
+		assert False, 'Blog post failed.'
 
 def post_miniblog(request, url, tree_prefix = ''):
     """ Add a post to a miniblog, then re-render the miniblog """
@@ -101,7 +120,7 @@ def preview_miniblog(request, section):
 		
 		for i in range(len(ann_posts) - max_announcements - 1, len(ann_posts) - 1):
 			x = ann_posts[i]
-			ann_items.append(['<a href="/' + section + '/' + '/'.join(x.anchor.tree_encode()[2:]) + '/blog/">' + x.title + '</a>', None, '']);
+			ann_items.append(['<a href="/blog/' + str(x.id) + '/">' + x.title + '</a>', None, '']);
 			
 		#	I've put a link in here to an all-announcements page that I didn't make yet.  Hold tight.
 		if len(ann_posts) > 5:

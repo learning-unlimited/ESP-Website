@@ -132,7 +132,7 @@ class UserBit(models.Model):
      			res.append( entry )
 	
 	# Operation Complete!
-	return res
+	return list(set(res))
 
     class Admin:
         pass

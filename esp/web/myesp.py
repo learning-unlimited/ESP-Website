@@ -7,7 +7,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
-from esp.miniblog.views import preview_miniblog
+from esp.miniblog.views import preview_miniblog, create_miniblog
 from esp.program.models import Program, RegistrationProfile, Class, ClassCategories
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
@@ -319,20 +319,14 @@ def myesp_battlescreen_admin(request, module):
 				u.save()
 
 		if request.POST.has_key('anntext'):
-			#	Temporary anchor for now... I'm not sure where it should be
-			qsc = GetNode('Q/ESP')
-			has_perms = UserBit.UserHasPerms(request.user, qsc, GetNode('V/Post'))
-			if has_perms:
-				e = Entry()
-				e.anchor = qsc
-				e.title = request.POST['anntext']
-				#	We don't necessarily want to make these one liners!
-				e.content = e.title
-				e.save()
+			#	Send them to the create-miniblog form.
+			return create_miniblog(request,'Web/')
 
-	block_ann['sections'].append({'header' : 'Announcements Control',
+	has_ann_perms = UserBit.UserHasPerms(request.user, GetNode('Q/Web'), GetNode('V/Administer/Edit/Use'))
+	if has_ann_perms:
+		block_ann['sections'].append({'header' : 'Announcements Control',
 								'items' : None,
-								'input_items' : [['Add Announcement', 'anntext', 'Add', 'Announcement']]})
+								'input_items' : [['Add Announcement', 'anntext', 'Create...', '']]})
 						
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Edit'))
 	

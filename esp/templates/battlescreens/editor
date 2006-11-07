@@ -1,0 +1,113 @@
+
+{% extends "outlines/series-3.html" %}
+
+{% block stylesheets %}
+{{block.super}}
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+{% endblock %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+{% for b in blocks %}
+	
+<form action="{{ b.action }}" method="post">
+	
+<table width="450" border="0" cellpadding="0" cellspacing="0">
+<tr height="25">
+<td width="2" bgcolor="#9999FF"></td> 
+<td align="center" colspan="2" bgcolor="#333399">
+<div class="header1">
+{{ b.title }}
+</div>
+</td>
+<td width="2" bgcolor="#9999FF"></td> 
+</tr>
+
+<!-- Just a little space above the headers -->
+<tr height="5">
+<td width="2" bgcolor="#9999FF"></td> 
+<td align="center" colspan="2" bgcolor="#FFFFEE">
+</td>
+<td width="2" bgcolor="#9999FF"></td> 
+</tr>
+
+<tr><td width="2" bgcolor="#9999FF"></td> 
+<td colspan="2" bgcolor="#FFFFEE">
+
+{% for h in b.headers %}
+
+<div class="class_stuff">
+{{ h }}
+</div>
+
+{% endfor %}
+
+</td>
+<td width="2" bgcolor="#9999FF"></td> </tr>
+
+<!-- And below the headers -->
+<tr height="5">
+<td width="2" bgcolor="#9999FF"></td> 
+<td align="center" colspan="2" bgcolor="#FFFFEE">
+</td>
+<td width="2" bgcolor="#9999FF"></td> 
+</tr>
+
+<!--	Now for the actual sections -->
+<tr>
+<td width="2" bgcolor="#9999FF"></td> 
+<td align="left" colspan="2" bgcolor="#FFFFEE">
+
+<table border="0" cellpadding="0" cellspacing="0">
+
+{% for i in b.lineitems %}
+
+<div class="class_stuff">
+{{ i.label }}: <input type="text" name="{{ i.variable }}">
+</div><br>
+
+{% endfor %}
+
+</table>
+
+</td>
+<td width="2" bgcolor="#9999FF"></td> 
+</tr>
+<tr>
+<td width="2" bgcolor="#9999FF"></td> 
+<td align="left" colspan="2" bgcolor="#FFFFEE">
+
+<table border="0" cellpadding="0" cellspacing="0">
+
+{% for t in b.textboxes %}
+
+<div class="class_stuff">
+{{ i.label }}: <input type="textarea" name="{{ i.variable }}">
+</div><br>
+
+{% endfor %}
+
+<!-- Stuff at the end -->
+<tr><td colspan="2">
+<div class="class_stuff">
+&nbsp; {{ s.footer }}
+</div>
+</td></tr>
+<tr height="10"><td colspan="2"></td></tr>
+</table>
+<!-- End of a program -->
+
+</form>
+
+{% endfor %}
+
+</td>
+<td width="2" bgcolor="#9999FF">&nbsp; </td> </tr>
+<tr height="7"><td colspan="4" bgcolor="#9999FF"> </td></tr>
+</table>	
+	
+<p> &nbsp; </p>
+
+{% endblock %}
