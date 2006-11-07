@@ -15,6 +15,7 @@ urlpatterns = patterns('',
     (r'^beta/satprep.csv$', 'esp.satprep.views.satprep_csv'),
 
     # The default
+	(r'^esp_devel/$', 'esp.web.views.index'),
     (r'^$', 'esp.web.views.index'),
 
     # Generic view for starting a class
@@ -25,9 +26,9 @@ urlpatterns = patterns('',
 
     # Mini-Blog pages
 	(r'^(?P<subsection>teach|learn|help)/(?P<url>.*)/blog/$', 'esp.miniblog.views.show_miniblog', {'section_redirect_keys': section_redirect_keys}),
-	(r'^blog/post/$', 'esp.miniblog.views.post_miniblog'),
     (r'^blog/(?P<url>.*)/post/$', 'esp.miniblog.views.post_miniblog'),
     (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog_entry'),
+	(r'^blog/$', 'esp.miniblog.views.show_miniblog', {'url': '', 'section_redirect_keys': section_redirect_keys}),
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
@@ -69,11 +70,10 @@ urlpatterns = patterns('',
 
     # Uncomment this for @login_required:
     (r'^accounts/login/$', 'django.contrib.auth.views.login'),
-	
-	(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'C:\Documents and Settings\Michael P\Desktop\work\esp_website\esp\media'}),
 
     # Class-edit interface
-    (r'^classes/edit/(?P<id>[0-9]*)/$', 'esp.program.views.updateClass')
+    (r'^classes/edit/(?P<id>[0-9]*)/$', 'esp.program.views.updateClass'),
 	
+	#	(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'c:/work/esp/dev_site/esp/media/'})
 
 )

@@ -241,6 +241,7 @@ def myesp_battlescreen_student(request, module):
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
 							   'page_title': 'MyESP: Student Home Page',
+							   'navbar_list': makeNavBar(request.user, GetNode('Q/Program/')),
 							   'welcome_msg': welcome_msg,
 							   'logged_in': request.user.is_authenticated() }) 
 
@@ -259,12 +260,19 @@ def myesp_battlescreen_teacher(request, module):
 	teacher_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Administer/Edit'))
 	
 	
-	for p in programs_current:
+	for q in range(len(programs_current)):
+		duplicate_flag = False
 		program_class_list = []
-	
-		for a in teacher_classes:
-			if (a.parent_program == p):
-				program_class_list.append(a)
+		p = programs_current[q]
+		
+		for j in range(1, q):
+			if (p.id == programs_current[j].id):
+				duplicate_flag = True
+		
+		if not duplicate_flag:
+			for a in teacher_classes:
+				if (a.parent_program == p):
+					program_class_list.append(a)
 				
 		program_classes = []
 		
@@ -288,6 +296,7 @@ def myesp_battlescreen_teacher(request, module):
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
 							   'page_title': 'MyESP: Teacher Home Page',
+							   'navbar_list': makeNavBar(request.user, GetNode('Q/Program/')),
 							   'welcome_msg': welcome_msg, 
 							   'logged_in': request.user.is_authenticated() })
 
@@ -320,12 +329,12 @@ def myesp_battlescreen_admin(request, module):
 
 		if request.POST.has_key('anntext'):
 			#	Send them to the create-miniblog form.
-			return create_miniblog(request,'Web/')
+			return create_miniblog(request,'Web')
 
 	has_ann_perms = UserBit.UserHasPerms(request.user, GetNode('Q/Web'), GetNode('V/Administer/Edit/Use'))
 	if has_ann_perms:
-		block_ann['sections'].append({'header' : 'Announcements Control',
-								'items' : None,
+		block_ann['sections'].append({'header' : 'General Announcements Control',
+								'items' : [['<b>Careful</b>: announcements created here are seen by all.', None, '']],
 								'input_items' : [['Add Announcement', 'anntext', 'Create...', '']]})
 						
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Edit'))
@@ -335,13 +344,20 @@ def myesp_battlescreen_admin(request, module):
 	program_classes = []
 	
 	proposed_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Flags/Class/Proposed'))
-	for p in programs_current:
+
+	for i in range(len(programs_current)):
+		duplicate_flag = False
+		p = programs_current[i]
+		for j in range(1, i):
+			if (p.id == programs_current[j].id):
+				duplicate_flag = True
 		program_classes = []
-		for c in proposed_classes:
-			if UserBit.UserHasPerms(curUser, c.anchor, GetNode('V/Flags/Class/Proposed')):
-				program_classes.append([str(c), '/learn/' + c.url() + '/index.html',
-					'<input class="button" type="submit" value="Approve"> / <input class="button" type="submit" value="Reject">'])
-		approval_sections.append({'header' : str(p), 'items' : program_classes})
+		if not duplicate_flag:
+			for c in proposed_classes:
+				if UserBit.UserHasPerms(curUser, c.anchor, GetNode('V/Flags/Class/Proposed')):
+					program_classes.append([str(c), '/learn/' + c.url() + '/index.html',
+						'<input class="button" type="submit" value="Approve"> / <input class="button" type="submit" value="Reject">'])
+			approval_sections.append({'header' : str(p), 'items' : program_classes})
 						
 	block_approve = {	'title' : 'Approve Classes',
 						'headers' : None,
@@ -353,6 +369,7 @@ def myesp_battlescreen_admin(request, module):
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
 							   'page_title': 'MyESP: Administrator Home Page',
+							   'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/')),
 							   'welcome_msg': welcome_msg, 
 							   'logged_in': request.user.is_authenticated() })
 

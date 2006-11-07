@@ -57,13 +57,15 @@ def create_miniblog(request, url, tree_prefix = ''):
 		initial_title = ''
 		if (request.POST and request.POST.has_key('anntext')):
 			initial_title = request.POST['anntext']
-		create_form = {'sections': [{'headers': ['Create Announcement: ' + initial_title],
-									'lineitems': [{'label': 'Announcement Title', 'variable': 'title'},
-													{'label': 'Announcement Content', 'variable': 'content'}]}],
-						'action': '/blog/post/'}
+		create_form_block = {'action': '/blog/' + url + '/post/',
+							'title': 'Create Announcement: ' + initial_title,
+							'headers': ['Announcement Details'],
+							'lineitems': [{'label': 'Announcement Title', 'variable': 'title', 'default': initial_title}],
+							'textboxes': [{'label': 'Announcement Content', 'variable': 'content', 'default': ''}]
+							}
 		return render_to_response('battlescreens/editor', {'request': request,
 															'navbar_list': makeNavBar(request.user, qsc),
-															'blocks': [create_form]})
+															'blocks': [create_form_block]})
 	else:
 		assert False, 'Blog post failed.'
 
@@ -86,20 +88,10 @@ def post_miniblog(request, url, tree_prefix = ''):
         e.title = request.POST['title']
         e.content = request.POST['content']
         e.save()
-
-        # Also generate mail
-        m = MessageRequest()
-        m.subject = "Miniblog Update: " + e.title
-        m.msgtext = e.content
-        m.category = e.anchor
-        m.sender = "ESP Miniblog E-mail System <esp@mit.edu>"
-        m.save()
-
-        EmailController().run()
     else:
-        return show_miniblog(request, url, extramsg='Error: You don\'t have permission to post to this page.')
+        return show_miniblog(request, '/blog/' + str(e.id) + '/', extramsg='Error: You don\'t have permission to post to this page.')
 
-    return show_miniblog(request, url)
+    return show_miniblog(request, '/blog/' + str(e.id) + '/')
 
 
 #	Function for previewing announcements  - Michael P
