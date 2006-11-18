@@ -9,5 +9,7 @@ class BlogEntry(models.Model):
     title = models.CharField(maxlength=128)
     text = models.TextField()
     timestamp = models.DateTimeField(default=datetime.now())
+    class Meta:
+        ordering = ['-timestamp']
     class Admin:
         pass
