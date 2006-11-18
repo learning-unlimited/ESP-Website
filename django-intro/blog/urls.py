@@ -12,5 +12,5 @@ urlpatterns = patterns('',
 
     # This gives us our images from our media/ folder at http://localhost:8000/media/
     # NOTE: On a real site, you'd actually let the web server handle this.
-     (r'^media/(.*)$', 'django.views.static.serve', {'document_root': 'media'}),
+     (r'^static/(.*)$', 'django.views.static.serve', {'document_root': 'media'}),
 )
