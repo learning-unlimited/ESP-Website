@@ -6,7 +6,7 @@ from datetime import datetime
 
 class BlogEntry(models.Model):
     author = models.ForeignKey(User)
-    title = models.TextField()
+    title = models.CharField(maxlength=128)
     text = models.TextField()
     timestamp = models.DateTimeField(default=datetime.now())
     class Admin:
