@@ -1,0 +1,8 @@
+{% extends "enfidget" %}
+
+{% block content %}
+  {% for entry in entries %}
+  <h1>{{entry.title}}</h1>
+  <p>By {{entry.author}} <br> {{entry.text}} </p>
+  {% endfor %}
+{% endblock %}

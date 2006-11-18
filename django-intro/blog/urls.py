@@ -6,4 +6,5 @@ urlpatterns = patterns('',
 
     # Uncomment this for admin:
      (r'^admin/', include('django.contrib.admin.urls')),
+     (r'^entries/$', 'blog.myblog.views.list_blogs'),
 )
