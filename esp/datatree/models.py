@@ -219,7 +219,7 @@ class DataTree(models.Model):
         """ The DataTree must always contain a node named 'ROOT', with no parent.  Raise this exception \
         if this is encountered. """
         def __init__(self, NumOfRootNodes):
-           NoSuchNodeException.__init__(self, None, ['ROOT'])
+           DataTree.NoSuchNodeException.__init__(self, None, ['ROOT'])
            self.value = str(NumOfRootNodes) + " ROOT nodes in the DataTree"
 	def __str__(self):
 		return repr(self.value)
