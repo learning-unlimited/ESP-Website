@@ -95,7 +95,14 @@ class UserBit(models.Model):
         If 'qsc_root' is specified, only return qsc structures at or below the specified node """
         if end_of_now == None: end_of_now = now
 
-        qscs = UserBit.objects.filter(Q(recursive=True, verb__rangestart__gte=verb.rangestart, verb__rangeend__lt=verb.rangeend) | Q(verb__pk=verb.id)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True)| Q(startdate__lte=end_of_now),Q(enddate__isnull=True) | Q(enddate__gte=now))
+        #	qscs = UserBit.objects.filter(Q(recursive=True, verb__rangestart__gte=verb.rangestart, verb__rangeend__lt=verb.rangeend) | Q(verb__pk=verb.id)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True)| Q(startdate__lte=end_of_now),Q(enddate__isnull=True) | Q(enddate__gte=now))
+
+        Q_correct_userbit = Q(recursive = True, verb__rangestart__gte = verb.rangestart, verb__rangeend__lte = verb.rangeend)
+        Q_correct_user = Q(user__isnull = True) | Q(user__pk = user.id)
+        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
+        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
+		
+        qscs = UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
 
         if qsc_root == None:
             return qscs
@@ -132,7 +139,7 @@ class UserBit(models.Model):
      			res.append( entry )
 	
 	# Operation Complete!
-	return list(set(res))
+	return res
 
     class Admin:
         pass
