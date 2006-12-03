@@ -95,7 +95,7 @@ class UserBit(models.Model):
         If 'qsc_root' is specified, only return qsc structures at or below the specified node """
         if end_of_now == None: end_of_now = now
 
-        qscs = UserBit.objects.filter(Q(recursive=True, verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend) | Q(verb__pk=verb.id)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
+        qscs = UserBit.objects.filter(Q(recursive=True, verb__rangestart__gte=verb.rangestart, verb__rangeend__lt=verb.rangeend) | Q(verb__pk=verb.id)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnull=True)| Q(startdate__lte=end_of_now),Q(enddate__isnull=True) | Q(enddate__gte=now))
 
         if qsc_root == None:
             return qscs
