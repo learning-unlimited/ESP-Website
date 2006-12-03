@@ -236,7 +236,8 @@ def GetNode(nodename):
     elif nodes.count() == 1L:
         node = nodes[0]
     else:
-        raise DataTree.NoRootNodeException(nodes.count())
+	node = nodes[0]
+#        raise DataTree.NoRootNodeException(nodes.count())
 
     perm = StringToPerm(nodename)
     if nodename == '':
