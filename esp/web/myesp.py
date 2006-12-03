@@ -55,13 +55,14 @@ def myesp_finish(request, module):
 								    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
 								    'preload_images': preload_images})
 
-		if len(User.objects.filter(email=request.POST['email'])) > 0:
+		if User.objects.filter(email=request.POST['email']).count() > 0:
 			email_user = User.objects.filter(email=request.POST['email'])[0]
 			email_user.username = request.POST['username']
 			email_user.last_name = request.POST['last_name']
 			email_user.first_name = request.POST['first_name']
 			email_user.set_password(request.POST['password'])
 			email_user.save()
+			email_user = authenticate(username = request.POST['username'], password = request.POST['password'])
 			login(request, email_user)
 			return render_to_response('users/regdone', {'request': request,
 								    'logged_in': request.user.is_authenticated(),
@@ -76,6 +77,7 @@ def myesp_finish(request, module):
 		django_user.is_staff = False
 		django_user.is_superuser = False
 		django_user.save()
+		django_user = authenticate(username=request.POST['username'], password=request.POST['password'])
 		login(request, django_user)
 		return render_to_response('users/regdone', {'request': request,
 							    'logged_in': request.user.is_authenticated(),

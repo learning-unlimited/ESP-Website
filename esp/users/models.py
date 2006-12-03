@@ -85,8 +85,20 @@ class UserBit(models.Model):
     def bits_get_users(qsc, verb, now = datetime.now(), end_of_now = None):
         """ Return all users who have been granted 'verb' on 'qsc' """
         if end_of_now == None: end_of_now = now
-        
-        return UserBit.objects.filter(Q(recursive=True, qsc__rangestart__lte=qsc.rangestart, qsc__rangeend__gte=qsc.rangeend, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend) | Q(qsc__pk=qsc.id, verb__pk=verb.id)).filter(Q(startdate__isnull=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
+
+        #	Hopefully it's easier to understand this query now...
+        Q_correct_userbit = Q(recursive = True, verb__rangestart__gte = verb.rangestart, verb__rangeend__lte = verb.rangeend)
+        Q_exact_match = Q(recursive = False, verb__pk = verb.id, qsc__pk = qsc.id)
+        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
+        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
+		
+        if (UserBit.objects.filter(Q_correct_userbit).count() == 0):
+            users = UserBit.objects.filter(Q_exact_match).filter(Q_after_start).filter(Q_before_end)
+        else:
+            users = UserBit.objects.filter(Q_correct_userbit).filter(Q_after_start).filter(Q_before_end)
+
+        return users
+    
 
     @staticmethod
     def bits_get_qsc(user, verb, now = datetime.now(), end_of_now = None, qsc_root=None):
@@ -116,8 +128,22 @@ class UserBit(models.Model):
     def bits_get_verb(user, qsc, now = datetime.now(), end_of_now = None):
         """ Return all verbs that 'user' has been granted on 'qsc' """
         if end_of_now == None: end_of_now = now
+
+        #	Hopefully it's easier to understand this query now...
+        Q_correct_userbit = Q(recursive = True, qsc__rangestart__lte = qsc.rangestart, qsc__rangeend__gte = qsc.rangeend)
+        Q_exact_match = Q(recursive = False, qsc__pk = qsc.id)
+        Q_correct_user = Q(user__isnull = True) | Q(user__pk = user.id)
+        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
+        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
+		
+        if (UserBit.objects.filter(Q_correct_userbit).count() == 0):
+            verbs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+        else:
+            verbs = UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+
+        return verbs
         
-        return UserBit.objects.filter(Q(recursive=True, qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend) | Q(qsc__pk=qsc.id)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnul=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
+        #return UserBit.objects.filter(Q(recursive=True, qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend) | Q(qsc__pk=qsc.id)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnul=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
 
     @staticmethod
     def has_bits(queryset):
