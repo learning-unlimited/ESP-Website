@@ -236,8 +236,8 @@ def GetNode(nodename):
     elif nodes.count() == 1L:
         node = nodes[0]
     else:
-	node = nodes[0]
-#        raise DataTree.NoRootNodeException(nodes.count())
+	#node = nodes[0]
+        raise DataTree.NoRootNodeException(nodes.count())
 
     perm = StringToPerm(nodename)
     if nodename == '':
@@ -245,16 +245,5 @@ def GetNode(nodename):
         
     return node.tree_create(perm)
 
-    
-def PopulateInitialDataTree():
-    """ Populate the DataTree with values for the ESP site hierarchy:
-
-    ROOT
-     |- UserGroupTree
-     |- SiteTree
-    """
-
-    UserGroupTree = GetNode('UserGroupTree')
-    SiteTree = GetNode('SiteTree')
 
     
