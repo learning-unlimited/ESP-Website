@@ -1,4 +1,4 @@
-from esp.calendar.models import Event
+from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest, EmailRequest
 from esp.dbmail.controllers import EmailController
 from esp.users.models import UserBit

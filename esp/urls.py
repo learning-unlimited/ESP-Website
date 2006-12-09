@@ -48,9 +48,9 @@ urlpatterns = patterns('',
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),
 
     # Event-generation
-    (r'^events/create/$', 'esp.calendar.views.createevent'),
-    (r'^events/edit/$', 'esp.calendar.views.updateevent'),
-    (r'^events/edit/(?P<id>\d+)/$', 'esp.calendar.views.updateevent'),
+    (r'^events/create/$', 'esp.cal.views.createevent'),
+    (r'^events/edit/$', 'esp.cal.views.updateevent'),
+    (r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
 
     # DB-generated QSD pages: HTML or plaintext
     (r'^(?P<url>.*)\.html$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys } ),
@@ -74,6 +74,6 @@ urlpatterns = patterns('',
     # Class-edit interface
     (r'^classes/edit/(?P<id>[0-9]*)/$', 'esp.program.views.updateClass'),
 	
-	#	(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': 'c:/work/esp/dev_site/esp/media/'})
+    (r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/media/'})
 
 )

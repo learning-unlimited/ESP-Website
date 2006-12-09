@@ -2,7 +2,7 @@ from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
-from esp.calendar.models import Event
+from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode

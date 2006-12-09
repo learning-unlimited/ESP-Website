@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
-from esp.calendar.models import Event
+from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.views import qsd
 

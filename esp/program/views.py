@@ -1,5 +1,5 @@
 from django.shortcuts import render_to_response
-from esp.calendar.models import Event
+from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry

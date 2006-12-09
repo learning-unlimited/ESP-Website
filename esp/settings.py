@@ -77,7 +77,7 @@ INSTALLED_APPS = (
     'esp.workflow',
     'esp.dbmail',
     'esp.program',
-    'esp.calendar',
+    'esp.cal',
     'esp.lib',
     'esp.setup',
     'esp.unittest',
