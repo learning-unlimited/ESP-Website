@@ -206,6 +206,7 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     nodes = DataTree.objects.filter(name='ROOT', parent=None)
     node = None
     if nodes.count() < 1L:
+        assert False, "Trying to create a new root node here.  Dying..."
         node = DataTree()
         node.name = 'ROOT'
         node.parent = None

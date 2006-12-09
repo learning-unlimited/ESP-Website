@@ -229,6 +229,7 @@ def GetNode(nodename):
     nodes = DataTree.objects.filter(name='ROOT', parent=None)
     node = None
     if nodes.count() < 1L:
+        assert False, "Trying to create a new root node.  Dying here."
         node = DataTree()
         node.name = 'ROOT'
         node.parent = None
