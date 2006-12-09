@@ -226,7 +226,7 @@ class DataTree(models.Model):
 
 def GetNode(nodename):
     """ Get a DataTree node with the given path; create it if it doesn't exist """
-    nodes = DataTree.objects.filter(name='ROOT', parent=None)
+    nodes = DataTree.objects.filter(name='ROOT', parent__isnull=True)
     node = None
     if nodes.count() < 1L:
         assert False, "Trying to create a new root node.  Dying here."
