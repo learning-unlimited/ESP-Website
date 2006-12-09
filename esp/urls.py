@@ -1,5 +1,7 @@
 from django.conf.urls.defaults import *
 from esp.program.models import Class
+from esp.qsd.views import qsd
+from esp.poll.views import poll
 
 #	This is a lookup for the redirector, to insert a certain string for the tree node 
 section_redirect_keys = {'teach': 'Programs',
@@ -25,7 +27,7 @@ urlpatterns = patterns('',
     (r'^beta/calendar.ics$', 'esp.web.views.iCalFeed'),
 
     # Mini-Blog pages
-	(r'^(?P<subsection>teach|learn|help)/(?P<url>.*)/blog/$', 'esp.miniblog.views.show_miniblog', {'section_redirect_keys': section_redirect_keys}),
+    (r'^(?P<subsection>teach|learn|help)/(?P<url>.*)/blog/$', 'esp.miniblog.views.show_miniblog', {'section_redirect_keys': section_redirect_keys}),
     (r'^blog/(?P<url>.*)/post/$', 'esp.miniblog.views.post_miniblog'),
     (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog_entry'),
 	(r'^blog/$', 'esp.miniblog.views.show_miniblog', {'url': '', 'section_redirect_keys': section_redirect_keys}),
@@ -53,7 +55,8 @@ urlpatterns = patterns('',
     (r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
 
     # DB-generated QSD pages: HTML or plaintext
-    (r'^(?P<url>.*)\.html$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys } ),
+    (r'^(?P<url>.*)\.html$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': qsd} ),
+    (r'^(?P<url>.*)\.poll$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': poll} ),
     #(r'^(?P<url>.*)\.text$', 'esp.qsd.views.qsd_raw'),
 
     # Possibly overspecific, possibly too general.
@@ -75,5 +78,4 @@ urlpatterns = patterns('',
     (r'^classes/edit/(?P<id>[0-9]*)/$', 'esp.program.views.updateClass'),
 	
     (r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/media/'})
-
 )

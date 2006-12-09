@@ -84,7 +84,7 @@ def myesp(request, module):
 #		'content': qsd_rec[0].html(),
 #		'logged_in': request.user.is_authenticated() })
 
-def redirect(request, url, subsection = None, section_redirect_keys = {}):
+def redirect(request, url, subsection = None, section_redirect_keys = {}, renderer = qsd ):
 	""" Universal mapping function between urls.py entries and QSD pages
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
@@ -130,7 +130,7 @@ def redirect(request, url, subsection = None, section_redirect_keys = {}):
 
 	root_url = "/" + "/".join(url_parts) + "/" + qsd_name
 
-	return qsd(request, branch, qsd_name, qsd_verb, root_url)
+	return renderer(request, branch, qsd_name, qsd_verb, root_url)
 	
 
 def program(request, tl, one, two, module, extra = None):
