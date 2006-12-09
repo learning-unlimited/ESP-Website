@@ -9,6 +9,7 @@ from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
 from esp.miniblog.views import preview_miniblog, create_miniblog
 from esp.program.models import Program, RegistrationProfile, Class, ClassCategories
+from esp.web.program import program_teacherreg2
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
@@ -191,10 +192,12 @@ def myesp_home(request, module):
 #	-	button label (value)
 #	-	form action (what URL the data is submitted to)
 
-#	So a list item is a plain array of 3 containing
+#	A list item is a plain array of 3 to 5 containing
 #	-	left-hand (wide) cell text 
 #	-	left-hand (wide) cell url
-#	-	right-hand (narrow) cell html including links but not formatting
+#	-	right-hand (narrow) cell html
+#	-	OPTIONAL: command string
+#	-	OPTIONAL: form post URL
 
 #	That hopefully completes the array structure needed for this thing.
 
@@ -251,6 +254,26 @@ def myesp_battlescreen_student(request, module):
 def myesp_battlescreen_teacher(request, module):
 	curUser = request.user
 	
+	if request.POST:
+		#	If you clicked a button to approve or reject, first clear the "proposed" bit
+		#	by setting the end date to now.
+		if request.POST.has_key('command'):
+			command_str = request.POST['command'].split('_')
+			if command_str[0] == 'edit':
+				if command_str[1] == 'class':
+					class_id = int(command_str[2])
+					#	teach/HSSP/2006_Summer/teacherreg/
+					#	tl/one/two/module
+					class_obj = list(Class.objects.filter(id = class_id))
+					if len(class_obj) != 1:
+						assert False, 'Zero (or more than 1) classes match selected ID.'
+					program_key = class_obj[0].parent_program
+					two = program_key.anchor.name
+					one = program_key.anchor.parent.name
+					prog = program_key
+					return program_teacherreg2(request, 'teach', one, two, 'teacherreg', '', prog, class_obj)
+			
+	
 	block_ann = preview_miniblog(request, 'teach')
 	
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Publish'))
@@ -259,7 +282,7 @@ def myesp_battlescreen_teacher(request, module):
 	class_headers = []
 	program_classes = []
 	
-	teacher_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Administer/Edit'))
+	teacher_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Administer/Program/Class'))
 	
 	
 	for q in range(len(programs_current)):
@@ -280,7 +303,7 @@ def myesp_battlescreen_teacher(request, module):
 		
 		for i in range(0, min(5, len(program_class_list))):
 			c = program_class_list[i]
-			program_classes.append([str(c), '/teach/' + c.url() + '/index.html', '<input class="button" type="submit" value="Edit">'])
+			program_classes.append([str(c), '/teach/' + c.url() + '/index.html', 'Edit', 'edit_class_' + str(c.id), '/myesp/teacher/'])
 		if (len(program_class_list) > 5):
 			program_classes.append(['<b>' + str(len(program_class_list)) + ' total</b>... <a href="/teach/' + p.url() + '/selectclass/">see all</a>', '', ''])
 			

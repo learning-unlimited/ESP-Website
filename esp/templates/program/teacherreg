@@ -1,8 +1,8 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}Teacher Signup{% endblock %}
+{% block title %}MIT ESP - Teacher Registration{% endblock %}
 
-{% block subsection_name %}Teach for {{one}}{% endblock %}
+{% block subsection_name %}Teach for {{one}} <br>{% endblock %}
 
 
 {% block content %}
@@ -10,6 +10,7 @@
        <div id="divmaintext">	
 	<h2>Hi {{teacher.first_name}}!</h2>
 	<h2>Thank you for teaching for {{one}}!</h2> 
+	
 	<br /><br />
 
 	{% if oops %}
@@ -19,10 +20,10 @@
 	<form action='/teach/{{one}}/{{two}}/makecourse/' method="post">
 
  <b>Course Title:</b><br />
- <input type='text' name='title' value='{{course.title}}' size='30'>
+ <input type='text' class='text' name='title' value='{{course.title}}' size='30'>
 <br /><br /><br /> 
 <b>Course Description:</b><br />
-<textarea id="course_info"  name="course_info" rows="10" cols="40">{{course.class_info}}</textarea>
+<textarea class="text" id="course_info"  name="course_info" rows="10" cols="40">{{course.class_info}}</textarea>
 <br /><br /><br />
 
 {% if course %}
@@ -50,18 +51,18 @@
 <br /><br />
 <b>Course Information:</b><br /><br />
 <small><i>Minimum Grade Level: </i></small>
-<input type='text' name='grade_min' value='{{course.grade_min }}' size='30'><br />
+<input type='text' class='text' name='grade_min' value='{{course.grade_min }}' size='30'><br />
 <small><i>Maximum Grade Level: </i></small>
-<input type='text' name='grade_max' value='{{course.grade_max }}' size='30'><br />
+<input type='text' class='text' name='grade_max' value='{{course.grade_max }}' size='30'><br />
 <small><i>Minimum Course Size: </i></small>
-<input type='text' name='course_size_min' value='{{course.class_size_min }}' size='30'><br />
+<input type='text' class='text' name='course_size_min' value='{{course.class_size_min }}' size='30'><br />
 <small><i>Maximum Course Size: </i></small>
-<input type='text' name='course_size_max' value='{{course.class_size_max }}' size='30'><br />
+<input type='text' class='text' name='course_size_max' value='{{course.class_size_max }}' size='30'><br />
 <br /><br />
 
 {% if course %}
 <b> Course Time: </b><br />
- <select name="Time">
+ <select class="text" name="Time">
 {% for thing in ts %}
 <option value='{{thing.id}}'
 {% ifequal thing course.event_template %}
@@ -71,7 +72,7 @@
 {% endfor %}
 {% else %}
 <b> Course Time: </b><br />
- <select name="Time">
+ <select class="text" name="Time">
 {% for thing in ts %}
 <option value='{{thing.id}}'>{{thing.friendly_name}}</option>
 {% endfor %}
@@ -81,7 +82,7 @@
 </select>  
 
 <br><br /><br />
-<center><input type='submit' value='Teach for {{one}}!'></center><br>
+<center><input class="button" type='submit' value='Teach for {{one}}!'></center><br>
 </form></div>
 
 {% endblock %}

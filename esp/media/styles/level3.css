@@ -49,6 +49,39 @@ form {
   text-align: right;
 }
 
+/*	Testing interesting formatting on form elements 
+-	Michael P		*/
+td {
+font-family: Arial;
+font-size: 13px;
+}
+input.button
+{
+   color:#000000;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   font-weight:bold;
+   border: #cccccc 1px solid;
+   background-color: #cccccc;
+}
+input.button:hover
+{
+   color:#0000cc;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   font-weight:bold;
+   border: #000000 1px solid;
+   background-color: #ccffcc;
+}
+input.text
+{
+   color:#000000;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   border-width: 1px;
+   border-color: 000000;
+   background-color: ffffff;
+}
 
 
 /* BACKGROUNDS AT TOP OF PAGE */

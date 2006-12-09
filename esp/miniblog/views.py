@@ -12,7 +12,10 @@ def show_miniblog(request, url, subsection = None, section_redirect_keys = {}, e
     """ Shows a miniblog based on the specified node """
     user = request.user
 	
-    tree_branch = section_redirect_keys[subsection]
+    if subsection == None:
+        tree_branch = 'Web'
+    else:
+        tree_branch = section_redirect_keys[subsection]
 
     node = 'Q/' + tree_branch + '/' + str(url)
     qsc = GetNode(node)

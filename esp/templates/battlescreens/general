@@ -101,7 +101,17 @@ Welcome, {{ request.user.first_name }}
 </td>
 <td width="120" align="center">
 <div class="admin_options">
+
+{% if i.3 %}
+<form method="post" action="{{ i.4 }}">
+<input type="hidden" name="command" value="{{ i.3 }}">
+<input class="button" type="submit" value="{{ i.2 }}">
+</form>
+{% else %}
 {{ i.2 }}
+{% endif %}
+
+
 </div>
 </td></tr>
 

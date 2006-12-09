@@ -84,9 +84,10 @@ class Class(models.Model):
                 newevent.save()
         
 	def __str__(self):
-            if self.title() is not None:
-		return self.title()
-            return ""
+		if self.title() is not None:
+			return self.title()
+		else:
+			return ""
 
 	def title(self):
 		return self.anchor.friendly_name

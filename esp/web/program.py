@@ -174,7 +174,7 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 		context['classes'] = cobj
 		return render_to_response('program/selectclass', context)
 		
-def program_teacherreg2(request, tl, one, two, module, extra, prog):
+def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = None):
 	""" Actually load a specific class or a new class for editing"""
 	context = {'logged_in': request.user.is_authenticated() }
 	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
@@ -185,9 +185,10 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog):
 	context['teacher'] = request.user
 	v = GetNode('V/Administer/Edit')
 	q = prog.anchor
-	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
+
 	if request.POST.has_key('cname'):
 		cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
+
 		for pclass in cobj:
 			eee = [x.title() for x in cobj]
 			ffff = [(x.title() == request.POST['cname']) for x in cobj]
@@ -195,14 +196,19 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog):
 				cobj = pclass
 				break
 	else:
-		cobj = Class()
-		cobj.title = ""
+		if (class_obj == None):
+			cobj = Class()
+		else:
+			cobj = class_obj
+
 	context['course'] = cobj
+	
 	ts = list(prog.anchor.tree_create(['Templates','TimeSlots']).children())
 	cat = list(ClassCategories.objects.all())
 	context['cat'] = cat
 	context['ts'] = ts
 	context['request'] = request
+	assert False, 'about to render teacherreg2'
 	return render_to_response('program/teacherreg', context)
 
 @login_required
