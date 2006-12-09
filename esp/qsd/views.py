@@ -137,12 +137,12 @@ def qsd(request, branch, url_name, url_verb, base_url):
 			'request': request,
 			'navbar_list': makeNavBar(request.user, branch),
 			'preload_images': preload_images,
-			'title': poll_rec.title,
-			'content': poll_rec.html(postback = base_url + ".poll"),
-			'qsdrec': poll_rec,
+			'title': qsd_rec.title,
+			'content': qsd_rec.html(postback = base_url + ".html"),
+			'qsdrec': qsd_rec,
 			'logged_in': request.user.is_authenticated(),
 			'have_edit': have_edit,
-			'edit_url': base_url + ".edit.poll" })
+			'edit_url': base_url + ".edit.html" })
 	
 	# Operation Complete!
 	assert False, 'Unexpected QSD operation'

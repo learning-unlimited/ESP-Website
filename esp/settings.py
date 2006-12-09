@@ -88,6 +88,7 @@ INSTALLED_APPS = (
     'esp.money',
     'esp.resources',
     'esp.poll',
+    'esp.dblog',
 )
 
 EMAIL_HOST = 'outgoing.mit.edu'
