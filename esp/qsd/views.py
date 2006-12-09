@@ -123,8 +123,8 @@ def qsd(request, branch, url_name, url_verb, base_url):
 			'qsdrec': qsd_rec,
 			'missing_files': m.BrokenLinks(),
 			'logged_in': request.user.is_authenticated(),
-			'target_url': base_url + ".edit.html",
-			'return_to_view': base_url + ".html" })
+			'target_url': base_url.split("/")[-1] + ".edit.html",
+			'return_to_view': base_url.split("/")[-1] + ".html" })
 
 	# Detect the standard read verb
 	if url_verb == 'read':		
