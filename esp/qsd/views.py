@@ -138,7 +138,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 			'navbar_list': makeNavBar(request.user, branch),
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
-			'content': qsd_rec.html(postback = base_url + ".html"),
+			'content': qsd_rec.html(),
 			'qsdrec': qsd_rec,
 			'logged_in': request.user.is_authenticated(),
 			'have_edit': have_edit,
