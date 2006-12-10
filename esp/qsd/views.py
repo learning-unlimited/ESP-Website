@@ -39,7 +39,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 		qsd_rec = qsd_recs[0]
 
 	except QuasiStaticData.DoesNotExist:
-		if have_edit and ( url_verb == 'create' or request.POST.has_key('post_edit') ):
+		if have_edit and (( url_verb == 'create' ) or request.POST.has_key('post_edit') ):
 			qsd_rec = QuasiStaticData()
 			qsd_rec.path = branch
 			qsd_rec.name = url_name
