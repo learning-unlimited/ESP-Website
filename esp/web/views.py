@@ -127,6 +127,7 @@ def redirect(request, url, subsection = None, section_redirect_keys = {}, render
 		subsection_str = ''
 	else:
 		subsection_str = subsection + "/"
+		url_parts.pop()
 
 	root_url = "/" + "/".join(url_parts) + "/" + qsd_name
 
