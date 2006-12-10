@@ -276,13 +276,13 @@ def myesp_battlescreen_teacher(request, module):
 	
 	block_ann = preview_miniblog(request, 'teach')
 	
-	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Publish'))
+	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Flags/Public'))
 	
 	class_sections = []
 	class_headers = []
 	program_classes = []
 	
-	teacher_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Administer/Program/Class'))
+	teacher_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Administer/Edit'))
 	
 	
 	for q in range(len(programs_current)):

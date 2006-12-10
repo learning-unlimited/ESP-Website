@@ -198,17 +198,16 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 	else:
 		if (class_obj == None):
 			cobj = Class()
+			cobj.anchor = q.tree_decode(['Classes'])
 		else:
 			cobj = class_obj
 
 	context['course'] = cobj
 	
-	ts = list(prog.anchor.tree_create(['Templates','TimeSlots']).children())
-	cat = list(ClassCategories.objects.all())
-	context['cat'] = cat
-	context['ts'] = ts
+	context['ts'] = list(prog.anchor.tree_create(['Templates','TimeSlots']).children())
+	context['cat'] = list(ClassCategories.objects.all())
 	context['request'] = request
-	assert False, 'about to render teacherreg2'
+	#	assert False, 'about to render teacherreg2'
 	return render_to_response('program/teacherreg', context)
 
 @login_required
@@ -248,6 +247,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	cobj.class_size_min = int(request.POST['class_size_min'])
 	cobj.class_size_max = int(request.POST['class_size_max'])
 	cobj.class_info = request.POST['class_info']
+	cobj.message_for_directors = request.POST['message_for_directors']
 	cobj.parent_program = prog
 	cobj.anchor = prog.anchor.tree_create(['Classes', "".join(title.split(" "))])
 	cobj.anchor.friendly_name = title
@@ -261,7 +261,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	ub.save()
 	#TimeSlot
 	cobj.event_template = DataTree.objects.filter(id=request.POST['Time'])
-	cat = ClassCategories.objects.filter(id=request.POST['Catigory'])[0]
+	cat = ClassCategories.objects.filter(id=request.POST['Category'])[0]
 	cobj.category = cat
 	cobj.enrollment = 0
 	cobj.save()
@@ -457,6 +457,7 @@ program_handlers = {'catalog': program_catalog,
 		    'fillslot': program_fillslot,
 		    'addclass': program_addclass,
 		    'makeaclass': program_makeaclass,
+			'makecourse': program_makeaclass,
 		    'updateprofile': program_updateprofile,
 		    'startpay': program_display_credit,
 		    'finishedStudent': studentRegDecision, 

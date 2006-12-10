@@ -1,6 +1,6 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}MIT ESP - Teacher Registration{% endblock %}
+{% block title %}Teacher Registration{% endblock %}
 
 {% block subsection_name %}Teach for {{one}} <br>{% endblock %}
 
@@ -8,9 +8,8 @@
 {% block content %}
 	<br /><br />
        <div id="divmaintext">	
-	<h2>Hi {{teacher.first_name}}!</h2>
-	<h2>Thank you for teaching for {{one}}!</h2> 
-	
+	<h2>Welcome, {{teacher.first_name}}</h2>
+	Thank you for teaching for {{one}}.  On this page, please fill out the important information relevant to your class.  You will need to fill out this form separately for each class you would like to teach, even if you're teaching the same subject more than once.  This information can be edited through your MyESP home page.
 	<br /><br />
 
 	{% if oops %}
@@ -23,30 +22,27 @@
  <input type='text' class='text' name='title' value='{{course.title}}' size='30'>
 <br /><br /><br /> 
 <b>Course Description:</b><br />
-<textarea class="text" id="course_info"  name="course_info" rows="10" cols="40">{{course.class_info}}</textarea>
+<textarea class="text" id="class_info"  name="class_info" rows="10" cols="40">{{course.class_info}}</textarea>
 <br /><br /><br />
 
-{% if course %}
+
 <b>Course Category: </b>
- <select name="Catigory">
-{% if course.category %}
-{% for thing in cat %}
-<option value='{{thing.id}}'
-{% ifequal thing course.category.category %}
- selected
-{% endifequal %}
->{{thing}}</option>
-{% endfor %}
-{% endif %}
+<select name="Category">
+	{% if course.category %}
+		{% for thing in cat %}
+			<option value='{{thing.id}}'
+			{% ifequal thing course.category.category %}
+			 selected
+			{% endifequal %}
+			>{{thing}}</option>
+		{% endfor %}
+	{% else %}
+		{% for thing in cat %}
+			<option value='{{thing.id}}'>{{thing}}</option>
+		{% endfor %}
+	{% endif %}
 </select>  
-{% else %}
-<b>Course Category: </b>
- <select name="Catigory">
-{% for thing in cat %}
-<option value='{{thing.id}}'>{{thing}}</option>
-{% endfor %}
-</select>
-{% endif %}
+
 
 <br /><br />
 <b>Course Information:</b><br /><br />
@@ -55,31 +51,21 @@
 <small><i>Maximum Grade Level: </i></small>
 <input type='text' class='text' name='grade_max' value='{{course.grade_max }}' size='30'><br />
 <small><i>Minimum Course Size: </i></small>
-<input type='text' class='text' name='course_size_min' value='{{course.class_size_min }}' size='30'><br />
+<input type='text' class='text' name='class_size_min' value='{{course.class_size_min }}' size='30'><br />
 <small><i>Maximum Course Size: </i></small>
-<input type='text' class='text' name='course_size_max' value='{{course.class_size_max }}' size='30'><br />
+<input type='text' class='text' name='class_size_max' value='{{course.class_size_max }}' size='30'><br />
 <br /><br />
 
-{% if course %}
-<b> Course Time: </b><br />
- <select class="text" name="Time">
-{% for thing in ts %}
-<option value='{{thing.id}}'
-{% ifequal thing course.event_template %}
- selected
-{% endifequal %}
->{{thing.friendly_name}}</option>
-{% endfor %}
-{% else %}
 <b> Course Time: </b><br />
  <select class="text" name="Time">
 {% for thing in ts %}
 <option value='{{thing.id}}'>{{thing.friendly_name}}</option>
 {% endfor %}
-{% endif %}
-
-
 </select>  
+
+<p>Please let us know if there are any special needs for your class in the box below.
+<br><small><i>Message for Directors: </i></small><input type='text' class='text' name='message_for_directors' value='{{course.message_for_directors }}' size='100'><br />
+</p>
 
 <br><br /><br />
 <center><input class="button" type='submit' value='Teach for {{one}}!'></center><br>
