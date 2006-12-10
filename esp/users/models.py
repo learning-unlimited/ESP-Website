@@ -69,6 +69,7 @@ class UserBit(models.Model):
 
         return False
     
+    # FIXME: This looks like it has been subject to extreme code rot
     @staticmethod
     def enforce_bits(controller_class, user):
         def call(proc, *args):
@@ -87,7 +88,7 @@ class UserBit(models.Model):
         if end_of_now == None: end_of_now = now
 
         #	Hopefully it's easier to understand this query now...
-        Q_correct_userbit = Q(recursive = True, verb__rangestart__gte = verb.rangestart, verb__rangeend__lte = verb.rangeend)
+        Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
         Q_exact_match = Q(recursive = False, verb__pk = verb.id, qsc__pk = qsc.id)
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
@@ -108,7 +109,7 @@ class UserBit(models.Model):
         if end_of_now == None: end_of_now = now
 
         #	Hopefully it's easier to understand this query now...
-        Q_correct_userbit = Q(recursive = True, verb__rangestart__gte = verb.rangestart, verb__rangeend__lte = verb.rangeend)
+        Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
         Q_exact_match = Q(recursive = False, verb__pk = verb.id)
         Q_correct_user = Q(user__isnull = True) | Q(user__pk = user.id)
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
