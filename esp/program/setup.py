@@ -1,6 +1,7 @@
 from esp.datatree.models import GetNode, DataTree
 from esp.users.models import UserBit
 from esp.program.Lists_ClassCategories import populate as populate_LCC
+from esp.program.models import Program
 #	from esp.program.Lists_EquipmentTypes import populate as populate_LET
 
 def PopulateProgram(program_node,
@@ -19,6 +20,14 @@ def PopulateProgram(program_node,
 	# Set the friendly name for the program's term (e.g. 'Summer 2006')
 	anchor.friendly_name = program_term
 	anchor.save()
+
+	# Create a Program entry
+	program = Program()
+	program.anchor = anchor
+	program.grade_min = 6
+	program.grade_max = 12
+	program.class_size_min = 4
+	program.class_size_max = 200
 
 	# Create the DataTree branches
 	for sub_node in ProgramTemplate:

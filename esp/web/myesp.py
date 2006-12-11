@@ -47,16 +47,21 @@ def myesp_finish(request, module):
 								    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
 								    'preload_images': preload_images})
 
+	# Does this user already exist?
 	if User.objects.filter(username=request.POST['username']).count() == 0:
-			
+
+		# Did the user enter the same password twice?
 		if request.POST['password'] != request.POST['confirm']:
+			# They did not; complain loudly
 			return render_to_response('users/newuser', {'request': request,
 								    'Problem': True,
 								   'logged_in': request.user.is_authenticated(),
 								    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
 								    'preload_images': preload_images})
 
-		if User.objects.filter(email=request.POST['email']).count() > 0:
+		# Does there already exist an account with this e-mail address, used for subscribing to mailing lists?
+		if User.objects.filter(email=request.POST['email'], password="emailuser").count() > 0:
+			# If so, re-use it
 			email_user = User.objects.filter(email=request.POST['email'])[0]
 			email_user.username = request.POST['username']
 			email_user.last_name = request.POST['last_name']
@@ -68,7 +73,10 @@ def myesp_finish(request, module):
 			return render_to_response('users/regdone', {'request': request,
 								    'logged_in': request.user.is_authenticated(),
 								    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-								    'preload_images': preload_images})							
+								    'preload_images': preload_images})
+
+
+		# We can't steal an already-existing account, so make a new one
 		django_user = User()
 		django_user.username = request.POST['username']
 		django_user.last_name = request.POST['last_name']
@@ -84,6 +92,9 @@ def myesp_finish(request, module):
 							    'logged_in': request.user.is_authenticated(),
 							    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
 							    'preload_images': preload_images})
+	
+	assert False, "This username already exists!"
+
 
 def myesp_emaillist(request, module):
 	""" Present the subscribe-to-emaillist page """
@@ -112,6 +123,7 @@ def myesp_emailfin(request, module):
 		email_user = User()
 		email_user.email = request.POST['email']
 		email_user.username = request.POST['email']
+		email_user.password = "emailuser"
 		email_user.is_staff = False
 		email_user.is_superuser = False
 		email_user.save()
@@ -120,6 +132,11 @@ def myesp_emailfin(request, module):
 			'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
 			'preload_images': preload_images,
 			'logged_in': False})
+
+
+		
+
+	
 	
 def myesp_signout(request, module):
 	""" Deauthenticate a user """

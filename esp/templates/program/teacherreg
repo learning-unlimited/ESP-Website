@@ -47,13 +47,13 @@
 <br /><br />
 <b>Course Information:</b><br /><br />
 <small><i>Minimum Grade Level: </i></small>
-<input type='text' class='text' name='grade_min' value='{{course.grade_min }}' size='30'><br />
+<input type='text' class='text' name='grade_min' value='{{course.grade_min }}' size='30'> (Min: {{ program.grade_min }})<br />
 <small><i>Maximum Grade Level: </i></small>
-<input type='text' class='text' name='grade_max' value='{{course.grade_max }}' size='30'><br />
+<input type='text' class='text' name='grade_max' value='{{course.grade_max }}' size='30'> (Max: {{ program.grade_max }})<br />
 <small><i>Minimum Course Size: </i></small>
-<input type='text' class='text' name='class_size_min' value='{{course.class_size_min }}' size='30'><br />
+<input type='text' class='text' name='class_size_min' value='{{course.class_size_min }}' size='30'> (Min: {{ program.class_size_min }})<br />
 <small><i>Maximum Course Size: </i></small>
-<input type='text' class='text' name='class_size_max' value='{{course.class_size_max }}' size='30'><br />
+<input type='text' class='text' name='class_size_max' value='{{course.class_size_max }}' size='30'> (Min: {{ program.class_size_max }})<br />
 <br /><br />
 
 <b> Course Time: </b><br />

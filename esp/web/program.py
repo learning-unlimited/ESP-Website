@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
-from esp.cal.models import Event
+from esp.cal.models import Event, Series
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode, DataTree
@@ -165,6 +165,7 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 	context['two'] = two
 	context['teacher'] = request.user
 	context['request'] = request
+	context['timeslots'] = prog.anchor.tree_create(['Templates', 'TimeSlots']).series_set.all()
 	v = GetNode('V/Administer/Edit')
 	q = prog.anchor
 	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
@@ -207,6 +208,7 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 	context['ts'] = list(prog.anchor.tree_create(['Templates','TimeSlots']).children())
 	context['cat'] = list(ClassCategories.objects.all())
 	context['request'] = request
+	context['program'] = prog
 	#	assert False, 'about to render teacherreg2'
 	return render_to_response('program/teacherreg', context)
 
@@ -224,13 +226,18 @@ def program_addclass(request, tl, one, two, module, extra, prog):
 	classid = request.POST['class']
 	cobj = Class.objects.filter(id=classid)[0]
 	cobj.preregister_student(request.user)
+
+	from esp.web.views import program
+
 	return program(request, tl, one, two, "studentreg")
 
 @login_required
 def program_makeaclass(request, tl, one, two, module, extra, prog):
 	""" Create a new class """
-	for thing in ['title', 'class_info', 'class_size_min', 'class_size_max', 'grade_min', 'grade_max']:
-		if not request.POST.has_key(thing) and request.POST[thing].strip() != "":
+	from esp.web.views import program
+
+	for thing in ['title', 'class_info', 'class_size_min', 'class_size_max', 'grade_min', 'grade_max', 'Time']:
+		if not request.POST.has_key(thing) or request.POST[thing] == None or request.POST[thing] == 'None' or request.POST[thing].strip() == "":
 			return program(request, tl, one, two, "teacherreg", extra = "oops")
 	aid = request.POST.get('id', None)
 	if aid is None:
@@ -241,18 +248,32 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 			cobj = Class()
 		else:
 			cobj = theclass[0]
+
 	title = request.POST['title']
-	cobj.grade_max = int(request.POST["grade_max"])
+	try:
+		cobj.grade_max = int(request.POST["grade_max"])
+	except ValueError:
+		cobj.grade_max = None
+	
 	cobj.grade_min = int(request.POST["grade_min"])
 	cobj.class_size_min = int(request.POST['class_size_min'])
 	cobj.class_size_max = int(request.POST['class_size_max'])
+		
 	cobj.class_info = request.POST['class_info']
 	cobj.message_for_directors = request.POST['message_for_directors']
 	cobj.parent_program = prog
 	cobj.anchor = prog.anchor.tree_create(['Classes', "".join(title.split(" "))])
 	cobj.anchor.friendly_name = title
-	
 	cobj.anchor.save()
+
+	time_sets = DataTree.objects.filter(id=request.POST['Time'])
+
+	if len(time_sets) != 1:
+		assert False, "Error: Invalid time_set : " + str(time_sets) + ' ' + str(request.POST['Time'])
+
+	cobj.event_template = time_sets[0]
+	
+
 	v = GetNode( 'V/Administer/Edit')
 	ub = UserBit()
 	ub.user = request.user
@@ -260,7 +281,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	ub.verb = v
 	ub.save()
 	#TimeSlot
-	cobj.event_template = DataTree.objects.filter(id=request.POST['Time'])
+
 	cat = ClassCategories.objects.filter(id=request.POST['Category'])[0]
 	cobj.category = cat
 	cobj.enrollment = 0
@@ -268,11 +289,14 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	return render_to_response('program/registered', {'request': request,
 							 'logged_in': request.user.is_authenticated(),
 							 'navbar_list': makeNavBar(request.user, prog.anchor),
-							 'preload_images': preload_images})	    
+							 'preload_images': preload_images})
 
 @login_required
 def program_updateprofile(request, tl, one, two, module, extra, prog):
 	""" Update a user profile """
+	from esp.web.views import program
+
+	
 	for thing in ['first', 'last', 'email', 'street', 'guard_name', 'emerg_name', 'emerg_street']:
 		if not request.POST.has_key(thing) and request.POST[thing].strip() != "":
 			return program(request, tl, one, two, "profile", extra = "oops")
@@ -457,7 +481,7 @@ program_handlers = {'catalog': program_catalog,
 		    'fillslot': program_fillslot,
 		    'addclass': program_addclass,
 		    'makeaclass': program_makeaclass,
-			'makecourse': program_makeaclass,
+		    'makecourse': program_makeaclass,
 		    'updateprofile': program_updateprofile,
 		    'startpay': program_display_credit,
 		    'finishedStudent': studentRegDecision, 
