@@ -33,7 +33,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 
 	# Fetch the QSD object
 	try:
-		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name ).order_by('-id')
+		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name ).order_by('-create_date')
 		if qsd_recs.count() < 1:
 			raise QuasiStaticData.DoesNotExist
 
@@ -51,7 +51,6 @@ def qsd(request, branch, url_name, url_verb, base_url):
 
 			url_verb = 'edit'
 		else:
-			assert False, 'Could not find QSD entry'
 			raise Http404
 
 	if url_verb == 'create':
@@ -73,7 +72,6 @@ def qsd(request, branch, url_name, url_verb, base_url):
 		qsd_rec_new.title = request.POST['title']
 		qsd_rec_new.create_date = datetime.now()
 		qsd_rec_new.save()
-		assert False, "Attempt to update!"
 
 		qsd_rec = qsd_rec_new
 
