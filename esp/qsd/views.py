@@ -72,6 +72,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 		qsd_rec_new.title = request.POST['title']
 		qsd_rec_new.create_date = datetime.now()
 		qsd_rec_new.save()
+		assert False, "Attempt to update!"
 
 		qsd_rec = qsd_rec_new
 
