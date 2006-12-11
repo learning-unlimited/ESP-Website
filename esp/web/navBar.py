@@ -9,11 +9,12 @@ def makeNavBar(user, node, section = ''):
 	qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=node.rangestart,path__rangeend__gte=node.rangeend,section=section).order_by('sort_rank')
 	return { 'node': node,
 		 'has_edit_bits': UserBit.UserHasPerms(user, node, GetNode('V/Administer')),
-		 'qsdTree': qsdTree }
+		 'qsdTree': qsdTree,
+		 'section': section }
 
 
 
-def updateNavBar(request, section = '', section_prefix_keys = {'': ''}):
+def updateNavBar(request, section = ''): 
 	""" Update a NavBar entry with the specified data """
 
 	for i in [ 'navbar_id', 'action', 'new_url', 'node_id' ]:
@@ -50,8 +51,6 @@ def updateNavBar(request, section = '', section_prefix_keys = {'': ''}):
 
 	if request.REQUEST.has_key('section'):
 		section = request.REQUEST['section']
-	if section_prefix_keys.has_key(section):
-		section = section_prefix_keys[section]
 
 	actions[action](request, navbar, node, section)
 
