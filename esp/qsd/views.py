@@ -10,6 +10,7 @@ from esp.qsdmedia.models import Media
 from esp.lib.markdownaddons import ESPMarkdown
 from esp.settings import MEDIA_ROOT, MEDIA_URL
 from os.path import basename, dirname
+from datetime import datetime
 
 #def qsd_raw(request, url):
 #	""" Return raw QSD data as a text file """
@@ -68,6 +69,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 		qsd_rec_new.author = request.user
 		qsd_rec_new.content = request.POST['content']
 		qsd_rec_new.title = request.POST['title']
+		qsd_rec_new.create_date = datetime.now()
 		qsd_rec_new.save()
 
 		qsd_rec = qsd_rec_new
