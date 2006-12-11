@@ -6,15 +6,7 @@ from esp.datatree.models import DataTree
 
 def makeNavBar(user, node, section = ''):
 	""" Query the navbar-entry table for all navbar entries associated with this tree node """
-	qsdTree = NavBarEntry.objects.filter(path=node,section=section).order_by('sort_rank')
-	#navbar_data = []
-	#for entry in qsdTree:
-	#	qd = {}
-	#	qd['link'] = entry.link
-	#	qd['text'] = entry.text
-	#	qd['indent'] = entry.indent
-	#	navbar_data.append(qd)
-	#return navbar_data
+	qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=node.rangestart,path__rangeend__gte=node.rangeend,section=section).order_by('sort_rank')
 	return { 'node': node,
 		 'has_edit_bits': UserBit.UserHasPerms(user, node, GetNode('V/Administer')),
 		 'qsdTree': qsdTree }
@@ -24,7 +16,7 @@ def makeNavBar(user, node, section = ''):
 def updateNavBar(request, section = '', section_prefix_keys = {'': ''}):
 	""" Update a NavBar entry with the specified data """
 
-	for i in [ 'navbar_id', 'action', 'new_url', 'node_id' ]:
+	for i in [ 'navbar_id', 'action', 'new_url', 'node_id', 'section' ]:
 		# Info can come by way of GET or POST, so we're using REQUEST
 		# Could trusting GET be a problem?; I'm assuming Django
 		# sessions are still maintained properly, so I can do security that way
