@@ -46,4 +46,6 @@
 
 <p style="text-align: center"><input type='submit' value='-  Login  -'></p>
 </form>
+
+<p><h2>Don't have an account?  <a href="/myesp/register/">Click Here</a> to create one!</h2></p>
 {% endblock %}

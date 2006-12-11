@@ -288,7 +288,7 @@ def myesp_battlescreen_teacher(request, module):
 					two = program_key.anchor.name
 					one = program_key.anchor.parent.name
 					prog = program_key
-					return program_teacherreg2(request, 'teach', one, two, 'teacherreg', '', prog, class_obj)
+					return program_teacherreg2(request, 'teach', one, two, 'teacherreg', '', prog, class_obj[0])
 			
 	
 	block_ann = preview_miniblog(request, 'teach')
