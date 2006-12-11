@@ -239,7 +239,12 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	for thing in ['title', 'class_info', 'class_size_min', 'class_size_max', 'grade_min', 'grade_max', 'Time']:
 		if not request.POST.has_key(thing) or request.POST[thing] == None or request.POST[thing] == 'None' or request.POST[thing].strip() == "":
 			return program(request, tl, one, two, "teacherreg", extra = "oops")
-	aid = request.POST.get('id', None)
+
+	if request.POST.has_key('id'):
+		aid = request.POST['id']
+	else:
+		aid = None
+
 	if aid is None:
 		cobj = Class()
 	else:

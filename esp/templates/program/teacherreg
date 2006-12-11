@@ -31,7 +31,7 @@
 	{% if course.category %}
 		{% for thing in cat %}
 			<option value='{{thing.id}}'
-			{% ifequal thing course.category.category %}
+			{% ifequal thing.id course.category.id %}
 			 selected
 			{% endifequal %}
 			>{{thing}}</option>
@@ -59,7 +59,7 @@
 <b> Course Time: </b><br />
  <select class="text" name="Time">
 {% for thing in ts %}
-<option value='{{thing.id}}'>{{thing.friendly_name}}</option>
+<option value='{{thing.id}}'{% ifequal thing.id course.event_template.id %} selected{% endifequal %}>{{thing.friendly_name}}</option>
 {% endfor %}
 </select>  
 
