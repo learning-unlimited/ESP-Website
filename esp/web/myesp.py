@@ -12,7 +12,7 @@ from esp.program.models import Program, RegistrationProfile, Class, ClassCategor
 from esp.web.program import program_teacherreg2
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
-from django.http import HttpResponse, Http404, HttpResponseNotAllowed
+from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
@@ -158,7 +158,8 @@ def myesp_login(request, module):
 	if user is not None:
 		login(request, user)
 
-	return myesp_logfin(request, module)
+	return HttpResponseRedirect("/")
+	#return myesp_logfin(request, module)
 
 @login_required
 def myesp_logfin(request, module):
@@ -289,7 +290,7 @@ def myesp_battlescreen_teacher(request, module):
 					one = program_key.anchor.parent.name
 					prog = program_key
 					return program_teacherreg2(request, 'teach', one, two, 'teacherreg', '', prog, class_obj[0])
-			
+	
 	
 	block_ann = preview_miniblog(request, 'teach')
 	
@@ -326,10 +327,10 @@ def myesp_battlescreen_teacher(request, module):
 			
 		class_sections.append({'header' : str(p), 'items' : program_classes,
 								'footer': '<b><a href="/teach/' + p.url() + '/teacherreg/">Add New Class for ' + str(p) + '</a></b>'})
-						
+
 	block_classes = {	'title' : 'Manage Your Classes',
-						'headers' : ['You have the ability to edit the following classes:'],
-						'sections' : class_sections }
+				'headers' : ['You have the ability to edit the following classes:'],
+				'sections' : class_sections }
 						
 	blocks = [block_ann, block_classes]
 	
