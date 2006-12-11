@@ -16,7 +16,7 @@ def makeNavBar(user, node, section = ''):
 def updateNavBar(request, section = '', section_prefix_keys = {'': ''}):
 	""" Update a NavBar entry with the specified data """
 
-	for i in [ 'navbar_id', 'action', 'new_url', 'node_id', 'section' ]:
+	for i in [ 'navbar_id', 'action', 'new_url', 'node_id' ]:
 		# Info can come by way of GET or POST, so we're using REQUEST
 		# Could trusting GET be a problem?; I'm assuming Django
 		# sessions are still maintained properly, so I can do security that way
@@ -48,7 +48,12 @@ def updateNavBar(request, section = '', section_prefix_keys = {'': ''}):
 		#raise Http404
 		assert False, "Need action"
 
-	actions[action](request, navbar, node, section_prefix_keys[section])
+	if request.REQUEST.has_key('section'):
+		section = request.REQUEST['section']
+	if section_prefix_keys.has_key(section):
+		section = section_prefix_keys[section]
+
+	actions[action](request, navbar, node, section)
 
 	return HttpResponseRedirect(request.REQUEST['new_url'])
 
