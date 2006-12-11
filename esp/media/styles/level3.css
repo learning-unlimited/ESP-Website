@@ -247,7 +247,7 @@ input.text
 .divtertiarynavlink {
   padding: 0px 3px 4px 36px;
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.60em;
+  font-size: 0.65em;
   color: #3366cc;
   line-height: 133%;
   margin: 0px;
@@ -428,11 +428,11 @@ input.text
   padding: 0px 6px 20px 0px;
 }
 #divmainqsddatetimestamp {
-  font-size: 0.75em;
+  font-size: 0.90em;
 }
 #divmaintext p, #divmaintext li {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.75em;
+  font-size: 0.90em;
   line-height: 160%;
   color: #000000;
   margin-top: 0px;
@@ -454,7 +454,7 @@ input.text
 }
 #divmaintext h3 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.75em;
+  font-size: 0.90em;
   font-weight: bold;
   color: #000000;
   margin-top: 0px;
@@ -586,7 +586,7 @@ input.text
   padding: 0px 44px 0px 6px;
 }
 #divquotetext .quoteauthor {
-  font-size: 0.75em;
+  font-size: 0.85em;
   font-weight: normal;
   color: #666666;
 }
@@ -606,7 +606,7 @@ input.text
 }
 #divfooter p {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.70em;
+  font-size: 0.80em;
   color: #000000;
   line-height: 135%;
   margin: 0px;
