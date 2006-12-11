@@ -14,7 +14,7 @@ class NavBarEntry(models.Model):
     section = models.CharField(maxlength=64,blank=True)
     
     def __str__(self):
-        return ( self.path.full_name() + ':' + self.section + ':' + str(self.sort_rank) + ' (' + self.text + ')'  )
+        return self.path.full_name() + ':' + self.section + ':' + str(self.sort_rank) + ' (' + self.text + ') ' + '[' + self.link + ']' 
     
     class Admin:
         pass

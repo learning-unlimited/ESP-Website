@@ -37,6 +37,8 @@
 {% if form.parent_program.errors %}*** {{ form.parent_program.errors|join:", " }}{% endif %}</p>
 <p><label for="id_schedule">Schedule:</label> {{ form.schedule }}
 {% if form.schedule.errors %}*** {{ form.schedule.errors|join:", " }}{% endif %}</p>
+<p><label for="id_viable_times">Acceptable time slots:</label> {{ form.viable_times }}
+{% if form.viable_times.errors %}** {{ form.viable_times.errors|join:", "  }}{% endif %}</p>
 
 <input type="hidden" name="anchor" value="{{ orig_class.anchor.id }}" />
 <input type="hidden" name="event_template" value="{{ orig_class.event_template.id }}" />

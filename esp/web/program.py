@@ -205,7 +205,11 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 
 	context['course'] = cobj
 	
-	context['ts'] = list(prog.anchor.tree_create(['Templates','TimeSlots']).children())
+	if cobj.id is None: selected_times = []
+	else: selected_times = cobj.viable_times.all()
+	context['ts'] = [ {'obj': x } for x in list(prog.anchor.tree_create(['Templates','TimeSlots']).children()) ]
+	for i in range(0,len(context['ts'])):
+		context['ts'][i]['selected'] = (context['ts'][i]['obj'] in selected_times)
 	context['cat'] = list(ClassCategories.objects.all())
 	context['request'] = request
 	context['program'] = prog
@@ -271,13 +275,15 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	cobj.anchor.friendly_name = title
 	cobj.anchor.save()
 
-	time_sets = DataTree.objects.filter(id=request.POST['Time'])
+	time_sets = []
+	for id in request.POST.getlist('Time'):
+		for x in DataTree.objects.filter(id=int(id)):
+			time_sets.append(x)
 
-	if len(time_sets) != 1:
+	if len(time_sets) == 0:
 		assert False, "Error: Invalid time_set : " + str(time_sets) + ' ' + str(request.POST['Time'])
 
-	cobj.event_template = time_sets[0]
-	
+	#cobj.event_template = time_sets[0]
 
 	v = GetNode( 'V/Administer/Edit')
 	ub = UserBit()
@@ -291,6 +297,11 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	cobj.category = cat
 	cobj.enrollment = 0
 	cobj.save()
+	cobj.viable_times.clear()
+	for t in time_sets:
+		cobj.viable_times.add(t)
+	cobj.save()
+
 	return render_to_response('program/registered', {'request': request,
 							 'logged_in': request.user.is_authenticated(),
 							 'navbar_list': makeNavBar(request.user, prog.anchor),

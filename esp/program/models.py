@@ -66,7 +66,8 @@ class Class(models.Model):
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
 	schedule = models.TextField(blank=True)
-	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set')
+	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set', null=True)
+	viable_times = models.ManyToManyField(DataTree, related_name='class_viable_set', blank=True)
 	enrollment = models.IntegerField()
 
 	def url(self):

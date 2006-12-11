@@ -56,10 +56,10 @@
 <input type='text' class='text' name='class_size_max' value='{{course.class_size_max }}' size='30'> (Min: {{ program.class_size_max }})<br />
 <br /><br />
 
-<b> Course Time: </b><br />
- <select class="text" name="Time">
+<b>Acceptable Course times (select all that apply): </b><br />
+ <select multiple class="text" name="Time">
 {% for thing in ts %}
-<option value='{{thing.id}}'{% ifequal thing.id course.event_template.id %} selected{% endifequal %}>{{thing.friendly_name}}</option>
+<option value='{{thing.obj.id}}' {% if thing.selected %}selected{% endif %}>{{thing.obj.friendly_name}}</option>
 {% endfor %}
 </select>  
 
