@@ -13,7 +13,7 @@ class Log(models.Model):
 def error(err_txt, extra = '', stack_trace = None):
     # Log an error to the database
     # Let programmers be lame.  Auto stack trace.
-    if stack_trace = None:
+    if stack_trace == None:
         stack_trace = "\n".join(format_stack())
 
     # Save the error as a database record
