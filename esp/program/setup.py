@@ -69,6 +69,7 @@ def populate():
 
 ProgramTemplate = (
     '/Critical',
+    '/Internal',
     '/Prospectives',
     '/Prospectives/Teachers',
     '/Prospectives/Students',
