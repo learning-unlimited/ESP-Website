@@ -102,7 +102,8 @@ class DataTree(models.Model):
 
     def __str__(self):
         """ Returns a string """
-        res = str(self.rangestart) + ' .. ' + str(self.rangeend) + ' '*self.depth() + ' <' + str(self.full_name()) + '>'
+	#res = str(self.rangestart) + ' .. ' + str(self.rangeend) + ' '*self.depth() + ' <' + str(self.full_name()) + '>'
+        res = str(self.full_name()) + ' (' + str(self.rangestart) + ' .. ' + str(self.rangeend) + ')'
 	if self.friendly_name is not None:
 		res = res + ' (' + self.friendly_name + ')'
 	return res
