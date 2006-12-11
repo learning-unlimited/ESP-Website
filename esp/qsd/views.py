@@ -47,6 +47,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 			qsd_rec.name = url_name
 			qsd_rec.title = 'New Page'
 			qsd_rec.content = 'Please insert your text here'
+			qsd_rec.create_date = datetime.now()
 
 			url_verb = 'edit'
 		else:
