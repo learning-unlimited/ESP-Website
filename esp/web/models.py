@@ -11,6 +11,7 @@ class NavBarEntry(models.Model):
     link = models.CharField(maxlength=256)
     text = models.CharField(maxlength=64)
     indent = models.BooleanField()
+    section = models.CharField(maxlength=64,blank=True)
     
     def __str__(self):
         return ( self.path.full_name() + ':' + str(self.sort_rank) + ' (' + self.text + ')'  )

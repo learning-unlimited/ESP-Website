@@ -84,7 +84,7 @@ def myesp(request, module):
 #		'content': qsd_rec[0].html(),
 #		'logged_in': request.user.is_authenticated() })
 
-def redirect(request, url, subsection = None, section_redirect_keys = {}, renderer = qsd ):
+def redirect(request, url, subsection = None, section_redirect_keys = {}, section_prefix_keys = {}, renderer = qsd ):
 	""" Universal mapping function between urls.py entries and QSD pages
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
@@ -115,23 +115,30 @@ def redirect(request, url, subsection = None, section_redirect_keys = {}, render
 	target_node = url_parts
 
 	# Get the node in question.  If it doesn't exist, deal with whether or not this user can create it.
-	if subsection != None and subsection != 'program': # Hack to make "program" toggle not render subnodes
-		target_node.append(subsection)
-
 	try:
-		branch = GetNodeOrNoBits('Q/' + tree_branch + '/' + "/".join(target_node), user=request.user)
+		branch_name = 'Q/' + tree_branch
+		if target_node:
+			branch_name = branch_name + '/' + "/".join(target_node)
+		branch = GetNodeOrNoBits(branch_name, user=request.user)
 	except DataTree.NoSuchNodeException:
 		raise Http404
 
+	if url_parts:
+		root_url = "/" + "/".join(url_parts) + "/" + qsd_name
+	else:
+		root_url = "/" + qsd_name
+
+	section = ''
 	if subsection == None:
 		subsection_str = ''
 	else:
 		subsection_str = subsection + "/"
-		url_parts.pop()
+		root_url = "/" + subsection + root_url
+		if section_prefix_keys.has_key(subsection):
+			section = section_prefix_keys[subsection]
+			qsd_name = section + ':' + qsd_name
 
-	root_url = "/" + "/".join(url_parts) + "/" + qsd_name
-
-	return renderer(request, branch, qsd_name, qsd_verb, root_url)
+	return renderer(request, branch, section, qsd_name, qsd_verb, root_url)
 	
 
 def program(request, tl, one, two, module, extra = None):

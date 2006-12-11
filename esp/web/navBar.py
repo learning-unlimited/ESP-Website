@@ -4,9 +4,9 @@ from esp.datatree.models import GetNode
 from django.http import HttpResponseRedirect, Http404
 from esp.datatree.models import DataTree
 
-def makeNavBar(user, node):
+def makeNavBar(user, node, section = ''):
 	""" Query the navbar-entry table for all navbar entries associated with this tree node """
-	qsdTree = NavBarEntry.objects.filter(path=node).order_by('sort_rank')
+	qsdTree = NavBarEntry.objects.filter(path=node,section=section).order_by('sort_rank')
 	#navbar_data = []
 	#for entry in qsdTree:
 	#	qd = {}
@@ -21,7 +21,7 @@ def makeNavBar(user, node):
 
 
 
-def updateNavBar(request):
+def updateNavBar(request, section = '', section_prefix_keys = {'': ''}):
 	""" Update a NavBar entry with the specified data """
 
 	for i in [ 'navbar_id', 'action', 'new_url', 'node_id' ]:
@@ -56,11 +56,11 @@ def updateNavBar(request):
 		#raise Http404
 		assert False, "Need action"
 
-	actions[action](request, navbar, node)
+	actions[action](request, navbar, node, section_prefix_keys[section])
 
 	return HttpResponseRedirect(request.REQUEST['new_url'])
 
-def navBarUp(request, navbar, node):
+def navBarUp(request, navbar, node, section):
 	""" Swap the sort_rank of the specified NavBarEntry and the NavBarEntry immediately before it in the list of NavBarEntrys associated with this tree node, so that this NavBarEntry appears to move up one unit on the page
 
 	Fail silently if this is not possible
@@ -84,7 +84,7 @@ def navBarUp(request, navbar, node):
 		last_n = n
 		
 	
-def navBarDown(request, navbar, node):
+def navBarDown(request, navbar, node, section):
 	""" Swap the sort_rank of the specified NavBarEntry and the NavBarEntry immediately after it in the list of NavBarEntrys associated with this tree node, so that this NavBarEntry appears to move down one unit on the page
 
 	Fail silently if this is not possible
@@ -108,7 +108,7 @@ def navBarDown(request, navbar, node):
 		last_n = n
 		
 
-def navBarNew(request, navbar, node):
+def navBarNew(request, navbar, node, section):
 	""" Create a new NavBarEntry.  Put it at the bottom of the current sort_rank. """
 	try:
 		max_sort_rank = NavBarEntry.objects.filter(path=node).order_by('-sort_rank')[0].sort_rank
@@ -127,6 +127,7 @@ def navBarNew(request, navbar, node):
 		entry.link = url
 		entry.text = request.POST['text']
 		entry.indent = request.POST['indent']
+		entry.section = section
 
 		entry.save()
 		
@@ -134,7 +135,7 @@ def navBarNew(request, navbar, node):
 		raise
 
 	
-def navBarDelete(request, navbar, node):
+def navBarDelete(request, navbar, node, section):
 	navbar.delete()
 
 

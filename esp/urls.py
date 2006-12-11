@@ -10,6 +10,7 @@ section_redirect_keys = {'teach': 'Programs',
 						'help': 'ESP/Committees',
 						None: 'Web'}
 
+section_prefix_keys = {'teach': 'teach', 'learn': 'learn'}
 urlpatterns = patterns('',
     # Example:
     # (r'^esp/', include('esp.apps.foo.urls.foo')),
@@ -44,7 +45,7 @@ urlpatterns = patterns('',
     (r'^program/Template/$', 'esp.program.views.programTemplateEditor'),
     (r'^program/(?P<program>[-A-Za-z0-9_ ]+)/(?P<session>[-A-Za-z0-9_ ]+)/Classes/Template/$', 'esp.program.views.classTemplateEditor'),
 	
-    (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys } ),
+    (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*).html$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys, 'section_prefix_keys': section_prefix_keys } ),
 	
 	#	This same URL pattern also handles the battlescreen  -Michael
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'esp.web.views.myesp'),

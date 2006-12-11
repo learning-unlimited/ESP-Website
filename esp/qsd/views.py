@@ -26,7 +26,7 @@ from datetime import datetime
 #	else:
 #		return Http404
 	
-def qsd(request, branch, url_name, url_verb, base_url):
+def qsd(request, branch, section, url_name, url_verb, base_url):
 	# Detect edit authorizations
 	have_edit = UserBit.UserHasPerms( request.user, branch, GetNode('V/Administer/Edit') )
 	have_read = UserBit.UserHasPerms( request.user, branch, GetNode('V/Flags/Public') )
@@ -40,8 +40,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 		qsd_rec = qsd_recs[0]
 
 	except QuasiStaticData.DoesNotExist:
-		if have_edit:
-			#and ( url_verb == 'edit' ):
+		if have_edit and (url_verb == 'edit' or url_verb == 'create'):
 			qsd_rec = QuasiStaticData()
 			qsd_rec.path = branch
 			qsd_rec.name = url_name
@@ -51,10 +50,11 @@ def qsd(request, branch, url_name, url_verb, base_url):
 
 			url_verb = 'edit'
 		else:
+			assert False, "404"
 			raise Http404
 
 	if url_verb == 'create':
-		qsd_rec.save()
+		#qsd_rec.save()
 		url_verb = 'edit'
 			
 	# Detect POST
@@ -119,7 +119,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 		# Render an edit form
 		return render_to_response('qsd_edit.html', {
 			'request': request,
-			'navbar_list': makeNavBar(request.user, branch),
+			'navbar_list': makeNavBar(request.user, branch, section),
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.content,
@@ -138,7 +138,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 		# Render response
 		return render_to_response('qsd.html', {
 			'request': request,
-			'navbar_list': makeNavBar(request.user, branch),
+			'navbar_list': makeNavBar(request.user, branch, section),
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
 			'content': qsd_rec.html(),
