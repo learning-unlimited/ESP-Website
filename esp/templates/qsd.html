@@ -2,9 +2,10 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block subsection_name %}Welcome{% endblock %}
+{% block subsection_name %}{% endblock %}
 
 {% block content %}{{ content }}
 <br /><br />
 <p><div id="divmainqsddatetimestamp">Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date }}</div></p>
+<p><code>{{ qsdrec.path }}</code></p>
 {% if have_edit %}<a href="{{ edit_url }}">Edit this page</a>{% endif %}{% endblock %}
