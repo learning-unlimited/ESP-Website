@@ -58,7 +58,6 @@ def qsd(request, branch, url_name, url_verb, base_url):
 		url_verb = 'edit'
 			
 	# Detect POST
-	assert False
 	if request.POST.has_key('post_edit'):
 		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
 		if not have_edit:
