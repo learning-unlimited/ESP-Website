@@ -9,7 +9,7 @@
 	<br /><br />
        <div id="divmaintext">	
 	<h2>Welcome, {{teacher.first_name}}</h2>
-	Thank you for teaching for {{one}}.  On this page, please fill out the important information relevant to your class.  You will need to fill out this form separately for each class you would like to teach, even if you're teaching the same subject more than once.  This information can be edited through your MyESP home page.
+	Thank you for teaching for {{one}}.  On this page, please fill out the important information relevant to your class.  You will need to fill out this form separately for each class you would like to teach, even if you're teaching the same subject more than once.  This information can be edited through your <a href="/myesp/teacher/">MyESP home page</a>.
 	<br /><br />
 
 	{% if oops %}

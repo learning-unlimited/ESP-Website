@@ -4,6 +4,7 @@
 
 {% block stylesheets %}
 <link rel="stylesheet" href="/media/styles/home.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 {% endblock %}
 
 {% block javascript %}
@@ -212,7 +213,39 @@ document.writeln("</style>");
 no more than 3-4 
 announcements so it looks
 nice!!!! -->
-Welcome to the ESP Usability test!
+
+<!-- Please don't kill me for copying in all this general purpose template code.  I mean no harm, really.   -Michael P -->
+
+{% for b in blocks %}
+	
+<table border="0" cellpadding="0" cellspacing="0">
+
+{% for s in b.sections %}
+
+{% for i in s.items %}
+
+<tr><td>
+<div class="class_stuff">
+
+{% if i.1 %}
+<a href="{{ i.1 }}">{{ i.0 }}</a>
+{% else %}
+{{ i.0 }}
+{% endif %}
+
+</div>
+</td>
+</tr>
+
+{% endfor %}
+
+{% endfor %}
+	
+</table>	
+	
+{% endfor %}
+
+
 </div>
 
 <!-- more announcements -->

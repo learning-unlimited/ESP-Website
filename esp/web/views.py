@@ -22,16 +22,19 @@ from esp.web.models import NavBarEntry
 from esp.web.data import navbar_data, preload_images
 from esp.web.myesp import myesp_handlers
 from esp.web.program import program_handlers
+from esp.miniblog.views import preview_miniblog
 
 def index(request):
 	""" Displays a generic "index" page """
 	# Catherine: This does nothing
 	# aseering: Yay.
 	latest_event_list = Event.objects.filter().order_by('-start')
+	block_ann = preview_miniblog(request, 'teach')
 	return render_to_response('index.html', {
 		'request': request,
 		'navbar_list': navbar_data,
 		'preload_images': preload_images,
+		'blocks': [block_ann],
 		'logged_in': request.user.is_authenticated()
 		})
 

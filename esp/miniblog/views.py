@@ -43,7 +43,8 @@ def show_miniblog_entry(request, url, extramsg=''):
 
     return render_to_response('miniblog.html', { 'request': request,
                                                  'entries': entries,
-                                                 'canpost': UserBit.UserHasPerms(user, branch, GetNode('V/Administer/Edit/Use')),
+                                                 #'canpost': UserBit.UserHasPerms(user, branch, GetNode('V/Administer/Edit/Use')),
+												 'canpost': False,
 												 'navbar_list': makeNavBar(request.user, branch),
                                                  'webnode': str(url),
 												 'logged_in': request.user.is_authenticated(),
