@@ -33,7 +33,7 @@ def qsd(request, branch, url_name, url_verb, base_url):
 
 	# Fetch the QSD object
 	try:
-		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name ).order_by('-create_date')
+		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name ).order_by('+id')
 		if qsd_recs.count() < 1:
 			raise QuasiStaticData.DoesNotExist
 
