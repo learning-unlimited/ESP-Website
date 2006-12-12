@@ -125,6 +125,16 @@ class ResourceRequest(models.Model):
 	class Admin:
 		pass
 
+class BusSchedule(models.Model):
+	""" A scheduled bus journey associated with a program """
+	program = models.ForeignKey(Program)
+	src_dst = models.CharField(maxlength=128)
+	departs = models.DateTimeField()
+	arrives = models.DateTimeField()
+
+	class Admin:
+		pass
+
 class TeacherParticipationProfile(models.Model):
 	""" Profile properties associated with a teacher in a program """
 	teacher = models.ForeignKey(User)
@@ -136,16 +146,6 @@ class TeacherParticipationProfile(models.Model):
 
 	def __str__(self):
 		return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
-
-	class Admin:
-		pass
-
-class BusSchedule(models.Model):
-	""" A scheduled bus journey associated with a program """
-	program = models.ForeignKey(Program)
-	src_dst = models.CharField(maxlength=128)
-	departs = models.DateTimeField()
-	arrives = models.DateTimeField()
 
 	class Admin:
 		pass
