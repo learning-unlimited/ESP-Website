@@ -5,7 +5,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest
+from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest, TeacherParticipationProfile
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
@@ -215,13 +215,23 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 
 	context['course'] = cobj
 # Again...RSN
-#	res = ResourceRequest.objects.filter(requestor = cobj)
-#	if res.count() == 0:
-#		res = ResourceRequest(requestor = cobj)
+	res = ResourceRequest.objects.filter(requestor = cobj)
+	if res.count() == 0:
+		res = ResourceRequest(requestor = cobj)
+	else:
+		res = res[0]
+
+	context['res'] = res
+
+	# teacher will volunteer
+#	participation = TeacherParticipationProfile.objects.filter(program = prog, teacher = request.user)
+#	if participation.count() == 0:
+#		participation = TeacherParticipationProfile(program = prog, teacher = request.user)
 #	else:
-#		res = res[0]
-#
-#	context['res'] = res
+#		participation = participation[0]
+#		
+#	context['participation'] = participation
+		
 
 	if cobj.id is None: selected_times = []
 	else: selected_times = cobj.viable_times.all()
@@ -323,17 +333,6 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 
 	#cobj.event_template = time_sets[0]
 
-# set resources:
-# Need to get this working RSN!
-#	res = ResourceRequest()
-#	res.requester = cobj
-#	res.wants_projector = (request.POST['wants_projector'] == '1')
-#	res.wants_computer_lab = (request.POST['wants_computer_lab'] == '1')
-#	res.wants_open_space = (request.POST['wants_open_space'] == '1')
-
-#	res.save()
-
-
 	# Can edit this class
 	v = GetNode( 'V/Administer/Edit')
 	ub = UserBit()
@@ -360,6 +359,28 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	for t in time_sets:
 		cobj.viable_times.add(t)
 	cobj.save()
+
+# set resources:
+# Need to get this working RSN!
+	res = ResourceRequest(requestor = cobj)
+#	res.requester = cobj
+	
+	res.wants_projector = request.POST.has_key('wants_projector')
+	res.wants_computer_lab = request.POST.has_key('wants_computer_lab') 
+	res.wants_open_space = request.POST.has_key('wants_open_space')
+
+	res.save()
+
+
+	# teacher will volunteer
+#	participation = TeacherParticipationProfile.objects.filter(program = prog, teacher = request.user)
+#	if participation.count() == 0:
+#		participation = TeacherParticipationProfile(program = prog, teacher = request.user)
+#	else:
+#		participation = participation[0]
+#
+#	participation.can_help = request.POST.has_key('can_help')
+	
 
 	return render_to_response('program/registered', {'request': request,
 							 'logged_in': request.user.is_authenticated(),

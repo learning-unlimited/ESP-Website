@@ -232,8 +232,7 @@ In case you were wondering when classes are being taught, they are here for refe
 </select>  
 <br />
 <br />
-<!--
-Get this on-line soon! 
+
 <b>Resources Required by Your Class:</b>
 <br />
 <input type="checkbox" value="1" name="wants_projector"{% if res.wants_projector %} checked{% endif %} />
@@ -244,6 +243,14 @@ Get this on-line soon!
 <br />
 <input type="checkbox" value="1" name="wants_open_space"{% if res.wants_open_space %} checked{% endif %} />
 <label><em><small>: Large Open Room</small></em></label>
+<br />
+<!--
+<b>Bus Information</b>
+<br />
+...
+<br />
+<input type="checkbox" value="1" name="can_help"{% if participation.can_help %} checked{% endif %} />
+<label><em><small>: I'm willing to stay and help out when I'm not teaching!</small></em></label>
 <br />
 //-->
 <br />
