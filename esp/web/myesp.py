@@ -321,7 +321,14 @@ def myesp_battlescreen_teacher(request, module):
 		
 		for i in range(0, min(5, len(program_class_list))):
 			c = program_class_list[i]
-			program_classes.append([str(c), '/teach/' + c.url() + '/index.html', 'Edit', 'edit_class_' + str(c.id), '/myesp/teacher/'])
+			url = '/learn/' + c.url() + '/'
+			if c.anchor.quasistaticdata_set.filter(name='learn:index').count() > 0:
+				visit_or_edit = 'Visit web page'
+				url = url + 'index.html'
+			else:
+				visit_or_edit = 'Create web page'
+				url = url + 'index.edit.html'
+			program_classes.append([str(c), url, 'Edit', 'edit_class_' + str(c.id), '/myesp/teacher/', visit_or_edit])
 		if (len(program_class_list) > 5):
 			program_classes.append(['<b>' + str(len(program_class_list)) + ' total</b>... <a href="/teach/' + p.url() + '/selectclass/">see all</a>', '', ''])
 			
@@ -339,7 +346,7 @@ def myesp_battlescreen_teacher(request, module):
 	return render_to_response('battlescreens/general', {'request': request,
 							   'blocks': blocks,
 							   'page_title': 'MyESP: Teacher Home Page',
-							   'navbar_list': makeNavBar(request.user, GetNode('Q/Program/')),
+							   'navbar_list': makeNavBar(request.user, GetNode('Q/Program')),
 							   'welcome_msg': welcome_msg, 
 							   'logged_in': request.user.is_authenticated() })
 
