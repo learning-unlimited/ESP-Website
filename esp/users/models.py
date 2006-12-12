@@ -168,8 +168,17 @@ class UserBit(models.Model):
 					continue
      			res.append( entry )
 	
+	# Reprocess list to eliminate duplicates
+	ids = []
+	result = []
+	for entry in res:
+		id = entry._get_pk_val()
+		if not id in ids:
+			result.append(entry)
+			ids.append(id)
+
 	# Operation Complete!
-	return res
+	return result
 
     class Admin:
         pass
