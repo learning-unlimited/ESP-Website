@@ -285,7 +285,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	# Checking to make sure a class of the same title by another teacher does not exist
 	tmpclasses = Class.objects.filter(anchor__friendly_name=str(request.POST['title']),parent_program=prog)
 
-	if tmpclasses.count() > 0 and not UserBit.UserHasPerms(request.user, tmpclasses[0].anchor, GetNode('V/Flags/Registration/Teacher'), datetime.now()):
+	if aid is None and tmpclasses.count() > 0 and not UserBit.UserHasPerms(request.user, tmpclasses[0].anchor, GetNode('V/Flags/Registration/Teacher'), datetime.now()):
 		return render_to_response('errors/program/classtitleconflict',{})
 
 	if aid is None:
