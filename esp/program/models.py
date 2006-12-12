@@ -112,6 +112,19 @@ class Class(models.Model):
 	class Admin:
 		pass
 	
+class ResourceRequest(models.Model):
+	""" An indication of resources requested for a particular class """
+	requestor = models.OneToOneField(Class)
+	wants_projector = models.BooleanField()
+	wants_computer_lab = models.BooleanField()
+	wants_open_space = models.BooleanField()
+
+	def __str__(self):
+		return 'Resource request for ' + self.requestor
+
+	class Admin:
+		pass
+
 class TeacherBio(models.Model):
 	""" A biography of an ESP teacher """
 	user = models.ForeignKey(User)
