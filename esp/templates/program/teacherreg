@@ -38,6 +38,8 @@
 			>{{thing}}</option>
 		{% endfor %}
 	{% else %}
+                <option value="" selected></option>
+		<option value="">--------------</option>
 		{% for thing in cat %}
 			<option value='{{thing.id}}'>{{thing}}</option>
 		{% endfor %}
@@ -48,13 +50,74 @@
 <br /><br />
 <b>Course Information:</b><br /><br />
 <small><i>Minimum Grade Level: </i></small>
-<input type='text' class='text' name='grade_min' value='{{course.grade_min }}' size='30'> (Min: {{ program.grade_min }})<br />
+<select name="grade_min">
+{% if course.grade_min %}
+  <option value="{{course.grade_min }}">{{ course.grade_min }}</option>
+{% else %}
+  <option value="8">8</option>
+{% endif %}
+  <option value="">--</option>
+  <option value="8">8</option>
+  <option value="9">9</option>
+  <option value="10">10</option>
+  <option value="11">11</option>
+  <option value="12">12</option>
+</select>
+<br />
 <small><i>Maximum Grade Level: </i></small>
-<input type='text' class='text' name='grade_max' value='{{course.grade_max }}' size='30'> (Max: {{ program.grade_max }})<br />
+<select name="grade_max">
+{% if course.grade_max %}
+  <option value="{{course.grade_max }}">{{ course.grade_max }}</option>
+{% else %}
+  <option value="12">12</option>
+{% endif %}
+  <option value="12">--</option>
+  <option value="8">8</option>  
+  <option value="9">9</option>
+  <option value="10">10</option>
+  <option value="11">11</option>
+  <option value="12">12</option>
+</select>
+<br />
 <small><i>Minimum Course Size: </i></small>
-<input type='text' class='text' name='class_size_min' value='{{course.class_size_min }}' size='30'> (Min: {{ program.class_size_min }})<br />
-<small><i>Maximum Course Size: </i></small>
-<input type='text' class='text' name='class_size_max' value='{{course.class_size_max }}' size='30'> (Min: {{ program.class_size_max }})<br />
+<select name="class_size_min">
+{% if course.class_size_min %}
+  <option value="{{ class_size_min }}">{{ class_size_min }}</option>
+{% else %}
+  <option value="0">0</option>
+{% endif %}
+  <option value="">--</option>
+  <option value="10">10</option>
+  <option value="20">20</option>
+  <option value="30">30</option>
+  <option value="40">40</option>
+  <option value="50">50</option>
+  <option value="60">60</option>
+  <option value="60">60</option>
+  <option value="60">60</option>
+  <option value="999">Unlimited</option>
+</select>
+
+<br />
+
+<small><i>Maximum Course Size: </i></small
+<select name="class_size_max">
+{% if course.class_size_max %}
+  <option value="{{ class_size_max }}">{{ class_size_max }}</option>
+{% else %}
+  <option value="20">20</option>
+{% endif %}
+  <option value="">--</option>
+  <option value="10">10</option>
+  <option value="20">20</option>
+  <option value="30">30</option>
+  <option value="40">40</option>
+  <option value="50">50</option>
+  <option value="60">60</option>
+  <option value="60">60</option>
+  <option value="60">60</option>
+  <option value="999">Unlimited</option>
+</select>
 <br /><br />
 
 <b>Acceptable Course times (select all that apply): </b><br />
@@ -69,7 +132,13 @@
 </p>
 
 <br><br /><br />
-<center><input class="button" type='submit' value='Teach for {{one}}!'></center><br>
+<center><input class="button" type="submit"
+{% if course.id %}
+ value="Save course!">
+{% else %}
+ value="Teach for {{one}}!">
+{% endif %}
+</center><br>
 </form></div>
 
 {% endblock %}

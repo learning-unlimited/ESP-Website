@@ -29,7 +29,7 @@ SITE_ID = 1
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = '/esp/esp/media/uploaded/'
+MEDIA_ROOT = '/var/www/esp-devel/trunk/esp/media/uploaded/'
 
 # URL that handles the media served from MEDIA_ROOT.
 # Example: "http://media.lawrence.com"
@@ -62,7 +62,7 @@ ROOT_URLCONF = 'esp.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
-    '/esp/esp/templates'
+    '/var/www/esp-devel/trunk/esp/templates'
 )
 
 INSTALLED_APPS = (
