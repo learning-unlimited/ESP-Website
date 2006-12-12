@@ -11,7 +11,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
-import datetime
+from datetime import datetime
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
@@ -188,14 +188,14 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 	q = prog.anchor
 
 	if request.POST.has_key('cname'):
-		cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
-
-		for pclass in cobj:
-			eee = [x.title() for x in cobj]
-			ffff = [(x.title() == request.POST['cname']) for x in cobj]
-			if pclass.title() == request.POST['cname']:
-				cobj = pclass
-				break
+		c_id = int(request.POST['cname'])
+		try:
+			cobj = Class.objects.get(id=c_id)
+		except Class.DoesNotExist:
+			raise Http404
+		
+		if not UserBit.UserHasPerms(request.user, cobj.anchor, v, datetime.now()):
+			raise Http404
 	else:
 		if (class_obj == None):
 			cobj = Class()

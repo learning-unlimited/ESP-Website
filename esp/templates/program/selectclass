@@ -18,10 +18,10 @@
 	<form action='/teach/{{one}}/{{two}}/teacherreg/' method="post">
 
  <b>Please choose a course to edit:</b><br />
+<input type="radio" name="cname" value="CatherineIsLazy"><b>Create a new class</b><br/>
 {% for class in classes %}
-	<input type="radio" name="cname" value="{{class}}"> {{class}}<br/>
+	<input type="radio" name="cname" value="{{class.id}}"> {{class}}<br/>
 {% endfor %}
-<input type="radio" name="cname" value="CatherineIsLazy"> Create a new class<br/>
 <center><input type='submit' value='Continue'></center><br>
 </form></div>
 
