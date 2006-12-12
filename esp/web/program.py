@@ -159,7 +159,7 @@ def program_finishstudentreg(request, tl, one, two, module, extra, prog):
 def program_teacherreg(request, tl, one, two, module, extra, prog):
 	""" Display the registration page to allow a teacher to register for a program """
 	# Axiak added user bit requirements
-	if not UserBit.UserHasPerms(request.user, GetNode('Q/'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
+	if not UserBit.UserHasPerms(request.user, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
 		return render_to_response('errors/program/notateacher', {})
 
 
@@ -184,7 +184,8 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 	""" Actually load a specific class or a new class for editing"""
 
 	# Axiak added user bit requirements
-	if not UserBit.UserHasPerms(request.user, GetNode('Q/'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
+	if not UserBit.UserHasPerms(request.user, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
+		assert False
 		return render_to_response('errors/program/notateacher', {})
 
 	context = {'logged_in': request.user.is_authenticated() }
@@ -250,7 +251,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	""" Create a new class """
 	from esp.web.views import program
 
-	if not UserBit.UserHasPerms(request.user, GetNode('Q/'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
+	if not UserBit.UserHasPerms(request.user, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
 		return render_to_response('errors/program/notateacher', {})
 
 	for thing in ['title', 'class_info', 'class_size_min', 'class_size_max', 'grade_min', 'grade_max', 'Time']:
@@ -304,8 +305,6 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	cobj.anchor = prog.anchor.tree_create(['Classes', "".join(title.split(" "))])
 	cobj.anchor.friendly_name = title
 	cobj.anchor.save()
-
-
 
 	time_sets = []
 	for id in request.POST.getlist('Time'):
