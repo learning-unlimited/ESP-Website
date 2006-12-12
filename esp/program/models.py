@@ -120,7 +120,32 @@ class ResourceRequest(models.Model):
 	wants_open_space = models.BooleanField()
 
 	def __str__(self):
-		return 'Resource request for ' + self.requestor
+		return 'Resource request for ' + str(self.requestor)
+
+	class Admin:
+		pass
+
+class TeacherParticipationProfile(models.Model):
+	""" Profile properties associated with a teacher in a program """
+	teacher = models.ForeignKey(User)
+	program = models.ForeignKey(Program)
+	unique_together = (('teacher', 'program'),)
+	bus_schedule = models.ManyToManyField(BusSchedule)
+
+	can_help = models.BooleanField()
+
+	def __str__(self):
+		return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
+
+	class Admin:
+		pass
+
+class BusSchedule(models.Model):
+	""" A scheduled bus journey associated with a program """
+	program = models.ForeignKey(Program)
+	src_dst = models.CharField(maxlength=128)
+	departs = models.DateTimeField()
+	arrives = models.DateTimeField()
 
 	class Admin:
 		pass
