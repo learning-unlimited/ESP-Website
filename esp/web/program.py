@@ -5,7 +5,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, Class, ClassCategories
+from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
@@ -214,6 +214,14 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 			cobj = class_obj
 
 	context['course'] = cobj
+# Again...RSN
+#	res = ResourceRequest.objects.filter(requestor = cobj)
+#	if res.count() == 0:
+#		res = ResourceRequest(requestor = cobj)
+#	else:
+#		res = res[0]
+#
+#	context['res'] = res
 
 	if cobj.id is None: selected_times = []
 	else: selected_times = cobj.viable_times.all()
@@ -245,6 +253,8 @@ def program_addclass(request, tl, one, two, module, extra, prog):
 
 	return program(request, tl, one, two, "studentreg")
 
+
+
 @login_required
 def program_makeaclass(request, tl, one, two, module, extra, prog):
 	""" Create a new class """
@@ -257,13 +267,13 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 		if not request.POST.has_key(thing) or request.POST[thing] == None or request.POST[thing] == 'None' or request.POST[thing].strip() == "":
 			return program(request, tl, one, two, "teacherreg", extra = "oops")
 
-	if request.POST.has_key('id') and str(request.POST['id']) != 'None':
+	if request.POST.has_key('id') and request.POST['id'] != 'None':
 		aid = int(request.POST['id'])
 	else:
 		aid = None
 
 	# Checking to make sure a class of the same title by another teacher does not exist
-	tmpclasses = Class.objects.filter(title=str(request.POST['title']),program__parent=prog)
+	tmpclasses = Class.objects.filter(anchor__friendly_name=str(request.POST['title']),parent_program=prog)
 
 	if tmpclasses.count() > 0 and not UserBit.UserHasPerms(request.user, tmpclasses[0].anchor, GetNode('V/Flags/Registration/Teacher'), datetime.now()):
 		return render_to_response('errors/program/classtitleconflict',{})
@@ -280,11 +290,9 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 			if not UserBit.UserHasPerms(request.user, cobj.anchor, GetNode('V/Administer/Edit'), datetime.now()): raise Http404
 	
 
-
-		
-
-
+	
 	title = request.POST['title']
+
 	try:
 		cobj.grade_max = int(request.POST["grade_max"])
 	except ValueError:
@@ -314,6 +322,17 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 		assert False, "Error: Invalid time_set : " + str(time_sets) + ' ' + str(request.POST['Time'])
 
 	#cobj.event_template = time_sets[0]
+
+# set resources:
+# Need to get this working RSN!
+#	res = ResourceRequest()
+#	res.requester = cobj
+#	res.wants_projector = (request.POST['wants_projector'] == '1')
+#	res.wants_computer_lab = (request.POST['wants_computer_lab'] == '1')
+#	res.wants_open_space = (request.POST['wants_open_space'] == '1')
+
+#	res.save()
+
 
 	# Can edit this class
 	v = GetNode( 'V/Administer/Edit')
@@ -345,7 +364,8 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	return render_to_response('program/registered', {'request': request,
 							 'logged_in': request.user.is_authenticated(),
 							 'navbar_list': makeNavBar(request.user, prog.anchor),
-							 'preload_images': preload_images})
+							 'preload_images': preload_images,
+							 'aid': aid})
 
 @login_required
 def program_updateprofile(request, tl, one, two, module, extra, prog):

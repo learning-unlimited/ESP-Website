@@ -3,16 +3,114 @@
 {% block title %}Teacher Registration{% endblock %}
 
 {% block subsection_name %}Teach for {{one}} <br>{% endblock %}
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+
+var fields = ['title','class_info','Category',
+	      'grade_max','grade_min',
+	      'class_size_max','class_size_min']
+
+var descs  = ['Course Title', 'Course Description',
+	      'Course Category','Maximum Grade Level',
+	      'Minimum Grade Level', 'Maximum Course Size',
+	      'Minimum Course Size'];
+
+function validate_form() {
+// some client-side validation
+	var errormsg = '';
+	var haderror = false;
+	var selectednone = true;
+
+	var tmp = '';
+	for (var i=0 ; i<fields.length; i++) {
+		tmp = '';
+		eval('tmp = document.clsform.'+fields[i]+'.value;');
+		if (tmp == '') {
+			errormsg += "  - The "+descs[i]+" must be specified.\n";
+			haderror = true;
+		}
+
+	}
+
+	// check time control...
+
+	var timecontrol = document.clsform.Time;
+	
+	for (var i=0; i<timecontrol.length; i++) {
+		if (document.clsform.Time[i].selected) {
+			selectednone = false;
+		}
+	}
+	
+	if (selectednone) {
+		haderror = true;
+		errormsg += "  - You did not specify when you will be available to teach.\n";
+	}
+
+/*	if (document.clsform.grade_max[document.clsform.grade_max.selectedIndex].value
+         > document.clsform.grade_min[document.clsform.grade_min.selectedIndex].value)  {
+		haderror = true;
+		errormsg += "  - The maximum grade must be greater than the minimum.\n";
+	}
+*/
+	if (document.clsform.class_size_min[document.clsform.class_size_min.selectedIndex].value
+	  >
+ document.clsform.class_size_max[document.clsform.class_size_max.selectedIndex].value) {
+		haderror = true;
+		errormsg += "  - The maximum class size must be greater than the minimum size.\n";
+	}
+	
+	if (haderror) {
+		alert("You did not tell us everything we needed from you. Details below\n\n"
+		     +errormsg+"\n\n");
+		return false;
+
+	}
+	return true;
+}
+
+
+//-->
+</script>
+{% endblock %}
 
 
 {% block content %}
 	<br /><br />
        <div id="divmaintext">	
 	<h2>Welcome, {{teacher.first_name}}</h2>
-	Thank you for teaching for {{one}}.  On this page, please fill out the important information relevant to your class.  You will need to fill out this form separately for each class you would like to teach, even if you're teaching the same subject more than once.  This information can be edited through your <a href="/myesp/teacher/">MyESP home page</a>.
+<p>	Thank you for teaching for {{one}}.  On this page, please fill out the important information relevant to your class.  You will need to fill out this form separately for each class you would like to teach, even if you're teaching the same subject more than once.  This information can be edited through your <a href="/myesp/teacher/">MyESP home page</a>.
 <br />
+<br />
+Splash On Wheels will operate a little differently from Splash! The main difference is that we are going to another school. This time it's Hudson High School in Hudson, MA, roughly 45 minutes away (<a 
+href="http://maps.google.com/maps?q=69+Brigham+Street,+Hudson,+MA+01749" title="View a Google Map!">map</a>). We will have four buses leaving from 77 Massachusetts Ave so you don't have to stay the entire day. 
+<br /><br />
+<h2>What?!? Away from MIT?</h2>
+<br />
+We know that the atmosphere of MIT is comforting and the thought of teaching away might be a bit daunting&mdash;but fear not! We've held Splash at Hudson before and here are few of the things that you will be provided if you need them:<br />
+<ul>
+  <li>Projectors with a computer with (very exclusive<sup>*</sup>) Internet access in your classroom<br />
+     <em><small>*Please note: Be prepared to have web sites blocked by the high school. Sorry for the inconvenience.</small></em></li>
 
-Splash On Wheels will operate a little differently from Splash! The main difference is that we are going to another school. This time it's Hudson High School in Hudson, MA, roughly 45 minutes away. We will have four buses leaving from 77 Massachusetts Ave so you don't have to stay the entire day.<br />
+  <li>Computer Labs</li>
+  <li>Larger rooms for activities</li>
+  <li>Shuttles to and from the high school</li>
+  <li>Lunch if you're around during the lunch block</li>
+ </ul>
+<br />
+<h2>What's the Schedule?</h2>
+In case you were wondering when classes are being taught, they are here for reference. Please note you should be prepared to leave about an hour before your first class:<br />
+<pre>
+9:30am  - 11:30am     Block I
+11:30am - 1:30pm      Block II
+1:30pm  - 2:30pm      Lunch
+2:30pm  - 4:30pm      Block III
+</pre>
+
+</p>
+<br />
+<hr>
 
 
 	<br /><br />
@@ -21,14 +119,15 @@ Splash On Wheels will operate a little differently from Splash! The main differe
 <h2 style="color:red">Please make sure to fill in all the fields.  Thanks! </h2>
 {% endif %}
 
-	<form action='/teach/{{one}}/{{two}}/makecourse/' method="post">
+	<form action="/teach/{{one}}/{{two}}/makecourse/" name="clsform" method="post"
+         onsubmit="return validate_form();">
 
  <b>Course Title:</b><br />
- <input type='text' class='text' name='title' value='{{course.title}}' size='30'>
+ <input type='text' class='text' name='title' value='{{course.title}}' style="border: 1px solid black; " size='30'>
  <input type='hidden' name='id' value='{{course.id}}' />
 <br /><br /><br /> 
 <b>Course Description:</b><br />
-<textarea class="text" id="class_info"  name="class_info" rows="10" cols="40">{{course.class_info}}</textarea>
+<textarea style="border: 1px solid black; "c lass="text" id="class_info"  name="class_info" rows="10" cols="40">{{course.class_info}}</textarea>
 <br /><br /><br />
 
 
@@ -87,7 +186,7 @@ Splash On Wheels will operate a little differently from Splash! The main differe
 <small><i>Minimum Course Size: </i></small>
 <select name="class_size_min">
 {% if course.class_size_min %}
-  <option value="{{ class_size_min }}">{{ class_size_min }}</option>
+  <option value="{{ course.class_size_min }}">{{ course.class_size_min }}</option>
 {% else %}
   <option value="0">0</option>
 {% endif %}
@@ -98,8 +197,8 @@ Splash On Wheels will operate a little differently from Splash! The main differe
   <option value="40">40</option>
   <option value="50">50</option>
   <option value="60">60</option>
-  <option value="60">60</option>
-  <option value="60">60</option>
+  <option value="70">70</option>
+  <option value="80">80</option>
   <option value="999">Unlimited</option>
 </select>
 
@@ -108,7 +207,7 @@ Splash On Wheels will operate a little differently from Splash! The main differe
 <small><i>Maximum Course Size: </i></small
 <select name="class_size_max">
 {% if course.class_size_max %}
-  <option value="{{ class_size_max }}">{{ class_size_max }}</option>
+  <option value="{{ course.class_size_max }}">{{ course.class_size_max }}</option>
 {% else %}
   <option value="20">20</option>
 {% endif %}
@@ -131,12 +230,35 @@ Splash On Wheels will operate a little differently from Splash! The main differe
 <option value='{{thing.obj.id}}' {% if thing.selected %}selected{% endif %}>{{thing.obj.friendly_name}}</option>
 {% endfor %}
 </select>  
-
+<br />
+<br />
+<!--
+Get this on-line soon! 
+<b>Resources Required by Your Class:</b>
+<br />
+<input type="checkbox" value="1" name="wants_projector"{% if res.wants_projector %} checked{% endif %} />
+<label><em><small>: Projector</small></em></label>
+<br />
+<input type="checkbox" value="1" name="wants_computer_lab"{% if res.wants_computer_lab %} checked{% endif %} />
+<label><em><small>: Computer Lab</small></em></label>
+<br />
+<input type="checkbox" value="1" name="wants_open_space"{% if res.wants_open_space %} checked{% endif %} />
+<label><em><small>: Large Open Room</small></em></label>
+<br />
+//-->
+<br />
 <p>Please let us know if there are any special needs for your class in the box below.
-<br><small><i>Message for Directors: </i></small><input type='text' class='text' name='message_for_directors' value='{{course.message_for_directors }}' size='100'><br />
+<br><small><i>Message for Directors: </i></small>
+<br />
+<textarea rows="6" cols="50" name="message_for_directors" style="border: 1px solid black; ">
+{{ course.message_for_directors }}
+</textarea>
+<br />
 </p>
 
-<br><br /><br />
+
+
+<br /><br /><br />
 <center><input class="button" type="submit"
 {% if course.id %}
  value="Save course!">
