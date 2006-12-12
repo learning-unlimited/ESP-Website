@@ -185,7 +185,6 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 
 	# Axiak added user bit requirements
 	if not UserBit.UserHasPerms(request.user, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
-		assert False
 		return render_to_response('errors/program/notateacher', {})
 
 	context = {'logged_in': request.user.is_authenticated() }
