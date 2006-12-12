@@ -140,6 +140,7 @@
 
 <div class="divsecondarynavlink">
 <p>
+{% if navbar_list.qsdTree %}
 <form name="shiftform" method="post" action="/navbar/edit.scm">
 Create a new entry:
 <input type="hidden" name="new_url" value="{{ request.path }}" />
@@ -155,6 +156,7 @@ Create a new entry:
 </select>
 <input name="submit" value="Create!" type="Submit" />
 </form>
+{% endif %}
 </p><br><br>
 {% endif %}
 <div class="divsecondarynavlink"><!-- final dashed line -->   
