@@ -204,7 +204,7 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 			cobj = class_obj
 
 	context['course'] = cobj
-	
+
 	if cobj.id is None: selected_times = []
 	else: selected_times = cobj.viable_times.all()
 	context['ts'] = [ {'obj': x } for x in list(prog.anchor.tree_create(['Templates','TimeSlots']).children()) ]
@@ -259,7 +259,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 			cobj = theclass[0]
 
 	# Enforce permissions
-	if not UserBit.UserHasPerms(request.user, cobj.anchor, GetNode('V/Administer/Edit')): raise Http404
+	if not UserBit.UserHasPerms(request.user, cobj.anchor, GetNode('V/Administer/Edit'), datetime.now()): raise Http404
 	
 	title = request.POST['title']
 	try:
