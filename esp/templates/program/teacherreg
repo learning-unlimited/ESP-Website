@@ -20,6 +20,7 @@
 
  <b>Course Title:</b><br />
  <input type='text' class='text' name='title' value='{{course.title}}' size='30'>
+ <input type='hidden' name='id' value='{{course.id}}' />
 <br /><br /><br /> 
 <b>Course Description:</b><br />
 <textarea class="text" id="class_info"  name="class_info" rows="10" cols="40">{{course.class_info}}</textarea>

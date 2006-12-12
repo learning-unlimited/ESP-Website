@@ -245,7 +245,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 			return program(request, tl, one, two, "teacherreg", extra = "oops")
 
 	if request.POST.has_key('id'):
-		aid = request.POST['id']
+		aid = int(request.POST['id'])
 	else:
 		aid = None
 
