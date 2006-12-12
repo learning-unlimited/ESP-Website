@@ -80,6 +80,12 @@ def myesp_finish(request, module):
 	# We can't steal an already-existing account, so make a new one
 	django_user = User()
 	django_user.username = request.POST['username']
+	if len(django_user.username) < 4 or len(django_user.username) > 12:
+		return render_to_response('users/newuser', {'request': request,
+							    'Problem': True,
+							    'logged_in': request.user.is_authenticated(),
+							    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
+							    'preload_images': preload_images})
 	django_user.last_name = request.POST['last_name']
 	django_user.first_name = request.POST['first_name']
 	django_user.set_password(request.POST['password'])
