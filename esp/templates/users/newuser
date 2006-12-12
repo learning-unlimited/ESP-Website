@@ -75,7 +75,15 @@
 
  </td>
 </tr>
-
+<tr>
+ <td><b>Initial Role:</b></td>
+ <td>
+<input type="radio" name="role" value="Student" /> Student <br />
+<input type="radio" name="role" value="Guardian" /> Parent <br />
+<input type="radio" name="role" value="Educator" /> K-12 Educator <br />
+<input type="radio" name="role" value="Teacher" /> ESP Teacher <br />
+ </td>
+</tr>
 <tr>
  <td><b>Email:</b></td>
  <td><input type='text' name='email' size='30' value=''></td>

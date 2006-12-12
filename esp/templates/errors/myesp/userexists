@@ -1,0 +1,15 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Username already exists!{% endblock %}
+
+{% block subsection_name %}User Exists.{% endblock %}
+
+
+{% block content %}
+
+<h1>User Exists!</h1>
+
+
+<h2>Sorry, but the username you have chosen already exists. Please go back and pick another one.</h2>
+
+{% endblock %}

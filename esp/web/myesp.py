@@ -48,53 +48,62 @@ def myesp_finish(request, module):
 								    'preload_images': preload_images})
 
 	# Does this user already exist?
-	if User.objects.filter(username=request.POST['username']).count() == 0:
+	if User.objects.filter(username=request.POST['username']).count() > 0:
+		assert False, request.POST['username']
+		return render_to_response('errors/myesp/userexists')
 
-		# Did the user enter the same password twice?
-		if request.POST['password'] != request.POST['confirm']:
-			# They did not; complain loudly
-			return render_to_response('users/newuser', {'request': request,
-								    'Problem': True,
-								   'logged_in': request.user.is_authenticated(),
-								    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-								    'preload_images': preload_images})
-
+	# Did the user enter the same password twice?
+	if request.POST['password'] != request.POST['confirm']:
+		# They did not; complain loudly
+		return render_to_response('users/newuser', {'request': request,
+							    'Problem': True,
+							   'logged_in': request.user.is_authenticated(),
+							    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
+							    'preload_images': preload_images})
 		# Does there already exist an account with this e-mail address, used for subscribing to mailing lists?
-		if User.objects.filter(email=request.POST['email'], password="emailuser").count() > 0:
-			# If so, re-use it
-			email_user = User.objects.filter(email=request.POST['email'])[0]
-			email_user.username = request.POST['username']
-			email_user.last_name = request.POST['last_name']
-			email_user.first_name = request.POST['first_name']
-			email_user.set_password(request.POST['password'])
-			email_user.save()
-			email_user = authenticate(username = request.POST['username'], password = request.POST['password'])
-			login(request, email_user)
-			return render_to_response('users/regdone', {'request': request,
-								    'logged_in': request.user.is_authenticated(),
-								    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-								    'preload_images': preload_images})
-
-
-		# We can't steal an already-existing account, so make a new one
-		django_user = User()
-		django_user.username = request.POST['username']
-		django_user.last_name = request.POST['last_name']
-		django_user.first_name = request.POST['first_name']
-		django_user.set_password(request.POST['password'])
-		django_user.email = request.POST['email']
-		django_user.is_staff = False
-		django_user.is_superuser = False
-		django_user.save()
-		django_user = authenticate(username=request.POST['username'], password=request.POST['password'])
-		login(request, django_user)
+	if User.objects.filter(email=request.POST['email'], password="emailuser").count() > 0:
+		# If so, re-use it
+		email_user = User.objects.filter(email=request.POST['email'])[0]
+		email_user.username = request.POST['username']
+		email_user.last_name = request.POST['last_name']
+		email_user.first_name = request.POST['first_name']
+		email_user.set_password(request.POST['password'])
+		email_user.save()
+		email_user = authenticate(username = request.POST['username'], password = request.POST['password'])
+		login(request, email_user)
 		return render_to_response('users/regdone', {'request': request,
 							    'logged_in': request.user.is_authenticated(),
 							    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
 							    'preload_images': preload_images})
-	
-	assert False, "This username already exists!"
 
+
+	# We can't steal an already-existing account, so make a new one
+	django_user = User()
+	django_user.username = request.POST['username']
+	django_user.last_name = request.POST['last_name']
+	django_user.first_name = request.POST['first_name']
+	django_user.set_password(request.POST['password'])
+	django_user.email = request.POST['email']
+	django_user.is_staff = False
+	django_user.is_superuser = False
+	django_user.save()
+	django_user = authenticate(username=request.POST['username'], password=request.POST['password'])
+	login(request, django_user)
+	if request.POST.has_key('role'):
+		# is a teacher of this class
+		v = GetNode( 'V/Flags/UserRole/'+request.POST['role'])
+		ub = UserBit()
+		ub.user = request.user
+		ub.qsc = GetNode('Q')
+		ub.verb = v
+		ub.save()
+			
+	return render_to_response('users/regdone', {'request': request,
+						    'logged_in': request.user.is_authenticated(),
+						    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
+						    'preload_images': preload_images})
+
+       
 
 def myesp_emaillist(request, module):
 	""" Present the subscribe-to-emaillist page """
