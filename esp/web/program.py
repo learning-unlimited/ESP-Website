@@ -258,6 +258,9 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 		else:
 			cobj = theclass[0]
 
+	# Enforce permissions
+	if not UserBit.UserHasPerms(request.user, cobj.anchor, GetNode('V/Administer/Edit')): raise Http404
+	
 	title = request.POST['title']
 	try:
 		cobj.grade_max = int(request.POST["grade_max"])
