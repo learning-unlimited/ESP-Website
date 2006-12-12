@@ -249,7 +249,7 @@ In case you were wondering when classes are being taught, they are here for refe
 <br />
 ...
 <br />
-<input type="checkbox" value="1" name="can_help"{% if participation.can_help %} checked{% endif %} />
+
 <label><em><small>: I'm willing to stay and help out when I'm not teaching!</small></em></label>
 <br />
 //-->

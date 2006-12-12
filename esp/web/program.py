@@ -214,7 +214,7 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 			cobj = class_obj
 
 	context['course'] = cobj
-# Again...RSN
+
 	res = ResourceRequest.objects.filter(requestor = cobj)
 	if res.count() == 0:
 		res = ResourceRequest(requestor = cobj)
