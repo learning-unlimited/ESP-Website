@@ -20,7 +20,7 @@ function validate_form() {
 // some client-side validation
 	var errormsg = '';
 	var haderror = false;
-	var selectednone = true;
+	var selectednone = false;
 
 	var tmp = '';
 	for (var i=0 ; i<fields.length; i++) {
@@ -224,12 +224,11 @@ In case you were wondering when classes are being taught, they are here for refe
 </select>
 <br /><br />
 
+
 <b>Acceptable Course times (select all that apply): </b><br />
- <select multiple class="text" name="Time">
 {% for thing in ts %}
-<option value='{{thing.obj.id}}' {% if thing.selected %}selected{% endif %}>{{thing.obj.friendly_name}}</option>
+<input type="checkbox" value="{{thing.obj.id}}" name="Time" {% if thing.selected %}checked{% endif %} /> <label><em><small>: {{thing.obj.friendly_name}}</small></em></label><br/>
 {% endfor %}
-</select>  
 <br />
 <br />
 
