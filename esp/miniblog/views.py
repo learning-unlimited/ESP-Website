@@ -2,7 +2,7 @@ from django.shortcuts import render_to_response
 from esp.miniblog.models import Entry
 from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import GetNode
-from esp.users.models import UserBit
+from esp.users.models import UserBit, ESPUser
 from esp.dbmail.models import MessageRequest, EmailRequest
 from esp.dbmail.controllers import EmailController
 from esp.web.navBar import makeNavBar

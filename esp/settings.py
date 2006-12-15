@@ -93,3 +93,5 @@ INSTALLED_APPS = (
 
 EMAIL_HOST = 'outgoing.mit.edu'
 APPEND_SLASH=False
+
+AUTH_PROFILE_MODULE = 'esp.users.ESPUser'

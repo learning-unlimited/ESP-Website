@@ -18,14 +18,7 @@ color: #000000;
 padding-top: 3px;
 padding-bottom: 2px;
 }
-#battlescreen td {
-font-family: Arial;
-font-size: 12px;
-}
-#battlescreen table {
-border-color: #333399;
-border-style: solid;
-}
+
 #battlescreen .class_stuff {
 text-indent: 20px;
 font-family: Arial;
@@ -65,4 +58,84 @@ color: #006600;
    border-width: 1px;
    border-color: 000000;
    background-color: ffffff;
+}
+
+/* beginning of axiak work */
+
+#battlescreen {
+   font-size: 95%;
+}
+
+#battlescreen {
+   font-family: Times New Roman;
+}
+
+#battlescreen .classname {
+   font-family: Arial;
+}
+
+#battlescreen table {
+   background-color: #FFE;
+   width: 400px;
+   border: 2px solid #99F;
+   border-width: 0 2px 6px 2px;
+}
+
+#battlescreen table.welcomebox {
+   width: 400px;
+   border: 0;
+}
+
+#battlescreen th {
+   padding: 5px;
+   text-align: center;
+   font-size: 1.1em;
+   background-color: #339;
+   color: #FFC;
+}
+
+#battlescreen .welcomebox th {
+   background-color: #CCF;
+   color: black;
+}
+
+#battlescreen .progTitle {
+   font-weight: bolder;
+   font-size: 110%;
+}
+
+#battlescreen a:hover {
+   background: #FFF;
+   text-decoration: none;
+}
+
+#battlescreen a {
+   background: transparent;
+   text-decoration: underline;
+}
+
+#battlescreen a.addclass {
+   padding: 0 0 5px 0;
+   margin: 5px;
+}
+#battlescreen span.addclass {
+   padding: 0;
+   margin: 0 0 20px 0;
+   height: 20px
+   
+}
+#battlescreen .clsright {
+   text-align: right;
+   font-size: 80%;
+}
+#battlescreen .clsleft {
+   margin-left: 19px;
+}
+
+#battlescreen .borderTop {
+   border: 1px groove #999; border-width: 4px 0 0 0;
+}
+
+#battlescreen .announcementBullets {
+   position: relative; left: 10px;
 }

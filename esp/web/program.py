@@ -2,7 +2,7 @@ from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
 from esp.cal.models import Event, Series
 from esp.qsd.models import QuasiStaticData
-from esp.users.models import ContactInfo, UserBit
+from esp.users.models import ContactInfo, UserBit, ESPUser
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
 from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest, TeacherParticipationProfile
@@ -28,33 +28,25 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 		for i in [ 'class_id', 'action' ]:
 			if not request.POST.has_key(i):
 				assert False, i
-				#raise Http404()
+                                #raise Http404()
+
+		clsObj = Class.objects.filter(pk=request.POST['class_id'])[0]
 
 		if request.POST['action'] == 'Edit':
 			return HttpResponseRedirect('/classes/edit/' + request.POST['class_id'] + '/') # We need to redirect to the class edit page
 		
 		if request.POST['action'] == 'Accept':
-			u = UserBit()
-			u.user = None
-			u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-			u.verb = dt_approved
-			u.save()
+			clsObj.accept()
 			
-		#	We should be able to reject classes too    -Michael P
-		
-		#	if request.POST['action'] == 'Reject':
-		#		u = UserBit()
-		#		u.user = None
-		#		u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-		#		u.verb = GetNode('V/Rejected')
-		#		u.save()
+		if request.POST['action'] == 'Reject':
+			clsObj.reject()
 
+			
+	curUser = ESPUser(request.user)
+	can_edit_classes = curUser.canAdminister(prog)
 
-	can_edit_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
-	can_approve_classes = UserBit.UserHasPerms(request.user, prog.anchor, GetNode('V/Administer'))
-	
-	clas = [ {'class': x, 'accepted': UserBit.UserHasPerms(request.user, x.anchor, dt_approved) }
-		 for x in prog.class_set.all().order_by('category')
+	clas = [ {'class': cls, 'accepted': cls.isAccepted() }
+		 for cls in prog.class_set.all().order_by('category')
 		 if (can_edit_classes or can_approve_classes
 		 or UserBit.UserHasPerms(request.user, x.anchor, dt_approved) )
 		 and (timeslot == None or x.event_template == timeslot) ]
@@ -159,8 +151,9 @@ def program_finishstudentreg(request, tl, one, two, module, extra, prog):
 def program_teacherreg(request, tl, one, two, module, extra, prog):
 	""" Display the registration page to allow a teacher to register for a program """
 	# Axiak added user bit requirements
+	curUser = ESPUser(request.user)
 	if not UserBit.UserHasPerms(request.user, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
-		return render_to_response('errors/program/notateacher', {})
+		return render_to_response('errors/program/notateacher.html', {})
 
 
 	context = {'logged_in': request.user.is_authenticated() }
@@ -171,20 +164,16 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 	context['teacher'] = request.user
 	context['request'] = request
 	context['timeslots'] = prog.anchor.tree_create(['Templates', 'TimeSlots']).series_set.all()
-	v = GetNode('V/Administer/Edit')
-	q = prog.anchor
-	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
+
 	
-	if cobj == [] or cobj is None:
+	clsList = curUser.getEditable(Class)
+	
+	if len(clsList) == 0:
 		return program_teacherreg2(request, tl, one, two, module, extra, prog)
-	else:
-		classgroups = {}
-		for classobj in cobj:
-			classgroups[classobj.id] = {'teacher': UserBits.bits_get_users(classobj.anchor, GetNode('V/Flags/Registration/Teacher')),
-						 'cls': classobj }
-		
-		context['classes'] = classgroups
-		return render_to_response('program/selectclass', context)
+
+	context['classes'] = clsList
+	
+	return render_to_response('program/selectclass', context)
 		
 def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = None):
 	""" Actually load a specific class or a new class for editing"""

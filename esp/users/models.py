@@ -6,14 +6,30 @@ from esp.workflow.models import Controller
 from datetime import datetime
 from django.db.models import Q
 
-# Create your models here.
+class ESPUser(User):
+    """ Create a user of the ESP Website
+    This user extends the auth.User of django"""
 
-#class ESPUser(models.Model):
-#    """ Create a user of the ESP Website """
-#    user = models.OneToOneField(User) # Django user that we're connected to
-#
-#    class Admin:
-#        pass
+    # this will allow a casting from User to ESPUser:
+    #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
+    def __init__(self, userObj):
+        self.__dict__ = userObj.__dict__
+
+    def getVisible(self, objType):
+        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
+
+    def getEditable(self, objType):
+        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
+
+    def getTaughtClasses(self):
+        from esp.program.models import Class
+        return UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Teacher'))
+
+    def canAdminister(self, nodeObj):
+        return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
+
+    def canEdit(self, nodeObj):
+        return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer/Edit'))
 
 class UserBit(models.Model):
     """ Grant a user a bit on a Q """
@@ -32,7 +48,10 @@ class UserBit(models.Model):
         curr_verb = '?'
 
         try:
-            curr_user = str(self.user)
+            if self.user is None:
+                curr_user = 'Everyone'
+            else:
+                curr_user = str(self.user)
         except Exception:
             pass
 

@@ -27,6 +27,16 @@ class Program(models.Model):
     def parent(self):
 	    return anchor.parent
 
+    def getUrlBase(self):
+        """ gets the base url of this class """
+        tmpnode = self.anchor
+        urllist = []
+        while tmpnode.name != 'Programs':
+            urllist.insert(0,tmpnode.name)
+            tmpnode = tmpnode.parent
+        return "/".join(urllist)
+                      
+
     class Admin:
         pass
     
@@ -109,6 +119,43 @@ class Class(models.Model):
 		prereg.verb = GetNode( 'V/Flags/Registration/Preliminary' )
 		prereg.save()
 
+        def pageExists(self):
+            from esp.qsd.models import QuasiStaticData
+            return self.anchor.quasistaticdata_set.filter(name='learn:index').count() > 0
+
+        def isAccepted(self):
+            return UserBit.UserHasPerms(None, self.anchor, GetNode('V/Flags/Class/Approved'))
+
+        def accept():
+            if self.isAccepted():
+                return False # already accepted
+            
+            u = UserBit()
+            u.user = None
+            u.qsc = self.anchor
+            u.verb = GetNode('V/Flags/Class/Approved')
+            u.save()
+            return True
+
+        def reject():
+            userbitlst = UserBit.objects.filter(user = None,
+                                                qsc  = clsObj.anchor,
+                                                verb = dt_approved)
+            if len(userbitlst) > 0:
+                userbitlst.delete()
+                return True
+
+            return False
+            
+        def getUrlBase(self):
+            """ gets the base url of this class """
+            tmpnode = self.anchor
+            urllist = []
+            while tmpnode.name != 'Programs':
+                urllist.insert(0,tmpnode.name)
+                tmpnode = tmpnode.parent
+            return "/".join(urllist)
+                               
 	class Admin:
 		pass
 	

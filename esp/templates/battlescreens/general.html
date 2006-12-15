@@ -1,0 +1,137 @@
+{% extends "outlines/series-3.html" %}
+
+{% block stylesheets %}
+{{block.super}}
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+{% endblock %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<div id="battlescreen">
+
+<table class="welcomebox" cellpadding="0" cellspacing="0" align="center">
+
+<thead>
+  <tr class="welcomebox">
+    <th align="center" class="welcomebox">
+        Welcome, {{ request.user.first_name }}!
+    </td>
+  </tr>
+</thead>
+<tbody>
+  <tr class="welcomebox">
+    <td bgcolor="#FFFFFF" class="welcomebox">
+This is your ESP <em>battle screen</em> where you can sign up to teach, modify your class information, get in touch with your students, and review your history of interactions with ESP.
+    </td>
+  </tr>
+</tbody>
+
+</table>
+
+<br />
+<br />
+<br />
+
+<table cellpadding="4px" cellspacing="0" align="center">
+<thead>
+  <tr>
+    <th>{{ announcements.title }}</th>
+  </tr>
+</thead>
+
+<tbody>
+{% for announcementSection in announcements.sections %}
+<tr style="borderTop">
+  <td>
+    <strong>{{ announcementSection.header }}</strong>
+    <div class="announcementBullets">
+      {% for bullet in announcementSection.items %}
+      {{ bullet.0 }}
+      <br />
+      {% endfor %}
+    </div>
+  </td>
+</tr>    
+{% endfor %}
+</tbody>
+</table>
+
+<br />
+<br />
+<br />
+
+<table class="classList" cellpadding="0" cellspacing="0" align="center">
+<thead>
+  <tr>
+    <th colspan="3">
+       Manage Your Classes
+    </th>
+  </tr>
+  <tr>
+    <td colspan="3">
+       You have the ability to edit the following classes:
+    </td>
+  </tr>
+</thead>
+
+<tbody>
+{% for progDict in progList %}
+  <tr>
+    <td class="borderTop" colspan="3">
+      <span style="position:relative;left:10px;" class="progTitle">
+             {{progDict.prog}}
+      </span>
+    </td>
+  </tr>
+  {% for cls in progDict.clslist %}
+  <tr>
+    <td class="clsleft classname">
+      {{ cls|truncatewords:6 }}
+    </td>
+    <td class="clsmiddle">
+       <form method="post" action="">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}">
+         <input class="button" type="submit" value="Edit">
+       </form>
+    </td>
+    <td class="clsright">
+      {% if cls.pageExists %}
+      <a href="/learn/{{cls.getUrlBase}}/index.html"
+         title="{{ cls }}...">Visit web page</a>
+      {% else %}
+      <a href="/learn/{{cls.getUrlBase}}/index.edit.html"
+         title="Create `{{ cls }}'...">Create web page</a>
+      {% endif %}
+     </td>
+   </tr>
+   {% endfor %}
+   <tr>
+     <td colspan="3" style="font-weight: bold;">
+     {% if progDict.shortened %}
+     {{ progDict.totalclsnum }} total.... 
+     <a href="/teach/{{progDict.prog.getUrlBase}}/selectclass"
+        title="Select from all your editable classes">
+	     see all
+     </a>
+     {% endif %}
+     <br />
+     <span style="position:relative; left: 4px;" class="addclass">
+     <a href="/teach/{{progDict.prog.getUrlBase}}/teacherreg"
+        title="Teach for ESP!" class="addclass">
+	    Add New Class for {{progDict.prog}}
+     </a>
+     </span> 
+     <br /><br />
+    </tr>
+{% endfor %}
+</table>
+
+
+<p style="height: .5in;">
+  <!-- v-space -->
+  &nbsp;
+</p>
+
+{% endblock %}

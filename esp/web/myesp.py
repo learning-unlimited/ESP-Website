@@ -4,7 +4,7 @@ from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
-from esp.users.models import ContactInfo, UserBit
+from esp.users.models import ContactInfo, UserBit, ESPUser
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
 from esp.miniblog.views import preview_miniblog, create_miniblog
@@ -41,6 +41,7 @@ def myesp_register(request, module):
 
 def myesp_finish(request, module):
 	""" Complete a user registration """
+
 	for thing in ['confirm', 'password', 'username', 'email', "last_name", "first_name"]:
 		if not request.POST.has_key(thing):
 			return render_to_response('users/newuser', {'request': request,
@@ -241,6 +242,7 @@ def myesp_home(request, module):
 @login_required
 def myesp_battlescreen_student(request, module):
 	curUser = request.user
+
 	sub = GetNode('V/Subscribe')
 	ann = Entry.find_posts_by_perms(curUser, sub)
 	ann = [x.html() for x in ann]
@@ -289,85 +291,73 @@ def myesp_battlescreen_student(request, module):
 
 @login_required
 def myesp_battlescreen_teacher(request, module):
-	curUser = request.user
-	
+	"""This function is the main battlescreen for the teachers. It will go through and show the classes
+	that they can edit and display. """
+
+	# request.user just got 1-up'd
+	curUser = ESPUser(request.user)
+
 	if request.POST:
 		#	If you clicked a button to approve or reject, first clear the "proposed" bit
 		#	by setting the end date to now.
 		if request.POST.has_key('command'):
-			command_str = request.POST['command'].split('_')
-			if command_str[0] == 'edit':
-				if command_str[1] == 'class':
-					class_id = int(command_str[2])
-					#	teach/HSSP/2006_Summer/teacherreg/
-					#	tl/one/two/module
-					class_obj = list(Class.objects.filter(id = class_id))
-					if len(class_obj) != 1:
-						assert False, 'Zero (or more than 1) classes match selected ID.'
-					program_key = class_obj[0].parent_program
-					two = program_key.anchor.name
-					one = program_key.anchor.parent.name
-					prog = program_key
-					return program_teacherreg2(request, 'teach', one, two, 'teacherreg', '', prog, class_obj[0])
-	
-	
-	block_ann = preview_miniblog(request, 'teach')
-	
-	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Flags/Public'))
-	
-	class_sections = []
-	class_headers = []
-	program_classes = []
-	
-	teacher_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Administer/Edit'))
-	
-	
-	for q in range(len(programs_current)):
-		duplicate_flag = False
-		program_class_list = []
-		p = programs_current[q]
-		
-		for j in range(1, q):
-			if (p.id == programs_current[j].id):
-				duplicate_flag = True
-		
-		if not duplicate_flag:
-			for a in teacher_classes:
-				if (a.parent_program == p):
-					program_class_list.append(a)
-				
-		program_classes = []
-		
-		for i in range(0, min(5, len(program_class_list))):
-			c = program_class_list[i]
-			url = '/learn/' + c.url() + '/'
-			if c.anchor.quasistaticdata_set.filter(name='learn:index').count() > 0:
-				visit_or_edit = 'Visit web page'
-				url = url + 'index.html'
-			else:
-				visit_or_edit = 'Create web page'
-				url = url + 'index.edit.html'
-			program_classes.append([str(c), url, 'Edit', 'edit_class_' + str(c.id), '/myesp/teacher/', visit_or_edit])
-		if (len(program_class_list) > 5):
-			program_classes.append(['<b>' + str(len(program_class_list)) + ' total</b>... <a href="/teach/' + p.url() + '/selectclass/">see all</a>', '', ''])
-			
-		class_sections.append({'header' : str(p), 'items' : program_classes,
-								'footer': '<b><a href="/teach/' + p.url() + '/teacherreg/">Add New Class for ' + str(p) + '</a></b>'})
+			try:
+				# not general yet...but started as 'edit','class','classid'...
+				command, objtype, objid = request.POST['command'].split('_')
+			except ValueError:
+				command = None
 
-	block_classes = {	'title' : 'Manage Your Classes',
-				'headers' : ['You have the ability to edit the following classes:'],
-				'sections' : class_sections }
-						
-	blocks = [block_ann, block_classes]
+			if command == 'edit' and objtype == 'class':
+				clsid = int(objid) # we have a class
+				clslist = list(Class.objects.filter(id = clsid))
+				if len(clslist) != 1:
+					assert False, 'Zero (or more than 1) classes match selected ID.'
+				clsobj = clslist[0]
+				prog = clsobj.parent_program
+				two  = prog.anchor.name
+				one  = prog.anchor.parent.name
+				return program_teacherreg2(request, 'teach', one, two, 'teacherreg', '', prog, clsobj)
 	
-	welcome_msg = 'This is your ESP "battle screen," where you can sign up to teach, modify your class information, get in touch with your students, and review your history of interactions with ESP.'
-						
-	return render_to_response('battlescreens/general', {'request': request,
-							   'blocks': blocks,
-							   'page_title': 'MyESP: Teacher Home Page',
-							   'navbar_list': makeNavBar(request.user, GetNode('Q/Program')),
-							   'welcome_msg': welcome_msg, 
-							   'logged_in': request.user.is_authenticated() })
+	# I have no idea what structure this is, but at its simplest level,
+	# it's a dictionary
+	announcementsDict = preview_miniblog(request, 'teach')
+
+	usrPrograms = curUser.getVisible(Program)
+
+	# get a list of editable classes
+	clslist = curUser.getEditable(Class)
+
+	fullclslist = {}
+	
+	# not the most direct way of doing it,
+	# but hey, it's O(n) in class #, which
+	# is nice.
+	for cls in clslist:
+		if fullclslist.has_key(cls.parent_program.id):
+			fullclslist[cls.parent_program.id].append(cls)
+		else:
+			fullclslist[cls.parent_program.id] = [cls]
+		
+	# I don't like adding this second structure...
+	# but django templates made me do it!
+	responseProgs = []
+	
+	for prog in usrPrograms:
+		if not fullclslist.has_key(prog.id):
+			curclslist = []
+		else:
+			curclslist = fullclslist[prog.id]
+		responseProgs.append({'prog':        prog,
+				      'clslist':     curclslist[:5],
+				      'shortened':   len(curclslist) > 5,
+				      'totalclsnum': len(curclslist)})
+
+	return render_to_response('battlescreens/general.html', {'request':       request,
+								 'page_title':    'MyESP: Teacher Home Page',
+								 'navbar_list':   makeNavBar(request.user, GetNode('Q/Program')),
+								 'logged_in':     request.user.is_authenticated(),
+								 'progList':      responseProgs,
+								 'announcements': announcementsDict})
 
 @login_required							   
 def myesp_battlescreen_admin(request, module):
