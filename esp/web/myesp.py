@@ -37,6 +37,8 @@ def myesp_register(request, module):
 						    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
 						    'preload_images': preload_images})
 
+
+
 def myesp_finish(request, module):
 	""" Complete a user registration """
 	for thing in ['confirm', 'password', 'username', 'email', "last_name", "first_name"]:
@@ -48,8 +50,8 @@ def myesp_finish(request, module):
 								    'preload_images': preload_images})
 
 	# Does this user already exist?
-	if User.objects.filter(username=request.POST['username']).count() > 0:
-		assert False, request.POST['username']
+	if User.objects.filter(username=request.POST['username'].lower()).count() > 0:
+		assert False, request.POST['username'].lower()
 		return render_to_response('errors/myesp/userexists')
 
 	# Did the user enter the same password twice?
@@ -64,12 +66,12 @@ def myesp_finish(request, module):
 	if User.objects.filter(email=request.POST['email'], password="emailuser").count() > 0:
 		# If so, re-use it
 		email_user = User.objects.filter(email=request.POST['email'])[0]
-		email_user.username = request.POST['username']
+		email_user.username = request.POST['username'].lower()
 		email_user.last_name = request.POST['last_name']
 		email_user.first_name = request.POST['first_name']
 		email_user.set_password(request.POST['password'])
 		email_user.save()
-		email_user = authenticate(username = request.POST['username'], password = request.POST['password'])
+		email_user = authenticate(username = request.POST['username'].lower(), password = request.POST['password'])
 		login(request, email_user)
 		return render_to_response('users/regdone', {'request': request,
 							    'logged_in': request.user.is_authenticated(),
@@ -79,7 +81,7 @@ def myesp_finish(request, module):
 
 	# We can't steal an already-existing account, so make a new one
 	django_user = User()
-	django_user.username = request.POST['username']
+	django_user.username = request.POST['username'].lower()
 	if len(django_user.username) < 4 or len(django_user.username) > 12:
 		return render_to_response('users/newuser', {'request': request,
 							    'Problem': True,
@@ -93,7 +95,7 @@ def myesp_finish(request, module):
 	django_user.is_staff = False
 	django_user.is_superuser = False
 	django_user.save()
-	django_user = authenticate(username=request.POST['username'], password=request.POST['password'])
+	django_user = authenticate(username=request.POST['username'].lower(), password=request.POST['password'])
 	login(request, django_user)
 	if request.POST.has_key('role'):
 		# is a teacher of this class
@@ -166,11 +168,13 @@ def myesp_login(request, module):
 	Note that the decorator does this, we're just a redirect function """
 
 	if request.POST.has_key('username') and request.POST.has_key('password'):
-		user = authenticate(username=request.POST['username'], password=request.POST['password'])
+		user = authenticate(username=request.POST['username'].lower(), password=request.POST['password'])
 	else:
 		user = None
 	
 	if user is not None:
+		user.set_password(request.POST['password'])
+		user.save()
 		login(request, user)
 
 	return HttpResponseRedirect("/")

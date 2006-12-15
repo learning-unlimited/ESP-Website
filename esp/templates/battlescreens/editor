@@ -9,6 +9,7 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
+<div id="battlescreen">
 
 {% for b in blocks %}
 	
@@ -113,5 +114,6 @@
 	<p> &nbsp; </p>
 
 {% endfor %}
+</div>
 
 {% endblock %}

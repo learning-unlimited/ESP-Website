@@ -19,35 +19,41 @@
 <!-- backgrounds  at top of page -->
 {% block banner_backgrounds %}
 <div id="divbkg1">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div>
+  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
+</div>
 <div id="divbkg2">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div>
+  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
+</div>
 <div id="divbkg3">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div>
+  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
+</div>
 <div id="divbkg4">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div>
+  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
+</div>
 {% endblock %}
 
 <!-- site title -->
 <div id="divtitle">
 {% block section_title %}<img src="/media/images/series-3/sitetitle.gif" border="0" alt="Educational Studies Program" title="" />{% endblock %}
 </div>
-<!-- image size may vary -->
 
+<!-- image size may vary -->
 {% block banner_nav %}
 <div id="divnavh">
-<a href="/" onmouseover="MM_swapImage('home','','/media/images/level3/nav/home_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/media/images/level3/nav/home.gif" border="0" alt="Home" title="" name="home" id="home" /></a></div>
+  <a href="/" onmouseover="MM_swapImage('home','','/media/images/level3/nav/home_ro.gif',1)"
+   onmouseout="MM_swapImgRestore()">
+      <img src="/media/images/level3/nav/home.gif" border="0" alt="Home"
+           title="" name="home" id="home" />
+  </a>
+</div>
 
 <div id="divnav0">
-
 
 <a href="/about/index.html" onmouseover="MM_swapImage('discoveresp','','/media/images/level3/nav/discoveresp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/level3/nav/discoveresp.gif" border="0" alt="Discover ESP" title="" name="discoveresp" id="discoveresp" />
 </a>
 </div>
 
-</div>
 <div id="divnav1">
 
 
@@ -56,50 +62,40 @@
 </a>
 </div>
 
-</div>
 <div id="divnav2">
-
-
 <a href="/teach/index.html" onmouseover="MM_swapImage('volunteertoteach','','/media/images/level3/nav/volunteertoteach_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/level3/nav/volunteertoteach.gif" border="0" alt="Volunteer To Teach" title="" name="volunteertoteach" id="volunteertoteach" />
 </a>
 </div>
 
-</div>
+
 <div id="divnav3">
-
-
 <a href="/getinvolved/index.html" onmouseover="MM_swapImage('getinvolved','','/media/images/level3/nav/getinvolved_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/level3/nav/getinvolved.gif" border="0" alt="Get Involved" title="" name="getinvolved" id="getinvolved" />
 </a>
 </div>
 
-</div>
 <div id="divnav4">
-
-
 <a href="/archives/index.html" onmouseover="MM_swapImage('archivesresources','','/media/images/level3/nav/archivesresources_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/level3/nav/archivesresources.gif" border="0" alt="Archives / Resources" title="" name="archivesresources" id="archivesresources" />
 </a>
 </div>
 
-</div>
+
 <div id="divnav5">
-
-
 <a href="/myesp/home/" onmouseover="MM_swapImage('myesp','','/media/images/level3/nav/myesp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/level3/nav/myesp.gif" border="0" alt="myESP" title="" name="myesp" id="myesp" />
 </a>
 </div>
 
-</div>
+
+
 <div id="divnav6">
 
 
 <a href="/about/contact.html" onmouseover="MM_swapImage('contactinfo','','/media/images/level3/nav/contactinfo_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/level3/nav/contactinfo.gif" border="0" alt="Contact Info" title="" name="contactinfo" id="contactinfo" />
 </a>
-</div>
 
 </div>
 
@@ -171,11 +167,11 @@ Create a new entry:
 {% block search %}
 <!-- search -->
 <div id="divsearch">
-  <form name="searchform" id="searchform" method="get" action="http://gb-server.mit.edu/search">
+  <form name="searchform" id="searchform" method="get" action="http://search.mit.edu/search">
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
 	 <input type='hidden' name='site' value='mit' />
 	 <input type='hidden' name='client' value='mit' />
-	 <input type='hidden' name='proxystylesheet' value='http://web.mit.edu/xsl/google-mit.xsl' />
+	 <input type='hidden' name='proxystylesheet' value='mit' />
 	 <input type='hidden' name='output' value='xml_no_dtd' />
 	 <input type='hidden' name='as_dt' value='i' />
 	 <input type='hidden' name='as_sitesearch' value='esp.mit.edu' />

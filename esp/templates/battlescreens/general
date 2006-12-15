@@ -10,6 +10,8 @@
 
 {% block content %}
 
+<div id="battlescreen">
+
 <table width="450" border="0" cellpadding="0" cellspacing="0">
 <tr height="25">
 <td align="center" bgcolor="#CCCCFF">
@@ -150,5 +152,7 @@ Welcome, {{ request.user.first_name }}
 <p> &nbsp; </p>
 	
 {% endfor %}
+</div>
+
 
 {% endblock %}

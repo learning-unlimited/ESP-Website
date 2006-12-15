@@ -36,9 +36,9 @@ function validate_form() {
 	// check time control...
 
 	var timecontrol = document.clsform.Time;
-	
+	selectednone = true;
 	for (var i=0; i<timecontrol.length; i++) {
-		if (document.clsform.Time[i].selected) {
+		if (document.clsform.Time[i].checked) {
 			selectednone = false;
 		}
 	}
@@ -54,6 +54,9 @@ function validate_form() {
 		errormsg += "  - The maximum grade must be greater than the minimum.\n";
 	}
 */
+
+		
+
 	if (document.clsform.class_size_min[document.clsform.class_size_min.selectedIndex].value
 	  >
  document.clsform.class_size_max[document.clsform.class_size_max.selectedIndex].value) {
@@ -218,8 +221,8 @@ In case you were wondering when classes are being taught, they are here for refe
   <option value="40">40</option>
   <option value="50">50</option>
   <option value="60">60</option>
-  <option value="60">60</option>
-  <option value="60">60</option>
+  <option value="70">70</option>
+  <option value="80">80</option>
   <option value="999">Unlimited</option>
 </select>
 <br /><br />

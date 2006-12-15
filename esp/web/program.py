@@ -174,10 +174,16 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 	v = GetNode('V/Administer/Edit')
 	q = prog.anchor
 	cobj = UserBit.find_by_anchor_perms(Class, request.user, v, q)
+	
 	if cobj == [] or cobj is None:
 		return program_teacherreg2(request, tl, one, two, module, extra, prog)
 	else:
-		context['classes'] = cobj
+		classgroups = {}
+		for classobj in cobj:
+			classgroups[classobj.id] = {'teacher': UserBits.bits_get_users(classobj.anchor, GetNode('V/Flags/Registration/Teacher')),
+						 'cls': classobj }
+		
+		context['classes'] = classgroups
 		return render_to_response('program/selectclass', context)
 		
 def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = None):

@@ -1,16 +1,16 @@
-.header1 {
+#battlescreen .header1 {
 font-family: Times New Roman, Palatino, serif;
 font-size: 15px;
 font-weight: bold;
 color: #FFFFCC;
 }
-.header_dark {
+#battlescreen  .header_dark {
 font-family: Times New Roman, Palatino, serif;
 font-size: 15px;
 font-weight: bold;
 color: #000000;
 }
-.header {
+#battlescreen .header {
 font-family: Arial;
 font-size: 13px;
 font-weight: bold;
@@ -18,28 +18,28 @@ color: #000000;
 padding-top: 3px;
 padding-bottom: 2px;
 }
-td {
+#battlescreen td {
 font-family: Arial;
 font-size: 12px;
 }
-table {
+#battlescreen table {
 border-color: #333399;
 border-style: solid;
 }
-.class_stuff {
+#battlescreen .class_stuff {
 text-indent: 20px;
 font-family: Arial;
 font-size: 12px;
 }
-.admin_options {
+#battlescreen .admin_options {
 text-indent: 0px;
 font-family: Arial;
 font-size: 12px;
 }
-.class_title {
+#battlescreen .class_title {
 color: #006600;
 }
-input.button
+#battlescreen input.button
 {
    color:#000000;
    font-family:Arial,helvetica,sans-serif;
@@ -48,7 +48,7 @@ input.button
    border: #cccccc 1px solid;
    background-color: #cccccc;
 }
-input.button:hover
+#battlescreen input.button:hover
 {
    color:#0000cc;
    font-family:Arial,helvetica,sans-serif;
@@ -57,7 +57,7 @@ input.button:hover
    border: #000000 1px solid;
    background-color: #ccffcc;
 }
-input.text
+#battlescreen input.text
 {
    color:#000000;
    font-family:Arial,helvetica,sans-serif;
