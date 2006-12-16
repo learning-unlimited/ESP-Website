@@ -17,7 +17,7 @@
   <tr class="welcomebox">
     <th align="center" class="welcomebox">
         Welcome, {{ request.user.first_name }}!
-    </td>
+    </th>
   </tr>
 </thead>
 <tbody>
@@ -88,7 +88,9 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
   {% for cls in progDict.clslist %}
   <tr>
     <td class="clsleft classname">
+      <span title="{{ ", "|join:cls.getTeacherNames }}">
       {{ cls|truncatewords:6 }}
+      </span>
     </td>
     <td class="clsmiddle">
        <form method="post" action="">

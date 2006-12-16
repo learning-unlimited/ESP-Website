@@ -62,7 +62,7 @@ ROOT_URLCONF = 'esp.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
-    '/esp/esp/templates'
+    '/var/www/esp-devel/trunk/esp/templates'
 )
 
 INSTALLED_APPS = (
@@ -95,8 +95,5 @@ EMAIL_HOST = 'outgoing.mit.edu'
 APPEND_SLASH=False
 
 #aseering 12-15-2006: Make memcached happen
-CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=60"
-
-# axiak 12-15-2006: Overload the user class
-AUTH_PROFILE_MODULE = 'esp.users.ESPUser'
+#CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=60"
 

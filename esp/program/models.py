@@ -1,3 +1,5 @@
+
+
 from django.db import models
 from django.contrib.auth.models import User
 from esp.cal.models import Event
@@ -109,15 +111,20 @@ class Class(models.Model):
 		return self.anchor.friendly_name
 	
 	def teachers(self):
-		v = GetNode( 'V/Administer' )
-		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
+            v = GetNode( 'V/Flags/Registration/Teacher' )
+            return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
 
+        def getTeacherNames(self):
+            return [ usr.first_name + ' ' + usr.last_name
+                     for usr in self.teachers() ]
+        
+        
 	def preregister_student(self, user):
-		prereg = UserBit()
-		prereg.user = user
-		prereg.qsc = self.anchor
-		prereg.verb = GetNode( 'V/Flags/Registration/Preliminary' )
-		prereg.save()
+            prereg = UserBit()
+            prereg.user = user
+            prereg.qsc = self.anchor
+            prereg.verb = GetNode( 'V/Flags/Registration/Preliminary' )
+            prereg.save()
 
         def pageExists(self):
             from esp.qsd.models import QuasiStaticData

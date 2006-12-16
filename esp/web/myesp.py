@@ -295,7 +295,7 @@ def myesp_battlescreen_teacher(request, module):
 	that they can edit and display. """
 
 	# request.user just got 1-up'd
-	curUser = ESPUser(request.user)
+	currentUser = ESPUser(request.user)
 
 	if request.POST:
 		#	If you clicked a button to approve or reject, first clear the "proposed" bit
@@ -322,10 +322,10 @@ def myesp_battlescreen_teacher(request, module):
 	# it's a dictionary
 	announcementsDict = preview_miniblog(request, 'teach')
 
-	usrPrograms = curUser.getVisible(Program)
+	usrPrograms = currentUser.getVisible(Program)
 
 	# get a list of editable classes
-	clslist = curUser.getEditable(Class)
+	clslist = currentUser.getEditable(Class)
 
 	fullclslist = {}
 	
