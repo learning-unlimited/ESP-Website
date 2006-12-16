@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
+from django.core.cache import cache
+
 
 # Create your models here.
     
@@ -227,6 +229,13 @@ class DataTree(models.Model):
 
 def GetNode(nodename):
     """ Get a DataTree node with the given path; create it if it doesn't exist """
+    # aseering 12-15-2006: Cache query results.  Pull them from the cache when possible.
+    cache_id = 'datatree:' + nodename
+
+    cached_val = cache.get(cache_id)
+    if cached_val != None:
+        return cached_val
+
     nodes = DataTree.objects.filter(name='ROOT', parent__isnull=True)
     node = None
     if nodes.count() < 1L:
@@ -245,7 +254,11 @@ def GetNode(nodename):
     if nodename == '':
         perm = []
         
-    return node.tree_create(perm)
+    # aseering 12-15-2006: Encache output
+    retVal = node.tree_create(perm)
+
+    cache.set(cache_id, retVal)
+    return retVal
 
 
     

@@ -29,7 +29,7 @@ SITE_ID = 1
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = '/var/www/esp-devel/trunk/esp/media/uploaded/'
+MEDIA_ROOT = '/esp/esp/media/uploaded/'
 
 # URL that handles the media served from MEDIA_ROOT.
 # Example: "http://media.lawrence.com"
@@ -62,7 +62,7 @@ ROOT_URLCONF = 'esp.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
-    '/var/www/esp-devel/trunk/esp/templates'
+    '/esp/esp/templates'
 )
 
 INSTALLED_APPS = (
@@ -94,4 +94,9 @@ INSTALLED_APPS = (
 EMAIL_HOST = 'outgoing.mit.edu'
 APPEND_SLASH=False
 
+#aseering 12-15-2006: Make memcached happen
+CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=60"
+
+# axiak 12-15-2006: Overload the user class
 AUTH_PROFILE_MODULE = 'esp.users.ESPUser'
+

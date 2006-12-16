@@ -11,6 +11,7 @@ from esp.lib.markdownaddons import ESPMarkdown
 from esp.settings import MEDIA_ROOT, MEDIA_URL
 from os.path import basename, dirname
 from datetime import datetime
+from django.core.cache import cache
 
 #def qsd_raw(request, url):
 #	""" Return raw QSD data as a text file """
@@ -25,19 +26,29 @@ from datetime import datetime
 #		return HttpResponse(qsd_rec.content, mimetype='text/plain')
 #	else:
 #		return Http404
-	
+
 def qsd(request, branch, section, url_name, url_verb, base_url):
+
+	# Pages are global per-user (not unique per-user)
+	cache_id = str(branch.id) + ':' + str(url_name)
+
 	# Detect edit authorizations
 	have_edit = UserBit.UserHasPerms( request.user, branch, GetNode('V/Administer/Edit') )
 	have_read = UserBit.UserHasPerms( request.user, branch, GetNode('V/Flags/Public') )
 
 	# Fetch the QSD object
 	try:
-		qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name ).order_by('-create_date')
-		if qsd_recs.count() < 1:
-			raise QuasiStaticData.DoesNotExist
+		cache_qsd = cache.get('quasistaticdata:' + cache_id)
+		if cache_qsd != None:
+			qsd_rec = cache_qsd
+		else:			
+			qsd_recs = QuasiStaticData.objects.filter( path = branch, name = url_name ).order_by('-create_date')
+			if qsd_recs.count() < 1:
+				raise QuasiStaticData.DoesNotExist
 
-		qsd_rec = qsd_recs[0]
+			qsd_rec = qsd_recs[0]
+
+			cache.set('quasistaticdata:' + cache_id, qsd_rec)
 
 	except QuasiStaticData.DoesNotExist:
 		if have_edit and (url_verb == 'edit' or url_verb == 'create'):
@@ -105,6 +116,9 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 			m.save_target_file_file(local_filename, request.FILES[FILE]['content'])
 			m.save()
 
+		cache.delete('quasistaticdata:' + cache_id)
+		cache.delete('quasistaticdata_html:' + cache_id)
+
 
 	# Detect the edit verb
 	if url_verb == 'edit':
@@ -135,13 +149,18 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 			assert False, 'Insufficient permissions for QSD read'
 			raise Http404
 
+		cached_html = cache.get('quasistaticdata_html:' + cache_id)
+		if cached_html == None:
+			cached_html = qsd_rec.html()
+			cache.set('quasistaticdata_html:' + cache_id, cached_html)
+
 		# Render response
 		return render_to_response('qsd.html', {
 			'request': request,
 			'navbar_list': makeNavBar(request.user, branch, section),
 			'preload_images': preload_images,
 			'title': qsd_rec.title,
-			'content': qsd_rec.html(),
+			'content': cached_html,
 			'qsdrec': qsd_rec,
 			'logged_in': request.user.is_authenticated(),
 			'have_edit': have_edit,
