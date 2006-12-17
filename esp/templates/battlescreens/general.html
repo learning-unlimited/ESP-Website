@@ -37,16 +37,29 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
 <table cellpadding="4px" cellspacing="0" align="center">
 <thead>
   <tr>
-    <th>{{ announcements.title }}</th>
+    <th>Your Announcements</th>
   </tr>
 </thead>
 
 <tbody>
-{% for announcementSection in announcements.sections %}
+
 <tr style="borderTop">
   <td>
-    <strong>{{ announcementSection.header }}</strong>
+    <strong>Recent Announcements</strong>
     <div class="announcementBullets">
+{% for announce in announcements.announcementList %}
+       <a href="{{ announce.makeUrl }}" title="{{ announce.makeTitle }}">
+                {{ announce.makeTitle }}
+       </a>
+       <br />
+{% endfor %}
+
+     {% if announcements.overflowed %}
+     {{ announcements.total }} total ...
+     <a href="/blog/announcements" title="See all announcements!">
+        see all
+     </a>
+     {% endif %}
       {% for bullet in announcementSection.items %}
       {{ bullet.0 }}
       <br />
@@ -54,7 +67,6 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
     </div>
   </td>
 </tr>    
-{% endfor %}
 </tbody>
 </table>
 

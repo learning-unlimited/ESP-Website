@@ -19,6 +19,12 @@ class Entry(models.Model):
 
 	def html(self):
 		return markdown(self.content)
+
+	def makeTitle(self):
+		return self.title
+
+	def makeUrl(self):
+		return "/blog/"+str(self.id)+"/"
 	
 	@staticmethod
 	def find_posts_by_perms(user, verb, qsc=None):

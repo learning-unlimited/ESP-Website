@@ -29,11 +29,20 @@ class ESPUser(User):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
     def isTeacher(self):
+        """Returns true if this user is a teacher"""
         return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now())
 
     def canEdit(self, nodeObj):
+        """Returns True or False if the user can edit the node object"""
+        # Axiak
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer/Edit'))
 
+    def getMiniBlogEntries(self):
+        """Return all miniblog posts this person has V/Subscribe bits for"""
+        # Axiak 12/17
+        from esp.miniblog.models import Entry
+        return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe'))
+    
 class UserBit(models.Model):
     """ Grant a user a bit on a Q """
     user = models.ForeignKey(User, blank=True, null=True) # User to give this permission

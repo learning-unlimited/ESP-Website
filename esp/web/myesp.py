@@ -320,7 +320,7 @@ def myesp_battlescreen_teacher(request, module):
 	
 	# I have no idea what structure this is, but at its simplest level,
 	# it's a dictionary
-	announcementsDict = preview_miniblog(request, 'teach')
+	announcements = preview_miniblog(request)
 
 	usrPrograms = currentUser.getVisible(Program)
 
@@ -357,7 +357,10 @@ def myesp_battlescreen_teacher(request, module):
 								 'navbar_list':   makeNavBar(request.user, GetNode('Q/Program')),
 								 'logged_in':     request.user.is_authenticated(),
 								 'progList':      responseProgs,
-								 'announcements': announcementsDict})
+								 'announcements': {'announcementList': announcements[:5],
+										   'overflowed':       len(announcements) > 5,
+										   'total':            len(announcements)}})
+								 
 
 @login_required							   
 def myesp_battlescreen_admin(request, module):

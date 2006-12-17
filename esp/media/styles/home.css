@@ -315,11 +315,12 @@ form {
 }
 #divannouncements li {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.75em;
+  font-size: 0.9em;
   color: #000000;
   line-height: 133%;
   padding-left: 10px;
   margin-top: 0px;
+  font-weight: bolder;
   margin-bottom: 6px;
 /* Experimentation (-PdoX)
   border-bottom: thin solid black;

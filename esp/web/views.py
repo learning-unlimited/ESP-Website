@@ -5,7 +5,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.views import qsd
 
 from esp.datatree.models import GetNode, DataTree
-from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
+from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits, ESPUser
 from esp.miniblog.models import Entry
 from esp.program.models import RegistrationProfile, Class, ClassCategories, TeacherBio
 from esp.dbmail.models import MessageRequest
@@ -28,14 +28,16 @@ def index(request):
 	""" Displays a generic "index" page """
 	# Catherine: This does nothing
 	# aseering: Yay.
-	latest_event_list = Event.objects.filter().order_by('-start')
-	block_ann = preview_miniblog(request, 'teach')
+	# axiak:    hmm...
+	announcements = preview_miniblog(request)
 	return render_to_response('index.html', {
-		'request': request,
-		'navbar_list': navbar_data,
-		'preload_images': preload_images,
-		'blocks': [block_ann],
-		'logged_in': request.user.is_authenticated()
+		'request':          request,
+		'navbar_list':      navbar_data,
+		'preload_images':   preload_images,
+		'announcements':    {'announcementList': announcements[:5],
+				     'overflowed':       len(announcements) > 5,
+				     'total':            len(announcements)},
+		'logged_in':        request.user.is_authenticated()
 		})
 
 def bio(request, tl, last, first):

@@ -19,6 +19,12 @@ class NavBarEntry(models.Model):
     
     def __str__(self):
         return self.path.full_name() + ':' + self.section + ':' + str(self.sort_rank) + ' (' + self.text + ') ' + '[' + self.link + ']' 
+
+    def makeTitle(self):
+        return self.text
+
+    def makeUrl(self):
+        return self.link
     
     class Admin:
         pass

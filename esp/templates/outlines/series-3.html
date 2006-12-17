@@ -120,7 +120,10 @@
   <div class="divsecondarynavlink">
     <p><span class="bullet">- </span>
 {% endif %}
-      <a href="{{ nav_entry.entry.link }}">{{ nav_entry.entry.text }}</a>
+      <a href="{{ nav_entry.entry.makeUrl }}"
+        title="Click for `{{ nav_entry.entry.makeTitle }}'">
+        {{ nav_entry.entry.makeTitle }}
+      </a>
 {% if nav_entry.has_bits %}
 <tt>
 <a href="/navbar/edit.scm?new_url={{ request.path }}&navbar_id={{ nav_entry.entry.id }}&node_id={{ navbar_list.entry.node.id }}&action=up">[+]</a>
