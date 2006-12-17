@@ -4,12 +4,13 @@ from esp.datatree.models import GetNode
 from django.http import HttpResponseRedirect, Http404
 from esp.datatree.models import DataTree
 
+
 def makeNavBar(user, node, section = ''):
 	""" Query the navbar-entry table for all navbar entries associated with this tree node """
 	qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=node.rangestart,path__rangeend__gte=node.rangeend,section=section).order_by('sort_rank')
 	return { 'node': node,
 		 'has_edit_bits': UserBit.UserHasPerms(user, node, GetNode('V/Administer/Edit/QSD')),
-		 'qsdTree': qsdTree,
+		 'qsdTree': [ {'entry': x, 'has_bits': UserBit.UserHasPerms(user, x.path, GetNode('V/Administer/Edit/QSD')) } for x in qsdTree ],
 		 'section': section }
 
 
@@ -61,6 +62,9 @@ def navBarUp(request, navbar, node, section):
 
 	Fail silently if this is not possible
 	"""
+	if not UserBit.UserHasPerms(request.user, navbar.path, GetNode("V/Administer/Edit/QSD")):
+		assert False, "You don't have permisssion to do that!"
+
 	navbarList = NavBarEntry.objects.filter(path=navbar.path).order_by('sort_rank')
 
 	if not navbar.indent:
@@ -85,6 +89,9 @@ def navBarDown(request, navbar, node, section):
 
 	Fail silently if this is not possible
 	"""
+	if not UserBit.UserHasPerms(request.user, navbar.path, GetNode("V/Administer/Edit/QSD")):
+		assert False, "You don't have permisssion to do that!"
+
 	navbarList = NavBarEntry.objects.filter(path=navbar.path).order_by('sort_rank')
 
 	if not navbar.indent:
@@ -106,11 +113,13 @@ def navBarDown(request, navbar, node, section):
 
 def navBarNew(request, navbar, node, section):
 	""" Create a new NavBarEntry.  Put it at the bottom of the current sort_rank. """
+	if not UserBit.UserHasPerms(request.user, node, GetNode("V/Administer/Edit/QSD")):
+		assert False, "You don't have permisssion to do that!"
+
 	try:
 		max_sort_rank = NavBarEntry.objects.filter(path=node).order_by('-sort_rank')[0].sort_rank
-	except Exception:
-		raise
-	#	max_sort_rank = -100
+	except IndexError:
+		max_sort_rank = -100
 
 	new_sort_rank = max_sort_rank + 100
 
@@ -132,6 +141,9 @@ def navBarNew(request, navbar, node, section):
 
 	
 def navBarDelete(request, navbar, node, section):
+	if not UserBit.UserHasPerms(request.user, navbar.path, GetNode("V/Administer/Edit/QSD")):
+		assert False, "You don't have permisssion to do that!"
+
 	navbar.delete()
 
 
