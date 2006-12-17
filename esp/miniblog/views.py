@@ -104,9 +104,11 @@ def post_miniblog(request, url, tree_prefix = ''):
 def preview_miniblog(request, section = None):
     """this function will return the last n miniblog entries from preview_miniblog """
     # last update: Axiak
-    
-    curUser = ESPUser(request.user)
-
+    if request.user != None and type(request.user) != AnonymousUser:
+        curUser = ESPUser(request.user)
+    else:
+        curUser = request.user
+        
     announcements = curUser.getMiniBlogEntries()
     announcements.reverse()
 
