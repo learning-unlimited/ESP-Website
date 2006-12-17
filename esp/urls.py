@@ -19,7 +19,10 @@ urlpatterns = patterns('',
 
     # The default
 	(r'^esp_devel/$', 'esp.web.views.index'),
+
     (r'^$', 'esp.web.views.index'),
+    # backwards compatibility...
+    (r'^web/index\.html$', 'esp.web.views.index'),
 
     # Generic view for starting a class
     (r'^startaclass/', 'django.views.generic.create_update.create_object', { 'model': Class } ),
