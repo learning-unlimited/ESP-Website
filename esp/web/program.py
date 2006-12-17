@@ -152,9 +152,8 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 	""" Display the registration page to allow a teacher to register for a program """
 	# Axiak added user bit requirements
 	curUser = ESPUser(request.user)
-	if not UserBit.UserHasPerms(request.user, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
+	if not curUser.isTeacher():
 		return render_to_response('errors/program/notateacher.html', {})
-
 
 	context = {'logged_in': request.user.is_authenticated() }
 	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
@@ -177,9 +176,10 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 		
 def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = None):
 	""" Actually load a specific class or a new class for editing"""
-
+	curUser = ESPUser(request.user)
+	
 	# Axiak added user bit requirements
-	if not UserBit.UserHasPerms(request.user, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
+	if not curUser.isTeacher():
 		return render_to_response('errors/program/notateacher', {})
 
 	context = {'logged_in': request.user.is_authenticated() }
@@ -231,13 +231,13 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 	if cobj.id is None: selected_times = []
 	else: selected_times = cobj.viable_times.all()
 	context['ts'] = [ {'obj': x } for x in list(prog.anchor.tree_create(['Templates','TimeSlots']).children()) ]
-	for i in range(0,len(context['ts'])):
+	for i in range(len(context['ts'])):
 		context['ts'][i]['selected'] = (context['ts'][i]['obj'] in selected_times)
 	context['cat'] = list(ClassCategories.objects.all())
 	context['request'] = request
 	context['program'] = prog
 	#	assert False, 'about to render teacherreg2'
-	return render_to_response('program/teacherreg', context)
+	return render_to_response('program/teacherreg.html', context)
 
 @login_required
 def program_fillslot(request, tl, one, two, module, extra, prog):
