@@ -39,55 +39,28 @@ class DataTree(models.Model):
             else:
                 return filtered[0].tree_decode(tree_nodenames[1:])
 
-    def tree_create(self, tree_nodenames, trysql = True, printsql = False):
+    def tree_create(self, tree_nodenames):
         """ Given a list of nodes leading from the current node to a direct descendant, return that descendant, creating it if it does not exist """
-        #Axiak modifies to add SQL queries for optimization...
+        # This is blatant code copying from tree_decode(); anyone know
+        # of a good way to rewrite one based on the other?
         if tree_nodenames == []:
             return self
-
-        if trysql:
-            keys = self.__dict__.keys()
-            reverseNodesList = tree_nodenames
-            reverseNodesList.reverse()
-            sql = "SELECT "+", ".join(keys)+" FROM datatree_datatree WHERE name = %s AND parent_id = "
-            if len(reverseNodesList) == 1:
-                sql += "%s"
-            else:
-                endsql = ""
-                for i in range(len(reverseNodesList[1:])):
-                    sql += "(SELECT id FROM datatree_datatree WHERE name = %s AND parent_id = "
-                    endsql += ")"
-                    if i == (len(reverseNodesList) - 2):
-                        sql += "%s"
-                sql += endsql
-            if printsql:
-                print sql
-            from django.db import connection
-            cursor = connection.cursor()
-            reverseNodesList.append(self.id)
-            cursor.execute(sql, reverseNodesList)
-            row = cursor.fetchone()
-            if row is not None:
-                newnode = DataTree()
-                for i in range(len(keys)):
-                    newnode.__dict__[keys[i]] = row[i]
-                return newnode
-
-        filtered = self.children().filter(name=tree_nodenames[0])
-        if filtered.count() < 1:
-            newnode = DataTree()
-            newnode.parent = self
-            newnode.name = tree_nodenames[0]
-            newnode.save()
-            
-            self.refactor()
-            
-            return newnode.tree_create(tree_nodenames[1:], False)
-                
-        elif filtered.count() > 1:
-            raise self.DuplicateNodeException(self,tree_nodenames)
         else:
-            return filtered[0].tree_create(tree_nodenames[1:])
+            filtered = self.children().filter(name=tree_nodenames[0])
+            if filtered.count() < 1:
+                newnode = DataTree()
+                newnode.parent = self
+                newnode.name = tree_nodenames[0]
+                newnode.save()
+
+                self.refactor()
+
+                return newnode.tree_create(tree_nodenames[1:])
+                
+            elif filtered.count() > 1:
+                raise self.DuplicateNodeException(self,tree_nodenames)
+            else:
+                return filtered[0].tree_create(tree_nodenames[1:])
 
     def tree_encode(self):
         """  Return a list of the nodes leading from the root of the current tree (as determined by is_root()) to """
@@ -254,7 +227,7 @@ class DataTree(models.Model):
 	def __str__(self):
 		return repr(self.value)
 
-def GetNode(nodename, printsql = False):
+def GetNode(nodename):
     """ Get a DataTree node with the given path; create it if it doesn't exist """
     # aseering 12-15-2006: Cache query results.  Pull them from the cache when possible.
     cache_id = 'datatree:' + nodename
@@ -282,7 +255,7 @@ def GetNode(nodename, printsql = False):
         perm = []
         
     # aseering 12-15-2006: Encache output
-    retVal = node.tree_create(perm, True, printsql)
+    retVal = node.tree_create(perm)
 
     cache.set(cache_id, retVal)
     return retVal

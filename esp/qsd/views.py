@@ -149,10 +149,10 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 			assert False, 'Insufficient permissions for QSD read'
 			raise Http404
 
-		cached_html = cache.get('quasistaticdata_html:' + cache_id)
-		if cached_html == None:
-			cached_html = qsd_rec.html()
-			cache.set('quasistaticdata_html:' + cache_id, cached_html)
+		#cached_html = cache.get('quasistaticdata_html:' + cache_id)
+		#if cached_html == None:
+		cached_html = qsd_rec.html()
+		#	cache.set('quasistaticdata_html:' + cache_id, cached_html)
 
 		# Render response
 		return render_to_response('qsd.html', {
