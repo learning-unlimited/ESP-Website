@@ -1,6 +1,5 @@
 # Django settings for esp project.
 
-
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
