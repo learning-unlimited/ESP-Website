@@ -346,6 +346,22 @@ form {
 }
 
 
+#divmaintext .error {
+  font-size: 100%;
+  text-align: center;
+  color: #F00;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+#divmaintext .formerror {
+  font-size: 80%;
+  font-weight: bold;
+  position: relative;
+  left: 10px;
+  text-decoration: underline;
+  color: #F00;
+}
 
 /* MAIN CONTENT AREA */
 

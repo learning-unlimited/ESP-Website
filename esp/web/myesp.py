@@ -31,7 +31,7 @@ def myesp_register(request, module):
 							'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
 							'preload_images': preload_images})
 
-	return render_to_response('users/newuser', {'request': request,
+	return render_to_response('users/newuser.html', {'request': request,
 						    'Problem': False,
 						    'logged_in': request.user.is_authenticated(),
 						    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
@@ -42,28 +42,60 @@ def myesp_register(request, module):
 def myesp_finish(request, module):
 	""" Complete a user registration """
 
-	for thing in ['confirm', 'password', 'username', 'email', "last_name", "first_name"]:
-		if not request.POST.has_key(thing):
-			return render_to_response('users/newuser', {'request': request,
-								    'Problem': True,
-								    'logged_in': request.user.is_authenticated(),
-								    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-								    'preload_images': preload_images})
+	error_dict = {}
+	whitespace = " \t"
+	
+	""" checking for existence of all post objects... """
+	formnames = {'confirm':   'Please enter a confirmation password.',
+		     'password':  'Please enter a password.',
+		     'username':  'Please enter a valid username.',
+		     'email':     'Please enter a valid email address.',
+		     'role':      'Please select a valid initial role.',
+		     'last_name': 'Please enter a valid last name.',
+		     'first_name':'Please enter a valid first name.'}
 
-	# Does this user already exist?
-	if User.objects.filter(username=request.POST['username'].lower()).count() > 0:
-		assert False, request.POST['username'].lower()
-		return render_to_response('errors/myesp/userexists')
+	for name_error in formnames.items():
+		if not request.POST.has_key(name_error[0]) or len(set(request.POST[name_error[0]]) - set(" \t")) == 0:
+			if error_dict.has_key(name_error[0]):
+				error_dict[name_error[0]].append(name_error[1])
+			else:
+				error_dict[name_error[0]] = [name_error[1]]
 
-	# Did the user enter the same password twice?
-	if request.POST['password'] != request.POST['confirm']:
-		# They did not; complain loudly
-		return render_to_response('users/newuser', {'request': request,
-							    'Problem': True,
-							   'logged_in': request.user.is_authenticated(),
-							    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-							    'preload_images': preload_images})
-		# Does there already exist an account with this e-mail address, used for subscribing to mailing lists?
+
+	if not error_dict.has_key('username'):
+		errormsgList = ESPUser.isUserNameValid(request.POST['username'], True)
+		if errormsgList != True:
+			error_dict['username'] = [ ('The chosen username ' + errormsg + '.')
+						   for errormsg in errormsgList                ]
+
+	if not error_dict.has_key('password') and not error_dict.has_key('confirm'):
+		if request.POST['password'] != request.POST['confirm']:
+			error_dict['confirm'] = ['The password and password confirmation must be the same.']
+		else:
+			errormsgList = ESPUser.isPasswordValid(request.POST['password'])
+			if errormsgList != True:
+				error_dict['password'] = [ ('The chosen password '+errormsg+'.')
+							   for errormsg in errormsgList         ]
+
+	if not error_dict.has_key('role'):
+		fixedRole = {request.POST['role'] : ' checked'}
+	else:
+		fixedRole = {}
+		
+	if len(error_dict) > 0:
+		for name, errors in error_dict.items():
+			error_dict[name] = '<br />'.join(errors)
+			
+		return render_to_response('users/newuser.html', {'request':        request,
+							         'Problem':        True,
+								 'logged_in':      request.user.is_authenticated(),
+								 'navbar_list':    makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
+								 'errors':         error_dict,
+								 'fixedRole':      fixedRole,
+								 'preload_images': preload_images})
+
+
+	# Does there already exist an account with this e-mail address, used for subscribing to mailing lists?
 	if User.objects.filter(email=request.POST['email'], password="emailuser").count() > 0:
 		# If so, re-use it
 		email_user = User.objects.filter(email=request.POST['email'])[0]
@@ -83,12 +115,6 @@ def myesp_finish(request, module):
 	# We can't steal an already-existing account, so make a new one
 	django_user = User()
 	django_user.username = request.POST['username'].lower()
-	if len(django_user.username) < 4 or len(django_user.username) > 12:
-		return render_to_response('users/newuser', {'request': request,
-							    'Problem': True,
-							    'logged_in': request.user.is_authenticated(),
-							    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-							    'preload_images': preload_images})
 	django_user.last_name = request.POST['last_name']
 	django_user.first_name = request.POST['first_name']
 	django_user.set_password(request.POST['password'])
@@ -124,7 +150,7 @@ def myesp_emaillist(request, module):
 def myesp_emailfin(request, module):
 	""" Subscribe a user to an e-mail list """
 	if not request.POST.has_key('email'):
-		return render_to_response('users/newuser', {'request': request,
+		return render_to_response('users/newuser.html', {'request': request,
 							    'Problem': True,
 							    'logged_in': request.user.is_authenticated(),
 							    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),

@@ -6,7 +6,7 @@ from esp.workflow.models import Controller
 from datetime import datetime
 from django.db.models import Q
 
-class ESPUser(User):
+class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
     This user extends the auth.User of django"""
 
@@ -42,7 +42,46 @@ class ESPUser(User):
         # Axiak 12/17
         from esp.miniblog.models import Entry
         return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe'))
-    
+
+    @staticmethod
+    def isUserNameValid(username, checkForDuplicate = False):
+        """Return true if the username is valid, a list of strings representing the error if it isn't"""
+        #axiak 12-17
+        errors = []
+        validalphabet = "abcdefghijklmnopqrstuvwxyz _0123456789"
+        if len(username) < 4:
+            errors.append('is too short')
+        if len(username) > 12:
+            errors.append('is too long')
+        #invalid characters
+        if len(set(username.lower()) - set(validalphabet)) > 0:
+            errors.append('contains invalid characters')
+
+        if checkForDuplicate and User.objects.filter(username=username.lower()).count() > 0:
+            errors.append('is already in use')
+            
+        if len(errors) == 0:
+            return True
+        else:
+            return errors
+
+    @staticmethod
+    def isPasswordValid(password):
+        """Return true if the password is valid, a list of strings representing the errors if it isn't"""
+        #axiak 12-17
+        errors = []
+        if len(password) < 4:
+            errors.append('is too short')
+        if len(password) > 12:
+            errors.append('is too long')
+
+        if len(errors) == 0:
+            return True
+        else:
+            return errors
+
+
+
 class UserBit(models.Model):
     """ Grant a user a bit on a Q """
     user = models.ForeignKey(User, blank=True, null=True) # User to give this permission

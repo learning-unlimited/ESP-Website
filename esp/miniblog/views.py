@@ -106,13 +106,12 @@ def preview_miniblog(request, section = None):
     # last update: Axiak
     from esp.miniblog.models import Entry
     announcements = UserBit.find_by_anchor_perms(Entry, request.user, GetNode('V/Subscribe'))
+    if request.user != None:
+        curUser = ESPUser(request.user)
+    else:
+        curUser = None
 
-    #if request.user != None and type(request.user) != AnonymousUser:
-    #   curUser = ESPUser(request.user)
-    #else:
-    #    curUser = request.user
-     
-    # announcements = curUser.getMiniBlogEntries()
+    announcements = curUser.getMiniBlogEntries()
     announcements.reverse()
 
     return announcements
