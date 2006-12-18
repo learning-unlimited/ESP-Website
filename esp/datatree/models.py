@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from django.core.cache import cache
-
+from django.db.models import Q
 
 # Create your models here.
     
@@ -78,9 +78,17 @@ class DataTree(models.Model):
         """ Returns a QuerySet of DataTrees of all children of this DataTree """
         return DataTree.objects.filter(parent__pk=self.id)
 
+    def Q_descendants(self):
+        """ Return a 'Q' object that, when passed to a Django filter on a DataTree node, will filter for all descendants of the current node """
+        return Q(rangestart__gte=self.rangestart, rangeend__lte=self.rangeend)
+
     def is_descendant(self, node):
         """ Return False if the specified node is not a descendant (child, child of a child, etc.) of this node, AND if the specified node is not this node """
         return (node.rangestart >= self.rangestart and node.rangeend <= self.rangeend)
+
+    def Q_antecedents(self):
+        """ Return a 'Q' object that, when passed to a Django filter on a DataTree node, will filter for all descendants of the current node """
+        return Q(rangestart__lte=self.rangestart, rangeend__gte=self.rangeend)
 
     def is_antecedent(self, node):
         """ Return False if the specified node is not an antecedent (parent, parent of a parent, etc.) of the current node, AND if the specified node is not this node """
