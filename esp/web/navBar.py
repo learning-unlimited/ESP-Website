@@ -3,7 +3,8 @@ from esp.users.models import UserBit
 from esp.datatree.models import GetNode
 from django.http import HttpResponseRedirect, Http404
 from esp.datatree.models import DataTree
-
+from esp.dblog.models import error
+from esp.dblog.views import ESPError
 
 def makeNavBar(user, node, section = ''):
 	""" Query the navbar-entry table for all navbar entries associated with this tree node """
@@ -144,7 +145,8 @@ def navBarDelete(request, navbar, node, section):
 	if not UserBit.UserHasPerms(request.user, navbar.path, GetNode("V/Administer/Edit/QSD")):
 		assert False, "You don't have permisssion to do that!"
 
-	navbar.delete()
+	error("NavBar Delete logged", "We're disallowing NavBar deletes because we don't trust them")
+	#navbar.delete()
 
 
 actions = { 'up': navBarUp,

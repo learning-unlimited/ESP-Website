@@ -24,6 +24,8 @@ from esp.web.myesp import myesp_handlers
 from esp.web.program import program_handlers
 from esp.miniblog.views import preview_miniblog
 
+from esp.dblog.views import ESPError
+
 def index(request):
 	""" Displays a generic "index" page """
 	# Catherine: This does nothing
@@ -109,12 +111,11 @@ def redirect(request, url, subsection = None, section_redirect_keys = {}, sectio
 	if len(url_address_parts) == 1: # We know the name; use the default verb
 		qsd_name = url_address_parts[0]
 		qsd_verb = 'read'
-	elif len(url_address_parts) > 1: # We're given both pieces; hopefully that's all we're given (we're ignoring extra data here)
+	elif len(url_address_parts) == 2: # We're given both pieces; hopefully that's all we're given (we're ignoring extra data here)
 		qsd_name = url_address_parts[0]
 		qsd_verb = url_address_parts[1]
 	else: # In case someone breaks urls.py and "foo/.html" is allowed through
-		qsd_name = 'index'
-		qsd_verb = 'read'
+		raise Http404
 
 	# If we have a subsection, descend into a node by that name
 	target_node = url_parts
@@ -126,7 +127,7 @@ def redirect(request, url, subsection = None, section_redirect_keys = {}, sectio
 			branch_name = branch_name + '/' + "/".join(target_node)
 		branch = GetNodeOrNoBits(branch_name, user=request.user)
 	except DataTree.NoSuchNodeException:
-		raise Http404
+		return ESPError("The requested directory does not exist.", log_error = False)
 
 	if url_parts:
 		root_url = "/" + "/".join(url_parts) + "/" + qsd_name

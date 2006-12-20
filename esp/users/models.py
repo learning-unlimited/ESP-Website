@@ -5,6 +5,7 @@ from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm
 from esp.workflow.models import Controller
 from datetime import datetime
 from django.db.models import Q
+from esp.dblog.models import error
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -252,6 +253,9 @@ class UserBit(models.Model):
 
     class Admin:
         pass
+
+    
+
     
 class ContactInfo(models.Model):
 	""" ESP-specific contact information for (possibly) a specific user """
@@ -280,12 +284,14 @@ class ContactInfo(models.Model):
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
+
     if verb == None:
         verb = GetNode("V/Administer/Program/Class")
 
     nodes = DataTree.objects.filter(name='ROOT', parent__isnull=True)
     node = None
     if nodes.count() < 1L:
+        error("Trying to create a new root node here.  Dying...")
         assert False, "Trying to create a new root node here.  Dying..."
         node = DataTree()
         node.name = 'ROOT'

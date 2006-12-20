@@ -12,6 +12,7 @@ from esp.settings import MEDIA_ROOT, MEDIA_URL
 from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
+from esp.dblog.views import ESPError
 
 #def qsd_raw(request, url):
 #	""" Return raw QSD data as a text file """
@@ -61,7 +62,6 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 
 			url_verb = 'edit'
 		else:
-			assert False, "404"
 			raise Http404
 
 	if url_verb == 'create':
@@ -72,7 +72,7 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 	if request.POST.has_key('post_edit'):
 		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
 		if not have_edit:
-			return HttpResponseNotAllowed(['GET'])
+			return ESPError("You don't have permission to edit this page.", log_error = False)
 		
 		qsd_rec_new = QuasiStaticData()
 		qsd_rec_new.path = branch
@@ -124,8 +124,7 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 	if url_verb == 'edit':
 		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
 		if not have_edit:
-			assert False, 'Insufficient permissions for QSD edit'
-			raise Http404
+			return ESPError("You don't have permission to edit this page.", log_error = False)
 
 		m = ESPMarkdown(qsd_rec.content, media={})
 		m.toString()
@@ -146,7 +145,6 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 	# Detect the standard read verb
 	if url_verb == 'read':		
 		if not have_read:
-			assert False, 'Insufficient permissions for QSD read'
 			raise Http404
 
 		#cached_html = cache.get('quasistaticdata_html:' + cache_id)
@@ -168,4 +166,4 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 	
 	# Operation Complete!
 	assert False, 'Unexpected QSD operation'
-       	raise Http404
+
