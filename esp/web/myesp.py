@@ -50,7 +50,7 @@ def myesp_finish(request, module):
 		     'password':  'Please enter a password.',
 		     'username':  'Please enter a valid username.',
 		     'email':     'Please enter a valid email address.',
-		     'role':      'Please selct a valid initial role.',
+		     'role':      'Please select a valid initial role.',
 		     'last_name': 'Please enter a valid last name.',
 		     'first_name':'Please enter a valid first name.'}
 
