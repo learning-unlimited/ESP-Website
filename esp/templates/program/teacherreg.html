@@ -126,16 +126,16 @@ In case you were wondering when classes are being taught, they are here for refe
          onsubmit="return validate_form();">
 
  <b>Course Title:</b><br />
- <input type='text' class='text' name='title' value='{{course.title}}' style="border: 1px solid black; " size='30'>
+ <input type='text' class='text' name='title' value='{{course.title}}' style="border: 1px solid black; " size='50'>
  <input type='hidden' name='id' value='{{course.id}}' />
 <br /><br /><br /> 
 <b>Course Description:</b><br />
-<textarea style="border: 1px solid black; "c lass="text" id="class_info"  name="class_info" rows="10" cols="40">{{course.class_info}}</textarea>
+<textarea style="border: 1px solid black; "c lass="text" id="class_info"  name="class_info" rows="10" cols="65">{{course.class_info}}</textarea>
 <br /><br /><br />
 
 
-<b>Course Category: </b>
-<select name="Category">
+<table><tr><td width="160"><b>Course Category: </b></td>
+<td><select name="Category">
 	{% if course.category %}
 		{% for thing in cat %}
 			<option value='{{thing.id}}'
@@ -152,12 +152,14 @@ In case you were wondering when classes are being taught, they are here for refe
 		{% endfor %}
 	{% endif %}
 </select>  
-
+</td></tr></table>
 
 <br /><br />
 <b>Course Information:</b><br /><br />
-<small><i>Minimum Grade Level: </i></small>
-<select name="grade_min">
+<table>
+<tr>
+<td width="160"><small><i>Minimum Grade Level: </i></small></td>
+<td><select name="grade_min">
 {% if course.grade_min %}
   <option value="{{course.grade_min }}">{{ course.grade_min }}</option>
 {% else %}
@@ -169,10 +171,10 @@ In case you were wondering when classes are being taught, they are here for refe
   <option value="10">10</option>
   <option value="11">11</option>
   <option value="12">12</option>
-</select>
-<br />
-<small><i>Maximum Grade Level: </i></small>
-<select name="grade_max">
+</select></td>
+</tr><tr>
+<td width="160"><small><i>Maximum Grade Level: </i></small></td>
+<td><select name="grade_max">
 {% if course.grade_max %}
   <option value="{{course.grade_max }}">{{ course.grade_max }}</option>
 {% else %}
@@ -184,10 +186,10 @@ In case you were wondering when classes are being taught, they are here for refe
   <option value="10">10</option>
   <option value="11">11</option>
   <option value="12">12</option>
-</select>
-<br />
-<small><i>Minimum Course Size: </i></small>
-<select name="class_size_min">
+</select></td>
+</tr><tr>
+<td width="160"><small><i>Minimum Course Size: </i></small></td>
+<td><select name="class_size_min">
 {% if course.class_size_min %}
   <option value="{{ course.class_size_min }}">{{ course.class_size_min }}</option>
 {% else %}
@@ -203,12 +205,10 @@ In case you were wondering when classes are being taught, they are here for refe
   <option value="70">70</option>
   <option value="80">80</option>
   <option value="999">Unlimited</option>
-</select>
-
-<br />
-
-<small><i>Maximum Course Size: </i></small>
-<select name="class_size_max">
+</select></td>
+</tr><tr>
+<td width="160"><small><i>Maximum Course Size: </i></small></td>
+<td><select name="class_size_max">
 {% if course.class_size_max %}
   <option value="{{ course.class_size_max }}">{{ course.class_size_max }}</option>
 {% else %}
@@ -224,27 +224,37 @@ In case you were wondering when classes are being taught, they are here for refe
   <option value="70">70</option>
   <option value="80">80</option>
   <option value="999">Unlimited</option>
-</select>
+</select></td>
+</tr>
+</table>
 <br /><br />
 
 
 <b>Acceptable Course times (select all that apply): </b><br />
+<table>
 {% for thing in ts %}
-<input type="checkbox" value="{{thing.obj.id}}" name="Time" {% if thing.selected %}checked{% endif %} /> <label><em><small>: {{thing.obj.friendly_name}}</small></em></label><br/>
+<tr><td><input type="checkbox" value="{{thing.obj.id}}" name="Time" {% if thing.selected %}checked{% endif %} /></td><td><label><em><small>{{thing.obj.friendly_name}}</small></em></label></td></tr>
 {% endfor %}
+</table>
 <br />
 <br />
 
 <b>Resources Required by Your Class:</b>
 <br />
-<input type="checkbox" value="1" name="wants_projector"{% if res.wants_projector %} checked{% endif %} />
-<label><em><small>: Projector</small></em></label>
-<br />
-<input type="checkbox" value="1" name="wants_computer_lab"{% if res.wants_computer_lab %} checked{% endif %} />
-<label><em><small>: Computer Lab</small></em></label>
-<br />
-<input type="checkbox" value="1" name="wants_open_space"{% if res.wants_open_space %} checked{% endif %} />
-<label><em><small>: Large Open Room</small></em></label>
+<table>
+<tr>
+<td><input type="checkbox" value="1" name="wants_projector"{% if res.wants_projector %} checked{% endif %} /></td>
+<td><label><em><small>Projector</small></em></label></td>
+</tr>
+<tr>
+<td><input type="checkbox" value="1" name="wants_computer_lab"{% if res.wants_computer_lab %} checked{% endif %} /></td>
+<td><label><em><small>Computer Lab</small></em></label></td>
+</tr>
+<tr>
+<td><input type="checkbox" value="1" name="wants_open_space"{% if res.wants_open_space %} checked{% endif %} /></td>
+<td><label><em><small>Large Open Room</small></em></label></td>
+</tr>
+</table>
 <br />
 <!--
 <b>Bus Information</b>
@@ -259,7 +269,7 @@ In case you were wondering when classes are being taught, they are here for refe
 <p>Please let us know if there are any special needs for your class in the box below.
 <br><small><i>Message for Directors: </i></small>
 <br />
-<textarea rows="6" cols="50" name="message_for_directors" style="border: 1px solid black; ">
+<textarea rows="6" cols="65" name="message_for_directors" style="border: 1px solid black; ">
 {{ course.message_for_directors }}
 </textarea>
 <br />

@@ -165,7 +165,7 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 	context['timeslots'] = prog.anchor.tree_create(['Templates', 'TimeSlots']).series_set.all()
 
 	
-	clsList = curUser.getEditable(Class)
+	clsList = [ x for x in curUser.getEditable(Class) if x.parent_program == prog ]
 	
 	if len(clsList) == 0:
 		return program_teacherreg2(request, tl, one, two, module, extra, prog)

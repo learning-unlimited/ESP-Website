@@ -116,11 +116,16 @@ class UserBit(models.Model):
             curr_verb = PermToString(self.verb.tree_encode())
         except Exception:
             pass
+
+        if self.recursive:
+            recurse = ""
+        else:
+            recurse = " (non-recursive)"
         
         if self.startdate != None and self.enddate != None:
-            return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc + ' <' + str(self.startdate) + ' - ' + str(self.enddate) + '>'
+            return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc + ' <' + str(self.startdate) + ' - ' + str(self.enddate) + '>' + recurse
         else:
-            return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc
+            return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc + recurse
 
     @staticmethod
     def UserHasPerms(user, qsc, verb, now = datetime.now()):
