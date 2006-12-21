@@ -171,11 +171,12 @@ def myesp_emailfin(request, module):
 		email_user.is_staff = False
 		email_user.is_superuser = False
 		email_user.save()
-		return render_to_response('index.html', {
-			'request': request,
-			'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-			'preload_images': preload_images,
-			'logged_in': False})
+
+	return render_to_response('index.html', {
+		'request': request,
+		'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
+		'preload_images': preload_images,
+		'logged_in': False})
 
 
 		
