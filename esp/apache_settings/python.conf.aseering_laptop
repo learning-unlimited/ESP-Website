@@ -1,0 +1,21 @@
+<Location "/">
+    SetHandler python-program
+    PythonHandler django.core.handlers.modpython
+    PythonPath "['/sw/local/esp/trunk/'] + sys.path"
+    SetEnv DJANGO_SETTINGS_MODULE esp.settings
+    PythonDebug On
+</Location>
+
+<Location "/admin/media/">
+	SetHandler none
+</Location>
+
+<Location "/media/">
+	SetHandler none
+</Location>
+
+<Location "/test/">
+	SetHandler none
+</Location>
+
+LoadModule python_module /sw/lib/apache2/modules/mod_python.so
