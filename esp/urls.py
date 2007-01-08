@@ -24,6 +24,9 @@ urlpatterns = patterns('',
     # backwards compatibility...
     (r'^web/index\.html$', 'esp.web.views.index'),
 
+    # JSON
+    (r'json/teachers/$', 'esp.web.json.teacher_lookup'),
+
     # Generic view for starting a class
     (r'^startaclass/', 'django.views.generic.create_update.create_object', { 'model': Class } ),
 
