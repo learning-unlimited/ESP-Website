@@ -1,0 +1,115 @@
+<!--
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+-->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>Wizard Demo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+
+<script type="text/javascript">
+var djConfig = {
+	isDebug: true,
+	debugAtAllCosts: true
+};
+</script>
+<script type="text/javascript" src="../../dojo.js"></script>
+<script type="text/javascript">
+	dojo.require("dojo.widget.Wizard");
+	dojo.hostenv.writeIncludes();
+
+    function cancel() {
+        alert("Wizard Cancelled!");
+    }
+
+    function done() {
+        alert("Wizard Done!");
+    }
+</script>
+
+<style type="text/css">
+body {
+	font-family : sans-serif;
+}
+
+</style>
+</head>
+<body>
+	<p>This example shows a wizard with customized button labels.</p>
+    <div id="wizard1" dojoType="WizardContainer"
+         style="width: 100%; height: 200px;"
+         nextButtonLabel="next >>"
+         previousButtonLabel="<< previous"
+         cancelFunction="cancel"
+         >
+        <div dojoType="WizardPane" label="Tab 1">
+            <h1>Tab 1</h1>
+        </div>
+        <div dojoType="WizardPane">
+            <h1>Tab 2</h1>
+        </div>
+        <div dojoType="WizardPane" doneFunction="done">
+            <h1>Tab 3</h1>
+
+            You won't be able to come back, but you can finish now...
+        </div>
+        <div dojoType="WizardPane" canGoBack="false">
+            <h1>Tab 4</h1>
+
+            ... and now you can't go back.
+        </div>
+        <div dojoType="WizardPane" doneFunction="done">
+            <h1>Tab 5</h1>
+            ... and now you can finish up.
+        </div>
+    </div>
+
+    <p>The next shows the option to hide the inactive buttons, with a smaller width (smaller width current fails, bug #607)...</p>
+
+    <div id="wizard2" dojoType="WizardContainer" hideDisabledButtons="true" style="width: 50%; height: 200px;">
+        <div dojoType="WizardPane">
+            <h1>Step 1 of 3</h1>
+            <p>Lorem ipsum dolor sit amet</p>
+        </div>
+        <div dojoType="WizardPane">
+            <h1>Step 2 of 3</h1>
+            <p>consectetur adipisicing elit</p>
+        </div>
+        <div dojoType="WizardPane">
+            <h1>Step 3 of 3</h1>
+            <p>sed do eiusmod tempor incididunt ut labore et dolore magna aliqua</p>
+        </div>
+    </div>
+
+    <p>The next shows blocking moving to the next step with a JS function...</p>
+
+    <script>
+        function checkAgreement() {
+            var frm = document.forms['acceptAgreement'];
+            var accept = frm.accept;
+            if (!accept.checked) {
+                return "You must agree to the terms before continuing.";
+            }
+        }
+    </script>
+    <div id="wizard3" dojoType="WizardContainer" style="width: 100%; height: 200px;">
+        <div dojoType="WizardPane" id="Agreement1" passFunction="checkAgreement">
+            <h1>Agreement Terms</h1>
+            <form action="#" name="acceptAgreement">
+                <p>
+                <input type="checkbox" name="accept" value="true"/> I accept the terms of this agreement.
+                </p>
+            </form>
+        </div>
+        <div dojoType="WizardPane" canGoBack="false">
+            <h1>Complete</h1>
+            <p>The license has been accepted.</p>
+        </div>
+    </div>
+
+</body>
+</html>
+
+

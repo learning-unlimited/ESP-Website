@@ -1,0 +1,6 @@
+This is an external namespace for demonstrating how dojo users
+can define their own widgets, outside the dojo namespace.
+
+Look at test_Button.html for an example.
+
+-- Bill 2005/12/08
