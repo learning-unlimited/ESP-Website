@@ -112,7 +112,6 @@ def preview_miniblog(request, section = None):
         curUser = None
 
     announcements = curUser.getMiniBlogEntries()
-    announcements.reverse()
 
     return announcements
 

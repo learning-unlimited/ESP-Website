@@ -26,6 +26,10 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import Class
         return UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Teacher'))
 
+    def getEnrolledClasses(self):
+        from esp.program.models import Class
+        return (UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Confirmed')) | UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Preliminary'))).distinct()
+
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
@@ -42,7 +46,7 @@ class ESPUser(User, AnonymousUser):
         """Return all miniblog posts this person has V/Subscribe bits for"""
         # Axiak 12/17
         from esp.miniblog.models import Entry
-        return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe'))
+        return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe')).order_by('-timestamp')
 
     @staticmethod
     def isUserNameValid(username, checkForDuplicate = False):
@@ -232,29 +236,25 @@ class UserBit(models.Model):
     	""" Fetch a list of relevant items for a given user and verb in a module that has an anchor foreign key into the DataTree """
     	q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
 
-    	# FIXME: This code should be compressed into a single DB query
-    	# ...using the extra() QuerySet method.
-
     	# Extract entries associated with a particular branch
-    	res = []
-    	for q in q_list:
-    		for entry in module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend):
-			if qsc is not None:
-				if entry.anchor.rangestart < qsc.rangestart or entry.anchor.rangeend > qsc.rangeend:
-					continue
-     			res.append( entry )
-	
-	# Reprocess list to eliminate duplicates
-	ids = []
-	result = []
-	for entry in res:
-		id = entry._get_pk_val()
-		if not id in ids:
-			result.append(entry)
-			ids.append(id)
+
+        res = None
+
+        for q in q_list:
+            query = module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend)
+            if qsc is not None:
+                query = query.filter(anchor__rangestart__gte=qsc.rangestart, anchor__rangeend__lte=qsc.rangeend)
+
+            if res == None:
+                res = query
+            else:
+                res = res | query
+
+        if res != None:
+            res = res.distinct()
 
 	# Operation Complete!
-	return result
+	return res
 
     class Admin:
         pass

@@ -76,13 +76,11 @@ color: #006600;
 
 #battlescreen table {
    background-color: #FFE;
-   width: 400px;
    border: 2px solid #99F;
    border-width: 0 2px 6px 2px;
 }
 
 #battlescreen table.welcomebox {
-   width: 400px;
    border: 0;
 }
 
@@ -134,6 +132,12 @@ color: #006600;
 
 #battlescreen .borderTop {
    border: 1px groove #999; border-width: 4px 0 0 0;
+}
+
+#battlescreen .borderTopRight {
+   border: 1px groove #999; border-width: 4px 0 0 0;
+   text-align: right;
+   font-size: 75%;
 }
 
 #battlescreen .announcementBullets {

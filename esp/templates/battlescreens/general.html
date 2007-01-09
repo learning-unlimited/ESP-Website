@@ -12,7 +12,6 @@
 <div id="battlescreen">
 
 <table class="welcomebox" cellpadding="0" cellspacing="0" align="center">
-
 <thead>
   <tr class="welcomebox">
     <th align="center" class="welcomebox">
@@ -35,16 +34,12 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
 <br />
 
 <table cellpadding="4px" cellspacing="0" align="center">
-<thead>
-  <tr>
-    <th>Your Announcements</th>
-  </tr>
-</thead>
-
 <tbody>
-
+  <tr>
+    <th colspan="4">Your Announcements</th>
+  </tr>
 <tr style="borderTop">
-  <td>
+  <td colspan="4">
     <strong>Recent Announcements</strong>
     <div class="announcementBullets">
 {% for announce in announcements.announcementList %}
@@ -67,48 +62,54 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
     </div>
   </td>
 </tr>    
-</tbody>
-</table>
 
-<br />
-<br />
-<br />
-
-<table class="classList" cellpadding="0" cellspacing="0" align="center">
-<thead>
   <tr>
-    <th colspan="3">
+    <th colspan="4">
        Manage Your Classes
     </th>
   </tr>
-  <tr>
-    <td colspan="3">
-       You have the ability to edit the following classes:
-    </td>
-  </tr>
-</thead>
 
-<tbody>
 {% for progDict in progList %}
   <tr>
-    <td class="borderTop" colspan="3">
+    <td class="borderTop" colspan="2">
       <span style="position:relative;left:10px;" class="progTitle">
              {{progDict.prog}}
+      </span>
+    <td class="borderTopRight" colspan="2">
+      <span class="progLinks">
+        <a href="/learn/{{ progDict.prog.url }}/index.html">Info</a>
+	|
+	<a href="/learn/{{ progDict.prog.url }}/catalog/">Catalog</a>
+	|
+	<a href="/learn/{{ progDict.prog.url }}/studentreg/">Sign Up!</a>
+	|
+	<a href="/learn/{{ progDict.prog.url }}/survey/">Survey</a>
       </span>
     </td>
   </tr>
   {% for cls in progDict.clslist %}
   <tr>
     <td class="clsleft classname">
-      <span title="{{ ", "|join:cls.getTeacherNames }}">
+      <span title="Class">
       {{ cls|truncatewords:6 }}
       </span>
     </td>
+    <td class="clsmiddle classname">
+      {% if admin_details %}
+      <span title="Teacher Names">
+      {% for t in cls.getTeacherNames %}
+      {{ t }}
+      {% endfor %}
+      </span>
+      {% endif %}
+    </td>
     <td class="clsmiddle">
+       {% if student_view %}{% else %}
        <form method="post" action="">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
          <input class="button" type="submit" value="Edit">
        </form>
+       {% endif %}
     </td>
     <td class="clsright">
       {% if cls.pageExists %}

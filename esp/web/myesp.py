@@ -307,17 +307,16 @@ def myesp_battlescreen_student(request, module):
 					}
 						
 	blocks = [block_ann, block_signup, block_surveys]
-	welcome_msg = 'This is your ESP "battle screen," from which you can sign up for our programs, get in touch with teachers and administrators, and review your history of interactions with ESP.'
 	
-	return render_to_response('battlescreens/general', {'request': request,
-							   'blocks': blocks,
+	return render_to_response('battlescreens/general.html', {'request': request,
+							   'programs': programs_current,
+							   'blocks': blocks,								 
 							   'page_title': 'MyESP: Student Home Page',
 							   'navbar_list': makeNavBar(request.user, GetNode('Q/Program/')),
-							   'welcome_msg': welcome_msg,
 							   'logged_in': request.user.is_authenticated() }) 
 
 @login_required
-def myesp_battlescreen_teacher(request, module):
+def myesp_battlescreen_teacher(request, module, admin_details = False, student_version = False):
 	"""This function is the main battlescreen for the teachers. It will go through and show the classes
 	that they can edit and display. """
 
@@ -352,7 +351,10 @@ def myesp_battlescreen_teacher(request, module):
 	usrPrograms = currentUser.getVisible(Program)
 
 	# get a list of editable classes
-	clslist = currentUser.getEditable(Class)
+	if student_version:
+		clslist = currentUser.getEnrolledClasses()
+	else:
+		clslist = currentUser.getEditable(Class)
 
 	fullclslist = {}
 	
@@ -375,8 +377,8 @@ def myesp_battlescreen_teacher(request, module):
 		else:
 			curclslist = fullclslist[prog.id]
 		responseProgs.append({'prog':        prog,
-				      'clslist':     curclslist[:5],
-				      'shortened':   len(curclslist) > 5,
+				      'clslist':     curclslist,
+				      'shortened':   False,#len(curclslist) > 5,
 				      'totalclsnum': len(curclslist)})
 
 	return render_to_response('battlescreens/general.html', {'request':       request,
@@ -384,13 +386,23 @@ def myesp_battlescreen_teacher(request, module):
 								 'navbar_list':   makeNavBar(request.user, GetNode('Q/Program')),
 								 'logged_in':     request.user.is_authenticated(),
 								 'progList':      responseProgs,
+								 'admin_details': admin_details,
+								 'student_version': student_version,
 								 'announcements': {'announcementList': announcements[:5],
 										   'overflowed':       len(announcements) > 5,
 										   'total':            len(announcements)}})
-								 
+
+
+@login_required
+def myesp_battlescreen_admin(request, module):
+	qscs = UserBit.bits_get_qsc(user=request.user, verb=GetNode("V/Administer"))
+	if qscs.count() > 0:
+		return myesp_battlescreen_teacher(request, module, admin_details = True)
+	else:
+		raise Http404
 
 @login_required							   
-def myesp_battlescreen_admin(request, module):
+def myesp_battlescreen_admin2(request, module):
 	curUser = request.user
 	
 	block_ann = preview_miniblog(request, 'teach')
@@ -423,9 +435,9 @@ def myesp_battlescreen_admin(request, module):
 	has_ann_perms = UserBit.UserHasPerms(request.user, GetNode('Q/Web'), GetNode('V/Administer/Edit/Use'))
 	if has_ann_perms:
 		block_ann['sections'].append({'header' : 'General Announcements Control',
-								'items' : [['<b>Careful</b>: announcements created here are seen by all.', None, '']],
-								'input_items' : [['Add Announcement', 'anntext', 'Create...', '']]})
-						
+					      'items' : [['<b>Careful</b>: announcements created here are seen by all.', None, '']],
+					      'input_items' : [['Add Announcement', 'anntext', 'Create...', '']]})
+					
 	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Edit'))
 	
 	approval_sections = []
@@ -461,6 +473,8 @@ def myesp_battlescreen_admin(request, module):
 							   'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/')),
 							   'welcome_msg': welcome_msg, 
 							   'logged_in': request.user.is_authenticated() })
+
+
 
 myesp_handlers = { 'register': myesp_register,
 		   'finish': myesp_finish,
