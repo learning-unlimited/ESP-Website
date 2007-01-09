@@ -19,7 +19,7 @@ def teacher_lookup(request, limit=10):
     
     # Initialize anchors for identifying teachers
     q = GetNode( 'Q' )
-    v = GetNode( 'V/Flags/Registration/Teacher' )
+    v = GetNode( 'V/Flags/UserRole/Teacher' )
     
     # Select teachers
     queryset = UserBit.bits_get_users(q, v)
