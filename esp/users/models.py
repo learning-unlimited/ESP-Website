@@ -174,15 +174,12 @@ class UserBit(models.Model):
 
         #	Hopefully it's easier to understand this query now...
         Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
-        Q_correct_qsc = Q(qsc__pk = qsc.id)
-        Q_exact_match = Q(recursive = False, verb__pk = verb.id, qsc__pk = qsc.id)
+        Q_correct_qsc = Q(qsc=qsc)
+        Q_exact_match = Q(recursive = False, verb=verb, qsc=qsc)
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
-        if (UserBit.objects.filter(Q_correct_userbit).count() == 0):
-            users = UserBit.objects.filter(Q_correct_qsc).filter(Q_exact_match).filter(Q_after_start).filter(Q_before_end)
-        else:
-            users = UserBit.objects.filter(Q_correct_qsc).filter(Q_correct_userbit).filter(Q_after_start).filter(Q_before_end)
+        users = UserBit.objects.filter(Q_exact_match).filter(Q_after_start).filter(Q_before_end) | UserBit.objects.filter(Q_correct_qsc).filter(Q_correct_userbit).filter(Q_after_start).filter(Q_before_end)
 
         return users.distinct()
     
