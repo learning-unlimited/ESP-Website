@@ -15,6 +15,8 @@ urlpatterns = patterns('',
     # Example:
     # (r'^esp/', include('esp.apps.foo.urls.foo')),
 
+    (r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/media/'}),
+
     (r'^beta/satprep.csv$', 'esp.satprep.views.satprep_csv'),
 
     # The default
@@ -84,5 +86,4 @@ urlpatterns = patterns('',
     # Class-edit interface
     (r'^classes/edit/(?P<id>[0-9]*)/$', 'esp.program.views.updateClass'),
 	
-    (r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/media/'})
 )

@@ -26,11 +26,13 @@ def teacher_lookup(request, limit=10):
 
     # Search for teachers with names that start with search string
     startswith = request.GET['q']
-    Q_firstname = Q(user__first_name__istartswith=startswith)
-    Q_lastname = Q(user__last_name__istartswith=startswith)
+    parts = startswith.split(', ')
+    Q_name = Q(user__last_name__istartswith=parts[0])
+    if len(parts) > 1:
+	Q_name = Q_name & Q(user__first_name__istartswith=parts[1])
 
     # Isolate user objects
-    queryset = queryset.filter(Q_firstname | Q_lastname)[:(limit*10)]
+    queryset = queryset.filter(Q_name)[:(limit*10)]
     users = [ub.user for ub in queryset]
     user_dict = {}
     for user in users:
@@ -38,7 +40,7 @@ def teacher_lookup(request, limit=10):
     users = user_dict.values()
 
     # Construct combo-box items
-    obj_list = [[user.first_name + ' ' + user.last_name, user.id] for user in users]
+    obj_list = [[user.last_name + ', ' + user.first_name, user.id] for user in users]
 
     # Operation Complete!
     return JsonResponse(obj_list)
