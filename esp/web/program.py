@@ -40,19 +40,26 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 			
 		if request.POST['action'] == 'Reject':
 			clsObj.reject()
+		
+		if request.POST['action'] == 'Change Time':
+			clsObj.setTime(request.POST['event_template'])
 
 	curUser = ESPUser(request.user)
 	#	You'll notice these are the same; we make no distinction yet.
 	#	Only show the approve and edit buttons if you're looking at the whole
-	#	catalog as opposed to a particular timeslot.
+	#	catalog as opposed to a particular timeslot.  Only show the buttons
+	#	for pre-registering if you're looking at a particular timeslot.
 	if timeslot == None:
 		can_edit_classes = curUser.canAdminister(prog)
 		can_approve_classes = curUser.canAdminister(prog)
+		prereg_url = None
 	else:
 		can_edit_classes = False
 		can_approve_classes = False
+		prereg_url = '/' + tl + '/' + prog.url() + '/addclass'
 
-	clas = [ {'class': cls, 'accepted': cls.isAccepted() }
+	clas = [ {'class': cls, 'accepted': cls.isAccepted(), 
+			'times': [{'id': vt.id, 'label': vt.friendly_name} for vt in cls.viable_times.all()] }
 		for cls in prog.class_set.all().order_by('category')
 		if (can_approve_classes or can_edit_classes
 		or UserBit.UserHasPerms(request.user, cls.anchor, dt_approved)
@@ -64,7 +71,7 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 	return render_to_response('program/catalogue', {'request': request,
 							'Program': p.replace("_", " "),
 							'courses': clas ,
-							'prereg_url': 'addclass',
+							'prereg_url': prereg_url,
 							'timeslot': timeslot,
 							'navbar_list': makeNavBar(request.user, prog.anchor),
 							'preload_images': preload_images,
@@ -576,6 +583,7 @@ program_handlers = {'catalog': program_catalog,
 		    'selectclass': program_teacherreg,
 		    'teacherreg': program_teacherreg2,
 		    'fillslot': program_fillslot,
+			'changeslot': program_fillslot,
 		    'addclass': program_addclass,
 		    'makeaclass': program_makeaclass,
 		    'makecourse': program_makeaclass,

@@ -44,7 +44,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 </tr>
 <tr><td valign='top' align='center'><b>Meeting Time</b><br/>
 {{ aclass.class.event_template.friendly_name }}<br /></td>
-<td style='width: 40%' align='left'><b>Grades:</b>{{ aclass.class.grade_min }} - {{ aclass.class.grade_max }}<br/>
+<td style='width: 40%' align='left'><b>Grades:</b> {{ aclass.class.grade_min }} - {{ aclass.class.grade_max }}<br/>
 <b>Enrollment:</b> {{aclass.class.enrollment}} (max {{aclass.class.class_size_max}})</td></tr></table><br />
 
 {% if can_edit_classes or can_approve_classes %}
@@ -55,15 +55,30 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% endif %}
 {% if can_approve_classes %}
 {% if not aclass.accepted %}
-<input type="submit" name="action" value="Accept" />
+Class is not approved... <input type="submit" name="action" value="Accept" />
+{% else %}
+Class has been approved... <input type="submit" name="action" value="Reject" />
 {% endif %}
+Time: <select name="event_template" value="{{ aclass.class.event_template.id }}">
+<option value="">Not Assigned</option>
+{% for event in aclass.times %}
+<option value="{{ event.id }}" 
+{% ifequal event.id aclass.class.event_template.id %}
+selected
+{% endifequal %}
+>{{ event.label }}</option>
+{% endfor %}
+</select>
+<input type="submit" name="action" value="Change Time" />
 {% endif %}
 </form><br /><br />
 {% endif %}
+{% if prereg_url %}
 <form name="prereg_class" method="post" action="{{ prereg_url }}">
 <input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
 <input type="submit" name="action" value="Pre-register" />
 </form>
+{% endif %}
 
 </div>
 {% endfor %}

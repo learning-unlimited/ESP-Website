@@ -118,10 +118,20 @@ class Class(models.Model):
 			for usr in self.teachers() ]
 
 	def preregister_student(self, user):
+		prereg_verb = GetNode( 'V/Flags/Registration/Preliminary' )
+		
+		#	First, delete preregistration bits for other classes at the same time.
+		other_bits = UserBit.objects.filter(user=user, verb=prereg_verb)
+		for b in other_bits:
+			class_qset = Class.objects.filter(anchor=b.qsc, event_template = self.event_template)
+			if class_qset.count() > 0:
+				b.delete()
+		
+		#	Then, create the userbit denoting preregistration for this class.
 		prereg = UserBit()
 		prereg.user = user
 		prereg.qsc = self.anchor
-		prereg.verb = GetNode( 'V/Flags/Registration/Preliminary' )
+		prereg.verb = prereg_verb
 		prereg.save()
 
 	def pageExists(self):
@@ -150,6 +160,12 @@ class Class(models.Model):
 			userbitlst.delete()
 			return True
 		return False
+	
+	def setTime(self, event_template_id):
+		if event_template_id > 0:
+			self.event_template = DataTree.objects.filter(id=event_template_id)[0]
+			self.save()
+		return event_template_id
 			
 	def getUrlBase(self):
 		""" gets the base url of this class """
