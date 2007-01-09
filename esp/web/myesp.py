@@ -266,57 +266,9 @@ def myesp_home(request, module):
 
 #	That hopefully completes the array structure needed for this thing.
 
-@login_required
-def myesp_battlescreen_student(request, module):
-	curUser = request.user
-
-	sub = GetNode('V/Subscribe')
-	ann = Entry.find_posts_by_perms(curUser, sub)
-	ann = [x.html() for x in ann]
-	
-	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Flags/Public'));
-	
-	signup_sections = []
-	
-	for p in programs_current:
-		signup_sections.append({'header' : str(p), 
-								'items' : [['Information Page', '/learn/' + p.url() + '/index.html', ''],
-										['Class Catalog', '/learn/' + p.url() + '/catalog/', ''],
-										['Register for Classes', '/learn/' + p.url() + '/studentreg/', 'Help']]
-								})
-	
-	block_ann = 	preview_miniblog(request, 'learn')
-				
-	block_signup =  {	'title' : 'Register For ESP Programs',
-						'headers' : ['Follow the links below to get started.'],
-						'sections' : signup_sections
-					}
-					
-	#	The survey engine doesn't exist yet, and that's why the URLs are None.
-	block_surveys = {	'title' : 'Online Surveys',
-						'headers' : ['We\'re looking for your feedback so we can improve:'],
-						'sections' : 
-							[{	'header' : 'Splash Fall 2005',
-								'items' : 	[['General Survey', None, ''],
-											['Class 1 Survey', None, ''],
-											['Class 2 Survey', None, '']]
-							},
-							{	'header' : 'Delve 2005 - 2006',
-								'items' :	[['General Survey', None, '']]
-							}]
-					}
-						
-	blocks = [block_ann, block_signup, block_surveys]
-	
-	return render_to_response('battlescreens/general.html', {'request': request,
-							   'programs': programs_current,
-							   'blocks': blocks,								 
-							   'page_title': 'MyESP: Student Home Page',
-							   'navbar_list': makeNavBar(request.user, GetNode('Q/Program/')),
-							   'logged_in': request.user.is_authenticated() }) 
 
 @login_required
-def myesp_battlescreen_teacher(request, module, admin_details = False, student_version = False):
+def myesp_battlescreen(request, module, admin_details = False, student_version = False):
 	"""This function is the main battlescreen for the teachers. It will go through and show the classes
 	that they can edit and display. """
 
@@ -397,83 +349,25 @@ def myesp_battlescreen_teacher(request, module, admin_details = False, student_v
 def myesp_battlescreen_admin(request, module):
 	qscs = UserBit.bits_get_qsc(user=request.user, verb=GetNode("V/Administer"))
 	if qscs.count() > 0:
-		return myesp_battlescreen_teacher(request, module, admin_details = True)
+		return myesp_battlescreen(request, module, admin_details = True)
 	else:
 		raise Http404
 
-@login_required							   
-def myesp_battlescreen_admin2(request, module):
-	curUser = request.user
-	
-	block_ann = preview_miniblog(request, 'teach')
-	
-	#	Admins see: read announcements, post announcements, approve/reject classes, program administration, create program
-	
-	if request.POST:
-		#	If you clicked a button to approve or reject, first clear the "proposed" bit
-		#	by setting the end date to now.
-		if request.POST.has_key('action'):
-			if (request.POST['action'] == 'Approve' or request.POST['action'] == 'Reject'):
-				u = UserBit()
-				u.user = None
-				u.end_date = datetime.now()
-				u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-				u.verb = GetNode('V/Flags/Class/Proposed')
-				u.save()
-			#	And, if the class was approved, grant the Approved verb to it.		
-			if request.POST['action'] == 'Approve':
-				u = UserBit()
-				u.user = None
-				u.qsc = Class.objects.filter(pk=request.POST['class_id'])[0].anchor
-				u.verb = GetNode('V/Flags/Class/Approved')
-				u.save()
+@login_required
+def myesp_battlescreen_student(request, module):
+	qscs = UserBit.bits_get_qsc(user=request.user, verb=GetNode("V/Flags/UserRole/Student"))
+	if qscs.count() > 0:
+		return myesp_battlescreen(request, module, student_version = True)
+	else:
+		raise Http404
 
-		if request.POST.has_key('anntext'):
-			#	Send them to the create-miniblog form.
-			return create_miniblog(request,'Web')
-
-	has_ann_perms = UserBit.UserHasPerms(request.user, GetNode('Q/Web'), GetNode('V/Administer/Edit/Use'))
-	if has_ann_perms:
-		block_ann['sections'].append({'header' : 'General Announcements Control',
-					      'items' : [['<b>Careful</b>: announcements created here are seen by all.', None, '']],
-					      'input_items' : [['Add Announcement', 'anntext', 'Create...', '']]})
-					
-	programs_current = UserBit.find_by_anchor_perms(Program, curUser, GetNode('V/Administer/Edit'))
-	
-	approval_sections = []
-	approval_headers = []
-	program_classes = []
-	
-	proposed_classes = UserBit.find_by_anchor_perms(Class, curUser, GetNode('V/Flags/Class/Proposed'))
-
-	for i in range(len(programs_current)):
-		duplicate_flag = False
-		p = programs_current[i]
-		for j in range(1, i):
-			if (p.id == programs_current[j].id):
-				duplicate_flag = True
-		program_classes = []
-		if not duplicate_flag:
-			for c in proposed_classes:
-				if UserBit.UserHasPerms(curUser, c.anchor, GetNode('V/Flags/Class/Proposed')):
-					program_classes.append([str(c), '/learn/' + c.url() + '/index.html',
-						'<input class="button" type="submit" value="Approve"> / <input class="button" type="submit" value="Reject">'])
-			approval_sections.append({'header' : str(p), 'items' : program_classes})
-						
-	block_approve = {	'title' : 'Approve Classes',
-						'headers' : None,
-						'sections' : approval_sections }
-						
-	blocks = [block_ann, block_approve]
-	welcome_msg = 'This is your ESP "battle screen."  Have fun and don\'t break anything.'
-					
-	return render_to_response('battlescreens/general', {'request': request,
-							   'blocks': blocks,
-							   'page_title': 'MyESP: Administrator Home Page',
-							   'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/')),
-							   'welcome_msg': welcome_msg, 
-							   'logged_in': request.user.is_authenticated() })
-
+@login_required
+def myesp_battlescreen_teacher(request, module):
+	qscs = UserBit.bits_get_qsc(user=request.user, verb=GetNode("V/Flags/UserRole/Teacher"))
+	if qscs.count() > 0:
+		return myesp_battlescreen(request, module)
+	else:
+		raise Http404	
 
 
 myesp_handlers = { 'register': myesp_register,

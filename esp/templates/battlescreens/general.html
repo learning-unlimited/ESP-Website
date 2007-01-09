@@ -104,7 +104,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
       {% endif %}
     </td>
     <td class="clsmiddle">
-       {% if student_view %}{% else %}
+       {% if student_version %}{% else %}
        <form method="post" action="">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
          <input class="button" type="submit" value="Edit">
@@ -124,6 +124,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
    {% endfor %}
    <tr>
      <td colspan="3" style="font-weight: bold;">
+    {% if student_version %}{% else %}
      {% if progDict.shortened %}
      {{ progDict.totalclsnum }} total.... 
      <a href="/teach/{{progDict.prog.getUrlBase}}/selectclass"
@@ -139,6 +140,8 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
      </a>
      </span> 
      <br /><br />
+     {% endif %}
+     </td>
     </tr>
 {% endfor %}
 </table>

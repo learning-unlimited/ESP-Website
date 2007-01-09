@@ -6,6 +6,8 @@ from esp.workflow.models import Controller
 from datetime import datetime
 from django.db.models import Q
 from esp.dblog.models import error
+from django.db.models.query import QuerySet
+from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -28,8 +30,11 @@ class ESPUser(User, AnonymousUser):
 
     def getEnrolledClasses(self):
         from esp.program.models import Class
-        return (UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Confirmed')) | UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Preliminary'))).distinct()
+        Conf = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Confirmed'))
+        Prel = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Preliminary'))
 
+        return (Conf | Prel).distinct()
+        
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
@@ -252,6 +257,9 @@ class UserBit(models.Model):
 
         if res != None:
             res = res.distinct()
+
+        if res == None:
+            return EMPTY_QUERYSET
 
 	# Operation Complete!
 	return res
