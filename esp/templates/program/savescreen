@@ -6,14 +6,18 @@
 
 {% block content %}
 <br>
-<h3 style="font-size: 100%">Thank you for your interest in {{one}}!</h3>
-<br>
-Your class selection has been saved.  <br>You can come back and change your class selections later, up until 2 days before {{one}} begins.
-<br>
+<h3 style="font-size: 100%">Thank you!</h3>
+<p>
+Your class selection for {{one}} has been saved. You can come back and change your class selections later, up until 2 days before {{one}} begins.
+</p>
 {% if printConfirm %}
+<p>
 You may <a href="printconfirm">print</a> your confirmation letter now.  You should print this letter and bring it with you to the program's registration and/or first day of class.
+</p>
 {% else %}
-However, you are not completely finished with registration.  You should come back later and finish your registration.  
+<p>
+However, <b>you are not completely finished with registration</b>.  You should come back later and finish your registration.  
+</p>
 {% endif %}
 <br>
 Thanks!

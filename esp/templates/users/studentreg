@@ -10,8 +10,7 @@
 <h2 style="text-align: center">Welcome!</h2><br />
 <b style="text-align: center">Student registration for {{program}} </b>
 
-<p style="text-align: center">There are two steps to registration. You must complete both to be fully
-registered for {{program}}</p>
+<p style="text-align: center">Please complete both of the following steps so that you are fully pre-registered for {{program}}.</p>
 
 <center><table style="text-align: center">
 <tr><th>What to do?</th><th>Done?</th></tr>
@@ -33,6 +32,7 @@ border = 1
 ></td>
 </tr>
 
+{% if using_online_payments %}
 <tr>
  <td><a href="/learn/{{one}}/{{two}}/startpay/">Pay Online</a> (Optional)</td>
  <td style="text-align: center"><img src="/media/images/{{pay_graphic}}.gif"
@@ -41,6 +41,7 @@ border = 1
 {% endifequal %}
 ></td>
 </tr>
+{% endif %}
 
 </table></center>
 <br /><hr><br />

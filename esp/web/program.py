@@ -41,20 +41,31 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 		if request.POST['action'] == 'Reject':
 			clsObj.reject()
 
-			
 	curUser = ESPUser(request.user)
-	can_edit_classes = curUser.canAdminister(prog)
+	#	You'll notice these are the same; we make no distinction yet.
+	#	Only show the approve and edit buttons if you're looking at the whole
+	#	catalog as opposed to a particular timeslot.
+	if timeslot == None:
+		can_edit_classes = curUser.canAdminister(prog)
+		can_approve_classes = curUser.canAdminister(prog)
+	else:
+		can_edit_classes = False
+		can_approve_classes = False
 
 	clas = [ {'class': cls, 'accepted': cls.isAccepted() }
-		 for cls in prog.class_set.all().order_by('category')
-		 if (can_edit_classes or can_approve_classes
-		 or UserBit.UserHasPerms(request.user, x.anchor, dt_approved) )
-		 and (timeslot == None or x.event_template == timeslot) ]
+		for cls in prog.class_set.all().order_by('category')
+		if (can_approve_classes or can_edit_classes
+		or UserBit.UserHasPerms(request.user, cls.anchor, dt_approved)
+		and (timeslot == None or (cls.event_template != None and cls.event_template == timeslot ))) ]
 
 	p = one + " " + two
+		
+	#	assert False, 'About to render catalog'
 	return render_to_response('program/catalogue', {'request': request,
 							'Program': p.replace("_", " "),
 							'courses': clas ,
+							'prereg_url': 'addclass',
+							'timeslot': timeslot,
 							'navbar_list': makeNavBar(request.user, prog.anchor),
 							'preload_images': preload_images,
 							'logged_in': request.user.is_authenticated(),
@@ -250,12 +261,12 @@ def program_fillslot(request, tl, one, two, module, extra, prog):
 @login_required
 def program_addclass(request, tl, one, two, module, extra, prog):
 	""" Preregister a student for the specified class, then return to the studentreg page """
-	classid = request.POST['class']
+	classid = request.POST['class_id']
 	cobj = Class.objects.filter(id=classid)[0]
 	cobj.preregister_student(request.user)
 
 	from esp.web.views import program
-
+	
 	return program(request, tl, one, two, "studentreg")
 
 
@@ -330,18 +341,12 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 
 	# Can edit this class
 	v = GetNode( 'V/Administer/Edit')
-	ub = UserBit()
-	ub.user = request.user
-	ub.qsc = cobj.anchor
-	ub.verb = v
+	ub, created = UserBit.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
 	ub.save()
 
 	# is a teacher of this class
 	v = GetNode( 'V/Flags/Registration/Teacher')
-	ub = UserBit()
-	ub.user = request.user
-	ub.qsc = cobj.anchor
-	ub.verb = v
+	ub, created = UserBit.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
 	ub.save()
 	
 	#TimeSlot

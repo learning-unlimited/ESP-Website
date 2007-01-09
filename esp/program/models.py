@@ -1,5 +1,4 @@
 
-
 from django.db import models
 from django.contrib.auth.models import User
 from esp.cal.models import Event
@@ -11,54 +10,54 @@ from esp.qsd.models import QuasiStaticData
 # Create your models here.
 
 class Program(models.Model):
-    """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
-    anchor = models.ForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
+	""" An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
+	anchor = models.ForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
 
-    grade_min = models.IntegerField()
-    grade_max = models.IntegerField()
-    class_size_min = models.IntegerField()
-    class_size_max = models.IntegerField()
+	grade_min = models.IntegerField()
+	grade_max = models.IntegerField()
+	class_size_min = models.IntegerField()
+	class_size_max = models.IntegerField()
 
-    def url(self):
-        str_array = self.anchor.tree_encode()
-        return '/'.join(str_array[2:])
-    
-    def __str__(self):
-        return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+	def url(self):
+		str_array = self.anchor.tree_encode()
+		return '/'.join(str_array[2:])
+	
+	def __str__(self):
+		return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
 
-    def parent(self):
-	    return anchor.parent
+	def parent(self):
+		return anchor.parent
 
-    def getUrlBase(self):
-        """ gets the base url of this class """
-        tmpnode = self.anchor
-        urllist = []
-        while tmpnode.name != 'Programs':
-            urllist.insert(0,tmpnode.name)
-            tmpnode = tmpnode.parent
-        return "/".join(urllist)
-                      
+	def getUrlBase(self):
+		""" gets the base url of this class """
+		tmpnode = self.anchor
+		urllist = []
+		while tmpnode.name != 'Programs':
+			urllist.insert(0,tmpnode.name)
+			tmpnode = tmpnode.parent
+		return "/".join(urllist)
+					  
 
-    class Admin:
-        pass
-    
-    @staticmethod
-    def find_by_perms(user, verb):
-    	""" Fetch a list of relevant programs for a given user and verb """
-	return UserBit.find_by_anchor_perms(Program,user,verb)
+	class Admin:
+		pass
+	
+	@staticmethod
+	def find_by_perms(user, verb):
+		""" Fetch a list of relevant programs for a given user and verb """
+		return UserBit.find_by_anchor_perms(Program,user,verb)
 
 class ClassCategories(models.Model):
-    """ A list of all possible categories for an ESP class
+	""" A list of all possible categories for an ESP class
 
-    Categories include 'Mathematics', 'Science', 'Zocial Zciences', etc.
-    """
-    category = models.TextField()
+	Categories include 'Mathematics', 'Science', 'Zocial Zciences', etc.
+	"""
+	category = models.TextField()
 
-    def __str__(self):
-        return str(self.category)
+	def __str__(self):
+		return str(self.category)
 
-    class Admin:
-        pass
+	class Admin:
+		pass
 
 # FIXME: The Class object should use the permissions system to control
 # which grades (Q/Community/6_12/*) are permitted to join the class, though
@@ -87,20 +86,20 @@ class Class(models.Model):
 		return '/'.join(str_array[2:])
 
 	def got_qsd(self):
-                return (QuasiStaticData.objects.filter(path = self.anchor).count() > 0)
+				return (QuasiStaticData.objects.filter(path = self.anchor).count() > 0)
 
-        def PopulateEvents(self):
-            """ Given this instance's event_template, generate a series of events that define this class's schedule """
-            for e in self.event_template.event_set.all():
-                newevent = Event()
-                newevent.start = e.start
-                newevent.end = e.end
-                newevent.short_description = e.short_description
-                newevent.description = e.description.replace('[event]', e.anchor.friendly_name) # Allow for the insertion of event names, so that the templates are less generic/nonspecific
-                newevent.event_type = e.event_type
-                newevent.anchor = self.anchor
-                newevent.save()
-        
+	def PopulateEvents(self):
+		""" Given this instance's event_template, generate a series of events that define this class's schedule """
+		for e in self.event_template.event_set.all():
+			newevent = Event()
+			newevent.start = e.start
+			newevent.end = e.end
+			newevent.short_description = e.short_description
+			newevent.description = e.description.replace('[event]', e.anchor.friendly_name) # Allow for the insertion of event names, so that the templates are less generic/nonspecific
+			newevent.event_type = e.event_type
+			newevent.anchor = self.anchor
+			newevent.save()
+		
 	def __str__(self):
 		if self.title() is not None:
 			return self.title()
@@ -111,58 +110,56 @@ class Class(models.Model):
 		return self.anchor.friendly_name
 	
 	def teachers(self):
-            v = GetNode( 'V/Flags/Registration/Teacher' )
-            return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
+		v = GetNode( 'V/Flags/Registration/Teacher' )
+		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
 
-        def getTeacherNames(self):
-            return [ usr.first_name + ' ' + usr.last_name
-                     for usr in self.teachers() ]
-        
-        
+	def getTeacherNames(self):
+		return [ usr.first_name + ' ' + usr.last_name
+			for usr in self.teachers() ]
+
 	def preregister_student(self, user):
-            prereg = UserBit()
-            prereg.user = user
-            prereg.qsc = self.anchor
-            prereg.verb = GetNode( 'V/Flags/Registration/Preliminary' )
-            prereg.save()
+		prereg = UserBit()
+		prereg.user = user
+		prereg.qsc = self.anchor
+		prereg.verb = GetNode( 'V/Flags/Registration/Preliminary' )
+		prereg.save()
 
-        def pageExists(self):
-            from esp.qsd.models import QuasiStaticData
-            return self.anchor.quasistaticdata_set.filter(name='learn:index').count() > 0
+	def pageExists(self):
+		from esp.qsd.models import QuasiStaticData
+		return self.anchor.quasistaticdata_set.filter(name='learn:index').count() > 0
 
-        def isAccepted(self):
-            return UserBit.UserHasPerms(None, self.anchor, GetNode('V/Flags/Class/Approved'))
+	def isAccepted(self):
+		return UserBit.UserHasPerms(None, self.anchor, GetNode('V/Flags/Class/Approved'))
 
-        def accept():
-            if self.isAccepted():
-                return False # already accepted
-            
-            u = UserBit()
-            u.user = None
-            u.qsc = self.anchor
-            u.verb = GetNode('V/Flags/Class/Approved')
-            u.save()
-            return True
+	def accept(self):
+		if self.isAccepted():
+			return False # already accepted
+			
+		u = UserBit()
+		u.user = None
+		u.qsc = self.anchor
+		u.verb = GetNode('V/Flags/Class/Approved')
+		u.save()
+		return True
 
-        def reject():
-            userbitlst = UserBit.objects.filter(user = None,
-                                                qsc  = clsObj.anchor,
-                                                verb = dt_approved)
-            if len(userbitlst) > 0:
-                userbitlst.delete()
-                return True
-
-            return False
-            
-        def getUrlBase(self):
-            """ gets the base url of this class """
-            tmpnode = self.anchor
-            urllist = []
-            while tmpnode.name != 'Programs':
-                urllist.insert(0,tmpnode.name)
-                tmpnode = tmpnode.parent
-            return "/".join(urllist)
-                               
+	def reject(self):
+		userbitlst = UserBit.objects.filter(user = None,
+											qsc  = clsObj.anchor,
+											verb = dt_approved)
+		if len(userbitlst) > 0:
+			userbitlst.delete()
+			return True
+		return False
+			
+	def getUrlBase(self):
+		""" gets the base url of this class """
+		tmpnode = self.anchor
+		urllist = []
+		while tmpnode.name != 'Programs':
+			urllist.insert(0,tmpnode.name)
+			tmpnode = tmpnode.parent
+		return "/".join(urllist)
+							   
 	class Admin:
 		pass
 	
