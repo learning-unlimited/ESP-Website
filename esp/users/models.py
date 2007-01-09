@@ -184,7 +184,7 @@ class UserBit(models.Model):
         else:
             users = UserBit.objects.filter(Q_correct_qsc).filter(Q_correct_userbit).filter(Q_after_start).filter(Q_before_end)
 
-        return users
+        return users.distinct()
     
 
     @staticmethod
@@ -207,9 +207,9 @@ class UserBit(models.Model):
             qscs = UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
 
         if qsc_root == None:
-            return qscs
+            return qscs.distinct()
         else:
-            return qscs.filter(qsc__rangestart__gte=qsc_root.rangestart, qsc__rangeend__lte=qsc_root.rangeend)
+            return qscs.filter(qsc__rangestart__gte=qsc_root.rangestart, qsc__rangeend__lte=qsc_root.rangeend).distinct()
 
     @staticmethod
     def bits_get_verb(user, qsc, now = datetime.now(), end_of_now = None):
@@ -224,9 +224,9 @@ class UserBit(models.Model):
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
         if (UserBit.objects.filter(Q_correct_userbit).count() == 0):
-            verbs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+            verbs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end).distinct()
         else:
-            verbs = UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+            verbs = UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end).distinct()
 
         return verbs
         

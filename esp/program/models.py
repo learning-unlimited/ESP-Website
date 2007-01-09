@@ -111,7 +111,8 @@ class Class(models.Model):
 	
 	def teachers(self):
 		v = GetNode( 'V/Flags/Registration/Teacher' )
-		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
+		return User.objects.filter(id__in=[ x.user.id for x in UserBit.bits_get_users( self.anchor, v) ]).distinct()
+		#return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
 
 	def getTeacherNames(self):
 		return [ usr.first_name + ' ' + usr.last_name

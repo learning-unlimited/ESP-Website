@@ -318,7 +318,7 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 			fullclslist[cls.parent_program.id].append(cls)
 		else:
 			fullclslist[cls.parent_program.id] = [cls]
-		
+	
 	# I don't like adding this second structure...
 	# but django templates made me do it!
 	responseProgs = []
