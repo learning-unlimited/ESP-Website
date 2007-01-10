@@ -116,8 +116,10 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
       <a href="/learn/{{cls.getUrlBase}}/index.html"
          title="{{ cls }}...">Visit web page</a>
       {% else %}
-      <a href="/learn/{{cls.getUrlBase}}/index.edit.html"
-         title="Create `{{ cls }}'...">Create web page</a>
+		{% if student_version %} {% else %} 
+		  <a href="/learn/{{cls.getUrlBase}}/index.edit.html"
+			 title="Create `{{ cls }}'...">Create web page</a>
+		{% endif %}
       {% endif %}
      </td>
    </tr>

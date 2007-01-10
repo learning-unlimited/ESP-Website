@@ -4,13 +4,15 @@ from esp.qsd.models import QuasiStaticData
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
 from django.http import HttpResponseRedirect, HttpResponse, Http404
-from esp.users.models import UserBit, GetNodeOrNoBits
+from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits
 from esp.program.models import Class
 from django import forms
 
 from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.decorators import login_required
 from esp.web.models import NavBarEntry
 
+@login_required
 def updateClass(request, id):
     """ An update-class form """
     try:
@@ -18,6 +20,10 @@ def updateClass(request, id):
     except Class.DoesNotExist:
         raise Http404
 
+    curUser = ESPUser(request.user)
+    if not curUser.canEdit(Class.objects.get(id=id)):
+        raise Http404
+	
     orig_class = manipulator.original_object
 
     #errors = None

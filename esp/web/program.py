@@ -120,7 +120,28 @@ def program_profile(request, tl, one, two, module, extra, prog):
 @login_required
 def program_studentreg(request, tl, one, two, module, extra, prog):
 	""" Display a student reg page """
-	curUser = request.user
+	curUser = ESPUser(request.user)
+	
+	if not curUser.isStudent():
+		timeslot = None
+		dt_approved = GetNode( 'V/Flags/Class/Approved' )
+		clas = [ {'class': cls, 'accepted': cls.isAccepted(), 
+				'times': [{'id': vt.id, 'label': vt.friendly_name} for vt in cls.viable_times.all()] }
+			for cls in prog.class_set.all().order_by('category')
+			if (UserBit.UserHasPerms(request.user, cls.anchor, dt_approved)
+			and (timeslot == None or (cls.event_template != None and cls.event_template == timeslot ))) ]
+		return render_to_response('program/catalogue', {'request': request,
+							'Program': str(prog).replace("_", " "),
+							'courses': clas ,
+							'timeslot': None,
+							'message': 'You must be an ESP student to register for ' + prog.anchor.friendly_name + '.',
+							'navbar_list': makeNavBar(curUser, prog.anchor),
+							'preload_images': preload_images,
+							'logged_in': curUser.is_authenticated(),
+							'tl': tl,
+							'can_edit_classes': False,
+							'can_approve_classes': False })
+	
 	regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
 	if regprof.count() < 1:
 		regprof = RegistrationProfile()

@@ -14,6 +14,9 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% endif %}
 </p>
 <p style='text-align: center;'>
+{{ message }}
+</p>
+<p style='text-align: center;'>
 
 <table style='text-align: center; margin: auto;' width='60%' border='0'>
  <tr>
