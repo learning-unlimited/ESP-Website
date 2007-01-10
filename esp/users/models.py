@@ -144,13 +144,13 @@ class UserBit(models.Model):
     def UserHasPerms(user, qsc, verb, now = datetime.now()):
         """ Given a user, a permission, and a subject, return True if the user, or all users, has been Granted [subject] on [permission]; False otherwise """
 	test = []
-        if user != None and type(user) != AnonymousUser:
+        if user != None and type(user) != AnonymousUser and user.is_authenticated():
             for bit in user.userbit_set.all().filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now)):
                 test.append(bit)
                 if ((bit.recursive and bit.qsc.is_descendant(qsc)) or bit.qsc == qsc) and ((bit.recursive and bit.verb.is_descendant(verb)) or bit.verb == verb):
                     return True
 
-            # This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
+        # This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
         for bit in UserBit.objects.filter(user__isnull=True).filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now)):
             test.append(bit)
             if ((bit.recursive and bit.qsc.is_descendant(qsc)) or bit.qsc == qsc) and ((bit.recursive and bit.verb.is_descendant(verb)) or bit.verb == verb):
@@ -197,15 +197,12 @@ class UserBit(models.Model):
 
         #	Hopefully it's easier to understand this query now...
         Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
-        Q_exact_match = Q(recursive = False, verb__pk = verb.id)
-        Q_correct_user = Q(user__isnull = True) | Q(user__pk = user.id)
+        Q_exact_match = Q(recursive = False, verb=verb)
+        Q_correct_user = Q(user__isnull = True) | Q(user=user)
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
-        if (UserBit.objects.filter(Q_correct_userbit).count() == 0):
-            qscs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
-        else:
-            qscs = UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+        qscs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end) | UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
 
         if qsc_root == None:
             return qscs.distinct()
@@ -219,17 +216,14 @@ class UserBit(models.Model):
 
         #	Hopefully it's easier to understand this query now...
         Q_correct_userbit = Q(recursive = True, qsc__rangestart__lte = qsc.rangestart, qsc__rangeend__gte = qsc.rangeend)
-        Q_exact_match = Q(recursive = False, qsc__pk = qsc.id)
-        Q_correct_user = Q(user__isnull = True) | Q(user__pk = user.id)
+        Q_exact_match = Q(recursive = False, qsc=qsc)
+        Q_correct_user = Q(user__isnull = True) | Q(user=user)
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
-        if (UserBit.objects.filter(Q_correct_userbit).count() == 0):
-            verbs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end).distinct()
-        else:
-            verbs = UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end).distinct()
+        verbs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end) | UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
 
-        return verbs
+        return verbs.distinct()
         
         #return UserBit.objects.filter(Q(recursive=True, qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend) | Q(qsc__pk=qsc.id)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnul=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
 

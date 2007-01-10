@@ -267,7 +267,6 @@ def myesp_home(request, module):
 #	That hopefully completes the array structure needed for this thing.
 
 
-@login_required
 def myesp_battlescreen(request, module, admin_details = False, student_version = False):
 	"""This function is the main battlescreen for the teachers. It will go through and show the classes
 	that they can edit and display. """
