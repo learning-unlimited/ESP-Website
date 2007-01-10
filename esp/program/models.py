@@ -6,6 +6,7 @@ from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit, ContactInfo
 from esp.lib.markdown import markdown
 from esp.qsd.models import QuasiStaticData
+from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 
 # Create your models here.
 
@@ -112,7 +113,11 @@ class Class(models.Model):
 	
 	def teachers(self):
 		v = GetNode( 'V/Flags/Registration/Teacher' )
-		return User.objects.filter(id__in=[ x.user.id for x in UserBit.bits_get_users( self.anchor, v) ]).distinct()
+		userbits = [ x.user.id for x in UserBit.bits_get_users( self.anchor, v) ]
+		if len(userbits) > 0:
+			return User.objects.filter(id__in=userbits).distinct()
+		else:
+			return EMPTY_QUERYSET.distinct()
 		#return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
 		
 	def students(self):
