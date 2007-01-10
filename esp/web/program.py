@@ -35,8 +35,16 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 		
 		if curUser.canEdit(clsObj):
 			if request.POST['action'] == 'Edit':
-				return HttpResponseRedirect('/classes/edit/' + request.POST['class_id'] + '/') # We need to redirect to the class edit page
-		
+				clsid = int(request.POST['class_id']) # we have a class
+				clslist = list(Class.objects.filter(id = clsid))
+				if len(clslist) != 1:
+					assert False, 'Zero (or more than 1) classes match selected ID.'
+				clsobj = clslist[0]
+				prog = clsobj.parent_program
+				two  = prog.anchor.name
+				one  = prog.anchor.parent.name
+				return program_teacherreg2(request, 'teach', one, two, 'teacherreg', '', prog, clsobj)
+
 		if curUser.canAdminister(prog):
 			if request.POST['action'] == 'Accept':
 				clsObj.accept()

@@ -10,8 +10,9 @@
 <p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center;'><b>{{ Program }} Catalog</b></p>
 <p style='text-align: center;'>
 {% if timeslot %}
-Viewing classes for: {{ timeslot.friendly_name }}
+Viewing classes for: {{ timeslot.friendly_name }}; 
 {% endif %}
+{{ courses|length }} classes shown.
 </p>
 <p style='text-align: center;'>
 {{ message }}
@@ -26,11 +27,11 @@ Viewing classes for: {{ timeslot.friendly_name }}
  </tr>
 
 <tr><td style='width: 50%' valign='top' align='center'>
-	<a href='#cat1'>Computer Science</a><br /><a href='#cat2'>Hobbies</a><br /><a href='#cat4'>Liberal Arts</a><br /></td><td valign='top' align='center'><a href='#cat5'>Mathematics</a><br /><a href='#cat6'>Performing Arts</a><br /><a href='#cat7'>Science</a><br /><a href='#cat8'>Zocial Zcience</a><br /></td></tr></table><br />
+	<a href='#1'>Computer Science</a><br /><a href='#2'>Hobbies</a><br /><a href='#3'>Liberal Arts</a><br /></td><td valign='top' align='center'><a href='#4'>Mathematics</a><br /><a href='#5'>Performing Arts</a><br /><a href='#6'>Science</a><br /><a href='#7'>Zocial Zcience</a><br /></td></tr></table><br />
 
 {% for aclass in courses %}
 
-{% ifchanged %}<hr /><p style='font-family: arial; font-size:125%; text-align: center; margin-bottom: 0'><a name='{{ aclass.class.category }}'></a><b>{{ aclass.class.category}}</b></p><p style='text-align: center; margin-top: 0'><a href='#top'><small>[ Return to Category List ]</small></a></p> {% endifchanged %}
+{% ifchanged %}<hr /><a name="{{aclass.class.category.id}}"><p style='font-family: arial; font-size:125%; text-align: center; margin-bottom: 0'><a name='{{ aclass.class.category }}'></a><b>{{ aclass.class.category}}</b></p><p style='text-align: center; margin-top: 0'><a href='#top'><small>[ Return to Category List ]</small></a></p> {% endifchanged %}
 
 <div class="show_class">
 <table cellpadding="5" style="text-align: center; margin: auto; width: 620px">
