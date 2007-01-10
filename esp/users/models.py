@@ -199,6 +199,10 @@ class UserBit(models.Model):
         Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
         Q_exact_match = Q(recursive = False, verb=verb)
         Q_correct_user = Q(user__isnull = True) | Q(user=user)
+
+        if not user.is_authenticated():
+            Q_correct_user = Q(user__isnull = True)
+            
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
@@ -218,6 +222,10 @@ class UserBit(models.Model):
         Q_correct_userbit = Q(recursive = True, qsc__rangestart__lte = qsc.rangestart, qsc__rangeend__gte = qsc.rangeend)
         Q_exact_match = Q(recursive = False, qsc=qsc)
         Q_correct_user = Q(user__isnull = True) | Q(user=user)
+
+        if not user.is_authenticated():
+            Q_correct_user = Q(user__isnull = True)
+            
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		

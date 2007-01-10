@@ -31,6 +31,8 @@ def updateClass(request, id):
     if request.POST:
         new_data = request.POST.copy()
         # We're not letting users change these.  Admins only, and only via the Admin interface.
+        assert False, (new_data['anchor'], str(orig_class.anchor.id))
+        
         new_data['anchor'] = str(orig_class.anchor.id)
         new_data['parent_program'] = str(orig_class.parent_program.id)
 
