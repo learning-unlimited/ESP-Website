@@ -243,14 +243,20 @@ class UserBit(models.Model):
     @staticmethod
     def find_by_anchor_perms(module,user,verb,qsc=None):
     	""" Fetch a list of relevant items for a given user and verb in a module that has an anchor foreign key into the DataTree """
-    	q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
-
+    	#q_list = [ x.qsc for x in UserBit.bits_get_qsc( user, verb ) ]
+        q_list = UserBit.bits_get_qsc( user, verb )
     	# Extract entries associated with a particular branch
 
         res = None
 
-        for q in q_list:
-            query = module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend)
+        for bit in q_list:
+            q = bit.qsc
+
+            if bit.recursive:
+                query = module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend)
+            else:
+                query = module.objects.filter(anchor=q)
+                
             if qsc is not None:
                 query = query.filter(anchor__rangestart__gte=qsc.rangestart, anchor__rangeend__lte=qsc.rangeend)
 
