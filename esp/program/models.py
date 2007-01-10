@@ -80,7 +80,7 @@ class Class(models.Model):
 	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set', null=True)
 	viable_times = models.ManyToManyField(DataTree, related_name='class_viable_set', blank=True)
 	#	We think this is useless because the sign-up is completely based on userbits.
-	#	enrollment = models.IntegerField()
+	enrollment = models.IntegerField()
 
 	def url(self):
 		str_array = self.anchor.tree_encode()

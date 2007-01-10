@@ -371,12 +371,12 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 
 	# Can edit this class
 	v = GetNode( 'V/Administer/Edit')
-	ub, created = UserBit.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
+	ub, created = UserBit.objects.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
 	ub.save()
 
 	# is a teacher of this class
 	v = GetNode( 'V/Flags/Registration/Teacher')
-	ub, created = UserBit.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
+	ub, created = UserBit.objects.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
 	ub.save()
 	
 	#TimeSlot
