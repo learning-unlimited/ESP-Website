@@ -124,7 +124,7 @@ class Class(models.Model):
 		return UserBit.bits_get_users(self.anchor, v).count()
 
 	def isFull(self):
-		if len(self.students()) >= self.class_size_max:
+		if self.num_students() >= self.class_size_max:
 			return True
 		else:
 			return False
@@ -143,7 +143,7 @@ class Class(models.Model):
 			if class_qset.count() > 0:
 				b.delete()
 				
-		if self.students().count() < class_size_max:
+		if not self.isFull():
 			#	Then, create the userbit denoting preregistration for this class.
 			prereg = UserBit()
 			prereg.user = user
