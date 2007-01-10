@@ -79,7 +79,8 @@ class Class(models.Model):
 	schedule = models.TextField(blank=True)
 	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set', null=True)
 	viable_times = models.ManyToManyField(DataTree, related_name='class_viable_set', blank=True)
-	enrollment = models.IntegerField()
+	#	We think this is useless because the sign-up is completely based on userbits.
+	#	enrollment = models.IntegerField()
 
 	def url(self):
 		str_array = self.anchor.tree_encode()
@@ -113,7 +114,21 @@ class Class(models.Model):
 		v = GetNode( 'V/Flags/Registration/Teacher' )
 		return User.objects.filter(id__in=[ x.user.id for x in UserBit.bits_get_users( self.anchor, v) ]).distinct()
 		#return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
+		
+	def students(self):
+		v = GetNode( 'V/Flags/Registration/Preliminary' )
+		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
+		
+	def num_students(self):
+		v = GetNode( 'V/Flags/Registration/Preliminary' )
+		return UserBit.bits_get_users(self.anchor, v).count()
 
+	def isFull(self):
+		if len(self.students()) >= self.class_size_max:
+			return True
+		else:
+			return False
+	
 	def getTeacherNames(self):
 		return [ usr.first_name + ' ' + usr.last_name
 			for usr in self.teachers() ]
@@ -127,13 +142,18 @@ class Class(models.Model):
 			class_qset = Class.objects.filter(anchor=b.qsc, event_template = self.event_template)
 			if class_qset.count() > 0:
 				b.delete()
-		
-		#	Then, create the userbit denoting preregistration for this class.
-		prereg = UserBit()
-		prereg.user = user
-		prereg.qsc = self.anchor
-		prereg.verb = prereg_verb
-		prereg.save()
+				
+		if self.students().count() < class_size_max:
+			#	Then, create the userbit denoting preregistration for this class.
+			prereg = UserBit()
+			prereg.user = user
+			prereg.qsc = self.anchor
+			prereg.verb = prereg_verb
+			prereg.save()
+			return True
+		else:
+			#	Pre-registration failed because the class is full.
+			return False
 
 	def pageExists(self):
 		from esp.qsd.models import QuasiStaticData
@@ -155,8 +175,8 @@ class Class(models.Model):
 
 	def reject(self):
 		userbitlst = UserBit.objects.filter(user = None,
-											qsc  = clsObj.anchor,
-											verb = dt_approved)
+											qsc  = self.anchor,
+											verb = GetNode('V/Flags/Class/Approved'))
 		if len(userbitlst) > 0:
 			userbitlst.delete()
 			return True

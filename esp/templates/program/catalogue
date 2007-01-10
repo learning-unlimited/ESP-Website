@@ -45,7 +45,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 <tr><td valign='top' align='center'><b>Meeting Time</b><br/>
 {{ aclass.class.event_template.friendly_name }}<br /></td>
 <td style='width: 40%' align='left'><b>Grades:</b> {{ aclass.class.grade_min }} - {{ aclass.class.grade_max }}<br/>
-<b>Enrollment:</b> {{aclass.class.enrollment}} (max {{aclass.class.class_size_max}})</td></tr></table><br />
+<b>Enrollment:</b> {{aclass.class.num_students}} (max {{aclass.class.class_size_max}})</td></tr></table><br />
 
 {% if can_edit_classes or can_approve_classes %}
 <form name="edit_class" method="post" action=".">
@@ -74,10 +74,14 @@ selected
 </form><br /><br />
 {% endif %}
 {% if prereg_url %}
-<form name="prereg_class" method="post" action="{{ prereg_url }}">
-<input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
-<input type="submit" name="action" value="Pre-register" />
-</form>
+{% if aclass.isFull %}
+	Class is full
+{% else %}
+	<form name="prereg_class" method="post" action="{{ prereg_url }}">
+	<input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
+	<input type="submit" name="action" value="Pre-register" />
+	</form>
+{% endif %}
 {% endif %}
 
 </div>

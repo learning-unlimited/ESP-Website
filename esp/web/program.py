@@ -23,6 +23,7 @@ from django.contrib.auth.decorators import login_required
 def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 	""" Return the program class catalog """
 	dt_approved = GetNode( 'V/Flags/Class/Approved' )
+	curUser = ESPUser(request.user)
 	# aseering 8/25/2006: We can post to this page to approve a class, or redirect to an edit page
 	if request.POST:
 		for i in [ 'class_id', 'action' ]:
@@ -31,20 +32,21 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
                                 #raise Http404()
 
 		clsObj = Class.objects.filter(pk=request.POST['class_id'])[0]
-
-		if request.POST['action'] == 'Edit':
-			return HttpResponseRedirect('/classes/edit/' + request.POST['class_id'] + '/') # We need to redirect to the class edit page
 		
-		if request.POST['action'] == 'Accept':
-			clsObj.accept()
+		if curUser.canEdit(clsObj):
+			if request.POST['action'] == 'Edit':
+				return HttpResponseRedirect('/classes/edit/' + request.POST['class_id'] + '/') # We need to redirect to the class edit page
+		
+		if curUser.canAdminister(prog):
+			if request.POST['action'] == 'Accept':
+				clsObj.accept()
+				
+			if request.POST['action'] == 'Reject':
+				clsObj.reject()
 			
-		if request.POST['action'] == 'Reject':
-			clsObj.reject()
-		
-		if request.POST['action'] == 'Change Time':
-			clsObj.setTime(request.POST['event_template'])
+			if request.POST['action'] == 'Change Time':
+				clsObj.setTime(request.POST['event_template'])
 
-	curUser = ESPUser(request.user)
 	#	You'll notice these are the same; we make no distinction yet.
 	#	Only show the approve and edit buttons if you're looking at the whole
 	#	catalog as opposed to a particular timeslot.  Only show the buttons
@@ -268,14 +270,14 @@ def program_fillslot(request, tl, one, two, module, extra, prog):
 @login_required
 def program_addclass(request, tl, one, two, module, extra, prog):
 	""" Preregister a student for the specified class, then return to the studentreg page """
-	classid = request.POST['class_id']
-	cobj = Class.objects.filter(id=classid)[0]
-	cobj.preregister_student(request.user)
-
 	from esp.web.views import program
 	
-	return program(request, tl, one, two, "studentreg")
-
+	classid = request.POST['class_id']
+	cobj = Class.objects.filter(id=classid)[0]
+	if cobj.preregister_student(request.user):
+		return program(request, tl, one, two, "studentreg")
+	else:
+		assert False, 'Class is full'
 
 
 @login_required
