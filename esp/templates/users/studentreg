@@ -14,6 +14,7 @@
 
 <center><table style="text-align: center">
 <tr><th>What to do?</th><th>Done?</th></tr>
+{% if using_profile %}
 <tr>
  <td><a href="/learn/{{one}}/{{two}}/profile/">Update Contact Info</a></td>
  <td style="text-align: center"><img src="/media/images/{{profile_graphic}}.gif"
@@ -22,6 +23,12 @@ border = 1
 {% endifequal %}
 ></td>
 </tr>
+{% else %}
+<tr>
+ <td>Profile update (disabled)</td>
+ <td style="text-align: center">&nbsp;</td>
+</tr>
+{% endif %}
 
 <tr>
  <td><a href="/learn/{{one}}/{{two}}/studentreg/">Select Your Classes</a></td>
@@ -40,6 +47,11 @@ border = 1
 border = 1
 {% endifequal %}
 ></td>
+</tr>
+{% else %}
+<tr>
+ <td>Online payments (disabled)</td>
+ <td style="text-align: center">&nbsp;</td>
 </tr>
 {% endif %}
 
