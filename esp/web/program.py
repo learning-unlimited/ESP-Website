@@ -377,18 +377,18 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 
 	#cobj.event_template = time_sets[0]
 
-	# Can edit this class
-	v = GetNode( 'V/Administer/Edit')
-	ub, created = UserBit.objects.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
-	ub.save()
+	if aid is None:
+		# Can edit this class
+		v = GetNode( 'V/Administer/Edit')
+		ub, created = UserBit.objects.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
+		ub.save()
 
-	# is a teacher of this class
-	v = GetNode( 'V/Flags/Registration/Teacher')
-	ub, created = UserBit.objects.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
-	ub.save()
+		# is a teacher of this class
+		v = GetNode( 'V/Flags/Registration/Teacher')
+		ub, created = UserBit.objects.get_or_create(user = request.user, qsc = cobj.anchor, verb = v)
+		ub.save()
 	
 	#TimeSlot
-
 	cat = ClassCategories.objects.filter(id=request.POST['Category'])[0]
 	cobj.category = cat
 	cobj.enrollment = 0
