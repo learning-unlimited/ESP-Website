@@ -173,14 +173,14 @@ class UserBit(models.Model):
         # Filter by date/time range
         base_userbit = base_userbit.filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now))
 
-        # filter by qsc
-        base_userbit = base_userbit.filter(Q(qsc=qsc) | Q(recursive=True, qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend))
-
-        # filter by verb
-        base_userbit = base_userbit.filter(Q(verb=verb) | Q(recursive=True, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend))
+        # filter by qsc and verb
+        recursive_userbit = base_userbit.filter(recursive=True, qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend)
+        flat_userbit = base_userbit.filter(recursive=False, qsc=qsc, verb=verb)
 
         # If we have at least one UserBit meeting these criteria, we have perms.
-        retVal = (base_userbit.count() >= 1)
+        final_userbit = (recursive_userbit | flat_userbit)
+
+        retVal = (final_userbit.count() >= 1)
 
         # Cache the result for up to 10sec.
         # That had better be long enough for even the most painful page renders...
