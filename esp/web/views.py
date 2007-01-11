@@ -103,10 +103,8 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 
 	if len(url_address_parts) == 1: # We know the name; use the default verb
 		qsd_name = url_address_parts[0]
-		if url_address_parts[1] == 'html':
-			qsd_verb = 'read'
-		else:
-			qsd_verb = url_address_parts[1]
+
+		qsd_verb = 'read'
 	elif len(url_address_parts) == 2: # We're given both pieces; hopefully that's all we're given (we're ignoring extra data here)
 		qsd_name = url_address_parts[0]
 		qsd_verb = url_address_parts[1]
