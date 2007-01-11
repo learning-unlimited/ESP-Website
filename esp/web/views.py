@@ -26,6 +26,10 @@ from esp.miniblog.views import preview_miniblog
 
 from esp.dblog.views import ESPError
 
+from django.views.decorators.vary import vary_on_headers
+from django.views.decorators.cache import cache_control
+
+@vary_on_headers('User-Agent')
 def index(request):
 	""" Displays a generic "index" page """
 	# Catherine: This does nothing
@@ -63,6 +67,8 @@ def bio(request, tl, last, first):
 						'tl': tl})
 
 
+@vary_on_headers('User-Agent')
+@cache_control(private=True)
 def myesp(request, module):
 	""" Return page handled by myESP (generally, a user-specific page) """
 	if myesp_handlers.has_key(module):
@@ -74,6 +80,7 @@ def myesp(request, module):
 							 'preload_images': preload_images})
 
 
+@vary_on_headers('User-Agent')
 def redirect(request, url, subsection = None, section_redirect_keys = {}, section_prefix_keys = {}, renderer = qsd ):
 	""" Universal mapping function between urls.py entries and QSD pages
 
@@ -129,7 +136,8 @@ def redirect(request, url, subsection = None, section_redirect_keys = {}, sectio
 
 	return renderer(request, branch, section, qsd_name, qsd_verb, root_url)
 	
-
+@vary_on_headers('User-Agent')
+@cache_control(private=True)
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
 	treeItem = "Q/Programs/" + one + "/" + two
