@@ -2,6 +2,7 @@ from django.conf.urls.defaults import *
 from esp.program.models import Class
 from esp.qsd.views import qsd
 from esp.poll.views import poll
+from esp.qsdmedia.views import qsdmedia
 
 
 #	This is a lookup for the redirector, to insert a certain string for the tree node 
@@ -16,6 +17,9 @@ urlpatterns = patterns('',
     # Example:
     # (r'^esp/', include('esp.apps.foo.urls.foo')),
 
+    # Possibly overspecific, possibly too general.
+    (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'section_prefix_keys': section_prefix_keys }),
+    (r'^(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia }),
     (r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/media/'}),
 
     (r'^beta/satprep.csv$', 'esp.satprep.views.satprep_csv'),
@@ -40,7 +44,7 @@ urlpatterns = patterns('',
     (r'^(?P<subsection>teach|learn|help)/(?P<url>.*)/blog/$', 'esp.miniblog.views.show_miniblog', {'section_redirect_keys': section_redirect_keys}),
     (r'^blog/(?P<url>.*)/post/$', 'esp.miniblog.views.post_miniblog'),
     (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog_entry'),
-	(r'^blog/$', 'esp.miniblog.views.show_miniblog', {'url': '', 'section_redirect_keys': section_redirect_keys}),
+    (r'^blog/$', 'esp.miniblog.views.show_miniblog', {'url': '', 'section_redirect_keys': section_redirect_keys}),
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
@@ -68,9 +72,6 @@ urlpatterns = patterns('',
     (r'^(?P<url>.*)\.html$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': qsd} ),
     (r'^(?P<url>.*)\.poll$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': poll} ),
     #(r'^(?P<url>.*)\.text$', 'esp.qsd.views.qsd_raw'),
-
-    # Possibly overspecific, possibly too general.
-    (r'^(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'esp.qsdmedia.views.qsdmedia'),
 
     # Update navbar
     (r'^navbar/edit.scm', 'esp.web.navBar.updateNavBar'),

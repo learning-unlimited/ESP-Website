@@ -81,11 +81,14 @@ def myesp(request, module):
 
 
 @vary_on_headers('User-Agent')
-def redirect(request, url, subsection = None, section_redirect_keys = {}, section_prefix_keys = {}, renderer = qsd ):
+def redirect(request, url, subsection = None, filename = "", section_redirect_keys = {}, section_prefix_keys = {}, renderer = qsd ):
 	""" Universal mapping function between urls.py entries and QSD pages
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
+
+	if filename != "":
+		url = url + "/" + filename
 
 	tree_branch = section_redirect_keys[subsection]
 
@@ -100,7 +103,10 @@ def redirect(request, url, subsection = None, section_redirect_keys = {}, sectio
 
 	if len(url_address_parts) == 1: # We know the name; use the default verb
 		qsd_name = url_address_parts[0]
-		qsd_verb = 'read'
+		if url_address_parts[1] == 'html':
+			qsd_verb = 'read'
+		else:
+			qsd_verb = url_address_parts[1]
 	elif len(url_address_parts) == 2: # We're given both pieces; hopefully that's all we're given (we're ignoring extra data here)
 		qsd_name = url_address_parts[0]
 		qsd_verb = url_address_parts[1]
