@@ -12,7 +12,7 @@ Your class selection for {{one}} has been saved. You can come back and change yo
 </p>
 {% if printConfirm %}
 <p>
-You may <a href="printconfirm">print</a> your confirmation letter now.  You should print this letter and bring it with you to the program's registration and/or first day of class.
+You may print your <a href="Confirmation/confirmation.html">confirmation letter</a> and <a href="studentreg/">schedule</a> now.  You should bring the schedule to the first day of classes for your program.  You may bring your confirmation letter to this program's on-site registration as an additional confirmation of your registration (although your schedule should suffice); you should also read it, to learn any special information (such as on-site registration details) that you'll want to keep track of when you show up for this program.
 </p>
 {% else %}
 <p>

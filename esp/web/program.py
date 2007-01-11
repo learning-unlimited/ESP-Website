@@ -12,6 +12,7 @@ from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpRespo
 from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 from datetime import datetime
+from esp.users.models import UserBit
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
@@ -588,13 +589,22 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 		if validateContactInfo(thing):
 			profile_done = True
 			break
-	if profile_done:
+	if True:# aseering 1-11-2007: The profile editor is disabled; don't bother with thi#profile_done:
 		context['printConfirm'] = True
 		pre = regprof.preregistered_classes()
 		if pre != []:
+			done = True
 			context['printConfirm'] = True
-		else: context['printConfirm'] = False
-	else: context['printConfirm'] = False
+		else:
+			done = False
+			context['printConfirm'] = False
+	else:
+		done = False
+		context['printConfirm'] = False
+
+	if done:
+		bit, created = UserBit.objects.get_or_create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+
 	return render_to_response('program/savescreen', context)
 
 @login_required

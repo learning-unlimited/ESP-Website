@@ -174,7 +174,7 @@ class UserBit(models.Model):
         base_userbit = base_userbit.filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now))
 
         # filter by qsc and verb
-        recursive_userbit = base_userbit.filter(recursive=True, qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend)
+        recursive_userbit = base_userbit.filter(recursive=True, qsc__rangestart__lte=qsc.rangestart, qsc__rangeend__gte=qsc.rangeend, verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend)
         flat_userbit = base_userbit.filter(recursive=False, qsc=qsc, verb=verb)
 
         # If we have at least one UserBit meeting these criteria, we have perms.
