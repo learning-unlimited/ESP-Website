@@ -8,6 +8,8 @@ from django.db.models import Q
 from esp.dblog.models import error
 from django.db.models.query import QuerySet
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
+from django.core.cache import cache
+
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -141,22 +143,50 @@ class UserBit(models.Model):
             return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc + recurse
 
     @staticmethod
-    def UserHasPerms(user, qsc, verb, now = datetime.now()):
+    def UserHasPerms(user, qsc, verb, now = None):
         """ Given a user, a permission, and a subject, return True if the user, or all users, has been Granted [subject] on [permission]; False otherwise """
-	test = []
-        if user != None and type(user) != AnonymousUser and user.is_authenticated():
-            for bit in user.userbit_set.all().filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now)):
-                test.append(bit)
-                if ((bit.recursive and bit.qsc.is_descendant(qsc)) or bit.qsc == qsc) and ((bit.recursive and bit.verb.is_descendant(verb)) or bit.verb == verb):
-                    return True
+        # aseering: This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
+        # aseering 1-11-2007: Even better; single query!
 
-        # This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
-        for bit in UserBit.objects.filter(user__isnull=True).filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now)):
-            test.append(bit)
-            if ((bit.recursive and bit.qsc.is_descendant(qsc)) or bit.qsc == qsc) and ((bit.recursive and bit.verb.is_descendant(verb)) or bit.verb == verb):
-                return True
+        if user==None:
+            user_id="None"
+        else:
+            user_id=str(user.id)
 
-        return False
+        if now == None:
+            now = datetime.now()
+            now_id = "None"
+        else:
+            now_id = "-".join([ str(i) for i in datetime.now().timetuple() ])
+
+        cache_id = 'UserHasPerms:' + user_id + ',' + str(qsc.id) + ',' + str(verb.id) + ',' + now_id
+        cached_val = cache.get(cache_id)
+        if cached_val != None:
+            return cached_val
+
+        # Filter by user
+        if user != None and user.is_authenticated():
+            base_userbit = UserBit.objects.filter(Q(user__isnull=True) | Q(user=user))
+        else:
+            base_userbit = UserBit.objects.filter(user__isnull=True)
+
+        # Filter by date/time range
+        base_userbit = base_userbit.filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now))
+
+        # filter by qsc
+        base_userbit = base_userbit.filter(Q(qsc=qsc) | Q(recursive=True, qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend))
+
+        # filter by verb
+        base_userbit = base_userbit.filter(Q(verb=verb) | Q(recursive=True, verb__rangestart__gte=verb.rangestart, verb__rangeend__lte=verb.rangeend))
+
+        # If we have at least one UserBit meeting these criteria, we have perms.
+        retVal = (base_userbit.count() >= 1)
+
+        # Cache the result for up to 10sec.
+        # That had better be long enough for even the most painful page renders...
+        cache.set(cache_id, retVal, 10)
+
+        return retVal
     
     # FIXME: This looks like it has been subject to extreme code rot
     @staticmethod
@@ -307,9 +337,23 @@ class ContactInfo(models.Model):
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
+    if user == None or not user.is_authenticated():
+        user_id = "None"
+    else:
+        user_id = user.username
 
     if verb == None:
-        verb = GetNode("V/Administer/Program/Class")
+        verb_id = "None"
+    else:
+        verb_id = str(verb.id)
+
+    cache_id = 'datatree:' + user_id + ',' + str(verb_id) + ',' + nodename
+
+    cached_val = cache.get(cache_id)
+    if cached_val != None:
+        return cached_val
+
+    cached_val = cache.get
 
     nodes = DataTree.objects.filter(name='ROOT', parent__isnull=True)
     node = None
@@ -330,10 +374,25 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
         perm = []
 
     try:
-        return node.tree_decode(perm)
+        retVal = node.tree_decode(perm)
+
+        if retVal.id == -1:
+            pass
+
+        cache.set(cache_id, retVal)
+        return retVal
     except DataTree.NoSuchNodeException, e:
+        if verb == None:
+            verb = GetNode("V/Administer/Program/Class")
+
         if UserBit.UserHasPerms(user, e.anchor, verb):
-            return e.anchor.tree_create(e.remainder)
+            retVal = e.anchor.tree_create(e.remainder)
+
+            if retVal.id == -1:
+                pass
+
+            cache.set(cache_id, retVal)
+            return retVal
         else:
             raise
 

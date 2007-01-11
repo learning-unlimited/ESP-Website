@@ -22,9 +22,12 @@ from django.contrib.auth.decorators import login_required
 
 def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 	""" Return the program class catalog """
+
 	dt_approved = GetNode( 'V/Flags/Class/Approved' )
+
 	curUser = ESPUser(request.user)
 	# aseering 8/25/2006: We can post to this page to approve a class, or redirect to an edit page
+	
 	if request.POST:
 		for i in [ 'class_id', 'action' ]:
 			if not request.POST.has_key(i):
@@ -67,6 +70,7 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 		can_edit_classes = False
 		can_approve_classes = False
 		prereg_url = '/' + tl + '/' + prog.url() + '/addclass'
+
 
 	clas = [ {'class': cls, 'accepted': cls.isAccepted(), 
 			'times': [{'id': vt.id, 'label': vt.friendly_name} for vt in cls.viable_times.all()] }

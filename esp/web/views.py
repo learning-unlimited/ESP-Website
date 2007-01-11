@@ -73,23 +73,6 @@ def myesp(request, module):
 							 'navbar_list': makeNavBar(request.user, GetNode('Q/Web')),
 							 'preload_images': preload_images})
 
-#def redirect(request, tl, one, three):
-#	Q_Prog = GetNode('Q/Programs')
-#	try:
-#		branch = Q_Prog.tree_decode(one.split("/"))
-#	except DataTree.NoSuchNodeException:
-#		return qsd(request, one + "/" +three+".html")
-#
-#	qsd_rec = QuasiStaticData.objects.filter( path = branch, name = tl +  "-" + three )
-#	if len(qsd_rec) < 1:
-#		return qsd(request, one + "/" +three+".html")
-#
-#	return render_to_response('qsd.html', {
-#		'navbar_list': makeNavBar(request.path),
-#		'preload_images': preload_images,
-#		'title': qsd_rec[0].title,
-#		'content': qsd_rec[0].html(),
-#		'logged_in': request.user.is_authenticated() })
 
 def redirect(request, url, subsection = None, section_redirect_keys = {}, section_prefix_keys = {}, renderer = qsd ):
 	""" Universal mapping function between urls.py entries and QSD pages
@@ -128,7 +111,7 @@ def redirect(request, url, subsection = None, section_redirect_keys = {}, sectio
 		branch = GetNodeOrNoBits(branch_name, user=request.user)
 	except DataTree.NoSuchNodeException:
 		return ESPError("The requested directory does not exist.", log_error = False)
-
+		
 	if url_parts:
 		root_url = "/" + "/".join(url_parts) + "/" + qsd_name
 	else:

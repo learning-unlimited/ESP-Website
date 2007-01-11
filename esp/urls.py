@@ -3,12 +3,13 @@ from esp.program.models import Class
 from esp.qsd.views import qsd
 from esp.poll.views import poll
 
+
 #	This is a lookup for the redirector, to insert a certain string for the tree node 
 section_redirect_keys = {'teach': 'Programs',
-						'learn': 'Programs',
-						'program': 'Programs',
-						'help': 'ESP/Committees',
-						None: 'Web'}
+                         'learn': 'Programs',
+                         'program': 'Programs',
+                         'help': 'ESP/Committees',
+                         None: 'Web'}
 
 section_prefix_keys = {'teach': 'teach', 'learn': 'learn'}
 urlpatterns = patterns('',
@@ -20,7 +21,7 @@ urlpatterns = patterns('',
     (r'^beta/satprep.csv$', 'esp.satprep.views.satprep_csv'),
 
     # The default
-	(r'^esp_devel/$', 'esp.web.views.index'),
+    (r'^esp_devel/$', 'esp.web.views.index'),
 
     (r'^$', 'esp.web.views.index'),
     # backwards compatibility...
@@ -86,4 +87,7 @@ urlpatterns = patterns('',
     # Class-edit interface
     (r'^classes/edit/(?P<id>[0-9]*)/$', 'esp.program.views.updateClass'),
 	
+    (r'^(?P<temp>.*).php$', 'esp.web.viewredirect.redirect', {'target': 'http://esp.mit/edu/missing_page.html'}),
+    (r'^esp_web/(?P<temp>.*)$', 'esp.web.viewredirect.redirect', {'target': 'http://esp.mit.edu/missing_page.html'}),
+
 )

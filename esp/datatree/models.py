@@ -31,10 +31,11 @@ class DataTree(models.Model):
             return self
         else:
             filtered = self.children().filter(name=tree_nodenames[0])
+            length = len(filtered)
 
-            if filtered.count() < 1L:
+            if length < 1:
                 raise self.NoSuchNodeException(self,tree_nodenames)
-            elif filtered.count() > 1L:
+            elif length > 1:
                 raise self.DuplicateNodeException(self,tree_nodenames)
             else:
                 return filtered[0].tree_decode(tree_nodenames[1:])
@@ -266,6 +267,10 @@ def GetNode(nodename):
     # aseering 12-15-2006: Encache output
     retVal = node.tree_create(perm)
 
+    # aseering 1-11-2006: Quick'n'dirty hack to force the node to get evaluated
+    if retVal.id == -1:
+        pass
+    
     cache.set(cache_id, retVal)
     return retVal
 
