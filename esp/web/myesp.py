@@ -16,7 +16,7 @@ from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpRespo
 from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
-from esp.validation import *
+#from esp.validation import *
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 
