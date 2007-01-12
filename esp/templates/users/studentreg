@@ -80,6 +80,7 @@ Open Full Catalog in a Separate Window
 	<td>{{timeslot.1.title}}</td>
         <td width='20%' align='center'>
 	<a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change]</a>
+	<a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[remove]</a>
 	{% else %}
    <td>Nothing Selected</td>
   <td width='20%' align='center'>

@@ -320,6 +320,23 @@ def program_fillslot(request, tl, one, two, module, extra, prog):
 	return program_catalog(request, tl, one, two, module, extra, prog, timeslot=ts)
 
 @login_required
+def program_clearslot(request, tl, one, two, module, extra, prog):
+	""" Clear the specified timeslot from a student registration and go back to the same page """
+	ts = DataTree.objects.filter(id=extra)[0]
+	v_registered = GetNode('V/Flags/Registration/Preliminary')
+	
+	#	Get list of all pre-registration userbits
+	prereg_ubs = UserBit.objects.filter(user=request.user, verb=v_registered)
+	
+	#	Find the userbits for classes in that timeslot and delete them.
+	for ub in prereg_ubs:
+		if Class.objects.filter(event_template__id=extra, anchor=ub.qsc).count() > 0:
+			ub.delete()
+
+	return program_studentreg(request, tl, one, two, module, extra, prog)
+
+
+@login_required
 def program_addclass(request, tl, one, two, module, extra, prog):
 	""" Preregister a student for the specified class, then return to the studentreg page """
 	from esp.web.views import program
@@ -646,6 +663,7 @@ program_handlers = {'catalog': program_catalog,
 		    'selectclass': program_teacherreg,
 		    'teacherreg': program_teacherreg2,
 		    'fillslot': program_fillslot,
+			'clearslot': program_clearslot,
 		    'changeslot': program_fillslot,
 		    'addclass': program_addclass,
 		    'makeaclass': program_makeaclass,
