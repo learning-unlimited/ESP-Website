@@ -13,6 +13,8 @@ from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 from datetime import datetime
 from esp.users.models import UserBit
+from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator
+from django import forms
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
@@ -101,10 +103,26 @@ def program_profile(request, tl, one, two, module, extra, prog):
 	regprof = RegistrationProfile.objects.filter(user=request.user,program=prog)[0]
 
 	context = {'logged_in': request.user.is_authenticated() }
-	context['student'] = request.user
+	context['user'] = request.user
 	context['one'] = one
-	if extra == "oops":
-		context['oops'] = True
+
+	if tl == 'learn':
+		manipulator = StudentProfileManipulator()
+	else:
+		manipulator = TeacherProfileManipulator()
+
+	if request.method == 'POST':
+		new_data = request.POST.copy()
+		errors = manipulator.get_validation_errors(new_data)
+
+		if not errors:
+			manipulator.do_html2python(new_data)
+	else:
+		errors = new_data = {}
+
+	context['form'] = forms.FormWrapper(manipulator, new_data, errors)
+	return render_to_response('users/studentprofile.html', context)
+		
 	context['two'] = two
 	context['statenames'] = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL'  ,'IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  ,'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada']
 	contactInfo = request.user.contactinfo_set.all()
@@ -170,7 +188,7 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 	context['preload_images'] =  preload_images
 	profile_done = False
-	for thing in [regprof.contact_student, regprof.contact_student, regprof.contact_emergency]:
+	for thing in [regprof.contact_user, regprof.contact_user, regprof.contact_emergency]:
 		if validateContactInfo(thing):
 			profile_done = True
 			break

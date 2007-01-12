@@ -16,7 +16,7 @@ from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpRespo
 from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
-
+from esp.validation import *
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 
@@ -41,50 +41,36 @@ def myesp_register(request, module):
 
 def myesp_finish(request, module):
 	""" Complete a user registration """
-
-	error_dict = {}
-	whitespace = " \t"
+	form_guidelines = {'username':   [UserNameForm, {'name': 'username',
+							 'min':  4,
+							 'max': 12}],
+			   'password':   [PasswordForm, {'name': 'password'}],
+			   'first_name': [TextForm, {'name': 'first name',
+						     'min':  2,
+						     'max': 32}],
+			   'last_name':  [TextForm, {'name': 'last name',
+						     'min':  2,
+						     'max': 64}],
+			   'confirm':    [PWConfirmForm, {'name': 'password confirmation',
+							  'password': 'password'}],
+			   'role':       [SelectForm, {'name': 'initial role',
+						       'validinputs': ['Student',
+								       'Teacher',
+								       'Guardian',
+								       'Educator']}],
+			   'email':      [EmailForm, {'name': 'email'}]}
 	
-	""" checking for existence of all post objects... """
-	formnames = {'confirm':   'Please enter a confirmation password.',
-		     'password':  'Please enter a password.',
-		     'username':  'Please enter a valid username.',
-		     'email':     'Please enter a valid email address.',
-		     'role':      'Please select a valid initial role.',
-		     'last_name': 'Please enter a valid last name.',
-		     'first_name':'Please enter a valid first name.'}
-
-	for name_error in formnames.items():
-		if not request.POST.has_key(name_error[0]) or len(set(request.POST[name_error[0]]) - set(" \t")) == 0:
-			if error_dict.has_key(name_error[0]):
-				error_dict[name_error[0]].append(name_error[1])
-			else:
-				error_dict[name_error[0]] = [name_error[1]]
-
-
-	if not error_dict.has_key('username'):
-		errormsgList = ESPUser.isUserNameValid(request.POST['username'], True)
-		if errormsgList != True:
-			error_dict['username'] = [ ('The chosen username ' + errormsg + '.')
-						   for errormsg in errormsgList                ]
-
-	if not error_dict.has_key('password') and not error_dict.has_key('confirm'):
-		if request.POST['password'] != request.POST['confirm']:
-			error_dict['confirm'] = ['The password and password confirmation must be the same.']
-		else:
-			errormsgList = ESPUser.isPasswordValid(request.POST['password'])
-			if errormsgList != True:
-				error_dict['password'] = [ ('The chosen password '+errormsg+'.')
-							   for errormsg in errormsgList         ]
-
+	newForm, error_dict = validator.form_validate(request, form_guidelines)	
+	error_dict = validator.getNiceMsgs(error_dict)
+	
 	if not error_dict.has_key('role'):
-		fixedRole = {request.POST['role'] : ' checked'}
+		if request.POST.has_key('role'):
+			fixedRole = {request.POST['role'] : ' checked'}
 	else:
 		fixedRole = {}
 		
 	if len(error_dict) > 0:
-		for name, errors in error_dict.items():
-			error_dict[name] = '<br />'.join(errors)
+		error_dict = validator.addHTMLLineBreaks(error_dict)
 			
 		return render_to_response('users/newuser.html', {'request':        request,
 							         'Problem':        True,

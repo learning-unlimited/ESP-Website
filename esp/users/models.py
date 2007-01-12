@@ -60,43 +60,9 @@ class ESPUser(User, AnonymousUser):
         return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe')).order_by('-timestamp')
 
     @staticmethod
-    def isUserNameValid(username, checkForDuplicate = False):
-        """Return true if the username is valid, a list of strings representing the error if it isn't"""
-        #axiak 12-17
-        errors = []
-        validalphabet = "abcdefghijklmnopqrstuvwxyz _0123456789"
-        if len(username) < 4:
-            errors.append('is too short')
-        if len(username) > 12:
-            errors.append('is too long')
-        #invalid characters
-        if len(set(username.lower()) - set(validalphabet)) > 0:
-            errors.append('contains invalid characters')
-
-        if checkForDuplicate and User.objects.filter(username=username.lower()).count() > 0:
-            errors.append('is already in use')
-            
-        if len(errors) == 0:
-            return True
-        else:
-            return errors
-
-    @staticmethod
-    def isPasswordValid(password):
-        """Return true if the password is valid, a list of strings representing the errors if it isn't"""
-        #axiak 12-17
-        errors = []
-        if len(password) < 4:
-            errors.append('is too short')
-        if len(password) > 12:
-            errors.append('is too long')
-
-        if len(errors) == 0:
-            return True
-        else:
-            return errors
-
-
+    def isUserNameTaken(username):
+        return User.objects.filter(username=username.lower()).count() > 0
+   
 
 class UserBit(models.Model):
     """ Grant a user a bit on a Q """
@@ -308,14 +274,57 @@ class UserBit(models.Model):
         pass
 
     
+class StudentInfo(models.Model):
+    """ ESP Student-specific contact information """
+    graduation_year = models.PositiveIntegerField(blank=True, null=True)
+    school = models.CharField(maxlength=256,blank=True, null=True)
+    
+    def __str__(self):
+        return "(ESP Student Info)"
+            
+    class Admin:
+        pass
 
+class TeacherInfo(models.Model):
+    """ ESP Teacher-specific contact information """
+    graduation_year = models.PositiveIntegerField(blank=True, null=True)
+    college = models.CharField(maxlength=128,blank=True, null=True)
+    major = models.CharField(maxlength=32,blank=True, null=True)
+    
+    def __str__(self):
+        return "(ESP Teacher Info)"
+
+    class Admin:
+        pass
+    
+class GuardianInfo(models.Model):
+    """ ES Guardian-specific contact information """
+    year_finished = models.PositiveIntegerField(blank=True, null=True)
+    num_kids = models.PositiveIntegerField(blank=True, null=True)
+    
+    def __str__(self):
+        return "(ESP Guardian Info)"
+    
+    class Admin:
+        pass
+
+class EducatorInfo(models.Model):
+    """ ESP Educator-specific contact information """
+    subject_taught = models.CharField(maxlength=64,blank=True, null=True)
+    grades_taught = models.CharField(maxlength=16,blank=True, null=True)
+    school = models.CharField(maxlength=128,blank=True, null=True)
+    
+    def __str__(self):
+        return "(ESP Educator Info)"
+    
+    class Admin:
+        pass
     
 class ContactInfo(models.Model):
 	""" ESP-specific contact information for (possibly) a specific user """
 	user = models.ForeignKey(User, blank=True, null=True)
 	full_name = models.CharField(maxlength=256)
 	dob = models.DateField(blank=True, null=True)
-	graduation_year = models.PositiveIntegerField(blank=True, null=True)
 	e_mail = models.EmailField(blank=True, null=True)
 	phone_day = models.PhoneNumberField(blank=True, null=True)
 	phone_cell = models.PhoneNumberField(blank=True, null=True)

@@ -1,0 +1,300 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Profile Editor{% endblock %}
+
+{% block subsection_name %}Student Profile Editor{% endblock %}
+
+{% block content %}
+<br /><br />
+       <div id="divmaintext">	
+	<h2>Hi {{user.username}}!</h2>
+	<h2>Please tell us a bit about yourself!</h2> 
+	Field with * are required.
+
+
+
+{% if form.has_errors %}
+<h2 style="color:red">Please make sure to fill in all the required fields.  Thanks! </h2>
+{% endif %}
+
+<form action='/learn/{{one}}/{{two}}/profile/' method="post">
+<table cellpadding='2' align='center' border='0'>
+<tr>
+ <td><label for="id_full_name">Name: *</label></td>
+ <td>{{ form.full_name }} {% if form.name.errors %}
+   <br /><span class="form_error">{{ form.name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_dob">D.O.B.:</label></td>
+ <td>{{ form.dob }} {% if form.dob.errors %}
+   <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
+   {% endif %}
+<small> Example 1994/02/29</small> 
+ </td>
+
+</tr>
+
+<tr>
+ <td><label for="id_graduation_year">Year of high school graduation: *</label></td>
+ <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
+   <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+
+</tr>
+
+
+<tr>
+ <td><label for="id_e_mail">Email:</label></td>
+ <td>{{ form.e_mail }} {% if form.e_mail.errors %}
+   <br /><span class="form_error">{{ form.e_mail.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+  <td colspan="2"><label>Address: *</label></td>
+</tr>
+
+<tr>
+ <td align='right'><label for="id_address_street">
+                       <small><i>street</i></small>
+		   </label>
+ </td>
+ <td>{{ form.address_street }} {% if form.address_street.errors %}
+   <br /><span class="form_error">{{ form.address_street.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align="right"><label for="id_address_city">
+                        <small><i>city</i></small>
+                   </label></td>
+ <td>
+ <table border="0" cellspacing="0" cellpadding="0" width="100%">
+ <tr>
+ 
+ <td>
+  {{ form.address_city }} {% if form.address_city.errors %}
+   <br /><span class="form_error">{{ form.address_city.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+ <td style="padding-left: 6px;">{{ form.address_state }} {% if form.address_state.errors %}
+   <br /><span class="form_error">{{ form.address_state.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+
+ <td align="right"><label for="id_address_zip">
+                       <small><i>&nbsp;&nbsp;zip</i></small>
+                   </label>
+ 
+ </td>
+   <td>
+  {{ form.address_zip }} {% if form.address_zip.errors %}
+   <br /><span class="form_error">{{ form.address_zip.errors|join:", " }}</span>
+   {% endif %}
+   </td> 
+ </tr>
+ </table>
+ </td>
+</tr>
+
+<tr>
+ <td><label>Phone: *</label></td>
+ <td>&nbsp;</td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_phone_day">day</label></i></small></td>
+ <td>{{ form.phone_day }} {% if form.phone_day.errors %}
+   <br /><span class="form_error">{{ form.phone_day.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_phone_even">evening</label></i></small></td>
+ <td>{{ form.phone_even }} {% if form.phone_even.errors %}
+   <br /><span class="form_error">{{ form.phone_even.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_phone_cell">cell</label></i></small></td>
+ <td>{{ form.phone_day }} {% if form.phone_cell.errors %}
+   <br /><span class="form_error">{{ form.phone_cell.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
+<tr>
+ <td colspan="2">
+<span class="groupheader"><label>Parent/Guardian</label></span>
+ </td>
+</tr>
+
+<tr>
+ <td><label for="guard_full_name">Full Name: *</label></td>
+ <td>{{ form.guard_full_name }} {% if form.guard_full_name %}
+   <br /><span class="form_error">{{ form.guard_full_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="guard_e_mail">Email:</label></td>
+ <td>{{ form.guard_e_mail }} {% if form.guard_e_mail %}
+   <br /><span class="form_error">{{ form.guard_e_mail.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label>Phone: *</label></td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="guard_phone_day">day</label></i></small></td>
+ <td>{{ form.guard_phone_day }} {% if form.guard_phone_day %}
+   <br /><span class="form_error">{{ form.guard_phone_day.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="guard_phone_even">evening</label></i></small></td>
+ <td>{{ form.guard_phone_even }} {% if form.guard_phone_even %}
+   <br /><span class="form_error">{{ form.guard_phone_even.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="guard_phone_cell">cell</label></i></small></td>
+ <td>{{ form.guard_phone_cell }} {% if form.guard_phone_cell %}
+   <br /><span class="form_error">{{ form.guard_phone_cell.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
+<!-- Emergency Contact information -->
+
+
+<tr>
+ <td colspan="2">
+   <span class="groupheader">Emergency Contact</span>
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_emerg_full_name">Full Name: *</label></td>
+ <td>{{ form.emerg_full_name }} {% if form.emerg_full_name %}
+   <br /><span class="form_error">{{ form.emerg_full_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
+<tr>
+ <td><label for="id_emerg_e_mail">Email:</label></td>
+ <td>{{ form.emerg_e_mail}} {% if form.emerg_e_mail %}
+   <br /><span class="form_error">{{ form.emerg_e_mail.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+  <td colspan="2"><label>Address: *</label></td>
+</tr>
+
+<tr>
+ <td align='right'><label for="id_emerg_address_street">
+                       <small><i>street</i></small>
+		   </label>
+ </td>
+ <td>{{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
+   <br /><span class="form_error">{{ form.emerg_address_street.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align="right"><label for="id_emerg_address_city">
+                        <small><i>city</i></small>
+                   </label></td>
+ <td>
+ <table border="0" cellspacing="0" cellpadding="0" width="100%">
+ <tr>
+ 
+ <td>
+  {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
+   <br /><span class="form_error">{{ form.emerg_address_city.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+ <td style="padding-left: 6px;">{{ form.emerg_address_state }} {% if form.emerg_address_state.errors %}
+   <br /><span class="form_error">{{ form.emerg_address_state.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+
+ <td align="right"><label for="id_emerg_address_zip">
+                       <small><i>&nbsp;&nbsp;zip</i></small>
+                   </label>
+ 
+ </td>
+   <td>
+  {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
+   <br /><span class="form_error">{{ form.emerg_address_zip.errors|join:", " }}</span>
+   {% endif %}
+   </td> 
+ </tr>
+ </table>
+ </td>
+</tr>
+
+<tr>
+ <td><label>Phone: *</label></td>
+ <td>&nbsp;</td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_emerg_phone_day">day</label></i></small></td>
+ <td>{{ form.emerg_phone_day }} {% if form.emerg_phone_day.errors %}
+   <br /><span class="form_error">{{ form.emerg_phone_day.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_emerg_phone_even">evening</label></i></small></td>
+ <td>{{ form.emerg_phone_even }} {% if form.emerg_phone_even.errors %}
+   <br /><span class="form_error">{{ form.emerg_phone_even.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_emerg_phone_cell">cell</label></i></small></td>
+ <td>{{ form.emerg_phone_day }} {% if form.emerg_phone_cell.errors %}
+   <br /><span class="form_error">{{ form.emerg_phone_cell.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+</table>
+
+<br />
+<center><input type='submit' value='Update your Information!'></center>
+
+<br />
+</form>
+
+</div>
+
+{% endblock %}

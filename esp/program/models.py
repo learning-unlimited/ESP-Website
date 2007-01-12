@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from esp.cal.models import Event
 from esp.datatree.models import DataTree, GetNode
-from esp.users.models import UserBit, ContactInfo
+from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo
 from esp.lib.markdown import markdown
 from esp.qsd.models import QuasiStaticData
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
@@ -261,9 +261,15 @@ class RegistrationProfile(models.Model):
 	""" A student registration form """
 	user = models.ForeignKey(User)
 	program = models.ForeignKey(Program)
-	contact_student = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_student')
+	contact_user = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_user')
 	contact_guardian = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian')
 	contact_emergency = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency')
+	student_info = models.ForeignKey(StudentInfo, blank=True, null=True, related_name='as_student')
+	teacher_info = models.ForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
+	guardian_info = models.ForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
+	educator_info = models.ForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
+		
+	
 
 	def __str__(self):
 		return '<Registration for ' + str(self.user) + ' in ' + str(self.program) + '>'
@@ -271,6 +277,7 @@ class RegistrationProfile(models.Model):
 	def preregistered_classes(self):
 		v = GetNode( 'V/Flags/Registration/Preliminary' )
 		return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode(['Classes']))
+	
 	def registered_classes(self):
 		v = GetNode( 'V/Subscribe' )
 		return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode(['Classes']))

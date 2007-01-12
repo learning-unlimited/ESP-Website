@@ -21,6 +21,7 @@ urlpatterns = patterns('',
     (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'section_prefix_keys': section_prefix_keys }),
     (r'^(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'esp.web.views.redirect', { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia }),
     (r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/media/'}),
+    (r'^admin/media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/admin/media/'}),
 
     (r'^beta/satprep.csv$', 'esp.satprep.views.satprep_csv'),
 
