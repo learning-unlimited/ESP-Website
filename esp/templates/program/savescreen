@@ -16,7 +16,7 @@ Your class selection for {{one}} has been saved. You can come back and change yo
 
 {% else %}
 <p>
-However, <b>you are not completely finished with registration</b>.  You will need to come back later and finish your registration, which includes your class selections and updated contact information.
+However, <b>you are not completely finished with registration</b>.  You will need to come back later and finish your registration, which includes your class selections and updated contact information.  We are working to enable this as soon as possible - by Monday, January 15.
 </p>
 {% endif %}
 <br>
