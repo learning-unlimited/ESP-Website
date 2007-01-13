@@ -11,15 +11,20 @@
 Your class selection for {{one}} has been saved. You can come back and change your class selections later, up until 2 days before {{one}} begins.
 </p>
 {% if printConfirm %}
-<p>
-You may print your <a href="Confirmation/confirmation.html">confirmation letter</a> and <a href="studentreg/">schedule</a> now.  You should bring the schedule to the first day of classes for your program.  You may bring your confirmation letter to this program's on-site registration as an additional confirmation of your registration (although your schedule should suffice); you should also read it, to learn any special information (such as on-site registration details) that you'll want to keep track of when you show up for this program.
-</p>
+
+{% include "program/confirmation.html" %}
+
 {% else %}
 <p>
-However, <b>you are not completely finished with registration</b>.  You should come back later and finish your registration.  
+However, <b>you are not completely finished with registration</b>.  You will need to come back later and finish your registration, which includes your class selections and updated contact information.
 </p>
 {% endif %}
 <br>
+
+<hr width="75%">
+
+{% include "users/student_schedule.html" %}
+
 Thanks!
 <br>
 <div textalign="center"><a href="/">Go back to the front page.</a></div>

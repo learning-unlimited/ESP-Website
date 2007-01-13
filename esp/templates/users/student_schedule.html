@@ -1,0 +1,33 @@
+
+<p style='font-family: arial; margin-left:10px; text-align: center'>
+ <b style="text-align: center">Classes for {{student.name}} - ID: {{student.id}}</b>
+
+</p>
+
+<p style="text-align: center">
+<a target="_blank" href='/teach/{{one}}/{{two}}/catalog/'>
+Open Full Catalog in a Separate Window
+</a>
+</p>
+
+<br/>  	
+
+ <table cellpadding="3" style="width: 600px; margin: auto" border=1>
+{% for timeslot in timeslots %}
+
+<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.friendly_name }} </td>
+	{% if timeslot.1 %}
+	<td>{{timeslot.1.title}}</td>
+        <td width='20%' align='center'>
+	<a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change]</a>
+	<a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[remove]</a>
+	{% else %}
+   <td>Nothing Selected</td>
+  <td width='20%' align='center'>
+  <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
+	{% endif %}	
+  </td></tr>
+
+{% endfor %}
+</table> 
+<br/>

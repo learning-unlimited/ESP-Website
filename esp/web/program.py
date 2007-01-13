@@ -194,7 +194,8 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 			break
 	if profile_done: context['profile_graphic'] = "checkmark"
 	else: context['profile_graphic'] = "nocheckmark"
-	context['student'] = curUser.first_name + " " + curUser.last_name
+	context['student'] = {'name': curUser.first_name + " " + curUser.last_name,
+						'id': curUser.id }
 	ts = list(GetNode('Q/Programs/' + one + '/' + two + '/Templates/TimeSlots').children())
 
 	pre = regprof.preregistered_classes()
@@ -206,9 +207,8 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 		else: prerl.append((time, then[0]))
 	context['timeslots'] = prerl
 
-	if pre != []: context['select_graphic'] = "checkmark"
+	if len(pre) > 0: context['select_graphic'] = "checkmark"
 	else: context['select_graphic'] = "nocheckmark"
-
 
 	context['request'] = request
 	regprof.save()
@@ -619,12 +619,29 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 	context['request'] = request
 	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 	context['preload_images'] =  preload_images
+	
+	context['student'] = {'name': curUser.first_name + " " + curUser.last_name,
+						'id': curUser.id }
+	ts = list(GetNode('Q/Programs/' + one + '/' + two + '/Templates/TimeSlots').children())
+
+	#	Put the student's schedule on the confirmation page.  This code is identical to 
+	#	that in program_studentreg, maybe they should be shared.
+	pre = regprof.preregistered_classes()
+	z = [x.event_template for x in pre]
+	prerl = []
+	for time in ts:
+		then = [x for x in pre if x.event_template == time]
+		if then == []: prerl.append((time, None))
+		else: prerl.append((time, then[0]))
+	context['timeslots'] = prerl
+	
+	#	Verify the profile information before letting the user print a conformation.
 	profile_done = False
-	for thing in [regprof.contact_student, regprof.contact_student, regprof.contact_emergency]:
+	for thing in [regprof.contact_user, regprof.contact_guardian, regprof.contact_emergency]:
 		if validateContactInfo(thing):
 			profile_done = True
 			break
-	if True:# aseering 1-11-2007: The profile editor is disabled; don't bother with thi#profile_done:
+	if profile_done:
 		context['printConfirm'] = True
 		pre = regprof.preregistered_classes()
 		if pre != []:
@@ -636,6 +653,10 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 	else:
 		done = False
 		context['printConfirm'] = False
+
+	#	Put in the instructions to go along with the program.
+	context['program'] = {'title': prog.anchor.friendly_name}
+	#	This needs to be filled in with date, address, and instructions.
 
 	if done:
 		bit, created = UserBit.objects.get_or_create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))

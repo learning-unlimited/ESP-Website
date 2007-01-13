@@ -4,11 +4,10 @@
 
 {% block subsection_name %}Register for {{program}} classes.{% endblock %}
 
-
 {% block content %}
 <br /><br />
 <h2 style="text-align: center">Welcome!</h2><br />
-<b style="text-align: center">Student registration for {{program}} </b>
+<p style="text-align: center"><b>Student registration for {{program}} </b></p>
 
 <p style="text-align: center">Please complete the following steps so that you are fully pre-registered for {{program}}.</p>
 
@@ -23,11 +22,6 @@ border = 1
 {% endifequal %}
 ></td>
 </tr>
-{% else %}
-<tr>
- <td>Profile update (disabled)</td>
- <td style="text-align: center">&nbsp;</td>
-</tr>
 {% endif %}
 
 <tr>
@@ -36,22 +30,17 @@ border = 1
 {% ifequal select_graphic "nocheckmark" %}
 border = 1
 {% endifequal %}
-></td>
+>&nbsp; </td>
 </tr>
 
 {% if using_online_payments %}
 <tr>
  <td><a href="/learn/{{one}}/{{two}}/startpay/">Pay Online</a> (Optional)</td>
  <td style="text-align: center"><img src="/media/images/{{pay_graphic}}.gif"
-{% ifequal select_graphic "nocheckmark" %}
+{% ifequal payment_graphic "nocheckmark" %}
 border = 1
 {% endifequal %}
 ></td>
-</tr>
-{% else %}
-<tr>
- <td>Online payments (disabled)</td>
- <td style="text-align: center">&nbsp;</td>
 </tr>
 {% endif %}
 
@@ -59,38 +48,8 @@ border = 1
 <br /><hr><br />
 
 <p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center'><b>Select Your {{one}} Classes</p></b></center>
-<p style='font-family: arial; margin-left:10px; text-align: center'>
- <b style="text-align: center">Classes for {{student}}</b>
 
-</p>
-
-<p style="text-align: center">
-<a target="_blank" href='/teach/{{one}}/{{two}}/catalog/'>
-Open Full Catalog in a Separate Window
-</a>
-</p>
-
-<br/>  	
-
- <table style="width: 600px; margin: auto" border=1>
-{% for timeslot in timeslots %}
-
-<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.friendly_name }} </td>
-	{% if timeslot.1 %}
-	<td>{{timeslot.1.title}}</td>
-        <td width='20%' align='center'>
-	<a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change]</a>
-	<a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[remove]</a>
-	{% else %}
-   <td>Nothing Selected</td>
-  <td width='20%' align='center'>
-  <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
-	{% endif %}	
-  </td></tr>
-
-{% endfor %}
-</table> 
-<br/>
+{% include "users/student_schedule.html" %}
 
 <form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">
 <p style="text-align: center">

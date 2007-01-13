@@ -279,7 +279,7 @@ class RegistrationProfile(models.Model):
 		return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode(['Classes']))
 	
 	def registered_classes(self):
-		v = GetNode( 'V/Subscribe' )
+		v = GetNode( 'V/Flags/Registration/Confirmed' )
 		return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode(['Classes']))
 
 	class Admin:
