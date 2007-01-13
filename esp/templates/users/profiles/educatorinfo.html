@@ -1,6 +1,14 @@
 <!-- Begin Educator Info Portion -->
 
 <tr>
+ <td><label for="id_position">Position: <br /> <small>(e.g. teacher,principal)</small></label></td>
+ <td>{{ form.position }} {% if form.position.errors %}
+   <br /><span class="form_error">{{ form.position.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
  <td><label for="id_subject_taught">Subject Taught: <br /> <small>(if applicable)</small></label></td>
  <td>{{ form.subject_taught }} {% if form.subject_taught.errors %}
    <br /><span class="form_error">{{ form.subject_taught.errors|join:", " }}</span>

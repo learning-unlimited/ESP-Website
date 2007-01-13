@@ -391,11 +391,13 @@ class EducatorInfo(models.Model):
     subject_taught = models.CharField(maxlength=64,blank=True, null=True)
     grades_taught = models.CharField(maxlength=16,blank=True, null=True)
     school = models.CharField(maxlength=128,blank=True, null=True)
-
+    position = models.CharField(maxlength=64,blank=True, null=True)
+    
     def updateForm(self, form_dict):
         form_dict['subject_taught'] = self.subject_taught
         form_dict['grades_taught']  = self.grades_taught
         form_dict['school']         = self.school
+        form_dict['position']       = self.position        
         return form_dict
     
     @staticmethod
@@ -408,7 +410,8 @@ class EducatorInfo(models.Model):
             educatorInfo = regProfile.educator_info
         
         educatorInfo.subject_taught = new_data['subject_taught']
-        educatorInfo.grades_taught  = new_data['grades_taught']        
+        educatorInfo.grades_taught  = new_data['grades_taught']
+        educatorInfo.position       = new_data['position']      
         educatorInfo.school         = new_data['school']
         educatorInfo.save()
         return educatorInfo

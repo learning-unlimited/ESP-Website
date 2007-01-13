@@ -76,7 +76,8 @@ class EducatorInfoManipulator(forms.Manipulator):
         self.fields = (
             forms.TextField(field_name="subject_taught", length=12, maxlength=64),
             forms.TextField(field_name="grades_taught", length=10, maxlength=16),
-            forms.TextField(field_name="school", length=24, maxlength=128)
+            forms.TextField(field_name="school", length=24, maxlength=128),
+            forms.TextField(field_name="position", length=10, maxlength=32)
             )
         
 class StudentProfileManipulator(forms.Manipulator):
