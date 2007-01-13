@@ -6,7 +6,8 @@ class UserContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
     def __init__(self):
         self.fields = (
-            forms.TextField(field_name="full_name", length=20, maxlength=256, is_required=True),
+            forms.TextField(field_name="first_name", length=15, maxlength=64, is_required=True),
+            forms.TextField(field_name="last_name", length=15, maxlength=64, is_required=False),            
             forms.EmailField(field_name="e_mail", is_required=True, length=25),
             ESPPhoneNumberField(field_name="phone_day", is_required=True, local_areacode='617'),
             ESPPhoneNumberField(field_name="phone_cell", is_required=True, local_areacode='617'),
@@ -21,7 +22,8 @@ class EmergContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
     def __init__(self):
         self.fields = (
-            forms.TextField(field_name="emerg_full_name", length=20, maxlength=256, is_required=True),
+            forms.TextField(field_name="emerg_first_name", length=15, maxlength=64, is_required=True),
+            forms.TextField(field_name="emerg_last_name", length=15, maxlength=64, is_required=False),            
             forms.EmailField(field_name="emerg_e_mail", is_required=True, length=25),
             ESPPhoneNumberField(field_name="emerg_phone_day", is_required=True, local_areacode='617'),
             ESPPhoneNumberField(field_name="emerg_phone_cell", is_required=True, local_areacode='617'),
@@ -36,7 +38,8 @@ class GuardContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
     def __init__(self):
         self.fields = (
-            forms.TextField(field_name="guard_full_name", length=20, maxlength=256, is_required=True),
+            forms.TextField(field_name="guard_first_name", length=15, maxlength=64, is_required=True),
+            forms.TextField(field_name="guard_last_name", length=15, maxlength=64, is_required=False),
             forms.EmailField(field_name="guard_e_mail", is_required=True, length=25),
             ESPPhoneNumberField(field_name="guard_phone_day", is_required=True, local_areacode='617'),
             ESPPhoneNumberField(field_name="guard_phone_cell", local_areacode='617'),
@@ -63,7 +66,8 @@ class TeacherInfoManipulator(forms.Manipulator):
         self.fields = (
             forms.PositiveIntegerField(field_name="graduation_year", length=4, maxlength=4),
             forms.TextField(field_name="school", length=24, maxlength=128),
-            forms.TextField(field_name="major", length=10, maxlength=32)
+            forms.TextField(field_name="major", length=10, maxlength=32),
+            DojoDatePickerField(field_name="dob", is_required=False, default='1994-02-29')           
             )
 
 class EducatorInfoManipulator(forms.Manipulator):

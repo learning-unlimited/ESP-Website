@@ -298,7 +298,7 @@ class StudentInfo(models.Model):
         
         studentInfo.graduation_year = new_data['graduation_year']
         studentInfo.school          = new_data['school']
-        studentInfo.dob          = new_data['dob']        
+        studentInfo.dob             = new_data['dob']
         studentInfo.save()
         return studentInfo
     
@@ -317,11 +317,13 @@ class TeacherInfo(models.Model):
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     college = models.CharField(maxlength=128,blank=True, null=True)
     major = models.CharField(maxlength=32,blank=True, null=True)
-
+    dob = models.DateField(blank=True, null=True)
+    
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.college
         form_dict['major']           = self.major
+        form_dict['dob']             = self.dob
         return form_dict
     
     @staticmethod
@@ -336,6 +338,7 @@ class TeacherInfo(models.Model):
         teacherInfo.graduation_year = new_data['graduation_year']
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
+        teacherInfo.dob           = new_data['dob']        
         teacherInfo.save()
         return teacherInfo
                     
@@ -423,7 +426,8 @@ class EducatorInfo(models.Model):
 class ContactInfo(models.Model):
 	""" ESP-specific contact information for (possibly) a specific user """
 	user = models.ForeignKey(User, blank=True, null=True)
-	full_name = models.CharField(maxlength=256)
+	first_name = models.CharField(maxlength=64)
+	last_name = models.CharField(maxlength=64)        
 	e_mail = models.EmailField(blank=True, null=True)
 	phone_day = models.PhoneNumberField(blank=True, null=True)
 	phone_cell = models.PhoneNumberField(blank=True, null=True)
@@ -459,7 +463,7 @@ class ContactInfo(models.Model):
             if self.user != None:
                 username = self.user.username
                 
-            return self.full_name + ' (' + username + ')'
+            return self.first_name + ' ' + self.last_name + ' (' + username + ')'
 	
 	class Admin:
 		pass

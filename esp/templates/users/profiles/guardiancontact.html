@@ -7,9 +7,17 @@
 </tr>
 
 <tr>
- <td><label for="id_guard_full_name">Full Name:</label></td>
- <td>{{ form.guard_full_name }} {% if form.guard_full_name.errors %}
-   <br /><span class="form_error">{{ form.guard_full_name.errors|join:", " }}</span>
+ <td><label for="id_guard_first_name">First Name:</label></td>
+ <td>{{ form.guard_first_name }} {% if form.guard_first_name.errors %}
+   <br /><span class="form_error">{{ form.guard_first_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_guard_last_name">Last Name:</label></td>
+ <td>{{ form.guard_last_name }} {% if form.guard_last_name.errors %}
+   <br /><span class="form_error">{{ form.guard_last_name.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

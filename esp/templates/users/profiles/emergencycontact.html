@@ -6,9 +6,17 @@
 </tr>
 
 <tr>
- <td><label for="id_emerg_full_name">Full Name:</label></td>
- <td>{{ form.emerg_full_name }} {% if form.emerg_full_name.errors %}
-   <br /><span class="form_error">{{ form.emerg_full_name.errors|join:", " }}</span>
+ <td><label for="id_emerg_first_name">First Name:</label></td>
+ <td>{{ form.emerg_first_name }} {% if form.emerg_first_name.errors %}
+   <br /><span class="form_error">{{ form.emerg_first_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_emerg_last_name">Last Name:</label></td>
+ <td>{{ form.emerg_last_name }} {% if form.emerg_last_name.errors %}
+   <br /><span class="form_error">{{ form.emerg_last_name.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

@@ -1,8 +1,16 @@
 <!-- User ContactInfo -->
 <tr>
- <td><label for="id_full_name">Name:</label></td>
- <td>{{ form.full_name }} {% if form.full_name.errors %}
-   <br /><span class="form_error">{{ form.full_name.errors|join:", " }}</span>
+ <td><label for="id_first_name">First Name:</label></td>
+ <td>{{ form.first_name }} {% if form.first_name.errors %}
+   <br /><span class="form_error">{{ form.first_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_last_name">Last Name:</label></td>
+ <td>{{ form.last_name }} {% if form.last_name.errors %}
+   <br /><span class="form_error">{{ form.last_name.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
