@@ -1,0 +1,102 @@
+<!-- Begin Emergency Contact -->
+<tr>
+ <td colspan="2">
+ <label class="groupheader">Emergency Contact</label>
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_emerg_full_name">Full Name:</label></td>
+ <td>{{ form.emerg_full_name }} {% if form.emerg_full_name.errors %}
+   <br /><span class="form_error">{{ form.emerg_full_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
+<tr>
+ <td><label for="id_emerg_e_mail">Email:</label></td>
+ <td>{{ form.emerg_e_mail}} {% if form.emerg_e_mail.errors %}
+   <br /><span class="form_error">{{ form.emerg_e_mail.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+  <td colspan="2"><label>Address:</label></td>
+</tr>
+
+<tr>
+ <td align='right'><label for="id_emerg_address_street">
+                       <small><i>street</i></small>
+		   </label>
+ </td>
+ <td>{{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
+   <br /><span class="form_error">{{ form.emerg_address_street.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align="right"><label for="id_emerg_address_city">
+                        <small><i>city</i></small>
+                   </label></td>
+ <td>
+ <table border="0" cellspacing="0" cellpadding="0" width="100%">
+ <tr>
+ 
+ <td>
+  {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
+   <br /><span class="form_error">{{ form.emerg_address_city.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+ <td style="padding-left: 6px;">{{ form.emerg_address_state }} {% if form.emerg_address_state.errors %}
+   <br /><span class="form_error">{{ form.emerg_address_state.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+
+ <td align="right"><label for="id_emerg_address_zip">
+                       <small><i>&nbsp;&nbsp;zip</i></small>
+                   </label>
+ 
+ </td>
+   <td>
+  {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
+   <br /><span class="form_error">{{ form.emerg_address_zip.errors|join:", " }}</span>
+   {% endif %}
+   </td> 
+ </tr>
+ </table>
+ </td>
+</tr>
+
+<tr>
+ <td><label>Phone:</label></td>
+ <td>&nbsp;</td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_emerg_phone_day">day</label></i></small></td>
+ <td>{{ form.emerg_phone_day }} {% if form.emerg_phone_day.errors %}
+   <br /><span class="form_error">{{ form.emerg_phone_day.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_emerg_phone_even">evening</label></i></small></td>
+ <td>{{ form.emerg_phone_even }} {% if form.emerg_phone_even.errors %}
+   <br /><span class="form_error">{{ form.emerg_phone_even.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_emerg_phone_cell">cell</label></i></small></td>
+ <td>{{ form.emerg_phone_cell }} {% if form.emerg_phone_cell.errors %}
+   <br /><span class="form_error">{{ form.emerg_phone_cell.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<!-- End Emergency Contact -->

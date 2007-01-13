@@ -1,0 +1,94 @@
+<!-- User ContactInfo -->
+<tr>
+ <td><label for="id_full_name">Name:</label></td>
+ <td>{{ form.full_name }} {% if form.full_name.errors %}
+   <br /><span class="form_error">{{ form.full_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_e_mail">Email:</label></td>
+ <td>{{ form.e_mail }} {% if form.e_mail.errors %}
+   <br /><span class="form_error">{{ form.e_mail.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+  <td colspan="2"><label>Address:</label></td>
+</tr>
+
+<tr>
+ <td align='right'><label for="id_address_street">
+                       <small><i>street</i></small>
+		   </label>
+ </td>
+ <td>{{ form.address_street }} {% if form.address_street.errors %}
+   <br /><span class="form_error">{{ form.address_street.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align="right"><label for="id_address_city">
+                        <small><i>city</i></small>
+                   </label></td>
+ <td>
+ <table border="0" cellspacing="0" cellpadding="0" width="100%">
+ <tr>
+ 
+ <td>
+  {{ form.address_city }} {% if form.address_city.errors %}
+   <br /><span class="form_error">{{ form.address_city.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+ <td style="padding-left: 6px;">{{ form.address_state }} {% if form.address_state.errors %}
+   <br /><span class="form_error">{{ form.address_state.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+
+ <td align="right"><label for="id_address_zip">
+                       <small><i>&nbsp;&nbsp;zip</i></small>
+                   </label>
+ 
+ </td>
+   <td>
+  {{ form.address_zip }} {% if form.address_zip.errors %}
+   <br /><span class="form_error">{{ form.address_zip.errors|join:", " }}</span>
+   {% endif %}
+   </td> 
+ </tr>
+ </table>
+ </td>
+</tr>
+
+<tr>
+ <td><label>Phone:</label></td>
+ <td>&nbsp;</td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_phone_day">day</label></i></small></td>
+ <td>{{ form.phone_day }} {% if form.phone_day.errors %}
+   <br /><span class="form_error">{{ form.phone_day.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_phone_even">evening</label></i></small></td>
+ <td>{{ form.phone_even }} {% if form.phone_even.errors %}
+   <br /><span class="form_error">{{ form.phone_even.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td align='right'><small><i><label for="id_phone_cell">cell</label></i></small></td>
+ <td>{{ form.phone_cell }} {% if form.phone_cell.errors %}
+   <br /><span class="form_error">{{ form.phone_cell.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+<!-- End User ContactInfo -->

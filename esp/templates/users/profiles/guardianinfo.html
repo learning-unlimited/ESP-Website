@@ -1,0 +1,20 @@
+<!-- Begin Guardian Info Portion -->
+
+<tr>
+ <td><label for="id_year_finished">Est. year finished with ESP<br /> (if applicable):</label></td>
+ <td>{{ form.year_finished }} {% if form.year_finished.errors %}
+   <br /><span class="form_error">{{ form.year_finished.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_num_kids">Number of Kids (to be involved in ESP):</label></td>
+ <td>{{ form.num_kids }} {% if form.num_kids.errors %}
+   <br /><span class="form_error">{{ form.num_kids.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
+<!-- End Guardian Info Portion -->

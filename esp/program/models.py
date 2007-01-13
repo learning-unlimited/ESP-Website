@@ -1,4 +1,3 @@
-
 from django.db import models
 from django.contrib.auth.models import User
 from esp.cal.models import Event
@@ -268,11 +267,47 @@ class RegistrationProfile(models.Model):
 	teacher_info = models.ForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
 	guardian_info = models.ForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
 	educator_info = models.ForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
-		
-	
 
+	@staticmethod
+	def getLastProfile(user):
+		regProfList = RegistrationProfile.objects.filter(user__exact=user).order_by('-id')
+		if len(regProfList) < 1:
+			regProf = RegistrationProfile()
+			regProf.user = user
+		else:
+			regProf = regProfList[0]
+		return regProf
+
+	@staticmethod
+	def getLastForProgram(user, program):
+		regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-id')
+		if len(regProfList) < 1:
+			regProf = RegistrationProfile()
+			regProf.user = user
+			regProg.program = program
+		else:
+			regProf = regProfList[0]
+		return regProf
+			
 	def __str__(self):
 		return '<Registration for ' + str(self.user) + ' in ' + str(self.program) + '>'
+
+	def updateForm(self, form_data, specificInfo = None):
+		if self.student_info is not None and (specificInfo is None or specificInfo == 'student'):
+			form_data = self.student_info.updateForm(form_data)
+		if self.teacher_info is not None and (specificInfo is None or specificInfo == 'teacher'):
+			form_data = self.teacher_info.updateForm(form_data)
+		if self.guardian_info is not None and (specificInfo is None or specificInfo == 'guardian'):
+			form_data = self.guardian_info.updateForm(form_data)
+		if self.educator_info is not None and (specificInfo is None or specificInfo == 'educator'):
+			form_data = self.educator_info.updateForm(form_data)
+		if self.contact_user is not None:
+			form_data = self.contact_user.updateForm(form_data)
+		if self.contact_guardian is not None:
+			form_data = self.contact_guardian.updateForm(form_data, 'guard_')
+		if self.contact_emergency is not None:
+			form_data = self.contact_emergency.updateForm(form_data, 'emerg_')
+		return form_data
 	
 	def preregistered_classes(self):
 		v = GetNode( 'V/Flags/Registration/Preliminary' )

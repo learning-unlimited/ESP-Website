@@ -1,0 +1,29 @@
+<!-- Begin Educator Info Portion -->
+
+<tr>
+ <td><label for="id_subject_taught">Subject Taught: <br /> <small>(if applicable)</small></label></td>
+ <td>{{ form.subject_taught }} {% if form.subject_taught.errors %}
+   <br /><span class="form_error">{{ form.subject_taught.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
+<tr>
+ <td><label for="id_grades_taught">Grades Taught: <br /> <small>(e.g. 9-12)</small></label></td>
+ <td>{{ form.grades_taught }} {% if form.grades_taught.errors %}
+   <br /><span class="form_error">{{ form.grades_taught.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
+<tr>
+ <td><label for="id_college">School Name:</label></td>
+ <td>{{ form.college }} {% if form.college.errors %}
+   <br /><span class="form_error">{{ form.college.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<!-- End Educator Info Portion -->

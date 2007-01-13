@@ -276,46 +276,146 @@ class UserBit(models.Model):
     
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
+    user = models.ForeignKey(User, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     school = models.CharField(maxlength=256,blank=True, null=True)
+    dob = models.DateField(blank=True, null=True)
+    
+    def updateForm(self, form_dict):
+        form_dict['graduation_year'] = self.graduation_year
+        form_dict['school']          = self.school
+        form_dict['dob']             = self.dob
+        return form_dict        
+
+    @staticmethod
+    def addOrUpdate(curUser, regProfile, new_data):
+        """ adds or updates a StudentInfo record """
+        if regProfile.student_info is None:
+            studentInfo = StudentInfo()
+            studentInfo.user = curUser
+        else:
+            studentInfo = regProfile.student_info
+        
+        studentInfo.graduation_year = new_data['graduation_year']
+        studentInfo.school          = new_data['school']
+        studentInfo.dob          = new_data['dob']        
+        studentInfo.save()
+        return studentInfo
     
     def __str__(self):
-        return "(ESP Student Info)"
+        username = ""
+        if self.user != None:
+            username = self.user.username
+        return 'ESP Student Info (%s)' % username
             
     class Admin:
         pass
 
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
+    user = models.ForeignKey(User, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     college = models.CharField(maxlength=128,blank=True, null=True)
     major = models.CharField(maxlength=32,blank=True, null=True)
+
+    def updateForm(self, form_dict):
+        form_dict['graduation_year'] = self.graduation_year
+        form_dict['school']          = self.college
+        form_dict['major']           = self.major
+        return form_dict
     
+    @staticmethod
+    def addOrUpdate(curUser, regProfile, new_data):
+        """ adds or updates a TeacherInfo record """
+        if regProfile.teacher_info is None:
+            teacherInfo = TeacherInfo()
+            teacherInfo.user = curUser
+        else:
+            teacherInfo = regProfile.teacher_info
+        
+        teacherInfo.graduation_year = new_data['graduation_year']
+        teacherInfo.college         = new_data['school']
+        teacherInfo.major           = new_data['major']
+        teacherInfo.save()
+        return teacherInfo
+                    
     def __str__(self):
-        return "(ESP Teacher Info)"
+        username = ""
+        if self.user != None:
+            username = self.user.username
+        return 'ESP Teacher Info (%s)' % username
 
     class Admin:
         pass
     
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
+    user = models.ForeignKey(User, blank=True, null=True)
     year_finished = models.PositiveIntegerField(blank=True, null=True)
     num_kids = models.PositiveIntegerField(blank=True, null=True)
+
+    def updateForm(self, form_dict):
+        form_dict['year_finished'] = self.year_finished
+        form_dict['num_kids']      = self.num_kids
+        return form_dict
+    
+    @staticmethod
+    def addOrUpdate(curUser, regProfile, new_data):
+        """ adds or updates a GuardianInfo record """
+        if regProfile.guardian_info is None:
+            guardianInfo = GuardianInfo()
+            guardianInfo.user = curUser
+        else:
+            guardianInfo = regProfile.guardian_info
+        
+        guardianInfo.year_finished = new_data['year_finished']
+        guardianInfo.num_kids      = new_data['num_kids']
+        guardianInfo.save()
+        return guardianInfo
     
     def __str__(self):
-        return "(ESP Guardian Info)"
+        username = ""
+        if self.user != None:
+            username = self.user.username
+        return 'ESP Guardian Info (%s)' % username
     
     class Admin:
         pass
 
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
+    user = models.ForeignKey(User, blank=True, null=True)
     subject_taught = models.CharField(maxlength=64,blank=True, null=True)
     grades_taught = models.CharField(maxlength=16,blank=True, null=True)
     school = models.CharField(maxlength=128,blank=True, null=True)
+
+    def updateForm(self, form_dict):
+        form_dict['subject_taught'] = self.subject_taught
+        form_dict['grades_taught']  = self.grades_taught
+        form_dict['school']         = self.school
+        return form_dict
     
+    @staticmethod
+    def addOrUpdate(curUser, regProfile, new_data):
+        """ adds or updates a EducatorInfo record """
+        if regProfile.educator_info is None:
+            educatorInfo = EducatorInfo()
+            educatorInfo.user = curUser
+        else:
+            educatorInfo = regProfile.educator_info
+        
+        educatorInfo.subject_taught = new_data['subject_taught']
+        educatorInfo.grades_taught  = new_data['grades_taught']        
+        educatorInfo.school         = new_data['school']
+        educatorInfo.save()
+        return educatorInfo
+        
     def __str__(self):
-        return "(ESP Educator Info)"
+        username = ""
+        if self.user != None:
+            username = self.user.username
+        return 'ESP Educator Info (%s)' % username
+
     
     class Admin:
         pass
@@ -324,16 +424,36 @@ class ContactInfo(models.Model):
 	""" ESP-specific contact information for (possibly) a specific user """
 	user = models.ForeignKey(User, blank=True, null=True)
 	full_name = models.CharField(maxlength=256)
-	dob = models.DateField(blank=True, null=True)
 	e_mail = models.EmailField(blank=True, null=True)
 	phone_day = models.PhoneNumberField(blank=True, null=True)
 	phone_cell = models.PhoneNumberField(blank=True, null=True)
 	phone_even = models.PhoneNumberField(blank=True, null=True)
-	address_street = models.CharField(maxlength=100)
-	address_city = models.CharField(maxlength=50)
-	address_state = models.USStateField()
-	address_zip = models.CharField(maxlength=5)
+	address_street = models.CharField(maxlength=100,blank=True, null=True)
+	address_city = models.CharField(maxlength=50,blank=True, null=True)
+	address_state = models.USStateField(blank=True, null=True)
+	address_zip = models.CharField(maxlength=5,blank=True, null=True)
 
+        @staticmethod
+        def addOrUpdate(regProfile, new_data, contactInfo, prefix='', curUser=None):
+            """ adds or updates a ContactInfo record """
+            if contactInfo is None:
+                contactInfo = ContactInfo()
+            for i in contactInfo.__dict__.keys():
+                if i != 'user_id' and i != 'id' and new_data.has_key(prefix+i):
+                    contactInfo.__dict__[i] = new_data[prefix+i]
+            if curUser is not None:
+                contactInfo.user = curUser
+            contactInfo.save()
+            return contactInfo
+
+        def updateForm(self, form_data, prepend=''):
+            newkey = self.__dict__
+            for key, val in newkey.items():
+                if val and key != 'id':
+                    form_data[prepend+key] = str(val)
+
+            return form_data
+        
 	def __str__(self):
             username = ""
             if self.user != None:

@@ -1,0 +1,27 @@
+<!-- Begin Teacher Info Portion -->
+
+<tr>
+ <td><label for="id_graduation_year">Year of college graduation:<br /><small>(if applicable)</small></label></td>
+ <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
+   <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_school">School Name:</label></td>
+ <td>{{ form.school }} {% if form.school.errors %}
+   <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_major">Major:</label></td>
+ <td>{{ form.major }} {% if form.major.errors %}
+   <br /><span class="form_error">{{ form.major.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<!-- End Teacher Info Portion -->

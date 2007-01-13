@@ -1,0 +1,27 @@
+<!-- Begin Student Info Portion -->
+<tr>
+ <td><label for="id_dob">D.O.B.:</label></td>
+ <td>{{ form.dob }} {% if form.dob.errors %}
+   <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
+   {% endif %}
+<small> Example 1994/02/29</small> 
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_graduation_year">Year of high school graduation:</label></td>
+ <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
+   <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_school">School Name:<br /><small>(or &quot;home-schooled&quot;)</small></label></td>
+ <td>{{ form.school }} {% if form.school.errors %}
+   <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<!-- End Student Info Portion -->

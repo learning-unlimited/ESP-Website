@@ -5,7 +5,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest, TeacherParticipationProfile
+from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest, TeacherParticipationProfile, TeacherInfo, StudentInfo
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
@@ -100,53 +100,43 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 @login_required
 def program_profile(request, tl, one, two, module, extra, prog):
 	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+	curUser = request.user
 	regprof = RegistrationProfile.objects.filter(user=request.user,program=prog)[0]
-
+	
 	context = {'logged_in': request.user.is_authenticated() }
 	context['user'] = request.user
 	context['one'] = one
 
 	if tl == 'learn':
+		context['profiletype'] = 'student'
 		manipulator = StudentProfileManipulator()
 	else:
+		context['profiletype'] = 'teacher'
 		manipulator = TeacherProfileManipulator()
 
 	if request.method == 'POST':
 		new_data = request.POST.copy()
 		errors = manipulator.get_validation_errors(new_data)
-
 		if not errors:
 			manipulator.do_html2python(new_data)
+			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+			regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
+			regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
+			if tl == 'teach':
+				regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
+			else:
+				regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
+				regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
+			regProf.save()
+			return render_to_response('users/profile_complete.html', {})
+
 	else:
-		errors = new_data = {}
-
+		errors = {}
+		regProf = RegistrationProfile.getLastProfile(curUser)
+		new_data = regProf.updateForm({}, tl == 'learn' and 'student' or 'teacher')
+	
 	context['form'] = forms.FormWrapper(manipulator, new_data, errors)
-	return render_to_response('users/studentprofile.html', context)
-		
-	context['two'] = two
-	context['statenames'] = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL'  ,'IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  ,'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada']
-	contactInfo = request.user.contactinfo_set.all()
-	if len(contactInfo) < 1:
-		empty = ContactInfo()
-		empty.user = request.user
-		context['grad'] = empty
-		context['studentc'] = empty
-		context['emerg'] = empty
-		context['guard'] = empty
-		context['navbar_list'] = makeNavBar(request.user, prog.anchor)
-		context['preload_images'] =  preload_images
-		context['request'] = request
-		return render_to_response('users/profile', context)
-	contactInfo = contactInfo[0]
-
-	context['grad'] = contactInfo.graduation_year
-	context['studentc'] = regprof.contact_student
-	context['emerg'] = regprof.contact_emergency
-	context['guard'] = regprof.contact_guardian
-	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
-	context['preload_images'] =  preload_images
-	context['request'] = request
-	return render_to_response('users/profile', context)
+	return render_to_response('users/profile.html', context)
 
 @login_required
 def program_studentreg(request, tl, one, two, module, extra, prog):
@@ -637,6 +627,7 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 	
 	#	Verify the profile information before letting the user print a conformation.
 	profile_done = False
+
 	for thing in [regprof.contact_user, regprof.contact_guardian, regprof.contact_emergency]:
 		if validateContactInfo(thing):
 			profile_done = True
