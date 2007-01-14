@@ -284,7 +284,7 @@ class RegistrationProfile(models.Model):
 		if len(regProfList) < 1:
 			regProf = RegistrationProfile()
 			regProf.user = user
-			regProg.program = program
+			regProf.program = program
 		else:
 			regProf = regProfList[0]
 		return regProf
