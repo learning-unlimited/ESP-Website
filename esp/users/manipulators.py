@@ -15,7 +15,7 @@ class UserRegManipulator(forms.Manipulator):
             forms.PasswordField(field_name="password", length=12, maxlength=32,is_required=True),
             forms.PasswordField(field_name="password_confirm", length=12, maxlength=32,validator_list=confirm_validators,is_required=True),
             forms.RadioSelectField(field_name='role',choices=roles,is_required=True),
-            forms.TextField(field_name="email",length=15, is_required=True)
+            forms.EmailField(field_name="email",length=15, is_required=True)
             )
 
     def isUniqueUserName(self, field_data, all_data):
