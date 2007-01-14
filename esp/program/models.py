@@ -309,7 +309,6 @@ class RegistrationProfile(models.Model):
 			form_data = self.contact_user.updateForm(form_data)
 		if self.contact_guardian is not None:
 			form_data = self.contact_guardian.updateForm(form_data, 'guard_')
-			assert False, form_data
 		if self.contact_emergency is not None:
 			form_data = self.contact_emergency.updateForm(form_data, 'emerg_')
 		return form_data
