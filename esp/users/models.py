@@ -463,10 +463,14 @@ class ContactInfo(models.Model):
         
 	def __str__(self):
             username = ""
+            last_name, first_name = '', ''
             if self.user != None:
                 username = self.user.username
-                
-            return self.first_name + ' ' + self.last_name + ' (' + username + ')'
+            if self.first_name is not None:
+                first_name = self.first_name
+            if self.last_name is not None:
+                last_name = self.last_name
+            return first_name + ' ' + last_name + ' (' + username + ')'
 	
 	class Admin:
 		pass

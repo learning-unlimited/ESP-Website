@@ -290,7 +290,11 @@ class RegistrationProfile(models.Model):
 		return regProf
 			
 	def __str__(self):
-		return '<Registration for ' + str(self.user) + ' in ' + str(self.program) + '>'
+		if self.program is None:
+			return '<Registration for '+str(self.user)+'>'
+		if self.user is not None:
+			return '<Registration for ' + str(self.user) + ' in ' + str(self.program) + '>'
+
 
 	def updateForm(self, form_data, specificInfo = None):
 		if self.student_info is not None and (specificInfo is None or specificInfo == 'student'):
@@ -305,6 +309,7 @@ class RegistrationProfile(models.Model):
 			form_data = self.contact_user.updateForm(form_data)
 		if self.contact_guardian is not None:
 			form_data = self.contact_guardian.updateForm(form_data, 'guard_')
+			assert False, form_data
 		if self.contact_emergency is not None:
 			form_data = self.contact_emergency.updateForm(form_data, 'emerg_')
 		return form_data

@@ -16,7 +16,7 @@
  </b>
 </p>
 <hr/>
-{% if Problem %}
+{% if form.has_errors %}
 <p class="error">Hey - There was a problem with your registration.  Please try again, errors displayed below.</p>
 {% endif %}
 <form action='/myesp/finish/' method="post">
@@ -24,87 +24,65 @@
 <table width='65%' cellpadding='2' align='center' border='0'>
 
 <tr>
- <td style="vertical-align: top"><b>First Name:</b></td>
- <td><input type='text' name='first_name' size='30' value='{{ request.POST.first_name }}'><br/>
- <span class="formerror">{{ errors.first_name }}</span>
+ <td><label for="id_first_name">First Name:</label></td>
+ <td>{{ form.first_name }} {% if form.first_name.errors %}
+   <br /><span class="form_error">{{ form.first_name.errors|join:", " }}</span>
+   {% endif %}
  </td>
 </tr>
 
 <tr>
- <td style="vertical-align: top"><b>Last Name:</b></td>
- <td><input type='text' name='last_name' size='30' value='{{ request.POST.last_name }}'><br/>
- <span class="formerror">{{ errors.last_name }}</span>
+ <td><label for="id_last_name">Last Name:</label></td>
+ <td>{{ form.last_name }} {% if form.last_name.errors %}
+   <br /><span class="form_error">{{ form.last_name.errors|join:", " }}</span>
+   {% endif %}
  </td>
 </tr>
 
 <tr>
- <td style="vertical-align: top"><b>Username:</b></td>
- <td><input type='text' name='username' size='30' value='{{ request.POST.username }}'><br/>
-     <small>Username must be between 4 and 12 characters.</small><br />
- <span class="formerror">{{ errors.username }}</span>
+ <td><label for="id_username">Username:</label></td>
+ <td>{{ form.username }} {% if form.username.errors %}
+   <br /><span class="form_error">{{ form.username.errors|join:", " }}</span>
+   {% endif %}
  </td>
 </tr>
 
 <tr>
- <td></td>
- <td>
-
+ <td><label for="id_password">Password:</label></td>
+ <td>{{ form.password }} {% if form.password.errors %}
+   <br /><span class="form_error">{{ form.password.errors|join:", " }}</span>
+   {% endif %}
  </td>
 </tr>
 
 <tr>
- <td><b>Password:</b></td>
- <td><input type='password' name='password' size='30' value=''><br />
- <span class="formerror">{{ errors.password }}</span>
-
+ <td><label for="id_password_confirm">Confirm Password:</label></td>
+ <td>{{ form.password_confirm }} {% if form.password_confirm.errors %}
+   <br /><span class="form_error">{{ form.password_confirm.errors|join:", " }}</span>
+   {% endif %}
  </td>
 </tr>
 
 <tr>
- <td></td>
- <td>
-
-   <small>Password must be between 4 and 12<br/>characters, and is cAsE-SenSiTiVe.</small>
- </td>
-</tr>
-<tr>
- <td style="vertical-align: top"><b>Confirm<br/>Password:</b></td>
- <td><input type='password' name='confirm' size='30' value=''><br />
- <span class="formerror">{{ errors.confirm }}</span>
-</td>
-</tr>
-
-<tr>
- <td></td>
- <td>
-
+ <td><label for="id_role">Initial Role:</label></td>
+ <td>{{ form.role }} {% if form.role.errors %}
+   <br /><span class="form_error">{{ form.role.errors|join:", " }}</span>
+   {% endif %}
  </td>
 </tr>
 
- </td>
-</tr>
-<tr>
- <td><b>Initial Role:</b></td>
- <td>
-<input type="radio" name="role" value="Student" {{ fixedRole.Student }}/> Student <br />
-<input type="radio" name="role" value="Guardian" {{ fixedRole.Parent }}/> Parent <br />
-<input type="radio" name="role" value="Educator" {{ fixedRole.Educator }}/> K-12 Educator <br />
-<input type="radio" name="role" value="Teacher" {{ fixedRole.Teacher }}/> ESP Teacher <br />
- </td>
-</tr>
-<tr>
- <td><b>Email:</b></td>
- <td><input type='text' name='email' size='30' value='{{ request.POST.email }}'><br />
- <span class="formerror">{{ errors.email }}</span>
 
+
+<tr>
+ <td><label for="id_email">Email:</label></td>
+ <td>{{ form.email }} {% if form.email.errors %}
+   <br /><span class="form_error">{{ form.email.errors|join:", " }}</span>
+   {% endif %}<br />
+   <small>Please provide a valid email address. We won't spam you.</small>
  </td>
 </tr>
 
-<tr>
- <td></td>
- <td>
 
-   <small>Please provide a valid email address.  We won't spam you.</small>
  </td>
 </tr>
 

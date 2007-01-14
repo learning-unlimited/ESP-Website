@@ -19,9 +19,9 @@ import datetime
 #from esp.validation import *
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
-
+from esp.users.manipulators import UserRegManipulator
 from esp.web.data import navbar_data, preload_images
-
+from django import forms
 
 def myesp_register(request, module):
 	""" Return a user-registration page """
@@ -30,54 +30,28 @@ def myesp_register(request, module):
 							'logged_in': True,
 							'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
 							'preload_images': preload_images})
-
+	manipulator = UserRegManipulator()
 	return render_to_response('users/newuser.html', {'request': request,
 						    'Problem': False,
 						    'logged_in': request.user.is_authenticated(),
 						    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
+						    'form':           forms.FormWrapper(manipulator, {}, {}),
 						    'preload_images': preload_images})
 
 
 
 def myesp_finish(request, module):
 	""" Complete a user registration """
-	form_guidelines = {'username':   [UserNameForm, {'name': 'username',
-							 'min':  4,
-							 'max': 12}],
-			   'password':   [PasswordForm, {'name': 'password'}],
-			   'first_name': [TextForm, {'name': 'first name',
-						     'min':  2,
-						     'max': 32}],
-			   'last_name':  [TextForm, {'name': 'last name',
-						     'min':  2,
-						     'max': 64}],
-			   'confirm':    [PWConfirmForm, {'name': 'password confirmation',
-							  'password': 'password'}],
-			   'role':       [SelectForm, {'name': 'initial role',
-						       'validinputs': ['Student',
-								       'Teacher',
-								       'Guardian',
-								       'Educator']}],
-			   'email':      [EmailForm, {'name': 'email'}]}
-	
-	newForm, error_dict = validator.form_validate(request, form_guidelines)	
-	error_dict = validator.getNiceMsgs(error_dict)
-	
-	if not error_dict.has_key('role'):
-		if request.POST.has_key('role'):
-			fixedRole = {request.POST['role'] : ' checked'}
-	else:
-		fixedRole = {}
-		
-	if len(error_dict) > 0:
-		error_dict = validator.addHTMLLineBreaks(error_dict)
-			
+	manipulator = UserRegManipulator()
+	new_data = request.POST.copy()
+	errors = manipulator.get_validation_errors(new_data)
+
+	if errors:
 		return render_to_response('users/newuser.html', {'request':        request,
 							         'Problem':        True,
 								 'logged_in':      request.user.is_authenticated(),
 								 'navbar_list':    makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-								 'errors':         error_dict,
-								 'fixedRole':      fixedRole,
+								 'form':           forms.FormWrapper(manipulator, new_data, errors),
 								 'preload_images': preload_images})
 
 
