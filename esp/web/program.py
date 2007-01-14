@@ -127,13 +127,13 @@ def program_profile(request, tl, one, two, module, extra, prog):
 				regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
 				regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
 			regProf.save()
-			return render_to_response('users/profile_complete.html', {})
+			return render_to_response('users/profile_complete.html', {'request':request})
 
 	else:
 		errors = {}
 		regProf = RegistrationProfile.getLastProfile(curUser)
 		new_data = regProf.updateForm({}, tl == 'learn' and 'student' or 'teacher')
-	
+	context['request'] = request
 	context['form'] = forms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response('users/profile.html', context)
 
