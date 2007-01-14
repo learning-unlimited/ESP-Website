@@ -101,7 +101,6 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 def program_profile(request, tl, one, two, module, extra, prog):
 	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 	curUser = request.user
-	regprof = RegistrationProfile.objects.filter(user=request.user,program=prog)[0]
 	
 	context = {'logged_in': request.user.is_authenticated() }
 	context['user'] = request.user
