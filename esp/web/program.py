@@ -401,6 +401,9 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 		if not completed and module.required:
 			completedAll = False
 
+		if program_handler_finish.has_key(module.main_call):
+			context = program_handler_finish[module.main_call](curUser, prog, context)
+
 	
 	if completedAll:
 		bit, created = UserBit.objects.get_or_create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
@@ -431,6 +434,7 @@ def class_check(user, prog):
 	""" Return true if there are classes that have been registered. """
 	regProf = RegistrationProfile.getLastForProgram(user, prog)
 	return len(regProf.preregistered_classes()) > 0
+
 
 def class_prepare(user, prog, context={}):
 	regProf = RegistrationProfile.getLastForProgram(user, prog)
@@ -492,3 +496,6 @@ program_handler_checks = {'profile_check':  profile_check,
 			  }
 
 program_handler_prepare = {'sowclass': class_prepare }
+
+
+program_handler_finish = {'sowclass': class_prepare }

@@ -6,6 +6,7 @@ from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, Edu
 from esp.lib.markdown import markdown
 from esp.qsd.models import QuasiStaticData
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
+from datetime import datetime
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -342,10 +343,11 @@ class RegistrationProfile(models.Model):
 	teacher_info = models.ForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
 	guardian_info = models.ForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
 	educator_info = models.ForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
+	last_ts = models.DateTimeField(default=datetime.now())	
 
 	@staticmethod
 	def getLastProfile(user):
-		regProfList = RegistrationProfile.objects.filter(user__exact=user).order_by('-id')
+		regProfList = RegistrationProfile.objects.filter(user__exact=user).order_by('-last_ts','-id')
 		if len(regProfList) < 1:
 			regProf = RegistrationProfile()
 			regProf.user = user
@@ -353,9 +355,14 @@ class RegistrationProfile(models.Model):
 			regProf = regProfList[0]
 		return regProf
 
+	def save(self):
+		""" update the timestamp """
+		self.last_ts = datetime.now()
+		super(RegistrationProfile, self).save()
+		
 	@staticmethod
 	def getLastForProgram(user, program):
-		regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-id')
+		regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')
 		if len(regProfList) < 1:
 			regProf = RegistrationProfile()
 			regProf.user = user

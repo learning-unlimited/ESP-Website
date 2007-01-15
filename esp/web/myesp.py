@@ -294,6 +294,7 @@ def profile_editor(request, prog, responseuponCompletion = False, role=''):
 		if not errors:
 			manipulator.do_html2python(new_data)
 			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+
 			regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
 			regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
 			if role == 'student':
@@ -305,7 +306,9 @@ def profile_editor(request, prog, responseuponCompletion = False, role=''):
 				regProf.teacher_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
 			elif role == 'educator':
 				regProf.educator_info = GuardianInfo.addOrUpdate(curUser, regProf, new_data)
+			blah = regProf.__dict__
 			regProf.save()
+
 			curUser.first_name = new_data['first_name']
 			curUser.last_name  = new_data['last_name']
 			curUser.email     = new_data['e_mail']
@@ -317,13 +320,15 @@ def profile_editor(request, prog, responseuponCompletion = False, role=''):
 
 	else:
 		errors = {}
-		regProf = RegistrationProfile.getLastProfile(curUser)
+		regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+		if regProf.id is None:
+			regProf = RegistrationProfile.getLastProfile(curUser)
 		new_data = {}
 		new_data['first_name'] = curUser.first_name
 		new_data['last_name']  = curUser.last_name
 		new_data['e_mail']     = curUser.email
 		new_data = regProf.updateForm(new_data, role)
-	
+
 	context['request'] = request
 	context['form'] = forms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response('users/profile.html', context)
