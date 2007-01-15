@@ -8,15 +8,15 @@ from esp.qsd.models import QuasiStaticData
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 
 # Create your models here.
-
+	
 class Program(models.Model):
 	""" An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
 	anchor = models.ForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
-
 	grade_min = models.IntegerField()
 	grade_max = models.IntegerField()
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
+
 
 	def url(self):
 		str_array = self.anchor.tree_encode()
@@ -45,6 +45,8 @@ class Program(models.Model):
 	def find_by_perms(user, verb):
 		""" Fetch a list of relevant programs for a given user and verb """
 		return UserBit.find_by_anchor_perms(Program,user,verb)
+
+
 
 class ClassCategories(models.Model):
 	""" A list of all possible categories for an ESP class
@@ -217,6 +219,10 @@ class ResourceRequest(models.Model):
 	class Admin:
 		pass
 
+
+
+
+
 class BusSchedule(models.Model):
 	""" A scheduled bus journey associated with a program """
 	program = models.ForeignKey(Program)
@@ -226,7 +232,19 @@ class BusSchedule(models.Model):
 
 	class Admin:
 		pass
+class ProgramModule(models.Model):
+	""" Program Modules for a Program """
+	link_title = models.CharField(maxlength=64)
+	admin_title = models.CharField(maxlength=128)
+	main_call  = models.CharField(maxlength=32)
+	check_call = models.CharField(maxlength=32)
+	module_type = models.CharField(maxlength=32)
+	programs = models.ManyToManyField(Program)
 
+	class Admin:
+		pass
+
+	
 class TeacherParticipationProfile(models.Model):
 	""" Profile properties associated with a teacher in a program """
 	teacher = models.ForeignKey(User)
