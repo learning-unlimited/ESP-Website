@@ -34,9 +34,7 @@ def index(request):
 	# aseering: Yay.
 	# axiak:    hmm...
 	announcements = preview_miniblog(request)
-	return render_to_response('index.html', request, None, {
-		'navbar_list':      navbar_data,
-		'announcements':    {'announcementList': announcements[:5],
+	return render_to_response('index.html', request, None, {'announcements':    {'announcementList': announcements[:5],
 				     'overflowed':       len(announcements) > 5,
 				     'total':            len(announcements)},
 		
@@ -47,19 +45,11 @@ def bio(request, tl, last, first):
 	founduser = User.objects.filter(last_name = last, first_name = first)
 	if len(founduser) < 1: raise Http404
 	bio = founduser[0].teacherbio_set.all()
-	if len(bio) < 1: return render_to_response('users/construction', {'request': request,
-									  'logged_in': request.user.is_authenticated(),
-									  'navbar_list': makeNavBar(request.user, GetNode('Q/Web/Bio')),
-									  'preload_images': preload_images,
-									  'tl': tl})
+	if len(bio) < 1: return render_to_response('users/construction', request, GetNode('Q/Web/Bio'), {'tl': tl})
 
 	bio = bio[0].html()
-	return render_to_response('learn/bio', {'request': request,
-						'name': first + " " + last,
+	return render_to_response('learn/bio', request, GetNode('Q/Web/Bio'), {'name': first + " " + last,
 						'bio': bio,
-						'logged_in': request.user.is_authenticated(),
-						'navbar_list': makeNavBar(request.user, GetNode('Q/Web/Bio')),
-						'preload_images': preload_images,
 						'tl': tl})
 
 
@@ -70,10 +60,7 @@ def myesp(request, module):
 	if myesp_handlers.has_key(module):
 		return myesp_handlers[module](request, module)
 
-	return render_to_response('users/construction', {'request': request,
-							 'logged_in': request.user.is_authenticated(),
-							 'navbar_list': makeNavBar(request.user, GetNode('Q/Web')),
-							 'preload_images': preload_images})
+	return render_to_response('users/construction', request, GetNode('Q/Web/myesp'), {})
 
 
 @vary_on_headers('User-Agent')
@@ -143,10 +130,7 @@ def program(request, tl, one, two, module, extra = None):
 	treeItem = "Q/Programs/" + one + "/" + two
 	prog = GetNode(treeItem).program_set.all()
 	if len(prog) < 1:
-		return render_to_response('users/construction', {'request': request,
-								 'logged_in': request.user.is_authenticated(),
-								 'navbar_list': makeNavBar(request.user, GetNode('Q/Program')),
-								 'preload_images': preload_images})
+		return render_to_response('users/construction', request, GetNode('Q/Web'), {})
 
 	prog = prog[0]
 
@@ -154,16 +138,11 @@ def program(request, tl, one, two, module, extra = None):
 		# aseering: Welcome to the deep, dark, magical world of lambda expressions!
 		return program_handlers[module](request, tl, one, two, module, extra, prog)
 
-	return render_to_response('users/construction', {'request': request,
-							 'logged_in': request.user.is_authenticated(),
-							 'navbar_list': makeNavBar(request.user, GetNode('Q/Program')),
-							 'preload_images': preload_images})
+	return render_to_response('users/construction', request, GetNode('Q/Web'), {})
 
 
 def contact(request):
-	return render_to_response('contact.html',
-				  {'request': request,
-				   'programs': UserBit.bits_get_qsc(AnonymousUser(),
+	return render_to_response('contact.html', request, GetNode('Q/Web'),{'programs': UserBit.bits_get_qsc(AnonymousUser(),
 								    GetNode('V/Publish'),
 								    qsc_root=GetNode('Q/Programs')) })
 

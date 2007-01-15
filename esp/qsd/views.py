@@ -129,15 +129,11 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 		m.toString()
 		
 		# Render an edit form
-		return render_to_response('qsd_edit.html', {
-			'request': request,
-			'navbar_list': makeNavBar(request.user, branch, section),
-			'preload_images': preload_images,
+		return render_to_response('qsd_edit.html', request, (branch, section), {
 			'title': qsd_rec.title,
 			'content': qsd_rec.content,
 			'qsdrec': qsd_rec,
 			'missing_files': m.BrokenLinks(),
-			'logged_in': request.user.is_authenticated(),
 			'target_url': base_url.split("/")[-1] + ".edit.html",
 			'return_to_view': base_url.split("/")[-1] + ".html" })
 
@@ -152,14 +148,10 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 		#	cache.set('quasistaticdata_html:' + cache_id, cached_html)
 
 		# Render response
-		return render_to_response('qsd.html', {
-			'request': request,
-			'navbar_list': makeNavBar(request.user, branch, section),
-			'preload_images': preload_images,
+		return render_to_response('qsd.html', request, (branch, section), {
 			'title': qsd_rec.title,
 			'content': cached_html,
 			'qsdrec': qsd_rec,
-			'logged_in': request.user.is_authenticated(),
 			'have_edit': have_edit,
 			'edit_url': base_url + ".edit.html" })
 	

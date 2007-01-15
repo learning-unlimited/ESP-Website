@@ -32,8 +32,7 @@ def createevent(request):
                 errors = POSTdata = {}
 
         form = forms.FormWrapper(manipulator, POSTdata, errors)
-	return render_to_response('events/create_update', { 'request': request,
-							    'form': form } )
+	return render_to_response('events/create_update', request, GetNode('Q/Web'), {'form': form } )
 
 
 def updateevent(request, id=None):
@@ -66,8 +65,7 @@ def updateevent(request, id=None):
                 errors = POSTdata = {}
 
         form = forms.FormWrapper(manipulator, POSTdata, errors)
-	return render_to_response('events/create_update', { 'request': request,
-							    'form': form } )
+	return render_to_response('events/create_update', request, GetNode('Q/Web'), {'form': form } )
 
 
 def iCalFeed(request):

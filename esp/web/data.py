@@ -1,4 +1,5 @@
 from esp.users.models import ESPUser
+from esp.web.navBar import makeNavBar
 import django.shortcuts
 from esp.web.navBar import makeNavBar
 from esp.program.models import Program
@@ -10,16 +11,24 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
     
     if context is not None:
         request = requestOrContext
-        if type(prog) == Program and not context.has_key('program'):
-            context['program'] = prog
-        # create nav bar list
+        section = ''
+
+        if type(prog) == tuple:
+            section = prog[1]
+            prog = prog[0]
+
+        if not context.has_key('program'):  
+
+            if type(prog) == Program:
+                context['program'] = prog
+            # create nav bar list
         if not context.has_key('navbar_list'):
             if prog is None:
                 context['navbar_list'] = navbar_data
             elif type(prog) == Program:
-                context['navbar_list'] = makeNavBar(request.user, prog.anchor)
+                context['navbar_list'] = makeNavBar(request.user, prog.anchor, section)
             else:
-                context['navbar_list'] = makeNavBar(request.user, prog)
+                context['navbar_list'] = makeNavBar(request.user, prog, section)
                 
         # get the preload_images list
         if not context.has_key('preload_images'):

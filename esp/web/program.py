@@ -81,14 +81,10 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 	p = one + " " + two
 		
 	#	assert False, 'About to render catalog'
-	return render_to_response('program/catalogue', {'request': request,
-							'Program': p.replace("_", " "),
+	return render_to_response('program/catalogue', request, (prog, tl), {'Program': p.replace("_", " "),
 							'courses': clas ,
 							'prereg_url': prereg_url,
 							'timeslot': timeslot,
-							'navbar_list': makeNavBar(request.user, prog.anchor),
-							'preload_images': preload_images,
-							'logged_in': request.user.is_authenticated(),
 							'tl': tl,
 							'can_edit_classes': can_edit_classes,
 							'can_approve_classes': can_approve_classes })
@@ -118,14 +114,10 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 			for cls in prog.class_set.all().order_by('category')
 			if (UserBit.UserHasPerms(request.user, cls.anchor, dt_approved)
 			and (timeslot == None or (cls.event_template != None and cls.event_template == timeslot ))) ]
-		return render_to_response('program/catalogue', {'request': request,
-							'Program': str(prog).replace("_", " "),
+		return render_to_response('program/catalogue', request, (prog, tl), {'Program': str(prog).replace("_", " "),
 							'courses': clas ,
 							'timeslot': None,
 							'message': 'You must be an ESP student to register for ' + prog.anchor.friendly_name + '.<br>Click <a href="/myesp/register/">here</a> to register a new account.',
-							'navbar_list': makeNavBar(curUser, prog.anchor),
-							'preload_images': preload_images,
-							'logged_in': curUser.is_authenticated(),
 							'tl': tl,
 							'can_edit_classes': False,
 							'can_approve_classes': False })
@@ -137,14 +129,12 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 	profile_done = regProf.id is not None
 	status = {'profile_done': profile_done}
 	
-	context = {'logged_in': request.user.is_authenticated() }
+	context = {}
 	context['profile_done'] = profile_done
 	context['program'] = one + " " + two
 	context['program'] = context['program'].replace("_", " ")
 	context['one'] = one
 	context['two'] = two
-	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
-	context['preload_images'] =  preload_images
 
 	context['student'] = {'name': curUser.first_name + " " + curUser.last_name,
 			      'id': curUser.id }
@@ -163,8 +153,7 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 	status['classes_done'] = len(pre) > 0
 	status['payment_done'] = False
 	context['status'] = status
-	context['request'] = request
-	return render_to_response('users/studentreg.html', context)
+	return render_to_response('users/studentreg.html', request, (prog, tl), context)
 
 @login_required
 def program_finishstudentreg(request, tl, one, two, module, extra, prog):
@@ -179,15 +168,10 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 	if not curUser.isTeacher():
 		return render_to_response('errors/program/notateacher.html', {})
 
-	context = {'logged_in': request.user.is_authenticated() }
-	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
-	context['preload_images'] =  preload_images
 	context['one'] = one
 	context['two'] = two
 	context['teacher'] = request.user
-	context['request'] = request
 	context['timeslots'] = prog.anchor.tree_create(['Templates', 'TimeSlots']).series_set.all()
-
 	
 	clsList = [ x for x in curUser.getEditable(Class) if x.parent_program == prog ]
 	
@@ -196,7 +180,7 @@ def program_teacherreg(request, tl, one, two, module, extra, prog):
 
 	context['classes'] = clsList
 	
-	return render_to_response('program/selectclass', context)
+	return render_to_response('program/selectclass', request, (prog, tl), context)
 		
 def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = None):
 	""" Actually load a specific class or a new class for editing"""
@@ -206,9 +190,6 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 	if not curUser.isTeacher():
 		return render_to_response('errors/program/notateacher', {})
 
-	context = {'logged_in': request.user.is_authenticated() }
-	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
-	context['preload_images'] =  preload_images
 	context['one'] = one
 	context['two'] = two
 	context['oops'] = False
@@ -258,10 +239,8 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 	for i in range(len(context['ts'])):
 		context['ts'][i]['selected'] = (context['ts'][i]['obj'] in selected_times)
 	context['cat'] = list(ClassCategories.objects.all())
-	context['request'] = request
-	context['program'] = prog
 	#	assert False, 'about to render teacherreg2'
-	return render_to_response('program/teacherreg.html', context)
+	return render_to_response('program/teacherreg.html', request, (prog, tl), context)
 
 @login_required
 def program_fillslot(request, tl, one, two, module, extra, prog):
@@ -307,7 +286,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	from esp.web.views import program
 
 	if not UserBit.UserHasPerms(request.user, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now()):
-		return render_to_response('errors/program/notateacher', {})
+		return render_to_response('errors/program/notateacher', request, prog, {})
 
 	for thing in ['title', 'class_info', 'class_size_min', 'class_size_max', 'grade_min', 'grade_max', 'Time']:
 		if not request.POST.has_key(thing) or request.POST[thing] == None or request.POST[thing] == 'None' or request.POST[thing].strip() == "":
@@ -322,7 +301,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 	tmpclasses = Class.objects.filter(anchor__friendly_name=str(request.POST['title']),parent_program=prog)
 
 	if aid is None and tmpclasses.count() > 0 and not UserBit.UserHasPerms(request.user, tmpclasses[0].anchor, GetNode('V/Flags/Registration/Teacher'), datetime.now()):
-		return render_to_response('errors/program/classtitleconflict',{})
+		return render_to_response('errors/program/classtitleconflict', request, prog, {})
 
 	if aid is None:
 		cobj = Class()
@@ -412,11 +391,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 #	participation.can_help = request.POST.has_key('can_help')
 	
 
-	return render_to_response('program/registered', {'request': request,
-							 'logged_in': request.user.is_authenticated(),
-							 'navbar_list': makeNavBar(request.user, prog.anchor),
-							 'preload_images': preload_images,
-							 'aid': aid})
+	return render_to_response('program/registered', request, (prog, tl), {'aid': aid})
 
 
 def validateContactInfo(ci):
@@ -439,14 +414,11 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 	# verify contact info is done
 	profile_done = regProf.id is not None
 	
-	context = {'logged_in': request.user.is_authenticated() }
+	context = {}
 	context['program'] = one + " " + two
 	context['program'] = context['program'].replace("_", " ")
 	context['one'] = one
 	context['two'] = two
-	context['request'] = request
-	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
-	context['preload_images'] =  preload_images
 	
 	context['student'] = {'name': curUser.first_name + " " + curUser.last_name,
 						'id': curUser.id }
@@ -484,17 +456,13 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 	if done:
 		bit, created = UserBit.objects.get_or_create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
 
-	return render_to_response('program/savescreen', context)
+	return render_to_response('program/savescreen', request, (prog, tl), context)
 
 @login_required
 def program_display_credit(request, tl, one, two, module, extra, prog):
 	""" Displays the credit card form to feed to OMAR """
 	# Catherine: I've manually hard-coded the amount of the program
-	return render_to_response('program/creditcard', {'request': request,
-							 'logged_in': request.user.is_authenticated(),
-							 'navbar_list': makeNavBar(request.user, prog.anchor),
-							 'preload_images': preload_images,
-							 'credit_name': two + ' ' + one, 
+	return render_to_response('program/creditcard', request, (prog, tl), {'credit_name': two + ' ' + one, 
 							 'one': one,
 							 'two': two,
 							 'student': request.user,

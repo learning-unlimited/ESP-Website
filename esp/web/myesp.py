@@ -26,17 +26,10 @@ from esp.program.manipulators import StudentProfileManipulator, TeacherProfileMa
 def myesp_register(request, module):
 	""" Return a user-registration page """
 	if request.user.is_authenticated():
-		return render_to_response('users/duh', {'request': request,
-							'logged_in': True,
-							'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-							'preload_images': preload_images})
+		return render_to_response('users/duh', request, GetNode('Q/Web/myesp'), {})
 	manipulator = UserRegManipulator()
-	return render_to_response('users/newuser.html', {'request': request,
-						    'Problem': False,
-						    'logged_in': request.user.is_authenticated(),
-						    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-						    'form':           forms.FormWrapper(manipulator, {}, {}),
-						    'preload_images': preload_images})
+	return render_to_response('users/newuser.html', request, None, {'Problem': False,
+						    'form':           forms.FormWrapper(manipulator, {}, {})})
 
 
 
@@ -47,12 +40,8 @@ def myesp_finish(request, module):
 	errors = manipulator.get_validation_errors(new_data)
 
 	if errors:
-		return render_to_response('users/newuser.html', {'request':        request,
-							         'Problem':        True,
-								 'logged_in':      request.user.is_authenticated(),
-								 'navbar_list':    makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-								 'form':           forms.FormWrapper(manipulator, new_data, errors),
-								 'preload_images': preload_images})
+		return render_to_response('users/newuser.html', request, GetNode('Q/Web/myesp'), {'Problem':        True,
+								'form':           forms.FormWrapper(manipulator, new_data, errors)})
 
 
 	# Does there already exist an account with this e-mail address, used for subscribing to mailing lists?
@@ -66,10 +55,7 @@ def myesp_finish(request, module):
 		email_user.save()
 		email_user = authenticate(username = request.POST['username'].lower(), password = request.POST['password'])
 		login(request, email_user)
-		return render_to_response('users/regdone', {'request': request,
-							    'logged_in': request.user.is_authenticated(),
-							    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-							    'preload_images': preload_images})
+		return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {})
 
 
 	# We can't steal an already-existing account, so make a new one
@@ -93,36 +79,22 @@ def myesp_finish(request, module):
 		ub.verb = v
 		ub.save()
 			
-	return render_to_response('users/regdone', {'request': request,
-						    'logged_in': request.user.is_authenticated(),
-						    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-						    'preload_images': preload_images})
+	return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {})
 
        
 
 def myesp_emaillist(request, module):
 	""" Present the subscribe-to-emaillist page """
-	return render_to_response('users/email', {'request': request,
-						  'logged_in': False,
-						  'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-						  'preload_images': preload_images})
+	return render_to_response('users/email', request, GetNode('Q/Web/myesp'), {})
 
 def myesp_emailfin(request, module):
 	""" Subscribe a user to an e-mail list """
 	if not request.POST.has_key('email'):
-		return render_to_response('users/newuser.html', {'request': request,
-							    'Problem': True,
-							    'logged_in': request.user.is_authenticated(),
-							    'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-							    'preload_images': preload_images})
+		return render_to_response('users/newuser.html', request, GetNode('Q/Web/myesp'), {'Problem': True})
 	
 	if User.objects.filter(email=request.POST['email']).count() == 0:
 		if User.objects.filter(email=request.POST['email']).count() > 0:
-			return render_to_response('index.html', {
-				'request': request,
-				'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-				'preload_images': preload_images,
-				'logged_in': False})
+			return render_to_response('index.html', request, GetNode('Q/Web/myesp'), {})
 			
 		email_user = User()
 		email_user.email = request.POST['email']
@@ -132,24 +104,12 @@ def myesp_emailfin(request, module):
 		email_user.is_superuser = False
 		email_user.save()
 
-	return render_to_response('index.html', {
-		'request': request,
-		'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-		'preload_images': preload_images,
-		'logged_in': False})
+	return render_to_response('index.html', request, GetNode('Q/Web/myesp'), {})
 
-
-		
-
-	
-	
 def myesp_signout(request, module):
 	""" Deauthenticate a user """
 	logout(request)
-	return render_to_response('users/logout', {'request': request,
-						   'logged_in': request.user.is_authenticated(),
-						   'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-						   'preload_images': preload_images})
+	return render_to_response('users/logout', request, GetNode('Q/Web/myesp'), {})
 
 def myesp_login(request, module):
 	""" Force a login
@@ -172,11 +132,7 @@ def myesp_login(request, module):
 def myesp_logfin(request, module):
 	""" Display the "You have successfully logged in" page """
 
-	return render_to_response('index.html', {'request': request,
-						 'navbar_list': makeNavBar(request.user, GetNode('Q/Web/myesp/' + module)),
-						 'preload_images': preload_images,
-						 'logged_in': True
-						 })
+	return render_to_response('index.html', request, {})
 	
 def myesp_home(request, module):
 	""" Draw the ESP home page """
@@ -184,9 +140,7 @@ def myesp_home(request, module):
 	sub = GetNode('V/Subscribe')
 	ann = Entry.find_posts_by_perms(curUser, sub)
 	ann = [x.html() for x in ann]
-	return render_to_response('display/battlescreen', {'request': request,
-							   'announcements': ann,
-							   'logged_in': request.user.is_authenticated() })
+	return render_to_response('display/battlescreen', request, GetNode('Q/Web/myesp'), {'announcements': ann})
 
 #	Format for battlescreens 			Michael P
 #	----------------------------------------------
@@ -292,10 +246,7 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 				      'shortened':   False,#len(curclslist) > 5,
 				      'totalclsnum': len(curclslist)})
 
-	return render_to_response('battlescreens/general.html', {'request':       request,
-								 'page_title':    'MyESP: Teacher Home Page',
-								 'navbar_list':   makeNavBar(request.user, GetNode('Q/Program')),
-								 'logged_in':     request.user.is_authenticated(),
+	return render_to_response('battlescreens/general.html', request, GetNode('Q/Web/myesp'), {'page_title':    'MyESP: Teacher Home Page',
 								 'progList':      responseProgs,
 								 'admin_details': admin_details,
 								 'student_version': student_version,

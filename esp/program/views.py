@@ -50,7 +50,7 @@ def updateClass(request, id):
         new_data = orig_class.__dict__
 
     form = forms.FormWrapper(manipulator, new_data, errors)
-    return render_to_response('program/class_form.html', {'form': form, 'class': orig_class, 'edit': True, 'orig_class': orig_class })
+    return render_to_response('program/class_form.html', request, orig_class.parent_program, {'form': form, 'class': orig_class, 'edit': True, 'orig_class': orig_class })
 
 
 #def courseCatalogue(request, one, two):
@@ -59,14 +59,11 @@ def updateClass(request, id):
 #    treeItem = "Q/Programs/" + one + "/" + two 
 #    prog = GetNode(treeItem).program_set.all()
 #    if len(prog) < 1:
-#        return render_to_response('users/construction', {'request': request,
-#                                                         'logged_in': request.user.is_authenticated() })
+#        return render_to_response('users/construction', request, None, {})
 #    prog = prog[0]
 #    clas = list(prog.class_set.all().order_by('category'))
 #    p = one + " " + two
-#    return render_to_response('program/catalogue', {'request': request,
-#                                                    'Program': p.replace("_", " "),
-#			'courses': clas })
+#    return render_to_response('program/catalogue', request, prog,{'courses': clas })
 
 
 def programTemplateEditor(request):
@@ -83,8 +80,7 @@ def programTemplateEditor(request):
 
     have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
 
-    return render_to_response('display/qsd_listing.html', { 'request': request,
-                                                            'qsd_pages': qsd_pages, 'have_create': have_create })
+    return render_to_response('display/qsd_listing.html', request, GetNode('Q/Web'), {'qsd_pages': qsd_pages, 'have_create': have_create })
 
 def classTemplateEditor(request, program, session):
     """ Generate and display a listing of all QSD pages in the Class template within the specified program
@@ -103,8 +99,7 @@ def classTemplateEditor(request, program, session):
 
     have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
 
-    return render_to_response('display/qsd_listing.html', { 'request': request,
-                                                            'qsd_pages': qsd_pages,
+    return render_to_response('display/qsd_listing.html', request, program, {'qsd_pages': qsd_pages,
                                                             'have_create': have_create })
 
 

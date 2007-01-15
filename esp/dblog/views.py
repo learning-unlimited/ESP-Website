@@ -1,5 +1,5 @@
 # Create your views here.
-from esp.web.data import render_to_response
+from django.shortcuts import render_to_response
 from esp.dblog.models import error
 
 

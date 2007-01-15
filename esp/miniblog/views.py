@@ -22,12 +22,9 @@ def show_miniblog(request, url, subsection = None, section_redirect_keys = {}, e
         
     entries = Entry.find_posts_by_perms(user, GetNode('V/Subscribe'), qsc=qsc)
 
-    return render_to_response('miniblog.html', { 'request': request,
-                                                 'entries': entries,
+    return render_to_response('miniblog.html', request, GetNode('Q/Web'), {'entries': entries,
                                                  'canpost': UserBit.UserHasPerms(user, qsc, GetNode('V/Administer/Edit/Use')),
-												 'navbar_list': makeNavBar(request.user, qsc),
                                                  'webnode': str(url),
-												 'logged_in': request.user.is_authenticated(),
                                                  'extramsg': extramsg })
 
 def show_miniblog_entry(request, url, extramsg=''):
@@ -41,13 +38,9 @@ def show_miniblog_entry(request, url, extramsg=''):
 	    branch = e.anchor
 	    if not UserBit.UserHasPerms( user, branch, verb ): assert False, "Insufficient permissions to view record"
 
-    return render_to_response('miniblog.html', { 'request': request,
-                                                 'entries': entries,
-                                                 #'canpost': UserBit.UserHasPerms(user, branch, GetNode('V/Administer/Edit/Use')),
+    return render_to_response('miniblog.html', request, GetNode('Q/Web'), {'entries': entries,
 												 'canpost': False,
-												 'navbar_list': makeNavBar(request.user, branch),
                                                  'webnode': str(url),
-												 'logged_in': request.user.is_authenticated(),
                                                  'extramsg': extramsg })
 
 
@@ -67,9 +60,7 @@ def create_miniblog(request, url, tree_prefix = ''):
 							'lineitems': [{'label': 'Announcement Title', 'variable': 'title', 'default': initial_title}],
 							'textboxes': [{'label': 'Announcement Content', 'variable': 'content', 'default': ''}]
 							}
-		return render_to_response('battlescreens/editor', {'request': request,
-															'navbar_list': makeNavBar(request.user, qsc),
-															'blocks': [create_form_block]})
+		return render_to_response('battlescreens/editor', request, GetNode('Q/Web'), {'blocks': [create_form_block]})
 	else:
 		assert False, 'Blog post failed.'
 
