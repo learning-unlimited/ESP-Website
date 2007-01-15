@@ -22,6 +22,9 @@ User Information: <br />
 </p>
 <br />
 <table cellpadding="3" style="width: 5.5in; margin: auto; border: 1px solid black; border-collapse: collapse;" border=1>
+<tr>
+  <th colspan="2">Class Schedule for {{ request.user.first_name }} {{ request.user.last_name }}</th>
+</tr>
 {% for timeslot in timeslots %}
 <tr>
   <td width="25%" class="timeslot" align="center"> {{ timeslot.0.friendly_name }} </td>
