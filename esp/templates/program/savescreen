@@ -1,31 +1,47 @@
-{% extends "outlines/series-3.html" %}
+{% extends "elements/receipt.html" %}
 
-{% block title %}Thank you{% endblock %}
+{% block title %}Registration for {{one}} Receipt{% endblock %}
 
 {% block subsection_name %} {% endblock %}
 
-{% block content %}
+{% block body %}
 <br>
-<h3 style="font-size: 100%">Thank you!</h3>
 <p>
 Your class selection for {{one}} has been saved. You can come back and change your class selections later, up until 2 days before {{one}} begins.
 </p>
-{% if printConfirm %}
 
-{% include "program/confirmation.html" %}
+{% include "program/sowconfirmation.html" %}
 
-{% else %}
 <p>
-However, <b>you are not completely finished with registration</b>.  You will need to come back later and finish your registration, which includes your class selections and updated contact information.  We are working to enable this as soon as possible - by Monday, January 15.
+User Information: <br />
+<ul>
+<li>Username: {{ request.user.username }}</li>
+<li>Full Name: {{ request.user.first_name }} {{ request.user.last_name }}</li>
+<li>User ID: {{ request.user.id }}</li>
+</ul>
 </p>
-{% endif %}
-<br>
+<br />
+<table cellpadding="3" style="width: 5.5in; margin: auto; border: 1px solid black; border-collapse: collapse;" border=1>
+{% for timeslot in timeslots %}
+<tr>
+  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.friendly_name }} </td>
+  <td>
+	{% if timeslot.1 %}
+	{{timeslot.1.title}}{% else %} <em>Nothing Selected</em> {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+<br />
+<br />
 
-<hr width="75%">
+(Please print this out for your own records.)
 
-{% include "users/student_schedule.html" %}
-
-Thanks!
-<br>
-<div textalign="center"><a href="/">Go back to the front page.</a></div>
+<br />
+<br />
+<pre>
+Please Note: Class selections are subject to change up
+until and on the day of the event. MIT Educational Studies
+Program cannot guarantee the successful fruition of a
+proposed class.
 {% endblock %}

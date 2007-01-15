@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>{% block title %}{% endblock %}</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta name="description" content="{% block description %}{% endblock %}" />
+<meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
+{% block javascript %}
+{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="/media/styles/receipt.css" type="text/css" />
+{% endblock %}
+{% block xtrajs %}{% endblock %}
+</head>
+<body>
+<p class="title">Registration Receipt for {{request.user.first_name}} {{request.user.last_name}}</p>
+
+<div id="divmaintext">
+<hr />
+<h2>Thank you!</h2>
+{% block body %}{% endblock %}
+</div>
+</body>
+</html>

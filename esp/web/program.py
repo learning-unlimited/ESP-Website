@@ -5,7 +5,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest, TeacherParticipationProfile, TeacherInfo, StudentInfo
+from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest, TeacherParticipationProfile
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
@@ -13,7 +13,6 @@ from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 from datetime import datetime
 from esp.users.models import UserBit
-from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator
 from django import forms
 
 from django.contrib.auth.models import User
@@ -100,42 +99,14 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 @login_required
 def program_profile(request, tl, one, two, module, extra, prog):
 	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
-	curUser = request.user
+	from esp.web.myesp import profile_editor
+	role = {'teach': 'teacher','learn': 'student'}[tl]
 	
-	context = {'logged_in': request.user.is_authenticated() }
-	context['user'] = request.user
-	context['one'] = one
+	response = profile_editor(request, prog, False, role)
+	if response == True:
+		return program_studentreg(request, tl, one, two, module, extra, prog)
 
-	if tl == 'learn':
-		context['profiletype'] = 'student'
-		manipulator = StudentProfileManipulator()
-	else:
-		context['profiletype'] = 'teacher'
-		manipulator = TeacherProfileManipulator()
-
-	if request.method == 'POST':
-		new_data = request.POST.copy()
-		errors = manipulator.get_validation_errors(new_data)
-		if not errors:
-			manipulator.do_html2python(new_data)
-			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
-			regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
-			regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
-			if tl == 'teach':
-				regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
-			else:
-				regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
-				regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
-			regProf.save()
-			return render_to_response('users/profile_complete.html', {'request':request})
-
-	else:
-		errors = {}
-		regProf = RegistrationProfile.getLastProfile(curUser)
-		new_data = regProf.updateForm({}, tl == 'learn' and 'student' or 'teacher')
-	context['request'] = request
-	context['form'] = forms.FormWrapper(manipulator, new_data, errors)
-	return render_to_response('users/profile.html', context)
+	return response
 
 @login_required
 def program_studentreg(request, tl, one, two, module, extra, prog):
@@ -162,32 +133,28 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 							'can_edit_classes': False,
 							'can_approve_classes': False })
 	
-	regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
-	if regprof.count() < 1:
-		regprof = RegistrationProfile()
-		regprof.user = curUser
-		regprof.program = prog
-	else:
-		regprof = regprof[0]
+	# get the last profile for this program and user
+	regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+
+	# is there no profile?
+	profile_done = regProf.id is not None
+	status = {'profile_done': profile_done}
+	
 	context = {'logged_in': request.user.is_authenticated() }
+	context['profile_done'] = profile_done
 	context['program'] = one + " " + two
 	context['program'] = context['program'].replace("_", " ")
 	context['one'] = one
 	context['two'] = two
 	context['navbar_list'] = makeNavBar(request.user, prog.anchor)
 	context['preload_images'] =  preload_images
-	profile_done = False
-	for thing in [regprof.contact_user, regprof.contact_user, regprof.contact_emergency]:
-		if validateContactInfo(thing):
-			profile_done = True
-			break
-	if profile_done: context['profile_graphic'] = "checkmark"
-	else: context['profile_graphic'] = "nocheckmark"
-	context['student'] = {'name': curUser.first_name + " " + curUser.last_name,
-						'id': curUser.id }
-	ts = list(GetNode('Q/Programs/' + one + '/' + two + '/Templates/TimeSlots').children())
 
-	pre = regprof.preregistered_classes()
+	context['student'] = {'name': curUser.first_name + " " + curUser.last_name,
+			      'id': curUser.id }
+	
+	ts = list(GetNode('Q/Programs/' + one + '/' + two + '/Templates/TimeSlots').children().order_by('id'))
+
+	pre = regProf.preregistered_classes()
 	z = [x.event_template for x in pre]
 	prerl = []
 	for time in ts:
@@ -196,12 +163,11 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 		else: prerl.append((time, then[0]))
 	context['timeslots'] = prerl
 
-	if len(pre) > 0: context['select_graphic'] = "checkmark"
-	else: context['select_graphic'] = "nocheckmark"
-
+	status['classes_done'] = len(pre) > 0
+	status['payment_done'] = False
+	context['status'] = status
 	context['request'] = request
-	regprof.save()
-	return render_to_response('users/studentreg', context)
+	return render_to_response('users/studentreg.html', context)
 
 @login_required
 def program_finishstudentreg(request, tl, one, two, module, extra, prog):
@@ -455,128 +421,6 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 							 'preload_images': preload_images,
 							 'aid': aid})
 
-@login_required
-def program_updateprofile(request, tl, one, two, module, extra, prog):
-	""" Update a user profile """
-	from esp.web.views import program
-
-	
-	for thing in ['first', 'last', 'email', 'street', 'guard_name', 'emerg_name', 'emerg_street']:
-		if not request.POST.has_key(thing) and request.POST[thing].strip() != "":
-			return program(request, tl, one, two, "profile", extra = "oops")
-
-	sphone = False
-	gphone = False
-	ephone = False
-	if request.has_key('dobmonth'):
-		if len(request.POST['dobmonth']) not in [1,2]:
-			return program(request, tl, one, two, "profile", extra = "oops")
-	if request.has_key('dobday'):
-		if len(request.POST['dobday']) not in [1,2]:
-			return program(request, tl, one, two, "profile", extra = "oops")
-	if request.has_key('dobyear'):
-		if len(request.POST['dobyear']) != 4:
-			return program(request, tl, one, two, "profile", extra = "oops")
-	for phone in ['phone_even', 'phone_cell', 'phone_day']:
-		if request.POST.has_key(phone) and request.POST[phone].strip() != "":
-			aphone = request.POST[phone]
-			if aphone.strip() == "None": continue
-			aphone = aphone.split("-")
-			if len(aphone) != 3 or len(aphone[0]) != 3 or len(aphone[1]) != 3 or len(aphone[2]) != 4:
-				# assert False, 5
-				return program(request, tl, one, two, "profile", extra = "oops")
-			sphone = True
-	for phone in ['guard_phone_day', 'guard_phone_cell', 'guard_phone_even']:
-		if request.POST.has_key(phone) and request.POST[phone].strip() != "":
-			aphone = request.POST[phone]
-			if aphone.strip() == "None": continue
-			aphone = aphone.split("-")
-			if len(aphone) != 3 or len(aphone[0]) != 3 or len(aphone[1]) != 3 or len(aphone[2]) != 4:
-				# assert False, 6
-				return program(request, tl, one, two, "profile", extra = "oops")
-			gphone = True
-	for phone in ['emerg_phone_day', 'emerg_phone_cell', 'emerg_phone_even']:
-		if request.POST.has_key(phone) and request.POST[phone].strip() != "":
-			aphone = request.POST[phone]
-			if aphone.strip() == "None": continue
-			aphone = aphone.split("-")
-			if len(aphone) != 3 or len(aphone[0]) != 3 or len(aphone[1]) != 3 or len(aphone[2]) != 4:
-				# assert False, 7
-				return program(request, tl, one, two, "profile", extra = "oops")
-			ephone = True
-	if not (sphone and gphone and ephone):
-		# assert False, 8
-		return program(request, tl, one, two, "profile", extra = "oops")
-	curUser = request.user
-	regprof = RegistrationProfile.objects.filter(user__exact=curUser,program__exact=prog)
-	if len(regprof) < 1:
-		regprof = RegistrationProfile()
-		regprof.user = curUser
-		regprof.program = prog
-	else:
-		regprof = regprof[0]
-	curUser.first_name = request.POST['first']
-	curUser.last_name = request.POST['last']
-	curUser.email = request.POST['email']
-	if regprof.contact_student is None:
-		c1 = ContactInfo()
-		c1.user = curUser
-		c1.save()
-	else:
-		c1 = regprof.contact_student
-	c1.grad = request.POST.get('grad', "")
-	c1.e_mail = curUser.email
-	c1.full_name = curUser.first_name + " " + curUser.last_name
-	c1.address_street = request.POST.get('street', "")
-	c1.address_city = request.POST.get('city', "")
-	c1.address_state = request.POST.get('state', "")
-	c1.address_zip = request.POST.get('zip', "")
-	if request.has_key('dobmonth') and request.has_key('dobday') and request.has_key('dobyear'):
-		c1.dob =  datetime.date(int(request.POST['dobyear']), int(request.POST['dobmonth']), int(request.POST['dobday']))
-	c1.phone_day = request.POST.get('phone_day', "")
-	c1.phone_cell = request.POST.get('phone_cell', "")
-	c1.phone_even = request.POST.get('phone_even', "")
-	c1.save()
-	regprof.contact_student = c1	    
-	if regprof.contact_guardian is None:
-		c2 = ContactInfo()
-		c2.user = curUser
-		c2.save()
-	else:
-		c2 = regprof.contact_guardian
-	c2.full_name = request.POST.get('guard_name', "")
-	c2.e_mail = request.POST.get('guard_email', "")
-	q = c2.e_mail
-	p = c2.full_name
-	c2.phone_day = request.POST.get('guard_phone_day', "")
-	c2.phone_cell = request.POST.get('guard_phone_cell', "")
-	c2.phone_even = request.POST.get('guard_phone_even', "")
-	c2.address_street = c1.address_street
-	c2.address_city = c1.address_city
-	c2.address_state = c1.address_state
-	c2.address_zip = c1.address_zip
-	c2.save()
-	regprof.contact_guardian = c2
-	if regprof.contact_emergency is None:
-		c3 = ContactInfo()
-		c3.user = curUser
-		c3.save()
-	else:
-		c3 = regprof.contact_emergency
-	c3.full_name = request.POST.get('emerg_name', "")
-	c3.e_mail = request.POST.get('emerg_email', "")
-	c3.address_street = request.POST.get('emerg_street', "")
-	c3.address_city = request.POST.get('emerg_city', "")
-	c3.address_state = request.POST.get('emerg_state', "")
-	c3.address_zip = request.POST.get('emerg_zip', "")
-	c3.phone_day = request.POST.get('emerg_phone_day', "")
-	c3.phone_cell = request.POST.get('emerg_phone_cell', "")
-	c3.phone_even = request.POST.get('emerg_phone_even', "")
-	c3.save()
-	regprof.contact_emergency = c3	    
-	curUser.save()
-	regprof.save()
-	return program_updateprofile(request, tl, one, two, "studentreg", extra, prog)
 
 def validateContactInfo(ci):
 	""" Confirm that all necessary contact information is attached to the specified object """
@@ -593,13 +437,11 @@ def validateContactInfo(ci):
 def studentRegDecision(request, tl, one, two, module, extra, prog):
 	""" The page that is shown once the user saves their student reg, giving them the option of printing a confirmation """
 	curUser = request.user
-	regprof = RegistrationProfile.objects.filter(user=curUser,program=prog)
-	if regprof.count() < 1:
-		regprof = RegistrationProfile()
-		regprof.user = curUser
-		regprof.program = prog
-	else:
-		regprof = regprof[0]
+
+	regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+	# verify contact info is done
+	profile_done = regProf.id is not None
+	
 	context = {'logged_in': request.user.is_authenticated() }
 	context['program'] = one + " " + two
 	context['program'] = context['program'].replace("_", " ")
@@ -615,7 +457,7 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 
 	#	Put the student's schedule on the confirmation page.  This code is identical to 
 	#	that in program_studentreg, maybe they should be shared.
-	pre = regprof.preregistered_classes()
+	pre = regProf.preregistered_classes()
 	z = [x.event_template for x in pre]
 	prerl = []
 	for time in ts:
@@ -624,16 +466,10 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 		else: prerl.append((time, then[0]))
 	context['timeslots'] = prerl
 	
-	#	Verify the profile information before letting the user print a conformation.
-	profile_done = False
 
-	for thing in [regprof.contact_user, regprof.contact_guardian, regprof.contact_emergency]:
-		if validateContactInfo(thing):
-			profile_done = True
-			break
 	if profile_done:
 		context['printConfirm'] = True
-		pre = regprof.preregistered_classes()
+		pre = regProf.preregistered_classes()
 		if pre != []:
 			done = True
 			context['printConfirm'] = True
@@ -674,12 +510,11 @@ program_handlers = {'catalog': program_catalog,
 		    'selectclass': program_teacherreg,
 		    'teacherreg': program_teacherreg2,
 		    'fillslot': program_fillslot,
-			'clearslot': program_clearslot,
+		    'clearslot': program_clearslot,
 		    'changeslot': program_fillslot,
 		    'addclass': program_addclass,
 		    'makeaclass': program_makeaclass,
 		    'makecourse': program_makeaclass,
-		    'updateprofile': program_updateprofile,
 		    'startpay': program_display_credit,
 		    'finishedStudent': studentRegDecision, 
 		    

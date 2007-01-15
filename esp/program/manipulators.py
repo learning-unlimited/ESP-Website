@@ -80,6 +80,14 @@ class EducatorInfoManipulator(forms.Manipulator):
             forms.TextField(field_name="position", length=10, maxlength=32)
             )
         
+class GuardianInfoManipulator(forms.Manipulator):
+    """ Manipulator for Educator Info """
+    def __init__(self):
+        self.fields = (
+            forms.PositiveIntegerField(field_name="year_finished", length=4, maxlength=4),
+            forms.PositiveIntegerField(field_name="num_kids", length=3, maxlength=16)
+            )
+
 class StudentProfileManipulator(forms.Manipulator):
     """ Create the student profile manipulator from the other manipulators """
     def __init__(self):

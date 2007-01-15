@@ -4,7 +4,8 @@ from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
-from esp.users.models import ContactInfo, UserBit, ESPUser
+from esp.users.models import ContactInfo, UserBit, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
+from esp.program.models import RegistrationProfile
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
 from esp.miniblog.views import preview_miniblog, create_miniblog
@@ -16,12 +17,12 @@ from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpRespo
 from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
-#from esp.validation import *
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 from esp.users.manipulators import UserRegManipulator
 from esp.web.data import navbar_data, preload_images
 from django import forms
+from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
 
 def myesp_register(request, module):
 	""" Return a user-registration page """
@@ -319,6 +320,63 @@ def myesp_battlescreen_student(request, module):
 		return myesp_battlescreen(request, module, student_version = True)
 	else:
 		raise Http404
+
+
+
+@login_required
+def profile_editor(request, prog, responseuponCompletion = False, role=''):
+	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+	curUser = request.user
+	
+	context = {'logged_in': request.user.is_authenticated() }
+	context['user'] = request.user
+
+	manipulator = {'': UserContactManipulator(),
+		       'student': StudentProfileManipulator(),
+		       'teacher': TeacherProfileManipulator(),
+		       'guardian': GuardianProfileManipulator(),
+		       'educator': EducatorProfileManipulator()}[role]
+	context['profiletype'] = role
+
+	if request.method == 'POST':
+		new_data = request.POST.copy()
+		errors = manipulator.get_validation_errors(new_data)
+		if not errors:
+			manipulator.do_html2python(new_data)
+			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+			regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
+			regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
+			if role == 'student':
+				regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
+				regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
+			elif role == 'teacher':
+				regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
+			elif role == 'guardian':
+				regProf.teacher_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
+			elif role == 'educator':
+				regProf.educator_info = GuardianInfo.addOrUpdate(curUser, regProf, new_data)
+			regProf.save()
+			curUser.first_name = new_data['first_name']
+			curUser.last_name  = new_data['last_name']
+			curUser.email     = new_data['e_mail']
+			curUser.save()
+			if responseuponCompletion == True:
+				return render_to_response('users/profile_complete.html', {'request':request})
+			else:
+				return True
+
+	else:
+		errors = {}
+		regProf = RegistrationProfile.getLastProfile(curUser)
+		new_data = {}
+		new_data['first_name'] = curUser.first_name
+		new_data['last_name']  = curUser.last_name
+		new_data['e_mail']     = curUser.email
+		new_data = regProf.updateForm(new_data, role)
+	
+	context['request'] = request
+	context['form'] = forms.FormWrapper(manipulator, new_data, errors)
+	return render_to_response('users/profile.html', context)
 
 @login_required
 def myesp_battlescreen_teacher(request, module):

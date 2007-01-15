@@ -1,0 +1,25 @@
+<p>You have successfully completed your pre-registration for {{ program.title }}!  Please carefully read the following instructions:
+</p>
+
+<ol>
+<li>You should now send a $10 check to: <br />
+<pre>
+    Hudson High School
+      69 Brigham St.
+     Hudson, MA 01749
+</pre> Please enclose the number <strong>{{ request.user.id }}</strong> (either on the memo section of the check or print off this sheet). Otherwise we may not be able to know that you have paid. If you are sending a check for multple students, please list the IDs of all the students included in the payment.
+</li>
+<li>You MUST fill out <a href="/media/uploaded/07_01/medical___.pdf">medical</a> and <a href="/media/uploaded/07_01/liabilities__.pdf">liabilities</a> forms and BRING THEM TO THE PROGRAM. Your parents need to sign them, and if you do not have them you CANNOT PARTICIPATE. This is VERY IMPORTANT.</li>
+
+ <li>You should BRING A LUNCH. You may also want to bring a snack for after the first class.</li>
+
+{% for inst in program.instructions %}
+ <li>{{ inst }}
+  </li>
+{% endfor %}
+</ol>
+
+<p>Thanks for registering. We're looking forward to seeing you on Saturday, Jan. 27th!
+<!-- on {{ program.date }} -->
+
+</p>
