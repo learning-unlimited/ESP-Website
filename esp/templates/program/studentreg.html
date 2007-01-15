@@ -1,0 +1,56 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br /><br />
+<h1>Student registration for {{program.niceName}} </h1>
+
+<p style="text-align: center">Please complete the following steps so that you are fully pre-registered for {{program.niceName}}.</p>
+
+<center>
+<table style="text-align: center" align="center">
+<tr><th>What to do?</th><th>Done?</th></tr>
+{% for moduleContainer in modules %}
+ <tr>
+  <td>{% if moduleContainer.useTemplate %}
+    {{ moduleContainer.moduleObj.link_title }} <em>(below)</em>
+   {% else %}
+    {{ moduleContainer.link }}
+   {% endif %}
+  </td>
+  <td>
+   <img src="/media/images/{% if not moduleContainer.isCompleted %}no{% endif %}checkmark.gif" class="nocheckmark" />
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+</center>
+<br />
+{% for moduleContainer in modules %}
+{% if moduleContainer.useTemplate %}
+<br />
+
+ {% include moduleContainer.moduleObj.getTemplate %}
+{% endif %}
+{% endfor %}
+<br />
+<form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">
+<p style="text-align: center">
+<input type="submit" value="Save!" {% if not completedAll %}disabled{% endif %}/><br />
+{% if not completedAll %}<em>(Please complete the above steps first!)</em>{% endif %}
+</p>
+</form>
+
+<i style="text-align: center">
+Please note that you can come back and change your preregistration up until 2 days before {{program.niceName}} begins!
+</i>
+
+
+{% endblock %}

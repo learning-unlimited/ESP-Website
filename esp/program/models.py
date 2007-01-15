@@ -8,6 +8,31 @@ from esp.qsd.models import QuasiStaticData
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 
 # Create your models here.
+class ProgramModule(models.Model):
+	""" Program Modules for a Program """
+	link_title = models.CharField(maxlength=64)
+	admin_title = models.CharField(maxlength=128)
+	main_call  = models.CharField(maxlength=32)
+	check_call = models.CharField(maxlength=32)
+	module_type = models.CharField(maxlength=32)
+	seq = models.IntegerField()
+	required = models.BooleanField()
+	
+	def __str__(self):
+		return 'Program Module "%s"' % self.admin_title
+
+	def makeLink(self, user, prog):
+		str_array = prog.anchor.tree_encode()
+		url = '/'+{'student_reg':'learn','teacher_reg':'teach'}[self.module_type] \
+		      +'/'+'/'.join(str_array[2:])+'/'+self.main_call
+		return '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % (url, self.link_title, self.link_title)
+
+	def getTemplate(self):
+		return 'program/modules/'+self.main_call+'.html'
+		
+	class Admin:
+		pass
+
 	
 class Program(models.Model):
 	""" An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
@@ -16,6 +41,7 @@ class Program(models.Model):
 	grade_max = models.IntegerField()
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
+	program_modules = models.ManyToManyField(ProgramModule)
 
 
 	def url(self):
@@ -27,6 +53,9 @@ class Program(models.Model):
 
 	def parent(self):
 		return anchor.parent
+
+	def niceName(self):
+		return str(self).replace("_", " ")
 
 	def getUrlBase(self):
 		""" gets the base url of this class """
@@ -232,17 +261,7 @@ class BusSchedule(models.Model):
 
 	class Admin:
 		pass
-class ProgramModule(models.Model):
-	""" Program Modules for a Program """
-	link_title = models.CharField(maxlength=64)
-	admin_title = models.CharField(maxlength=128)
-	main_call  = models.CharField(maxlength=32)
-	check_call = models.CharField(maxlength=32)
-	module_type = models.CharField(maxlength=32)
-	programs = models.ManyToManyField(Program)
 
-	class Admin:
-		pass
 
 	
 class TeacherParticipationProfile(models.Model):
@@ -256,6 +275,45 @@ class TeacherParticipationProfile(models.Model):
 	def __str__(self):
 		return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
 
+	class Admin:
+		pass
+
+class SATPrepRegInfo(models.Model):
+	""" SATPrep Registration Info """
+	old_math_score = models.IntegerField()
+	old_verb_score = models.IntegerField()
+	old_writ_score = models.IntegerField()
+	heard_by = models.CharField(maxlength=128)
+	user = models.ForeignKey(User)
+	program = models.ForeignKey(Program)
+
+	def __str__(self):
+		return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
+	def updateForm(self, new_data):
+		for i in self.__dict__.keys():
+			if i != 'user_id' and i != 'id' and i != 'program_id':
+				new_data[i] = self.__dict__[i]
+		return new_data
+
+	
+        def addOrUpdate(self, new_data, curUser, program):
+		for i in self.__dict__.keys():
+			if i != 'user_id' and i != 'id' and i != 'program_id' and new_data.has_key(i):
+				self.__dict__[i] = new_data[i]
+#		self.user = curUser
+#		self.program = program
+		self.save()
+
+	@staticmethod
+	def getLastForProgram(user, program):
+		satPrepList = SATPrepRegInfo.objects.filter(user=user,program=program).order_by('-id')
+		if len(satPrepList) < 1:
+			satPrep = SATPrepRegInfo()
+			satPrep.user = user
+			satPrep.program = program
+		else:
+			satPrep = satPrepList[0]
+		return satPrep
 	class Admin:
 		pass
 
@@ -340,3 +398,5 @@ class RegistrationProfile(models.Model):
 
 	class Admin:
 		pass
+
+

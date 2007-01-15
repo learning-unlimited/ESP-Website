@@ -1,0 +1,27 @@
+{% extends "elements/receipt.html" %}
+
+{% block title %}Registration for {{one}} Receipt{% endblock %}
+
+{% block subsection_name %} {% endblock %}
+
+{% block body %}
+<br>
+<p>
+Congratulations! Your preregistration for {{ one }} has completed. <br />
+Please note you still <strong>must</strong> attend the registration on Sunday, February 11, 2007 at 10:00am on MIT campus. At the registration, please bring $80 in either cash/check and <em>signed</em> medical and liability forms. Those will be available online shortly.<br />
+Please print this off for your records. <br />
+</p>
+
+<p>
+User Information: <br />
+<ul>
+<li>Username: {{ request.user.username }}</li>
+<li>Full Name: {{ request.user.first_name }} {{ request.user.last_name }}</li>
+<li>User ID: {{ request.user.id }}</li>
+</ul>
+</p>
+<br />
+<br />
+<br />
+
+{% endblock %}

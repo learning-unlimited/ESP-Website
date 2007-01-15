@@ -1,0 +1,69 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Profile Editor{% endblock %}
+
+{% block subsection_name %}Student Profile Editor{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/dojo/dojo.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<style type="text/css">
+
+.required { border: 2px solid black; }
+
+.form_error { font-size: 80%; font-style: italic; color: #C00; }
+
+label { font-family: Arial, Lucida, Helvetica, sans-serif; font-size: 0.8em; font-weight: normal;}
+label.groupheader { font-size: 1.2em; font-weight: bold; }
+#divmaintext table td { vertical-align: top; }
+
+</style>
+<br /><br />
+<div id="divmaintext">	
+<h2>Hi {{user.username}}!</h2>
+<h2>Please tell us a bit about yourself!</h2>
+(Boxed fields are required.)
+
+{% if form.has_errors %}
+<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
+{% endif %}
+
+
+<form action="" method="post">
+<table cellpadding="2" align="center" border="0">
+
+{% include "users/profiles/usercontact.html" %}
+
+{% ifequal profiletype "student" %}
+  {% include "users/profiles/studentinfo.html" %}
+  {% include "users/profiles/guardiancontact.html" %}
+  {% include "users/profiles/emergencycontact.html" %}
+{% endifequal %}
+
+{% ifequal profiletype "teacher" %}
+  {% include "users/profiles/teacherinfo.html" %}
+  {% include "users/profiles/emergencycontact.html" %}
+{% endifequal %}
+
+{% ifequal profiletype "educator" %}
+  {% include "users/profiles/educatorinfo.html" %}
+{% endifequal %}
+
+{% ifequal profiletype "guardian" %}
+  {% include "users/profiles/guardianinfo.html" %}
+{% endifequal %}
+
+</table>
+
+<br />
+<center><input type='submit' value='Update your Information!'></center>
+
+<br />
+</form>
+
+</div>
+
+{% endblock %}

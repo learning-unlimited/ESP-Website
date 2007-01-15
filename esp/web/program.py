@@ -4,7 +4,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest, TeacherParticipationProfile
+from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest, TeacherParticipationProfile, SATPrepRegInfo
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
@@ -13,7 +13,7 @@ from icalendar import Calendar, Event as CalEvent, UTC
 from datetime import datetime
 from esp.users.models import UserBit
 from django import forms
-
+from esp.program.manipulators import SATPrepInfoManipulator
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 from esp.web.data import navbar_data, preload_images, render_to_response
@@ -94,7 +94,7 @@ def program_profile(request, tl, one, two, module, extra, prog):
 	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 	from esp.web.myesp import profile_editor
 	role = {'teach': 'teacher','learn': 'student'}[tl]
-	
+
 	response = profile_editor(request, prog, False, role)
 	if response == True:
 		return program_studentreg(request, tl, one, two, module, extra, prog)
@@ -105,55 +105,34 @@ def program_profile(request, tl, one, two, module, extra, prog):
 def program_studentreg(request, tl, one, two, module, extra, prog):
 	""" Display a student reg page """
 	curUser = ESPUser(request.user)
-	
-	if not curUser.isStudent():
-		timeslot = None
-		dt_approved = GetNode( 'V/Flags/Class/Approved' )
-		clas = [ {'class': cls, 'accepted': cls.isAccepted(), 
-				'times': [{'id': vt.id, 'label': vt.friendly_name} for vt in cls.viable_times.all()] }
-			for cls in prog.class_set.all().order_by('category')
-			if (UserBit.UserHasPerms(request.user, cls.anchor, dt_approved)
-			and (timeslot == None or (cls.event_template != None and cls.event_template == timeslot ))) ]
-		return render_to_response('program/catalogue', request, (prog, tl), {'Program': str(prog).replace("_", " "),
-							'courses': clas ,
-							'timeslot': None,
-							'message': 'You must be an ESP student to register for ' + prog.anchor.friendly_name + '.<br>Click <a href="/myesp/register/">here</a> to register a new account.',
-							'tl': tl,
-							'can_edit_classes': False,
-							'can_approve_classes': False })
-	
-	# get the last profile for this program and user
-	regProf = RegistrationProfile.getLastForProgram(curUser, prog)
-
-	# is there no profile?
-	profile_done = regProf.id is not None
-	status = {'profile_done': profile_done}
-	
 	context = {}
-	context['profile_done'] = profile_done
-	context['program'] = one + " " + two
-	context['program'] = context['program'].replace("_", " ")
+	if not curUser.isStudent():
+		return render_to_response('program/not_a_student.html', request, (prog, tl),{})
+
+	# Create a container that has the boolean 'useTemplate'
+	moduleContainer = []
+	
+	modules = prog.program_modules.all().order_by('seq')
+
+	context['completedAll'] = True
+	
+	for module in modules:
+		completed = program_handler_checks[module.check_call](curUser, prog)
+		if not completed and module.required:
+			context['completedAll'] = False
+			
+		moduleContainer = moduleContainer + [ {'moduleObj':   module,
+						       'useTemplate': not program_handlers.has_key(module.main_call),
+						       'isCompleted': completed,
+						       'link':        module.makeLink(curUser, prog)
+						       } ]
+		if program_handler_prepare.has_key(module.main_call):
+			context = program_handler_prepare[module.main_call](curUser, prog, context)
+	context['modules'] = moduleContainer
 	context['one'] = one
 	context['two'] = two
 
-	context['student'] = {'name': curUser.first_name + " " + curUser.last_name,
-			      'id': curUser.id }
-	
-	ts = list(GetNode('Q/Programs/' + one + '/' + two + '/Templates/TimeSlots').children().order_by('id'))
-
-	pre = regProf.preregistered_classes()
-	z = [x.event_template for x in pre]
-	prerl = []
-	for time in ts:
-		then = [x for x in pre if x.event_template == time]
-		if then == []: prerl.append((time, None))
-		else: prerl.append((time, then[0]))
-	context['timeslots'] = prerl
-
-	status['classes_done'] = len(pre) > 0
-	status['payment_done'] = False
-	context['status'] = status
-	return render_to_response('users/studentreg.html', request, (prog, tl), context)
+	return render_to_response('program/studentreg.html', request, (prog, tl), context)
 
 @login_required
 def program_finishstudentreg(request, tl, one, two, module, extra, prog):
@@ -408,55 +387,26 @@ def validateContactInfo(ci):
 @login_required
 def studentRegDecision(request, tl, one, two, module, extra, prog):
 	""" The page that is shown once the user saves their student reg, giving them the option of printing a confirmation """
-	curUser = request.user
-
-	regProf = RegistrationProfile.getLastForProgram(curUser, prog)
-	# verify contact info is done
-	profile_done = regProf.id is not None
-	
+	curUser = ESPUser(request.user)
 	context = {}
-	context['program'] = one + " " + two
-	context['program'] = context['program'].replace("_", " ")
 	context['one'] = one
 	context['two'] = two
+
+	modules = prog.program_modules.all().order_by('seq')
+
+	completedAll = True
 	
-	context['student'] = {'name': curUser.first_name + " " + curUser.last_name,
-						'id': curUser.id }
-	ts = list(GetNode('Q/Programs/' + one + '/' + two + '/Templates/TimeSlots').children())
+	for module in modules:
+		completed = program_handler_checks[module.check_call](curUser, prog)
+		if not completed and module.required:
+			completedAll = False
 
-	#	Put the student's schedule on the confirmation page.  This code is identical to 
-	#	that in program_studentreg, maybe they should be shared.
-	pre = regProf.preregistered_classes()
-	z = [x.event_template for x in pre]
-	prerl = []
-	for time in ts:
-		then = [x for x in pre if x.event_template == time]
-		if then == []: prerl.append((time, None))
-		else: prerl.append((time, then[0]))
-	context['timeslots'] = prerl
 	
-
-	if profile_done:
-		context['printConfirm'] = True
-		pre = regProf.preregistered_classes()
-		if pre != []:
-			done = True
-			context['printConfirm'] = True
-		else:
-			done = False
-			context['printConfirm'] = False
-	else:
-		done = False
-		context['printConfirm'] = False
-
-	#	Put in the instructions to go along with the program.
-	context['program'] = {'title': prog.anchor.friendly_name}
-	#	This needs to be filled in with date, address, and instructions.
-
-	if done:
+	if completedAll:
 		bit, created = UserBit.objects.get_or_create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
 
-	return render_to_response('program/savescreen', request, (prog, tl), context)
+	receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
+	return render_to_response(receipt, request, (prog, tl), context)
 
 @login_required
 def program_display_credit(request, tl, one, two, module, extra, prog):
@@ -467,6 +417,57 @@ def program_display_credit(request, tl, one, two, module, extra, prog):
 							 'two': two,
 							 'student': request.user,
 							 'amount': '30'})
+
+def profile_check(user, prog):
+	""" Return true if the profile has been filled out. """
+	regProf = RegistrationProfile.getLastForProgram(user, prog)
+	return regProf.id is not None
+
+def satprepinfo_check(user, prog):
+	satPrep = SATPrepRegInfo.getLastForProgram(user, prog)
+	return satPrep.id is not None
+
+def class_check(user, prog):
+	""" Return true if there are classes that have been registered. """
+	regProf = RegistrationProfile.getLastForProgram(user, prog)
+	return len(regProf.preregistered_classes()) > 0
+
+def class_prepare(user, prog, context={}):
+	regProf = RegistrationProfile.getLastForProgram(user, prog)
+	ts = list(GetNode(prog.anchor.full_name()+'/Templates/TimeSlots').children().order_by('id'))
+	pre = regProf.preregistered_classes()
+	z = [x.event_template for x in pre]
+	prerl = []
+	for time in ts:
+		then = [x for x in pre if x.event_template == time]
+		if then == []: prerl.append((time, None))
+		else: prerl.append((time, then[0]))
+	context['timeslots'] = prerl
+	
+	return context
+
+def satprep_info(request, tl, one, two, module, extra, prog):
+	manipulator = SATPrepInfoManipulator()
+	new_data = {}
+	if request.method == 'POST':
+		new_data = request.POST.copy()
+		
+		errors = manipulator.get_validation_errors(new_data)
+		
+		if not errors:
+			manipulator.do_html2python(new_data)
+			new_reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
+			new_reginfo.addOrUpdate(new_data, request.user, prog)
+
+			return program_studentreg(request, tl, one, two, module, extra, prog)
+	else:
+		satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
+		
+		new_data = satPrep.updateForm(new_data)
+		errors = {}
+
+	form = forms.FormWrapper(manipulator, new_data, errors)
+	return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
 
 program_handlers = {'catalog': program_catalog,
 		    'profile': program_profile,
@@ -482,5 +483,12 @@ program_handlers = {'catalog': program_catalog,
 		    'makecourse': program_makeaclass,
 		    'startpay': program_display_credit,
 		    'finishedStudent': studentRegDecision, 
-		    
+		    'satprepinfo': satprep_info
 		    }
+#program_handlers_finishes = {'sowclass': class_finish }
+program_handler_checks = {'profile_check':  profile_check,
+			  'sowclass_check': class_check,
+			  'satprepinfo_check': satprepinfo_check
+			  }
+
+program_handler_prepare = {'sowclass': class_prepare }
