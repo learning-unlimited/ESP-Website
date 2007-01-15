@@ -8,6 +8,8 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
     
     if context is not None:
         request = requestOrContext
+        if not context.has_key('program') and prog is not None:
+            context['program'] = prog
          # create nav bar list
         if not context.has_key('navbar_list'):
             if prog is None:

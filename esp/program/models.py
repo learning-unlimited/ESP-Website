@@ -233,7 +233,6 @@ class TeacherParticipationProfile(models.Model):
 	program = models.ForeignKey(Program)
 	unique_together = (('teacher', 'program'),)
 	bus_schedule = models.ManyToManyField(BusSchedule)
-
 	can_help = models.BooleanField()
 
 	def __str__(self):
