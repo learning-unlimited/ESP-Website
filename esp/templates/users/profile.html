@@ -33,6 +33,8 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 
 <form action="" method="post">
+<input type="hidden" name="profile_page" value="true" />
+<input type="hidden" name="current_role" value="{{ profiletype }}" />
 <table cellpadding="2" align="center" border="0">
 
 {% include "users/profiles/usercontact.html" %}

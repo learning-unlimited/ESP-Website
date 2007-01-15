@@ -5,41 +5,42 @@ import re
 class UserContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
     def __init__(self):
+        phone_validators = [OneOfSetAreFilled(['phone_day','phone_even','phone_cell'])]
         self.fields = (
-            forms.TextField(field_name="first_name", length=15, maxlength=64, is_required=True),
-            forms.TextField(field_name="last_name", length=15, maxlength=64, is_required=False),            
-            forms.EmailField(field_name="e_mail", is_required=True, length=25),
-            ESPPhoneNumberField(field_name="phone_day", is_required=True, local_areacode='617'),
-            ESPPhoneNumberField(field_name="phone_cell", is_required=True, local_areacode='617'),
-            ESPPhoneNumberField(field_name="phone_even", is_required=True, local_areacode='617'),
-            forms.TextField(field_name="address_street", length=20, maxlength=100, is_required=True),
-            forms.TextField(field_name="address_city", length=20, maxlength=50, is_required=True),
+            forms.TextField(field_name="first_name", length=15, maxlength=64, is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="last_name", length=15, maxlength=64, is_required=False, validator_list=[validators.isNotEmpty]),            
+            forms.EmailField(field_name="e_mail", is_required=True, length=25, validator_list=[validators.isNotEmpty]),
+            ESPPhoneNumberField(field_name="phone_day", local_areacode='617', is_required=True),
+            ESPPhoneNumberField(field_name="phone_cell", local_areacode='617'),
+            ESPPhoneNumberField(field_name="phone_even", local_areacode='617'),
+            forms.TextField(field_name="address_street", length=20, maxlength=100, is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="address_city", length=20, maxlength=50, is_required=True, validator_list=[validators.isNotEmpty]),
             USStateSelectField(field_name="address_state", is_required=True),
-            forms.TextField(field_name="address_zip", length=5, maxlength=5, is_required=True)
+            forms.TextField(field_name="address_zip", length=5, maxlength=5, is_required=True, validator_list=[validators.isNotEmpty])
         )
         
 class EmergContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
     def __init__(self):
         self.fields = (
-            forms.TextField(field_name="emerg_first_name", length=15, maxlength=64, is_required=True),
-            forms.TextField(field_name="emerg_last_name", length=15, maxlength=64, is_required=False),            
+            forms.TextField(field_name="emerg_first_name", length=15, maxlength=64, is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="emerg_last_name", length=15, maxlength=64, is_required=False, validator_list=[validators.isNotEmpty]),            
             forms.EmailField(field_name="emerg_e_mail", is_required=True, length=25),
             ESPPhoneNumberField(field_name="emerg_phone_day", is_required=True, local_areacode='617'),
-            ESPPhoneNumberField(field_name="emerg_phone_cell", is_required=True, local_areacode='617'),
-            ESPPhoneNumberField(field_name="emerg_phone_even", is_required=True, local_areacode='617'),    
-            forms.TextField(field_name="emerg_address_street", length=20, maxlength=100, is_required=True),
-            forms.TextField(field_name="emerg_address_city", length=20, maxlength=50, is_required=True),
+            ESPPhoneNumberField(field_name="emerg_phone_cell", local_areacode='617'),
+            ESPPhoneNumberField(field_name="emerg_phone_even", local_areacode='617'),    
+            forms.TextField(field_name="emerg_address_street", length=20, maxlength=100, is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="emerg_address_city", length=20, maxlength=50, is_required=True, validator_list=[validators.isNotEmpty]),
             USStateSelectField(field_name="emerg_address_state", is_required=True),
-            forms.TextField(field_name="emerg_address_zip", length=5, maxlength=5, is_required=True)
+            forms.TextField(field_name="emerg_address_zip", length=5, maxlength=5, is_required=True, validator_list=[validators.isNotEmpty])
         )
 
 class GuardContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
     def __init__(self):
         self.fields = (
-            forms.TextField(field_name="guard_first_name", length=15, maxlength=64, is_required=True),
-            forms.TextField(field_name="guard_last_name", length=15, maxlength=64, is_required=False),
+            forms.TextField(field_name="guard_first_name", length=15, maxlength=64, is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="guard_last_name", length=15, maxlength=64, is_required=False, validator_list=[validators.isNotEmpty]),
             forms.EmailField(field_name="guard_e_mail", is_required=True, length=25),
             ESPPhoneNumberField(field_name="guard_phone_day", is_required=True, local_areacode='617'),
             ESPPhoneNumberField(field_name="guard_phone_cell", local_areacode='617'),
@@ -115,6 +116,20 @@ def YOGValidator(self, field_data, all_data):
     end_year = datetime.date.today().year + 20
     if type(field_data) != int or field_data < begin_year or field_data > end_year:
         raise validators.ValidationError("Please enter a valid year between "+begin_year+" and "+year)
+
+class OneOfSetAreFilled(object):
+    """ This will be valid if at least one of a set of fields are filled in and not empty. """
+    def __init__(self, field_list):
+        self.field_list = field_list
+
+    def __call__(self, field_data, all_data):
+        atleastOne = False
+        for field in self.field_list:
+            if all_data.get(field, False) and all_data[field][0].strip() != '':
+                atleastOne = True
+                
+        if not atleastOne:
+            raise validators.ValidationError, 'At least one of the these fields must be filled in.'
 
 class DojoDatePickerField(forms.DateField):
     """ A pretty dojo date picker field """
@@ -197,6 +212,8 @@ def isValidSATScore(data, form):
     data = int(data)
     if data < 600 or data > 2400:
         raise validators.ValidationError, '"%s" not a valid SAT score.' % data        
+
+
 
 class SATPrepInfoManipulator(forms.Manipulator):
     def __init__(self):

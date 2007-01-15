@@ -35,6 +35,14 @@ def myesp_register(request, module):
 
 def myesp_finish(request, module):
 	""" Complete a user registration """
+	admin_program = Program.objects.filter(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))[0]
+	if request.POST.has_key('profile_page'):
+		profile_page =  profile_editor(request, admin_program, False, request.POST['current_role'])
+		if profile_page == True:
+			return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {})
+		else:
+			return profile_page
+	
 	manipulator = UserRegManipulator()
 	new_data = request.POST.copy()
 	errors = manipulator.get_validation_errors(new_data)
@@ -78,8 +86,12 @@ def myesp_finish(request, module):
 		ub.qsc = GetNode('Q')
 		ub.verb = v
 		ub.save()
-			
-	return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {})
+	
+	profile_page =  profile_editor(request, admin_program, False, request.POST['role'])
+	if profile_page == True:
+		return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {})
+	else:
+		return profile_page
 
        
 
@@ -277,9 +289,10 @@ def myesp_battlescreen_student(request, module):
 def profile_editor(request, prog, responseuponCompletion = False, role=''):
 	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 	curUser = request.user
-	
+	role = role.lower();
 	context = {'logged_in': request.user.is_authenticated() }
 	context['user'] = request.user
+	
 
 	manipulator = {'': UserContactManipulator(),
 		       'student': StudentProfileManipulator(),
@@ -288,7 +301,7 @@ def profile_editor(request, prog, responseuponCompletion = False, role=''):
 		       'educator': EducatorProfileManipulator()}[role]
 	context['profiletype'] = role
 
-	if request.method == 'POST':
+	if request.method == 'POST' and request.POST.has_key('profile_page'):
 		new_data = request.POST.copy()
 		errors = manipulator.get_validation_errors(new_data)
 		if not errors:
