@@ -3,9 +3,8 @@ from esp.users.models import UserBit
 from django.http import Http404
 from esp.datatree.models import GetNode
 from esp.users.models import GetNodeOrNoBits
-from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
-from esp.web.data import navbar_data, preload_images
+from esp.web.data import navbar_data, preload_images, render_to_response
 
 # Create your views here.
 

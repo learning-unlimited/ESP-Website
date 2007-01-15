@@ -1,6 +1,5 @@
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
@@ -20,7 +19,7 @@ import datetime
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 from esp.users.manipulators import UserRegManipulator
-from esp.web.data import navbar_data, preload_images
+from esp.web.data import navbar_data, preload_images, render_to_response
 from django import forms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
 
@@ -307,16 +306,16 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 
 @login_required
 def myesp_battlescreen_admin(request, module):
-	qscs = UserBit.bits_get_qsc(user=request.user, verb=GetNode("V/Administer"))
-	if qscs.count() > 0:
+	curUser = ESPUser(request.user)
+	if curUser.isAdministrator():
 		return myesp_battlescreen(request, module, admin_details = True)
 	else:
 		raise Http404
 
 @login_required
 def myesp_battlescreen_student(request, module):
-	qscs = UserBit.bits_get_qsc(user=request.user, verb=GetNode("V/Flags/UserRole/Student"))
-	if qscs.count() > 0:
+	curUser = ESPUser(request.user)
+	if curUser.isStudent():
 		return myesp_battlescreen(request, module, student_version = True)
 	else:
 		raise Http404

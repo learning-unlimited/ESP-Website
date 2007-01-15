@@ -40,6 +40,9 @@ class ESPUser(User, AnonymousUser):
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
+    def isAdministrator(self):
+        return UserBit.bits_get_qsc(user=self, verb=GetNode("V/Administer")).count() > 0
+    
     def isTeacher(self):
         """Returns true if this user is a teacher"""
         return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now())

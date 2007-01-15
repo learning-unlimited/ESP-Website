@@ -152,6 +152,18 @@ form {
   top: 83px;
   z-index: 10;
 }
+#divnav7 {
+  position: absolute;
+  left: 790px;
+  top: 83px;
+  z-index: 10;
+}
+#divnav8 {
+  position: absolute;
+  left: 220px;
+  top: 155px;
+  z-index: 10;
+}
 
 
 

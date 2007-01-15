@@ -1,5 +1,5 @@
 from esp.money.models import Transaction
-from django.shortcuts import render_to_response
+from esp.web.data import render_to_response
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django import forms
 

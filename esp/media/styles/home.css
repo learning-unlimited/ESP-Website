@@ -114,8 +114,12 @@ form {
   top: 239px;
   z-index: 10;
 }
-
-
+#divnav7 {
+  position: absolute;
+  left: 410px;
+  top: 320px;
+  z-index: 10;
+}
 
 /* "EXTRA" LINKS */
 

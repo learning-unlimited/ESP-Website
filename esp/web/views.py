@@ -1,4 +1,3 @@
-from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
@@ -18,8 +17,7 @@ import datetime
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
-
-from esp.web.data import navbar_data, preload_images
+from esp.web.data import navbar_data, preload_images, render_to_response
 from esp.web.myesp import myesp_handlers
 from esp.web.program import program_handlers
 from esp.miniblog.views import preview_miniblog
@@ -36,14 +34,12 @@ def index(request):
 	# aseering: Yay.
 	# axiak:    hmm...
 	announcements = preview_miniblog(request)
-	return render_to_response('index.html', {
-		'request':          request,
+	return render_to_response('index.html', request, None, {
 		'navbar_list':      navbar_data,
-		'preload_images':   preload_images,
 		'announcements':    {'announcementList': announcements[:5],
 				     'overflowed':       len(announcements) > 5,
 				     'total':            len(announcements)},
-		'logged_in':        request.user.is_authenticated()
+		
 		})
 
 def bio(request, tl, last, first):

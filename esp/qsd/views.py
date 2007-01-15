@@ -2,9 +2,8 @@ from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
 from esp.datatree.models import GetNode, DataTree
-from django.shortcuts import render_to_response
 from esp.web.navBar import makeNavBar
-from esp.web.data import navbar_data, preload_images
+from esp.web.data import navbar_data, preload_images, render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
 from esp.lib.markdownaddons import ESPMarkdown

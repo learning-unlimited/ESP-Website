@@ -1,3 +1,30 @@
+from esp.users.models import ESPUser
+import django.shortcuts
+
+def render_to_response(template, requestOrContext, prog = None, context = None):
+    # if there are only two arguments
+    if context is None and prog is None:
+        return django.shortcuts.render_to_response(template, requestOrContext)
+    
+    if context is not None:
+        request = requestOrContext
+         # create nav bar list
+        if not context.has_key('navbar_list'):
+            context['navbar_list'] = makeNavBar(request.user, prog.anchor)
+        # get the preload_images list
+        if not context.has_key('preload_images') and prog is not None:
+            context['preload_images'] = preload_images
+        # set the value of logged_in
+        if not context.has_key('logged_in'):
+            context['logged_in'] = request.user.is_authenticated()
+        # upgrade user
+        request.user = ESPUser(request.user)
+        context['request'] = request
+        return django.shortcuts.render_to_response(template, context)
+        
+    assert False, 'render_to_response expects 2 or 4 arguments.'
+
+
 navbar_data = [
 	{ 'link': '/teach/what-to-teach.html',
 	  'text': 'What You Can Teach',
