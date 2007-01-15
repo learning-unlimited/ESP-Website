@@ -1,0 +1,67 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program}} classes.{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br /><br />
+<h2 style="text-align: center">Welcome!</h2><br />
+<p style="text-align: center"><b>Student registration for {{program}} </b></p>
+
+<p style="text-align: center">Please complete the following steps so that you are fully pre-registered for {{program}}.</p>
+
+<center><table style="text-align: center">
+<tr><th>What to do?</th><th>Done?</th></tr>
+<tr>
+ <td><a href="/learn/{{one}}/{{two}}/profile/">Update Contact Info</a></td>
+ <td style="text-align: center"><img src="/media/images/{% if not status.profile_done %}no{% endif %}checkmark.gif"
+{% if not status.profile_done %}
+class="nocheckmark"
+{% endif %}
+/></td>
+</tr>
+
+<tr>
+ <td>Select Your Classes <em>(below)</em></td>
+ <td style="text-align: center"><img src="/media/images/{% if not status.classes_done %}no{% endif %}checkmark.gif"
+{% if not status.classes_done %}
+class="nocheckmark"
+{% endif %}
+/>&nbsp; </td>
+</tr>
+
+{% if using_online_payments %}
+<tr>
+ <td><a href="/learn/{{one}}/{{two}}/startpay/">Pay Online</a> (Optional)</td>
+ <td style="text-align: center"><img src="/media/images/{{pay_graphic}}.gif"
+{% ifequal payment_graphic "nocheckmark" %}
+border = 1
+{% endifequal %}
+></td>
+</tr>
+{% endif %}
+
+</table></center>
+<br /><hr><br />
+
+<p style="font-family: arial; font-size:130%; margin-left:10px; text-align: center"><b>Select Your {{one}} Classes</p></b></center>
+
+{% include "users/student_schedule.html" %}
+
+<form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">
+<p style="text-align: center">
+<input type="submit" value="Save!" {% if not status.classes_done or not status.profile_done %}disabled{% endif %}/><br />
+{% if not status.classes_done or not status.profile_done %}<em>(Please complete the above steps first!)</em>{% endif %}
+</p>
+</form>
+
+<i style="text-align: center">
+Please note that you can come back and change your class selections later, up until 2 days before {{program}} begins!
+</i>
+
+
+{% endblock %}
