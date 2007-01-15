@@ -10,10 +10,13 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         request = requestOrContext
          # create nav bar list
         if not context.has_key('navbar_list'):
-            context['navbar_list'] = makeNavBar(request.user, prog.anchor)
+            if prog is None:
+                context['navbar_list'] = navbar_data
+            else:
+                context['navbar_list'] = makeNavBar(request.user, prog.anchor)
         # get the preload_images list
-        if not context.has_key('preload_images') and prog is not None:
-            context['preload_images'] = preload_images
+        if not context.has_key('preload_images'):
+                context['preload_images'] = preload_images
         # set the value of logged_in
         if not context.has_key('logged_in'):
             context['logged_in'] = request.user.is_authenticated()
