@@ -112,7 +112,7 @@ def program_studentreg(request, tl, one, two, module, extra, prog):
 	# Create a container that has the boolean 'useTemplate'
 	moduleContainer = []
 	
-	modules = prog.program_modules.all().order_by('seq')
+	modules = prog.program_modules.filter(module_type = 'student_reg').order_by('seq')
 
 	context['completedAll'] = True
 	
