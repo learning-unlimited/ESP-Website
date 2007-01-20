@@ -392,7 +392,7 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 	context['one'] = one
 	context['two'] = two
 
-	modules = prog.program_modules.all().order_by('seq')
+	modules = prog.program_modules.filter(module_type='student_reg').order_by('seq')
 
 	completedAll = True
 	
