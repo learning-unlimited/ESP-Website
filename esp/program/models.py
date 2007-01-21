@@ -266,6 +266,9 @@ class Class(models.Model):
 	def conflicts(self, teacher):
 		from esp.users.models import ESPUser
 		user = ESPUser(teacher)
+		if user.getTaughtClasses().count() == 0:
+			return False
+		
 		for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
 			for time in cls.meeting_times.all():
 				if self.meeting_times.filter(id = time.id).count() > 0:

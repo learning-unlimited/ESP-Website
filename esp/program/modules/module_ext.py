@@ -13,7 +13,8 @@ class ClassRegModuleInfo(models.Model):
     director_email       = models.CharField(maxlength=64, blank=True, null=True)
     class_durations       = models.CharField(maxlength=128, blank=True, null=True)
     teacher_class_noedit = models.DateTimeField(blank=True, null=True)
-
+    
+    class_durations_any = models.BooleanField(blank=True, null=True)
     def __str__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
     

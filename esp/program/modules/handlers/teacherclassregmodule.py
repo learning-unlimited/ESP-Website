@@ -80,8 +80,15 @@ class TeacherClassRegModule(ProgramModuleObj):
                                 str(durationSeconds / 3600) + ':' + \
                                 str((durationSeconds / 60) % 60).rjust(2,'0')
             
-        return durationDict.items()
-            
+        durationList = durationDict.items()
+        if self.classRegInfo.class_durations_any:
+            if len(durationList) == 2:
+                durationList = [('', 'Either')] + durationList
+            else:
+                durationList = [('', 'Any')] + durationList
+
+        return durationList
+    
     def getResources(self):
         resources = self.program.getResources()
         return [(str(x.id), x.friendly_name) for x in resources]
@@ -135,11 +142,19 @@ class TeacherClassRegModule(ProgramModuleObj):
             op = request.POST['op']
 
         conflictingusers = []
-
+        error = False
+        
         if op == 'add':
 
             if len(request.POST['teacher_selected'].strip()) == 0:
                 error = 'Error - Please click on the name when it drops down.'
+
+            elif (request.POST['teacher_selected'] == str(self.user.id)):
+                error = 'Error - You cannot select yourself as a coteacher!'
+            elif (request.POST['teacher_selected'] txtTeachers.split(',')
+
+            if error:
+
                 return render_to_response(self.baseDir()+'coteachers.html', request, (prog, tl),{'class':cls,
                                                                                                  'ajax':ajax,
                                                                                                  'txtTeachers': txtTeachers,
