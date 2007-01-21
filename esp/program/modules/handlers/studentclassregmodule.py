@@ -3,6 +3,7 @@ from esp.datatree.models import GetNode, DataTree
 from esp.program.models import Class, ClassCategories, RegistrationProfile
 from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
+from esp.users.models  import ESPUser
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):

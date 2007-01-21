@@ -234,33 +234,49 @@ class Class(models.Model):
 		
 	def makeTeacher(self, user):
 		v = GetNode('V/Flags/Registration/Teacher')
-		ub, created = UserBit.objects.get_or_create(user = user, qsc = self.anchor, verb = v)
+		if UserBit.objects.filter(user = user,
+					  qsc = self.anchor,
+					  verb = v).count() > 0:
+			return True
+		
+		ub, created = UserBit.objects.get_or_create(user = user,
+							    qsc = self.anchor,
+							    verb = v)
 		ub.save()
 		return True
 
 	def removeTeacher(self, user):
 		v = GetNode('V/Flags/Registration/Teacher')
-		ub, created = UserBit.objects.get_or_create(user = user, qsc = self.anchor, verb = v)
-		ub.delete()
+		for userbit in UserBit.objects.filter(user = user,
+						      qsc = self.anchor,
+						      verb = v):
+			userbit.delete()
+
+
+		return True
 
 	def makeAdmin(self, user, endtime = None):
 		v = GetNode('V/Administer/Edit')
+		if UserBit.objects.filter(user = user,
+					  qsc = self.anchor,
+					  verb = v).count() > 0:
+			return True
+
 		ub, created = UserBit.objects.get_or_create(user = user,
 							    qsc = self.anchor,
-							    verb = v,
-							    startdate=datetime.now(),
-							    enddate = endtime)
-		ub.save()
+							    verb = v)
+
+
 		return True		
 
 
 	def removeAdmin(self, user):
 		v = GetNode('V/Administer/Edit')
-		ub, created = UserBit.objects.get_or_create(user = user,
-							    qsc = self.anchor,
-							    verb = v)
+		for userbit in UserBit.objects.filter(user = user,
+						      qsc = self.anchor,
+						      verb = v):
+			userbit.delete()
 
-		ub.delete()
 		return True
 
 	def conflicts(self, teacher):
