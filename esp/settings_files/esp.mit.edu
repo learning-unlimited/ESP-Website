@@ -96,7 +96,6 @@ INSTALLED_APPS = (
     'esp.dblog',
 )
 
-EMAIL_HOST = 'outgoing.mit.edu'
 APPEND_SLASH=False
 
 #aseering 12-15-2006: Make memcached happen
