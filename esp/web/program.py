@@ -13,7 +13,7 @@ from icalendar import Calendar, Event as CalEvent, UTC
 from datetime import datetime
 from esp.users.models import UserBit
 from django import forms
-from esp.program.manipulators import SATPrepInfoManipulator
+
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 from esp.web.data import navbar_data, preload_images, render_to_response
@@ -392,18 +392,12 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 	context['one'] = one
 	context['two'] = two
 
-	modules = prog.program_modules.filter(module_type='student_reg').order_by('seq')
-
+	modules = prog.getModules(request.user, tl)
 	completedAll = True
-	
 	for module in modules:
-		completed = program_handler_checks[module.check_call](curUser, prog)
-		if not completed and module.required:
+		if not module.isCompleted():
 			completedAll = False
-
-		if program_handler_finish.has_key(module.main_call):
-			context = program_handler_finish[module.main_call](curUser, prog, context)
-
+			
 	
 	if completedAll:
 		bit, created = UserBit.objects.get_or_create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
@@ -450,31 +444,8 @@ def class_prepare(user, prog, context={}):
 	
 	return context
 
-def satprep_info(request, tl, one, two, module, extra, prog):
-	manipulator = SATPrepInfoManipulator()
-	new_data = {}
-	if request.method == 'POST':
-		new_data = request.POST.copy()
-		
-		errors = manipulator.get_validation_errors(new_data)
-		
-		if not errors:
-			manipulator.do_html2python(new_data)
-			new_reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-			new_reginfo.addOrUpdate(new_data, request.user, prog)
-
-			return program_studentreg(request, tl, one, two, module, extra, prog)
-	else:
-		satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
-		
-		new_data = satPrep.updateForm(new_data)
-		errors = {}
-
-	form = forms.FormWrapper(manipulator, new_data, errors)
-	return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
 
 program_handlers = {
 		    'finishstudentreg': program_finishstudentreg,
 		    'finishedStudent': studentRegDecision, 
-		    'satprepinfo': satprep_info
 		    }

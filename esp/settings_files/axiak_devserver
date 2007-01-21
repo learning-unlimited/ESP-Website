@@ -81,6 +81,7 @@ INSTALLED_APPS = (
     'esp.workflow',
     'esp.dbmail',
     'esp.program',
+    'esp.program.modules',
     'esp.cal',
     'esp.lib',
     'esp.setup',
@@ -93,7 +94,7 @@ INSTALLED_APPS = (
     'esp.resources',
     'esp.poll',
     'esp.dblog',
-    'esp.program.modules',
+
 )
 
 

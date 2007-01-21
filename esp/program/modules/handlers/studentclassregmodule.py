@@ -7,6 +7,9 @@ from esp.web.data        import render_to_response
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
 
+    def isCompleted(self):
+        return self.user.getEnrolledClasses().filter(parent_program = self.program).count() > 0
+
     @needs_student
     def prepare(self, context={}):
 	regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
