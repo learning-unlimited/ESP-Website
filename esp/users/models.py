@@ -18,8 +18,12 @@ class ESPUser(User, AnonymousUser):
     # this will allow a casting from User to ESPUser:
     #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
     def __init__(self, userObj):
-        self.__dict__ = userObj.__dict__
-        self.__olduser = userObj
+        if type(userObj) == ESPUser:
+            self.__dict__ = userObj.__dict__
+            self.__olduser = userObj.__olduser
+        else:
+            self.__dict__ = userObj.__dict__
+            self.__olduser = userObj            
 
     def getOld(self):
         if not self.__olduser:
