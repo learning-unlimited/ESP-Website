@@ -151,10 +151,10 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             elif (request.POST['teacher_selected'] == str(self.user.id)):
                 error = 'Error - You cannot select yourself as a coteacher!'
-            elif (request.POST['teacher_selected'] txtTeachers.split(',')
+            elif request.POST['teacher_selected'] in txtTeachers.split(','):
+                error = 'Error - You already added this teacher as a coteacher!'
 
             if error:
-
                 return render_to_response(self.baseDir()+'coteachers.html', request, (prog, tl),{'class':cls,
                                                                                                  'ajax':ajax,
                                                                                                  'txtTeachers': txtTeachers,
