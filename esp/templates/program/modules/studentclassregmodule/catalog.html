@@ -1,0 +1,167 @@
+
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{Program}}{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+  function submit_prereg(clsid) {
+     // prereg for a class
+     document.getElementById('submitbutton'+clsid).disabled = true;
+     return true;
+  }
+//-->
+</script>
+{% endblock %}
+
+{% block subsection_name %}Course Catalogue{% endblock %}
+
+{% block content %}
+<style type="text/css">
+p.category {
+   font-family: arial;
+   font-size: 2em;
+   text-align: center;
+   margin-bottom: 0;
+   font-weight: bold;
+}
+.linktop {
+   font-family: arial;
+   font-size: 40%;
+   font-style: italic;
+   text-align: center;
+}
+.show_class table {
+   text-align: center;
+   margin: auto;
+   width: 620px;
+}
+.show_class th {
+   background-color: #a6cedf;
+   text-align: left;
+}
+.teachers {
+   font-size: 80%;
+   font-style: italic;
+   font-weight: normal;
+}
+.show_class td {
+   text-align: center;
+   vertical-align: top;
+}
+.show_class td.info {
+   text-align: left;
+}
+#divmaintext h1 {
+  font-size: 28pt;
+  color: black;
+  font-family: arial;
+  text-align: center;
+  width: 100%;
+}
+</style>
+<br />
+
+<h1>
+    {{ program.niceName }} <br /> 
+        Course Catalog
+</h1>
+
+{% if timeslot %}
+<h2 style="text-align: center;">
+Viewing classes for: {{ timeslot.friendly_name }}
+</h2>
+{% endif %}
+
+
+
+<p style="text-align: center;">
+
+<table style="text-align: center; margin: auto;" width="60%" border="0">
+ <tr>
+  <td align="center" colspan="2" style="font-family: arial; font-size:110%">
+   <a name="top"></a>Categories<hr />
+  </td>
+ </tr>
+
+{% for category in categories %}
+{% if forloop.counter0|divisibleby:2 %}
+<tr>{% endif %}
+  <td style="width: 50%; vertical-align: top;" valign="top" align="center">
+    <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
+              {{category.category}}
+    </a>
+  </td>
+ {% if forloop.counter|divisibleby:2 %}
+</tr>{% endif %} 
+{% endfor %}
+{% if not categories|length|divisibleby:2 %}
+</tr>
+{% endif %}
+
+</table>
+
+{% for aclass in courses %}
+
+{% ifchanged %}<hr />
+    <a name="cat{{aclass.class.category.id}}"></a>
+      <p style="font-size: 1.2em;" class="category">
+         {{ aclass.class.category }}
+      </p>
+      <p class="linktop">
+         <a href="#top">[ Return to Category List ]</a>
+      </p> {% endifchanged %}
+
+<div class="show_class">
+  <table cellpadding="5px">
+    <tr>
+      <th colspan="2">
+       {{ aclass.class.title|escape }}
+       <br />
+       <span class="teachers">
+       {% for teacher in aclass.class.teachers %}
+       <a href="/teach/teachers/{{ teacher.last_name|urlencode }}/{{ teacher.id }}/bio.html" 
+          title="Click for the biography of {{teacher.first_name }} {{teacher.last_name }}">
+          {{ teacher.first_name }} {{teacher.last_name }}
+       </a>{% if not forloop.last %},{% endif %}{% endfor %}
+       </span>
+       </th>
+     </tr>
+     <tr>
+       <td colspan="2" class="info">
+         {{ aclass.class.class_info|escape|linebreaksbr }}<br />
+       </td>
+     </tr>
+    <tr>
+      <td valign="top">
+        <strong>Meeting Time{{ aclass.class.friendly_times|pluralize }}</strong>
+        <br />
+	  {{ aclass.class.friendly_times|join:"<br />" }}
+        <br />
+      </td>
+ 
+      <td style="width: 40%;">
+         <strong>Grades:</strong>
+           {{ aclass.class.grade_min }}--{{ aclass.class.grade_max }} <br />
+         <strong>Enrollment:</strong>
+           {{ aclass.class.num_students }} (max {{ aclass.class.class_size_max }})
+      </td>
+    </tr>
+{% if prereg_url %}
+    <tr>
+      <td colspan="2" style="text-align: center;" align="center">
+     {% if aclass.errormsg %}
+<span class="error">{{ aclass.errormsg }}</span> {% else %}
+	<form name="prereg_submitform" onsubmit="return submit_prereg('{{ aclass.class.id }}');" method="post" action="{{ prereg_url }}">
+	  <input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
+  	  <input type="submit" name="action" value="Add this class"
+                 id="submitbutton{{ aclass.class.id }}" />
+	</form>{% endif %}{% endif %}
+      </td>
+     </tr>
+</table>
+
+<br />
+{% endfor %}
+{% endblock %}

@@ -67,6 +67,8 @@ TEMPLATE_DIRS = (
     '/var/www/esp-devel/trunk/esp/templates'
 )
 
+APPEND_SLASH=False
+
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',

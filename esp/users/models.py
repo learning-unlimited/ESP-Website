@@ -9,7 +9,7 @@ from esp.dblog.models import error
 from django.db.models.query import QuerySet
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 from django.core.cache import cache
-
+from datetime import datetime
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -19,6 +19,16 @@ class ESPUser(User, AnonymousUser):
     #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
     def __init__(self, userObj):
         self.__dict__ = userObj.__dict__
+        self.__olduser = userObj
+
+    def getOld(self):
+        if not self.__olduser:
+            self.__olduser = User()
+        self.__olduser.__dict__ = self.__dict__
+        return self.__olduser
+
+  #  def is_authenticated(self):
+#        return self.getOld().is_authenticated()
 
     def getVisible(self, objType):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
@@ -26,9 +36,12 @@ class ESPUser(User, AnonymousUser):
     def getEditable(self, objType):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
 
+    def canEdit(self, object):
+        return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
+    
     def getTaughtClasses(self):
         from esp.program.models import Class
-        return UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Teacher'))
+        return UserBit.find_by_anchor_perms(Class, self.getOld(), GetNode('V/Flags/Registration/Teacher'))
 
     def getEnrolledClasses(self):
         from esp.program.models import Class
@@ -36,6 +49,10 @@ class ESPUser(User, AnonymousUser):
         Prel = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Preliminary'))
 
         return (Conf | Prel).distinct()
+
+    def isEnrolledInClass(self, clsObj):
+        return UserBit.UserHasPerms(self, clsObj.anchor, GetNode('V/Flags/Registration/Confirmed')) or \
+               UserBit.UserHasPerms(self, clsObj.anchor, GetNode('V/Flags/Registration/Preliminary'))
         
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))

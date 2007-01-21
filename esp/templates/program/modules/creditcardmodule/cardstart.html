@@ -1,0 +1,29 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<h1>Credit Card Payment for {{ program.niceName }} </h1>
+
+<div style="font-size: 120%">
+<p><b>Instructions for paying by credit card:</b><br/>
+<ol>
+<li>Fill out the form on the next page completely.</li>
+<li>Check your answers for accuracy, and submit.</li>
+<li>If the charge fails for any reason, you will have to fill out the form again.</li>
+<li>When finished, you will receive an on-screen receipt.</li>
+
+<li>Please print the receipt, and then close this window.<br/>
+</ol>
+</p>
+
+<p>When you are ready, please move on to the <a href="/{{ tl }}/{{ one }}/{{ two }}/paynow" title="Proceed to payment form.">payment form.</a>
+
+<p>If you would like to cancel at this time, please close this window.</p>
+</div>
+
+
+{% endblock %}
+

@@ -11,26 +11,19 @@ from datetime import datetime
 # Create your models here.
 class ProgramModule(models.Model):
 	""" Program Modules for a Program """
-	link_title = models.CharField(maxlength=64)
+	link_title = models.CharField(maxlength=64, blank=True, null=True)
 	admin_title = models.CharField(maxlength=128)
 	main_call  = models.CharField(maxlength=32)
-	check_call = models.CharField(maxlength=32)
+	check_call = models.CharField(maxlength=32, blank=True, null=True)
 	module_type = models.CharField(maxlength=32)
+	handler    = models.CharField(maxlength=32)
 	seq = models.IntegerField()
+	aux_calls = models.CharField(maxlength=512, blank=True, null=True)
 	required = models.BooleanField()
 	
 	def __str__(self):
 		return 'Program Module "%s"' % self.admin_title
 
-	def makeLink(self, user, prog):
-		str_array = prog.anchor.tree_encode()
-		url = '/'+{'student_reg':'learn','teacher_reg':'teach'}[self.module_type] \
-		      +'/'+'/'.join(str_array[2:])+'/'+self.main_call
-		return '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % (url, self.link_title, self.link_title)
-
-	def getTemplate(self):
-		return 'program/modules/'+self.main_call+'.html'
-		
 	class Admin:
 		pass
 
@@ -68,6 +61,42 @@ class Program(models.Model):
 		return "/".join(urllist)
 					  
 
+	def classes_node(self):
+		return DataTree.objects.filter(parent = self.anchor, name = 'Classes')[0]
+
+	def getTimeSlots(self):
+		return list(self.anchor.tree_create(['Templates','TimeSlots']).children().order_by('id'))
+
+	def getResources(self):
+		return list(self.anchor.tree_create(['Templates','Resources']).children())
+
+	def getModules(self, user = None, tl = None):
+		""" Gets a list of modules for this program. """
+		from esp.program.modules import base
+
+		def cmpModules(mod1, mod2):
+			""" comparator function for two modules """
+			return mod1.seq - mod2.seq
+		if tl:
+			modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
+				     for module in self.program_modules.all()
+				     if {'student_reg':'learn',
+					 'teacher_reg':'teach',
+					 'learn': 'learn',
+					 'teach': 'teach',
+					 'admin':'admin',
+					 'onsite':'onsite'}[module.module_type] == tl]
+		else:
+			modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
+				     for module in self.program_modules.all()]
+			
+		modules.sort(cmpModules)
+		
+		if user:
+			for module in modules:
+				module.setUser(user)
+		return modules
+		
 	class Admin:
 		pass
 	
@@ -87,7 +116,8 @@ class ClassCategories(models.Model):
 
 	def __str__(self):
 		return str(self.category)
-
+		
+		
 	class Admin:
 		pass
 
@@ -109,10 +139,14 @@ class Class(models.Model):
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
 	schedule = models.TextField(blank=True)
+	duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
 	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set', null=True)
+	meeting_times = models.ManyToManyField(DataTree, related_name='meeting_times', null=True)
 	viable_times = models.ManyToManyField(DataTree, related_name='class_viable_set', blank=True)
+	resources = models.ManyToManyField(DataTree, related_name='class_resources', blank=True)
 	#	We think this is useless because the sign-up is completely based on userbits.
 	enrollment = models.IntegerField()
+
 
 	def url(self):
 		str_array = self.anchor.tree_encode()
@@ -139,6 +173,17 @@ class Class(models.Model):
 		else:
 			return ""
 
+	def delete(self):
+		if self.num_students() > 0:
+			return False
+		if self.anchor.id:
+			self.anchor.delete()
+		
+		self.viable_times.clear()
+		self.meeting_times.clear()
+		super(Class, self).delete()
+		
+		
 	def title(self):
 		return self.anchor.friendly_name
 	
@@ -150,13 +195,83 @@ class Class(models.Model):
 		else:
 			return EMPTY_QUERYSET.distinct()
 		#return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
+
+
+	def cannotAdd(self, user):
+		""" Go through and give an error message if this user cannot add this class to their schedule. """
+		if not user.isStudent():
+			return 'You are not a student!'
 		
+		if not self.isAccepted():
+			return 'This class is not accepted.'
+
+		if self.isFull():
+			return 'Class is full!'
+
+		# student has no classes...no conflict there.
+		if user.getEnrolledClasses().count() == 0:
+			return False
+
+		if user.isEnrolledInClass(self):
+			return 'You are already signed up for this class!'
+		
+		# check to see if there's a conflict:
+		for cls in user.getEnrolledClasses().filter(parent_program = self.parent_program):
+			for time in cls.meeting_times.all():
+				if self.meeting_times.filter(id = time.id).count() > 0:
+					return 'Conflicts with your schedule!'
+
+		# this use *can* add this class!
+		return False
+
+		
+	def makeTeacher(self, user):
+		v = GetNode('V/Flags/Registration/Teacher')
+		ub, created = UserBit.objects.get_or_create(user = user, qsc = self.anchor, verb = v)
+		ub.save()
+		return True
+
+	def removeTeacher(self, user):
+		v = GetNode('V/Flags/Registration/Teacher')
+		ub, created = UserBit.objects.get_or_create(user = user, qsc = self.anchor, verb = v)
+		ub.delete()
+
+	def makeAdmin(self, user, endtime = None):
+		v = GetNode('V/Administer/Edit')
+		ub, created = UserBit.objects.get_or_create(user = user,
+							    qsc = self.anchor,
+							    verb = v,
+							    startdate=datetime.now(),
+							    enddate = endtime)
+		ub.save()
+		return True		
+
+
+	def removeAdmin(self, user):
+		v = GetNode('V/Administer/Edit')
+		ub, created = UserBit.objects.get_or_create(user = user,
+							    qsc = self.anchor,
+							    verb = v)
+
+		ub.delete()
+		return True
+
+	def conflicts(self, teacher):
+		from esp.users.models import ESPUser
+		user = ESPUser(teacher)
+		for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
+			for time in cls.meeting_times.all():
+				if self.meeting_times.filter(id = time.id).count() > 0:
+					return True
+
 	def students(self):
 		v = GetNode( 'V/Flags/Registration/Preliminary' )
 		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
-		
+
 	def num_students(self):
 		v = GetNode( 'V/Flags/Registration/Preliminary' )
+		if not self.anchor.id:
+			return 0
 		return UserBit.bits_get_users(self.anchor, v).count()
 
 	def isFull(self):
@@ -168,6 +283,23 @@ class Class(models.Model):
 	def getTeacherNames(self):
 		return [ usr.first_name + ' ' + usr.last_name
 			for usr in self.teachers() ]
+
+	def friendly_times(self):
+		""" will return friendly times for the class """
+		txtTimes = []
+		eventList = []
+		for timeanchor in self.meeting_times.all():
+			events = Event.objects.filter(anchor=timeanchor)
+			if len(events) != 1:
+				txtTimes.append(timeanchor.friendly_name)
+			else:
+				eventList.append(events[0])
+
+		txtTimes += [ event.pretty_time() for event
+			      in Event.collapse(eventList) ]
+
+		return txtTimes
+			
 
 	def preregister_student(self, user):
 		prereg_verb = GetNode( 'V/Flags/Registration/Preliminary' )
@@ -198,6 +330,8 @@ class Class(models.Model):
 	def isAccepted(self):
 		return UserBit.UserHasPerms(None, self.anchor, GetNode('V/Flags/Class/Approved'))
 
+	
+
 	def accept(self):
 		if self.isAccepted():
 			return False # already accepted
@@ -211,8 +345,8 @@ class Class(models.Model):
 
 	def reject(self):
 		userbitlst = UserBit.objects.filter(user = None,
-											qsc  = self.anchor,
-											verb = GetNode('V/Flags/Class/Approved'))
+						    qsc  = self.anchor,
+						    verb = GetNode('V/Flags/Class/Approved'))
 		if len(userbitlst) > 0:
 			userbitlst.delete()
 			return True
@@ -278,6 +412,7 @@ class TeacherParticipationProfile(models.Model):
 
 	class Admin:
 		pass
+	
 
 class SATPrepRegInfo(models.Model):
 	""" SATPrep Registration Info """
@@ -405,5 +540,4 @@ class RegistrationProfile(models.Model):
 
 	class Admin:
 		pass
-
 

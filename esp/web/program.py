@@ -473,29 +473,8 @@ def satprep_info(request, tl, one, two, module, extra, prog):
 	form = forms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
 
-program_handlers = {'catalog': program_catalog,
-		    'profile': program_profile,
-		    'studentreg': program_studentreg,
+program_handlers = {
 		    'finishstudentreg': program_finishstudentreg,
-		    'selectclass': program_teacherreg,
-		    'teacherreg': program_teacherreg2,
-		    'fillslot': program_fillslot,
-		    'clearslot': program_clearslot,
-		    'changeslot': program_fillslot,
-		    'addclass': program_addclass,
-		    'makeaclass': program_makeaclass,
-		    'makecourse': program_makeaclass,
-		    'startpay': program_display_credit,
 		    'finishedStudent': studentRegDecision, 
 		    'satprepinfo': satprep_info
 		    }
-#program_handlers_finishes = {'sowclass': class_finish }
-program_handler_checks = {'profile_check':  profile_check,
-			  'sowclass_check': class_check,
-			  'satprepinfo_check': satprepinfo_check
-			  }
-
-program_handler_prepare = {'sowclass': class_prepare }
-
-
-program_handler_finish = {'sowclass': class_prepare }

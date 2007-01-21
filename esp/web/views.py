@@ -130,7 +130,7 @@ def program(request, tl, one, two, module, extra = None):
 	treeItem = "Q/Programs/" + one + "/" + two
 	prog = GetNode(treeItem).program_set.all()
 	if len(prog) < 1:
-		return render_to_response('users/construction', request, GetNode('Q/Web'), {})
+		return render_to_response('errors/404.html', request, GetNode('Q/Web'), {})
 
 	prog = prog[0]
 
@@ -138,7 +138,13 @@ def program(request, tl, one, two, module, extra = None):
 		# aseering: Welcome to the deep, dark, magical world of lambda expressions!
 		return program_handlers[module](request, tl, one, two, module, extra, prog)
 
-	return render_to_response('users/construction', request, GetNode('Q/Web'), {})
+	from esp.program.modules.base import ProgramModuleObj
+	newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
+
+	if newResponse:
+		return newResponse
+	
+	return render_to_response('errors/404.html', request, GetNode('Q/Web'), {})
 
 
 def contact(request):

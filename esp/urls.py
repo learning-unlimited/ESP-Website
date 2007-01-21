@@ -88,8 +88,9 @@ urlpatterns = patterns('',
 
     # Class-edit interface
     (r'^classes/edit/(?P<id>[0-9]*)/$', 'esp.program.views.updateClass'),
-	
+ 
     (r'^(?P<temp>.*).php$', 'esp.web.viewredirect.redirect', {'target': 'http://esp.mit/edu/missing_page.html'}),
-    (r'^esp_web/(?P<temp>.*)$', 'esp.web.viewredirect.redirect', {'target': 'http://esp.mit.edu/missing_page.html'}),
+                       
+    (r'^esp_web(?P<temp>.*)$', 'esp.web.viewredirect.redirect', {'target': 'http://esp.mit.edu/missing_page.html'}),
 
 )

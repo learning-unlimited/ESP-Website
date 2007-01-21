@@ -1,0 +1,91 @@
+
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+
+function deleteClass() {
+    if (confirm('Are you sure you would like to delete this class?')) {
+       return true;
+    }
+    return false;
+}
+
+//-->
+</script>
+{% endblock %}
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+
+<hr />
+<br />
+<br />
+
+<div id="battlescreen">
+
+<table cellpadding="4px" cellspacing="0" align="center">
+  <tr>
+    <th colspan="6">
+       Manage Your Classes
+    </th>
+  </tr>
+  {% if teacherclsmodule.noclasses %}
+  <tr>
+  <tr>
+    <td class="clsleft classname">
+      <em>(None available)</em>
+    </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+   </tr>
+  {% endif %}
+
+  {% for cls in teacherclsmodule.clslist %}
+  <tr>
+    <td class="clsleft classname">
+      <span title="cls">
+      {{ cls|truncatewords:6 }}
+      </span>
+    </td>
+    <td class="clsleft classname" style="font-size: 60%; font-style: italic;">
+      <span title="Teacher Names">
+         ({{ cls.getTeacherNames|join:" " }})
+      </span>
+    </td>
+    <td class="clsmiddle">
+       <form method="post" action="./deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
+         <input class="button" type="submit" value="Delete" {% if cls.num_students %}disabled {% endif %} />
+       </form>
+    </td>
+    <td class="clsmiddle">
+       <form method="post" action="./editclass/{{cls.id }}">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}">
+         <input class="button" type="submit" value="Edit">
+       </form>
+    </td>
+{% if teacherclsmodule.classRegInfo.allow_coteach %}
+   <td class="clsmiddle">
+       <form method="post" action="./coteachers/">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
+	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
+         <input class="button" type="submit" value="Coteaching">
+       </form>
+    </td>
+{% endif %}<td class="clsright">
+      {% if cls.pageExists %}
+      <a href="/learn/{{cls.getUrlBase}}/index.html"
+         title="{{ cls }}...">Visit web page</a>
+      {% else %}
+      <a href="/learn/{{cls.getUrlBase}}/index.edit.html"
+	 title="Create `{{ cls }}'...">Create web page</a>
+      {% endif %}
+     </td>
+   </tr>
+   {% endfor %}
+   <tr>
+   <td colspan="4">
+     <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
+       Add a new class for {{ program.niceName }}!
+     </a>
+   </td>
+   </tr>
+</table>

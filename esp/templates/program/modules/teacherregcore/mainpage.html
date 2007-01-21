@@ -1,0 +1,61 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+{{ program.mainteacherreg }}
+
+<br /><br />
+<h1>Teacher registration for {{program.niceName}} </h1>
+
+<p style="text-align: center">
+Thank you for wanting to teach for us! Please fill out the following form to add classes.
+</p>
+
+<center>
+<table style="text-align: center" align="center">
+<tr><th>What to do?</th><th>Done?</th></tr>
+{% for module in modules %}
+{% if module.isStep %}
+ <tr>
+  <td>{% if module.useTemplate %}
+    {{ module.module.link_title }} <em>(below)</em>
+   {% else %}
+    {{ module.makeLink }}
+   {% endif %}
+  </td>
+  <td>
+   <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" alt="{% if module.isCompleted %}Done!{% else %}Not Done{% endif %}" class="nocheckmark" />
+  </td>
+</tr>
+{% endif %}
+{% endfor %}
+</table>
+
+</center>
+<br />
+{% for module in modules %}
+{% if module.useTemplate %}
+<br />
+ {% include module.getTemplate %}
+
+{% endif %}
+{% endfor %}
+
+<br />
+<p>Tip: You can get a screen to manage your teaching in all programs at:
+<br />
+<a href="/myesp/teacher" title="Teacher Battlescreen">The Teacher Battlescreen</a>
+</p>
+<br />
+
+
+{% endblock %}

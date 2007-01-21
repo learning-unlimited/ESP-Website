@@ -8,6 +8,7 @@
 <h2 style='text-align: center'>Join our mailing list!</h2>
 <h1 style='text-align: center; margin-bottom: 0px'>Get information on ESP!</h1>
 
+
 <p style="text-align: center; color: #FF0000; margin-bottom: 0px;">
 </p>
 <hr/>
@@ -29,5 +30,13 @@
 </table>
 
 <p style="text-align: center"><input type='submit' value='-  Subscribe!  -'></p>
+
+<center>
+<p align="center" style="text-align: center; color: red; width: 300px; size: 60%;">
+  Note: This is <u>not</u> an ESP user account. Filling this form will not let you join our programs, but it is useful if you want to hear about our program via email. If you would like to create an account for joining programs, click <a href="/myesp/register/" title="Join ESP!">here.</a>
+</p>
+</center>
+
+
 </form>
 {% endblock %}

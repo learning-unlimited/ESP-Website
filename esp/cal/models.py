@@ -2,7 +2,7 @@ from django.db import models
 from esp.datatree.models import DataTree
 from esp.dbmail.models import MessageRequest
 from esp.workflow.models import Controller, ControllerDB
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Create your models here.
 
@@ -20,6 +20,7 @@ class Series(models.Model):
     """ A container object for grouping Events.  Can be nested. """
     description = models.TextField()
     target = models.ForeignKey(DataTree) # location for this Series in the datatree
+
     class Admin:
         pass
 
@@ -52,13 +53,40 @@ class Event(models.Model):
     #    container_series = models.ForeignKey(Series, blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
 
-
+    def duration(self):
+        return self.end - self.start
+    
     def __str__(self):
-        return str(self.description)
+        return str(self.start)+'--'+str(self.end)
 
     def is_happening(self, time=datetime.now()):
         """ Return True if the specified time is between start and end """
-        return (time > start and time < end)
+        return (time > self.start and time < self.end)
+
+    @staticmethod
+    def collapse(eventList):
+        """ this method will return a list of new collapsed events """
+        from copy import copy
+        sortedList = copy(eventList)
+        sortedList.sort()
+        
+        oneMinute = timedelta(minutes=1)
+
+        for i in range(1,len(sortedList)):
+            if (sortedList[i-1].end+oneMinute) >= sortedList[i].start:
+                sortedList[i]   = Event(start=sortedList[i-1].start, end=sortedList[i].end)
+                sortedList[i-1] = None
+
+        newList = [ x for x in sortedList if x != None ]
+
+        return newList
+
+    def pretty_time(self):
+        return self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
+               + self.end.strftime('%I:%M%p').lower().strip('0')
+    
+    def __cmp__(self, other):
+        return cmp(self.start, other.start)
 
     class Admin:
         pass
