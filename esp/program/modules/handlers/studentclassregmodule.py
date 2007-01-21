@@ -8,6 +8,8 @@ from esp.web.data        import render_to_response
 class StudentClassRegModule(ProgramModuleObj):
 
     def isCompleted(self):
+        if self.user.getEnrolledClasses().count() == 0:
+            return False
         return self.user.getEnrolledClasses().filter(parent_program = self.program).count() > 0
 
     @needs_student
