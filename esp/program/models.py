@@ -174,6 +174,10 @@ class Class(models.Model):
 			return ""
 
 	def delete(self):
+		teachers = self.teachers()
+		for teacher in self.teachers():
+			self.removeTeacher(teacher)
+			self.removeAdmin(teacher)
 		if self.num_students() > 0:
 			return False
 		if self.anchor.id:
