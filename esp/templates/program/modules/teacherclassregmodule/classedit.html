@@ -140,7 +140,7 @@ Course Description:
 </table>
 <br />
 <br />
-
+{% if durations %}
 {% if form.duration %}
 <label for="id_duration" class="header">
 Preferred Duration (hours:minutes):
@@ -153,6 +153,7 @@ Preferred Duration (hours:minutes):
 
 <br />
 <br />
+{% endif %}
 {% endif %}
 
 {% if form.viable_times %}

@@ -309,7 +309,13 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         #        assert False, new_data
         context['form'] = forms.FormWrapper(manipulator, new_data, errors)
-        
+
+
+        if len(self.getDurations()) < 2:
+            context['durations'] = False
+        else:
+            context['durations'] = True
+            
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 
