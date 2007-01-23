@@ -169,6 +169,7 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 	if not curUser.isTeacher():
 		return render_to_response('errors/program/notateacher', {})
 
+	context = {}
 	context['one'] = one
 	context['two'] = two
 	context['oops'] = False
