@@ -1,0 +1,35 @@
+# Default esp.mit.edu SSL virtual host
+<VirtualHost *:443>
+  DocumentRoot "/esp/esp"
+  ServerName esp.mit.edu:443
+  ServerAdmin esp.mit.edu
+
+  ErrorLog /var/log/apache2/ssl_error_log
+  <IfModule mod_log_config.c>
+        TransferLog /var/log/apache2/ssl_access_log
+  </IfModule>
+
+  <Location "/">
+      SetHandler python-program
+      PythonHandler django.core.handlers.modpython
+      PythonPath "['/esp/'] + sys.path"
+      SetEnv DJANGO_SETTINGS_MODULE esp.settings
+      #PythonDebug On
+  </Location>
+
+  SSLEngine on
+  SSLCipherSuite ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP:+eNULL
+  SSLCertificateFile ssl/esp.mit.edu.crt
+  SSLCertificateKeyFile ssl/esp.mit.edu.key
+  SSLOptions +StdEnvVars
+
+  <IfModule mod_setenvif.c>
+      SetEnvIf User-Agent ".*MSIE.*" nokeepalive ssl-unclean-shutdown \
+      downgrade-1.0 force-response-1.0
+  </IfModule>
+  <IfModule mod_log_config.c>
+  CustomLog /var/log/apache2/ssl_request_log \
+          "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b"
+  </IfModule>
+</VirtualHost>
+

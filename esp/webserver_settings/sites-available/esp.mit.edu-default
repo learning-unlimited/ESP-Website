@@ -1,0 +1,16 @@
+NameVirtualHost *:81
+# Default virtual host for ESP.MIT.EDU
+# Using mod_python
+<VirtualHost *:81>
+	ServerAdmin esp@mit.edu
+	DocumentRoot /esp
+
+	<Location "/">
+	    SetHandler python-program
+	    PythonHandler django.core.handlers.modpython
+	    PythonPath "['/esp/'] + sys.path"
+	    SetEnv DJANGO_SETTINGS_MODULE esp.settings
+	    #PythonDebug On
+	</Location>
+	
+</VirtualHost>

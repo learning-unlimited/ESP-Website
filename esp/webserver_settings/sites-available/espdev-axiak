@@ -1,0 +1,17 @@
+NameVirtualHost *:81
+# Default virtual host for ~axiak/esp
+# Please copy and create more dev servers if you want!
+# Using mod_python
+<VirtualHost espdev.axiak.net:81>
+	ServerAdmin esp@mit.edu
+	DocumentRoot /home/axiak/esp
+
+	<Location "/">
+	    SetHandler python-program
+	    PythonHandler django.core.handlers.modpython
+	    PythonPath "['/home/axiak/'] + sys.path"
+	    SetEnv DJANGO_SETTINGS_MODULE esp.settings
+	    PythonDebug On
+	</Location>
+	
+</VirtualHost>
