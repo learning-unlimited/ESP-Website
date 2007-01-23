@@ -213,7 +213,7 @@ Create a new entry:
   <td width="100%"><div class="divformcol1">&nbsp;</div></td>
   <td style="text-align:left">
   {% if logged_in %}
-		<div class="divformcol1" style="text-align:left">Welcome, {{ request.user.first_name }}! &nbsp; <a href="/myesp/manage/">Manage Subscriptions</a></div>
+		<div class="divformcol1" style="text-align:left">Welcome, {{ request.user.first_name }}! &nbsp; <!-- <a href="/myesp/manage/">Manage Subscriptions</a> --></div>
   {% else %}
 		<div class="divformcol1" style="text-align:left"><a href="/myesp/register/">Join ESP!</a></div>
   {% endif %}

@@ -254,6 +254,11 @@ class TeacherClassRegModule(ProgramModuleObj):
                     if k != 'resources' and k != 'viable_times':
                         newclass.__dict__[k] = v
 
+                if new_data['duration'] == '':
+                    newclass.duration = 0.0
+                else:
+                    newclass.duration = float(new_data['duration'])
+                    
                 # datatree maintenance
                 newclass.parent_program = self.program
                 newclass.category = ClassCategories.objects.get(id=new_data['category'])
