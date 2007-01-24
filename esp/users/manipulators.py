@@ -6,7 +6,10 @@ class UserRegManipulator(forms.Manipulator):
     """Manipulator for User Reg"""
     def __init__(self):
         confirm_validators = [validators.AlwaysMatchesOtherField('password','The password and confirmation password do not match.'),validators.isNotEmpty]
-        roles = [('Student','Student'),('Teacher','Teacher'),('Guardian','Guardian'),('Educator','Educator')]
+        roles = [('Student','ESP Student (up through 12th grade)'),
+                 ('Teacher','ESP Teacher (MIT or non-MIT affiliated)'),
+                 ('Guardian','Guardian of ESP student or potential student'),
+                 ('Educator','K-12 Educator')]
 
         self.fields = (
             forms.TextField(field_name="username", length=12, maxlength=12,validator_list=[self.isUniqueUserName,validators.isNotEmpty],is_required=True),
