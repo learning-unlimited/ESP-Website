@@ -9,10 +9,11 @@ from esp.dblog.views import ESPError
 def makeNavBar(user, node, section = ''):
 	""" Query the navbar-entry table for all navbar entries associated with this tree node """
 	qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=node.rangestart,path__rangeend__gte=node.rangeend,section=section).order_by('sort_rank')
-	return { 'node': node,
+	context = { 'node': node,
 		 'has_edit_bits': UserBit.UserHasPerms(user, node, GetNode('V/Administer/Edit/QSD')),
 		 'qsdTree': [ {'entry': x, 'has_bits': UserBit.UserHasPerms(user, x.path, GetNode('V/Administer/Edit/QSD')) } for x in qsdTree ],
 		 'section': section }
+	return context
 
 
 

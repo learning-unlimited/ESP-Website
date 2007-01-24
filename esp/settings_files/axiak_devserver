@@ -14,7 +14,7 @@ EMAIL_PORT = '25'
 DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
 DATABASE_NAME = 'django'             # Or path to database file if using sqlite3.
 DATABASE_USER = 'esp'             # Not used with sqlite3.
-DATABASE_PASSWORD = 'password'         # Not used with sqlite3.
+DATABASE_PASSWORD = 'RyM^djcE!'         # Not used with sqlite3.
 DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
 DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
 
@@ -99,7 +99,7 @@ INSTALLED_APPS = (
 
 
 #aseering 12-15-2006: Make memcached happen
-#CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=60"
+CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
 
 
 LOG_FILE="/var/log/django/esp_errlog"

@@ -173,10 +173,16 @@ def myesp_login(request, module):
 	#return myesp_logfin(request, module)
 
 @login_required
+def myesp_passwd(request, module):
+	""" Someone needs to implement this... axiak"""
+	pass
+
+	
+@login_required
 def myesp_logfin(request, module):
 	""" Display the "You have successfully logged in" page """
 
-	return render_to_response('index.html', request, {})
+	return render_to_response('index.html', request, GetNode('Q/Web/myesp'), {})
 	
 def myesp_home(request, module):
 	""" Draw the ESP home page """
@@ -316,10 +322,37 @@ def myesp_battlescreen_student(request, module):
 		raise Http404
 
 
+@login_required
+def edit_profile(request, module):
+	curUser = ESPUser(request.user)
+
+	dummyProgram = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
+	
+	if curUser.isStudent():
+		return profile_editor(request, None, True, 'Student')
+	
+	elif curUser.isTeacher():
+		return profile_editor(request, None, True, 'Teacher')
+	
+	elif curUser.isGuardian():
+		return profile_editor(request, None, True, 'Guardian')
+	
+	elif curUser.isEducator():
+		return profile_editor(request, None, True, 'Educator')	
+
+	else:
+		return profile_editor(request, None, True, '')
 
 @login_required
-def profile_editor(request, prog, responseuponCompletion = False, role=''):
+def profile_editor(request, prog=None, responseuponCompletion = True, role=''):
 	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+
+	if prog is None:
+		prog = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
+		navnode = GetNode('Q/Web/myesp')
+	else:
+		navnode = prog
+		
 	curUser = request.user
 	role = role.lower();
 	context = {'logged_in': request.user.is_authenticated() }
@@ -359,7 +392,7 @@ def profile_editor(request, prog, responseuponCompletion = False, role=''):
 			curUser.email     = new_data['e_mail']
 			curUser.save()
 			if responseuponCompletion == True:
-				return render_to_response('users/profile_complete.html', {'request':request})
+				return render_to_response('users/profile_complete.html', request, navnode, {})
 			else:
 				return True
 
@@ -376,7 +409,7 @@ def profile_editor(request, prog, responseuponCompletion = False, role=''):
 
 	context['request'] = request
 	context['form'] = forms.FormWrapper(manipulator, new_data, errors)
-	return render_to_response('users/profile.html', context)
+	return render_to_response('users/profile.html', request, navnode, context)
 
 @login_required
 def myesp_battlescreen_teacher(request, module):
@@ -395,7 +428,9 @@ myesp_handlers = { 'register': myesp_register,
 		   'login': myesp_login,
 		   'logfin': myesp_logfin,
 		   'home': myesp_home,
+		   'changepw': myesp_passwd,
 		   'student': myesp_battlescreen_student,
 		   'teacher': myesp_battlescreen_teacher,
-		   'admin': myesp_battlescreen_admin
+		   'admin': myesp_battlescreen_admin,
+		   'profile': edit_profile
 		   }

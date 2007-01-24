@@ -21,7 +21,9 @@
 {% block counter %}
 <div class="offscreen">
 <!-- Web Reporting -->
-<img src="http://counter.mit.edu/tally" width="1" height="1" alt="" />
+<!-- Disabled
+  <img src="http://counter.mit.edu/tally" width="1" height="1" alt="" />
+-->
 <!-- End Web Reporting -->
 </div>
 {% endblock %}

@@ -32,8 +32,8 @@ class ESPUser(User, AnonymousUser):
         self.__olduser.__dict__ = self.__dict__
         return self.__olduser
 
-  #  def is_authenticated(self):
-#        return self.getOld().is_authenticated()
+    def is_authenticated(self):
+        return self.getOld().is_authenticated()
 
     def getVisible(self, objType):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
@@ -68,6 +68,15 @@ class ESPUser(User, AnonymousUser):
     def isTeacher(self):
         """Returns true if this user is a teacher"""
         return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now())
+
+    def isGuardian(self):
+        """Returns true if this user is a teacher"""
+        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Guardian'),datetime.now())
+
+    def isEducator(self):
+        """Returns true if this user is a teacher"""
+        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Educator'),datetime.now())
+
 
     def isStudent(self):
         """Returns true if this user is a teacher"""
