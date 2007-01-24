@@ -12,5 +12,7 @@ NameVirtualHost *:81
 	    SetEnv DJANGO_SETTINGS_MODULE esp.settings
 	    #PythonDebug On
 	</Location>
+
+#        Include /etc/request-tracker3.6/apache2-modperl2.conf
 	
 </VirtualHost>

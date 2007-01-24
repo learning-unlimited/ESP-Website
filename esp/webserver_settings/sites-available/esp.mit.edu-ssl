@@ -31,5 +31,8 @@
   CustomLog /var/log/apache2/ssl_request_log \
           "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b"
   </IfModule>
+
+  #Include /etc/request-tracker3.6/apache2-modperl2.conf
+
 </VirtualHost>
 
