@@ -10,6 +10,7 @@ from django.db.models.query import QuerySet
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 from django.core.cache import cache
 from datetime import datetime
+from django.template.defaultfilters import urlencode
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -150,7 +151,7 @@ class UserBit(models.Model):
             now_id = "-".join([ str(i) for i in datetime.now().timetuple() ])
 
         cache_id = 'UserHasPerms:' + user_id + ',' + str(qsc.id) + ',' + str(verb.id) + ',' + now_id
-        cached_val = cache.get(cache_id)
+        cached_val = cache.get(urlencode(cache_id))
         if cached_val != None:
             return cached_val
 
@@ -174,7 +175,7 @@ class UserBit(models.Model):
 
         # Cache the result for up to 10sec.
         # That had better be long enough for even the most painful page renders...
-        cache.set(cache_id, retVal, 10)
+        cache.set(urlencode(cache_id), retVal, 10)
 
         return retVal
     
@@ -513,11 +514,9 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
 
     cache_id = 'datatree:' + user_id + ',' + str(verb_id) + ',' + nodename
 
-    cached_val = cache.get(cache_id)
+    cached_val = cache.get(urlencode(cache_id))
     if cached_val != None:
         return cached_val
-
-    cached_val = cache.get
 
     nodes = DataTree.objects.filter(name='ROOT', parent__isnull=True)
     node = None
@@ -543,7 +542,7 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
         if retVal.id == -1:
             pass
 
-        cache.set(cache_id, retVal)
+        cache.set(urlencode(cache_id), retVal)
         return retVal
     except DataTree.NoSuchNodeException, e:
         if verb == None:
@@ -555,7 +554,7 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
             if retVal.id == -1:
                 pass
 
-            cache.set(cache_id, retVal)
+            cache.set(urlencode(cache_id), retVal)
             return retVal
         else:
             raise

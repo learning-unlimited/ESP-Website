@@ -12,6 +12,7 @@ from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
 from esp.dblog.views import ESPError
+from django.template.defaultfilters import urlencode
 
 #def qsd_raw(request, url):
 #	""" Return raw QSD data as a text file """
@@ -38,7 +39,7 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 
 	# Fetch the QSD object
 	try:
-		cache_qsd = cache.get('quasistaticdata:' + cache_id)
+		cache_qsd = cache.get(urlencode('quasistaticdata:' + cache_id))
 		if cache_qsd != None:
 			qsd_rec = cache_qsd
 		else:			
@@ -48,7 +49,7 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 
 			qsd_rec = qsd_recs[0]
 
-			cache.set('quasistaticdata:' + cache_id, qsd_rec)
+			cache.set(urlencode('quasistaticdata:' + cache_id), qsd_rec)
 
 	except QuasiStaticData.DoesNotExist:
 		if have_edit and (url_verb == 'edit' or url_verb == 'create'):
@@ -115,8 +116,8 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 			m.save_target_file_file(local_filename, request.FILES[FILE]['content'])
 			m.save()
 
-		cache.delete('quasistaticdata:' + cache_id)
-		cache.delete('quasistaticdata_html:' + cache_id)
+		cache.delete(urlencode('quasistaticdata:' + cache_id))
+		cache.delete(urlencode('quasistaticdata_html:' + cache_id))
 
 
 	# Detect the edit verb

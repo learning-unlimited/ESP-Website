@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from django.core.cache import cache
 from django.db.models import Q
+from django.template.defaultfilters import urlencode
 
 # Create your models here.
     
@@ -241,7 +242,7 @@ def GetNode(nodename):
     # aseering 12-15-2006: Cache query results.  Pull them from the cache when possible.
     cache_id = 'datatree:' + nodename
 
-    cached_val = cache.get(cache_id)
+    cached_val = cache.get(urlencode(cache_id))
     if cached_val != None:
         return cached_val
 
@@ -271,7 +272,7 @@ def GetNode(nodename):
     if retVal.id == -1:
         pass
     
-    cache.set(cache_id, retVal)
+    cache.set(urlencode(cache_id), retVal)
     return retVal
 
 
