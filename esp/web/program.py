@@ -20,6 +20,7 @@ from esp.web.data import navbar_data, preload_images, render_to_response
 from django.contrib.auth.decorators import login_required
 
 def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
+	assert False, (can_edit_classes, can_approve_classes)
 	""" Return the program class catalog """
 
 	dt_approved = GetNode( 'V/Flags/Class/Approved' )
@@ -79,7 +80,7 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 		and (timeslot == None or (cls.event_template != None and cls.event_template == timeslot ))) ]
 
 	p = one + " " + two
-		
+
 	#	assert False, 'About to render catalog'
 	return render_to_response('program/catalogue', request, (prog, tl), {'Program': p.replace("_", " "),
 							'courses': clas ,

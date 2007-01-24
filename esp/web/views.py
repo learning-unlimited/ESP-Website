@@ -9,7 +9,7 @@ from esp.miniblog.models import Entry
 from esp.program.models import RegistrationProfile, Class, ClassCategories, TeacherBio
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
-from django.http import HttpResponse, Http404, HttpResponseNotAllowed
+from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 
@@ -179,7 +179,7 @@ def contact_submit(request):
 		
 	m.save()
 
-	return qsd(request, 'contact/thanks')
+	return HttpResponseRedirect("/contact/thanks.html")
 
 
 
