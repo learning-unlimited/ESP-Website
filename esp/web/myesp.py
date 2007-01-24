@@ -137,14 +137,21 @@ def myesp_login(request, module):
 	if request.POST.has_key('formURL'):
 		formURL = request.POST['formURL']
 	else:
-		formURL = request.META['HTTP_REFERER']
+		if request.META.has_key('HTTP_REFERER'):
+			formURL = request.META['HTTP_REFERER']
+		else:
+			formURL = '/?next=/'
+
 		urlTest = formURL.split('?next=')
 
 		if len(urlTest) > 1:
 			formURL = urlTest[1].split('&')[0]
-		if formURL[-15:] == '/myesp/signout/':
-			formURL = '/'
-	
+		try:
+			if formURL[-15:] == '/myesp/signout/':
+				formURL = '/'
+		except Exception:
+			pass
+		
 	if request.POST.has_key('username') and request.POST.has_key('password'):
 		user = authenticate(username=request.POST['username'].lower(), password=request.POST['password'])
 		# user entered incorrect credentials
