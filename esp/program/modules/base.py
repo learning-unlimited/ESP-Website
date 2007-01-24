@@ -183,6 +183,23 @@ def usercheck_usetl(method):
 
     return _checkUser
 
+def needs_deadline(method):
+    def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
+        errorpage = 'errors/program/deadline-%s.html' % tl
+
+        canView = UserBit.UserHasPerms(moduleObj.user,
+                                       moduleObj.program.anchor,
+                                       GetNode('V/Deadline/Registration/'+{'learn':'Student',
+                                                                           'teach':'Teacher'}[tl]))
+
+        if canView:
+            return method(moduleObj, request, tl, *args, **kwargs)
+        else:
+            return render_to_response(errorpage, request, None, {})
+
+    return _checkDeadline
+            
+
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
         

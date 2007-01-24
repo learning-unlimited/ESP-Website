@@ -67,20 +67,20 @@ class ESPUser(User, AnonymousUser):
     
     def isTeacher(self):
         """Returns true if this user is a teacher"""
-        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'),datetime.now())
+        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'))
 
     def isGuardian(self):
         """Returns true if this user is a teacher"""
-        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Guardian'),datetime.now())
+        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Guardian'))
 
     def isEducator(self):
         """Returns true if this user is a teacher"""
-        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Educator'),datetime.now())
+        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Educator'))
 
 
     def isStudent(self):
         """Returns true if this user is a teacher"""
-        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Student'),datetime.now())
+        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Student'))
 
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""

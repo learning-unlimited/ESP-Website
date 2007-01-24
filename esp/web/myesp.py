@@ -87,6 +87,7 @@ def myesp_finish(request, module):
 		v = GetNode( 'V/Flags/UserRole/'+request.POST['role'])
 		ub = UserBit()
 		ub.user = request.user
+		ub.recursive = False
 		ub.qsc = GetNode('Q')
 		ub.verb = v
 		ub.save()
