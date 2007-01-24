@@ -148,6 +148,10 @@ class UserBit(models.Model):
         # aseering: This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
         # aseering 1-11-2007: Even better; single query!
 
+        # dictionary to convert true/false/not_cached to integers:
+        to_cache   = {True:255,False:1,None:0}
+        from_cache = {255:True,1: False } # else: Not in cache
+
         if user==None:
             user_id="None"
         else:
@@ -160,9 +164,10 @@ class UserBit(models.Model):
             now_id = "-".join([ str(i) for i in datetime.now().timetuple() ])
 
         cache_id = 'UserHasPerms:' + user_id + ',' + str(qsc.id) + ',' + str(verb.id) + ',' + now_id
+
         cached_val = cache.get(urlencode(cache_id))
-        if cached_val != None:
-            return cached_val
+        if from_cache.has_key(cached_val):
+            return from_cache[cached_val]
 
         # Filter by user
         if user != None and user.is_authenticated():
@@ -184,7 +189,9 @@ class UserBit(models.Model):
 
         # Cache the result for up to 10sec.
         # That had better be long enough for even the most painful page renders...
-        cache.set(urlencode(cache_id), retVal, 10)
+        # Axiak suspects the problem in caching has to do with the True/False to 1/0 conversion.
+        # So we're using a dictionary to convert to/from True and false
+        cache.set(urlencode(cache_id), to_cache[retVal], 10)
 
         return retVal
     
