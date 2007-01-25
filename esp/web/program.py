@@ -449,5 +449,5 @@ def class_prepare(user, prog, context={}):
 program_handlers = {
 		    'finishstudentreg': program_finishstudentreg,
 		    'finishedStudent': studentRegDecision,
-		    'catalog': program_catalog
+#		    'catalog': program_catalog
 		    }
