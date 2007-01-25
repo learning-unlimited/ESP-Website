@@ -325,6 +325,7 @@ def myesp_battlescreen_student(request, module):
 
 @login_required
 def edit_profile(request, module):
+
 	curUser = ESPUser(request.user)
 
 	dummyProgram = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))

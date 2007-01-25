@@ -660,6 +660,7 @@ table.plaintable th {
 	border: 0px;
 }
 
+.statistics { font-family: arial; font-size: .6em; font-style: italic; text-align: center; color: #999; }
 
 /* prettier forms */
 #divmaintext th { padding-top: 10px; }
@@ -667,3 +668,6 @@ table.plaintable th {
 #divmaintext input[type=text], input[type=password], textarea { border: 1px solid #d7d7d7; }
 #divmaintext input[type=text]:focus, input[type=password]:focus, textarea:focus { border: 1px solid black; }
 .form_error { font-size: 80%; font-style: italic; color: #C00; }
+
+
+
