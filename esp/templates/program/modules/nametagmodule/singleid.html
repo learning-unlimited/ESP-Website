@@ -1,0 +1,35 @@
+<div class="singleid">
+<div class="marginator">
+  <div class="bottomdiv">
+  <table class="bottom">
+  <tr>
+     <td class="left">
+        <img src="/img/printables/beaver.gif"
+         class="beaverimg" />
+     </td>
+     <td class="right url">{% if user.id %}
+      <span class="studentid">ID: {{user.id}}</span>
+      <br />{% endif
+ %}       http://esp.mit.edu
+     </td>
+  </tr>
+  </table>
+  </div>
+  <div class="restdiv">
+    <table class="top">
+    <tr>
+      <td class="left company">
+         MIT Educational Studies Program
+      </td>
+      <td class="right phone">(617)253-4882</td>
+    </tr>
+    </table>
+    <div class="firstspace">&nbsp;</div>
+    <span class="title">{{ programname }}</span>
+    <div class="title">{{ user.title }}</div>
+    <hr />
+    <div class="name">{{ user.name }}</div>
+  </div>
+</div>
+</div>
+<!-- End ID //-->

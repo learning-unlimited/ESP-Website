@@ -6,3 +6,5 @@ from esp.program.modules.handlers.studentclassregmodule import *
 from esp.program.modules.handlers.teacherclassregmodule import *
 from esp.program.modules.handlers.teacherregcore import *
 from esp.program.modules.handlers.studentregcore import *
+from esp.program.modules.handlers.admincore import *
+from esp.program.modules.handlers.nametagmodule import *

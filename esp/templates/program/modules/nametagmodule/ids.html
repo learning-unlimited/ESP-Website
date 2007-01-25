@@ -1,0 +1,98 @@
+<html>
+<head>
+<title>IDs</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia;
+       margin-left: 0; margin-top: 0in; margin-bottom: 0in}
+
+.right { text-align: right; }
+.left  { text-align: left;  }
+.center { text-align: center; }
+.rpointer,.lpointer {position: relative; border: 1px solid black;
+         height: 0px; width: .2in; padding: 0; margin: 0; top:-10px; }
+.lpointer { left: -.2in;}
+.rpointer { left: 3.9in; }
+.idback .help { font-size: 16px; font-weight: bolder; text-align:
+                center; }
+.idback .mapimg { width: 3.95in; height:2.18in; border: 1px solid black; }
+
+.singleid,.idback,.numlabel { width:3.9in; height: 3in; overflow: hidden;
+            text-align: center; margin: 0px; padding: 0px;}
+.singleid table { width: 100%; text-align:center;}
+.singleid div { text-align: center; padding: 0; width: auto; }
+.singleid hr { width: 75%; border: 1px solid black; }
+.singleid .beaverimg { width: 1in; height: 0.754in; }
+.singleid .titleimg  { width: 2in; height: 0.825in }
+.singleid .bottomdiv { position: relative; top:2.10in; }
+.singleid .bottom td   { vertical-align: bottom;}
+
+.singleid .restdiv   { position: relative; top:-.8in; }
+.singleid .url,.company,.phone       { font-weight: bold;  }
+.singleid .company,.phone {text-decoration: underline; font-size: 10pt; }
+.singleid .url { font-size: 10pt; }
+.singleid .title { font-weight: bolder; font-size: 16pt;}
+.singleid .name  { font-weight: bolder; font-size: 20pt; }
+.singleid .studentid { font-size: 10pt; }
+.numlabel { text-align: center; vertical-align: center;
+            font-size: 48pt; font-weight: bolder;
+            border: 1px solid black; }
+.marginator { margin: .1in; }
+
+/*.singleid,.idback { border: 1px solid black ; }*/
+
+.indicator { border: 1px solid black; border-width: 0 1px 0 1px; height: 0.85in;}
+</style>
+
+
+</head>
+<body>
+<table border="0" cellspacing="0" cellpadding="0" align="center">
+<tr>
+  <td><div class="numlabel">#1</div></td>
+  <td><div class="numlabel">#2</div></td>
+</tr>
+  <td><div class="numlabel">#3</div></td>
+  <td><div class="numlabel">#4</div></td>
+</tr>
+<tr>
+  <td><div class="numlabel">#5</div></td>
+  <td><div class="numlabel">#6</div></td>
+</tr>
+<tr>
+  <td><div class="indicator">&nbsp;</div></td>
+  <td><div class="indicator">&nbsp;</div></td>
+</tr>
+</table>
+<div style="page-break-after: always;">&nbsp; </div>
+{% for user in users %}
+{% if forloop.counter0|divisibleby:6 %}
+{% if not forloop.first %}
+<tr>
+  <td><div class="indicator">&nbsp;</div></td>
+  <td><div class="indicator">&nbsp;</div></td>
+</tr>
+</table>
+<div style="page-break-after: always;">&nbsp;</div>
+{% endif %}
+<table border="0" cellspacing="0" cellpadding="0" align="center">
+<tr>
+  <td>
+    {% include "program/modules/nametagmodule/singleid.html" %}
+  </td>
+{% else %}
+{% if forloop.counter|divisibleby:2 %}
+  <td>
+   {% include "program/modules/nametagmodule/singleid.html" %}
+  </td>
+</tr>
+{% else %}
+</tr>
+<tr>
+  <td>
+   {% include "program/modules/nametagmodule/singleid.html" %}
+  </td>
+{% endif %}
+{% endif %}
+{% endfor %}
+</body>
+</html>

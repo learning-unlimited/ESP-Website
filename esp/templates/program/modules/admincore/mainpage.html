@@ -1,0 +1,53 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+{{ program.mainteacherreg }}
+
+<br /><br />
+<h1>Admin Portal for {{program.niceName}} </h1>
+
+<p style="text-align: center">
+Welcome to the Administrative Portal for {{program.niceName }}.<br />
+If you need any assistance, please email <tt>web@esp.mit.edu</tt>.
+</p>
+
+<center>
+<strong>Your options:</strong>
+<br />
+<ul>
+
+{% for module in modules %}
+
+{% if module.isStep %}
+  {% if not module.useTemplate %}
+    <li>{{ module.makeLink }}</li>
+  {% endif %}
+{% endif %}
+{% endfor %}
+</ul>
+
+
+<br />
+<br />
+<br />
+{% for module in modules %}
+{% if module.useTemplate %}
+<br />
+ {% include module.getTemplate %}
+
+{% endif %}
+{% endfor %}
+
+
+
+{% endblock %}

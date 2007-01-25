@@ -132,6 +132,7 @@ class ProgramModuleObj(models.Model):
                    'learn': 'learn',
                    'teach': 'teach',
                    'admin':'admin',
+                   'manage': 'manage',
                    'onsite':'onsite'}[self.module.module_type] \
               +'/'+'/'.join(str_array[2:])+'/'+self.module.main_call
         return url
@@ -180,7 +181,7 @@ def usercheck_usetl(method):
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/nota'+{'teach':'teacher',
                                            'learn':'student',
-                                           'admin':'nadmin'}[tl]+'.html'
+                                           'admin':'admin'}[tl]+'.html'
     
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
@@ -190,7 +191,7 @@ def usercheck_usetl(method):
         if tl == 'teach' and not moduleObj.user.isTeacher():
             return render_to_response(errorpage, {})
         
-        if tl == 'admin' and not moduleObj.user.isAdmin():
+        if tl == 'manage' and not moduleObj.user.isAdmin(moduleObj.program):
             return render_to_response(errorpage, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
@@ -213,7 +214,7 @@ def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-        if not moduleObj.user.isAdmin():
+        if not moduleObj.user.isAdmin(moduleObj.program):
             return render_to_response('errors/program/notanadmin.html', request, None, {})
         return method(moduleObj, request, *args, **kwargs)
 

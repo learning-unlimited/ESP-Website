@@ -1,0 +1,82 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+{{ program.mainteacherreg }}
+
+<br /><br />
+<h1>Generate Nametags for {{program.niceName}} </h1>
+
+<p style="text-align: center">
+Using this tool you can generate nametags for your program.<br />
+Please select from options below.
+</p>
+
+<br />
+<form action="./generatetags" method="post">
+<fieldset>
+<strong>ID Type</strong>
+<ul>
+  <li><input type="radio" name="type" value="students" id="students"
+       onclick="document.getElementById('volunteers').disabled = true;" selected />
+      <label for="students">Teachers</label>
+  </li>
+  <li><input type="radio" name="type" value="teacher" id="teachers"
+       onclick="document.getElementById('volunteers').disabled = true;" />
+      <label for="teachers">Teachers</label>
+  </li>
+  <li><input type="radio" name="type" value="voluteers" id="volunt"
+       onclick="document.getElementById('volunteers').disabled = false;" />
+      <label for="volunt">Volunteers</label>
+  </li>
+  <li><input type="radio" name="type" value="blank" id="blank"
+       onclick="document.getElementById('volunteers').disabled = true;" />
+      <label for="blank">Blank</label>
+  </li>
+</ul>
+
+<br />
+<br />
+<labe. for="volunteers"><strong>Volunteers:</strong></label>
+<br />
+(&quot;Name, Title&quot; on each line, without quotes.)<br />
+<textarea name="volunteers" id="volunteers" rows="25" cols="40" disabled></textarea>
+<br />
+<br />
+<label for="number"><strong>Number (if blank chosen) of IDs:</strong></label>
+<br />
+<input type="text" id="number" name="number" value="20" size="5" />
+<br />
+<br />
+<label for="programname"><strong>Program Name for IDs:</strong></label>
+<br />
+<input type="text" id="programname" size="40" name="progname" value="{{ program.niceName }}" />
+<br />
+<br />
+<input type="submit" value="Generate IDs!" />
+</fieldset>
+</form>
+
+<br />
+<br />
+<br />
+{% for module in modules %}
+{% if module.useTemplate %}
+<br />
+ {% include module.getTemplate %}
+
+{% endif %}
+{% endfor %}
+
+
+
+{% endblock %}

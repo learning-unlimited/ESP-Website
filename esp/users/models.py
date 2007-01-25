@@ -62,8 +62,13 @@ class ESPUser(User, AnonymousUser):
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
-    def isAdministrator(self):
-        return UserBit.bits_get_qsc(user=self, verb=GetNode("V/Administer")).count() > 0
+    def isAdministrator(self, program = None):
+        if program is None:
+            return UserBit.bits_get_qsc(user=self, verb=GetNode("V/Administer")).count() > 0
+        else:
+            return UserBit.UserHasPerms(self, program.anchor, GetNode('V/Administer'))
+
+    isAdmin = isAdministrator
     
     def isTeacher(self):
         """Returns true if this user is a teacher"""

@@ -61,6 +61,16 @@ class Program(models.Model):
 		return "/".join(urllist)
 					  
 
+	def students(self):
+		import operator
+		students = []
+		for cls in Class.objects.filter(parent_program=self):
+			students += cls.students()
+		distinctstudents = {}
+		for student in students:
+			distinctstudents[student.id] = student
+		return distinctstudents.values()
+
 	def classes_node(self):
 		return DataTree.objects.filter(parent = self.anchor, name = 'Classes')[0]
 
@@ -80,12 +90,7 @@ class Program(models.Model):
 		if tl:
 			modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
 				     for module in self.program_modules.all()
-				     if {'student_reg':'learn',
-					 'teacher_reg':'teach',
-					 'learn': 'learn',
-					 'teach': 'teach',
-					 'admin':'admin',
-					 'onsite':'onsite'}[module.module_type] == tl]
+				     if module.module_type == tl]
 		else:
 			modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
 				     for module in self.program_modules.all()]
