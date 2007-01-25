@@ -1,4 +1,4 @@
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.program.modules         import module_ext, manipulators
 from esp.program.models          import Program, Class, ClassCategories
 from esp.datatree.models         import DataTree, GetNode
@@ -22,6 +22,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def isCompleted(self):
         return not self.noclasses()
+
+    def deadline_met(self):
+        tmpModule = ProgramModuleObj()
+        tmpModule.__dict__ = self.__dict__
+        return tmpModule.deadline_met('/Classes')
     
     def clslist(self):
         return [cls for cls in self.user.getTaughtClasses()
@@ -94,6 +99,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return [(str(x.id), x.friendly_name) for x in resources]
 
     @needs_teacher
+    @meets_deadline('/Classes')
     def deleteclass(self, request, tl, one, two, module, extra, prog):
         classes = Class.objects.filter(id = extra)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
@@ -106,6 +112,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return self.goToCore(tl)
 
     @needs_teacher
+    @meets_deadline('/Classes')
     def coteachers(self, request, tl, one, two, module, extra, prog):
         from esp.users.models import ESPUser 
         if not request.POST.has_key('clsid'):
@@ -209,7 +216,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                                          'txtTeachers': txtTeachers,
                                                                                          'coteachers':  coteachers,
                                                                                          'conflicts':   conflictingusers})
-    
+    @meets_deadline()
     @needs_teacher
     def editclass(self, request, tl, one, two, module, extra, prog):
         classes = Class.objects.filter(id = extra)
@@ -219,17 +226,25 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         return self.makeaclass(request, tl, one, two, module, extra, prog, cls)
 
+    @meets_deadline()
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
+        # this is ugly...but it won't recurse and falls
+        # back to @meets_deadline's behavior appropriately
+        if newclass is None and not self.deadline_met():
+            return meets_deadline(lambda: True)(self, request, tl, one, two, module)
         
         new_data = MultiValueDict()
-        context = {}
+        context = {'module': self}
         new_data['grade_max'] = str(self.getClassGrades()[-1:][0])
         new_data['class_size_max']  = str(self.getClassSizes()[-1:][0])
         
         manipulator = manipulators.TeacherClassRegManipulator(self)
 
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
+            if not self.deadline_met():
+                return self.goToCore();
+            
             new_data = request.POST.copy()
             #assert False, new_data            
             errors = manipulator.get_validation_errors(new_data)
@@ -325,6 +340,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
 
     @needs_teacher
+    @meets_deadline('/Classes')    
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
         from esp.web.json import JsonResponse

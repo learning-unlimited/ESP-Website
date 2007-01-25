@@ -1,4 +1,4 @@
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.datatree.models import GetNode, DataTree
 from esp.program.models import Class, ClassCategories, RegistrationProfile
 from esp.program.modules import module_ext
@@ -14,6 +14,12 @@ class StudentClassRegModule(ProgramModuleObj):
             return False
         return self.user.getEnrolledClasses().filter(parent_program = self.program).count() > 0
 
+    def deadline_met(self):
+        tmpModule = ProgramModuleObj()
+        tmpModule.__dict__ = self.__dict__
+        return tmpModule.deadline_met('/Classes')
+
+    
     @needs_student
     def prepare(self, context={}):
 	regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
@@ -33,6 +39,7 @@ class StudentClassRegModule(ProgramModuleObj):
 	return context
 
     @needs_student
+    @meets_deadline('/Classes')
     def addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
 
@@ -47,6 +54,7 @@ class StudentClassRegModule(ProgramModuleObj):
             assert False, 'Class is full'
 
     @needs_student
+    @meets_deadline('/Classes')    
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
         ts = DataTree.objects.filter(id=extra)
@@ -60,6 +68,7 @@ class StudentClassRegModule(ProgramModuleObj):
     # we can also ``changeslot''
     changeslot = fillslot
 
+    @meets_deadline('/Catalog')
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         
@@ -140,6 +149,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     @needs_student
+    @meets_deadline('/Classes')    
     def clearslot(self, request, tl, one, two, module, extra, prog):
 	""" Clear the specified timeslot from a student registration and go back to the same page """
         from esp.users.models import UserBit

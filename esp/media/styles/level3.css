@@ -660,6 +660,7 @@ table.plaintable th {
 	border: 0px;
 }
 
+
 .statistics { font-family: arial; font-size: .6em; font-style: italic; text-align: center; color: #999; }
 
 /* prettier forms */
@@ -671,3 +672,35 @@ table.plaintable th {
 
 
 
+/* pretty form stuff */
+
+div.note, div.info, div.errormsg, div.question { 
+  text-align: left;
+  font-size: .8em;
+  font-style: italic;
+  font-family: arial;
+  padding: 5px 0px 5px 38px;
+  border: 3px ridge #000;
+  margin: 10px;
+  overflow: visible;
+}
+div.note {
+  background: #DDD url('/media/images/note.gif') no-repeat 4px 50%;
+}
+div.info {
+  background: #DDD url('/media/images/information.gif') no-repeat 4px 50%;
+}
+div.errormsg {
+  background: #DDD url('/media/images/error.gif') no-repeat 4px 50%;
+}
+div.question {
+  background: #DDD url('/media/images/questionmark.gif') no-repeat 4px 50%;
+}
+
+.monospace {
+  font-style: normal;
+  font-weight: normal;
+  font-family: courier-new, courier, monospace;
+  text-decoration: none; 
+}
+  

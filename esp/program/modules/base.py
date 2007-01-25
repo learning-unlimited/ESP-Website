@@ -108,7 +108,20 @@ class ProgramModuleObj(models.Model):
             else:
                 self.__dict__[k] = newobj[0]
 
-       
+
+    def deadline_met(self, extension=''):
+        
+        from esp.users.models import UserBit
+        from esp.datatree.models import GetNode
+
+        if not self.user or not self.program:
+            return False
+        
+        canView = UserBit.UserHasPerms(self.user,
+                                       self.program.anchor,
+                                       GetNode('V/Deadline/Registration/'+{'learn':'Student',
+                                                                           'teach':'Teacher'}[self.module.module_type]+extension))
+        return canView
 
     # important functions for hooks...
 
@@ -122,6 +135,7 @@ class ProgramModuleObj(models.Model):
                    'onsite':'onsite'}[self.module.module_type] \
               +'/'+'/'.join(str_array[2:])+'/'+self.module.main_call
         return url
+
 
     def setUser(self, user):
         self.user = user
@@ -183,22 +197,6 @@ def usercheck_usetl(method):
 
     return _checkUser
 
-def needs_deadline(method):
-    def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
-        errorpage = 'errors/program/deadline-%s.html' % tl
-
-        canView = UserBit.UserHasPerms(moduleObj.user,
-                                       moduleObj.program.anchor,
-                                       GetNode('V/Deadline/Registration/'+{'learn':'Student',
-                                                                           'teach':'Teacher'}[tl]))
-
-        if canView:
-            return method(moduleObj, request, tl, *args, **kwargs)
-        else:
-            return render_to_response(errorpage, request, None, {})
-
-    return _checkDeadline
-            
 
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
@@ -230,3 +228,28 @@ def needs_student(method):
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkStudent        
+
+
+# Anything you can do, I can do meta
+def meets_deadline(extension=''):
+    def meets_deadline(method):
+        def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
+            errorpage = 'errors/program/deadline-%s.html' % tl
+            from esp.users.models import UserBit
+            from esp.datatree.models import GetNode
+
+
+            canView = UserBit.UserHasPerms(moduleObj.user,
+                                           moduleObj.program.anchor,
+                                           GetNode('V/Deadline/Registration/'+{'learn':'Student',
+                                                                               'teach':'Teacher'}[tl]+extension))
+
+            if canView:
+                return method(moduleObj, request, tl, *args, **kwargs)
+            else:
+                return render_to_response(errorpage, request, None, {})
+
+        return _checkDeadline
+
+    return meets_deadline
+

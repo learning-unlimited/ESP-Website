@@ -9,8 +9,14 @@
 Open Full Catalog in a Separate Window
 </a>
 </p>
-
-<br/>  	
+<br />  	
+<br />
+{% if not module.deadline_met %}
+<div class="note">
+Note: Student registration is no longer open. Please use this page to view your schedule. {% if completedAll %}You can still click `Save' to view your receipt. {% endif %}
+</div>
+<br />
+{% endif %}
 
  <table cellpadding="3" style="width: 600px; margin: auto" border=1>
 {% for timeslot in timeslots %}
@@ -18,15 +24,21 @@ Open Full Catalog in a Separate Window
 <tr><td width="25%" valign="top" align="center"> {{ timeslot.0.friendly_name }} </td>
 	{% if timeslot.1 %}
 	<td>{{timeslot.1.title}}</td>
+{% if module.deadline_met %}
         <td width='20%' align='center'>
 	<a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change]</a>
 	<a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[remove]</a>
+	</td>
+{% endif %}
 	{% else %}
    <td>Nothing Selected</td>
+{% if module.deadline_met %}
   <td width='20%' align='center'>
   <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
 	{% endif %}	
-  </td></tr>
+  </td>
+{% endif %}
+</tr>
 
 {% endfor %}
 </table> 

@@ -13,11 +13,23 @@ function deleteClass() {
 //-->
 </script>
 {% endblock %}
+
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 
 <hr />
 <br />
 <br />
+
+{% if not module.deadline_met %}
+<div class="note">Note: Class registration is closed. 
+You are welcome to use this page to view your classes' status.
+
+{% if module.classRegInfo.director_email %}<br />
+If you have any questions regarding the program, <br /> please email the 
+<a href="mailto:{{module.classRegInfo.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{module.classRegInfo.director_email }}</span>).
+{% endif %}
+</div>
+{% endif %}
 
 <div id="battlescreen">
 
@@ -42,7 +54,7 @@ function deleteClass() {
   {% for cls in teacherclsmodule.clslist %}
   <tr>
     <td class="clsleft classname">
-      <span title="cls">
+      <span title="{{cls}}">
       {{ cls|truncatewords:6 }}
       </span>
     </td>
@@ -53,16 +65,20 @@ function deleteClass() {
     </td>
     <td class="clsmiddle">
        <form method="post" action="./deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
-         <input class="button" type="submit" value="Delete" {% if cls.num_students %}disabled {% endif %} />
+         <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
        </form>
     </td>
     <td class="clsmiddle">
        <form method="post" action="./editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
+{% if module.deadline_met %}
          <input class="button" type="submit" value="Edit">
+{% else %}
+         <input class="button" type="submit" value="View">
+{% endif %}
        </form>
     </td>
-{% if teacherclsmodule.classRegInfo.allow_coteach %}
+{% if teacherclsmodule.classRegInfo.allow_coteach and module.deadline_met %}
    <td class="clsmiddle">
        <form method="post" action="./coteachers/">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
@@ -81,6 +97,7 @@ function deleteClass() {
      </td>
    </tr>
    {% endfor %}
+   {% if module.deadline_met %}
    <tr>
    <td colspan="4">
      <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
@@ -88,4 +105,5 @@ function deleteClass() {
      </a>
    </td>
    </tr>
+   {% endif %}
 </table>

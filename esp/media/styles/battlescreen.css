@@ -50,6 +50,14 @@ color: #006600;
    border: #000000 1px solid;
    background-color: #ccffcc;
 }
+#battlescreen input.button:disabled
+{
+   color: #666;
+   font-weight:normal;
+   border: black 1px solid;
+   background-color: #DFD;
+}
+
 #battlescreen input.text
 {
    color:#000000;

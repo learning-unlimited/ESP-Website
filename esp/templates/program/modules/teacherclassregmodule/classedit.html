@@ -197,6 +197,7 @@ Message for Director
 
 <center>
 
+{% if module.meets_deadline %}
 <input class="button" type="submit"
 {% if class.id %}
  value="Save course!" />
@@ -204,8 +205,9 @@ Message for Director
  value="Teach for {{one}}!" />
 {% endif %}
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+{% endif %}
 <input class="button" type="button"
-  onclick="history.go(-1);" value="Cancel" />
+  onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
 
 </center>
 
