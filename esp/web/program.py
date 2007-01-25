@@ -20,7 +20,6 @@ from esp.web.data import navbar_data, preload_images, render_to_response
 from django.contrib.auth.decorators import login_required
 
 def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
-	assert False, (can_edit_classes, can_approve_classes)
 	""" Return the program class catalog """
 
 	dt_approved = GetNode( 'V/Flags/Class/Approved' )
@@ -449,5 +448,6 @@ def class_prepare(user, prog, context={}):
 
 program_handlers = {
 		    'finishstudentreg': program_finishstudentreg,
-		    'finishedStudent': studentRegDecision, 
+		    'finishedStudent': studentRegDecision,
+		    'catalog': program_catalog
 		    }
