@@ -116,6 +116,8 @@ class ProgramModuleObj(models.Model):
 
         if not self.user or not self.program:
             return False
+        if self.module.module_type != 'learn' and self.module.module_type != 'teach':
+            return True
         
         canView = UserBit.UserHasPerms(self.user,
                                        self.program.anchor,
@@ -127,13 +129,7 @@ class ProgramModuleObj(models.Model):
 
     def get_full_path(self):
         str_array = self.program.anchor.tree_encode()
-        url = '/'+{'student_reg':'learn',
-                   'teacher_reg':'teach',
-                   'learn': 'learn',
-                   'teach': 'teach',
-                   'admin':'admin',
-                   'manage': 'manage',
-                   'onsite':'onsite'}[self.module.module_type] \
+        url = '/'+self.module.module_type \
               +'/'+'/'.join(str_array[2:])+'/'+self.module.main_call
         return url
 
@@ -179,9 +175,7 @@ class ProgramModuleObj(models.Model):
 # will use .isTeacher or .isStudent()
 def usercheck_usetl(method):
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
-        errorpage = 'errors/program/nota'+{'teach':'teacher',
-                                           'learn':'student',
-                                           'admin':'admin'}[tl]+'.html'
+        errorpage = 'errors/program/nota'+tl+'.html'
     
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
@@ -238,7 +232,8 @@ def meets_deadline(extension=''):
             errorpage = 'errors/program/deadline-%s.html' % tl
             from esp.users.models import UserBit
             from esp.datatree.models import GetNode
-
+            if tl != 'learn' and tl != 'teach':
+                return True
 
             canView = UserBit.UserHasPerms(moduleObj.user,
                                            moduleObj.program.anchor,

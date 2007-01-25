@@ -28,7 +28,7 @@ Please select from options below.
 <ul>
   <li><input type="radio" name="type" value="students" id="students"
        onclick="document.getElementById('volunteers').disabled = true;" selected />
-      <label for="students">Teachers</label>
+      <label for="students">Students</label>
   </li>
   <li><input type="radio" name="type" value="teacher" id="teachers"
        onclick="document.getElementById('volunteers').disabled = true;" />
@@ -61,6 +61,7 @@ Please select from options below.
 <br />
 <input type="text" id="programname" size="40" name="progname" value="{{ program.niceName }}" />
 <br />
+(You can put HTML in here if you want...)
 <br />
 <input type="submit" value="Generate IDs!" />
 </fieldset>
