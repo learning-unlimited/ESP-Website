@@ -187,6 +187,9 @@ class Class(models.Model):
 
 		return rooms.values()
 
+	def prettyrooms(self):
+		return [ x.friendly_name  for x in self.classrooms() ]
+
 	def assignClassRoom(self, classroom):
 		for x in ClassRoomAssignment.objects.filter(cls = self):
 			x.delete()
@@ -197,7 +200,6 @@ class Class(models.Model):
 			roomassignment.timeslot = time
 			roomassignment.room = classroom
 			roomassignment.save()
-			assert False
 		return True
 			
 

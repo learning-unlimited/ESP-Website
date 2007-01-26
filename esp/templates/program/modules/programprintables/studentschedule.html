@@ -1,0 +1,68 @@
+<html>
+<head>
+<title>Teacher Schedules</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; margin: 0; font-size: 12px;}
+.title { text-align: center; font-size: 12pt; font-family: georgia; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+.facts { text-align: center; border: 0; }
+.facts th { text-align: right; font-size: 12pt; font-weight: bold; }
+.facts td { text-align: left; font-size: 12pt;}
+.facts td.paid { border: 1px solid black; text-align: center;
+                 }
+.title { padding: 1in 0 0 0; }
+.schedule {border: 1px solid black; }
+.schedule td { border: 1px solid black; }
+.schedule th { border: 1px solid black; vertical-align: top; }
+.schedule td { vertical-align: top; }
+.schedule th.day { border-bottom: 0; }
+.schedule td.oldday { border-bottom: 0;
+                      border-top: 0;}
+td.newday { border-width: 2px 1px 0 1px;}
+#pagebreak {page-break-after: always; }
+.description { text-align: center; padding: .2in 0 .2in 0; }
+</style>
+
+</head>
+<body>
+{% for scheditem in scheditems %}
+{% ifchanged %}
+{% if not forloop.first %}
+</table>
+<div id="pagebreak">&nbsp;</div>
+{% endif %}
+<div class="title">Teacher Schedule for <br /><br />
+    <span>{{ scheditem.name }}</span>
+</div>
+<div class="description">Here is your schedule.
+  Please show up to class on-time.<br />
+  If you have any questions, please visit the ESP help desk in the main Lobby.
+</div>
+
+<div style="height: 2in;">&nbsp;</div>
+<br />
+<br />
+<table align="center" cellspacing="0" cellpadding="2px" class="schedule">
+<tr><th colspan="4">Schedule</th></tr>
+<tr>
+{% if scheditem.day %}
+    <th class="day">Day</th>
+{% endif %}
+    <th>Time</th>
+    <th>Room</th>
+    <th>Class</th>
+    <th>Teacher(s)</th>
+</tr>
+{% endifchanged %}
+<tr>
+  <td>{{ scheditem.cls.friendly_times|join:"<br />" }}</td>
+  <td>{% if scheditem.cls.classrooms|length_is:0 %}N/A{% else %}
+      {{ scheditem.cls.prettyrooms|join:"<br />" }}{% endif %}</td>
+  <td>{{ scheditem.cls.title }}</td>
+  <td>{{ scheditem.cls.getTeacherNames|join:", " }}</td>
+</tr>
+{% endfor %}
+
+</body>
+</html>

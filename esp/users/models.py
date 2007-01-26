@@ -32,6 +32,9 @@ class ESPUser(User, AnonymousUser):
         self.__olduser.__dict__ = self.__dict__
         return self.__olduser
 
+    def name(self):
+        return '%s %s' % (self.first_name, self.last_name)
+
     def __cmp__(self, other):
         lastname = cmp(self.last_name.upper(), other.last_name.upper())
         if lastname == 0:

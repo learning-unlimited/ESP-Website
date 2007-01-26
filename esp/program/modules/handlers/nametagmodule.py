@@ -45,6 +45,17 @@ class NameTagModule(ProgramModuleObj):
                               'name' : '%s %s' % (teacher.first_name, teacher.last_name),
                               'id'   : teacher.id})
 
+        elif idtype == 'volunteers':
+            users = []
+            volunteers = request.POST['volunteers']
+            for user in volunteers.split("\n"):
+                arruser = user.split(",")
+                if len(arruser) >= 2:
+                    users.append({'title': arruser[1].strip(),
+                                  'name' : arruser[0].strip(),
+                                  'id'   : ''})
+                
+                
         elif idtype == 'blank':
             users = []
             for i in range(int(request.POST['number'])):

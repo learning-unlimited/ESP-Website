@@ -1,0 +1,31 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Printables{% endblock %}
+
+{% block subsection_name %}Printing Options{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+<br /><br />
+<h1>Printables for {{program.niceName}}</h1>
+
+<p style="text-align: center">
+Using this tool you can generate some printables for your program.<br />
+Please select from options below.
+</p>
+
+
+<ul>
+<li><a href="./studentschedules" title="Student Schedules">Student Schedules</a></li>
+<li><a href="./teacherschedules" title="Teacher Schedules">Teacher Schedules</a></li>
+<li><a href="./roomschedules" title="Room Schedules">Room Schedules</a></li>
+<li><a href="./classrosters" title="Class Rosters">Class Rosters</a></li>
+</ul>
+
+
+{% endblock %}
