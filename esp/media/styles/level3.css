@@ -683,12 +683,13 @@ div.note, div.info, div.errormsg, div.question {
   border: 3px ridge #000;
   margin: 10px;
   overflow: visible;
+  width: 450px;
 }
 div.note {
   background: #DDD url('/media/images/note.gif') no-repeat 4px 50%;
 }
 div.info {
-  background: #DDD url('/media/images/information.gif') no-repeat 4px 50%;
+  background: #DDD url('/media/images/information.gif') no-repeat 4px 10%;
 }
 div.errormsg {
   background: #DDD url('/media/images/error.gif') no-repeat 4px 50%;

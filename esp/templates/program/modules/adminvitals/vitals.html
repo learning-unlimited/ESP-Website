@@ -1,0 +1,45 @@
+<style type="text/css">
+#vitals table, #vitals th, #vitals td { 
+     border: 1px solid black; border-collapse: collapse;
+}
+#vitals th { text-align: right; }
+</style>
+
+<hr />
+<h2 style="text-align: center">Program Vitals</h2>
+<br />
+<div id="vitals">
+<table style="border: 1px solid black; border-collapse: collapse;">
+<tr>
+  <th>Total # of Students</th>
+  <td>{{ vitals.studentnum }}</td>
+</tr>
+<tr>
+  <th>Total # of Teachers</th>
+  <td>{{ vitals.teachernum }}</td>
+</tr>
+
+<tr>
+  <th>Total # of Classes</th>
+  <td>{{ vitals.classtotal }}</td>
+</tr>
+<tr>
+  <th>Total # of Classes Approved</th>
+  <td>{{ vitals.classapproved }}</td>
+</tr>
+<tr>
+  <th>Total # of Classes Rejected</th>
+  <td>{{ vitals.classrejected }}</td>
+</tr>
+{% for timeslot in vitals.timeslots %}
+
+<tr>
+  <th>{{ timeslot.slotname }}</th>
+  <td>Students: {{ timeslot.studentcount }}<br />
+      Classes: {{ timeslot.classcount }}</td>
+</tr>
+{% endfor %}
+</table>
+
+
+</div>

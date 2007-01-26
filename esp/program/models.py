@@ -61,14 +61,24 @@ class Program(models.Model):
 		return "/".join(urllist)
 					  
 
+	def teachers(self):
+		from esp.users.models import ESPUser
+		teachers = []
+		for cls in Class.objects.filter(parent_program=self):
+			teachers += cls.teachers()
+		distinctteachers = {}
+		for teacher in teachers:
+			distinctteachers[teacher.id] = ESPUser(teacher)
+		return distinctteachers.values()
+
 	def students(self):
-		import operator
+                from esp.users.models import ESPUser
 		students = []
 		for cls in Class.objects.filter(parent_program=self):
 			students += cls.students()
 		distinctstudents = {}
 		for student in students:
-			distinctstudents[student.id] = student
+			distinctstudents[student.id] = ESPUser(student)
 		return distinctstudents.values()
 
 	def classes_node(self):
@@ -153,6 +163,9 @@ class Class(models.Model):
 	enrollment = models.IntegerField()
 
 
+	def emailcode(self):
+		return self.category.category[0].upper()+str(self.id)
+
 	def url(self):
 		str_array = self.anchor.tree_encode()
 		return '/'.join(str_array[2:])
@@ -178,8 +191,8 @@ class Class(models.Model):
 		else:
 			return ""
 
-	def delete(self):
-		if self.num_students() > 0:
+	def delete(self, adminoverride = False):
+		if self.num_students() > 0 and not adminoverride:
 			return False
 
 		teachers = self.teachers()
@@ -382,12 +395,7 @@ class Class(models.Model):
 			userbitlst.delete()
 			return True
 		return False
-	
-	def setTime(self, event_template_id):
-		if event_template_id > 0:
-			self.event_template = DataTree.objects.filter(id=event_template_id)[0]
-			self.save()
-		return event_template_id
+
 			
 	def getUrlBase(self):
 		""" gets the base url of this class """

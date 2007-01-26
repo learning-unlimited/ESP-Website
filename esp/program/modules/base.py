@@ -28,7 +28,9 @@ class ProgramModuleObj(models.Model):
         import esp.program.modules.models
         modules = self.program.getModules(self.user, tl)
         for module in modules:
-            if type(module) == esp.program.modules.models.StudentRegCore or type(module) == esp.program.modules.models.TeacherRegCore:
+            if type(module) == esp.program.modules.models.StudentRegCore or \
+               type(module) == esp.program.modules.models.TeacherRegCore or \
+               type(module) == esp.program.modules.models.AdminCore:
                 return getattr(module, module.module.main_call)
         assert False, 'No core module to return to!'
 
@@ -36,8 +38,10 @@ class ProgramModuleObj(models.Model):
         import esp.program.modules.models
         modules = self.program.getModules(self.user, tl)
         for module in modules:
-            if type(module) == esp.program.modules.models.StudentRegCore or type(module) == esp.program.modules.models.TeacherRegCore:
-                return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.module.main_call
+             if type(module) == esp.program.modules.models.StudentRegCore or \
+               type(module) == esp.program.modules.models.TeacherRegCore or \
+               type(module) == esp.program.modules.models.AdminCore:
+                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.module.main_call
 
 
     def goToCore(self, tl):

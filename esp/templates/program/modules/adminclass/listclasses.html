@@ -1,0 +1,135 @@
+
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+
+function deleteClass() {
+    if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students.')) {
+       return true;
+    }
+    return false;
+}
+
+//-->
+</script>
+{% endblock %}
+
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+<style type="text/css">
+<!--
+  .unapproved { 
+      text-decoration: underline;
+      text-style: italic;
+      color: #009;
+   }
+//-->
+</style>
+<hr />
+
+<br />
+<div class="info">If you need to email a class, students, or teachers, just use its code!<br />
+For instance, if the code is M100:<br />
+<tt>M100-students@esp.mit.edu</tt> will email the students,<br />
+<tt>M100-teachers@esp.mit.edu</tt> will email the teachers,<br />
+and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
+</div>
+<br />
+
+<div id="battlescreen">
+<table cellpadding="4px" cellspacing="0" align="center">
+  <tr>
+    <th colspan="8">
+       Manage the classes of {{program.niceName}}
+    </th>
+  </tr>
+  {% if noclasses %}
+  <tr>
+  <tr>
+    <td class="clsleft classname">
+      <em>(None available)</em>
+    </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+   </tr>
+  {% endif %}
+
+  {% for cls in classes %}
+  <tr>
+    <td class="clsleft classname">
+      <span title="{{cls}}">
+      <strong>{{cls.emailcode }}.</strong>
+      <span       {% if cls.isAccepted %}
+      class="approved"
+      {% else %}
+      class="unapproved"
+      {% endif %}> {{ cls|truncatewords:6 }}</span>
+      </span>
+    </td>
+    <td class="clsleft classname" style="font-size: 60%; font-style: italic;">
+      <span title="Teacher Names">
+         ({{ cls.getTeacherNames|join:", " }})
+      </span>
+    </td>
+    <td class="clsright classname" style="font-style: italic; font-size: 80%">
+      {{cls.class_size_min }} / {{ cls.num_students }} / {{ cls.class_size_max }}
+    </td>
+    <td class="clsmiddle">
+       <form method="post" action="./deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
+         <input class="button" type="submit" value="Delete"  />
+       </form>
+    </td>
+<!--
+    <td class="clsmiddle">
+       <form method="post" action="./editclass/{{cls.id }}">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}">
+         <input class="button" type="submit" value="Edit">
+         <input class="button" type="submit" value="View">
+       </form>
+    </td>
+//-->
+{% if teacherclsmodule.classRegInfo.allow_coteach %}
+   <td class="clsmiddle">
+       <form method="post" action="./coteachers/">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
+	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
+         <input class="button" type="submit" value="Coteaching" />
+       </form>
+    </td>
+{% endif %}
+{% if cls.isAccepted %}
+    <td class="clsmiddle">
+       <form method="post" action="./rejectclass/{{cls.id}}">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
+	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
+         <input class="button" type="submit" value="Reject Class" />
+       </form>
+    </td>
+{% else %}
+    <td class="clsmiddle">
+       <form method="post" action="./approveclass/{{cls.id}}">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
+	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
+         <input class="button" type="submit" value="Accept Class" />
+       </form>
+    </td>
+{% endif %}
+    <td class="clsmiddle">
+       {{ cls.friendly_times|join:"<br />" }}
+    </td>
+<!--
+<td class="clsright">
+      {% if cls.pageExists %}
+      <a href="/learn/{{cls.getUrlBase}}/index.html"
+         title="{{ cls }}...">Visit web page</a>
+      {% else %}
+      <a href="/learn/{{cls.getUrlBase}}/index.edit.html"
+	 title="Create `{{ cls }}'...">Create web page</a>
+      {% endif %}
+     </td>
+//-->
+   </tr>
+   {% endfor %}
+
+</table>
+</div>

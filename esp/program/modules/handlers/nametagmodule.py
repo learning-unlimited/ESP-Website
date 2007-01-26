@@ -28,12 +28,49 @@ class NameTagModule(ProgramModuleObj):
         if idtype == 'students':
             students = self.program.students()
             users = []
+            students.sort()
+            
             for student in students:
                 users.append({'title': 'Student',
                               'name' : '%s %s' % (student.first_name, student.last_name),
                               'id'   : student.id})
+                
+        elif idtype == 'teacher':
+            teachers = self.program.teachers()
+            users = []
+            teachers.sort()
 
-            context['users'] = users
+            for teacher in teachers:
+                users.append({'title': 'Teacher',
+                              'name' : '%s %s' % (teacher.first_name, teacher.last_name),
+                              'id'   : teacher.id})
 
+        elif idtype == 'blank':
+            users = []
+            for i in range(int(request.POST['number'])):
+                users.append({'title': 'Student',
+                              'name' : '',
+                              'id'   : ''})
+                
+        numperpage = 6
+
+        expanded = [[] for i in range(numperpage)]
+
+        for i in range(len(users)):
+            expanded[(i*numperpage)/len(users)].append(users[i])
+
+        users = []
+
+        for i in range(len(expanded[0])):
+            for j in range(len(expanded)):
+                if len(expanded[j]) <= i:
+                    users.append({'title': 'Student',
+                                  'name' : '',
+                                  'id'   : ''})
+                else:
+                    users.append(expanded[j][i])
+
+        context['users'] = users
+            
         return render_to_response(self.baseDir()+'ids.html', request, (prog, tl), context)
         

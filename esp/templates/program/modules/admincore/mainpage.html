@@ -31,6 +31,8 @@ If you need any assistance, please email <tt>web@esp.mit.edu</tt>.
 {% if module.isStep %}
   {% if not module.useTemplate %}
     <li>{{ module.makeLink }}</li>
+  {% else %}
+    <li><em>{{ module.module.link_title }} (below)</em></li>
   {% endif %}
 {% endif %}
 {% endfor %}

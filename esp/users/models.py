@@ -32,6 +32,12 @@ class ESPUser(User, AnonymousUser):
         self.__olduser.__dict__ = self.__dict__
         return self.__olduser
 
+    def __cmp__(self, other):
+        lastname = cmp(self.last_name.upper(), other.last_name.upper())
+        if lastname == 0:
+           return cmp(self.first_name.upper(), other.first_name.upper())
+        return lastname
+
     def is_authenticated(self):
         return self.getOld().is_authenticated()
 

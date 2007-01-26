@@ -1,0 +1,93 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{prog.niceName }} Teacher Registration{% endblock %}
+
+{% block subsection_name %}Teacher{% endblock %}
+
+{% block xtrajs %}
+{% if ajax %}
+{% if ajaxdebug %}
+<script type="text/javascript">
+<!--   djConfig = { isDebug: true }; //-->
+</script>
+{% endif %}
+<script type="text/javascript" src="/media/scripts/dojo/dojo.js"></script>
+<script type="text/javascript">
+<!--
+   dojo.require("dojo.widget.ComboBox")
+//-->
+</script>
+{% endif %}
+{% endblock %}
+     
+
+{% block content %}
+
+<h1>Setting Coteachers for &quot;<u>{{ class|escape }}</u>&quot;</h1>
+{% if conflicts|length %}
+<p style="color:red; font-weight: bold;">
+The following teachers have conflicting schedules:<br />
+{{ conflicts|join:"<br />" }}
+
+</p>
+{% endif %}
+{% if error %}
+<p style="color:red; font-weight: bold;">
+{{ error }}
+</p>
+{% endif %}
+<p>
+<form action="" method="post" name="submit">
+<input type="hidden" name="op" value="save" />
+<input type="hidden" name="clsid" value="{{ class.id }}" />
+<input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
+<input type="submit" value="Save Coteachers!" /><br />
+</form>
+{% if not coteachers|length %}
+You currently have no coteachers for this class.
+{% else %}
+Here are your current coteachers:<br />
+<form action="" method="post" name="delteacher">
+<input type="hidden" name="op" value="del" />
+<input type="hidden" name="clsid" value="{{ class.id }}" />
+<input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
+
+<select id="current_coteachers"
+        class="coteachers" name="delete_coteachers" 
+        size="5" multiple="multiple">
+{% for teacher in coteachers %}
+    <option value="{{teacher.id}}">{{teacher.last_name }}, 
+        {{teacher.first_name}} ({{teacher.username}})</option>
+{% endfor %}
+</select>
+<input type="submit" value="Delete Selected" />
+</form>
+
+{% endif %}
+</p>
+<br />
+<br />
+<p>
+Select a user to add:
+</p>
+<br />
+<form action="" method="post" name="addteacher">
+<input type="hidden" name="clsid" value="{{ class.id }}" />
+<input type="hidden" name="op" value="add" />
+<input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
+
+<small>Type `Last, First' and find the user.</small>
+		<select dojoType="ComboBox"
+			id="teacher_id"
+			name="teacher"
+			dataUrl="/teach/{{program.url}}/teacherlookup/?q=%{searchString}"
+			mode="remote"
+			style="width: 200px"
+			maxListLength="10"></select>
+			
+<input type="submit" value="Add Teacher" />
+</form>
+
+
+
+{% endblock %}
