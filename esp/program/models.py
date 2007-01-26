@@ -87,6 +87,18 @@ class Program(models.Model):
 	def getTimeSlots(self):
 		return list(self.anchor.tree_create(['Templates','TimeSlots']).children().order_by('id'))
 
+	def getClassRooms(self):
+		return list(self.anchor.tree_create(['Templates','Classrooms']).children().order_by('name'))
+
+	def addClassRoom(self, roomname, shortname):
+		room = DataTree()
+		room.parent = self.anchor.tree_create(['Templates','Classrooms'])
+		room.name = shortname
+		room.friendly_name = roomname
+		room.save()
+
+		
+
 	def getResources(self):
 		return list(self.anchor.tree_create(['Templates','Resources']).children())
 
@@ -136,6 +148,7 @@ class ClassCategories(models.Model):
 	class Admin:
 		pass
 
+
 # FIXME: The Class object should use the permissions system to control
 # which grades (Q/Community/6_12/*) are permitted to join the class, though
 # the UI should make it as clean as two numbers, at least initially.
@@ -162,6 +175,31 @@ class Class(models.Model):
 	#	We think this is useless because the sign-up is completely based on userbits.
 	enrollment = models.IntegerField()
 
+
+	def classrooms(self):
+		assignments = ClassRoomAssignment.objects.filter(cls = self)
+		rooms = {}
+		if assignments.count() == 0:
+			return []
+		
+		for assignment in assignments:
+			rooms[assignment.room.id] = assignment.room
+
+		return rooms.values()
+
+	def assignClassRoom(self, classroom):
+		for x in ClassRoomAssignment.objects.filter(cls = self):
+			x.delete()
+			
+		for time in self.meeting_times.all():
+			roomassignment = ClassRoomAssignment()
+			roomassignment.cls = self
+			roomassignment.timeslot = time
+			roomassignment.room = classroom
+			roomassignment.save()
+			assert False
+		return True
+			
 
 	def emailcode(self):
 		return self.category.category[0].upper()+str(self.id)
@@ -312,6 +350,7 @@ class Class(models.Model):
 		v = GetNode( 'V/Flags/Registration/Preliminary' )
 		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
 
+
 	def num_students(self):
 		v = GetNode( 'V/Flags/Registration/Preliminary' )
 		if not self.anchor.id:
@@ -424,6 +463,13 @@ class ResourceRequest(models.Model):
 
 
 
+class ClassRoomAssignment(models.Model):
+	""" This associates a class, with a room, with a timeblock
+	    This will prevent problems with classes that have to move """
+	room     = models.ForeignKey(DataTree, related_name="room")
+	timeslot = models.ForeignKey(DataTree, related_name="timeslot")
+	cls      = models.ForeignKey(Class)
+	
 
 
 class BusSchedule(models.Model):

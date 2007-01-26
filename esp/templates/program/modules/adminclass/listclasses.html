@@ -9,9 +9,13 @@ function deleteClass() {
     }
     return false;
 }
-
+function assignRoom(clsid){
+    form = document.getElementById('assignroom-'+clsid)
+    form.submit();
+}
 //-->
 </script>
+
 {% endblock %}
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
@@ -79,15 +83,24 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
          <input class="button" type="submit" value="Delete"  />
        </form>
     </td>
-<!--
     <td class="clsmiddle">
-       <form method="post" action="./editclass/{{cls.id }}">
+       <form method="post" action="/teach/{{ program.url }}/editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
-         <input class="button" type="submit" value="Edit">
          <input class="button" type="submit" value="View">
        </form>
     </td>
-//-->
+   <td> 
+     <form method="post" action="./assignroom/{{cls.id}}" id="assignroom-{{cls.id}}">
+        <select name="roomid" 
+ onchange="assignRoom('{{cls.id}}');">
+          <option value="{{cls.classrooms.0.id }}">{{cls.classrooms.0.name}}</option>
+          <option value="">----</option>
+      {% for room in program.getClassRooms %}
+          <option value="{{room.id}}">{{room.name}}</option>
+      {% endfor %}
+        </select>
+      </form>
+   </td>
 {% if teacherclsmodule.classRegInfo.allow_coteach %}
    <td class="clsmiddle">
        <form method="post" action="./coteachers/">

@@ -1,0 +1,41 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+{{ program.mainteacherreg }}
+
+<br /><br />
+<h1>Manage Rooms for {{program.niceName }}</h1>
+
+<p style="text-align: center">
+Using this tool you can add rooms for use in your program.
+</p>
+
+<br />
+<form action="./addroom" method="post">
+<fieldset>
+<label for="name"><strong>Long Name:</strong></label>
+<input type="text" name="name" value="" size="30" />
+(e.g. Country Kitchen in McCormick Hall (W4))
+<br />
+<br />
+<label for="shortname"><strong>Short Name:</strong></label>
+<input type="text" name="shortname" value="" size="12" /> 
+(e.g. W4.kitchen)
+<br />
+<br />
+<input type="submit" value="Add Room" />
+</fieldset>
+</form>
+
+
+{% endblock %}
