@@ -186,6 +186,8 @@ class Class(models.Model):
 	#	We think this is useless because the sign-up is completely based on userbits.
 	enrollment = models.IntegerField()
 
+	def classroomassignments(self):
+		return ClassRoomAssignment.objects.filter(cls = self)
 
 	def classrooms(self):
 		assignments = ClassRoomAssignment.objects.filter(cls = self)
