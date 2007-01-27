@@ -47,6 +47,10 @@ class ESPUser(User, AnonymousUser):
     def getVisible(self, objType):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
 
+    def getLastProfile(self):
+        from esp.program.models import RegistrationProfile
+        return RegistrationProfile.getLastProfile(self)
+        
     def getEditable(self, objType):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
 

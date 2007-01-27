@@ -680,7 +680,7 @@ div.note, div.info, div.errormsg, div.question {
   font-style: italic;
   font-family: arial;
   padding: 5px 0px 5px 38px;
-  border: 3px ridge #000;
+  border: 3px outset #999;
   margin: 10px;
   overflow: visible;
   width: 450px;

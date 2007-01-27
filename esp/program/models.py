@@ -65,7 +65,8 @@ class Program(models.Model):
 		from esp.users.models import ESPUser
 		teachers = []
 		for cls in Class.objects.filter(parent_program=self):
-			teachers += cls.teachers()
+			if cls.isAccepted():
+				teachers += cls.teachers()
 		distinctteachers = {}
 		for teacher in teachers:
 			distinctteachers[teacher.id] = ESPUser(teacher)
@@ -87,6 +88,15 @@ class Program(models.Model):
 	def getTimeSlots(self):
 		return list(self.anchor.tree_create(['Templates','TimeSlots']).children().order_by('id'))
 
+	def isConfirmed(self, espuser):
+		v = GetNode('V/Flags/Public')
+		userbits = UserBit.objects.filter(verb = v, user = espuser,
+						 qsc = self.anchor.tree_create(['Confirmation']))
+		if len(userbits) < 1:
+			return False
+
+		return True
+	
 	def getClassRooms(self):
 		return list(self.anchor.tree_create(['Templates','Classrooms']).children().order_by('name'))
 
@@ -97,7 +107,8 @@ class Program(models.Model):
 		room.friendly_name = roomname
 		room.save()
 
-		
+	def classes(self):
+		return Class.objects.filter(parent_program = self)		
 
 	def getResources(self):
 		return list(self.anchor.tree_create(['Templates','Resources']).children())
@@ -349,8 +360,9 @@ class Class(models.Model):
 					return True
 
 	def students(self):
+		from esp.users.models import ESPUser
 		v = GetNode( 'V/Flags/Registration/Preliminary' )
-		return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
+		return [ ESPUser(x.user) for x in UserBit.bits_get_users( self.anchor, v ) ]
 
 
 	def num_students(self):

@@ -59,3 +59,30 @@ class ProgramPrintables(ProgramModuleObj):
         context['scheditems'] = scheditems
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
         
+    @needs_admin
+    def classrosters(self, request, tl, one, two, module, extra, prog):
+        """ generate teacher schedules """
+
+        context = {'module': self     }
+        teachers = self.program.teachers()
+        teachers.sort()
+
+        scheditems = []
+
+        for teacher in teachers:
+            for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
+                if cls.isAccepted():
+                    scheditems.append({'teacher': teacher,
+                                       'cls'    : cls})
+
+        context['scheditems'] = scheditems
+        return render_to_response(self.baseDir()+'classrosters.html', request, (prog, tl), context)
+        
+
+    @needs_admin
+    def teacherlabels(self, request, tl, one, two, module, extra, prog):
+        context = {'module': self}
+        teachers = self.program.teachers()
+        teachers.sort()
+        context['teachers'] = teachers
+        return render_to_response(self.baseDir()+'teacherlabels.html', request, (prog, tl), context)

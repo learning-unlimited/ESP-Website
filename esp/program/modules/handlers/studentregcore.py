@@ -22,6 +22,8 @@ class StudentRegCore(ProgramModuleObj):
 	    context['modules'] = modules
 	    context['one'] = one
 	    context['two'] = two
+            context['coremodule'] = self
+            context['isConfirmed'] = self.program.isConfirmed(self.user)
 
 	    return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
