@@ -1,0 +1,36 @@
+<div class="classroster">
+  <div class="classtitle">{{ item.cls.title }}</div>
+
+  <table align="center" cellspacing="0" cellpadding="0">
+  <tr>
+   <td>
+      <div class="blocks">{{ item.cls.friendly_times|join:"<br />" }}</div>
+   </td>
+   <td>
+      <div class="classroom">{{ item.cls.prettyrooms|join:"<br />" }}</div>
+   </td>
+  </tr>
+  </table>
+  <br />
+  <div class="teachername"><span>{{ item.teacher.name }}</span></div>
+  <br />
+  <br />
+  <table align="center" class="pretty" cellspacing="0" cellpadding="3px">
+    <tr>
+      <th colspan="4" align="center">Students</th>
+    </tr>
+    <tr>
+      <th>#</th>
+      <th>Student ID</th>
+      <th>Student Name</th>
+      <th>High School YOG</th>
+    </tr>{% for student in item.cls.students %}
+    <tr>
+      <td align="right">{{ forloop.counter }}</td>
+      <td>{{ student.id }}</td>
+      <td>{{ student.name }}</td>
+      <td>{{ student.getLastProfile.student_info.graduation_year }}&nbsp;</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
