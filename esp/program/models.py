@@ -26,6 +26,28 @@ class ProgramModule(models.Model):
 
 	class Admin:
 		pass
+	
+class ArchiveClass(models.Model):
+	""" Old classes throughout the years """
+	program = models.CharField(maxlength=256)
+	year = models.IntegerField()
+	date = models.CharField(maxlength=128)
+	category = models.CharField(maxlength=16)
+	teacher = models.CharField(maxlength=1024)
+	title = models.CharField(maxlength=1024)
+	description = models.TextField()
+
+	def __str__(self):
+		return '"%s" taught by "%s"' % (self.title, self.teacher)
+	
+	def heading(self):
+		return ({'label': 'Teacher', 'value': self.teacher},
+			{'label': 'Year', 'value': self.year},
+			{'label': 'Program', 'value': self.program},
+			{'label': 'Category', 'value': self.category})
+	
+	def content(self):
+		return self.description
 
 	
 class Program(models.Model):
@@ -156,6 +178,16 @@ class ClassCategories(models.Model):
 		return str(self.category)
 		
 		
+	@staticmethod
+	def category_string(letter):
+		
+		results = ClassCategories.objects.filter(category__startswith = letter)
+		
+		if results.count() == 1:
+			return results[0].category
+		else:
+			return None
+
 	class Admin:
 		pass
 

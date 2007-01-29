@@ -20,6 +20,7 @@ from esp.web.models import NavBarEntry
 from esp.web.data import navbar_data, preload_images, render_to_response
 from esp.web.myesp import myesp_handlers
 from esp.web.program import program_handlers
+from esp.web.archives import archive_handlers
 from esp.miniblog.views import preview_miniblog
 
 from esp.dblog.views import ESPError
@@ -146,7 +147,21 @@ def program(request, tl, one, two, module, extra = None):
 	
 	return render_to_response('errors/404.html', request, GetNode('Q/Web'), {})
 
-
+def archives(request, selection, category = None, options = None):
+	""" Return a page with class archives """
+	
+	sortparams = []
+	if request.POST and request.POST.has_key('newparam'):
+		if request.POST['newparam']:
+			sortparams.append(request.POST['newparam'])
+		for key in request.POST:
+			if key.startswith('sortparam') and request.POST[key] != request.POST['newparam']: sortparams.append(request.POST[key])
+	#	The selection variable is the type of data they want to see:
+	#	classes, programs, teachers, etc.
+	if archive_handlers.has_key(selection):
+		return archive_handlers[selection](request, category, options, sortparams)
+	
+	return render_to_response('users/construction', request, GetNode('Q/Web'), {})
 def contact(request):
 	return render_to_response('contact.html', request, GetNode('Q/Web'),{'programs': UserBit.bits_get_qsc(AnonymousUser(),
 								    GetNode('V/Publish'),

@@ -58,6 +58,14 @@ color: #006600;
    background-color: #DFD;
 }
 
+#battlescreen select
+{
+	border: gray 1px solid;
+	font-size: 12px;
+	font-weight: normal;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
 #battlescreen input.text
 {
    color:#000000;
@@ -66,6 +74,11 @@ color: #006600;
    border-width: 1px;
    border-color: 000000;
    background-color: ffffff;
+}
+
+#archives table.innertable
+{
+	border: 1px solid gray;
 }
 
 /* beginning of axiak work */

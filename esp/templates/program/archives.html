@@ -1,0 +1,214 @@
+
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Archives: Viewing {{ selection }} by {{ category }} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+{% endblock %}
+
+{% block subsection_name %}Archives/Resources{% endblock %}
+
+{% block content %}
+
+<style type="text/css">
+#archives td.classheading {font-family: Arial, sans-serif; font-size: 12px}
+#archives td.classdesc {font-size: 13px}
+</style>
+
+<h1>ESP Archives: Past Classes</h1>
+
+Found {{ num_results }} results.
+
+{% if sortparams %}
+Showing {{ num_results_shown }} (#{{ results_range.start }} to #{{ results_range.end }}) results sorted by {{ sortparams.0.name }}. 
+{% else %}
+These {{ num_results_shown }} results (#{{ results_range.start }} to #{{ results_range.end }}) are not sorted in any particular order.
+{% endif %}
+<br>
+<!--
+Debug information:
+<p>
+{{ debug_text }}
+</p>
+-->
+<br>
+<!--
+{% if old_sortparams %}
+Old sort params:
+{% for sp in old_sortparams %}
+{{ sp }}, 
+{% endfor %}
+{% endif %}
+-->
+
+<br />
+<a name="top"></a>
+<form method="POST" action="">
+
+{% for p in sortparams %}
+<input type="hidden" name="sortparam{{ forloop.counter }}" value = "{{ p.name }}">
+{% endfor %}
+
+<div id="battlescreen">
+<table cellspacing="0" cellpadding="4" width="600" align="center">
+<tbody>
+<tr><th colspan="2">
+Archive Viewing Options
+</th></tr>
+<tr><td colspan="2">
+<h3>Filter results</h3>
+</td></tr>
+
+{% for p in sortparams %}
+	<tr><td>
+		{{ p.name|capfirst }}: </td><td>
+		{% if p.options|length_is:1 %}
+		<input class="text" type="text" width="50" name="filter_{{ p.name }}" value="{{ p.options.0.default_value }}">
+		{% else %}
+		<select name="filter_{{ p.name }}"> 
+		<option value="">Any</option>
+		{% for h in p.options %}
+			<option value="{{ h.value }}"
+			{% if h.selected %} selected{% endif %}
+			>{{ h.name|capfirst }}</option>
+		{% endfor %}
+		</select>
+		{% endif %}
+		<br />
+	</td></tr>
+{% endfor %}
+
+<tr><td>
+<h3>Sort results by:</h3></td><td>
+<select name="newparam">
+{% for p in sortparams %}
+<option value="{{ p.name }}">{{ p.name|capfirst }}</option>
+{% endfor %}
+</select>
+</td></tr>
+<tr><td>
+<h3>Maximum number of results per page: </h3>
+</td><td>
+<select name="max_num_results">
+{% for f in num_results_list %}
+<option value="{{ f }}">{{ f }}</option>
+{% endfor %}
+</select>
+</td></tr>
+<tr><td colspan="2" align="center">
+<input class="button" type="submit" value="Reload">
+</form>
+
+<br />
+<br />
+</td></tr>
+<tr><th align="center" colspan="2">Navigation Options</th></tr>
+<tr><td colspan="2">
+<h3>Jump to {{ sortparams.0.name }}</h3>
+{% for l in headings %}
+&nbsp; &nbsp; &nbsp; <a href="#{{ l }}">{{ l|capfirst }}</a>
+{% endfor %}
+</td></tr>
+<tr><td>
+<h3>Jump to a different range of results</h3></td>
+<td>
+<form method="POST" action="">
+<input type="hidden" name="max_num_results" value="{{ max_num_results }}">
+<input type="hidden" name="results_end" value="{{ results_range.start }}">
+<input class="button" type="submit" value="Previous Page"
+{% ifequal results_range.start 1 %}
+disabled 
+{% endifequal %}
+/>
+</form>
+<form method="POST" action="">
+<input type="hidden" name="max_num_results" value="{{ max_num_results }}">
+<input type="hidden" name="results_start" value="{{ results_range.end }}">
+<input class="button" type="submit" value="Next Page"
+{% ifequal results_range.end num_results %}
+disabled 
+{% endifequal %}
+/>
+</form>
+</td></tr>
+</tbody>
+</table>
+</div>
+
+<br />
+<br />
+
+<div id="archives">
+<center>
+<table cellspacing="4" cellpadding="2">
+{% for entry in results %}
+<tr><td>
+
+{% ifequal sortparams.0 "category" %}
+{% ifchanged entry.category %}
+<a name="{{ entry.category }}"><h2 align="center">Category: {{ entry.category }}</h2></a>
+<br><center><a href="#top">Return to top of page</a></center><hr size="1" width="75%">
+</td></tr>
+<tr><td>
+{% endifchanged %}
+{% endifequal %}
+
+{% ifequal sortparams.0 "title" %}
+{% ifchanged entry.title.0 %}
+<a name="{{ entry.title.0 }}"><h2 align="center">Title starts with: {{ entry.title.0 }}</h2></a>
+<br><center><a href="#top">Return to top of page</a></center>
+<hr size="1" width="75%">
+</td></tr>
+<tr><td>
+{% endifchanged %}
+{% endifequal %}
+
+{% ifequal sortparams.0 "program" %}
+{% ifchanged entry.program %}
+<a name="{{ entry.program }}"><h2 align="center">Program: {{ entry.program }}</h2></a>
+<br><center><a href="#top">Return to top of page</a></center>
+<hr size="1" width="75%">
+</td></tr>
+<tr><td>
+{% endifchanged %}
+{% endifequal %}
+
+{% ifequal sortparams.0 "year" %}
+{% ifchanged entry.year %}
+<a name="{{ entry.year }}"><h2 align="center">Year: {{ entry.year }}</h2></a>
+<br><center><a href="#top">Return to top of page</a></center>
+<hr size="1" width="75%">
+</td></tr>
+<tr><td>
+{% endifchanged %}
+{% endifequal %}
+
+<table width="100%" cellspacing="0" cellpadding="3" class="innertable">
+
+<tr><td bgcolor="#a6cedf">
+<h3>{{ entry.title }}</h3>
+</td>
+<td align="right" class="classheading" bgcolor="#a6cedf">
+<a href="#top">Return to top of page</a>
+</td>
+</tr>
+<tr><td colspan="2" class="classheading" bgcolor="#a6cedf">
+	{% for item in entry.heading %}
+	<b>{{ item.label }}:</b> {{ item.value }}
+	<br>
+	{% endfor %}
+</td></tr>
+<tr><td colspan="2" class="classdesc">
+<p>
+{{ entry.content|default:"No description available." }}
+</p>
+</td></tr>
+
+</table></td></tr>
+{% endfor %}
+</table></center>
+</div>
+
+{% endblock %}
