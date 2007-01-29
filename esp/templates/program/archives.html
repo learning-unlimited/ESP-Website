@@ -147,7 +147,7 @@ disabled
 <tr><td>
 
 {% ifequal sortparams.0 "category" %}
-{% ifchanged entry.category %}
+{% ifchanged %}
 <a name="{{ entry.category }}"><h2 align="center">Category: {{ entry.category }}</h2></a>
 <br><center><a href="#top">Return to top of page</a></center><hr size="1" width="75%">
 </td></tr>
@@ -156,7 +156,7 @@ disabled
 {% endifequal %}
 
 {% ifequal sortparams.0 "title" %}
-{% ifchanged entry.title.0 %}
+{% ifchanged %}
 <a name="{{ entry.title.0 }}"><h2 align="center">Title starts with: {{ entry.title.0 }}</h2></a>
 <br><center><a href="#top">Return to top of page</a></center>
 <hr size="1" width="75%">
@@ -166,7 +166,7 @@ disabled
 {% endifequal %}
 
 {% ifequal sortparams.0 "program" %}
-{% ifchanged entry.program %}
+{% ifchanged %}
 <a name="{{ entry.program }}"><h2 align="center">Program: {{ entry.program }}</h2></a>
 <br><center><a href="#top">Return to top of page</a></center>
 <hr size="1" width="75%">
@@ -176,7 +176,7 @@ disabled
 {% endifequal %}
 
 {% ifequal sortparams.0 "year" %}
-{% ifchanged entry.year %}
+{% ifchanged %}
 <a name="{{ entry.year }}"><h2 align="center">Year: {{ entry.year }}</h2></a>
 <br><center><a href="#top">Return to top of page</a></center>
 <hr size="1" width="75%">
