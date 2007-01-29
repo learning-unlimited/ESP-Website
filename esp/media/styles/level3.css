@@ -666,9 +666,12 @@ table.plaintable th {
 /* prettier forms */
 #divmaintext th { padding-top: 10px; }
 #divmaintext label.header { font-weight: bold; }
-#divmaintext input[type=text], input[type=password], textarea { border: 1px solid #d7d7d7; }
-#divmaintext input[type=text]:focus, input[type=password]:focus, textarea:focus { border: 1px solid black; }
+#divmaintext select, input[type=text], input[type=password], textarea { border: 1px solid #d7d7d7; }
+#divmaintext select.required, input[type=text].required, input[type=password].required, textarea.required { border: 1px solid #FFD7D7; }
+#divmaintext select:focus, input[type=text]:focus, input[type=password]:focus, textarea:focus { border: 1px solid black; }
+#divmaintext select:focus.required, input[type=text]:focus.required, input[type=password]:focus.required, textarea:focus.required { border: 1px solid #F00; }
 .form_error { font-size: 80%; font-style: italic; color: #C00; }
+
 
 
 
@@ -705,3 +708,16 @@ div.question {
   text-decoration: none; 
 }
   
+.sql { 
+  border: 1px solid black;
+  position: absolute;
+  top: 10000em;
+  font-style: normal;
+  font-weight: normal;
+  background-color: white;
+  font-family: courier-new, courier, monospace;
+  width: 100%;
+  font-size: 10pt;
+  height: 700px;
+  overflow: scroll;
+}

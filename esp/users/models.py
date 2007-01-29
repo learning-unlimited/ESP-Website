@@ -499,6 +499,17 @@ class ContactInfo(models.Model):
 	address_state = models.USStateField(blank=True, null=True)
 	address_zip = models.CharField(maxlength=5,blank=True, null=True)
 
+        def address(self):
+            return '%s, %s, %s %s' % \
+                   (self.address_street,
+                    self.address_city,
+                    self.address_state,
+                    self.address_zip)
+                    
+
+        def items(self):
+            return self.__dict__.items()
+
         @staticmethod
         def addOrUpdate(regProfile, new_data, contactInfo, prefix='', curUser=None):
             """ adds or updates a ContactInfo record """

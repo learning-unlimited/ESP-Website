@@ -51,19 +51,23 @@ Upon clicking this you will be given a receipt with further instructions!
 </div>
 </center>
 {% endif %}
+<center>
 <p style="text-align: center">
-<form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">
+<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
 <input type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %}/><br />
 </form>{% if not completedAll %}<em>(Please complete the above steps first!)</em>{% endif %}
 {% if isConfirmed %}
-<form action="./cancelreg/{{ coremodule.user.id }}" method="post">
+<form action="./cancelreg" method="get">
 <input type="submit" value="Cancel Registration" />
 {% endif %}
 </p>
+</center>
 
-
-<i style="text-align: center">
-Please note that you can come back and change your preregistration up until 2 days before {{program.niceName}} begins!
-</i>
+<br />
+<p style="text-align: center;">
+<em>
+  Please note that you can come back and change your preregistration up until 2 days before {{program.niceName}} begins!
+</em>
+</p>
 
 {% endblock %}

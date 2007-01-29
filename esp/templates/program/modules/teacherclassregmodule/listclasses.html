@@ -58,11 +58,6 @@ If you have any questions regarding the program, <br /> please email the
       {{ cls|truncatewords:6 }}
       </span>
     </td>
-    <td class="clsleft classname" style="font-size: 60%; font-style: italic;">
-      <span title="Teacher Names">
-         ({{ cls.getTeacherNames|join:" " }})
-      </span>
-    </td>
     <td class="clsmiddle">
        <form method="post" action="./deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
          <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
@@ -80,13 +75,20 @@ If you have any questions regarding the program, <br /> please email the
     </td>
 {% if teacherclsmodule.classRegInfo.allow_coteach and module.deadline_met %}
    <td class="clsmiddle">
-       <form method="post" action="./coteachers/">
+       <form method="post" action="./coteachers">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
 	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
          <input class="button" type="submit" value="Coteaching">
        </form>
     </td>
-{% endif %}<td class="clsright">
+{% endif %}
+   <td class="clsmiddle">
+      <form method="post" action="./class_status">
+         <input type="hidden" name="clsid" value="{{cls.id}}" />
+         <input class="button" type="submit" value="View Status" />
+      </form>
+   </td>
+   <td class="clsright">
       {% if cls.pageExists %}
       <a href="/learn/{{cls.getUrlBase}}/index.html"
          title="{{ cls }}...">Visit web page</a>

@@ -7,6 +7,7 @@ from django                      import forms
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
 from django.core.mail           import send_mail
+from esp.miniblog.models        import Entry
 
 
 class TeacherClassRegModule(ProgramModuleObj):
@@ -111,6 +112,26 @@ class TeacherClassRegModule(ProgramModuleObj):
         cls.delete()
         return self.goToCore(tl)
 
+
+    @needs_teacher
+    @meets_deadline()
+    def class_status(self, request, tl, one, two, module, extra, prog):
+        clsid = 0
+        if request.POST.has_key('clsid'):
+            clsid = request.POST['clsid']
+            
+        classes = Class.objects.filter(id = clsid)
+        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+                return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+        cls = classes[0]
+
+        context = {'cls': cls, 'module': self,
+                   'blogposts': Entry.find_posts_by_perms(self.user,GetNode('V/Subscribe'),cls.anchor)
+                  }
+
+
+        return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
+
     @needs_teacher
     @meets_deadline('/Classes')
     def coteachers(self, request, tl, one, two, module, extra, prog):
@@ -201,10 +222,12 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # add self back...
                 cls.makeTeacher(self.user)
                 cls.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
+                cls.subscribe(self.user)
 
                 # add bits for all new (and old) coteachers
                 for teacher in coteachers:
                     cls.makeTeacher(teacher)
+                    cls.subscribe(self.user)
                     cls.makeAdmin(teacher, self.classRegInfo.teacher_class_noedit)                    
                 
                 return self.goToCore(tl)
@@ -287,6 +310,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 newclass.anchor = self.program.classes_node().tree_create([nodestring])
                 newclass.anchor.friendly_name = newclass.title
                 newclass.anchor.save()
+                newclass.anchor.tree_create(['TeacherEmail'])
                 newclass.save()
 
 
@@ -305,6 +329,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # add userbits
                 newclass.makeTeacher(self.user)
                 newclass.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
+                cls.subscribe(self.user)                
+                newclass.propose()
 
                 return self.goToCore(tl)
                             

@@ -55,4 +55,10 @@ class StatsMiddleware(object):
                     s[match.end('cmt'):]
                 response.content = s
 
+        if settings.DISPLAYSQL and settings.DEBUG:
+            response.content += "\n\n"+'<div class="sql">'
+            for q in connection.queries:
+                response.content += "\n"+'%s:&nbsp;&nbsp;%s<br />' % \
+                                    (q['time'], q['sql'])
+
         return response

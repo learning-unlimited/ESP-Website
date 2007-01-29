@@ -11,9 +11,11 @@
 <h1>{{ addoredit }} a class for {{ program.niceName }}!</h1>
 
 <p>
-Thank you for teaching for {{ one }}. Please fill out/update the form below.
-</p>
+Thank you for teaching for {{ one }}. Please fill out/update the form below.<br />
 <br />
+Note: Required fields are bordered in red and marked with an asterisk.
+</p>
+
 <br />
 
 {% if form.has_errors %}
@@ -23,7 +25,7 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.
 <form action="" name="clsform" method="post">
 
 <label for="id_title" class="header">
-Course Title:
+Course Title *:
 </label>
 <br />
 {% if form.title.errors %}
@@ -51,7 +53,7 @@ Course Slug:
 {% endcomment %}
 
 <label for="id_class_info" class="header">
-Course Description:
+Course Description *:
 </label>
 <br />
 {% if form.class_info.errors %}
@@ -62,12 +64,12 @@ Course Description:
 
 <br />
 <br />
-<table border="0" cellpadding="0" width="300px">
+<table border="0" cellpadding="0" width="400px">
 
   <tr>
     <td>
       <label for="id_category" class="header">
-      Course Category:
+      Course Category *:
       </label>
     </td>
     <td>
@@ -85,7 +87,7 @@ Course Description:
   <tr>
     <td>
       <label for="id_grade_min">
-      Minimum Grade Level:
+      Minimum Grade Level *:
       </label>
     </td>
     <td>
@@ -99,7 +101,7 @@ Course Description:
   <tr>
     <td>
       <label for="id_grade_max">
-      Maximum Grade Level:
+      Maximum Grade Level *:
       </label>
     </td>
     <td>
@@ -113,7 +115,7 @@ Course Description:
   <tr>
     <td>
       <label for="id_class_size_min">
-      Minimum Size:
+      Minimum Size *:
       </label>
     </td>
     <td>
@@ -127,7 +129,7 @@ Course Description:
   <tr>
     <td>
       <label for="id_class_size_max">
-      Maximum Size:
+      Maximum Size *:
       </label>
     </td>
     <td>
@@ -158,7 +160,7 @@ Preferred Duration (hours:minutes):
 
 {% if form.viable_times %}
 <label class="header">
-Acceptable Course Times (check all that apply):
+Acceptable Course Times (check all that apply) *:
 </label>
 <br />
 {% if form.viable_times.errors %}
@@ -197,7 +199,7 @@ Message for Director
 
 <center>
 
-{% if module.meets_deadline %}
+{% if module.deadline_met %}
 <input class="button" type="submit"
 {% if class.id %}
  value="Save course!" />

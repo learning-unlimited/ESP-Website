@@ -1,0 +1,98 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Class Status for {{cls.title }}{% endblock %}
+
+{% block subsection_name %}Class Status{% endblock %}
+
+{% block content %}
+<style type="text/css">
+#divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
+  { border: 1px solid black; border-collapse: collapse; 
+    vertical-align: baseline;}
+#divmaintext .blogentry { border: 2px solid black; }
+#divmaintext .blogentry .heading { background-color: #d7eeff; padding: 5px; }
+#divmaintext .blogentry .title { font-weight: bolder; }
+#divmaintext .blogentry .date { font-style: italic; margin: 0 5px 0 0;  }
+#divmaintext .blogentry .contents { margin: 0 0 0 30px; }
+</style>
+
+<br />
+<br />
+
+<br /><br />
+<h1>Class Status For {{ cls.title }}</h1>
+
+<p>
+Here is some important information regarding your class:<br />
+</p>
+
+<table class="mainstats">
+<tr>
+ <th colspan="2" style="text-align: center;">
+   Major Statistics for {{cls.emailcode}}&mdash;{{cls.title }}
+ </th>
+</tr>
+<tr>
+ <th>Class Title:</th>
+ <td>&quot;{{cls.title|escape }}&quot;</th>
+</tr>
+<tr>
+ <th>Teachers:</th>
+ <td>{{cls.getTeacherNames|join:", "}}</td>
+</tr>
+<tr>
+ <th>Reviewing Status:<br />
+  <small>(Not reviewed, Accepted, or Rejected)</small>
+</th>
+ <td>{% if cls.isReviewed %}{% if cls.isAccepted %}
+   <span style="font-size: 120%; font-weight: bold; color: #0C0;">Accepted!</span>
+   {% else %}
+   <span style="font-size: 120%; font-weight: bold; color: #C00;">Rejected</span>
+   {% endif %}
+   {% else %}
+   <span style="font-size: 120%; font-weight: bold; color: #00C;">Not Reviewed</span>
+   {% endif %}
+</td>
+</tr>
+<tr>
+  <th>Number of Students: </th>
+  <td>{{cls.students|length }}</td>
+</tr>
+<tr>
+  <th>Email Addresses: </th>
+  <td>Whole Class: {{cls.emailcode}}-class@esp.mit.edu<br />
+Teachers: {{cls.emailcode}}-teachers@esp.mit.edu<br />
+Students: {{cls.emailcode}}-students@esp.mit.edu
+  </td>
+</tr>
+<tr>
+  <th>Time Blocks (if assigned): </th>
+  <td>{{ cls.friendly_times|join:"<br />" }}</td>
+</tr>
+<tr>
+  <th>Rooms (if assigned)</th>
+  <td>{{ cls.prettyrooms|join:"<br />" }}</td>
+</tr>
+<tr>
+  <th>Directors' Emails (if available)</th>
+  <td>{{ module.classRegInfo.director_email }}</td>
+</tr>
+</table>
+
+<br />
+<br />
+<h2>Announcements</h2>
+
+{% for blogentry in blogposts %}
+<div class="blogentry">
+  <p class="heading">
+    <span class="date">{{ blogentry.timestamp|date:"N n, Y @ f a" }}</span>
+    <span class="title">{{ blogentry.title }}</span>
+  </p>
+  <p class="contents">
+    {{ blogentry.html }}
+  </p>
+</div>
+{% endfor %}
+
+{% endblock %}

@@ -5,41 +5,173 @@
 {% block subsection_name %}Register for {{program.niceName}}{% endblock %}
 
 {% block xtrajs %}
-<script language="javascript">
+<style type="text/css">
+#divmaintext a { text-decoration: underline; }
+#divmaintext a:hover { text-decoration: none; }
+</style>
+<script type="text/javascript" src="/media/scripts/creditcard.js"></script>
+<script type="text/javascript">
 <!--
+
+// user contact information
+user_contact =  [
+{% for contactitem in module.user.getLastProfile.contact_user.items %}
+  ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
+  ['','']
+];
+
+// guardian contact information
+guardian_contact =  [
+{% for contactitem in module.user.getLastProfile.contact_guardian.items %}
+  ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
+  ['','']
+];
+
+
+// get an item from the above lists
+function getItem(arr, key) {
+
+   for (var i=0; i<arr.length; i++) {
+      if (arr[i][0] == key) {
+         if (arr[i][1] == 'None') {
+           return '';
+         }
+         return arr[i][1];
+      }
+   }
+   return '';
+}
+
+
+// autofill with contact information
+function autofill(ci) {
+   document.getElementById('BillingName').value = 
+          getItem(ci, 'first_name') + ' ' + getItem(ci, 'last_name');
+   document.getElementById('BillingStreet1').value = 
+          getItem(ci, 'address_street');
+   document.getElementById('BillingCity').value = 
+          getItem(ci, 'address_city');
+   document.getElementById('BillingZip').value = 
+          getItem(ci, 'address_zip');   
+   document.getElementById('BillingCustomerPhone').value = 
+          getItem(ci, 'phone_day');
+   document.getElementById('BillingState').value = 
+          getItem(ci, 'address_state');
+   document.getElementById('CustomerEmail').value = 
+          getItem(ci, 'e_mail');
+}
+
+// disable the submit button so that people pay once
 function payOnce() {
   document.getElementById('paybutton').disabled = true;
   return true;
 }
 
+
+// test the form...make sure it's valid.
+function formTest() {
+  errormsg = "You have errors with your form.\n\n";
+  errors = false;
+  
+  blankcheck = [['Cardnumber', 'card number'],
+                ['CardType', 'card type'],
+                ['BillingName', 'cardholder\'s name'],
+                ['BillingStreet1', 'address line 1'],
+                ['BillingCity', 'city'],
+                ['BillingState', 'state'],
+                ['BillingZip', 'zipcode'],
+                ['CustomerEmail', 'telephone'],
+                ['ExpiresMonth', 'expiration, month'],
+                ['ExpiresYear', 'expiration, year']];
+                
+  for (var i=0; i<blankcheck.length; i++) {
+
+     if (document.getElementById(blankcheck[i][0]).value == '') {
+          errormsg += "  -The "+blankcheck[i][1]+" is not filled in.\n";
+          errors = true;
+     }
+  }
+
+  if (!testCreditCard()) {
+    errormsg += "  -Your credit card is invalid.\n";
+    errors = true;
+  }
+
+  if (errors) {
+    alert(errormsg);
+    return false;
+  } 
+  payOnce();
+  return true;
+}
+
+function testCreditCard() {
+  myCardNo = document.getElementById('Cardnumber').value;
+  myCardType = document.getElementById('CardType').value;
+  if (checkCreditCard (myCardNo,myCardType)) {
+    return true;
+  } 
+  else {
+    return false;
+  }
+}
 //-->
 </script>
 {% endblock %}
 {% block content %}
 <h1>Credit Card Payment for {{ program.niceName }} </h1>
+<br />
+<p>Required fields are boxed in a red border and marked with an asterisk.</p>
+<form onsubmit="return formTest();" action="https://shopmit.mit.edu/payment/esp_form" method="post" autocomplete="off">
 
-<form action="https://shopmit.mit.edu/payment/esp_form" method="post" autocomplete="off" onsubmit="return payOnce();">
-<!---<form action="" method="post" autocomplete="off" onsubmit="return payOnce();">//-->
-<input type="hidden" name="OrderComments" value="{{program.id }}-{{module.payment.id}}">
+<input type="hidden" name="OrderComments" value="{{program.id }}-{{module.payment.id}}" />
 
-<input type="hidden" name="ChargeAmount" value="{{ module.cost }}">
+<input type="hidden" name="ChargeAmount" value="{{ module.cost }}" />
+<input type="hidden" name="ReturnLink" value="http://{{request.META.SERVER_NAME}}/learn/{{program.getUrlBase}}/studentreg" />
+<input type="hidden" name="ReturnLinkLabel" value="Student Registration for {{program.niceName }}"  />
+
+<p>
+Autofill contact information:
+<a href="javascript:autofill(guardian_contact);"
+   title="Autofill with parent information">with Guardian Information</a> |
+<a href="javascript:autofill(user_contact);"
+   title="Autofill with student information">with Student Information</a>
+<em>(JavaScript required)</em>
+<br />
+<strong>Note: While this form uses non-secure HTTP, all senstive credit-card information 
+<br />
+is sent over the internet using secure HTTPS.</strong>
+</p>
 
 <table class="payproc1">
 <tr>
- <th>Card Number *</th>
- <td><input type="text" name="Cardnumber" maxlength=40 size=20></td>
+ <th><label for="Cardnumber">Card Number *</label></th>
+ <td><input class="required" id="Cardnumber" type="text" name="Cardnumber" maxlength=40 size=20></td>
+</tr>
+<tr>
+ <th><label for="CardType">Card Type *</label></th>
+ <td><select class="required" name="CardType" id="CardType">
+      <option value=""></option>
+      <option value="">------</option>
+      <option value="AmEx">American Express</option>
+      <option value="Visa">VISA</option>
+      <option value="Discover">Discover</option>
+      <option value="MasterCard">MasterCard</option>
+     </select>
+  </td>
 </tr>
 
 <tr>
- <th>CVM (if available)</th>
- <td><input type="cvm" name="Cvm" maxlength=8 size=8>&nbsp;&nbsp;&nbsp;<a href="#cvminfo">[what's this?]</a></td>
+ <th><label for="cvm">CVM (if available)</label></th>
+ <td><input type="text" name="Cvm" id="cvm" maxlength="8" size="3">&nbsp;&nbsp;&nbsp;<a href="#cvminfo">[what's this?]</a></td>
 
 </tr>
 
 <tr>
  <th>Expiration Date *</th>
  <td>
-<select name="ExpiresMonth">
+<select class="required" id="ExpiresMonth" name="ExpiresMonth">
+ <option value=""></option>
  <option value="01">01 - January</option>
  <option value="02">02 - February</option>
  <option value="03">03 - March</option>
@@ -55,7 +187,8 @@ function payOnce() {
  <option value="11">11 - November</option>
  <option value="12">12 - December</option>
 </select>
-<select name="ExpiresYear">
+<select class="required" id="ExpiresYear" name="ExpiresYear">
+ <option value=""></option>
 {% for year in years %}
  <option value="{{ year.0 }}">{{year.1}}</option>
 {% endfor %}
@@ -63,56 +196,53 @@ function payOnce() {
 </tr>
 
 <tr>
- <th>Cardholder's Name *</th>
- <td><input type="text" name="BillingName" maxlength=60 size=40></td>
+ <th><label for="BillingName">Cardholder's Name *</label></th>
+ <td><input class="required" type="text" id="BillingName" name="BillingName" maxlength="60" size="40"></td>
 </tr>
 
 <tr>
- <th>Company</th>
+ <th><label for="BillingCompany">Company</label></th>
 
- <td><input type="text" name="BillingCompany" maxlength=40 size=40></td>
+ <td><input type="text" id="BillingCompany" name="BillingCompany" maxlength=40 size=40></td>
 </tr>
 
 <tr>
- <th>Address Line 1 *</th>
- <td><input type="text" name="BillingStreet1" maxlength=60 size=40></td>
+ <th><label for="BillingStreet1">Address Line 1 *</label></th>
+ <td><input class="required" type="text" id="BillingStreet1" name="BillingStreet1" maxlength=60 size=40></td>
 </tr>
 
 <tr>
- <th>Address Line 2</th>
+ <th><label for="BillingStreet2">Address Line 2</label></th>
  <td><input type="text" name="BillingStreet2" maxlength=60 size=40></td>
 
 </tr>
 
 <tr>
- <th>City *</th>
- <td><input type="text" name="BillingCity" maxlength=25 size=25></td>
+ <th><label for="BillingCity">City *</label></th>
+ <td><input class="required" type="text" id="BillingCity" name="BillingCity" maxlength=25 size=25></td>
 </tr>
 
 <tr>
- <th>State *</th>
- <td><input type="text" name="BillingState" maxlength=25 size=25></td>
+ <th><label for="BillingState">State *</label></th>
+ <td><input class="required" type="text" id="BillingState" name="BillingState" maxlength=25 size=25></td>
 </tr>
 
 <tr>
- <th>Zipcode *</th>
- <td><input type="text" name="BillingZip" maxlength=20 size=15> (5 or 9 digits only, no hyphen)</td>
+ <th><label for="BillingZip">Zipcode *</label></th>
+ <td><input class="required" type="text" id="BillingZip" name="BillingZip" maxlength=20 size=15> (5 or 9 digits only, no hyphen)</td>
 </tr>
 
 <tr>
- <th>Telephone</th>
- <td><input type="text" name="BillingCustomerPhone" maxlength=30 size=20></td>
+ <th><label for="BillingCustomerPhone">Telephone</label></th>
+ <td><input type="text" name="BillingCustomerPhone" id="BillingCustomerPhone" maxlength=30 size=20></td>
 
 </tr>
 
 <tr>
- <th>Email Address*</th>
- <td><input type="text" name="CustomerEmail" maxlength=64 size=34></td>
+ <th><label for="CustomerEmail">Email Address*</label></th>
+ <td><input class="required" type="text" id="CustomerEmail" name="CustomerEmail" maxlength=64 size=34></td>
 </tr>
 
-<tr>
-<td colspan="2" style="text-align: center">* Required</td>
-</tr>
 
 <tr>
 <td>&nbsp;</td>
@@ -122,7 +252,7 @@ function payOnce() {
 
 <tr>
 <td><b>TOTAL CHARGE</b></td>
-<td><span style="border: 1px solid black;" width="0px">${{ module.cost }}</span></td>
+<td><tt style="border: 1px solid black; padding: 1px 20px 1px 1px; font-size: 140%" width="0px">${{ module.cost }}</tt></td>
 </tr>
 
 </table>
@@ -140,8 +270,7 @@ function payOnce() {
 <li>DO NOT submit multiple times, or else you may be charged multiple times.</li>
 </ol>
 <p style="text-align: center">
-<input id="paybutton" onsubmit="return payOnce();" type="submit" value="Submit Payment"><br/>
-
+<input id="paybutton" onsubmit="return testForm();" type="submit" value="Submit Payment"><br/>
 </p>
 
 </form>

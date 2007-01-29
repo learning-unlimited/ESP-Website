@@ -2,6 +2,7 @@
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+DISPLAYSQL = True
 
 ADMINS = (
     ('Webmasters', 'esp-webmasters@mit.edu'),

@@ -298,13 +298,16 @@ class Class(models.Model):
 		return self.anchor.friendly_name
 	
 	def teachers(self):
+		from esp.users.models import ESPUser
 		v = GetNode( 'V/Flags/Registration/Teacher' )
 		userbits = [ x.user.id for x in UserBit.bits_get_users( self.anchor, v) ]
 		if len(userbits) > 0:
-			return User.objects.filter(id__in=userbits).distinct()
+			teachers = list(User.objects.filter(id__in=userbits).distinct())
+			return map(ESPUser, teachers)
 		else:
 			return EMPTY_QUERYSET.distinct()
 		#return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
+
 
 
 	def cannotAdd(self, user):
@@ -358,6 +361,20 @@ class Class(models.Model):
 
 		return True
 
+	def subscribe(self, user):
+		v = GetNode('V/Subscribe')
+		if UserBit.objects.filter(user = user,
+					  qsc = self.anchor,
+					  verb = v).count() > 0:
+			return False
+
+		ub, created = UserBit.objects.get_or_create(user = user,
+							    qsc = self.anchor,
+							    verb = v)
+
+
+		return True
+	
 	def makeAdmin(self, user, endtime = None):
 		v = GetNode('V/Administer/Edit')
 		if UserBit.objects.filter(user = user,
@@ -397,6 +414,40 @@ class Class(models.Model):
 		from esp.users.models import ESPUser
 		v = GetNode( 'V/Flags/Registration/Preliminary' )
 		return [ ESPUser(x.user) for x in UserBit.bits_get_users( self.anchor, v ) ]
+
+	@staticmethod
+	def idcmp(one, other):
+		return cmp(one.id, other.id)
+	
+	def __cmp__(self, other):
+		selfevent = self.firstBlockEvent()
+		otherevent = other.firstBlockEvent()
+
+		if selfevent is not None and otherevent is None:
+			return 1
+		if selfevent is None and otherevent is not None:
+			return -1
+
+		if selfevent is not None and otherevent is not None:
+			cmpresult = selfevent.__cmp__(otherevent)
+			if cmpresult != 0:
+				return cmpresult
+
+		return cmp(self.title(), other.title())
+
+		
+
+
+	def firstBlockEvent(self):
+		eventList = []
+		for timeanchor in self.meeting_times.all():
+			events = Event.objects.filter(anchor=timeanchor)
+			if len(events) == 1:
+				eventList.append(events[0])
+		if len(eventList) == 0:
+			return None
+		eventList.sort()
+		return eventList[0]
 
 
 	def num_students(self):
@@ -461,9 +512,14 @@ class Class(models.Model):
 	def isAccepted(self):
 		return UserBit.UserHasPerms(None, self.anchor, GetNode('V/Flags/Class/Approved'))
 
+	def isReviewed(self):
+		return not UserBit.UserHasPerms(None, self.anchor, GetNode('V/Flags/Class/Proposed'))
+
 	
 
 	def accept(self):
+		""" mark this class as accepted """
+		self.review()
 		if self.isAccepted():
 			return False # already accepted
 			
@@ -474,12 +530,46 @@ class Class(models.Model):
 		u.save()
 		return True
 
+	def review(self):
+		"""Mark this class as no-longer just `proposed' """
+		userbitList = UserBit.objects.filter(user = None,
+						     qsc = self.anchor,
+						     verb = GetNode('V/Flags/Class/Proposed'))
+
+		for userbit in userbitList:
+			userbit.delete()
+
+		return True
+	
+		
+
+	def propose(self):
+		""" Mark this class as just `proposed' """
+		
+		proposeVerb = GetNode('V/Flags/Class/Proposed')
+		
+		userbitList = UserBit.objects.filter(user = None,
+						     qsc = self.anchor,
+						     verb = proposeVerb)
+		if len(userbitList) > 0:
+			return False
+
+		u = UserBit()
+		u.user = None
+		u.qsc = self.anchor
+		u.verb = proposeVerb
+		u.save()
+
 	def reject(self):
+		""" Mark this class as rejected """
+		
+		self.review()
 		userbitlst = UserBit.objects.filter(user = None,
 						    qsc  = self.anchor,
 						    verb = GetNode('V/Flags/Class/Approved'))
 		if len(userbitlst) > 0:
-			userbitlst.delete()
+			for userbit in userbitlst:
+				userbit.delete()
 			return True
 		return False
 

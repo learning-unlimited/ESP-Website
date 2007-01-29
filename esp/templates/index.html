@@ -173,10 +173,13 @@ document.writeln("<"+"/style>");
   </tr>
   {% endif %}
   <tr>
-    <td>
     		{% if logged_in %}
+    <td colspan="2">
+
 <!--		<div class="divformcol1" style="text-align:left"><a href="/myesp/manage/">Manage Subscriptions</a></div>-->
+                <div class="divformcol1" style="text-align: right; font-size: 90%;">Welcome, {{ request.user.first_name }}!</div>
 		{% else %}
+    <td>
 		<div class="divformcol1" style="text-align:left"><a href="/myesp/register/">Join ESP!</a></div>
 		{% endif %}
 		</td>

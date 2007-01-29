@@ -2,7 +2,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
 from esp.money.models    import PaymentType, Transaction
-        
+from datetime            import datetime        
 
 class CreditCardModule(ProgramModuleObj):
     def extensions(self):
@@ -27,7 +27,7 @@ class CreditCardModule(ProgramModuleObj):
     @usercheck_usetl
     def paynow(self, request, tl, one, two, module, extra, prog):
 
-        context = {}
+        context = {'module': self}
         paymenttype = PaymentType.objects.get(description__icontains = 'credit card')
         payment = Transaction()
         payment.anchor = self.program.anchor
@@ -45,5 +45,8 @@ class CreditCardModule(ProgramModuleObj):
         context['years'] = zip(range(yearnow-2000, yearnow+20-2000),
                                range(yearnow, yearnow+20))
         context['module'] = self
+
+
+
         return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
 

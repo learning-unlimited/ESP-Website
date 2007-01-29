@@ -1,0 +1,42 @@
+
+
+<html>
+<head>
+<title>Teacher labels</title>
+<style media="print,screen" type="text/css">
+body { font-family: georgia; margin-left: 0; margin-top: 0; }
+.spacer { height: .5in }
+.label { width:4in; height: 1in; text-align: center; border: 0px solid black;}
+.hspace { width: 0.25in; }
+.marginize { margin: 5px; }
+.label { font-size: 14pt; overflow: hidden;}
+h1 { font-size: 18pt; font-weight: bold; display: inline; }
+h2 { font-size: 16pt; font-weight: bold; display: inline; }
+span { text-decoration: underline; }
+</style>
+</head>
+<body>
+{% for teacher in teachers %}
+{% if forloop.counter0|divisibleby:20 %}
+{% if not forloop.first %}
+</table>
+<div style="page-break-after: always;">&nbsp; </div>
+{% endif %}
+<div class="spacer">&nbsp; </div>
+<table cellspacing="0" cellpadding="0" align="center">
+{% endif %}
+{% if forloop.counter0|divisibleby:2 %}
+<tr>
+  <td>
+  {% include "program/modules/programprintables/teacherlabel.html" %}
+  </td>
+  <td class="hspace">&nbsp; </td>
+{% else %}
+  <td>
+  {% include "program/modules/programprintables/teacherlabel.html" %}
+  </td>
+</tr>
+{% endif %}
+{% endfor %}
+</body>
+</html>

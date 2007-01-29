@@ -406,24 +406,11 @@ def studentRegDecision(request, tl, one, two, module, extra, prog):
 	receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
 	return render_to_response(receipt, request, (prog, tl), context)
 
-@login_required
-def program_display_credit(request, tl, one, two, module, extra, prog):
-	""" Displays the credit card form to feed to OMAR """
-	# Catherine: I've manually hard-coded the amount of the program
-	return render_to_response('program/creditcard', request, (prog, tl), {'credit_name': two + ' ' + one, 
-							 'one': one,
-							 'two': two,
-							 'student': request.user,
-							 'amount': '30'})
-
 def profile_check(user, prog):
 	""" Return true if the profile has been filled out. """
 	regProf = RegistrationProfile.getLastForProgram(user, prog)
 	return regProf.id is not None
 
-def satprepinfo_check(user, prog):
-	satPrep = SATPrepRegInfo.getLastForProgram(user, prog)
-	return satPrep.id is not None
 
 def class_check(user, prog):
 	""" Return true if there are classes that have been registered. """
