@@ -33,6 +33,8 @@ elif request == 'teachers':
     newblog.anchor = clsobj.anchor.tree_create(['TeacherEmail'])
     newblog.content = total
     newblog.timestamp = datetime.now()
+    newblog.email = False
+    newblog.sent  = True
     newblog.title = sys.argv[3]
     newblog.save()
     

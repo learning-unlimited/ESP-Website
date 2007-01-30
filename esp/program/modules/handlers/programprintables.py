@@ -64,8 +64,8 @@ class ProgramPrintables(ProgramModuleObj):
     def roomrosters(self, request, tl, one, two, module, extra, prog):
         """ generate class room rosters"""
         classes = [ cls for cls in self.program.classes()
-                    if cls.accepted()                      ]
-
+                    if cls.isAccepted()                      ]
+        context = {}
         classes.sort()
 
         rooms = {}
@@ -74,9 +74,24 @@ class ProgramPrintables(ProgramModuleObj):
         for cls in classes:
             roomassignments = cls.classroomassignments()
             for roomassignment in roomassignments:
-                pass
-        
-            
+                if rooms.has_key(roomassignment.room.id):
+                    rooms[roomassignment.room.id].append({'room':
+                                                          roomassignment.room.name,
+                                                          'cls': cls,
+                                                          'timeblock':
+                                                          roomassignment.timeslot.friendly_name})
+                else:
+                    rooms[roomassignment.room.id] = [{'room':
+                                                      roomassignment.room.name,
+                                                      'cls': cls,
+                                                      'timeblock': roomassignment.timeslot.friendly_name}]
+        for scheditem in rooms.values():
+            for dictobj in scheditem:
+                scheditems.append(dictobj)
+                
+        context['scheditems'] = scheditems
+
+        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
         
         
     @needs_admin
