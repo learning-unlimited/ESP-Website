@@ -83,8 +83,7 @@ If you have any questions regarding the program, <br /> please email the
     </td>
 {% endif %}
    <td class="clsmiddle">
-      <form method="post" action="./class_status">
-         <input type="hidden" name="clsid" value="{{cls.id}}" />
+      <form method="get" action="./class_status/{{cls.id}}">
          <input class="button" type="submit" value="View Status" />
       </form>
    </td>

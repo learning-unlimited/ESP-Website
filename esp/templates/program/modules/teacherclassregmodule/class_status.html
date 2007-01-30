@@ -16,10 +16,6 @@
 #divmaintext .blogentry .contents { margin: 0 0 0 30px; }
 </style>
 
-<br />
-<br />
-
-<br /><br />
 <h1>Class Status For {{ cls.title }}</h1>
 
 <p>
@@ -81,12 +77,17 @@ Students: {{cls.emailcode}}-students@esp.mit.edu
 
 <br />
 <br />
-<h2>Announcements</h2>
 
+
+<h2>Announcements &ndash; Class Specific</h2>
+
+{% if blogposts|length_is:0 %}
+<em>There are currently no posts.</em>
+{% else %}
 {% for blogentry in blogposts %}
 <div class="blogentry">
   <p class="heading">
-    <span class="date">{{ blogentry.timestamp|date:"N n, Y @ f a" }}</span>
+    <span class="date">{{ blogentry.timestamp|date:"N d, Y @ f a" }}</span>
     <span class="title">{{ blogentry.title }}</span>
   </p>
   <p class="contents">
@@ -96,5 +97,5 @@ Students: {{cls.emailcode}}-students@esp.mit.edu
 <br />
 <br />
 {% endfor %}
-
+{% endif %}
 {% endblock %}

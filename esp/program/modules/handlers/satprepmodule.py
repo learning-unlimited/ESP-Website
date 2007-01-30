@@ -4,9 +4,17 @@ from esp.web.data        import render_to_response
 from esp.program.manipulators import SATPrepInfoManipulator
 from django import forms
 from esp.program.models import SATPrepRegInfo
+from esp.users.models   import ESPUser
+
+
+
 
 class SATPrepModule(ProgramModuleObj):
-    
+
+    def students(self):
+        students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
+        return {'satprepinfo': students }
+
     def isCompleted(self):
         
 	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)

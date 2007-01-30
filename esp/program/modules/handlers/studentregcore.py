@@ -1,10 +1,17 @@
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
-from esp.users.models    import UserBit
+from esp.users.models    import UserBit, ESPUser
 from esp.datatree.models import GetNode
 
 class StudentRegCore(ProgramModuleObj):
+
+
+    def students(self):
+        verb = GetNode('V/Flags/Public')
+        qsc  = GetNode("/".join(self.program.anchor.tree_encode()) + "/Confirmation")
+        userbits = UserBit.bits_get_users(qsc = qsc, verb = verb)
+        return {'confirmed': [ x.user for x in userbits ]}
 
     @needs_student
     @meets_deadline()

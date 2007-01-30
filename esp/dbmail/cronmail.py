@@ -5,8 +5,13 @@ from esp.users.models import UserBit
 from esp.datatree.models import GetNode
 from datetime import datetime, timedelta
 from django.db.models import Q
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
+from esp.users.models import ESPUser
+from esp.miniblog.models import Entry
+from django.core.mail import send_mail
 
+from django.conf import settings
+import time
 
 def event_to_message(event):
     m = MessageRequest()
@@ -49,3 +54,32 @@ def send_event_notices_for_day(day):
         send_event_notices_for_date(datetime.now()+timedelta(1))
     else:
         send_event_notices_for_date(datetime.now())
+
+def send_miniblog_messages():
+    entries = Entry.objects.filter(email = True, sent = False)
+    verb = GetNode('V/Subscribe')
+    if hasattr(settings, 'EMAILTIMEOUT') and settings.EMAILTIMEOUT is not None:
+        wait = settings.EMAILTIMEOUT
+    else:
+        wait = 1.5
+        
+    for entry in entries:
+        if entry.fromuser is None or type(entry.fromuser) == AnonymousUser:
+            fromemail = 'esp@mit.edu'
+        else:
+            fromemail = '%s <%s>' % (ESPUser(entry.fromuser).name(),
+                                     entry.fromuser.email)
+        emails = {}
+        bits = UserBit.bits_get_users(qsc = entry.anchor, verb = verb)
+        for bit in bits:
+            emails[bit.user.email] = ESPUser(bit.user).name()
+        for email,name in emails.items():
+            send_mail(entry.title,
+                      entry.content,
+                      fromemail,
+                      ['%s <%s>' % (name, email)],
+                      True)
+            print "Sent mail to %s" % (name)
+            time.sleep(wait)
+        entry.sent = True
+        entry.save()

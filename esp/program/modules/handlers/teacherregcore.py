@@ -2,6 +2,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
 from django.contrib.auth.decorators import login_required
+from esp.miniblog.models import Entry
+from esp.datatree.models import GetNode
 
 class TeacherRegCore(ProgramModuleObj):
     
@@ -23,6 +25,9 @@ class TeacherRegCore(ProgramModuleObj):
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
+
+        context['progposts'] = Entry.find_posts_by_perms(self.user,GetNode('V/Subscribe'),
+                                                         self.program.anchor.tree_create(['Announcements', 'Teachers']))
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 

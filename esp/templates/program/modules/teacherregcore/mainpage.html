@@ -7,6 +7,14 @@
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
+#divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
+  { border: 1px solid black; border-collapse: collapse; 
+    vertical-align: baseline;}
+#divmaintext .blogentry { border: 2px solid black; }
+#divmaintext .blogentry .heading { background-color: #d7eeff; padding: 5px; }
+#divmaintext .blogentry .title { font-weight: bolder; }
+#divmaintext .blogentry .date { font-style: italic; margin: 0 5px 0 0;  }
+#divmaintext .blogentry .contents { margin: 0 0 0 30px; }
 </style>
 <br />
 <br />
@@ -42,6 +50,33 @@ Please fill out the following form to manage your involvement in {{program.niceN
 </table>
 
 </center>
+<br />
+<br />
+<br />
+
+<h2>Announcements &ndash; General for {{program.niceName}}</h2>
+{% if progposts|length_is:0 %}
+<em>There are currently no posts.</em>
+<br />
+<br />
+<br />
+{% else %}
+{% for blogentry in progposts %}
+<div class="blogentry">
+  <p class="heading">
+    <span class="date">{{ blogentry.timestamp|date:"N d, Y @ f a" }}</span>
+    <span class="title">{{ blogentry.title }}</span>
+  </p>
+  <p class="contents">
+    {{ blogentry.html }}
+  </p>
+</div>
+<br />
+<br />
+{% endfor %}
+{% endif %}
+
+
 <br />
 {% for module in modules %}
 {% if module.useTemplate %}

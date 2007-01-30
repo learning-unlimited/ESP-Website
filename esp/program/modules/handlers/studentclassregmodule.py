@@ -8,6 +8,15 @@ from esp.users.models  import ESPUser
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
 
+    def students(self):
+        from esp.program.models import Class
+        Conf = UserBit.objects.filter(qsc__parent = self.program.classes_node(),
+                                      verb =  GetNode('V/Flags/Registration/Confirmed'))
+        Prel = UserBit.objects.filter(qsc__parent = self.program.classes_node(),
+                                      verb =  GetNode('V/Flags/Registration/Preliminary'))
+        return {'classreg': [ x.user for x in (Conf | Prel).distinct()] }
+
+    
     def isCompleted(self):
         self.user = ESPUser(self.user)
         if self.user.getEnrolledClasses().count() == 0:
@@ -68,42 +77,12 @@ class StudentClassRegModule(ProgramModuleObj):
     # we can also ``changeslot''
     changeslot = fillslot
 
-    @meets_deadline('/Catalog')
+#    @meets_deadline('/Catalog')
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         
         context = {}
         dt_approved = GetNode( 'V/Flags/Class/Approved' )
-
-        if request.POST:
-                for i in [ 'class_id', 'action' ]:
-                        if not request.POST.has_key(i):
-                                assert False, i
-                                #raise Http404()
-
-                clsObj = Class.objects.filter(pk=request.POST['class_id'])[0]
-
-                if self.user.canEdit(clsObj):
-                        if request.POST['action'] == 'Edit':
-                                clsid = int(request.POST['class_id']) # we have a class
-                                clslist = list(Class.objects.filter(id = clsid))
-                                if len(clslist) != 1:
-                                        assert False, 'Zero (or more than 1) classes match selected ID.'
-                                clsobj = clslist[0]
-                                prog = clsobj.parent_program
-                                two  = prog.anchor.name
-                                one  = prog.anchor.parent.name
-                                return program_teacherreg2(request, 'teach', one, two, 'teacherreg', '', prog, clsobj)
-
-                if self.user.canAdminister(prog):
-                        if request.POST['action'] == 'Accept':
-                                clsObj.accept()
-
-                        if request.POST['action'] == 'Reject':
-                                clsObj.reject()
-
-                        if request.POST['action'] == 'Change Time':
-                                clsObj.setTime(request.POST['event_template'])
 
         #	You'll notice these are the same; we make no distinction yet.
         #	Only show the approve and edit buttons if you're looking at the whole

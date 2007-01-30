@@ -168,6 +168,10 @@ class ProgramModuleObj(models.Model):
                self.module.main_call+'.html'
 
 
+
+    def students(self):
+        return None
+
     def isStep(self):
         return True
 

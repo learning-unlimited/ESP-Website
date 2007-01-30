@@ -233,7 +233,8 @@ class UserBit(models.Model):
 
         #	Hopefully it's easier to understand this query now...
         Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
-        Q_correct_qsc = Q(qsc=qsc)
+#        Q_correct_qsc = Q(qsc=qsc)
+        Q_correct_qsc = Q(recursive = True, qsc__rangestart__lte = qsc.rangestart, qsc__rangeend__gte = qsc.rangeend)
         Q_exact_match = Q(recursive = False, verb=verb, qsc=qsc)
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)

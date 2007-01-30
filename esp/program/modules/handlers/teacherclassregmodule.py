@@ -119,6 +119,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         clsid = 0
         if request.POST.has_key('clsid'):
             clsid = request.POST['clsid']
+        else:
+            clsid = extra
             
         classes = Class.objects.filter(id = clsid)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
@@ -174,6 +176,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         
         if op == 'add':
 
+
             if len(request.POST['teacher_selected'].strip()) == 0:
                 error = 'Error - Please click on the name when it drops down.'
 
@@ -223,11 +226,13 @@ class TeacherClassRegModule(ProgramModuleObj):
                 cls.makeTeacher(self.user)
                 cls.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
                 cls.subscribe(self.user)
+                self.program.teacherSubscribe(self.user)                
 
                 # add bits for all new (and old) coteachers
                 for teacher in coteachers:
+                    self.program.teacherSubscribe(teacher)
                     cls.makeTeacher(teacher)
-                    cls.subscribe(self.user)
+                    cls.subscribe(teacher)
                     cls.makeAdmin(teacher, self.classRegInfo.teacher_class_noedit)                    
                 
                 return self.goToCore(tl)
@@ -248,6 +253,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         cls = classes[0]
 
         return self.makeaclass(request, tl, one, two, module, extra, prog, cls)
+
 
     @meets_deadline()
     @needs_teacher
@@ -279,13 +285,13 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 if len(new_data['message_for_directors'].strip()) > 0 and \
                        new_data['message_for_directors'] != newclass.message_for_directors and \
-                       self.classRegInfo.director_email:
+                       self.program.director_email:
 
                     send_mail('['+self.program.anchor.parent.friendly_name+"] Directors' Comments for Teacher Reg", \
                               """ Directors\' comments below:\nClass Title: %s\n\n %s\n\n>>>>>>>>>>>EOM""" % \
                               (new_data['title'], new_data['message_for_directors']) , \
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
-                              [self.classRegInfo.director_email], True)
+                              [self.program.director_email], True)
 
 
                 for k, v in new_data.items():
@@ -329,7 +335,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # add userbits
                 newclass.makeTeacher(self.user)
                 newclass.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
-                cls.subscribe(self.user)                
+                cls.subscribe(self.user)
+                self.program.teacherSubscribe(self.user)
                 newclass.propose()
 
                 return self.goToCore(tl)
