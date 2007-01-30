@@ -3,15 +3,19 @@ from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
 from esp.users.models    import UserBit, ESPUser
 from esp.datatree.models import GetNode
+from django.db.models import Q
+import operator
 
 class StudentRegCore(ProgramModuleObj):
 
 
-    def students(self):
+    def students(self, QObject = False):
         verb = GetNode('V/Flags/Public')
         qsc  = GetNode("/".join(self.program.anchor.tree_encode()) + "/Confirmation")
-        userbits = UserBit.bits_get_users(qsc = qsc, verb = verb)
-        return {'confirmed': [ x.user for x in userbits ]}
+        if QObject:
+            return {'confirmed': Q(userbit__qsc = qsc) & Q(userbit__verb = verb)}
+        
+        return {'confirmed': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
 
     @needs_student
     @meets_deadline()

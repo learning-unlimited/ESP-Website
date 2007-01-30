@@ -46,3 +46,23 @@ class QuasiStaticData(models.Model):
 		# Operation Complete!
 		return qsd[0]
 
+
+class ESPQuotations(models.Model):
+	""" Quotation about ESP """
+
+	content = models.TextField()
+	display = models.BooleanField()
+	author  = models.CharField(maxlength=64)
+	create_date = models.DateTimeField(default=datetime.now())
+
+	@staticmethod
+	def getQuotation():
+		import random
+		cutoff = .9
+		if random.random() > cutoff:
+			return None
+		return ESPQuotations.objects.filter(display=True).order_by('?')[0]
+		
+
+	class Admin:
+		pass

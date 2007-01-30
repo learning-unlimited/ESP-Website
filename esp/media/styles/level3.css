@@ -303,7 +303,7 @@ form {
   padding: 0px 6px 10px 0px;
 
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 1em;
+  font-size: .85em;
   color: #000000;
   line-height: 100%;
   margin: 0px;
@@ -426,24 +426,24 @@ form {
 }
 #divmaintext p, #divmaintext li {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.90em;
+  font-size: 0.83em;
   line-height: 160%;
   color: #000000;
   margin-top: 0px;
 }
 #divmaintext pre {
-  font-size: 1.30em;
+  font-size: .9em;
 }
 #divmaintext h1 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 1em;
+  font-size: .92em;
   font-weight: bold;
   color: #3366cc;
   margin-top: 0px;
 }
 #divmaintext h2 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 1em;
+  font-size: .9em;
   font-weight: bold;
   color: #000000;
   margin-top: 0px;
@@ -451,7 +451,7 @@ form {
 }
 #divmaintext h3 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 1em;
+  font-size: .85em;
   font-weight: bold;
   color: #000000;
   margin-top: 0px;
@@ -581,6 +581,8 @@ form {
   margin: 0px;
   color: #ff5500;
   padding: 0px 44px 0px 6px;
+/*  position: absolute;
+  top: 150px;*/
 }
 #divquotetext .quoteauthor {
   font-size: 0.85em;
@@ -683,7 +685,7 @@ div.note, div.info, div.errormsg, div.question {
   font-style: italic;
   font-family: arial;
   padding: 5px 0px 5px 38px;
-  border: 3px outset #999;
+  border: 3px groove #999;
   margin: 10px;
   overflow: visible;
   width: 450px;

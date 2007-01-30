@@ -10,15 +10,22 @@ class AdminVitals(ProgramModuleObj):
         
     def prepare(self, context={}):
         import operator
-        classes = Class.objects.filter(parent_program = self.program)
-        vitals = {'classtotal': len(classes)}
-
+        
+        classes = self.program.classes()
+        vitals = {'classtotal': classes.count()}
+        classes = list(classes)
+        
         vitals['classapproved'] = len([x for x in classes if x.isAccepted() ])
-        vitals['classrejected'] = vitals['classtotal'] - vitals['classapproved']
+        vitals['classunreviewed'] = len([x for x in classes if not x.isReviewed() ])
 
-        vitals['teachernum'] = len(self.program.teachers())
-        vitals['studentnum'] = len(self.program.students())
+        vitals['classrejected'] = vitals['classtotal'] - vitals['classapproved'] - vitals['classunreviewed']
 
+
+        vitals['teachernum'] = self.program.teachers().items()
+        vitals['teachernum'].append(('union', self.program.teachers_union()))
+        vitals['studentnum'] = self.program.students().items()
+        vitals['studentnum'].append(('union', self.program.students_union()))
+        
         timeslots = self.program.getTimeSlots()
 
         vitals['timeslots'] = []
@@ -31,8 +38,11 @@ class AdminVitals(ProgramModuleObj):
 
             curTimeslot['classcount'] = curclasses.count()
 
-            curTimeslot['studentcount'] = \
-                              reduce(operator.add, [x.num_students() for x in curclasses ])
+            if curTimeslot['classcount'] == 0:
+                curTimeslot['studentcount'] = 0
+            else:
+                curTimeslot['studentcount'] = \
+                      reduce(operator.add, [x.num_students() for x in curclasses ])
             
             vitals['timeslots'].append(curTimeslot)
 

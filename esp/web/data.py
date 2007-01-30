@@ -3,6 +3,7 @@ from esp.web.navBar import makeNavBar
 import django.shortcuts
 from esp.web.navBar import makeNavBar
 from esp.program.models import Program
+from esp.qsd.models import ESPQuotations
 
 def render_to_response(template, requestOrContext, prog = None, context = None):
     # if there are only two arguments
@@ -29,7 +30,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
                 context['navbar_list'] = makeNavBar(request.user, prog.anchor, section)
             else:
                 context['navbar_list'] = makeNavBar(request.user, prog, section)
-                
+        context['randquote'] = ESPQuotations.getQuotation()   
         # get the preload_images list
         if not context.has_key('preload_images'):
                 context['preload_images'] = preload_images

@@ -5,16 +5,16 @@
 {% block subsection_name %}Welcome Back{% endblock %}
 
 {% block content %}
-<h2 style='text-align: center'>Welcome back to ESP?</h2>
-<h1 style='text-align: center; margin-bottom: 0px'>Cool!</h1>
+<h2 style='text-align: center'>Welcome back to ESP!</h2>
 
 <p style="text-align: center; color: #FF0000; margin-bottom: 0px;">
- <b>NOTE: You must have cookies enabled to login to this website.<br/>
+ <b>NOTE: You must have <a href="http://www.google.com/cookies.html"
+ title="How to enable cookies">cookies enabled</a> to login to this website.<br/>
  </b>
 </p>
 <hr/>
 {% if form.has_errors %}
-<h2 color="red">Sorry!  Check your username and password and try again.</h2>
+<h2 class="error">Sorry!  Check your username and password and try again.</h2>
 {% endif %}
 <form action='.' method="post">
 <table width='65%' cellpadding='2' align='center' border='0'>

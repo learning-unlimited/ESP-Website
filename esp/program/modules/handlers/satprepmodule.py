@@ -5,13 +5,15 @@ from esp.program.manipulators import SATPrepInfoManipulator
 from django import forms
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser
-
+from django.db.models import Q
 
 
 
 class SATPrepModule(ProgramModuleObj):
 
-    def students(self):
+    def students(self,QObject = False):
+        if QObject:
+            return {'satprepinfo': Q(satprepreginfo__program = self.program)}
         students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
         return {'satprepinfo': students }
 

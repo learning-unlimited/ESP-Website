@@ -3,6 +3,7 @@ from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
 from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
+from django.db.models    import Q
 
 class CreditCardModule(ProgramModuleObj):
     def extensions(self):
@@ -14,6 +15,21 @@ class CreditCardModule(ProgramModuleObj):
     def isCompleted(self):
         return Transaction.objects.filter(anchor = self.program.anchor,
                                           fbo = self.user).count() > 0
+
+    def students(self, QObject = False):
+        # this should be fixed...this is the best I can do for now - Axiak
+        transactions = Transaction.objects.filter(anchor = self.program.anchor)
+        userids = [ x.fbo.id for x in transactions ]
+        QObj = Q(id__in = userids)
+        if QObject:
+            return {'creditcard': QObj}
+        else:
+            from esp.users.models import ESPUser
+            
+            return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
+
+
+
 
     @usercheck_usetl
     def startpay(self, request, tl, one, two, module, extra, prog):

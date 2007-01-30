@@ -9,27 +9,9 @@
 
 {% block javascript %}
 {{ block.super }}
-<script language="JavaScript" type="text/javascript">
-<!--
-//
-// random backgrounds
-//
-var randbkgs = new Array(
-  "/media/images/home/pagebkg1.jpg",
-  "/media/images/home/pagebkg2.jpg",
-  "/media/images/home/pagebkg3.jpg"
-);
-var nbkg = Math.floor(Math.random()*randbkgs.length);    // pick one at random
-
-// write CSS for background
-document.writeln("<style type='text/css'>");
-
-document.writeln("html, body { background-image: url("+randbkgs[nbkg]+") }");
-
-document.writeln("<"+"/style>");
-
-// -->
-</script>
+<style type="text/css">
+html, body { background-image: url("{{ backgrounds|random }}"); }
+</style>
 {% endblock %}
 
 {% block body %}
@@ -156,46 +138,70 @@ document.writeln("<"+"/style>");
 {% endblock %}
 
 {% block login %}
-<div id="divlogin">
-<form name="loginform" id="loginform" method="post" action="/myesp/login/">
-<input type="hidden" name="next" value="/myesp/logfin/" />
-<table border="0" cellpadding="0" cellspacing="0" summary=" ">
-  {% if not logged_in %}
-  <tr>
-    <td><div class="divformcol1"><label for="user">Username:</label></div></td>
-    <td><div class="divformcol2"><input type="text" id="id_username" class="vTextField required inputbox" name="username" size="15" value="" maxlength="30" />
-    <td><div class="divformcol3">&nbsp;</div></td>
-  </tr>
-  <tr>
-    <td><div class="divformcol1"><label for="pass">Password:</label></div></td>
-    <td><div class="divformcol2"><input type="password" id="id_password" class="vPasswordField required inputbox" name="password" size="15" value="" maxlength="30" />
-    <td><div class="divformcol3"><input type="image" name="gologin" id="gologin" src="/media/images/home/go.gif" class="gobutton" alt="Go" title="" /></div></td>
-  </tr>
-  {% endif %}
-  <tr>
-    		{% if logged_in %}
-    <td colspan="2">
+<!-- quicklinks -->
+<div id="divquicklinks">
+  <form name="quicklinkform" id="quicklinkform" method="get" action="" onsubmit="return false;">
+    <table border="0" cellpadding="0" cellspacing="0" summary=" ">
+      <tr>
+        <td><div class="divformcol1">&nbsp;</div></td>
+        <td><div class="divformcol2">
 
-<!--		<div class="divformcol1" style="text-align:left"><a href="/myesp/manage/">Manage Subscriptions</a></div>-->
-                <div class="divformcol1" style="text-align: right; font-size: 90%;">Welcome, {{ request.user.first_name }}!</div>
-		{% else %}
-    <td>
-		<div class="divformcol1" style="text-align:left"><a href="/myesp/register/">Join ESP!</a></div>
-		{% endif %}
-		</td>
-		<td colspan="2">							  
-<br /> <br />
-	{% if logged_in %}
-		    <div class="divformcol2" style="text-align:left"><a href="/myesp/signout/">Sign Out</a></div>
-	{% else %}
-		    <div class="divformcol2" style="text-align:left"><a href="/myesp/emaillist/">Join our mailing list</a></div>
-	{% endif %}
-		</td>
-  </tr>
-
-</table>
-</form>
+          <!-- select name="quicklinks" id="quicklinks" class="selectbox" onchange="MM_jumpMenu('parent',this,0)" -->
+          <select name="quicklinks" id="quicklinks" class="selectbox">
+            <option value="#">Quick Links</option>
+            <option value="/learn/HSSP/index.html">HSSP</option>
+            <option value="/learn/Splash/index.html">Splash</option>
+            <option value="/learn/SATprep/index.html">SATPrep</option>
+            <option value="/learn/ProveIt/index.html">ProveIt</option>
+            <option value="/learn/Delve/index.html">Delve</option>
+            <option value="/learn/Delve/index.html">Delve</option>
+            <option value="/learn/SplashOnWheels/index.html">Splash On Wheels</option>
+          </select>
+        </div></td>
+        <td><div class="divformcol3"><input type="image" name="goquick" id="goquick" src="/media/images/home/go.gif" class="gobutton" alt="Go" onclick="MM_jumpMenuGo('quicklinks','parent',0)" /></div></td>
+      </tr>
+    </table>
+  </form>
 </div>
+
+
+
+<!-- login -->
+{% if not logged_in %}
+<div id="divlogin">
+  <form name="loginform" id="loginform" method="post" action="/myesp/login/">
+    <input type="hidden" name="next" value="/myesp/logfin" />
+    <table border="0" cellpadding="0" cellspacing="0" summary=" ">
+      <tr>
+        <td><div class="divformcol1"><label for="user">Login:</label></div></td>
+        <td><div class="divformcol2"><input type="text" name="username" id="user" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+
+        <td><div class="divformcol3">&nbsp;</div></td>
+      </tr>
+      <tr>
+        <td><div class="divformcol1"><label for="pass">Password:</label></div></td>
+        <td><div class="divformcol2"><input type="password" name="password" id="pass" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+        <td><div class="divformcol3"><input type="image" name="gologin" id="gologin" src="/media/images/home/go.gif" class="gobutton" alt="Go" title="" /></div></td>
+      </tr>
+      <tr>
+
+        <td colspan="3"><div class="divformcol1"><a href="/myesp/loginhelp.html">Login Help</a>
+        <span style="padding-left: 25px;">
+        <a href="/myesp/register">Join ESP!</a></span></div></td>
+      </tr>
+    </table>
+  </form>
+</div>
+
+{% else %}
+<!-- logout -->
+<div id="divlogout">
+  <p>
+    Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
+    (<a href="/myesp/signout/">Logout</a>) <span id="spanlogouticon"><img src="/media/images/home/logouticon.gif" width="23" height="23" alt="" /></span>
+  </p>
+</div>
+{% endif %}
 {% endblock %}
 
 <!-- announcements header -->
@@ -205,34 +211,30 @@ document.writeln("<"+"/style>");
 
 <!-- announcements -->
 <div id="divannouncements">
-<table border="0" cellpadding="0" cellspacing="0">
-  <tr>
-    <td>
-     <ul>
+<ul>
 {% for announce in announcements.announcementList %}
        <li> <a href="{{ announce.makeUrl }}" title="{{ announce.makeTitle }}">
-                {{ announce.makeTitle }}
+                {{ announce.makeTitle|truncatewords:6 }}
        </a></li>
 {% endfor %}
      </ul>
-     {% if announcements.overflowed %}
+</div>
+
+<!-- more announcements -->
+{% if announcements.overflowed %}
+<div id="divannouncemore">
+  <a href="/blog/announcements">
+<img src="/media/images/home/more.gif" width="45" height="34" border="0" alt="More Announcements" title="" /></a></div>
+{% comment %}
      {{ announcements.total }} total ...
      <a href="/blog/announcements" title="See all announcements!">
         see all
      </a>
-     {% endif %}
-    </td>
-  </tr>
-</table>	
+{% endcomment %}
+{% endif %}
 
 
 
-</div>
-
-<!-- more announcements -->
-<!--<div id="divannouncemore">
-  <a href="announcements.html"><img src="/web/img/home/more.gif" width="45" height="34" border="0" alt="More Announcements" title="" /></a></div>
--->
 
 <!-- footer -->
 <div id="divfooter">

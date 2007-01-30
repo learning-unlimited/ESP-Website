@@ -35,11 +35,15 @@ def index(request):
 	# aseering: Yay.
 	# axiak:    hmm...
 	announcements = preview_miniblog(request)
-	return render_to_response('index.html', request, None, {'announcements':    {'announcementList': announcements[:5],
-				     'overflowed':       len(announcements) > 5,
-				     'total':            len(announcements)},
-		
-		})
+
+	backgrounds = ["/media/images/home/pagebkg1.jpg",
+		       "/media/images/home/pagebkg2.jpg",
+		       "/media/images/home/pagebkg3.jpg"]
+
+	return render_to_response('index.html', request, None, {'announcements':    {'announcementList': announcements[:4],
+										     'overflowed':       len(announcements) > 4,
+										     'total':            len(announcements)},
+								'backgrounds':      backgrounds})
 
 def bio(request, tl, last, first):
 	""" Displays a teacher bio """

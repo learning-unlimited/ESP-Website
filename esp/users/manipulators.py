@@ -24,3 +24,28 @@ class UserRegManipulator(forms.Manipulator):
     def isUniqueUserName(self, field_data, all_data):
         if ESPUser.isUserNameTaken(field_data):
             raise validators.ValidationError, 'Username "'+field_data+'" already in use. Please use another one.'
+
+class UserPasswdManipulator(forms.Manipulator):
+    def __init__(self, user):
+        self.fields = (
+            forms.TextField(field_name="username", length=12, maxlength=12, is_required=True, validator_list=[IsEqualTo(user.username)]),
+            forms.PasswordField(field_name="password", length=12, maxlength=32, is_required = True, validator_list=[UserPassCorrect]),
+            forms.PasswordField(field_name="newpasswd", length=12, maxlength=32, is_required = True),
+            forms.PasswordField(field_name="newpasswdconfirm", length=12, maxlength=32, is_required = True,validator_list = [
+                                validators.AlwaysMatchesOtherField('newpasswd', 'The new password and confirm password must be equal.')]))            
+
+class IsEqualTo(object):
+    """ Form is equal to """
+    def __init__(self, value):
+        self.value = value
+
+    def __call__(self, field_data, all_data):
+
+        if field_data.strip() != self.value.strip():
+            raise validators.ValidationError, 'Please enter the correct username.'
+ 
+def UserPassCorrect(field_data, all_data):
+    from django.contrib import auth
+    user = auth.authenticate(username=all_data['username'].lower(), password=all_data['password'])
+    if not user:
+        raise validators.ValidationError, 'Username and/or password incorrect.'

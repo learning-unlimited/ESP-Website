@@ -33,7 +33,7 @@ class AdminClass(ProgramModuleObj):
         return range(min_grade, max_grade+1)
 
     def getClasses(self):
-        return self.user.getEditable(Class)
+        return self.user.getEditable(Class).filter(parent_program = self.program)
         
     def prepare(self, context={}):
         classes = self.getClasses()

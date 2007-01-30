@@ -26,9 +26,9 @@ class NameTagModule(ProgramModuleObj):
         idtype = request.POST['type']
 
         if idtype == 'students':
-            students = self.program.students()
+            students = self.program.students_union()
             users = []
-            students.sort()
+            students.order_by('last_name','first_name')
             
             for student in students:
                 users.append({'title': 'Student',

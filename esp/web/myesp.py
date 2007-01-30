@@ -18,7 +18,7 @@ from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
-from esp.users.manipulators import UserRegManipulator
+from esp.users.manipulators import UserRegManipulator, UserPasswdManipulator
 from esp.web.data import navbar_data, preload_images, render_to_response
 from django import forms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
@@ -32,7 +32,7 @@ def myesp_register(request, module):
 	if request.user.is_authenticated():
 		return render_to_response('users/duh', request, GetNode('Q/Web/myesp'), {})
 	manipulator = UserRegManipulator()
-	return render_to_response('users/newuser.html', request, None, {'Problem': False,
+	return render_to_response('users/newuser.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
 						    'form':           forms.FormWrapper(manipulator, new_data, {})})
 
 
@@ -175,8 +175,20 @@ def myesp_login(request, module):
 
 @login_required
 def myesp_passwd(request, module):
-	""" Someone needs to implement this... axiak"""
-	pass
+	""" Change password """
+	new_data = request.POST.copy()
+	manipulator = UserPasswdManipulator(request.user)
+	if request.method == "POST":
+		errors = manipulator.get_validation_errors(new_data)
+		if not errors:
+			manipulator.do_html2python(new_data)
+	else:
+		errors = {}
+		
+	return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
+						    'form':           forms.FormWrapper(manipulator, new_data, errors)})
+
+
 
 	
 @login_required
@@ -430,7 +442,7 @@ myesp_handlers = { 'register': myesp_register,
 		   'login': myesp_login,
 		   'logfin': myesp_logfin,
 		   'home': myesp_home,
-		   'changepw': myesp_passwd,
+		   'passwd': myesp_passwd,
 		   'student': myesp_battlescreen_student,
 		   'teacher': myesp_battlescreen_teacher,
 		   'admin': myesp_battlescreen_admin,

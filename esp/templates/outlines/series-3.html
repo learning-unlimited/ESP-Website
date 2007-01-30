@@ -178,16 +178,18 @@ Create a new entry:
 <div id="divsearch">
   <form name="searchform" id="searchform" method="get" action="http://search.mit.edu/search">
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
+      <tr>
+	<td width="100%"><div class="divformcol1">&nbsp;</div></td>
+	<td class="rightalign">
 	 <input type='hidden' name='site' value='mit' />
 	 <input type='hidden' name='client' value='mit' />
 	 <input type='hidden' name='proxystylesheet' value='mit' />
 	 <input type='hidden' name='output' value='xml_no_dtd' />
 	 <input type='hidden' name='as_dt' value='i' />
 	 <input type='hidden' name='as_sitesearch' value='esp.mit.edu' />
-      <tr>
-						<td width="100%"><div class="divformcol1">&nbsp;</div></td>
-				<td class="rightalign"><div class="divformcol3"><label for="q">Search:</label></div></td>
-				<td><div class="divformcol4"><input type="text" name="q" id="q" size="8" value="" maxlength="255" class="inputbox" accesskey="s" /></div></td>
+         <div class="divformcol3"><label for="q">Search:</label></div>
+        </td>
+				<td><div class="divformcol4"><input style="border: 2px solid black;" type="text" name="q" id="q" size="8" value="" maxlength="255" class="inputbox" accesskey="s" /></div></td>
 				<td><div class="divformcol5"><input type="image" name="gosearch" id="gosearch" src="/media/images/go1.gif" class="gobutton" alt="Go" title="" /></div></td>
 	          </tr>
     </table>
@@ -263,10 +265,13 @@ style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-ind
         </div>
       </td>
       <td align="left" valign="bottom" class="paper">
-        <div id="divquotenone"><!-- table required for bottom vertical alignment of text -->
+        <div id="divquote{% if randquote %}large{% else %}none{% endif %}"><!-- table required for bottom vertical alignment of text -->
           <table border="0" cellpadding="0" cellspacing="0" summary=" "><tr><td>
-          <div id="divquotetext">
-            &nbsp;
+          <div id="divquotetext"> 
+          {% if randquote %}
+	  {{ randquote.content|truncatewords:28 }}<br />
+          <span class="quoteauthor">-{{ randquote.author }}</span>
+          {% endif %}
           </div>
           </td></tr></table>
         </div>
@@ -305,7 +310,7 @@ style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-ind
     </tr>
   </table>
 </div>      </td>
-      <td><div id="divquotenonebot"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td><div id="divquote{% if randquote %}large{% else %}none{% endif %}bot"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
       <td><div class="row4 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr>
     <tr>

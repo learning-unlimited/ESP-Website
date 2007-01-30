@@ -25,12 +25,24 @@
     {{ module.makeLink }}
    {% endif %}
   </td>
-  <td>
+  <td>{% if not module.useTemplate %}
+   <a href="{{ module.get_full_path }}">
+   {% endif %}
    <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" class="nocheckmark" />
+   {% if not module.useTemplate %}
+   </a>
+   {% endif %}
   </td>
 </tr>
 {% endif %}
 {% endfor %}
+ <tr>
+  <td>Confirm Pre-Registration <em>(below)</em>
+  </td>
+  <td>
+   <img src="/media/images/{% if not isConfirmed %}no{% endif %}checkmark.gif" class="nocheckmark" />
+  </td>
+ </tr>   
 </table>
 
 </center>
@@ -57,7 +69,7 @@ Upon clicking this you will be given a receipt with further instructions!
 <input type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %}/><br />
 </form>{% if not completedAll %}<em>(Please complete the above steps first!)</em>{% endif %}
 {% if isConfirmed %}
-<form action="./cancelreg" method="get">
+<form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
 <input type="submit" value="Cancel Registration" />
 {% endif %}
 </p>

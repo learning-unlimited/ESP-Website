@@ -1,20 +1,26 @@
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.datatree.models import GetNode, DataTree
-from esp.program.models import Class, ClassCategories, RegistrationProfile
+from esp.program.models  import Class, ClassCategories, RegistrationProfile
 from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
-from esp.users.models  import ESPUser
+from esp.users.models    import ESPUser, UserBit
+from django.db.models     import Q
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
 
-    def students(self):
+    def students(self, QObject = False):
         from esp.program.models import Class
-        Conf = UserBit.objects.filter(qsc__parent = self.program.classes_node(),
-                                      verb =  GetNode('V/Flags/Registration/Confirmed'))
-        Prel = UserBit.objects.filter(qsc__parent = self.program.classes_node(),
-                                      verb =  GetNode('V/Flags/Registration/Preliminary'))
-        return {'classreg': [ x.user for x in (Conf | Prel).distinct()] }
+        Conf = Q(userbit__qsc__parent = self.program.classes_node()) & \
+               Q(userbit__verb = GetNode('V/Flags/Registration/Confirmed'))
+
+        Prel = Q(userbit__qsc__parent = self.program.classes_node()) & \
+               Q(userbit__verb = GetNode('V/Flags/Registration/Preliminary'))
+        
+        if QObject:
+            return {'classreg': (Conf | Prel)}
+        else:
+            return {'classreg': ESPUser.objects.filter((Conf | Prel)).distinct()}
 
     
     def isCompleted(self):

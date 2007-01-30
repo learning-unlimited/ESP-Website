@@ -12,11 +12,19 @@
 <table style="border: 1px solid black; border-collapse: collapse;">
 <tr>
   <th>Total # of Students</th>
-  <td>{{ vitals.studentnum }}</td>
+  <td>{% for value in vitals.studentnum %}
+       <strong>{{ value.0 }}</strong> &ndash; {{value.1|length}}
+      {% if not forloop.last %}<br />{% endif %}
+      {% endfor %}
+  </td>
 </tr>
 <tr>
   <th>Total # of Teachers</th>
-  <td>{{ vitals.teachernum }}</td>
+  <td{% for value in vitals.teachernum %}
+       <strong>{{ value.0 }}</strong> &ndash; {{value.1|length}}
+      {% if not forloop.last %}<br />{% endif %}
+      {% endfor %}
+  </td>
 </tr>
 
 <tr>
@@ -24,11 +32,15 @@
   <td>{{ vitals.classtotal }}</td>
 </tr>
 <tr>
-  <th>Total # of Classes Approved</th>
+  <th>Total # of Classes <span style="color: #00C;">Unreviewed</span></th>
+  <td>{{ vitals.classunreviewed }}</td>
+</tr>
+<tr>
+  <th>Total # of Classes <span style="color: #0C0;">Approved</span></th>
   <td>{{ vitals.classapproved }}</td>
 </tr>
 <tr>
-  <th>Total # of Classes Rejected</th>
+  <th>Total # of Classes <span style="color: #C00;">Rejected</span></th>
   <td>{{ vitals.classrejected }}</td>
 </tr>
 {% for timeslot in vitals.timeslots %}

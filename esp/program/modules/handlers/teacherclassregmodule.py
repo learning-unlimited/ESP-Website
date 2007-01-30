@@ -6,10 +6,10 @@ from esp.web.data                import render_to_response
 from django                      import forms
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
-from django.core.mail           import send_mail
-from esp.miniblog.models        import Entry
-
-
+from django.core.mail            import send_mail
+from esp.miniblog.models         import Entry
+from django.core.cache           import cache
+from django.db.models            import Q
 class TeacherClassRegModule(ProgramModuleObj):
     def extensions(self):
         return [('classRegInfo', module_ext.ClassRegModuleInfo)]
@@ -23,6 +23,45 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def isCompleted(self):
         return not self.noclasses()
+
+    def teachers(self, QObject = False):
+        from esp.program.models import Class
+        from esp.users.models import UserBit, ESPUser
+        from datetime import datetime
+        now = datetime.now()
+        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = now)
+        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
+
+        Q_approvedbits    = Q(verb = GetNode('V/Flags/Class/Approved')) &\
+                            Q(qsc__parent = self.program.classes_node())&\
+                            Q_after_start                               &\
+                            Q_before_end
+
+        Q_proposedbits    = Q(verb = GetNode('V/Flags/Class/Proposed')) &\
+                            Q(qsc__parent = self.program.classes_node())&\
+                            Q_after_start                               &\
+                            Q_before_end
+
+        # Got the bits required to find classes
+        approvedbits      = UserBit.objects.filter(Q_approvedbits).values('qsc').distinct()
+        proposedbits      = UserBit.objects.filter(Q_proposedbits).values('qsc').distinct()
+
+        approved_qsc_ids = [ bit['qsc'] for bit in approvedbits ]
+        proposed_qsc_ids = [ bit['qsc'] for bit in proposedbits ]
+
+        Q_approved_teacher = Q(userbit__qsc__in = approved_qsc_ids) &\
+                             Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
+        
+        Q_proposed_teacher = Q(userbit__qsc__in = proposed_qsc_ids) &\
+                             Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
+
+        if QObject:
+            return {'class_approved': Q_approved_teacher,
+                    'class_proposed': Q_proposed_teacher}
+        else:
+            return {'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
+                    'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct()}
+
 
     def deadline_met(self):
         tmpModule = ProgramModuleObj()
@@ -315,11 +354,13 @@ class TeacherClassRegModule(ProgramModuleObj):
                 nodestring = newclass.category.category[:1].upper() + str(newclass.id)
                 newclass.anchor = self.program.classes_node().tree_create([nodestring])
                 newclass.anchor.friendly_name = newclass.title
+
                 newclass.anchor.save()
                 newclass.anchor.tree_create(['TeacherEmail'])
                 newclass.save()
 
-
+                #cache this result
+                cache.set('ClassTitle:'+str(newclass.id), newclass.title, 99999)
                 # ensure multiselect fields are set
                 newclass.viable_times.clear()
                 for block in new_data.getlist('viable_times'):
@@ -335,7 +376,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # add userbits
                 newclass.makeTeacher(self.user)
                 newclass.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
-                cls.subscribe(self.user)
+                newclass.subscribe(self.user)
                 self.program.teacherSubscribe(self.user)
                 newclass.propose()
 

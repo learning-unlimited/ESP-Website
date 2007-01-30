@@ -2,12 +2,16 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.web.myesp import profile_editor
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser
+from django.db.models import Q
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
 
-    def students(self):
-        students = ESPUser.objects.filter(registrationprofile__program = self.program).distinct()
+    def students(self, QObject = False):
+        if QObject:
+            return {'profile': Q(registrationprofile__program = self.program) & \
+                               Q(registrationprofile__student_info__isnull = False)}
+        students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
         return {'profile': students }
 
     def profile(self, request, tl, one, two, module, extra, prog):

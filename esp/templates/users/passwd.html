@@ -1,0 +1,59 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Change Account Password{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block content %}
+<h1>Account Management &ndash; Change Password </h1>
+
+<br />
+<p>Welcome to the change password page. To change your password, please fill out the following form:
+</p>
+
+<br />
+
+<form action="" name="changepwform" method="post">
+<input type='hidden' name='op' value='register'>
+<table width='65%' cellpadding='2' align='center' border='0'>
+<tr>
+ <td><label for="username"><strong>Username:</strong></td>
+ <td>{{ form.username }} {% if form.username.errors %}
+   <br /><span class="form_error">{{ form.username.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+ </td>
+</tr>
+
+<tr>
+ <td><label for="password"><strong>Current Password:</strong></td>
+ <td>{{ form.password }} {% if form.password.errors %}
+   <br /><span class="form_error">{{ form.password.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+ </td>
+</tr>
+
+<tr>
+ <td><label for="newpasswd"><strong>New Password:</strong></td>
+ <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
+   <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+ </td>
+</tr>
+
+<tr>
+ <td><label for="newpasswdconfirm"><strong>New password confirm:</strong></td>
+ <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
+   <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+ </td>
+</tr>
+
+</table>
+
+<p style="text-align: center"><input type='submit' value='-  Change My Password  -'></p>
+</form>
+{% endblock %}

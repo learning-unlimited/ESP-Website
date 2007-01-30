@@ -7,6 +7,7 @@ from esp.lib.markdown import markdown
 from esp.qsd.models import QuasiStaticData
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 from datetime import datetime
+from django.core.cache import cache
 from esp.miniblog.models import Entry
 
 # Create your models here.
@@ -85,10 +86,10 @@ class Program(models.Model):
 		return "/".join(urllist)
 					  
 
-	def teacherSubscribe(self):
+	def teacherSubscribe(self, user):
 		v = GetNode('V/Subscribe')
-		qsc = self.program.anchor.tree_create(['Announcements',
-						       'Teachers'])
+		qsc = self.anchor.tree_create(['Announcements',
+					       'Teachers'])
 		
 		if UserBit.objects.filter(user = user,
 					  qsc = qsc,
@@ -101,25 +102,39 @@ class Program(models.Model):
 		return True
 
 	
-	def teachers(self):
-		from esp.users.models import ESPUser
-		teachers = []
-		for cls in Class.objects.filter(parent_program=self):
-			if cls.isAccepted():
-				teachers += cls.teachers()
-		distinctteachers = {}
-		for teacher in teachers:
-			distinctteachers[teacher.id] = ESPUser(teacher)
-		return distinctteachers.values()
+	def teachers(self, QObjects = False):
+		modules = self.getModules(None, 'teach')
+		teachers = {}
+		for module in modules:
+			tmpteachers = module.teachers(QObjects)
+			if tmpteachers is not None:
+				teachers.update(tmpteachers)
+		return teachers
 
-	def students(self):
+	def students(self, QObjects=False):
 		modules = self.getModules(None, 'learn')
 		students = {}
 		for module in modules:
-			tmpstudents = module.students()
+			tmpstudents = module.students(QObjects)
 			if tmpstudents is not None:
 				students.update(tmpstudents)
 		return students
+
+	def students_union(self):
+		import operator
+		if len(self.students().values()) == 0:
+			return []
+		
+		union = reduce(operator.or_, [x.distinct() for x in self.students().values() ])
+		return union.distinct()
+
+
+	def teachers_union(self):
+		import operator
+		if len(self.teachers().values()) == 0:
+			return []
+		union = reduce(operator.or_, [x.distinct() for x in self.teachers().values() ])
+		return union.distinct()	
 
 	def num_students(self):
 		modules = self.getModules(None, 'learn')
@@ -325,7 +340,13 @@ class Class(models.Model):
 		
 		
 	def title(self):
-		return self.anchor.friendly_name
+		cache_id = 'ClassTitle:'+str(self.id)
+		retVal = cache.get(cache_id)
+		if retVal is not None:
+			return retVal
+		retVal = self.anchor.friendly_name
+		cache.set(cache_id, retVal, 99999)
+		return retVal
 	
 	def teachers(self):
 		from esp.users.models import ESPUser

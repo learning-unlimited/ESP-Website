@@ -5,6 +5,8 @@ from esp.web.data import render_to_response
 from django.http import HttpResponseRedirect
 from django.contrib.auth import LOGIN_URL, REDIRECT_FIELD_NAME
 from urllib import quote
+from django.db.models import Q
+
 
 class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program)
@@ -169,8 +171,11 @@ class ProgramModuleObj(models.Model):
 
 
 
-    def students(self):
-        return None
+    def teachers(self, QObject = False):
+        return {}
+
+    def students(self,QObject=False):
+        return {}
 
     def isStep(self):
         return True
