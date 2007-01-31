@@ -56,9 +56,15 @@ class StatsMiddleware(object):
                 response.content = s
 
         if settings.DISPLAYSQL and settings.DEBUG:
-            response.content += "\n\n"+'<div class="sql">'
+            sqlcontent = "\n\n"+'<div class="sql">'
             for q in connection.queries:
-                response.content += "\n"+'%s:&nbsp;&nbsp;%s<br />' % \
-                                    (q['time'], q['sql'])
+                sqlcontent += "\n"+'%s:&nbsp;&nbsp;%s<br />' % \
+                              (q['time'], q['sql'])
+            sqlcontent += "\n\n</div>"
+
+            pos = response.content.find('</body>')
+            response.content = response.content[:pos] + \
+                               sqlcontent + \
+                               response.content[pos:]
 
         return response

@@ -378,12 +378,15 @@ class TeacherInfo(models.Model):
     college = models.CharField(maxlength=128,blank=True, null=True)
     major = models.CharField(maxlength=32,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
+    slugbio = models.CharField(maxlength=50, blank=True, null=True)
     
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.college
         form_dict['major']           = self.major
         form_dict['dob']             = self.dob
+        form_dict['bio']             = self.bio
         return form_dict
     
     @staticmethod
@@ -398,7 +401,9 @@ class TeacherInfo(models.Model):
         teacherInfo.graduation_year = new_data['graduation_year']
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
-        teacherInfo.dob           = new_data['dob']        
+        teacherInfo.dob           = new_data['dob']
+        teacherInfo.bio           = new_data['bio']
+        
         teacherInfo.save()
         return teacherInfo
                     

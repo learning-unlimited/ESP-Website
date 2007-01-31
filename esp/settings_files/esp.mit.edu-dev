@@ -1,6 +1,7 @@
 # Django settings for esp project.
 
 DEBUG = True
+DISPLAYSQL = True
 TEMPLATE_DEBUG = DEBUG
 DISPLAYSQL = True
 
@@ -57,10 +58,12 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'esp.middleware.StatsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
 )
 
 ROOT_URLCONF = 'esp.urls'
@@ -68,7 +71,7 @@ ROOT_URLCONF = 'esp.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
-    '/esp/esp/templates'
+    '/home/axiak/esp/templates'
 )
 
 INSTALLED_APPS = (

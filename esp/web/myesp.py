@@ -41,9 +41,10 @@ def myesp_finish(request, module):
 	""" Complete a user registration """
 	admin_program = Program.objects.filter(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))[0]
 	if request.POST.has_key('profile_page'):
+		
 		profile_page =  profile_editor(request, admin_program, False, request.POST['current_role'])
 		if profile_page == True:
-			return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {})
+			return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {'finish': True})
 		else:
 			return profile_page
 	
@@ -337,6 +338,7 @@ def myesp_battlescreen_student(request, module):
 
 @login_required
 def edit_profile(request, module):
+
 
 	curUser = ESPUser(request.user)
 

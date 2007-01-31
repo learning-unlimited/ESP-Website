@@ -33,4 +33,12 @@
  </td>
 </tr>
 
+<tr>
+ <td><label for="id_bio">Teacher Bio:</label></td>
+ <td>{{ form.bio }} {% if form.bio.errors %}
+   <br /><span class="form_error">{{ form.bio.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
 <!-- End Teacher Info Portion -->

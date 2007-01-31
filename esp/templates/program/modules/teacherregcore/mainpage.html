@@ -4,7 +4,8 @@
 
 {% block subsection_name %}Register for {{program.niceName}}{% endblock %}
 
-{% block content %}
+{% block stylesheets %}
+{{block.super }}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 #divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
@@ -16,6 +17,9 @@
 #divmaintext .blogentry .date { font-style: italic; margin: 0 5px 0 0;  }
 #divmaintext .blogentry .contents { margin: 0 0 0 30px; }
 </style>
+{% endblock %}
+
+{% block content %}
 <br />
 <br />
 

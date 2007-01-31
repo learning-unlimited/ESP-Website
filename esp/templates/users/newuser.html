@@ -4,12 +4,16 @@
 
 {% block subsection_name %}Welcome{% endblock %}
 
-{% block content %}
+{% block stylesheets %}
+{{ block.super }}
 <style type="text/css">
 #divmaintext table td { vertical-align: top }
 #divmaintext table li { list-style-image: url(/media/images/spacer.gif); }
 .form_error { font-size: 80%; font-style: italic; color: #C00; }
 </style>
+{% endblock %}
+
+{% block content %}
 <h2 style='text-align: center'>Ready to join ESP?</h2>
 <h1 style='text-align: center; margin-bottom: 0px'>Cool!</h1>
 <h3 style="text-align: center; font-weight: normal; margin-top: 0px">Please begin by choosing a username and password for your account on our system.<br/>

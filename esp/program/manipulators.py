@@ -69,7 +69,8 @@ class TeacherInfoManipulator(forms.Manipulator):
             forms.PositiveIntegerField(field_name="graduation_year", length=4, maxlength=4),
             forms.TextField(field_name="school", length=24, maxlength=128),
             forms.TextField(field_name="major", length=10, maxlength=32),
-            DojoDatePickerField(field_name="dob", is_required=False, default='1994-02-29')           
+            DojoDatePickerField(field_name="dob", is_required=False, default='1994-02-29'),
+            forms.LargeTextField(field_name="bio", is_required=True, validator_list=[validators.isNotEmpty])
             )
 
 class EducatorInfoManipulator(forms.Manipulator):

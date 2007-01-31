@@ -22,9 +22,9 @@ class AdminVitals(ProgramModuleObj):
 
 
         vitals['teachernum'] = self.program.teachers().items()
-        vitals['teachernum'].append(('union', self.program.teachers_union()))
+        vitals['teachernum'].append(('total', self.program.teachers_union()))
         vitals['studentnum'] = self.program.students().items()
-        vitals['studentnum'].append(('union', self.program.students_union()))
+        vitals['studentnum'].append(('total', self.program.students_union()))
         
         timeslots = self.program.getTimeSlots()
 

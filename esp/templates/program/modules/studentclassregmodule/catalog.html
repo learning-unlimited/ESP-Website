@@ -17,7 +17,8 @@
 
 {% block subsection_name %}Course Catalogue{% endblock %}
 
-{% block content %}
+{% block stylesheets %}
+{{ block.super }}
 <style type="text/css">
 p.category {
    font-family: arial;
@@ -61,6 +62,10 @@ p.category {
   width: 100%;
 }
 </style>
+{% endblock %}
+
+{% block content %}
+
 <br />
 
 <h1>

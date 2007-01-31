@@ -49,18 +49,43 @@ class TeacherClassRegModule(ProgramModuleObj):
         approved_qsc_ids = [ bit['qsc'] for bit in approvedbits ]
         proposed_qsc_ids = [ bit['qsc'] for bit in proposedbits ]
 
-        Q_approved_teacher = Q(userbit__qsc__in = approved_qsc_ids) &\
-                             Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
-        
-        Q_proposed_teacher = Q(userbit__qsc__in = proposed_qsc_ids) &\
-                             Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
+        if len(approved_qsc_ids) == 0:
+            Q_approved_class = Q(id=-1)
+            Q_approved_teacher = Q(id=-1)
+        else:
+            Q_approved_class = Q(anchor__in = approved_qsc_ids)
+            Q_approved_teacher = Q(userbit__qsc__in = approved_qsc_ids) &\
+                                 Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
+            
+        if len(proposed_qsc_ids) == 0:
+            Q_proposed_class = Q(id=-1)
+            Q_proposed_teacher = Q(id=-1)
+        else:
+            Q_proposed_class = Q(anchor__in = proposed_qsc_ids)
+            Q_proposed_teacher = Q(userbit__qsc__in = proposed_qsc_ids) &\
+                                 Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
+
+            
+        rejectedclasses  = Class.objects.filter(parent_program = self.program).exclude( \
+                                                Q_approved_class).exclude( \
+                                                Q_proposed_class).values('anchor').distinct()
+
+        rejected_qsc_ids = [ cls['anchor'] for cls in rejectedclasses ]
+
+        if len(rejected_qsc_ids) == 0:
+            Q_rejected_teacher = Q(id=-1)
+        else:
+            Q_rejected_teacher = Q(userbit__qsc__in = rejected_qsc_ids) &\
+                                 Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
 
         if QObject:
             return {'class_approved': Q_approved_teacher,
-                    'class_proposed': Q_proposed_teacher}
+                    'class_proposed': Q_proposed_teacher,
+                    'class_rejected': Q_rejected_teacher}
         else:
             return {'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
-                    'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct()}
+                    'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
+                    'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct()}
 
 
     def deadline_met(self):

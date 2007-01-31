@@ -4,10 +4,13 @@
 
 {% block subsection_name %}Register for {{program}} classes.{% endblock %}
 
-{% block content %}
+{% block stylesheets %}
+{{block.super }}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
+{% endblock %}
+{% block content %}
 <br /><br />
 <h2 style="text-align: center">Welcome!</h2><br />
 <p style="text-align: center"><b>Student registration for {{program}} </b></p>
