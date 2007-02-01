@@ -84,7 +84,7 @@ def get_page_setup(request):
         page_setup['stylesheet'] = [ x for x in basic_navlinks if sections[x][0] == path[0]][0]+'3'
 
         for section in basic_navlinks:
-            if path[0] == sections[section][0]:
+            if path[0] == sections[section][0] and sections[section][4]:
                 page_setup['section'] = {'id': section+'/lev3',
                                          'alt': sections[section][1],
                                          'cursection': section}
@@ -100,7 +100,7 @@ def get_page_setup(request):
                 
             page_setup['navlinks'].append({'id'       : section,
                                            'alt'      : sections[section][1],
-                                           'highlight': path[0] == sections[section][0],
+                                           'highlight': path[0] == sections[section][0] and sections[section][4],
                                            'href'     : sections[section][2],
                                            'buttonloc': curbuttonloc})
             
@@ -116,14 +116,14 @@ def get_page_setup(request):
 
     return False
 
-sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/index.html',      []),
-            'takeaclass'       : ('learn',      'Take a Class!',       '/learn/index.html',      ['getinvolved','volunteertoteach']),
-            'volunteertoteach' : ('teach',      'Volunteer to Teach!', '/teach/index.html',      ['getinvolved']),
-            'getinvolved'      : ('getinvolved','Get Involved',        '/getinvolved/index.html',['volunteertoteach']),
-            'archivesresources': ('archives',   'ESP Archives',        '/archives/index.html',   ['takeaclass','getinvolved','volunteertoteach']),
-            'myesp'            : ('myesp',      'myESP',               '/myesp/home/',           ['takeaclass','getinvolved','volunteertoteach']),
-            'contactinfo'      : ('about',      'Contact Us!',         '/about/contact.html',    []),
-            'admin'            : ('admin',      'Admin Section',       '/myesp/admin/',          [])}
+sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/index.html',      [], True),
+            'takeaclass'       : ('learn',      'Take a Class!',       '/learn/index.html',      ['getinvolved','volunteertoteach'], True),
+            'volunteertoteach' : ('teach',      'Volunteer to Teach!', '/teach/index.html',      ['getinvolved'], True),
+            'getinvolved'      : ('getinvolved','Get Involved',        '/getinvolved/index.html',['volunteertoteach'], True),
+            'archivesresources': ('archives',   'ESP Archives',        '/archives/index.html',   ['takeaclass','getinvolved','volunteertoteach'], True),
+            'myesp'            : ('myesp',      'myESP',               '/myesp/home/',           ['takeaclass','getinvolved','volunteertoteach'], True),
+            'contactinfo'      : ('about',      'Contact Us!',         '/about/contact.html',    [], False),
+            'admin'            : ('admin',      'Admin Section',       '/myesp/admin/',          [], False)}
 
 
 known_navlinks = ['about','learn','teach','getinvolved','archives','myesp','contactinfo']
