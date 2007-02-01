@@ -6,7 +6,16 @@
 
 {% block content %}
 <h1>Account Management &ndash; Change Password </h1>
+{{ Success }}
+{% if Success %}
 
+<h2>Congratulations!<h2>
+<br />
+<br />
+<p>
+Your password has been successfully changed. Please try not to forget it!
+</p>
+{% else %}
 <br />
 <p>Welcome to the change password page. To change your password, please fill out the following form:
 </p>
@@ -56,4 +65,5 @@
 
 <p style="text-align: center"><input type='submit' value='-  Change My Password  -'></p>
 </form>
+{% endif %}
 {% endblock %}

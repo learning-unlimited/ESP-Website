@@ -183,6 +183,12 @@ def myesp_passwd(request, module):
 		errors = manipulator.get_validation_errors(new_data)
 		if not errors:
 			manipulator.do_html2python(new_data)
+			user = authenticate(username=new_data['username'].lower(),
+					    password=new_data['password'])
+			
+			user.set_password(new_data['newpasswd'])
+			user.save()
+			render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Success': True})
 	else:
 		errors = {}
 		

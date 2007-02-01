@@ -58,65 +58,77 @@ def get_page_setup(request):
 
     is_admin = ESPUser(request.user).isAdmin()
     
-    
-    if len(path) == 2 and request.path.lower() in [ x[2] for x in section_convert.values() ]:
+    # if we are at a level 2 site, like /myesp/home/
+    if len(path) == 2 and request.path.lower() in [ x[2] for x in sections.values() ]:
         page_setup['navlinks'] = []
         page_setup['buttonlocation'] = 'lev2'
-        page_setup['stylesheet']     = [ x for x in basic_navlinks if section_convert[x][0] == path[0]][0]+'2'
+        page_setup['stylesheet']     = [ x for x in basic_navlinks if sections[x][0] == path[0]][0]+'2'
         for section in basic_navlinks:
             page_setup['navlinks'].append({'id'       : section,
-                                           'alt'      : section_convert[section][1],
-                                           'highlight': request.path.lower() == section_convert[section][2],
-                                           'href'     : section_convert[section][2]})
-            if request.path.lower() == section_convert[section][2]:
-                page_setup['section'] = {'id': section+'/lev2', 'alt': section_convert[section][1]}
+                                           'alt'      : sections[section][1],
+                                           'highlight': request.path.lower() == sections[section][2],
+                                           'href'     : sections[section][2]})
+            if request.path.lower() == sections[section][2]:
+                page_setup['section'] = {'id': section+'/lev2', 'alt': sections[section][1]}
         if is_admin:
             section = 'admin'
             page_setup['navlinks'].append({'id'       : section,
-                                           'alt'      : section_convert[section][1],
-                                           'highlight': request.path.lower() == section_convert[section][2],
-                                           'href'     : section_convert[section][2]})
+                                           'alt'      : sections[section][1],
+                                           'highlight': request.path.lower() == sections[section][2],
+                                           'href'     : sections[section][2]})
         return page_setup
     
-    elif path[0] in known_navlinks:
+    # this is now level 3
+    elif path[0] in [ x[0] for x in sections.values() ]:
         page_setup['navlinks'] = []
-        page_setup['buttonlocation'] = 'lev3'
-        page_setup['stylesheet'] = [ x for x in basic_navlinks if section_convert[x][0] == path[0]][0]+'3'
+        page_setup['stylesheet'] = [ x for x in basic_navlinks if sections[x][0] == path[0]][0]+'3'
+
         for section in basic_navlinks:
-            if path[0] == section_convert[section][0]:
+            if path[0] == sections[section][0]:
                 page_setup['section'] = {'id': section+'/lev3',
-                                         'alt': section_convert[section][1],
+                                         'alt': sections[section][1],
                                          'cursection': section}
-                page_setup['buttonlocation'] = section+'/lev3'
+                current_section = section
                 
         for section in basic_navlinks:
+            if path[0] == sections[section][0]:
+                curbuttonloc = 'lev3'
+            elif section in sections[current_section][3]:
+                curbuttonloc = current_section + '/lev3'
+            else:
+                curbuttonloc = 'lev3'
+                
             page_setup['navlinks'].append({'id'       : section,
-                                           'alt'      : section_convert[section][1],
-                                           'highlight': path[0] == section_convert[section][0],
-                                           'href'     : section_convert[section][2]})
-
+                                           'alt'      : sections[section][1],
+                                           'highlight': path[0] == sections[section][0],
+                                           'href'     : sections[section][2],
+                                           'buttonloc': curbuttonloc})
+            
 
         if is_admin:
             section = 'admin'
             page_setup['navlinks'].append({'id'       : section,
-                                           'alt'      : section_convert[section][1],
-                                           'highlight': path[0] == section_convert[section][0],
-                                           'href'     : section_convert[section][2]})
+                                           'alt'      : sections[section][1],
+                                           'highlight': False,
+                                           'href'     : sections[section][2],
+                                           'buttonloc': 'lev2'})
         return page_setup
 
     return False
 
+sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/index.html',      []),
+            'takeaclass'       : ('learn',      'Take a Class!',       '/learn/index.html',      ['getinvolved','volunteertoteach']),
+            'volunteertoteach' : ('teach',      'Volunteer to Teach!', '/teach/index.html',      ['getinvolved']),
+            'getinvolved'      : ('getinvolved','Get Involved',        '/getinvolved/index.html',['volunteertoteach']),
+            'archivesresources': ('archives',   'ESP Archives',        '/archives/index.html',   ['takeaclass','getinvolved','volunteertoteach']),
+            'myesp'            : ('myesp',      'myESP',               '/myesp/home/',           ['takeaclass','getinvolved','volunteertoteach']),
+            'contactinfo'      : ('about',      'Contact Us!',         '/about/contact.html',    []),
+            'admin'            : ('admin',      'Admin Section',       '/myesp/admin/',          [])}
+
+
 known_navlinks = ['about','learn','teach','getinvolved','archives','myesp','contactinfo']
 basic_navlinks = ['discoveresp','takeaclass','volunteertoteach','getinvolved','archivesresources','myesp','contactinfo']
 
-section_convert = {'volunteertoteach' : ('teach', 'Volunteer to Teach!', '/teach/index.html'),
-                   'takeaclass'       : ('learn', 'Take a Class!', '/learn/index.html'),
-                   'discoveresp'      : ('about', 'Discover ESP', '/about/index.html'),
-                   'myesp'            : ('myesp', 'myESP', '/myesp/home/'),
-                   'getinvolved'      : ('getinvolved', 'Get Involved!','/getinvolved/index.html'),
-                   'archivesresources': ('archives', 'ESP Archives','/archives/index.html'),
-                   'contactinfo'      : ('about', 'Contact Us','/about/contact.html'),
-                   'admin'            : ('admin', 'Admin Section', '/myesp/admin/')}
 
 
 navbar_data = [

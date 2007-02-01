@@ -55,14 +55,14 @@
 <div id="divnav{{forloop.counter0}}">
 {% if not navlink.highlight %} 
   <a href="{{navlink.href}}" 
-    onmouseover="MM_swapImage('{{navlink.id}}','','/media/images/{{page_setup.buttonlocation}}/nav/{{navlink.id}}_ro.gif',1)"
+    onmouseover="MM_swapImage('{{navlink.id}}','','/media/images/{% if page_setup.buttonlocation %}{{page_setup.buttonlocation}}{% else %}{{navlink.buttonloc }}{% endif %}/nav/{{navlink.id}}_ro.gif',1)"
                                                                                 onmouseout="MM_swapImgRestore()">
-    <img src="/media/images/{{page_setup.buttonlocation}}/nav/{{navlink.id}}.gif" border="0" 
+    <img src="/media/images/{% if page_setup.buttonlocation %}{{page_setup.buttonlocation}}{% else %}{{navlink.buttonloc }}{% endif %}/nav/{{navlink.id}}.gif" border="0" 
             alt="{{navlink.alt}}" title="" name="{{navlink.id}}" id="{{navlink.id}}" />
   </a>
 {% else %}
   <a href="{{navlink.href}}">
-    <img src="/media/images/{{page_setup.buttonlocation}}/nav/{{navlink.id}}_hi.gif" border="0"
+    <img src="/media/images/{% if page_setup.buttonlocation %}{{page_setup.buttonlocation}}{% else %}{{navlink.buttonloc }}{% endif %}/nav/{{navlink.id}}_hi.gif" border="0"
               alt="{{navlink.alt}}" title="" name="{{navlink.id}}" id="{{navlink.id}}" />
   </a>
 {% endif %}
