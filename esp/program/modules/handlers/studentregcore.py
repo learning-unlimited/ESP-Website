@@ -17,6 +17,9 @@ class StudentRegCore(ProgramModuleObj):
         
         return {'confirmed': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
 
+    def studentDesc(self):
+        return {'confirmed': """This is a list of students who have clicked on the `Confirm Pre-Registraiton' button."""}
+
     @needs_student
     @meets_deadline()
     def confirmreg(self, request, tl, one, two, module, extra, prog):

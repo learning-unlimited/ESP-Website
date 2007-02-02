@@ -17,6 +17,9 @@ class SATPrepModule(ProgramModuleObj):
         students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
         return {'satprepinfo': students }
 
+    def studentDesc(self):
+        return {'satprepinfo': """This is a list of students who have filled out the SAT Prep information."""}
+
     def isCompleted(self):
         
 	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)

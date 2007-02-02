@@ -12,3 +12,5 @@ from esp.program.modules.handlers.adminvitals import *
 from esp.program.modules.handlers.nametagmodule import *
 from esp.program.modules.handlers.classroommodule import *
 from esp.program.modules.handlers.programprintables import *
+from esp.program.modules.handlers.commpanel import *
+
