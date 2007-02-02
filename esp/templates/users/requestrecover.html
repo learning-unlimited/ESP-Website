@@ -1,0 +1,45 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Change Account Password{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block content %}
+<h1>Account Management &ndash; Password Recovery </h1>
+{% if Success %}
+<h2>You should receive an email with further instructions shortly.</h2><br />
+<div class="info">Note: Your account is disabled until your password is reset.</div>
+{% else %}
+<br />
+<p>Welcome to the password recovery page. To recover your password, you need to enter your username and last name here:
+</p>
+
+<br />
+
+<form action="" name="recoverpwform" method="post">
+<input type='hidden' name="prelim" value="true">
+<table width='65%' cellpadding='2' align='center' border='0'>
+<tr>
+ <td><label for="username"><strong>Username: *</strong></td>
+ <td>{{ form.username }} {% if form.username.errors %}
+   <br /><span class="form_error">{{ form.username.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+ </td>
+</tr>
+
+<tr>
+ <td><label for="last_name"><strong>Last Name: *</strong></td>
+ <td>{{ form.last_name }} {% if form.last_name.errors %}
+   <br /><span class="form_error">{{ form.last_name.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+ </td>
+</tr>
+
+</table>
+
+<p style="text-align: center"><input type='submit' value='- Recover My Password -'></p>
+</form>
+{% endif %}
+{% endblock %}

@@ -18,7 +18,7 @@ from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
-from esp.users.manipulators import UserRegManipulator, UserPasswdManipulator
+from esp.users.manipulators import UserRegManipulator, UserPasswdManipulator, UserRecoverForm, SetPasswordForm
 from esp.web.data import navbar_data, preload_images, render_to_response
 from django import forms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
@@ -188,16 +188,99 @@ def myesp_passwd(request, module):
 			
 			user.set_password(new_data['newpasswd'])
 			user.save()
-			render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Success': True})
+			login(request, user)
+			return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Success': True})
 	else:
 		errors = {}
 		
 	return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
-						    'form':           forms.FormWrapper(manipulator, new_data, errors)})
+						    'form':           forms.FormWrapper(manipulator, new_data, errors),
+											 'Success': False})
 
 
+def myesp_passrecover(request, module):
+	""" Recover the password for a user """
 
+	new_data = request.POST.copy()
+	manipulator = UserRecoverForm()
 	
+	
+	if request.method == 'POST' and request.POST.has_key('prelim'):
+		errors = manipulator.get_validation_errors(new_data)
+		if not errors:
+			# generate the code, send the email.
+			import string
+			import random
+			from esp.miniblog.models import Entry
+			symbols = string.ascii_uppercase + string.digits 
+			code = "".join([random.choice(symbols) for x in range(30)])
+			user = User.objects.get(username = new_data['username'])
+			msganchor = GetNode('Q/PasswordRecovery/'+str(user.id))
+
+			
+			ub = UserBit(user = user, qsc = msganchor, verb = GetNode('V/Subscribe'))
+			ub.save()
+
+			user.password = code
+			user.save()
+			
+			Entry.post( None, msganchor,
+			      '[ESP] Your Password Recovery For esp.mit.edu',
+			      """Hello,
+You (or someone imposing as you) requested to recover your account for esp.mit.edu.
+
+Please go to:
+http://esp.mit.edu/myesp/recoveremail/?code="""+code+"""
+
+to set a new password for your account.
+
+MIT Educational Studies Program
+esp.mit.edu""", True)
+			return render_to_response('users/requestrecover.html', request, GetNode('Q/Web/myesp'),{'Success': True})
+
+	else:
+		errors = {}
+
+	return render_to_response('users/requestrecover.html', request, GetNode('Q/Web/myesp'),
+				  {'form': forms.FormWrapper(manipulator, new_data, errors)})
+
+def myesp_passemailrecover(request, module):
+	new_data = request.POST.copy()
+	manipulator = SetPasswordForm()
+
+	success = False
+	code = ''
+
+	if request.GET.has_key('code'):
+		code = request.GET['code']
+	if request.POST.has_key('code'):
+		code = request.POST['code']
+	
+	numusers = User.objects.filter(password = code).count()
+	if numusers == 0:
+		code = False
+	
+      	
+	
+	if request.method == 'POST':
+		errors = manipulator.get_validation_errors(new_data)
+		if not errors:
+			user = User.objects.get(username = new_data['username'].lower())
+			user.set_password(new_data['newpasswd'])
+			user.save()
+			auth_user = authenticate(username = new_data['username'].lower(), password = new_data['newpasswd'])
+			login(request, auth_user)
+			success = True
+			
+	else:
+		errors = {}
+		
+	return render_to_response('users/emailrecover.html', request, GetNode('Q/Web/myesp'),
+				  {'form': forms.FormWrapper(manipulator, new_data, errors),
+				   'code': code,
+				   'Success': success})
+	
+
 @login_required
 def myesp_logfin(request, module):
 	""" Display the "You have successfully logged in" page """
@@ -451,6 +534,8 @@ myesp_handlers = { 'register': myesp_register,
 		   'logfin': myesp_logfin,
 		   'home': myesp_home,
 		   'passwd': myesp_passwd,
+		   'passwdrecover': myesp_passrecover,
+		   'recoveremail': myesp_passemailrecover,
 		   'student': myesp_battlescreen_student,
 		   'teacher': myesp_battlescreen_teacher,
 		   'admin': myesp_battlescreen_admin,

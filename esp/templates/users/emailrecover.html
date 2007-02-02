@@ -1,0 +1,61 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Change Account Password{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block content %}
+<h1>Account Management &ndash; Password Recovery </h1>
+{% if Success %}
+<h2>Your password has been successfully set. You are now logged in.</h2>
+{% else %}
+{% if not code %}
+<br />
+<h2>Error &ndash; The code you entered is invalid.</h2>
+<p> Please try going through the recovery process again or email us at web@esp.mit.edu!</p>
+{% else %}
+<br />
+<p>Hello!,<br />
+You are almost ready to log into this account! Please enter your username and the new <br />
+password you would like to use.
+</p>
+
+<br />
+
+<form action="" name="recoverpwform" method="post">
+<input type="hidden" name="code" value="{{code}}" />
+<table width='65%' cellpadding='2' align='center' border='0'>
+<tr>
+ <td><label for="username"><strong>Username: *</strong></td>
+ <td>{{ form.username }} {% if form.username.errors %}
+   <br /><span class="form_error">{{ form.username.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+ </td>
+</tr>
+
+<tr>
+ <td><label for="newpasswd"><strong>New Password: *</strong></td>
+ <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
+   <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+ </td>
+</tr>
+
+<tr>
+ <td><label for="newpasswdconfirm"><strong>New Password Confirm: *</strong></td>
+ <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
+   <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+ </td>
+</tr>
+
+</table>
+
+<p style="text-align: center"><input type='submit' value='- Set New Pasword -'></p>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}
