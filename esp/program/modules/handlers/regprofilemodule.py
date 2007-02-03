@@ -9,10 +9,23 @@ class RegProfileModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         if QObject:
-            return {'profile': Q(registrationprofile__program = self.program) & \
+            return {'student_profile': Q(registrationprofile__program = self.program) & \
                                Q(registrationprofile__student_info__isnull = False)}
         students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
-        return {'profile': students }
+        return {'student_profile': students }
+
+    def studentDesc(self):
+        return {'student_profile': """List of students who have completed the profile."""}
+
+    def teachers(self, QObject = False):
+        if QObject:
+            return {'teacher_profile': Q(registrationprofile__program = self.program) & \
+                               Q(registrationprofile__teacher_info__isnull = False)}
+        teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
+        return {'teacher_profile': teachers }
+
+    def teacherDesc(self):
+        return {'teacher_profile': """List of teachers who have completed the profile."""}
 
     def profile(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """

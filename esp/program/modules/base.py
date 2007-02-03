@@ -174,6 +174,13 @@ class ProgramModuleObj(models.Model):
     def teachers(self, QObject = False):
         return {}
 
+
+    def studentDesc(self):
+        return {}
+
+    def teacherDesc(self):
+        return {}
+
     def students(self,QObject=False):
         return {}
 

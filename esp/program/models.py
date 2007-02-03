@@ -120,6 +120,38 @@ class Program(models.Model):
 				students.update(tmpstudents)
 		return students
 
+	def getLists(self, QObjects=False):
+		lists = self.students(QObjects)
+		lists.update(self.teachers(QObjects))
+		learnmodules = self.getModules(None, 'learn')
+		teachmodules = self.getModules(None, 'teach')
+
+		
+		for k, v in lists.items():
+			lists[k] = {'list': v}
+
+		desc  = {}
+		for module in learnmodules:
+			tmpdict = module.studentDesc()
+			if tmpdict is not None:
+				desc.update(tmpdict)
+		for module in teachmodules:
+			tmpdict = module.teacherDesc()
+			if tmpdict is not None:
+				desc.update(tmpdict)
+
+		for k, v in desc.items():
+			lists[k]['description'] = v
+		from esp.users.models import ESPUser
+		usertypes = ['Student', 'Teacher', 'Guardian', 'Educator']
+
+		for usertype in usertypes:
+			lists['all_'+usertype.lower()+'s'] = {'description':
+							       'All '+usertype.lower()+'s in the ESP database.',
+							       'list' : ESPUser.getAllOfType(usertype)}
+			
+		return lists
+
 	def students_union(self):
 		import operator
 		if len(self.students().values()) == 0:

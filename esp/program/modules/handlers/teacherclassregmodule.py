@@ -24,6 +24,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def isCompleted(self):
         return not self.noclasses()
 
+
     def teachers(self, QObject = False):
         from esp.program.models import Class
         from esp.users.models import UserBit, ESPUser
@@ -87,6 +88,12 @@ class TeacherClassRegModule(ProgramModuleObj):
                     'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
                     'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct()}
 
+
+    def teacherDesc(self):
+        return {'class_approved': """List of teachers who are teaching an approved class.""",
+                'class_proposed': """List of teachers who are teaching a class which has yet to be reviewed.""",
+                'class_rejected': """List of teachers who are teaching a rejected class."""}
+    
 
     def deadline_met(self):
         tmpModule = ProgramModuleObj()

@@ -61,6 +61,28 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import Class
         return UserBit.find_by_anchor_perms(Class, self.getOld(), GetNode('V/Flags/Registration/Teacher'))
 
+    @staticmethod
+    def getAllOfType(strType, QObject = True):
+        now = datetime.now()
+        Q_after_start = Q(userbit__startdate__isnull = True) | Q(userbit__startdate__lte = now)
+        Q_before_end = Q(userbit__enddate__isnull = True) | Q(userbit__enddate__gte = now)
+
+        types = ['Student', 'Teacher','Guardian','Educator']
+
+        if strType not in types:
+            assert False, "Invalid type to find all of."
+                
+        Q_useroftype      = Q(userbit__verb = GetNode('V/Flags/UserRole/'+strType)) &\
+                            Q(userbit__qsc = GetNode('Q'))                          &\
+                            Q_after_start                                  &\
+                            Q_before_end
+
+        if QObject:
+            return Q_useroftype
+        else:
+            return User.objects.filter(Q_useroftype)
+
+
     def getEnrolledClasses(self):
         from esp.program.models import Class
         Conf = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Confirmed'))
