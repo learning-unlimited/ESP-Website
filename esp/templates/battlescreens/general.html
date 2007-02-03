@@ -105,7 +105,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
     </td>
     <td class="clsmiddle">
        {% if student_version %}{% else %}
-       <form method="post" action="">
+       <form method="post" action="{{request.path}}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
          <input class="button" type="submit" value="Edit">
        </form>

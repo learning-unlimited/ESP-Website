@@ -22,7 +22,7 @@ Note: Required fields are bordered in red and marked with an asterisk.
 <h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
 {% endif %}
 
-<form action="" name="clsform" method="post">
+<form action="{{request.path}}" name="clsform" method="post">
 
 <label for="id_title" class="header">
 Course Title *:
