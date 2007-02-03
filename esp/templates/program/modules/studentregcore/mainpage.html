@@ -28,7 +28,9 @@
   <td>{% if not module.useTemplate %}
    <a href="{{ module.get_full_path }}">
    {% endif %}
-   <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" class="nocheckmark" />
+   <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" 
+     {% if module.isCompleted %}title="Done!" alt="Done!"{% else %}
+       title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
    {% if not module.useTemplate %}
    </a>
    {% endif %}
