@@ -17,7 +17,8 @@ class RegProfileModule(ProgramModuleObj):
         return {'student_profile': students }
 
     def studentDesc(self):
-        return {'student_profile': """Students who have completed the profile."""}
+        return {'student_profile': """Students who have completed the profile.""",
+                'axiaks'         : """All users with last name like Axiak."""}
 
     def teachers(self, QObject = False):
         if QObject:

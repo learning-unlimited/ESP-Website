@@ -92,7 +92,7 @@ class CommModule(ProgramModuleObj):
                              anchor    = anchor,
                              email     = True,
                              sent      = False,
-                             fromuser  = self.user
+                             fromuser  = self.user,
                              fromemail = fromemail
                             )
 
