@@ -1,0 +1,42 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Communications Portal{% endblock %}
+
+{% block subsection_name %}Communications Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+<!--
+
+//-->
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+<style type="text/css">
+.listtable, .listtable th, .listtable td{ border: 1px solid #999; border-collapse: collapse;}
+#divmaintext .unchosen { background-color: #CCC; }
+#divmaintext .chosen { background-color: #FFF; }
+#divmaintext td.notchooser { cursor: pointer }
+#finalsentence { border: 1px solid black; width: 550px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Communications Portal</h1>
+<br />
+<h2>FINISHED!</h2>
+
+<br />
+<p>
+Congratulations!<br />
+<br />
+The email is in the process of being sent. To avoid being marked as a spam source, it will take {{time}} seconds to email everyone on the list, so please be patient!
+
+<br />
+</p>
+
+{% endblock %}

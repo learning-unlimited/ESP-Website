@@ -1,0 +1,86 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Communications Portal{% endblock %}
+
+{% block subsection_name %}Communications Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+<!--
+
+//-->
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+<style type="text/css">
+.listtable, .listtable th, .listtable td{ border: 1px solid #999; border-collapse: collapse;}
+#divmaintext .unchosen { background-color: #CCC; }
+#divmaintext .chosen { background-color: #FFF; }
+#divmaintext td.notchooser { cursor: pointer }
+#finalsentence { border: 1px solid black; width: 550px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Communications Portal</h1>
+<br />
+<h2>Step 2:</h2>
+
+<br />
+<p>
+There are <strong>{{ids|length}}</strong> distinct users in your query. If you feel this to be off, please
+<a href="javascript:history.go(-1);">go back</a> now.<br />
+<br />
+Please write your email/message now. Note that you can use <tt>{{ parameter }}</tt> to enter a parameter
+into the text of the message&mdash;the parameters are listed below.
+
+<form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="comm2">
+<table border="0" cellspacing="0" width="100%">
+<tr>
+  <td>
+  <label for="from">
+  <strong>From Email:</strong><br />
+  <small>(If blank: your email)</small>
+  </label>
+  <input type="text" size="20" name="from" id="from" />
+  <br />
+  <label for="subject">
+  <strong>Subject:</strong>
+  </label>
+  <input type="text" size="30" name="subject" id="subject" />
+  <br /><br />
+  <label for="body">
+  <strong>Body:</strong>
+  </label> <br />
+  <textarea cols="60" rows="12" name="body" id="body"></textarea>
+  <br />
+
+  </td>
+
+  <td width="200">
+   <table class="listtable" cellspacing="0">
+    <tr>
+      <th>Invocation</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <th>
+     {% templatetag openvariable %} name {% templatetag closevariable %}
+      </th>
+      <td>User's Full Name</td>
+    </tr>
+    </table>
+  </td>
+
+
+</tr>
+</table>
+
+<input type="submit" value="Send Message!" name="submitform" />
+<input type="hidden" name="userids" value="{{ids|join:","}}" />
+</form>
+{% endblock %}

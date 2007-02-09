@@ -1,0 +1,157 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Communications Portal{% endblock %}
+
+{% block subsection_name %}Communications Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+<!--
+
+var lists = [
+ {% for dblist in lists %}['{{dblist.id|addslashes}}', '{{dblist.description|addslashes}}']{% if not forloop.last %},{% endif %}
+ {% endfor %}];
+
+function getListDescription(list, key, def) {
+  for (var i = 0; i< list.length; i++) {
+     if (list[i][0] == key) return list[i][1];
+  }
+  return def;
+}
+
+
+function generateSentence() {
+
+   sentence = getListDescription(lists, document.getElementById('base_list').value, 'Nobody') + ' ';
+
+   for (var i=0; i < lists.length; i++) {
+//      alert('operator_'+lists[i][0]);
+      opvalue = document.getElementById('operator_'+lists[i][0]).value;
+      if (opvalue != 'ignore') {
+        if (opvalue == 'and') {
+           sentence += 'who ';
+        } else { 
+           sentence += 'or who ';
+        }
+
+        if (document.getElementById('are_'+lists[i][0]).checked) {
+           sentence += 'are ';
+        } else {
+           sentence += 'are not ';
+        }
+        sentence += '(' + lists[i][1].toLowerCase() + ') ';
+      }
+   }
+   sentence = sentence.substring(0, sentence.length - 1) + '.';
+   document.getElementById('finalsentence').innerHTML = sentence;
+}
+
+function switchrow(object, title) {
+
+   if (object.value == 'ignore') {
+      document.getElementById('row_'+title).className = 'unchosen';
+   } else {
+      document.getElementById('row_'+title).className = 'chosen';
+   }
+
+   document.getElementById('are_'+title).disabled = (object.value == 'ignore');
+   document.getElementById('arenot_'+title).disabled = (object.value == 'ignore');
+  
+}
+
+function switchnot(not, title) {
+   document.getElementById('are_'+title).checked = !not;
+   document.getElementById('arenot_'+title).checked = not;
+   generateSentence();
+}
+//-->
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+<style type="text/css">
+.listtable, .listtable th, .listtable td{ border: 1px solid #999; border-collapse: collapse;}
+#divmaintext .unchosen { background-color: #CCC; }
+#divmaintext .chosen { background-color: #FFF; }
+#divmaintext td.notchooser { cursor: pointer }
+#finalsentence { border: 1px solid black; width: 550px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Communications Portal</h1>
+<br />
+<p> Welcome to the communications portal &ndash; your one stop to communicate with the ESP community for your program.</p>
+
+<br />
+<h2>Step 1:</h2>
+
+
+<form action="/manage/{{program.getUrlBase}}/commstep2" method="post" name="comm">
+<p>
+<em>(If you feel there's a list omitted from this list or this interface is too hard to use, please email <tt>web@esp.mit.edu</tt> with questions!)</em>
+<br />
+
+To begin, you must build the list you are trying to contact below:
+<br />
+<br />
+To build this list, it is sufficient to build a sentence. There are a bunch of prepackaged lists from which you can <br />combine in interesting ways to contact who you want. <br />
+Please start the sentence here:
+<br />
+<select name="base_list" id="base_list" onchange="generateSentence();">
+   <option value="">Select start of sentence...</option>
+{% for dblist in lists %}
+  <option value="{{dblist.id}}">{{dblist.description }}...</option>
+{% endfor %}
+</select><br /><br />
+And continue adding to the sentence below (the final sentence is at the bottom for your reference):
+</p>
+<table border="0" width="600px" class="listtable" cellspacing="0" >
+<tr>
+  <th rowspan="2">Action</th>
+  <th style="white-space: nowrap;" colspan="2">Are/Are Not</th>
+  <th rowspan="2">List Description</th>
+  <th rowspan="2"># of Users</th>
+</tr>
+<tr>
+  <th>are</th>
+  <th>are not</th>
+</tr>
+{% for dblist in lists %}
+<tr class="unchosen" id="row_{{dblist.id}}">
+ <td width="1px">
+   <select name="operator_{{dblist.id}}" id="operator_{{dblist.id}}" onchange="switchrow(this, '{{dblist.id|addslashes}}');generateSentence();">
+    <option value="ignore">IGNORE</option>
+    <option value="and">...WHO...</option>
+    <option value="or">...OR WHO...</option>
+   </select>
+ </td>
+ <td class="notchooser" onclick="switchnot(false,'{{dblist.id|addslashes}}' );">
+   <input class="notchooser" onchange="generateSentence();" type="radio" name="not_{{dblist.id}}" value="ident" id="are_{{dblist.id}}" checked="checked" disabled="disabled" />
+ </td>
+ <td class="notchooser" onclick="switchnot(true, '{{dblist.id|addslashes}}');">
+  <input class="notchooser" type="radio" name="not_{{dblist.id}}" onchange="generateSentence();" id="arenot_{{dblist.id}}" value="not" disabled="disabled" />
+ </td>
+ <td>
+   {{ dblist.description }}
+ </td>
+ <td>
+   {{ dblist.count }}
+ </td>
+
+</tr>
+
+{% endfor %}
+</table>
+<br />
+<br />
+Final  Sentence: (with parentheses for added readibility)<br />
+<div id="finalsentence">Nobody.</div>
+<br />
+<input type="submit" value="Continue on to step 2!" name="submitform" />
+<input type="hidden" name="keys" value="{{lists|join:",,"|addslashes}}" />
+</form>
+{% endblock %}
