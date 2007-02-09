@@ -58,6 +58,7 @@ def send_event_notices_for_day(day):
 def send_miniblog_messages():
     entries = Entry.objects.filter(email = True, sent = False)
 
+
     for entry in entries:
         entry.sent = True
         entry.save()
@@ -67,7 +68,7 @@ def send_miniblog_messages():
         wait = settings.EMAILTIMEOUT
     else:
         wait = 1.5
-        
+
     for entry in entries:
         if entry.fromuser is None or type(entry.fromuser) == AnonymousUser:
             if entry.fromemail is None or len(entry.fromemail.strip()) == 0:
@@ -80,10 +81,12 @@ def send_miniblog_messages():
         emails = {}
         bits = UserBit.bits_get_users(qsc = entry.anchor, verb = verb)
         for bit in bits:
-            if bit.user is None:
+            if bit.user is None or type(bit.user) == AnonymousUser:
+#                print "Error with %s (%s)" % (str(entry), str(bit.user))
                 pass
-            
-            emails[bit.user.email] = ESPUser(bit.user).name()
+            else:
+                emails[bit.user.email] = ESPUser(bit.user).name()
+                
         for email,name in emails.items():
             send_mail(entry.title,
 
