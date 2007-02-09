@@ -353,7 +353,7 @@ class UserBit(models.Model):
             res = res.distinct()
 
         if res == None:
-            return EMPTY_QUERYSET.distinct()
+            return module.objects.filter(id=-1).distinct()
 
 	# Operation Complete!
 	return res

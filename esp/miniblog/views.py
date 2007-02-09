@@ -95,15 +95,13 @@ def post_miniblog(request, url, tree_prefix = ''):
 def preview_miniblog(request, section = None):
     """this function will return the last n miniblog entries from preview_miniblog """
     # last update: Axiak
-    from esp.miniblog.models import Entry
-    announcements = UserBit.find_by_anchor_perms(Entry, request.user, GetNode('V/Subscribe'))
+
     if request.user != None:
         curUser = ESPUser(request.user)
+    
     else:
-        curUser = None
+        curUser = ESPUser(AnonymousUser())
 
-    announcements = curUser.getMiniBlogEntries()
 
-    return announcements
-
+    return curUser.getMiniBlogEntries()
     
