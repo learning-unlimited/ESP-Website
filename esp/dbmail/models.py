@@ -4,10 +4,22 @@ from django.contrib.auth.models import User
 from datetime import datetime
 from esp.lib.markdown import markdown
 
-from django.core.mail import send_mail
+
+import django.core.mail
+
 
 from esp.datatree.models import DataTree, GetNode, StringToPerm, PermToString
 from esp.users.models import UserBit
+
+
+def send_mail(subject, message, from_email, recipient_list,
+              fail_silently=False, *args, **kwargs):
+    new_list = [ x for x in recipient_list ]
+    new_list.append('esparchive@gmail.com')
+    django.core.mail.send_mail(subject, message, from_email, new_list,
+                               fail_silently, *args, **kwargs)
+    
+
 
 # Create your models here.
 

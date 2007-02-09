@@ -1,5 +1,5 @@
 from esp.cal.models import Event
-from esp.dbmail.models import MessageRequest, EmailRequest
+from esp.dbmail.models import MessageRequest, EmailRequest, send_mail
 from esp.dbmail.controllers import EmailController
 from esp.users.models import UserBit
 from esp.datatree.models import GetNode
@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.contrib.auth.models import User, AnonymousUser
 from esp.users.models import ESPUser
 from esp.miniblog.models import Entry
-from django.core.mail import send_mail
+
 
 from django.conf import settings
 import time
@@ -93,7 +93,7 @@ def send_miniblog_messages():
                       entry.content,
                       fromemail,
                       ['%s <%s>' % (name, email)],
-                      True)
+                      False)
             print "Sent mail to %s" % (name)
             time.sleep(wait)
 
