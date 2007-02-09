@@ -9,6 +9,7 @@ from esp.users.models   import ESPUser
 from django.db.models.query import Q, QNot
 from django.template.defaultfilters import urlencode
 from django.template import Context, Template
+from esp.miniblog.models import Entry
 
 class DBList(object):
     totalnum = False
@@ -99,10 +100,17 @@ class CommModule(ProgramModuleObj):
             newentry.save()
 
             newentry.subscribe_user(user)
+            from django.conf import settings
+            if hasattr(settings, 'EMAILTIMEOUT') and \
+                     settings.EMAILTIMEOUT is not None:
+                est_time = settings.EMAILTIMEOUT * len(users)
+            else:
+                est_time = 1.5 * len(users)
+            
 
-
-        render_to_response(self.baseDir()+'finished.html', request,
-                           (prog, tl), {'time': len(users) * 1.5})
+            #        assert False, self.baseDir()+'finished.html'
+            return render_to_response(self.baseDir()+'finished.html', request,
+                           (prog, tl), {'time': est_time})
 
 
 

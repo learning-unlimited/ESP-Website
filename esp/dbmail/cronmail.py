@@ -80,6 +80,9 @@ def send_miniblog_messages():
         emails = {}
         bits = UserBit.bits_get_users(qsc = entry.anchor, verb = verb)
         for bit in bits:
+            if bit.user is None:
+                pass
+            
             emails[bit.user.email] = ESPUser(bit.user).name()
         for email,name in emails.items():
             send_mail(entry.title,
