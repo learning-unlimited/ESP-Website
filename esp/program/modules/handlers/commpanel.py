@@ -72,7 +72,7 @@ class CommModule(ProgramModuleObj):
 
         if request.POST.has_key('from') and \
            len(request.POST['from'].strip()) > 0:
-            fromemail = request.POST['email']
+            fromemail = request.POST['from']
         else:
             fromemail = None
 
