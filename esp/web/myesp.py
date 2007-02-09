@@ -223,7 +223,8 @@ def myesp_passrecover(request, module):
 
 			user.password = code
 			user.save()
-			
+
+			assert False, "Currently spams the Announcements list.  Disabled until that can be fixed."
 			Entry.post( None, msganchor,
 			      '[ESP] Your Password Recovery For esp.mit.edu',
 			      """Hello,
