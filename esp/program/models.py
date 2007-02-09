@@ -147,26 +147,32 @@ class Program(models.Model):
 
 		for usertype in usertypes:
 			lists['all_'+usertype.lower()+'s'] = {'description':
-							       'All '+usertype.lower()+'s in the ESP database.',
+							       usertype+'s in all of ESP',
 							       'list' : ESPUser.getAllOfType(usertype)}
 			
 		return lists
 
-	def students_union(self):
+	def students_union(self, QObject = False):
 		import operator
 		if len(self.students().values()) == 0:
 			return []
 		
-		union = reduce(operator.or_, [x.distinct() for x in self.students().values() ])
-		return union.distinct()
+		union = reduce(operator.or_, [x for x in self.students(True).values() ])
+		if QObject:
+			return union
+		else:
+			return User.objects.filter(union).distinct()
 
 
-	def teachers_union(self):
+	def teachers_union(self, QObject = False):
 		import operator
 		if len(self.teachers().values()) == 0:
 			return []
-		union = reduce(operator.or_, [x.distinct() for x in self.teachers().values() ])
-		return union.distinct()	
+		union = reduce(operator.or_, [x for x in self.teachers(True).values() ])
+		if QObject:
+			return union
+		else:
+			return User.objects.filter(union).distinct()	
 
 	def num_students(self):
 		modules = self.getModules(None, 'learn')

@@ -80,9 +80,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                                  Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
 
         if QObject:
-            return {'class_approved': Q_approved_teacher,
-                    'class_proposed': Q_proposed_teacher,
-                    'class_rejected': Q_rejected_teacher}
+            return {'class_approved': self.getQForUser(Q_approved_teacher),
+                    'class_proposed': self.getQForUser(Q_proposed_teacher),
+                    'class_rejected': self.getQForUser(Q_rejected_teacher)}
         else:
             return {'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
                     'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
@@ -90,9 +90,9 @@ class TeacherClassRegModule(ProgramModuleObj):
 
 
     def teacherDesc(self):
-        return {'class_approved': """List of teachers who are teaching an approved class.""",
-                'class_proposed': """List of teachers who are teaching a class which has yet to be reviewed.""",
-                'class_rejected': """List of teachers who are teaching a rejected class."""}
+        return {'class_approved': """Teachers not teaching an approved class.""",
+                'class_proposed': """Teachers not teaching a class which has yet to be reviewed.""",
+                'class_rejected': """Teachers not teaching a rejected class."""}
     
 
     def deadline_met(self):

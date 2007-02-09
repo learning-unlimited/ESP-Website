@@ -16,6 +16,7 @@ class Entry(models.Model):
 	sent    = models.BooleanField()
 	email   = models.BooleanField()
 	fromuser = models.ForeignKey(User, blank=True, null=True)
+	fromemail = models.CharField(maxlength=80, blank=True, null=True)
 	priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
 
 	def __str__(self):
@@ -49,6 +50,24 @@ class Entry(models.Model):
 		newentry.email  = email
 		newentry.sent  = False
 		newentry.fromuser = user_from
-
+		newentry.fromemail = user_email
 		newentry.save()
+
+		return newentry
+
+	def subscribe_user(self, user):
+		verb = GetNode('V/Subscribe')
+		ub = UserBit.objects.filter(verb = verb,
+					    qsc  = self.anchor,
+					    user = user)
+
+		if ub.count() > 0:
+			return False
+
+		ub = UserBit(verb = verb,
+			     qsc  = self.anchor,
+			     user = user
+			     )
+		ub.save()
+		return True
 

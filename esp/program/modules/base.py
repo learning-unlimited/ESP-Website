@@ -48,6 +48,14 @@ class ProgramModuleObj(models.Model):
 
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
+
+    def getQForUser(self, QRestriction):
+        from esp.users.models import User
+        ids = [ x['id'] for x in User.objects.filter(QRestriction).values('id')]
+        if len(ids) == 0:
+            return Q(id = -1)
+        else:
+            return Q(id__in = ids)
     
     def save(self):
         """ I'm doing this because DJango doesn't know what object inheritance is..."""

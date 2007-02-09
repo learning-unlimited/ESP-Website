@@ -9,23 +9,25 @@ class RegProfileModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         if QObject:
-            return {'student_profile': Q(registrationprofile__program = self.program) & \
-                               Q(registrationprofile__student_info__isnull = False)}
+            return {'student_profile': self.getQForUser(Q(registrationprofile__program = self.program) & \
+                               Q(registrationprofile__student_info__isnull = False)),
+                    'axiaks':          self.getQForUser(Q(last_name__icontains = 'axiak'))
+                    }
         students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
         return {'student_profile': students }
 
     def studentDesc(self):
-        return {'student_profile': """List of students who have completed the profile."""}
+        return {'student_profile': """Students who have completed the profile."""}
 
     def teachers(self, QObject = False):
         if QObject:
-            return {'teacher_profile': Q(registrationprofile__program = self.program) & \
-                               Q(registrationprofile__teacher_info__isnull = False)}
+            return {'teacher_profile': self.getQForUser(Q(registrationprofile__program = self.program) & \
+                               Q(registrationprofile__teacher_info__isnull = False))}
         teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
         return {'teacher_profile': teachers }
 
     def teacherDesc(self):
-        return {'teacher_profile': """List of teachers who have completed the profile."""}
+        return {'teacher_profile': """Teachers who have completed the profile."""}
 
     def profile(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """

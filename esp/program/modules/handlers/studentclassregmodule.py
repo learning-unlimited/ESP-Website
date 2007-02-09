@@ -18,13 +18,13 @@ class StudentClassRegModule(ProgramModuleObj):
                Q(userbit__verb = GetNode('V/Flags/Registration/Preliminary'))
         
         if QObject:
-            return {'classreg': (Conf | Prel)}
+            return {'classreg': self.getQForUser(Conf | Prel)}
         else:
             return {'classreg': ESPUser.objects.filter((Conf | Prel)).distinct()}
 
 
     def studentDesc(self):
-        return {'classreg': """This is a list of students who have preregistered or are enrolled in at least one class."""}
+        return {'classreg': """Students who have are enrolled in at least one class."""}
     
     def isCompleted(self):
         self.user = ESPUser(self.user)

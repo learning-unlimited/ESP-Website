@@ -13,12 +13,12 @@ class StudentRegCore(ProgramModuleObj):
         verb = GetNode('V/Flags/Public')
         qsc  = GetNode("/".join(self.program.anchor.tree_encode()) + "/Confirmation")
         if QObject:
-            return {'confirmed': Q(userbit__qsc = qsc) & Q(userbit__verb = verb)}
+            return {'confirmed': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
         
         return {'confirmed': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
 
     def studentDesc(self):
-        return {'confirmed': """This is a list of students who have clicked on the `Confirm Pre-Registraiton' button."""}
+        return {'confirmed': """Students who have clicked on the `Confirm Pre-Registraiton' button."""}
 
     @needs_student
     @meets_deadline()

@@ -31,7 +31,7 @@ class CreditCardModule(ProgramModuleObj):
 
 
     def studentDesc(self):
-        return {'creditcard': """This is a list of students who have filled out the credit card form."""}
+        return {'creditcard': """Students who have filled out the credit card form."""}
      
     @usercheck_usetl
     def startpay(self, request, tl, one, two, module, extra, prog):

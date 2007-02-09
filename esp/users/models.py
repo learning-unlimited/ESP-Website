@@ -78,7 +78,12 @@ class ESPUser(User, AnonymousUser):
                             Q_before_end
 
         if QObject:
-            return Q_useroftype
+            ids = [x['id'] for x in User.objects.filter(Q_useroftype).values('id')]
+            if len(ids) == 0:
+                return Q(id=-1)
+            else:
+                return Q(id__in = ids)
+
         else:
             return User.objects.filter(Q_useroftype)
 
@@ -284,7 +289,8 @@ class UserBit(models.Model):
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
-        qscs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end) | UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+        qscs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end) | \
+               UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
 
         if qsc_root == None:
             return qscs.distinct()

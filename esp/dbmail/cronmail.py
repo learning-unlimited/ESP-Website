@@ -57,6 +57,11 @@ def send_event_notices_for_day(day):
 
 def send_miniblog_messages():
     entries = Entry.objects.filter(email = True, sent = False)
+
+    for entry in entries:
+        entry.sent = True
+        entry.save()
+
     verb = GetNode('V/Subscribe')
     if hasattr(settings, 'EMAILTIMEOUT') and settings.EMAILTIMEOUT is not None:
         wait = settings.EMAILTIMEOUT
@@ -65,7 +70,10 @@ def send_miniblog_messages():
         
     for entry in entries:
         if entry.fromuser is None or type(entry.fromuser) == AnonymousUser:
-            fromemail = 'esp@mit.edu'
+            if entry.fromemail is None or len(entry.fromemail.strip()) == 0:
+                fromemail = 'esp@mit.edu'
+            else:
+                fromemail = entry.fromemail
         else:
             fromemail = '%s <%s>' % (ESPUser(entry.fromuser).name(),
                                      entry.fromuser.email)
@@ -75,11 +83,11 @@ def send_miniblog_messages():
             emails[bit.user.email] = ESPUser(bit.user).name()
         for email,name in emails.items():
             send_mail(entry.title,
+
                       entry.content,
                       fromemail,
                       ['%s <%s>' % (name, email)],
                       True)
             print "Sent mail to %s" % (name)
             time.sleep(wait)
-        entry.sent = True
-        entry.save()
+

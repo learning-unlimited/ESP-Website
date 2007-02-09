@@ -13,12 +13,12 @@ class SATPrepModule(ProgramModuleObj):
 
     def students(self,QObject = False):
         if QObject:
-            return {'satprepinfo': Q(satprepreginfo__program = self.program)}
+            return {'satprepinfo': self.getQForUser(Q(satprepreginfo__program = self.program))}
         students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
         return {'satprepinfo': students }
 
     def studentDesc(self):
-        return {'satprepinfo': """This is a list of students who have filled out the SAT Prep information."""}
+        return {'satprepinfo': """Students who have filled out the SAT Prep information."""}
 
     def isCompleted(self):
         

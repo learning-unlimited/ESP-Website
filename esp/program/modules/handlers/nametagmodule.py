@@ -27,6 +27,8 @@ class NameTagModule(ProgramModuleObj):
 
         if idtype == 'students':
             students = self.program.students_union()
+            from esp.users.models import User
+            from django.db.models import Q
             users = []
             students.order_by('last_name','first_name')
             
