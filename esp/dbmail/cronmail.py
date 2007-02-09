@@ -93,7 +93,7 @@ def send_miniblog_messages():
                       entry.content,
                       fromemail,
                       ['%s <%s>' % (name, email)],
-                      False)
+                      True)
             print "Sent mail to %s" % (name)
             time.sleep(wait)
 
