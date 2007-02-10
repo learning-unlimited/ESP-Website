@@ -42,7 +42,7 @@ class Entry(models.Model):
 		pass
 	
 	@staticmethod
-	def post( user_from, anchor, subject, content, email=False):
+	def post( user_from, anchor, subject, content, email=False, user_email = ''):
 		newentry = Entry()
 		newentry.content = content
 		newentry.title = subject
@@ -57,6 +57,10 @@ class Entry(models.Model):
 
 	def subscribe_user(self, user):
 		verb = GetNode('V/Subscribe')
+		from esp.users.models import ESPUser, User
+		if type(user) != User and type(user) != ESPUser:
+			assert False, 'EXPECTED USER, received %s' \
+			         % str(type(user))
 		ub = UserBit.objects.filter(verb = verb,
 					    qsc  = self.anchor,
 					    user = user)

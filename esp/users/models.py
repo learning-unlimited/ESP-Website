@@ -272,30 +272,64 @@ class UserBit(models.Model):
     
 
     @staticmethod
-    def bits_get_qsc(user, verb, now = datetime.now(), end_of_now = None, qsc_root=None):
+    def bits_get_qsc(user, verb, now = True, end_of_now = None, qsc_root=None):
         """  Return all qsc structures to which 'user' has been granted 'verb'
 
         If 'qsc_root' is specified, only return qsc structures at or below the specified node """
-        if end_of_now == None: end_of_now = now
+        cache_id = 'bit_get_qsc:' + str(user.id) + ',' + str(verb.id) + ',' + str(now) + ',' + str(end_of_now) + ',' + str(qsc_root)
+        cache_id_encoded = urlencode(cache_id)
 
-        #	Hopefully it's easier to understand this query now...
-        Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
-        Q_exact_match = Q(recursive = False, verb=verb)
-        Q_correct_user = Q(user__isnull = True) | Q(user=user)
+        cached_val = cache.get(cache_id_encoded)
 
-        if not user.is_authenticated():
-            Q_correct_user = Q(user__isnull = True)
-            
-        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
-        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
-		
-        qscs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end) | \
-               UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+        if now == True:
+            now = datetime.now()
 
-        if qsc_root == None:
-            return qscs.distinct()
+        if cached_val is not None:
+            usedCache = True
+            str_userbit_ids = cached_val
         else:
-            return qscs.filter(qsc__rangestart__gte=qsc_root.rangestart, qsc__rangeend__lte=qsc_root.rangeend).distinct()
+            usedCache = False
+            if end_of_now == None: end_of_now = now
+
+            #	Hopefully it's easier to understand this query now...
+            Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
+            Q_exact_match = Q(recursive = False, verb=verb)
+            Q_correct_user = Q(user__isnull = True) | Q(user=user)
+            
+            if not user.is_authenticated():
+                Q_correct_user = Q(user__isnull = True)
+            
+            Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
+            Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
+		
+            qscs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end) | \
+                   UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+
+            if qsc_root is None:
+                userbit_ids = qscs.values('id')
+            else:
+                userbit_ids = qscs.filter(qsc__rangestart__gte=qsc_root.rangestart, qsc__rangeend__lte=qsc_root.rangeend).values('id')
+            str_userbit_ids = ','.join([str(userbit['id']) for userbit in userbit_ids])
+            
+
+            cache.set(cache_id_encoded, str_userbit_ids, 20)
+
+        if len(str_userbit_ids.strip()) == 0:
+            userbit_ids_array = []
+        else:
+            userbit_ids_array = str_userbit_ids.split(',')
+            
+        try:
+            userbit_ids_array = [ int(userbit_id) for userbit_id in userbit_ids_array ]
+        except:
+            assert False, 'USERBIT_ID MUST BE AN INTEGER, RECEIVED NON-INTEGER: %s' % str_userbit_ids 
+
+
+        if len(userbit_ids_array) == 0:
+            return UserBit.objects.filter(id = -1)
+        else:
+            return UserBit.objects.filter(id__in = userbit_ids_array).distinct()
+
 
     @staticmethod
     def bits_get_verb(user, qsc, now = datetime.now(), end_of_now = None):
@@ -353,7 +387,7 @@ class UserBit(models.Model):
             res = res.distinct()
 
         if res == None:
-            return module.objects.filter(id=-1).distinct()
+            return module.objects.filter(id=-1)
 
 	# Operation Complete!
 	return res

@@ -84,6 +84,11 @@ class DataTree(models.Model):
         """ Return a 'Q' object that, when passed to a Django filter on a DataTree node, will filter for all descendants of the current node """
         return Q(rangestart__gte=self.rangestart, rangeend__lte=self.rangeend)
 
+    def descendants(self):
+        """ Return a QuerySet of all descendants."""
+        return DataTree.objects.filter(self.Q_descendants()).distinct()
+
+    
     def is_descendant(self, node):
         """ Return False if the specified node is not a descendant (child, child of a child, etc.) of this node, AND if the specified node is not this node """
         return (node.rangestart >= self.rangestart and node.rangeend <= self.rangeend)

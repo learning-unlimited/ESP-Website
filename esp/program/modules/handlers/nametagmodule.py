@@ -2,7 +2,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
 from django.contrib.auth.decorators import login_required
-
+from esp.users.models import ESPUser
 
 class NameTagModule(ProgramModuleObj):
 
@@ -30,7 +30,9 @@ class NameTagModule(ProgramModuleObj):
             from esp.users.models import User
             from django.db.models import Q
             users = []
-            students.order_by('last_name','first_name')
+            students = [ ESPUser(student) for student in students ]
+            students.sort()
+
             
             for student in students:
                 users.append({'title': 'Student',
