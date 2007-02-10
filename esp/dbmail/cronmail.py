@@ -70,14 +70,15 @@ def send_miniblog_messages():
         wait = 1.5
 
     for entry in entries:
-        if entry.fromuser is None or type(entry.fromuser) == AnonymousUser:
-            if entry.fromemail is None or len(entry.fromemail.strip()) == 0:
+        if entry.fromemail is None or len(entry.fromemail.strip()) == 0:
+            if entry.fromuser is None or type(entry.fromuser) == AnonymousUser:
                 fromemail = 'esp@mit.edu'
             else:
-                fromemail = entry.fromemail
+                fromemail = '%s <%s>' % (ESPUser(entry.fromuser).name(),
+                                         entry.fromuser.email)
         else:
-            fromemail = '%s <%s>' % (ESPUser(entry.fromuser).name(),
-                                     entry.fromuser.email)
+            fromemail = entry.fromemail
+
         emails = {}
         bits = UserBit.bits_get_users(qsc = entry.anchor, verb = verb)
         for bit in bits:
