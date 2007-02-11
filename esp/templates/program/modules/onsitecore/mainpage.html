@@ -21,34 +21,12 @@ Welcome to the OnSite portal for {{program.niceName}}.<br />
 Please select from the option below to continue.
 </p>
 
-<center>
-<strong>Your options:</strong>
 <br />
+<strong>Your Options:</strong>
 <ul>
-
-{% for module in modules %}
-
-{% if module.isStep %}
-  {% if not module.useTemplate %}
-    <li>{{ module.makeLink }}</li>
-  {% else %}
-    <li><em>{{ module.module.link_title }} (below)</em></li>
-  {% endif %}
-{% endif %}
-{% endfor %}
+<li><a href="/onsite/{{program.getUrlBase }}/checkin">User Checkin (pay/medical forms)</a></li>
+<li><a href="/onsite/{{program.getUrlBase }}/reg">OnSite Registration (from scratch, no prereg)</a></li>
 </ul>
-
-
-<br />
-<br />
-<br />
-{% for module in modules %}
-{% if module.useTemplate %}
-<br />
- {% include module.getTemplate %}
-
-{% endif %}
-{% endfor %}
 
 
 
