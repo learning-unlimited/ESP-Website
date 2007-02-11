@@ -1,0 +1,36 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Printables{% endblock %}
+
+{% block subsection_name %}Printing Options{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+<br /><br />
+<h1>SATPrep Test Lables for {{program.niceName}}</h1>
+
+<p style="text-align: center">
+This tool allows you to print off labels for use in SATPrep exams.
+
+Options:
+</p>
+
+
+<ul>
+<li><a href="{{request.path}}?print=all" title="Print all">
+     Print labels for all students
+    </a>
+</li>
+<li><a href="{{request.path}}?print=remaining" title="Print All Remaining">
+     Print labels for students who haven't had labels printed
+    </a>
+</li>
+</ul>
+
+
+{% endblock %}

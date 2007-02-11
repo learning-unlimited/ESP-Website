@@ -1,0 +1,42 @@
+
+
+<html>
+<head>
+<title>SATPrep Labels</title>
+<style media="print,screen" type="text/css">
+body { font-family: georgia; margin-left: 0; margin-top: 0; }
+.spacer { height: .5in }
+.label { width:4in; height: 2in; text-align: left; border: 0px solid black;}
+.hspace { width: 0.25in; }
+.marginize { margin: 5px; margin-left: 15px; }
+.label { font-size: 14pt; overflow: hidden;}
+h1 { font-size: 18pt; font-weight: bold; display: inline; }
+h2 { font-size: 16pt; font-weight: bold; display: inline; }
+span { text-decoration: none; }
+</style>
+</head>
+<body>
+{% for student in students %}
+{% if forloop.counter0|divisibleby:10 %}
+{% if not forloop.first %}
+</table>
+<div style="page-break-after: always;">&nbsp; </div>
+{% endif %}
+<div class="spacer">&nbsp; </div>
+<table cellspacing="0" cellpadding="0" align="center">
+{% endif %}
+{% if forloop.counter0|divisibleby:2 %}
+<tr>
+  <td>
+  {% include "program/modules/programprintables/satpreplabel.html" %}
+  </td>
+  <td class="hspace">&nbsp; </td>
+{% else %}
+  <td>
+  {% include "program/modules/programprintables/satpreplabel.html" %}
+  </td>
+</tr>
+{% endif %}
+{% endfor %}
+</body>
+</html>
