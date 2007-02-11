@@ -743,10 +743,10 @@ class TeacherParticipationProfile(models.Model):
 
 class SATPrepRegInfo(models.Model):
 	""" SATPrep Registration Info """
-	old_math_score = models.IntegerField()
-	old_verb_score = models.IntegerField()
-	old_writ_score = models.IntegerField()
-	heard_by = models.CharField(maxlength=128)
+	old_math_score = models.IntegerField(blank=True, null=True)
+	old_verb_score = models.IntegerField(blank=True, null=True)
+	old_writ_score = models.IntegerField(blank=True, null=True)
+	heard_by = models.CharField(maxlength=128, blank=True, null=True)
 	user = models.ForeignKey(User)
 	program = models.ForeignKey(Program)
 

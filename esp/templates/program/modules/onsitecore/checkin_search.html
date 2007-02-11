@@ -1,0 +1,43 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+{{ program.mainteacherreg }}
+
+<br /><br />
+<h1>Checkin &mdash; Search For User</h1>
+
+<p style="text-align: center">
+Please use this to search for a user to "check in".
+</p>
+
+{% if error %}
+<p class="error">Error: No user found by that criteria.</p>
+{% endif %}
+
+<br />
+<form action="{{ request.path }}" method="get">
+<label for="userid"><strong>User ID:</strong></label>
+<input type="text" size="6" name="userid" id="userid" />
+<input type="submit" name="submitid" value="Search by ID" />
+</form>
+<br />
+<br />
+<form action="{{ request.path }}" method="get">
+<label for="lastname"><strong>Last Name:</strong></label>
+<input type="text" size="20" name="lastname" id="lastname" />
+<input type="submit" name="submitid" value="Search by Last Name" />
+<br />
+
+
+
+{% endblock %}

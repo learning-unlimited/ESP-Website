@@ -1,0 +1,118 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+{{ program.mainteacherreg }}
+
+<br /><br />
+<h1>New Student Registration for {{ program.niceName }}</h1>
+
+<p style="text-align: center">
+Please enter the information for the new student:
+</p>
+<br />
+<form autocomplete="off" name="reg" method="POST" action="{{request.path}}">
+<table cellpadding="2" align="center" border="0">
+
+<tr>
+ <td><label for="id_first_name">First Name:</label></td>
+ <td>{{ form.first_name }} {% if form.first_name.errors %}
+   <br /><span class="form_error">{{ form.first_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_last_name">Last Name:</label></td>
+ <td>{{ form.last_name }} {% if form.last_name.errors %}
+   <br /><span class="form_error">{{ form.last_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_email">Email:</label></td>
+ <td>{{ form.email }} {% if form.email.errors %}
+   <br /><span class="form_error">{{ form.email.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
+<tr>
+ <td><label for="id_old_math_score">Current SAT Math Score:<br />
+       <small>(if available)</small></label></td>
+ <td>{{ form.old_math_score }} {% if form.old_math_score.errors %}
+   <br /><span class="form_error">{{ form.old_math_score.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_old_verb_score">Current SAT Verbal Score:<br />
+       <small>(if available)</small></label></td>
+ <td>{{ form.old_verb_score }} {% if form.old_verb_score.errors %}
+   <br /><span class="form_error">{{ form.old_verb_score.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_old_writ_score">Current SAT Writing Score:<br />
+       <small>(if available)</small></label></td>
+ <td>{{ form.old_writ_score }} {% if form.old_writ_score.errors %}
+   <br /><span class="form_error">{{ form.old_writ_score.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_medical">Handed Medical Form In?:</label></td>
+ <td>{{ form.medical }} {% if form.medical.errors %}
+   <br /><span class="form_error">{{ form.medical.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_liability">Handed Liability Form In?:
+</label></td>
+ <td>{{ form.liability }} {% if form.liability.errors %}
+   <br /><span class="form_error">{{ form.liability.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_paid">Has Paid?:
+          </label></td>
+ <td>{{ form.paid }} {% if form.paid.errors %}
+   <br /><span class="form_error">{{ form.paid.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <th colspan="2">
+ <input type="submit" value="Save Registration" />
+ </th>
+</tr>
+</table>
+
+
+
+</form>
+<br />
+
+
+
+{% endblock %}

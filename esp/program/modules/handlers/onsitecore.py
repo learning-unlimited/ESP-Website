@@ -6,7 +6,11 @@ from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
 from django              import forms
 from django.http import HttpResponseRedirect
+from esp.program.models import SATPrepRegInfo
 from esp.program.modules.manipulators import OnSiteRegManipulator
+
+
+
 class OnsiteCore(ProgramModuleObj):
 
     def createBit(self, extension):
@@ -141,11 +145,45 @@ class OnsiteCore(ProgramModuleObj):
                                 is_superuser = False)
                 new_user.save()
 
+                self.student = new_user
                 self.setCodeAndSendEmail(new_user)
-                #		new_reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-                #	new_reginfo.addOrUpdate(new_data, request.user, prog)
-                pass
-#return self.goToCore(tl)
+
+                #update satprep information
+                satprep = SATPrepRegInfo.getLastForProgram(new_user, self.program)
+                satprep.old_math_score = new_data['old_math_score']
+                satprep.old_verb_score = new_data['old_verb_score']
+                satprep.old_writ_score = new_data['old_writ_score']
+                satprep.save()
+
+                if new_data['paid']:
+                    self.createBit('Paid')
+                else:
+                    self.deleteBit('Paid')
+
+                if new_data['medical']:
+                    self.createBit('MedicalFiled')
+                else:
+                    self.deleteBit('MedicalFiled')
+
+                if new_data['liability']:
+                    self.createBit('LiabilityFiled')
+                else:
+                    self.deleteBit('LiabilityFiled')
+
+                self.createBit('OnSite')
+
+		v = GetNode( 'V/Flags/UserRole/Student')
+		ub = UserBit()
+		ub.user = new_user
+		ub.recursive = False
+		ub.qsc = GetNode('Q')
+		ub.verb = v
+		ub.save()
+                
+                new_user = ESPUser(new_user)
+
+                
+                return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'user': new_user})
         
         else:
             new_data = {}
@@ -198,6 +236,8 @@ class OnsiteCore(ProgramModuleObj):
 
  http://esp.mit.edu/myesp/recoveremail/?code="""+code+"""
 
+ For reference, your username is: """+user.username+"""
+ 
  This will allow better communication and participation between you and the program.
 
  Thank you,

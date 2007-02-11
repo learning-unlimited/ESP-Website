@@ -1,0 +1,49 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+{{ program.mainteacherreg }}
+
+<br /><br />
+<h1>Checkin &mdash; Search For User</h1>
+
+<p style="text-align: center">
+Please select a user from the list below:
+</p>
+
+<br />
+<table border="1" style="border: 1px solid black; border-collapse: collapsed;" cellspacing="0">
+<tr>
+  <th>Username</th>
+  <th>Name</th>
+  <th>D.O.B</th>
+  <th>Phone #s</th>
+  <th>ID</th>
+  <th>Check-In Link</th>
+</tr>
+
+{% for user in users %}
+<tr>
+ <td>{{user.username }}</td>
+ <td>{{user.name }}</td>
+ <td>{{user.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
+ <td>{{user.getLastProfile.contact_user.phone_cell}}/{{user.getLastProfile.contact_user.phone_day}}</td>
+ <td>{{user.id}}</td>
+ <td><a href="/onsite/{{program.getUrlBase}}/checkin/{{user.id}}" title="Click to checkin">Check-In User</a>
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+
+
+{% endblock %}

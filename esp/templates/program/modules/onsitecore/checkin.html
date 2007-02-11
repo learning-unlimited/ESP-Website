@@ -1,0 +1,43 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+{{ program.mainteacherreg }}
+
+<br /><br />
+<h1>Checkin &mdash; For &quot;{{module.student.name}}&quot;</h1>
+
+<p style="text-align: center">
+Welcome to the student check-in for {{module.student.name}}. Please checkoff that hte following has been completed:
+</p>
+<br />
+<form name="checkin" method="POST" action="{{request.path}}">
+<label for="medical"><strong>Medical Form?</strong></label> &nbsp;&nbsp;
+   <input type="checkbox" name="medical" id="medical" {% if module.hasMedical %}checked="checked"{% endif %} />
+  <br />
+
+<label for="liability"><strong>Liability Form?</strong></label> &nbsp;&nbsp;
+   <input type="checkbox" name="liability" id="liability" {% if module.hasLiability %}checked="checked"{% endif %} />
+  <br />
+
+<label for="paid"><strong>Paid $80?</strong></label> &nbsp;&nbsp;
+   <input type="checkbox" name="paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} />
+  <br />
+<br />
+
+<input type="submit" value="Save Check-In" />
+</form>
+<br />
+
+
+
+{% endblock %}
