@@ -10,15 +10,14 @@ class RegProfileModule(ProgramModuleObj):
     def students(self, QObject = False):
         if QObject:
             return {'student_profile': self.getQForUser(Q(registrationprofile__program = self.program) & \
-                               Q(registrationprofile__student_info__isnull = False)),
-                    'axiaks':          self.getQForUser(Q(last_name__icontains = 'axiak'))
+                               Q(registrationprofile__student_info__isnull = False))
                     }
         students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
         return {'student_profile': students }
 
     def studentDesc(self):
-        return {'student_profile': """Students who have completed the profile.""",
-                'axiaks'         : """All users with last name like Axiak."""}
+        return {'student_profile': """Students who have completed the profile."""}
+
 
     def teachers(self, QObject = False):
         if QObject:

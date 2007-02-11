@@ -120,6 +120,12 @@ form {
   top: 320px;
   z-index: 10;
 }
+#divnav8 {
+  position: absolute;
+  left: 620px;
+  top: 340px;
+  z-index: 10;
+}
 
 /* "EXTRA" LINKS */
 

@@ -12,6 +12,19 @@ from django.core.cache import cache
 from datetime import datetime
 from django.template.defaultfilters import urlencode
 
+def user_get_key(user):
+    """ Returns the key of the user, regardless of anything about the user object. """
+    if user is None or type(user) == AnonymousUser or \
+         (type(user) != User and type(user) != ESPUser) or \
+         user.id is None:
+        return 'None'
+    else:
+        return str(user.id)
+
+def userBitCacheTime():
+    return 20
+
+
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
     This user extends the auth.User of django"""
@@ -102,6 +115,14 @@ class ESPUser(User, AnonymousUser):
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
+    def isOnsite(self, program = None):
+        verb = GetNode('V/Registration/OnSite')
+        if program is None:
+            return UserBit.bits_get_qsc(user=self, verb=verb).count() > 0
+        else:
+            return UserBit.UserHasPerms(self, program.anchor, verb)
+
+
     def isAdministrator(self, program = None):
         if program is None:
             return UserBit.bits_get_qsc(user=self, verb=GetNode("V/Administer")).count() > 0
@@ -187,20 +208,47 @@ class UserBit(models.Model):
         else:
             return 'GRANT ' + curr_user + ' ' + curr_verb + ' ON ' + curr_qsc + recurse
 
+    def save(self):
+        if self.user is None or type(self.user) == AnonymousUser \
+              or (type(self.user) != ESPUser and type(self.user) != User) \
+              or self.user.id is None:
+            UserBit.updateCache(None)
+        else:
+            UserBit.updateCache(self.user.id)
+
+        super(UserBit, self).save()
+
+    def delete(self):
+        if self.user is None or type(self.user) == AnonymousUser \
+              or (type(self.user) != ESPUser and type(self.user) != User) \
+              or self.user.id is None:
+            UserBit.updateCache(None)
+        else:
+            UserBit.updateCache(self.user.id)
+
+        super(UserBit, self).delete()
+
+    @staticmethod
+    def updateCache(user_id):
+        """ Purges all userbit-related cache associated with user_id or everyone if None. """
+        if user_id is None:
+            user_ids = [ userid['id'] for userid in User.objects.values('id') ]
+            user_ids.append('None')
+        else:
+            user_ids = [user_id]
+
+        for userid in user_ids:
+            # delete the cache
+            cache.delete('UserBit__' + str(userid))
+        
+
+        
+
     @staticmethod
     def UserHasPerms(user, qsc, verb, now = None):
         """ Given a user, a permission, and a subject, return True if the user, or all users, has been Granted [subject] on [permission]; False otherwise """
         # aseering: This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
         # aseering 1-11-2007: Even better; single query!
-
-        # dictionary to convert true/false/not_cached to integers:
-        to_cache   = {True:255,False:1,None:0}
-        from_cache = {255:True,1: False } # else: Not in cache
-
-        if user==None:
-            user_id="None"
-        else:
-            user_id=str(user.id)
 
         if now == None:
             now = datetime.now()
@@ -208,11 +256,18 @@ class UserBit(models.Model):
         else:
             now_id = "-".join([ str(i) for i in datetime.now().timetuple() ])
 
-        cache_id = 'UserHasPerms:' + user_id + ',' + str(qsc.id) + ',' + str(verb.id) + ',' + now_id
+        user_cache_id = 'UserHasPerms:' + str(qsc.id) + ',' + str(verb.id) + ',' + now_id
 
-        cached_val = cache.get(urlencode(cache_id))
-        if from_cache.has_key(cached_val):
-            return from_cache[cached_val]
+        cache_id = 'UserBit__' + user_get_key(user)
+
+        userbit_cache = cache.get(cache_id)
+
+        if type(userbit_cache) == dict:
+            if userbit_cache.has_key(user_cache_id):
+                print 'USED CACHE'
+                return userbit_cache[user_cache_id]
+        else:
+            userbit_cache = {}
 
         # Filter by user
         if user != None and user.is_authenticated():
@@ -232,11 +287,9 @@ class UserBit(models.Model):
 
         retVal = (final_userbit.count() >= 1)
 
-        # Cache the result for up to 10sec.
-        # That had better be long enough for even the most painful page renders...
-        # Axiak suspects the problem in caching has to do with the True/False to 1/0 conversion.
-        # So we're using a dictionary to convert to/from True and false
-        cache.set(urlencode(cache_id), to_cache[retVal], 10)
+        userbit_cache[user_cache_id] = retVal
+        
+        cache.set(cache_id, userbit_cache, userBitCacheTime())
 
         return retVal
     
@@ -276,19 +329,24 @@ class UserBit(models.Model):
         """  Return all qsc structures to which 'user' has been granted 'verb'
 
         If 'qsc_root' is specified, only return qsc structures at or below the specified node """
-        cache_id = 'bit_get_qsc:' + str(user.id) + ',' + str(verb.id) + ',' + str(now) + ',' + str(end_of_now) + ',' + str(qsc_root)
-        cache_id_encoded = urlencode(cache_id)
+        user_cache_id = 'bit_get_qsc:' + str(verb.id) + ',' + str(now) + ',' + str(end_of_now) + ',' + str(qsc_root)
 
-        cached_val = cache.get(cache_id_encoded)
+        cache_id = 'UserBit__' + user_get_key(user)
+
+        userbit_cache = cache.get(cache_id)
+
+        usedCache = False
+        if type(userbit_cache) == dict:
+            if userbit_cache.has_key(user_cache_id):
+                usedCache = True
+                str_userbit_ids = userbit_cache[user_cache_id]
+        else:
+            userbit_cache = {}
 
         if now == True:
             now = datetime.now()
 
-        if cached_val is not None:
-            usedCache = True
-            str_userbit_ids = cached_val
-        else:
-            usedCache = False
+        if not usedCache:
             if end_of_now == None: end_of_now = now
 
             #	Hopefully it's easier to understand this query now...
@@ -311,14 +369,17 @@ class UserBit(models.Model):
                 userbit_ids = qscs.filter(qsc__rangestart__gte=qsc_root.rangestart, qsc__rangeend__lte=qsc_root.rangeend).values('id')
             str_userbit_ids = ','.join([str(userbit['id']) for userbit in userbit_ids])
             
-
-            cache.set(cache_id_encoded, str_userbit_ids, 20)
-
+            userbit_cache[user_cache_id] = str_userbit_ids
+            
+        cache.set(cache_id, userbit_cache, userBitCacheTime())
+        
         if len(str_userbit_ids.strip()) == 0:
             userbit_ids_array = []
         else:
             userbit_ids_array = str_userbit_ids.split(',')
             
+        print 'Used Cache %s' % usedCache
+        
         try:
             userbit_ids_array = [ int(userbit_id) for userbit_id in userbit_ids_array ]
         except:
@@ -387,7 +448,7 @@ class UserBit(models.Model):
             res = res.distinct()
 
         if res == None:
-            return module.objects.filter(id=-1)
+            return module.objects.filter(id=-1).distinct()
 
 	# Operation Complete!
 	return res

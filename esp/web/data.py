@@ -57,6 +57,7 @@ def get_page_setup(request):
     page_setup = {}
 
     is_admin = ESPUser(request.user).isAdmin()
+    is_onsite = ESPUser(request.user).isOnsite()
     
     # if we are at a level 2 site, like /myesp/home/
     if len(path) == 2 and request.path.lower() in [ x[2] for x in sections.values() ]:
@@ -72,6 +73,12 @@ def get_page_setup(request):
                 page_setup['section'] = {'id': section+'/lev2', 'alt': sections[section][1]}
         if is_admin:
             section = 'admin'
+            page_setup['navlinks'].append({'id'       : section,
+                                           'alt'      : sections[section][1],
+                                           'highlight': request.path.lower() == sections[section][2],
+                                           'href'     : sections[section][2]})
+        if is_onsite:
+            section = 'onsite'
             page_setup['navlinks'].append({'id'       : section,
                                            'alt'      : sections[section][1],
                                            'highlight': request.path.lower() == sections[section][2],
@@ -112,6 +119,14 @@ def get_page_setup(request):
                                            'highlight': False,
                                            'href'     : sections[section][2],
                                            'buttonloc': 'lev2'})
+        if is_onsite:
+            section = 'onsite'
+            page_setup['navlinks'].append({'id'       : section,
+                                           'alt'      : sections[section][1],
+                                           'highlight': False,
+                                           'href'     : sections[section][2],
+                                           'buttonloc': 'lev2'})
+            
         return page_setup
 
     return False
@@ -123,7 +138,8 @@ sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/i
             'archivesresources': ('archives',   'ESP Archives',        '/archives/index.html',   ['takeaclass','getinvolved','volunteertoteach'], True),
             'myesp'            : ('myesp',      'myESP',               '/myesp/home/',           ['takeaclass','getinvolved','volunteertoteach'], True),
             'contactinfo'      : ('about',      'Contact Us!',         '/about/contact.html',    [], False),
-            'admin'            : ('admin',      'Admin Section',       '/myesp/admin/',          [], False)}
+            'admin'            : ('admin',      'Admin Section',       '/myesp/admin/',          [], False),
+            'onsite'           : ('onsite',     'Onsite Registration', '/onsite/index.html',     [], False)}
 
 
 known_navlinks = ['about','learn','teach','getinvolved','archives','myesp','contactinfo']
