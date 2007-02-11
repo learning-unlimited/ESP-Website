@@ -139,7 +139,7 @@ sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/i
             'myesp'            : ('myesp',      'myESP',               '/myesp/home/',           ['takeaclass','getinvolved','volunteertoteach'], True),
             'contactinfo'      : ('about',      'Contact Us!',         '/about/contact.html',    [], False),
             'admin'            : ('admin',      'Admin Section',       '/myesp/admin/',          [], False),
-            'onsite'           : ('onsite',     'Onsite Registration', '/onsite/index.html',     [], False)}
+            'onsite'           : ('onsite',     'Onsite Registration', '/onsite/SATPrep/2007_Spring/main',     [], False)}
 
 
 known_navlinks = ['about','learn','teach','getinvolved','archives','myesp','contactinfo']
