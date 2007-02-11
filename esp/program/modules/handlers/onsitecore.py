@@ -68,40 +68,44 @@ class OnsiteCore(ProgramModuleObj):
             except:
                 error = True
                 
-            user = ESPUser(ESPUser.objects.get(id = userid))
-            self.student = user
+            if not error:
+                user = ESPUser(ESPUser.objects.get(id = userid))
+                self.student = user
 
-            if request.method == 'POST':
+                if request.method == 'POST':
                 
-                if request.POST.has_key('paid'):
-                    self.createBit('Paid')
-                else:
-                    self.deleteBit('Paid')
+                    if request.POST.has_key('paid'):
+                        self.createBit('Paid')
+                    else:
+                        self.deleteBit('Paid')
 
-                if request.POST.has_key('liability'):
-                    self.createBit('LiabilityFiled')
-                else:
-                    self.deleteBit('LiabilityFiled')
+                    if request.POST.has_key('liability'):
+                        self.createBit('LiabilityFiled')
+                    else:
+                        self.deleteBit('LiabilityFiled')
 
-                if request.POST.has_key('medical'):
-                    self.createBit('MedicalFiled')
-                else:
-                    self.deleteBit('MedicalFiled')
+                    if request.POST.has_key('medical'):
+                        self.createBit('MedicalFiled')
+                    else:
+                        self.deleteBit('MedicalFiled')
 
-                return HttpResponseRedirect('/onsite/'+self.program.getUrlBase()+'/main')
+                    return HttpResponseRedirect('/onsite/'+self.program.getUrlBase()+'/main')
                 
 
-            return render_to_response(self.baseDir()+'checkin.html', request, (prog, tl), {'module': self})
+                return render_to_response(self.baseDir()+'checkin.html', request, (prog, tl), {'module': self})
             
         if request.GET.has_key('userid'):
             try:
                 userid = int(request.GET['userid'])
             except:
                 error = True
-            users = [ESPUser(user) for user in ESPUser.getAllOfType('Student', False).filter(id = userid)]
-            if len(users) == 0:
-                error = True
-                users = None
+
+            if not error:
+                users = [ESPUser(user) for user in ESPUser.getAllOfType('Student', False).filter(id = userid)]
+                if len(users) == 0:
+                    error = True
+                    users = None
+                    
         elif request.GET.has_key('lastname'):
             users = [ESPUser(user) for user in
                      ESPUser.getAllOfType('Student', False).filter(last_name__icontains = request.GET['lastname']) ]
@@ -110,7 +114,7 @@ class OnsiteCore(ProgramModuleObj):
                 users = None
             
         
-        if users is None:
+        if users is None or error is True:
             return render_to_response(self.baseDir()+'checkin_search.html', request, (prog, tl), {'error': error})
         if len(users) == 1:
             return HttpResponseRedirect('/onsite/'+ self.program.getUrlBase()+'/checkin/' + str(users[0].id))
