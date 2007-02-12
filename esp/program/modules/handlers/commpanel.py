@@ -148,8 +148,12 @@ class CommModule(ProgramModuleObj):
         for List in separated['or'][1:]:
             curList = opmapping['or'](curList, List)
         
-    
-        
+        if request.POST['submitform'] == 'Get List Instead':
+            users = [ESPUser(user) for user in ESPUser.objects.filter(curList).distinct() ]
+            users.sort()
+            return render_to_response(self.baseDir()+'userlist.html', request, (prog,tl),
+                                      {'users': users,
+                                       'finalsentence': request.POST['finalsent']})
                                                                
         return render_to_response(self.baseDir()+ 'step2.html', request, (prog, tl),
                                   {'ids': [x['id'] for x in ESPUser.objects.filter(curList).values('id')]})
