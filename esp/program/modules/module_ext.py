@@ -32,4 +32,6 @@ class CreditCardModuleInfo(models.Model):
 
     class Admin:
         pass
-    
+
+
+
