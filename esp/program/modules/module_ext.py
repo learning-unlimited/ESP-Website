@@ -49,7 +49,7 @@ class SATPrepTeacherModuleInfo(models.Model):
     sat_writ = models.PositiveIntegerField(blank=True, null=True)
     sat_verb = models.PositiveIntegerField(blank=True, null=True)
 
-    subject  = models.CharField(maxlength=32, choices = SAT_SUBJECTS)
+    subject  = models.CharField(maxlength=32, choices = self.SAT_SUBJECTS)
 
     user     = models.ForeignKey(User,blank=True, null=True)
     program  = models.ForeignKey(Program,blank=True, null=True)
@@ -63,6 +63,6 @@ class SATPrepTeacherModuleInfo(models.Model):
 
     @staticmethod
     def subjects():
-        return SAT_SUBJECTS
+        return self.SAT_SUBJECTS
 
 
