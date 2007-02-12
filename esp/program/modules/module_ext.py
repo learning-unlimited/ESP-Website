@@ -34,4 +34,35 @@ class CreditCardModuleInfo(models.Model):
         pass
 
 
+class SATPrepTeacherModuleInfo(models.Model):
+    from esp.users.models import User
+    from esp.program.models import Program
+
+    """ Module that links a user with a program and has SATPrep teacher info"""
+    SAT_SUBJECTS = (
+        ('M', 'Math'),
+        ('V', 'Verbal'),
+        ('W', 'Writing')
+        )
+
+    sat_math = models.PositiveIntegerField(blank=True, null=True)
+    sat_writ = models.PositiveIntegerField(blank=True, null=True)
+    sat_verb = models.PositiveIntegerField(blank=True, null=True)
+
+    subject  = models.CharField(maxlength=32, choices = SAT_SUBJECTS)
+
+    user     = models.ForeignKey(User,blank=True, null=True)
+    program  = models.ForeignKey(Program,blank=True, null=True)
+   
+    def __str__(self):
+        return 'SATPrep Information for teacher %s in %s' % \
+                 (str(self.user), str(self.program))
+
+    class Admin:
+        pass
+
+    @staticmethod
+    def subjects():
+        return SAT_SUBJECTS
+
 

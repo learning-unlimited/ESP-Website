@@ -264,7 +264,6 @@ class UserBit(models.Model):
 
         if type(userbit_cache) == dict:
             if userbit_cache.has_key(user_cache_id):
-                print 'USED CACHE'
                 return userbit_cache[user_cache_id]
         else:
             userbit_cache = {}
@@ -378,8 +377,6 @@ class UserBit(models.Model):
         else:
             userbit_ids_array = str_userbit_ids.split(',')
             
-        print 'Used Cache %s' % usedCache
-        
         try:
             userbit_ids_array = [ int(userbit_id) for userbit_id in userbit_ids_array ]
         except:

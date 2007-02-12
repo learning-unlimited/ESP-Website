@@ -1,7 +1,7 @@
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
 from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
-from esp.program.manipulators import SATPrepInfoManipulator
+from esp.program.manipulators import SATPrepTeacherInfoManipulator
 from django import forms
 from esp.program.models import Program
 from esp.users.models   import ESPUser, User
@@ -9,52 +9,28 @@ from django.db.models import Q
 from django.db        import models
 
 
-class SATPrepTeacherModuleInfo(models.Model):
-    """ Module that links a user with a program and has SATPrep teacher info"""
-    SAT_SUBJECTS = (
-        ('M', 'Math'),
-        ('V', 'Verbal'),
-        ('W', 'Writing')
-        )
-    sat_math = models.PositiveIntegerField(blank=True, null=True)
-    sat_writ = models.PositiveIntegerField(blank=True, null=True)
-    sat_verb = models.PositiveIntegerField(blank=True, null=True)
-
-    subject  = models.CharField(maxlength=32, choices = SAT_SUBJECTS)
-
-    user     = models.ForeignKey(User,blank=True, null=True)
-    program  = models.ForeignKey(Program,blank=True, null=True)
-   
-    def __str__(self):
-        return 'SATPrep Information for teacher %s in %s' % \
-                 (str(self.user), str(self.program))
-
-    class Admin:
-        pass
-
 
 
 class SATPrepTeacherModule(ProgramModuleObj):
 
     def teachers(self,QObject = False):
         if QObject:
-            return {'satprepinfo_teachers': Q(id=-1)}
+            return {'teachers_satprepinfo': self.getQForUser(Q(satprepteachermoduleinfo__program = self.program))}
                     
-        students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
-        return {'satprepinfo': students }
+        teachers = ESPUser.objects.filter(satprepteachermoduleinfo__program = self.program).distinct()
+        return {'teachers_satprepinfo': teachers }
 
-    def studentDesc(self):
-        return {'satprepinfo': """Students who have filled out the SAT Prep information."""}
+    def teacherDesc(self):
+        return {'teachers_satprepinfo': """Teachers who have entered SATPrep-specific information."""}
 
     def isCompleted(self):
-        
-	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
-	return satPrep.id is not None
+        return module_ext.SATPrepTeacherModuleInfo.objects.filter(user = self.user,
+                                                       program = self.program).count() > 0
 
 
     @needs_teacher
     def satprepinfo(self, request, tl, one, two, module, extra, prog):
-        manipulator = SATPrepTeacherInfoManipulator()
+        manipulator = SATPrepTeacherInfoManipulator(module_ext.SATPrepTeacherModuleInfo.subjects())
         
 	new_data = {}
 	if request.method == 'POST':
@@ -63,14 +39,25 @@ class SATPrepTeacherModule(ProgramModuleObj):
 		errors = manipulator.get_validation_errors(new_data)
 		
 		if not errors:
-	#		manipulator.do_html2python(new_data)
-#			new_reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-		#	new_reginfo.addOrUpdate(new_data, request.user, prog)
+                    manipulator.do_html2python(new_data)
+                    moduleinfos = module_ext.SATPrepTeacherModuleInfo.objects.filter(user = self.user,
+                                                                                     program = self.program)
+                    if len(moduleinfos) == 0:
+                        new_reginfo = module_ext.SATPrepTeacherModuleInfo()
+                        new_reginfo.user = self.user
+                        new_reginfo.program = self.program
+                    else:
+                        new_reginfo = moduleinfos[0]
 
-                        return self.goToCore(tl)
+                    for k in new_data.keys():
+                        new_reginfo.__dict__[k] = new_data[k]
+
+                    new_reginfo.save()
+                
+                    return self.goToCore(tl)
 	else:
-		moduleinfos = SATPrepTeacherModuleInfo.objects.filer(user = self.user,
-                                                                     program = self.program)
+                moduleinfos = module_ext.SATPrepTeacherModuleInfo.objects.filter(user = self.user,
+                                                                                 program = self.program)
                 if len(moduleinfos) == 0:
                     new_data = {}
                 else:

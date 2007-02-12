@@ -224,3 +224,13 @@ class SATPrepInfoManipulator(forms.Manipulator):
             forms.PositiveIntegerField(field_name="old_writ_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
             forms.TextField(field_name="heard_by", length=24, maxlength=128)
             )
+
+
+class SATPrepTeacherInfoManipulator(forms.Manipulator):
+    def __init__(self, subjects):
+        self.fields = (
+            forms.PositiveIntegerField(field_name="sat_math", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="sat_verb", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="sat_writ", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
+            forms.SelectField(field_name="subject", is_required=True, choices=subjects)
+            )

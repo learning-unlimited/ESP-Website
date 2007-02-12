@@ -18,10 +18,10 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 </style>
 <br /><br />
-<h1>SAT Prep - Specific Information </h1>
+<h1>SAT Prep-Specific Information </h1>
 <br />
 <p> Please fill out the following short form to give us SATPrep-specific information. <br />
-While none of this information is required, it will greatly enhance our ability to help you.</p>
+</p>
 
 {% if form.has_errors %}
 <h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
@@ -32,36 +32,36 @@ While none of this information is required, it will greatly enhance our ability 
 <table cellpadding="2" align="center" border="0">
 
 <tr>
- <td><label for="id_old_math_score">Current SAT Math Score:<br />
+ <td><label for="id_sat_math">SAT Math Score:<br />
        <small>(if available)</small></label></td>
- <td>{{ form.old_math_score }} {% if form.old_math_score.errors %}
-   <br /><span class="form_error">{{ form.old_math_score.errors|join:", " }}</span>
+ <td>{{ form.sat_math }} {% if form.sat_math.errors %}
+   <br /><span class="form_error">{{ form.sat_math.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
- <td><label for="id_old_verb_score">Current SAT Verbal Score:<br />
+ <td><label for="id_sat_verb">SAT Verbal Score:<br />
        <small>(if available)</small></label></td>
- <td>{{ form.old_verb_score }} {% if form.old_verb_score.errors %}
-   <br /><span class="form_error">{{ form.old_verb_score.errors|join:", " }}</span>
+ <td>{{ form.sat_verb }} {% if form.sat_verb.errors %}
+   <br /><span class="form_error">{{ form.sat_verb.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
- <td><label for="id_old_writ_score">Current SAT Writing Score:<br />
+ <td><label for="id_sat_writ">SAT Writing Score:<br />
        <small>(if available)</small></label></td>
- <td>{{ form.old_writ_score }} {% if form.old_writ_score.errors %}
-   <br /><span class="form_error">{{ form.old_writ_score.errors|join:", " }}</span>
+ <td>{{ form.sat_writ }} {% if form.sat_writ.errors %}
+   <br /><span class="form_error">{{ form.sat_writ.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
- <td><label for="id_heard_by">How did you hear about SATPrep?</label></td>
- <td>{{ form.heard_by }} {% if form.heard_by.errors %}
-   <br /><span class="form_error">{{ form.heard_by.errors|join:", " }}</span>
+ <td><label for="id_subject">Subject:</label></td>
+ <td>{{ form.subject }} {% if form.subject.errors %}
+   <br /><span class="form_error">{{ form.subject.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
