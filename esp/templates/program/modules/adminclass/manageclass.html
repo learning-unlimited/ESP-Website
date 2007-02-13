@@ -1,0 +1,139 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Manage Class {{class.title }}{% endblock %}
+
+{% block subsection_name %}Class Status{% endblock %}
+{% block stylesheets %}
+{{block.super }}
+<style type="text/css">
+#divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
+  { border: 1px solid black; border-collapse: collapse; 
+    vertical-align: baseline;}
+#divmaintext .blogentry { border: 2px solid black; }
+#divmaintext .blogentry .heading { background-color: #d7eeff; padding: 5px; }
+#divmaintext .blogentry .title { font-weight: bolder; }
+#divmaintext .blogentry .date { font-style: italic; margin: 0 5px 0 0;  }
+#divmaintext .blogentry .contents { margin: 0 0 0 30px; }
+.viable { background: #9F9; padding: 3px; }
+.notviable { background: #333; padding: 3px; }
+
+</style>
+{% endblock %}
+{% block content %}
+
+
+<h1>Manage Class {{class.title}}</h1>
+
+<p>
+Please use this page to manage a class:
+</p>
+
+<h2>Timeslot Distribution</h2>
+<br />
+<table class="mainstats">
+<tr>
+ <th>Timeslot</th>
+ <th># of classes</th>
+</tr>
+{% for timeslot in module.timeslotNumClasses %}
+<tr>
+  <td>{{timeslot.slotname}}</td>
+  <td>{{timeslot.classcount}}</td>
+</tr>
+{% endfor %}
+</table>
+
+<br />
+<a href="/manage/{{program.getUrlBase}}/main" title="Go Back">
+  <-- Go back to main program management
+</a>
+<br />
+<form name="classmanage" action="{{request.path}}" method="POST">
+<input type="hidden" name="clsid" value="{{class.id}}" />
+
+<table class="mainstats">
+<tr>
+ <th colspan="2" style="text-align: center;">
+   Options for {{class.emailcode}}&mdash;{{class.title }}
+ </th>
+</tr>
+ <th colspan="2">
+  <input type="submit" value="-Save-" />
+ </th>
+<tr>
+ <th>Change Times:</th>
+ <td>
+{{ form.meeting_times }} {% if form.meeting_times.errors %}
+   <br /><span class="form_error">{{ form.meeting_times.errors|join:", " }}</span>
+   {% endif %}
+<br />
+Preferred Duration: {{class.prettyDuration }}
+ </td>
+</tr>
+<tr>
+  <th>Change Room(s):</th>
+  <td>
+{{ form.room}} {% if form.room.errors %}
+   <br /><span class="form_error">{{ form.room.errors|join:", " }}</span>
+   {% endif %}
+  (Assigned: {{class.prettyrooms|join:", "}})
+  </td>
+</tr>
+<tr>
+ <th>Teachers:</th>
+ <td>{{class.getTeacherNames|join:", "}}</td>
+</tr>
+<tr>
+ <th>Reviewing Status:<br />
+  <small>(Not reviewed, Accepted, or Rejected)</small>
+</th>
+ <td>{% if class.isReviewed %}{% if class.isAccepted %}
+   <span style="font-size: 120%; font-weight: bold; color: #0C0;">Accepted!</span>
+   {% else %}
+   <span style="font-size: 120%; font-weight: bold; color: #C00;">Rejected</span>
+   {% endif %}
+   {% else %}
+   <span style="font-size: 120%; font-weight: bold; color: #00C;">Not Reviewed</span>
+   {% endif %}
+<br />
+   [<a href="/manage/{{program.getUrlBase}}/approveclass/{{class.id}}?redirect={{request.path}}" title="Accept Class">Accept Class</a> |
+   <a href="/manage/{{program.getUrlBase}}/rejectclass/{{class.id}}?redirect={{request.path}}" title="Reject Class">Reject Class</a> |
+   <a href="/manage/{{program.getUrlBase}}/proposeclass/{{class.id}}?redirect={{request.path}}" title="Unreview Class">Mark as Unreviewed</a> ]
+
+
+</td>
+</tr>
+<tr>
+  <th>Number of Students: </th>
+  <td>{{class.students|length }}</td>
+</tr>
+<tr>
+  <th>Email Addresses: </th>
+  <td>Whole Class: {{class.emailcode}}-class@esp.mit.edu<br />
+Teachers: {{class.emailcode}}-teachers@esp.mit.edu<br />
+Students: {{class.emailcode}}-students@esp.mit.edu
+  </td>
+</tr>
+
+<tr>
+  <th>Directors' Notes<br />
+     <em>Notes for you to keep with each other; teachers don't see this.</em>
+  </th>
+  <td>
+{{ form.directors_notes }} {% if form.directors_notes.errors %}
+   <br /><span class="form_error">{{ form.directors_notes.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+</tr>
+<tr>
+ <th colspan="2">
+  <input type="submit" value="-Save-" />
+ </th>
+</table>
+
+</form>
+
+<br />
+<br />
+
+{% endblock %}

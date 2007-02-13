@@ -293,6 +293,7 @@ class Class(models.Model):
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
 	schedule = models.TextField(blank=True)
+	directors_notes = models.TextField(blank=True, null=True)
 	duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
 	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set', null=True)
 	meeting_times = models.ManyToManyField(DataTree, related_name='meeting_times', null=True)
@@ -318,10 +319,13 @@ class Class(models.Model):
 	def prettyrooms(self):
 		return [ x.friendly_name  for x in self.classrooms() ]
 
-	def assignClassRoom(self, classroom):
+	def clearRooms(self):
 		for x in ClassRoomAssignment.objects.filter(cls = self):
-			x.delete()
-			
+			x.delete()		
+
+	def assignClassRoom(self, classroom):
+		self.clearRooms()
+
 		for time in self.meeting_times.all():
 			roomassignment = ClassRoomAssignment()
 			roomassignment.cls = self
@@ -572,6 +576,8 @@ class Class(models.Model):
 		return txtTimes
 			
 
+
+
 	def preregister_student(self, user):
 		prereg_verb = GetNode( 'V/Flags/Registration/Preliminary' )
 		
@@ -605,6 +611,13 @@ class Class(models.Model):
 		return not UserBit.UserHasPerms(None, self.anchor, GetNode('V/Flags/Class/Proposed'))
 
 	
+	def prettyDuration(self):
+		if self.duration is None:
+			return 'N/A'
+
+		return '%s:%02d' % \
+		       (int(self.duration),
+			int((self.duration - int(self.duration)) * 60))
 
 	def accept(self, user=None):
 		""" mark this class as accepted """

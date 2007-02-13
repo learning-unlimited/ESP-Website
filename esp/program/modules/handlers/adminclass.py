@@ -4,11 +4,14 @@ from esp.web.data        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import Class, Program
 from esp.users.models import UserBit, ESPUser
+from esp.datatree.models import DataTree
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
+from esp.program.modules.manipulators import ClassManageManipulator
+from django import forms
+from django.http import HttpResponseRedirect
 
 class AdminClass(ProgramModuleObj):
-
 
     def getClassSizes(self):
         min_size, max_size, class_size_step = (0, 200, 10)
@@ -22,6 +25,25 @@ class AdminClass(ProgramModuleObj):
             class_size_step = self.classRegInfo.class_size_step
 
         return range(min_size, max_size+1, class_size_step)
+
+    def getTimes(self):
+        times = self.program.getTimeSlots()
+        return [(str(x.id),x.friendly_name) for x in times]
+
+    def timeslotNumClasses(self):
+        timeslots = self.program.getTimeSlots()
+        clsTimeSlots = []
+        for timeslot in timeslots:
+            curTimeslot = {'slotname': timeslot.friendly_name}
+            
+            curclasses = Class.objects.filter(parent_program = self.program,
+                                              meeting_times  = timeslot)
+
+            curTimeslot['classcount'] = curclasses.count()
+
+            clsTimeSlots.append(curTimeslot)
+        return clsTimeSlots
+
 
     def getClassGrades(self):
         min_grade, max_grade = (6, 12)
@@ -41,22 +63,132 @@ class AdminClass(ProgramModuleObj):
         context['classes']   = classes
         return context
 
+    def getClassFromId(self, clsid):
+        classes = Class.objects.filter(id = clsid)
+        if len(classes) == 1:
+            if not self.user.canEdit(classes[0]):
+                return (render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl), {}), False)
+            else:
+                Found = True
+                return (classes[0], True)
+        return (False, False)
+            
+    def getClass(self, request, extra):
+        found = False
+        if not found and extra is not None and len(extra.strip()) > 0:
+            try:
+                clsid = int(extra)
+            finally:
+                cls, found = self.getClassFromId(extra)
+                if found:
+                    return (cls, True)
+                elif cls is not False:
+                    return (cls, False)
+                
+
+        if not found and request.POST.has_key('clsid'):
+            try:
+                clsid = int(request.POST['clsid'])
+            finally:
+                cls, found = self.getClassFromId(extra)
+                if found:
+                    return (cls, True)
+                elif cls is not False:
+                    return (cls, False)
+
+        if not found and request.GET.has_key('clsid'):
+            try:
+                clsid = int(request.GET['clsid'])
+            finally:
+                cls, found = self.getClassFromId(extra)
+                if found:
+                    return (cls, True)
+                elif cls is not False:
+                    return (cls, False)
+
+                
+        return (render_to_response(self.baseDir()+'cannotfindclass.html', request, (prog, tl), {}), False)
+        
+                
+    @needs_admin
+    def manageclass(self, request, tl, one, two, module, extra, prog):
+        cls, found = self.getClass(request,extra)
+        if not found:
+            return cls
+        context = {'class': cls,
+                   'module': self}
+
+        manipulator = ClassManageManipulator(cls, self)
+        new_data = {}
+        if request.method == 'POST':
+            new_data = request.POST.copy()
+
+            errors = manipulator.get_validation_errors(new_data)
+            
+            if not errors:
+                manipulator.do_html2python(new_data)
+                cls.meeting_times.clear()
+                cls.directors_notes = new_data['directors_notes']
+                for meeting_time in new_data.getlist('meeting_times'):
+                    cls.meeting_times.add(DataTree.objects.get(id = str(meeting_time)))
+                cls.save()
+                rooms = new_data.getlist('room')
+                cls.clearRooms()
+                for room in rooms:
+                    if len(room.strip()) > 0:
+                        cls.assignClassRoom(DataTree.objects.get(id = room))
+                
+                # return self.goToCore(tl)
+        else:
+            new_data['meeting_times']   = [x.id for x in cls.meeting_times.all()]
+            new_data['directors_notes'] = cls.directors_notes
+            classrooms = cls.classrooms()
+            if len(classrooms) > 0:
+                new_data['room']      = cls.classrooms()[0].id
+            errors = {}
+
+        form = forms.FormWrapper(manipulator, new_data, errors)
+        context['form'] = form
+
+        return render_to_response(self.baseDir()+'manageclass.html',
+                                  request,
+                                  (prog, tl),
+                                  context)
+
+                                  
+        
+        
+
+
+
     @needs_admin
     def approveclass(self, request, tl, one, two, module, extra, prog):
-        classes = Class.objects.filter(id = extra)
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
-        cls = classes[0]
+        cls, found = self.getClass(request, extra)
+        if not found:
+            return cls
         cls.accept()
+        if request.GET.has_key('redirect'):
+            return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)        
 
     @needs_admin
     def rejectclass(self, request, tl, one, two, module, extra, prog):
-        classes = Class.objects.filter(id = extra)
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
-        cls = classes[0]
+        cls, found = self.getClass(request, extra)
+        if not found:
+            return cls
         cls.reject()
+        if request.GET.has_key('redirect'):
+            return HttpResponseRedirect(request.GET['redirect'])
+        return self.goToCore(tl)
+
+    @needs_admin
+    def proposeclass(self, request, tl, one, two, module, extra, prog):
+        cls, found = self.getClass(request, extra)
+        if not found:
+            return cls
+        cls.propose()
+        if request.GET.has_key('redirect'):
+            return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)
     
     @needs_admin

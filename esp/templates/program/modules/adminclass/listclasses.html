@@ -89,58 +89,12 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
          <input class="button" type="submit" value="View">
        </form>
     </td>
-   <td> 
-     <form method="post" action="./assignroom/{{cls.id}}" id="assignroom-{{cls.id}}">
-        <select name="roomid" 
- onchange="assignRoom('{{cls.id}}');">
-          <option value="{{cls.classrooms.0.id }}">{{cls.classrooms.0.name}}</option>
-          <option value="">----</option>
-      {% for room in program.getClassRooms %}
-          <option value="{{room.id}}">{{room.name}}</option>
-      {% endfor %}
-        </select>
-      </form>
-   </td>
-{% if teacherclsmodule.classRegInfo.allow_coteach %}
-   <td class="clsmiddle">
-       <form method="post" action="./coteachers/">
-         <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
-	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
-         <input class="button" type="submit" value="Coteaching" />
-       </form>
-    </td>
-{% endif %}
-{% if cls.isAccepted %}
     <td class="clsmiddle">
-       <form method="post" action="./rejectclass/{{cls.id}}">
-         <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
-	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
-         <input class="button" type="submit" value="Reject Class" />
-       </form>
+      <a href="/manage/{{program.getUrlBase}}/manageclass/{{cls.id}}" title="Manage {{cls.title}}"
+        class="abutton" >
+        Manage Class
+      </a>
     </td>
-{% else %}
-    <td class="clsmiddle">
-       <form method="post" action="./approveclass/{{cls.id}}">
-         <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
-	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
-         <input class="button" type="submit" value="Accept Class" />
-       </form>
-    </td>
-{% endif %}
-    <td class="clsmiddle">
-       {{ cls.friendly_times|join:"<br />" }}
-    </td>
-<!--
-<td class="clsright">
-      {% if cls.pageExists %}
-      <a href="/learn/{{cls.getUrlBase}}/index.html"
-         title="{{ cls }}...">Visit web page</a>
-      {% else %}
-      <a href="/learn/{{cls.getUrlBase}}/index.edit.html"
-	 title="Create `{{ cls }}'...">Create web page</a>
-      {% endif %}
-     </td>
-//-->
    </tr>
    {% endfor %}
 

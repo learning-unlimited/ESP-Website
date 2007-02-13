@@ -106,6 +106,31 @@ class TeacherClassRegManipulator(forms.Manipulator):
                                                            choices=module.getDurations()),)
 
 
+
+            
+class ClassManageManipulator(forms.Manipulator):
+    """Manipulator for managing a class. """
+    def __init__(self, cls, module):
+
+        self.fields = (
+            forms.LargeTextField(field_name="directors_notes", \
+                            is_required=False),
+                             
+            ClassSelectMeetingTimesField(field_name="meeting_times", \
+                                         choices=module.getTimes(), \
+                                         cls = cls, \
+                                         validator_list=[ClassRoomAssignmentConflictValidator(cls, 'meeting_times','room')]),
+            forms.SelectField(field_name="room", \
+                              choices=[('','')] + \
+                                       [(room.id, room.name) for room
+                                       in module.program.getClassRooms()], \
+                              validator_list=[ClassRoomAssignmentConflictValidator(cls, 'meeting_times','room')] \
+                                              ))
+            
+
+
+
+
 class IsLessThanOtherField(object):
     def __init__(self, other_field_name, error_message):
         self.other, self.error_message = other_field_name, error_message
@@ -132,7 +157,23 @@ class isClassSlugUnique(object):
         if str(classes[0].id) != all_data['class_id']:
             raise validators.ValidationError, 'Please choose a unique slug, "%s" chosen already.' % field_data
         
-    
+
+class ClassRoomAssignmentConflictValidator(object):
+    def __init__(self, cls, meeting_times, rooms):
+        self.cls = cls
+        self.meeting_times = meeting_times
+        self.rooms = rooms
+        
+    def __call__(self, form_data, all_data):
+         from esp.program.models import ClassRoomAssignment
+         rooms = all_data.getlist(self.rooms)
+         meeting_times = all_data.getlist(self.meeting_times)
+         for room in rooms:
+             for meeting_time in meeting_times:
+                 if len(meeting_time.strip()) > 0 and len(room.strip()) > 0:
+                     if (ClassRoomAssignment.objects.filter(timeslot = meeting_time, room = room).exclude(cls = self.cls).count() > 0):
+                         raise validators.ValidationError, 'The room assignment conflicts with another class.'
+        
 
 # Django's CheckboxSelectMultipleField fails miserably, and It's probably very version-dependent.
 # Here's an ESP implementation that'll work on (many) django platforms
@@ -177,3 +218,37 @@ class CheckboxSelectMultipleField(forms.SelectMultipleField):
         output.append('</ul>')
         return '\n'.join(output)
 
+class ClassSelectMeetingTimesField(CheckboxSelectMultipleField):
+    requires_data_list = True
+    def __init__(self, field_name, choices=None, ul_class='', validator_list=None, cls=None):
+        self.cls = cls
+        if validator_list is None: validator_list = []
+        if choices is None: choices = []
+        self.ul_class = ul_class
+        forms.SelectMultipleField.__init__(self, field_name, choices, size=1, is_required=False, validator_list=validator_list)
+
+
+    def render(self, data):
+        output = ['<ul%s>' % (self.ul_class and ' class="%s"' % self.ul_class or '')]
+        str_data_list = map(str, data) # normalize to strings
+        if self.cls is None:
+            viable_times = [str(choice[0]) for choice in self.choices]
+        else:
+            viable_times = [str(x.id) for x in self.cls.viable_times.all()]
+        
+        for value, choice in self.choices:
+            checked_html = ''
+            if str(value) in str_data_list:
+                checked_html = ' checked="checked"'
+            field_name = '%s%s' % (self.field_name, value)
+#            assert False, viable_times
+            if str(value) not in viable_times:
+                clsAvailable = ' notviable'
+            else:
+                clsAvailable = ' viable'
+                
+            output.append('<li><input type="checkbox" id="%s" class="v%s %s" name="%s" value="%s"%s /><label class="%s" for="%s">%s</label></li>' % \
+                (self.get_id() + value, self.__class__.__name__, clsAvailable, self.field_name, value, checked_html,
+                 clsAvailable, self.get_id() + value, choice))
+        output.append('</ul>')
+        return '\n'.join(output)
