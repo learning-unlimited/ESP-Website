@@ -22,7 +22,7 @@ def user_get_key(user):
         return str(user.id)
 
 def userBitCacheTime():
-    return 20
+    return 200
 
 
 class ESPUser(User, AnonymousUser):
