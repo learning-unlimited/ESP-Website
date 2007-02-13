@@ -95,7 +95,7 @@ class DataTree(models.Model):
 
     def descendants(self, distinct = True):
         """ Return a QuerySet of all descendants."""
-        return self.decendants.nocache(distinct)
+        return self.descendants_nocache(distinct)
 
     def descendants_nocache(self, distinct = True):
         """ Return a QuerySet of all descendants."""

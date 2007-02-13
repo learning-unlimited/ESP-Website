@@ -456,7 +456,8 @@ class UserBit(models.Model):
             q = bit.qsc
 
             if bit.recursive:
-                query = module.objects.filter(anchor__rangestart__gte = q.rangestart, anchor__rangestart__lt = q.rangeend)
+                qsc_children_ids = [q.id] + [x['id'] for x in q.descendants(False).values('id')]
+                query = module.objects.filter(anchor__in = qsc_children_ids)
             else:
                 query = module.objects.filter(anchor=q)
                 
