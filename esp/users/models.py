@@ -285,8 +285,8 @@ class UserBit(models.Model):
         # filter by qsc and verb
         # these ids make bad inner joins go away
         # in django 1.0, replace with OUTER JOINS!
-        qsc_parent_ids      = [x['id'] for x in  qsc.antecedents(False).values('id')]
-        verb_parent_ids     = [x['id'] for x in verb.antecedents(False).values('id')]
+        qsc_parent_ids      = [qsc.id ] + [x['id'] for x in  qsc.antecedents(False).values('id')]
+        verb_parent_ids     = [verb.id] + [x['id'] for x in verb.antecedents(False).values('id')]
 
         Q_recursive_search = Q(recursive = True) & Q(qsc__in = qsc_parent_ids) & Q(verb__in = verb_parent_ids)
 
@@ -329,8 +329,8 @@ class UserBit(models.Model):
         Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
 #        Q_correct_qsc = Q(qsc=qsc)
         # in django 1.0, replace with OUTER JOINS!
-        qsc_parent_ids      = [x['id'] for x in  qsc.antecedents(False).values('id')]
-        verb_parent_ids     = [x['id'] for x in verb.antecedents(False).values('id')]
+        qsc_parent_ids      = [qsc.id ] + [x['id'] for x in  qsc.antecedents(False).values('id')]
+        verb_parent_ids     = [verb.id] + [x['id'] for x in verb.antecedents(False).values('id')]
 
         Q_recursive_search = Q(recursive = True) & Q(qsc__in = qsc_parent_ids) & Q(verb__in = verb_parent_ids)
         Q_exact_match      = Q(qsc = qsc) & Q(verb = verb)
@@ -371,7 +371,7 @@ class UserBit(models.Model):
             #	Hopefully it's easier to understand this query now...
 
             # in django 1.0, replace with OUTER JOINS!
-            verb_parent_ids     = [x['id'] for x in verb.antecedents(False).values('id')]
+            verb_parent_ids     = [verb.id] + [x['id'] for x in verb.antecedents(False).values('id')]
 
             Q_recursive_search = Q(recursive = True) & Q(verb__in = verb_parent_ids)
             Q_exact_match      = Q(verb = verb)
