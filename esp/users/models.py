@@ -75,6 +75,10 @@ class ESPUser(User, AnonymousUser):
         return UserBit.find_by_anchor_perms(Class, self.getOld(), GetNode('V/Flags/Registration/Teacher'))
 
     @staticmethod
+    def getTypes():
+        return ['Student','Teacher','Educator','Guardian']
+
+    @staticmethod
     def getAllOfType(strType, QObject = True):
         now = datetime.now()
         Q_after_start = Q(userbit__startdate__isnull = True) | Q(userbit__startdate__lte = now)

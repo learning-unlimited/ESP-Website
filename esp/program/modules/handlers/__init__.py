@@ -15,4 +15,4 @@ from esp.program.modules.handlers.programprintables import *
 from esp.program.modules.handlers.commpanel import *
 from esp.program.modules.handlers.onsitecore import *
 from esp.program.modules.handlers.satprep_teachers import *
-
+from esp.program.modules.handlers.satprep_teachertestenter import *

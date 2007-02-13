@@ -174,6 +174,54 @@ def myesp_login(request, module):
 	return HttpResponseRedirect(formURL)
 	#return myesp_logfin(request, module)
 
+def search_for_user(request, user_type='Any'):
+	""" Interface to search for a user. If you need a user, just use this.
+	  Returns (user or response, user returned?) """
+
+	users = None
+
+	
+	# Get the "base list" consisting of all the users of a specific type, or all the users.
+	if user_type == 'All':
+		All_Users = ESPUser.objects.all()
+	else:
+		if user_type not in ESPUser.getTypes():
+			assert False, 'user_type must be one of '+str(ESPUser.getTypes())
+
+		All_Users = ESPUser.getAllOfType(base, False)
+	
+	if request.GET.has_key('userid'):
+		userid = -1
+		try:
+			userid = int(request.GET['userid'])
+		except:
+			pass
+
+		QSUsers = All_Users.filter(id = userid)
+		
+	elif request.GET.has_key('username'):
+		QSUsers = All_Users.filter(username__icontains = request.GET['username'])
+	
+	elif request.GET.has_key('lastname'):
+		QSUsers = All_Users.filter(last_name__icontains = request.GET['lastname'])
+
+
+	users = [ ESPUser(user) for user in QSUsers ]
+		
+
+	if users is not None and len(users) == 0:
+		error = True
+                users = None
+        
+        if users is None:
+		return (render_to_response('users/usersearch.html', request, (prog, tl), {'error': error}), False)
+        if len(users) == 1:
+		return (users[0], True)
+        else:
+		users.sort()
+		return (render_to_response('users/userpick.html', request, (prog, tl), {'users': users}), False)
+
+
 @login_required
 def myesp_passwd(request, module):
 	""" Change password """
