@@ -101,6 +101,8 @@ class ProgramModuleObj(models.Model):
             ModuleObj.seq     = mod.seq
             ModuleObj.required = mod.required
             ModuleObj.save()
+        elif len(BaseModuleList) > 1:
+            assert False, 'Too many module objects!'
         else:
             ModuleObj.__dict__.update(BaseModuleList[0].__dict__)
         ModuleObj.fixExtensions()

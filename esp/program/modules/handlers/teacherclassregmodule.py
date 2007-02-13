@@ -82,17 +82,20 @@ class TeacherClassRegModule(ProgramModuleObj):
         if QObject:
             return {'class_approved': self.getQForUser(Q_approved_teacher),
                     'class_proposed': self.getQForUser(Q_proposed_teacher),
-                    'class_rejected': self.getQForUser(Q_rejected_teacher)}
+                    'class_rejected': self.getQForUser(Q_rejected_teacher),
+                    'class_teacher_A': Q(last_name__istartswith = 'a')}
         else:
             return {'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
                     'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
-                    'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct()}
+                    'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
+                    'class_teacher_A': ESPUser.objects.filter(last_name__istartswith = 'a')}
 
 
     def teacherDesc(self):
         return {'class_approved': """Teachers not teaching an approved class.""",
                 'class_proposed': """Teachers not teaching a class which has yet to be reviewed.""",
-                'class_rejected': """Teachers not teaching a rejected class."""}
+                'class_rejected': """Teachers not teaching a rejected class.""",
+                'class_teacher_A': """Teachers with last names beginning with 'A'."""}
     
 
     def deadline_met(self):

@@ -86,7 +86,7 @@ class StudentClassRegModule(ProgramModuleObj):
     # we can also ``changeslot''
     changeslot = fillslot
 
-#    @meets_deadline('/Catalog')
+    @meets_deadline('/Catalog')
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         

@@ -1,0 +1,58 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+<h1> Search For User</h1>
+
+<p style="text-align: center">
+Please search for a user:
+</p>
+
+{% if error %}
+<p class="error">Error: No user found by that criteria.</p>
+{% endif %}
+
+<br />
+<form action="{{ request.path }}" method="get">
+<label for="userid"><strong>User ID:</strong></label>
+<input type="text" size="6" name="userid" id="userid" />
+<input type="submit" name="submitid" value="Search by ID" />
+</form>
+<br />
+
+<br />
+<form action="{{ request.path }}" method="get">
+<label for="username"><strong>Username:</strong></label>
+<input type="text" size="10" name="username" id="username" />
+<input type="submit" name="submitid" value="Search by Username" />
+</form>
+<br />
+
+<br />
+<form action="{{ request.path }}" method="get">
+<label for="lastname"><strong>Last Name:</strong></label>
+<input type="text" size="20" name="lastname" id="lastname" />
+<input type="submit" name="submitid" value="Search by Last Name" />
+</form>
+<br />
+
+<br />
+<form action="{{ request.path }}" method="get">
+<label for="firstname"><strong>First Name:</strong></label>
+<input type="text" size="20" name="firstname" id="firstname" />
+<input type="submit" name="submitid" value="Search by First Name" />
+</form>
+<br />
+
+
+
+{% endblock %}

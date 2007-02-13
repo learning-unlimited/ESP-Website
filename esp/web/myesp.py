@@ -179,17 +179,21 @@ def search_for_user(request, user_type='Any'):
 	  Returns (user or response, user returned?) """
 
 	users = None
+	error = False
+	QSUsers = None
 
-	
+
 	# Get the "base list" consisting of all the users of a specific type, or all the users.
-	if user_type == 'All':
+	if type(user_type) != str:
+		All_Users = user_type
+	elif user_type == 'All':
 		All_Users = ESPUser.objects.all()
 	else:
 		if user_type not in ESPUser.getTypes():
 			assert False, 'user_type must be one of '+str(ESPUser.getTypes())
 
-		All_Users = ESPUser.getAllOfType(base, False)
-	
+		All_Users = ESPUser.getAllOfType(user_type, False)
+
 	if request.GET.has_key('userid'):
 		userid = -1
 		try:
@@ -201,12 +205,16 @@ def search_for_user(request, user_type='Any'):
 		
 	elif request.GET.has_key('username'):
 		QSUsers = All_Users.filter(username__icontains = request.GET['username'])
-	
 	elif request.GET.has_key('lastname'):
 		QSUsers = All_Users.filter(last_name__icontains = request.GET['lastname'])
+	elif request.GET.has_key('firstname'):
+		QSUsers = All_Users.filter(first_name__icontains = request.GET['firstname'])
 
 
-	users = [ ESPUser(user) for user in QSUsers ]
+	if QSUsers is None:
+		users = None
+	else:
+		users = [ ESPUser(user) for user in QSUsers ]
 		
 
 	if users is not None and len(users) == 0:
@@ -214,12 +222,12 @@ def search_for_user(request, user_type='Any'):
                 users = None
         
         if users is None:
-		return (render_to_response('users/usersearch.html', request, (prog, tl), {'error': error}), False)
+		return (render_to_response('users/usersearch.html', request, None, {'error': error}), False)
         if len(users) == 1:
 		return (users[0], True)
         else:
 		users.sort()
-		return (render_to_response('users/userpick.html', request, (prog, tl), {'users': users}), False)
+		return (render_to_response('users/userpick.html', request, None, {'users': users}), False)
 
 
 @login_required

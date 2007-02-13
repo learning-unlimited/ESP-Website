@@ -710,6 +710,8 @@ class ClassRoomAssignment(models.Model):
 	    This will prevent problems with classes that have to move """
 	room     = models.ForeignKey(DataTree, related_name="room")
 	timeslot = models.ForeignKey(DataTree, related_name="timeslot")
+	unique_together = (('room','timeslot'),)
+	
 	cls      = models.ForeignKey(Class)
 	
 
