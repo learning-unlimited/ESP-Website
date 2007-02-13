@@ -274,21 +274,30 @@ class UserBit(models.Model):
 
         # Filter by user
         if user != None and user.is_authenticated():
-            base_userbit = UserBit.objects.filter(Q(user__isnull=True) | Q(user=user))
+            Q_user_correct = Q(user__isnull = True) | Q(user = user)
         else:
-            base_userbit = UserBit.objects.filter(user__isnull=True)
+            Q_user_correct = Q(user__isnull=True)
 
         # Filter by date/time range
-        base_userbit = base_userbit.filter(Q(startdate__isnull=True) | Q(startdate__lte=now), Q(enddate__isnull=True) | Q(enddate__gt=now))
+        Q_date_correct = (Q(startdate__isnull=True) | Q(startdate__lte=now)) & \
+                         (Q(enddate__isnull=True) | Q(enddate__gt=now))
 
         # filter by qsc and verb
-        recursive_userbit = base_userbit.filter(recursive=True, qsc__rangestart__lte=qsc.rangestart, qsc__rangeend__gte=qsc.rangeend, verb__rangestart__lte=verb.rangestart, verb__rangeend__gte=verb.rangeend)
-        flat_userbit = base_userbit.filter(recursive=False, qsc=qsc, verb=verb)
+        # these ids make bad inner joins go away
+        # in django 1.0, replace with OUTER JOINS!
+        qsc_parent_ids      = [x['id'] for x in  qsc.antecedents(False).values('id')]
+        verb_parent_ids     = [x['id'] for x in verb.antecedents(False).values('id')]
 
+        Q_recursive_search = Q(recursive = True) & Q(qsc__in = qsc_parent_ids) & Q(verb__in = verb_parent_ids)
+
+        Q_flat_userbit     = Q(qsc = qsc) & Q(verb = verb)
+
+
+        # the final query:
+        num = UserBit.objects.filter(Q_user_correct & Q_date_correct).filter(Q_recursive_search | Q_flat_userbit).count()
         # If we have at least one UserBit meeting these criteria, we have perms.
-        final_userbit = (recursive_userbit | flat_userbit)
 
-        retVal = (final_userbit.count() >= 1)
+        retVal = (num > 0)
 
         userbit_cache[user_cache_id] = retVal
         
@@ -314,15 +323,22 @@ class UserBit(models.Model):
         """ Return all users who have been granted 'verb' on 'qsc' """
         if end_of_now == None: end_of_now = now
 
-        #	Hopefully it's easier to understand this query now...
+
+        # fix in django 1.0...
+        
         Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
 #        Q_correct_qsc = Q(qsc=qsc)
-        Q_correct_qsc = Q(recursive = True, qsc__rangestart__lte = qsc.rangestart, qsc__rangeend__gte = qsc.rangeend)
-        Q_exact_match = Q(recursive = False, verb=verb, qsc=qsc)
+        # in django 1.0, replace with OUTER JOINS!
+        qsc_parent_ids      = [x['id'] for x in  qsc.antecedents(False).values('id')]
+        verb_parent_ids     = [x['id'] for x in verb.antecedents(False).values('id')]
+
+        Q_recursive_search = Q(recursive = True) & Q(qsc__in = qsc_parent_ids) & Q(verb__in = verb_parent_ids)
+        Q_exact_match      = Q(qsc = qsc) & Q(verb = verb)
+
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
-        users = UserBit.objects.filter(Q_exact_match).filter(Q_after_start).filter(Q_before_end) | UserBit.objects.filter(Q_correct_qsc).filter(Q_correct_userbit).filter(Q_after_start).filter(Q_before_end)
+        users = UserBit.objects.filter(Q_after_start & Q_before_end).filter(Q_recursive_search or Q_exact_match)
 
         return users.distinct()
     
@@ -353,23 +369,30 @@ class UserBit(models.Model):
             if end_of_now == None: end_of_now = now
 
             #	Hopefully it's easier to understand this query now...
-            Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
-            Q_exact_match = Q(recursive = False, verb=verb)
-            Q_correct_user = Q(user__isnull = True) | Q(user=user)
-            
-            if not user.is_authenticated():
-                Q_correct_user = Q(user__isnull = True)
-            
+
+            # in django 1.0, replace with OUTER JOINS!
+            verb_parent_ids     = [x['id'] for x in verb.antecedents(False).values('id')]
+
+            Q_recursive_search = Q(recursive = True) & Q(verb__in = verb_parent_ids)
+            Q_exact_match      = Q(verb = verb)
+
             Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
             Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
-            qscs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end) | \
-                   UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+            Q_correct_user = Q(user__isnull = True) | Q(user=user)
+            
+            if user is None or not user.is_authenticated():
+                Q_correct_user = Q(user__isnull = True)
+            
+            
+            qscs = UserBit.objects.filter(Q_correct_user & Q_after_start & Q_before_end).filter(Q_recursive_search | Q_exact_match)
 
             if qsc_root is None:
                 userbit_ids = qscs.values('id')
             else:
-                userbit_ids = qscs.filter(qsc__rangestart__gte=qsc_root.rangestart, qsc__rangeend__lte=qsc_root.rangeend).values('id')
+                qsc_children_ids = [ x['id'] for x in qsc_root.descendants(False).values('id') ]
+                Q_under_root = Q(qsc__in = qsc_children_ids)
+                userbit_ids = qscs.filter(Q_under_root).values('id')
             str_userbit_ids = ','.join([str(userbit['id']) for userbit in userbit_ids])
             
             userbit_cache[user_cache_id] = str_userbit_ids

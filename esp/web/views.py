@@ -75,6 +75,9 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
 
+
+
+
 	if filename != "":
 		url = url + "/" + filename
 
@@ -115,6 +118,7 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 		root_url = "/" + "/".join(url_parts) + "/" + qsd_name
 	else:
 		root_url = "/" + qsd_name
+
 
 	section = ''
 	if subsection == None:

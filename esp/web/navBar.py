@@ -1,18 +1,29 @@
 from esp.web.models import NavBarEntry
-from esp.users.models import UserBit
+from esp.users.models import UserBit, AnonymousUser
 from esp.datatree.models import GetNode
 from django.http import HttpResponseRedirect, Http404
 from esp.datatree.models import DataTree
 from esp.dblog.models import error
 from esp.dblog.views import ESPError
 
+
 def makeNavBar(user, node, section = ''):
 	""" Query the navbar-entry table for all navbar entries associated with this tree node """
+	edit_verb = GetNode('V/Administer/Edit/QSD')
+	
 	qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=node.rangestart,path__rangeend__gte=node.rangeend,section=section).order_by('sort_rank')
-	context = { 'node': node,
-		 'has_edit_bits': UserBit.UserHasPerms(user, node, GetNode('V/Administer/Edit/QSD')),
-		 'qsdTree': [ {'entry': x, 'has_bits': UserBit.UserHasPerms(user, x.path, GetNode('V/Administer/Edit/QSD')) } for x in qsdTree ],
-		 'section': section }
+	if user is None or type(user) == AnonymousUser or user.id is None:
+		
+		context = { 'node': node,
+			    'has_edit_bits': False,
+			    'qsdTree': [ {'entry': x, 'has_bits': False} for x in qsdTree ],
+			    'section': section }
+
+	else:
+		context = { 'node': node,
+			    'has_edit_bits': UserBit.UserHasPerms(user, node, edit_verb),
+			    'qsdTree': [ {'entry': x, 'has_bits': UserBit.UserHasPerms(user, x.path, edit_verb) } for x in qsdTree ],
+			    'section': section }
 	return context
 
 

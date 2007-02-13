@@ -84,10 +84,6 @@ class DataTree(models.Model):
         """ Return a 'Q' object that, when passed to a Django filter on a DataTree node, will filter for all descendants of the current node """
         return Q(rangestart__gte=self.rangestart, rangeend__lte=self.rangeend)
 
-    def descendants(self):
-        """ Return a QuerySet of all descendants."""
-        return DataTree.objects.filter(self.Q_descendants()).distinct()
-
     
     def is_descendant(self, node):
         """ Return False if the specified node is not a descendant (child, child of a child, etc.) of this node, AND if the specified node is not this node """
@@ -97,6 +93,30 @@ class DataTree(models.Model):
         """ Return a 'Q' object that, when passed to a Django filter on a DataTree node, will filter for all descendants of the current node """
         return Q(rangestart__lte=self.rangestart, rangeend__gte=self.rangeend)
 
+    def descendants(self, distinct = True):
+        """ Return a QuerySet of all descendants."""
+        return self.decendants.nocache(distinct)
+
+    def descendants_nocache(self, distinct = True):
+        """ Return a QuerySet of all descendants."""
+        QSet =  DataTree.objects.filter(self.Q_descendants())
+        if distinct:
+            return QSet.distinct()
+        else:
+            return QSet
+
+    def antecedents(self, distinct = True):
+        """ Return a QuerySet of all antecedents."""
+        return self.antecedents_nocache(distinct)
+    
+    def antecedents_nocache(self, distinct = True):
+        """ Return a QerySet of all antecedents."""
+        QSet = DataTree.objects.filter(self.Q_antecedents())
+        if distinct:
+            return QSet.distinct()
+        else:
+            return QSet
+    
     def is_antecedent(self, node):
         """ Return False if the specified node is not an antecedent (parent, parent of a parent, etc.) of the current node, AND if the specified node is not this node """
         return (node.rangestart <= self.rangestart and node.rangeend >= self.rangeend)
