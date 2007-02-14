@@ -113,7 +113,7 @@ class StudentClassRegModule(ProgramModuleObj):
             
         catDict = {}
         clsList = []
-        if timeslot is None:
+        if timeslot is not None:
             for cls in classes:
                 if cls.isAccepted():
                     clsList.append({'class':cls,
