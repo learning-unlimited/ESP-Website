@@ -160,8 +160,12 @@ class StudentClassRegModule(ProgramModuleObj):
 	#	Find the userbits for classes in that timeslot and delete them.
 	for ub in prereg_ubs:
             if Class.objects.filter(meeting_times=extra, anchor=ub.qsc).count() > 0:
+                cobj = Class.objects.filter(anchor = ub.qsc)
+                if len(cobj) > 0:
+                    for cls in cobj:
+                        cls.update_cache_students()
 		ub.delete()
 
-        cobj.update_cache_students()
+
 
 	return self.goToCore(tl)

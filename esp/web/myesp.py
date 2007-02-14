@@ -540,6 +540,7 @@ def profile_editor(request, prog=None, responseuponCompletion = True, role=''):
 		errors = manipulator.get_validation_errors(new_data)
 		if not errors:
 			manipulator.do_html2python(new_data)
+
 			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 
 			regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)

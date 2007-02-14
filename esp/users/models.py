@@ -197,12 +197,22 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def gradeFromYOG(yog):
-        schoolyear = ESPUser.current_schoolyear()        
+        schoolyear = ESPUser.current_schoolyear()
+        try:
+            yog        = int(yog)
+        except:
+            return 0
+        
         return schoolyear + 12 - yog
     
     @staticmethod
     def YOGFromGrade(grade):
         schoolyear = ESPUser.current_schoolyear()
+        try:
+            grade = int(grade)
+        except:
+            return 0
+
         return schoolyear + 12 - grade      
         
    
