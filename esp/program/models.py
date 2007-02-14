@@ -396,7 +396,7 @@ class Class(models.Model):
 		retVal['title'] = self.anchor.friendly_name
 		
 		cache.set(cache_id, retVal, self.cache_time())
-		return retVal
+		return retVal['title']
 	
 	def teachers(self):
 
