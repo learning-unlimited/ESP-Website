@@ -60,7 +60,8 @@ class CreditCardModule(ProgramModuleObj):
         self.payment = payment
 
         yearnow = datetime.now().year
-        context['years'] = zip(range(yearnow-2000, yearnow+20-2000),
+        context['years'] = zip(['%02d' % x for x in
+                                range(yearnow-2000,yearnow+20-2000)],
                                range(yearnow, yearnow+20))
         context['module'] = self
 

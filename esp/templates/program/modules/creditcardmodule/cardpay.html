@@ -124,7 +124,7 @@ function testCreditCard() {
 <p>Required fields are boxed in a red border and marked with an asterisk.</p>
 <form onsubmit="return formTest();" action="https://shopmit.mit.edu/payment/esp_form" method="post" autocomplete="off">
 
-<input type="hidden" name="OrderComments" value="{{program.id }}-{{module.payment.id}}" />
+<input type="hidden" name="OrderComments" value="ESP__{{program.id }}-{{module.payment.id}}" />
 
 <input type="hidden" name="ChargeAmount" value="{{ module.cost }}" />
 <input type="hidden" name="ReturnLink" value="http://{{request.META.SERVER_NAME}}/learn/{{program.getUrlBase}}/studentreg" />
