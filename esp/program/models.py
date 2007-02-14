@@ -380,25 +380,50 @@ class Class(models.Model):
 		self.meeting_times.clear()
 		super(Class, self).delete()
 		
-		
+
+	def cache_time(self):
+		return 3600
+	
 	def title(self):
-		cache_id = 'ClassTitle:'+str(self.id)
+		cache_id = 'Class__'+str(self.id)
+
 		retVal = cache.get(cache_id)
-		if retVal is not None:
-			return retVal
-		retVal = self.anchor.friendly_name
-		cache.set(cache_id, retVal, 99999)
+		if retVal is not None and type(retVal) == dict and retVal.has_key('title'):
+			return retVal['title']
+		if type(retVal) != dict:
+			retVal = {}
+			
+		retVal['title'] = self.anchor.friendly_name
+		
+		cache.set(cache_id, retVal, self.cache_time())
 		return retVal
 	
 	def teachers(self):
+
+		cache_id = 'Class__' + str(self.id)
+
+		retVal   = cache.get(cache_id)
+
+		if retVal is not None and type(retVal) == dict and retVal.has_key('teachers'):
+			return retVal['teachers']
+		
+		if type(retVal) != dict:
+			retVal = {}
+			
 		from esp.users.models import ESPUser
 		v = GetNode( 'V/Flags/Registration/Teacher' )
 		userbits = [ x.user.id for x in UserBit.bits_get_users( self.anchor, v) ]
+				
 		if len(userbits) > 0:
 			teachers = list(User.objects.filter(id__in=userbits).distinct())
-			return map(ESPUser, teachers)
+			retVal['teachers'] = map(ESPUser, teachers)
 		else:
-			return EMPTY_QUERYSET.distinct()
+			retVal['teachers'] = []
+
+		cache.set(cache_id, retVal, self.cache_time())
+
+		return retVal['teachers']
+			  
 		#return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
 
 	def manage_finished(self):
@@ -529,9 +554,21 @@ class Class(models.Model):
 					return True
 
 	def students(self):
+		cache_id = 'ClassStudents__'+str(self.id)
+
+		retVal = cache.get(cache_id)
+
+		if retVal is not None:
+			return retVal
+
 		from esp.users.models import ESPUser
 		v = GetNode( 'V/Flags/Registration/Preliminary' )
-		return [ ESPUser(x.user) for x in UserBit.bits_get_users( self.anchor, v ) ]
+		students = [ ESPUser(x.user) for x in UserBit.bits_get_users( self.anchor, v ) ]
+
+		cache.set(cache_id, students, self.cache_time())
+
+		return students
+	
 
 	@staticmethod
 	def idcmp(one, other):
@@ -569,10 +606,7 @@ class Class(models.Model):
 
 
 	def num_students(self):
-		v = GetNode( 'V/Flags/Registration/Preliminary' )
-		if not self.anchor.id:
-			return 0
-		return UserBit.bits_get_users(self.anchor, v).count()
+		return len(self.students())
 
 	def isFull(self):
 		if self.num_students() >= self.class_size_max:
@@ -586,6 +620,17 @@ class Class(models.Model):
 
 	def friendly_times(self):
 		""" will return friendly times for the class """
+		cache_id = 'Class__' + str(self.id)
+
+		retVal = cache.get(cache_id)
+
+		if retVal is not None and type(retVal) == dict and retVal.has_key('friendly_times'):
+			return retVal['friendly_times']
+
+
+		if type(retVal) != dict:
+			retVal = {}
+			
 		txtTimes = []
 		eventList = []
 		for timeanchor in self.meeting_times.all():
@@ -598,12 +643,22 @@ class Class(models.Model):
 		txtTimes += [ event.pretty_time() for event
 			      in Event.collapse(eventList) ]
 
+		retVal['friendly_times'] = txtTimes
+
+		cache.set(cache_id, retVal, self.cache_time())
+
 		return txtTimes
 			
 
+	def update_cache_students(self):
+		cache.delete('ClassStudents__'+str(self.id))
 
+	def update_cache(self):
+		cache.delete('Class__'+str(self.id))
 
 	def preregister_student(self, user):
+
+		
 		prereg_verb = GetNode( 'V/Flags/Registration/Preliminary' )
 		
 		#	First, delete preregistration bits for other classes at the same time.
@@ -620,6 +675,11 @@ class Class(models.Model):
 			prereg.qsc = self.anchor
 			prereg.verb = prereg_verb
 			prereg.save()
+
+			self.update_cache_students()
+
+
+			
 			return True
 		else:
 			#	Pre-registration failed because the class is full.

@@ -67,6 +67,7 @@ class StudentClassRegModule(ProgramModuleObj):
         if error:
             assert False, error
         if cobj.preregister_student(self.user):
+            cobj.update_cache_students()
             return self.goToCore(tl) # go to the core view.
         else:
             assert False, 'Class is full'
@@ -98,12 +99,8 @@ class StudentClassRegModule(ProgramModuleObj):
         #	catalog as opposed to a particular timeslot.  Only show the buttons
         #	for pre-registering if you're looking at a particular timeslot.
         if timeslot is None:
-                can_edit_classes = self.user.canAdminister(prog)
-                can_approve_classes = self.user.canAdminister(prog)
                 prereg_url = None
         else:
-                can_edit_classes = False
-                can_approve_classes = False
                 prereg_url = '/' + tl + '/' + prog.url() + '/addclass'
 
         if timeslot is not None:
@@ -113,15 +110,28 @@ class StudentClassRegModule(ProgramModuleObj):
             prereg_url = False
             classes = Class.objects.filter(parent_program = self.program).order_by('category')
             
+            
         catDict = {}
         clsList = []
-        for cls in classes:
-            if cls.isAccepted():
-                clsList.append({'class':cls,
-                                'errormsg':cls.cannotAdd(self.user)})
-                catDict[cls.category.id] = {'category': cls.category.category,
-                                            'id'      : cls.category.id
-                                            }
+        if timeslot is None:
+            for cls in classes:
+                if cls.isAccepted():
+                    clsList.append({'class':cls,
+                                    'errormsg':cls.cannotAdd(self.user)})
+                    
+                    if not catDict.has_key(cls.category_id):
+                        catDict[cls.category_id] = {'category': cls.category.category,
+                                                    'id'      : cls.category_id
+                                                    }
+        else:
+            for cls in classes:
+                if cls.isAccepted():
+                    clsList.append({'class':cls,
+                                    'errormsg':None})
+                    if not catDict.has_key(cls.category_id):
+                        catDict[cls.category_id] = {'category': cls.category.category,
+                                                    'id'      : cls.category_id
+                                                    }
         catList = []
         for k in catDict.keys():
             catList.append(catDict[k])
@@ -151,5 +161,7 @@ class StudentClassRegModule(ProgramModuleObj):
 	for ub in prereg_ubs:
             if Class.objects.filter(meeting_times=extra, anchor=ub.qsc).count() > 0:
 		ub.delete()
+
+        cobj.update_cache_students()
 
 	return self.goToCore(tl)

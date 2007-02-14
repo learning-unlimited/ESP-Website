@@ -394,7 +394,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                 newclass.save()
 
                 #cache this result
-                cache.set('ClassTitle:'+str(newclass.id), newclass.title, 99999)
+                newclass.update_cache()
+
                 # ensure multiselect fields are set
                 newclass.viable_times.clear()
                 for block in new_data.getlist('viable_times'):

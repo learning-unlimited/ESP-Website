@@ -164,8 +164,10 @@ class AdminClass(ProgramModuleObj):
                 for room in rooms:
                     if len(room.strip()) > 0:
                         cls.assignClassRoom(DataTree.objects.get(id = room))
+
+                cls.update_cache()
                 
-                # return self.goToCore(tl)
+                return self.goToCore(tl)
         else:
             new_data['meeting_times']   = [x.id for x in cls.meeting_times.all()]
             new_data['directors_notes'] = cls.directors_notes
