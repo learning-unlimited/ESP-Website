@@ -461,7 +461,7 @@ class Class(models.Model):
 			return 'Class is full!'
 
 		if user.getGrade() < self.grade_min or \
-		   user.getGrade() > self.grade_min:
+		   user.getGrade() > self.grade_max
 			return 'You are not in the requested grade range for this class.'
 
 		# student has no classes...no conflict there.
