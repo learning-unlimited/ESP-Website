@@ -4,7 +4,7 @@ from esp.program.models  import Class, ClassCategories, RegistrationProfile
 from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
 from esp.users.models    import ESPUser, UserBit
-from django.db.models     import Q
+from django.db.models    import Q
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
@@ -61,7 +61,12 @@ class StudentClassRegModule(ProgramModuleObj):
     def addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
 
-        classid = request.POST['class_id']
+        if request.POST.has_key('class_id'):
+            classid = request.POST['class_id']
+        else:
+            from esp.dblog.models import error
+            return error("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.")
+            
         cobj = Class.objects.filter(id=classid)[0]
         error = cobj.cannotAdd(self.user)
         if error:

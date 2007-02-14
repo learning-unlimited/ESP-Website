@@ -1,6 +1,7 @@
 from django.db import models
 from traceback import format_stack
 from esp.settings import LOG_FILE
+from django.shortcuts import render_to_response # aseering 2-14-2007: This can't be Axiak's fancy esp.web.data version because otherwise we get an import loop.  Possibly we should fix that someday.
 
 # Create your models here.
 
@@ -19,7 +20,10 @@ class Log(models.Model):
             errfile = open(LOG_FILE, 'a')
             errfile.write( str(self) )
             errfile.close()
-            
+
+        from esp.dbmail.models import send_mail
+        send_mail('Error: ' + self.text, str(self), 'server@esp.mit.edu', ['esp-webmasters@mit.edu'])
+
         super(Log, self).save()
 
     class Admin:
@@ -42,3 +46,5 @@ def error(err_txt, extra = '', stack_trace = None):
     err.stack_trace = stack_trace
     err.extra = extra
     err.save()
+
+    return render_to_response('error.html', { 'error': err_txt } )
