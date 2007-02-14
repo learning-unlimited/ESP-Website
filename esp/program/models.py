@@ -382,7 +382,7 @@ class Class(models.Model):
 		
 
 	def cache_time(self):
-		return 3600
+		return 99999
 	
 	def title(self):
 		cache_id = 'Class__'+str(self.id)
