@@ -607,11 +607,11 @@ class Class(models.Model):
 		prereg_verb = GetNode( 'V/Flags/Registration/Preliminary' )
 		
 		#	First, delete preregistration bits for other classes at the same time.
-		other_bits = UserBit.objects.filter(user=user, verb=prereg_verb)
-		for b in other_bits:
-			class_qset = Class.objects.filter(anchor=b.qsc, event_template = self.event_template)
-			if class_qset.count() > 0:
-				b.delete()
+		#other_bits = UserBit.objects.filter(user=user, verb=prereg_verb)
+		#for b in other_bits:
+		#class_qset = Class.objects.filter(anchor=b.qsc, event_template = self.event_template)
+		#if class_qset.count() > 0:
+		#		b.delete()
 				
 		if not self.isFull():
 			#	Then, create the userbit denoting preregistration for this class.
