@@ -75,14 +75,8 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
          ({{ cls.getTeacherNames|join:", " }})
       </span>
     </td>
-    <td class="clsright classname" style="font-style: italic; font-size: 80%">
-      {{cls.class_size_min }} / {{ cls.num_students }} / {{ cls.class_size_max }}
-    </td>
-    <td class="clsmiddle">
-       <form method="post" action="./deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
-         <input class="button" type="submit" value="Delete"  />
-       </form>
-    </td>
+
+
     <td class="clsmiddle">
        <form method="post" action="/teach/{{ program.url }}/editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
@@ -91,11 +85,40 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
     </td>
     <td class="clsmiddle">
       <a href="/manage/{{program.getUrlBase}}/manageclass/{{cls.id}}" title="Manage {{cls.title}}"
-        class="abutton" >
+        class="abutton" style="white-space: nowrap;" >
         Manage Class
       </a>
     </td>
+    <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
+       {% if cls.manage_scheduled %}
+     <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
+            title="Class Scheduled" />
+       {% else %}
+     <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
+            title="Class Not Scheduled" />
+       {% endif %}
+    </td>
+    <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
+       {% if cls.manage_roomassigned %}
+     <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
+            title="Class' Room Assigned" />
+       {% else %}
+     <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
+            title="Class' Room NOT Assigned" />
+       {% endif %}
+    </td>
+    <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
+       {% if cls.manage_finished %}
+     <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
+            title="Class Management Completed" />
+       {% else %}
+     <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
+            title="Class Management NOT Completed" />
+       {% endif %}
+    </td>
    </tr>
+
+
    {% endfor %}
 
 </table>

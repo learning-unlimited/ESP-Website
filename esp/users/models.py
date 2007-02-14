@@ -166,6 +166,45 @@ class ESPUser(User, AnonymousUser):
     @staticmethod
     def isUserNameTaken(username):
         return User.objects.filter(username=username.lower()).count() > 0
+
+    @staticmethod
+    def current_schoolyear():
+        now = datetime.now()
+        curyear = now.year
+        if datetime(curyear, 7, 1) > now:
+            schoolyear = curyear
+        else:
+            schoolyear = curyear + 1
+
+        return schoolyear
+
+    def getGrade(self, program = None):
+        if not self.isStudent():
+            return 0
+        if program is None:
+            regProf = self.getLastProfile()
+        else:
+            from esp.program.models import RegistrationProfile
+            regProf = RegistrationProfile.getLastForProgram(self,program)
+        if regProf and regProf.student_info:
+            if regProf.student_info.graduation_year:
+                return ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
+
+        return 0
+
+    def currentSchoolYear(self):
+        return ESPUser.current_schoolyear()-1
+
+    @staticmethod
+    def gradeFromYOG(yog):
+        schoolyear = ESPUser.current_schoolyear()        
+        return schoolyear + 12 - yog
+    
+    @staticmethod
+    def YOGFromGrade(grade):
+        schoolyear = ESPUser.current_schoolyear()
+        return schoolyear + 12 - grade      
+        
    
 
 class UserBit(models.Model):

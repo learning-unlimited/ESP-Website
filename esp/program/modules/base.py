@@ -229,7 +229,7 @@ def needs_teacher(method):
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         if not moduleObj.user.isTeacher():
-            return render_to_response('errors/program/notateacher.html', request, None, {})
+            return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkTeacher
@@ -239,7 +239,7 @@ def needs_admin(method):
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         if not moduleObj.user.isAdmin(moduleObj.program):
-            return render_to_response('errors/program/notanadmin.html', request, None, {})
+            return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkAdmin
@@ -249,7 +249,7 @@ def needs_onsite(method):
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         if not moduleObj.user.isOnsite(moduleObj.program):
-            return render_to_response('errors/program/notonsite.html', request, None, {})
+            return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkAdmin
@@ -259,11 +259,24 @@ def needs_student(method):
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         if not moduleObj.user.isStudent():
-            return render_to_response('errors/program/notastudent.html', request, None, {})
+            return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkStudent        
 
+
+def meets_grade(method):
+    def _checkGrade(moduleObj, request, tl, *args, **kwargs):
+        errorpage = 'errors/program/wronggrade.html'
+        # get the last grade...
+        cur_grade = moduleObj.user.getGrade()
+        if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
+                               cur_grade > moduleObj.program.grade_max):
+            return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+
+        return method(moduleObj, request, tl, *args, **kwargs)
+    
+    return _checkGrade
 
 # Anything you can do, I can do meta
 def meets_deadline(extension=''):
@@ -283,7 +296,7 @@ def meets_deadline(extension=''):
             if canView:
                 return method(moduleObj, request, tl, *args, **kwargs)
             else:
-                return render_to_response(errorpage, request, None, {})
+                return render_to_response(errorpage, request, (moduleObj.program, tl), {})
 
         return _checkDeadline
 

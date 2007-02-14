@@ -401,6 +401,27 @@ class Class(models.Model):
 			return EMPTY_QUERYSET.distinct()
 		#return [ x.user for x in UserBit.bits_get_users( self.anchor, v ) ]
 
+	def manage_finished(self):
+		verb = GetNode('V/Flags/Class/Finished')
+		return UserBit.UserHasPerms(user = None,
+					    qsc  = self.anchor,
+					    verb = verb)
+	
+
+	def manage_scheduled(self):
+		verb = GetNode('V/Flags/Class/Scheduled')
+		return UserBit.UserHasPerms(user = None,
+					    qsc  = self.anchor,
+					    verb = verb)
+	
+
+	def manage_roomassigned(self):
+		verb = GetNode('V/Flags/Class/RoomAssigned')
+		return UserBit.UserHasPerms(user = None,
+					    qsc  = self.anchor,
+					    verb = verb)
+	
+
 
 
 	def cannotAdd(self, user):
@@ -413,6 +434,10 @@ class Class(models.Model):
 
 		if self.isFull():
 			return 'Class is full!'
+
+		if user.getGrade() < self.grade_min or \
+		   user.getGrade() > self.grade_min:
+			return 'You are not in the requested grade range for this class.'
 
 		# student has no classes...no conflict there.
 		if user.getEnrolledClasses().count() == 0:

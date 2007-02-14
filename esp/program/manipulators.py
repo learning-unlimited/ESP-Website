@@ -54,9 +54,11 @@ class StudentInfoManipulator(forms.Manipulator):
         cur_year = datetime.date.today().year
         
         self.fields = (
-            forms.SelectField(field_name="graduation_year", choices=zip(range(cur_year,cur_year+20),range(cur_year,cur_year+20)), is_required=True),
+            GraduationYearField(field_name="graduation_year", is_required=True, choices=zip(range(6,13),range(6,13))),
+            
+#            forms.SelectField(field_name="graduation_year", choices=zip(range(cur_year,cur_year+20),range(cur_year,cur_year+20)), is_required=True),
             forms.TextField(field_name="school", length=24, maxlength=128),
-            DojoDatePickerField(field_name="dob", is_required=True, default='1994-02-29')
+            HTMLDateField(field_name="dob", is_required=True)
             )
 
 
@@ -69,7 +71,7 @@ class TeacherInfoManipulator(forms.Manipulator):
             forms.PositiveIntegerField(field_name="graduation_year", length=4, maxlength=4),
             forms.TextField(field_name="school", length=24, maxlength=128),
             forms.TextField(field_name="major", length=10, maxlength=32),
-            DojoDatePickerField(field_name="dob", is_required=False, default='1994-02-29'),
+            HTMLDateField(field_name="dob", is_required=False),
             forms.LargeTextField(field_name="bio", is_required=True, validator_list=[validators.isNotEmpty])
             )
 
@@ -131,6 +133,107 @@ class OneOfSetAreFilled(object):
                 
         if not atleastOne:
             raise validators.ValidationError, 'At least one of the these fields must be filled in.'
+
+class GraduationYearField(forms.SelectField):
+    #    def __init__(self, *args, **kwargs):
+    #        self(forms.SelectField, self).__init__(self, choices=zip(range(6,12),range(6,12)), *args, **kwargs)
+
+    def isValidChoice(self, data, form):
+        from esp.users.models import ESPUser
+        str_data = str(data)
+        str_choices = [str(ESPUser.YOGFromGrade(item[0])) for item in self.choices ]
+        if str_data not in str_choices:
+            raise validators.ValidationError, gettext("Select a valid choice; '%(data)s' is not in %(choices)s.") % {'data': str_data, 'choices': str_choices}
+    
+    def prepare(self, data):
+        from esp.users.models import ESPUser
+
+        try:
+            data[self.field_name] = ESPUser.YOGFromGrade(int(data[self.field_name]))
+        except:
+            data[self.field_name] = 'ERROR'
+        
+
+    def render(self, data):
+        from esp.users.models import ESPUser
+            
+        data = ESPUser.gradeFromYOG(data)
+        return super(GraduationYearField, self).render(data)
+        
+
+class HTMLDateField(forms.DateField):
+    
+    def isValidDate(self, field_data, all_data):
+        try:
+            validators.isValidANSIDate(field_data, all_data)
+        except validators.ValidationError, e:
+            raise validators.CriticalValidationError, e.messages
+
+        try:
+            import time
+            time_tuple = time.strptime(field_data, '%Y-%m-%d')
+        except:
+            raise validators.ValidationError, 'Please enter a valid date.'
+
+    def render(self, data):
+        from datetime import datetime
+
+        if type(data) == str:
+            try:
+                year, month, day = data.split('-')
+            except:
+                year, month, day = ['','','']
+        else:
+            year, month, day = [data.year, data.month, data.day]
+            year  = '%04d' % year
+            month = '%02d' % month
+            day   = '%02d' % day
+
+        current_data = {'year': year,'month':month,'day':day}
+        year_choices = range(datetime.now().year - 80,
+                             datetime.now().year - 11)
+        year_choices.reverse()
+        month_choices = ['%02d' % x for x in range(1, 13)]
+        day_choices   = ['%02d' % x for x in range(1, 32)]
+        choices = {'year' : [('',' ')] + zip(year_choices, year_choices),
+                   'month': [('',' ')] + zip(month_choices, month_choices),
+                   'day'  : [('',' ')] + zip(day_choices, day_choices)
+                   }
+
+        ind_html = []
+
+        for element in ['month','day','year']:
+            cur_name = self.field_name + '__' + element
+            tmphtml = '<label for="%s">%s:</label>' % \
+                      (cur_name, element.title())
+            tmphtml += '\n<select name="%s" id="%s" class="v%s%s">' % \
+                       (cur_name, cur_name, self.__class__.__name__,
+                        self.is_required and ' required' or '')
+            
+            for k, v in choices[element]:
+                selected_html = ''
+                if str(v) == current_data[element]:
+                    selected_html = ' selected="selected"'
+
+                tmphtml += '\n    <option value="%s"%s>%s</option>' % \
+                           (k, selected_html, v)
+
+            ind_html.append(tmphtml+'\n</select>')
+
+        tmphtml = '<input type="hidden" name="%s" value="DATE" />' % (self.field_name)
+        tmphtml += '\n\n'.join(ind_html)
+        
+        return tmphtml
+
+    def prepare(self, new_data):
+        new_data[self.field_name] = new_data[self.field_name + '__year'] + '-' \
+                                  + new_data[self.field_name + '__month'] + '-' \
+                                  + new_data[self.field_name + '__day']
+        for ext in ['__year','__month','__day']:
+            if not new_data.has_key(self.field_name+ext) or \
+               len(new_data[self.field_name+ext].strip()) == 0:
+                new_data[self.field_name] = ''
+        
 
 class DojoDatePickerField(forms.DateField):
     """ A pretty dojo date picker field """

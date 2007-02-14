@@ -280,7 +280,7 @@ def myesp_passrecover(request, module):
 			user.password = code
 			user.save()
 
-			assert False, "Currently spams the Announcements list.  Disabled until that can be fixed."
+
 			Entry.post( None, msganchor,
 			      '[ESP] Your Password Recovery For esp.mit.edu',
 			      """Hello,
@@ -445,6 +445,11 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 	# I don't like adding this second structure...
 	# but django templates made me do it!
 	responseProgs = []
+
+	if admin_details:
+		admPrograms = currentUser.getEditable(Program).order_by('-id')
+	else:
+		admPrograms = []
 	
 	for prog in usrPrograms:
 		if not fullclslist.has_key(prog.id):
@@ -459,6 +464,7 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 	return render_to_response('battlescreens/general.html', request, GetNode('Q/Web/myesp'), {'page_title':    'MyESP: Teacher Home Page',
 								 'progList':      responseProgs,
 								 'admin_details': admin_details,
+								 'admPrograms'  : admPrograms,
 								 'student_version': student_version,
 								 'announcements': {'announcementList': announcements[:5],
 										   'overflowed':       len(announcements) > 5,
@@ -530,6 +536,7 @@ def profile_editor(request, prog=None, responseuponCompletion = True, role=''):
 
 	if request.method == 'POST' and request.POST.has_key('profile_page'):
 		new_data = request.POST.copy()
+		manipulator.prepare(new_data)
 		errors = manipulator.get_validation_errors(new_data)
 		if not errors:
 			manipulator.do_html2python(new_data)

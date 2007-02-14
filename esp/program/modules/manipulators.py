@@ -125,7 +125,16 @@ class ClassManageManipulator(forms.Manipulator):
                                        [(room.id, room.name) for room
                                        in module.program.getClassRooms()], \
                               validator_list=[ClassRoomAssignmentConflictValidator(cls, 'meeting_times','room')] \
-                                              ))
+                                              ),
+            CheckboxSelectMultipleField(field_name="resources", \
+                                        choices=module.getResources()),
+
+            forms.LargeTextField(field_name="message_for_directors", \
+                                 is_required=False),
+
+            CheckboxSelectMultipleField(field_name="manage_progress", \
+                                        choices=module.getManageSteps()),
+            )
             
 
 

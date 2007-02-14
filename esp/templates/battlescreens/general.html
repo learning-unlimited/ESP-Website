@@ -29,10 +29,25 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
 
 </table>
 
-<br />
-<br />
+
 <br />
 
+<br />
+{% if admin_details %}
+<h3>Programs you are an Administrator of:</h3>
+<br />
+{% for program in admPrograms %}
+<a href="/manage/{{program.getUrlBase}}/main"
+  title="Administer {{program.niceName}}"> 
+  Administration Panel for `{{program.niceName}}'
+</a>
+   <br />
+{% endfor %}
+<br />
+{% endif %}
+
+<br />
+<br />
 <table cellpadding="4px" cellspacing="0" align="center">
 <tbody>
   <tr>

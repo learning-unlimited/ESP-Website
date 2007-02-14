@@ -1,4 +1,4 @@
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade
 from esp.program.modules import module_ext
 from esp.web.data        import render_to_response
 from esp.users.models    import UserBit, ESPUser
@@ -29,6 +29,7 @@ class StudentRegCore(ProgramModuleObj):
                 'attended' : """Students who attended %s""" % self.program.niceName()}
 
     @needs_student
+    @meets_grade
     @meets_deadline()
     def confirmreg(self, request, tl, one, two, module, extra, prog):
 	""" The page that is shown once the user saves their student reg,
@@ -42,7 +43,7 @@ class StudentRegCore(ProgramModuleObj):
 	for module in modules:
             if not module.isCompleted() and module.required:
                 completedAll = False
-			
+            context = module.prepare(context)
 	
 	if completedAll:
             bit, created = UserBit.objects.get_or_create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
@@ -54,6 +55,7 @@ class StudentRegCore(ProgramModuleObj):
 
 
     @needs_student
+    @meets_grade    
     @meets_deadline()
     def cancelreg(self, request, tl, one, two, module, extra, prog):
         bits = UserBit.objects.filter(user = self.user,
@@ -67,6 +69,7 @@ class StudentRegCore(ProgramModuleObj):
         return self.goToCore(tl)
   
     @needs_student
+    @meets_grade
     @meets_deadline()
     def studentreg(self, request, tl, one, two, module, extra, prog):
     	    """ Display a student reg page """

@@ -14,6 +14,7 @@
 #divmaintext .blogentry .title { font-weight: bolder; }
 #divmaintext .blogentry .date { font-style: italic; margin: 0 5px 0 0;  }
 #divmaintext .blogentry .contents { margin: 0 0 0 30px; }
+#divmaintext th, #divmaintext td { vertical-align: top }
 .viable { background: #9F9; padding: 3px; }
 .notviable { background: #333; padding: 3px; }
 
@@ -104,6 +105,22 @@ Preferred Duration: {{class.prettyDuration }}
 </td>
 </tr>
 <tr>
+  <th>Resources Requested:</th>
+  <td>
+{{ form.resources }} {% if form.resources.errors %}
+  <br /><span class="form_error">{{form.resources.errors|join:", " }}</span>
+{% endif %}
+  </td>
+</tr>
+<tr>
+  <th>Comments for Directors:</th>
+  <td>
+{{ form.message_for_directors }} {% if form.message_for_directors.errors %}
+  <br /><span class="form_error">{{form.message_for_directors.errors|join:", " }}</span>
+{% endif %}
+  </td>
+</tr>
+<tr>
   <th>Number of Students: </th>
   <td>{{class.students|length }}</td>
 </tr>
@@ -114,7 +131,19 @@ Teachers: {{class.emailcode}}-teachers@esp.mit.edu<br />
 Students: {{class.emailcode}}-students@esp.mit.edu
   </td>
 </tr>
-
+<tr>
+  <th colspan="2">
+   <h2>Directors' Annotations</h2>
+  </th>
+</tr>
+<tr>
+  <th>Progress:</th>
+  <td>
+{{ form.manage_progress }} {% if form.manage_progress.errors %}
+  <br /><span class="form_error">{{form.manage_progress.errors|join:", " }}</span>
+{% endif %}
+  </td>
+</tr>
 <tr>
   <th>Directors' Notes<br />
      <em>Notes for you to keep with each other; teachers don't see this.</em>

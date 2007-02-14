@@ -1,0 +1,23 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{prog.niceName }} Student Registration{% endblock %}
+
+{% block subsection_name %}Student{% endblock %}
+
+{% block content %}
+
+<h1>{{prog.niceName }} Student Registration&mdash; Error</h1>
+
+<p>
+Not in the correct grade for this program.
+<br />
+<br />
+<em>Sorry, you do not appear to match the required grade range for this program. Please browse through
+some of our other <a href="/learn/index.html">programs</a>, though!</em><br />
+If your grade, <strong>{{request.user.getGrade}}</strong>, is incorrect, please go to <a href="/myesp/profile" title="ESP Profile Editor">the myESP profile editor</a> to change it.
+
+</p>
+
+
+
+{% endblock %}

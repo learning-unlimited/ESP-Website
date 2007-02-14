@@ -13,6 +13,15 @@ from django.http import HttpResponseRedirect
 
 class AdminClass(ProgramModuleObj):
 
+    def getManageSteps(self):
+        return [('Scheduled', 'Schedule Completed'),
+                ('RoomAssigned','Room Assignment Completed'),
+                ('Finished', 'Finished All')]
+    
+    def getResources(self):
+        resources = self.program.getResources()
+        return [(str(x.id), x.friendly_name) for x in resources]
+
     def getClassSizes(self):
         min_size, max_size, class_size_step = (0, 200, 10)
         if self.classRegInfo.class_min_size:
@@ -112,6 +121,7 @@ class AdminClass(ProgramModuleObj):
                 
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
+        from esp.datatree.models import GetNode
         cls, found = self.getClass(request,extra)
         if not found:
             return cls
@@ -126,7 +136,24 @@ class AdminClass(ProgramModuleObj):
             errors = manipulator.get_validation_errors(new_data)
             
             if not errors:
+                verb_start = 'V/Flags/Class/'
                 manipulator.do_html2python(new_data)
+                progress = new_data.getlist('manage_progress')
+                for step in ['Finished','Scheduled','RoomAssigned']:
+                    
+                    if step in progress:
+
+                        UserBit.objects.get_or_create(user      = None,
+                                                      qsc       = cls.anchor,
+                                                      verb      = GetNode(verb_start+step),
+                                                      recursive = False)
+                    else:
+                        [ x.delete() for x in
+                          UserBit.objects.filter(user__isnull = True,
+                                                 qsc          = cls.anchor,
+                                                 verb         = GetNode(verb_start+step),
+                                                 recursive    = False) ]
+
                 cls.meeting_times.clear()
                 cls.directors_notes = new_data['directors_notes']
                 for meeting_time in new_data.getlist('meeting_times'):
@@ -142,6 +169,18 @@ class AdminClass(ProgramModuleObj):
         else:
             new_data['meeting_times']   = [x.id for x in cls.meeting_times.all()]
             new_data['directors_notes'] = cls.directors_notes
+            new_data['resources'] = [ resource.id for resource in cls.resources.all() ]
+
+            steps = []
+            if cls.manage_finished():
+                steps += ['Finished']
+            if cls.manage_scheduled():
+                steps += ['Scheduled']
+            if cls.manage_roomassigned():
+                steps += ['RoomAssigned']
+            new_data['manage_progress'] = steps
+
+            
             classrooms = cls.classrooms()
             if len(classrooms) > 0:
                 new_data['room']      = cls.classrooms()[0].id
