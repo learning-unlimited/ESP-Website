@@ -309,7 +309,17 @@ class UserBit(models.Model):
         else:
             now_id = "-".join([ str(i) for i in datetime.now().timetuple() ])
 
-        user_cache_id = 'UserHasPerms:' + str(qsc.id) + ',' + str(verb.id) + ',' + now_id
+        if type(qsc) == int:
+            qsc_id = qsc
+        else:
+            qsc_id = qsc.id
+
+        if type(verb) == int:
+            verb_id = verb
+        else:
+            verb_id = verb.id
+
+        user_cache_id = 'UserHasPerms:' + str(qsc_id) + ',' + str(verb_id) + ',' + now_id
 
         cache_id = 'UserBit__' + user_get_key(user)
 
@@ -372,7 +382,8 @@ class UserBit(models.Model):
         """ Return all users who have been granted 'verb' on 'qsc' """
         if end_of_now == None: end_of_now = now
 
-
+            
+            
         # fix in django 1.0...
         
         Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)

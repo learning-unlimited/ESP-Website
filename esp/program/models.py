@@ -155,8 +155,11 @@ class Program(models.Model):
 	def students_union(self, QObject = False):
 		import operator
 		if len(self.students().values()) == 0:
-			return []
-		
+			if QObject:
+				return Q(id = -1)
+			else:
+				return User.objects.filter(id = -1)
+					
 		union = reduce(operator.or_, [x for x in self.students(True).values() ])
 		if QObject:
 			return union
@@ -188,7 +191,7 @@ class Program(models.Model):
 		return students
 
 	def classes_node(self):
-		return DataTree.objects.filter(parent = self.anchor, name = 'Classes')[0]
+		return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
 	def getTimeSlots(self):
 		return list(self.anchor.tree_create(['Templates','TimeSlots']).children().order_by('id'))
@@ -343,7 +346,7 @@ class Class(models.Model):
 		return '/'.join(str_array[2:])
 
 	def got_qsd(self):
-				return (QuasiStaticData.objects.filter(path = self.anchor).count() > 0)
+		return (QuasiStaticData.objects.filter(path = self.anchor).count() > 0)
 
 	def PopulateEvents(self):
 		""" Given this instance's event_template, generate a series of events that define this class's schedule """
@@ -373,7 +376,7 @@ class Class(models.Model):
 			self.removeAdmin(teacher)
 
 
-		if self.anchor.id:
+		if self.anchor:
 			self.anchor.delete()
 		
 		self.viable_times.clear()

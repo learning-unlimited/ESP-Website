@@ -49,6 +49,8 @@ class SATPrepTeacherModuleInfo(models.Model):
     sat_writ = models.PositiveIntegerField(blank=True, null=True)
     sat_verb = models.PositiveIntegerField(blank=True, null=True)
 
+    mitid    = models.PositiveIntegerField(blank=True, null=True)
+
     subject  = models.CharField(maxlength=32, choices = SAT_SUBJECTS)
 
     user     = models.ForeignKey(User,blank=True, null=True)

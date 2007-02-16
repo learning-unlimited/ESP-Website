@@ -30,12 +30,12 @@ class SATPrepTeacherInput(ProgramModuleObj):
 
                 if not errors:
                         manipulator.do_html2python(new_data)
-                        new_reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-                        new_reginfo.addOrUpdate(new_data, request.user, prog)
+                        new_reginfo = SATPrepRegInfo.getLastForProgram(user, prog)
+                        new_reginfo.addOrUpdate(new_data, user, prog)
 
                         return self.goToCore(tl)
         else:
-                satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
+                satPrep = SATPrepRegInfo.getLastForProgram(user, prog)
 
                 new_data = satPrep.updateForm(new_data)
                 errors = {}

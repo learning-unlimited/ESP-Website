@@ -65,6 +65,16 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
    {% endif %}
  </td>
 </tr>
+
+<tr>
+ <td><label for="id_mitid">MIT ID #:</label><br />
+<em>(For payroll)</em></td>
+ <td>{{ form.mitid }} {% if form.mitid.errors %}
+   <br /><span class="form_error">{{ form.mitid.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
 </table>
 
 <br />

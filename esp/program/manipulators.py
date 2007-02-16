@@ -341,5 +341,6 @@ class SATPrepTeacherInfoManipulator(forms.Manipulator):
             forms.PositiveIntegerField(field_name="sat_math", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
             forms.PositiveIntegerField(field_name="sat_verb", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
             forms.PositiveIntegerField(field_name="sat_writ", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.SelectField(field_name="subject", is_required=True, choices=subjects)
+            forms.SelectField(field_name="subject", is_required=True, choices=subjects),
+            forms.PositiveIntegerField(field_name="mitid", is_required=True)
             )
