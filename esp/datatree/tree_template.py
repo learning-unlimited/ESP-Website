@@ -50,7 +50,7 @@ tree_template = [
     'V/Flags/UserRole/Guardian',
     'V/Flags/Public',
     'V/Flags/Registration',
-    'V/Flags/Registration/Attend',
+    'V/Flags/Registration/Attended',
     'V/Flags/Registration/Teacher',
     'V/Flags/Registration/Confirmed',
     'V/Flags/Registration/Preliminary',

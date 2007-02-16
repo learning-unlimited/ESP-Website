@@ -268,6 +268,19 @@ def needs_student(method):
 def meets_grade(method):
     def _checkGrade(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/wronggrade.html'
+        from esp.datatree.models import GetNode
+        from esp.users.models import UserBit
+
+        verb_override = GetNode('V/Flags/Registration/GradeOverride')
+
+        # if there's grade override we can just skip everything
+        if UserBit.UserHasPerms(user = moduleObj.user,
+                                  qsc  = moduleObj.program.anchor,
+                                  verb = verb_override):
+            return method(moduleObj, request, tl, *args, **kwargs)
+        
+        # now we have to use the grade..
+
         # get the last grade...
         cur_grade = moduleObj.user.getGrade()
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \

@@ -463,9 +463,15 @@ class Class(models.Model):
 		if self.isFull():
 			return 'Class is full!'
 
-		if user.getGrade() < self.grade_min or \
-		   user.getGrade() > self.grade_max:
-			return 'You are not in the requested grade range for this class.'
+
+		verb_override = GetNode('V/Flags/Registration/GradeOverride')
+		
+		if not UserBit.UserHasPerms(user = user,
+					      qsc  = self.anchor,
+					      verb = verb_override):
+			if user.getGrade() < self.grade_min or \
+			       user.getGrade() > self.grade_max:
+				return 'You are not in the requested grade range for this class.'
 
 		# student has no classes...no conflict there.
 		if user.getEnrolledClasses().count() == 0:
