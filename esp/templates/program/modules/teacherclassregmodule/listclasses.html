@@ -35,7 +35,7 @@ If you have any questions regarding the program, <br /> please email the
 
 <table cellpadding="4" cellspacing="0" align="center">
   <tr>
-    <th colspan="6">
+    <th colspan="7">
        Manage Your Classes
     </th>
   </tr>
@@ -85,6 +85,12 @@ If you have any questions regarding the program, <br /> please email the
       <form method="get" action="./class_status/{{cls.id}}">
          <input class="button" type="submit" value="View Status" />
       </form>
+   </td>
+   <td class="clsmiddle">
+      <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
+        title="View Class' Students" class="abutton">
+       Students
+      </a>
    </td>
    <td class="clsright">
       {% if cls.pageExists %}

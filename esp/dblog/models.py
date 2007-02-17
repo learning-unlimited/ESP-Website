@@ -46,6 +46,7 @@ def error(err_txt, extra = '', stack_trace = None, log = True):
         err.text = err_txt
         err.stack_trace = stack_trace
 
+
         try:
             err.extra = str(extra)
         except:

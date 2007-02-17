@@ -10,15 +10,28 @@ from django.core.mail            import send_mail
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
 from django.db.models            import Q
+
 class TeacherClassRegModule(ProgramModuleObj):
+    """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
+        as the program goes on. It is suggested, though not required, that this module is used in conjunction with
+        StudentClassRegModule. Please be mindful of all the options of this module. """
+
+    
     def extensions(self):
-        return [('classRegInfo', module_ext.ClassRegModuleInfo)]
+        """ This function gives all the extensions...that is, models that act on the join of a program and module."""
+        return [('classRegInfo', module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+
 
     def prepare(self, context={}):
-        context['teacherclsmodule'] = self
+        """ prepare returns the context for the main teacherreg page. This will just set the teacherclsmodule as this module,
+            since everything else can be gotten from hooks. """
+        
+        context['teacherclsmodule'] = self # ...
         return context
 
+
     def noclasses(self):
+        """ Returns true of there are no classes in this program """
         return len(self.clslist()) < 1
 
     def isCompleted(self):
@@ -171,6 +184,17 @@ class TeacherClassRegModule(ProgramModuleObj):
     def getResources(self):
         resources = self.program.getResources()
         return [(str(x.id), x.friendly_name) for x in resources]
+
+    @needs_teacher
+    @meets_deadline()
+    def class_students(self, request, tl, one, two, module, extra, prog):
+    
+        cls, found = self.getClassFromId(extra)
+        if not found:
+            return cls
+
+        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'cls': cls})
+        
 
     @needs_teacher
     @meets_deadline('/Classes')

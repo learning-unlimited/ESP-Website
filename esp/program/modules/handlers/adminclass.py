@@ -72,16 +72,6 @@ class AdminClass(ProgramModuleObj):
         context['classes']   = classes
         return context
 
-    def getClassFromId(self, clsid):
-        classes = Class.objects.filter(id = clsid)
-        if len(classes) == 1:
-            if not self.user.canEdit(classes[0]):
-                return (render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl), {}), False)
-            else:
-                Found = True
-                return (classes[0], True)
-        return (False, False)
-            
     def getClass(self, request, extra):
         found = False
         if not found and extra is not None and len(extra.strip()) > 0:

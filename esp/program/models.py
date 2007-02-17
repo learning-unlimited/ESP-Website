@@ -574,6 +574,8 @@ class Class(models.Model):
 		v = GetNode( 'V/Flags/Registration/Preliminary' )
 		students = [ ESPUser(x.user) for x in UserBit.bits_get_users( self.anchor, v ) ]
 
+		students.sort()
+		
 		cache.set(cache_id, students, self.cache_time())
 
 		return students

@@ -70,12 +70,27 @@ class ESPUser(User, AnonymousUser):
     def canEdit(self, object):
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
     
-    def getTaughtClasses(self):
-        from esp.program.models import Class
-        return UserBit.find_by_anchor_perms(Class, self.getOld(), GetNode('V/Flags/Registration/Teacher'))
+    def getTaughtClasses(self, program = None):
+        """ Return all the taught classes for this user. If program is specified, return all the classes under
+            that class. For most users this will return an empty queryset. """
+        
+        from esp.program.models import Class, Program # Need the Class object.
+        all_classes = UserBit.find_by_anchor_perms(Class, self.getOld(), GetNode('V/Flags/Registration/Teacher'))
+        
+        if program is None: # If we have no program specified
+            return all_classes
+        else:
+            if type(program) != Program: # if we did not receive a program
+                error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
+            else:
+                return all_classes.filter(parent_program = program)
 
+        
     @staticmethod
     def getTypes():
+        """ Get a list of the different roles an ESP user can have. By default there are four rols,
+            but there can be more. (Returns ['Student','Teacher','Educator','Guardian']. """
+        
         return ['Student','Teacher','Educator','Guardian']
 
     @staticmethod

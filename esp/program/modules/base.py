@@ -1,3 +1,8 @@
+""" This module houses the base ProgramModuleObj from which all module handlers are derived.
+    There are many useful and magical functions provided in here, most of which can be called
+    from within the program handler.
+"""
+
 from django.db import models
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser
@@ -108,6 +113,31 @@ class ProgramModuleObj(models.Model):
         ModuleObj.fixExtensions()
 
         return ModuleObj
+
+
+
+    def getClassFromId(self, clsid, tl='teach'):
+        """ This function can be called from a view to get a class object from an id. The id can be given
+            with request or extra, but it will try to get it in any way. """
+
+        from esp.program.models import Class
+
+        classes = []
+        try:
+            clsid = int(clsid)
+        except:
+            return (False, True)
+        
+        classes = Class.objects.filter(id = clsid)
+            
+        if len(classes) == 1:
+            if not self.user.canEdit(classes[0]):
+                return (render_to_response(self.baseDir()+'cannoteditclass.html', request, (self.program, tl), {}), False)
+            else:
+                Found = True
+                return (classes[0], True)
+        return (False, False)
+            
 
     def baseDir(self):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
