@@ -1,0 +1,64 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Class Status for {{cls.title }}{% endblock %}
+
+{% block subsection_name %}Class Status{% endblock %}
+
+{% block stylesheets %}
+
+{{block.super}}
+<style type="text/css">
+#divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
+  { border: 1px solid black; border-collapse: collapse; 
+    vertical-align: baseline;}
+#divmaintext .blogentry { border: 2px solid black; }
+#divmaintext .blogentry .heading { background-color: #d7eeff; padding: 5px; }
+#divmaintext .blogentry .title { font-weight: bolder; }
+#divmaintext .blogentry .date { font-style: italic; margin: 0 5px 0 0;  }
+#divmaintext .blogentry .contents { margin: 0 0 0 30px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Students Currently Enrolled in <u>{{ cls.title }}</u></h1>
+
+<p>
+Here are your class' students:
+<br />
+</p>
+<div class="info">
+  Note: You can email your students using <tt style="font-size: 130%;">{{cls.emailcode}}-students@esp.mit.edu</tt>
+</div>
+
+<br />
+<table class="mainstats" align="center" width="400px">
+<thead>
+<tr>
+ <th>
+   #
+ </th>
+ <th>
+  Student Name
+ </th>
+ <th>
+  Student Grade
+ </th>
+</tr>
+</thead>
+<tbody>
+{% for student in cls.students %}
+<tr>
+ <th>{{forloop.counter}}</th>
+ <td>{{student.name }}</td>
+ <td>{{student.getGrade}}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<br />
+<br />
+
+{% endblock %}
