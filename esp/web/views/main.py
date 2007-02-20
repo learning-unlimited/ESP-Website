@@ -1,4 +1,3 @@
-from esp.web.navBar import makeNavBar
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.views import qsd
@@ -17,14 +16,12 @@ import datetime
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
-from esp.web.data import navbar_data, preload_images, render_to_response
-from esp.web.myesp import myesp_handlers
-from esp.web.program import program_handlers
-from esp.web.archives import archive_handlers
+from esp.web.util.main import navbar_data, preload_images, render_to_response
+from esp.web.views.myesp import myesp_handlers
+from esp.web.views.program import program_handlers
+from esp.web.views.archives import archive_handlers
 from esp.miniblog.views import preview_miniblog
-
 from esp.dblog.views import ESPError
-
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 
@@ -180,7 +177,6 @@ def contact_submit(request):
 	for key in ['name', 'email', 'relation', 'publicity', 'program', 'comment']:
 		if not request.POST.has_key(key):
 			request.POST[key] = '(none)'
-			#raise Http404
 
 	t = loader.get_template('email/comment')
 

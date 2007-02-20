@@ -1,12 +1,16 @@
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade
 from esp.program.modules import module_ext
-from esp.web.data        import render_to_response
+from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser
 from esp.datatree.models import GetNode
 from django.db.models import Q
+from esp.middleware   import ESPError
+
 import operator
 
 class StudentRegCore(ProgramModuleObj):
+
+
 
 
     def students(self, QObject = False):
@@ -48,7 +52,7 @@ class StudentRegCore(ProgramModuleObj):
 	if completedAll:
             bit, created = UserBit.objects.get_or_create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
-            assert False, "Error: You did not finish all necessary steps!"
+            raise ESPError(), "You must finish all the necessary steps first, then click on the Save button to finish registration."
             
 	receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
 	return render_to_response(receipt, request, (prog, tl), context)
@@ -73,6 +77,7 @@ class StudentRegCore(ProgramModuleObj):
     @meets_deadline()
     def studentreg(self, request, tl, one, two, module, extra, prog):
     	    """ Display a student reg page """
+
 	    context = {}
             modules = prog.getModules(self.user, 'learn')
 

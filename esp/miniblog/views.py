@@ -1,11 +1,10 @@
-from esp.web.data import render_to_response
+from esp.web.util import render_to_response
 from esp.miniblog.models import Entry
 from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import GetNode
 from esp.users.models import UserBit, ESPUser
 from esp.dbmail.models import MessageRequest, EmailRequest
 from esp.dbmail.controllers import EmailController
-from esp.web.navBar import makeNavBar
 from datetime import datetime
 
 def show_miniblog(request, url, subsection = None, section_redirect_keys = {}, extramsg=''):

@@ -2,7 +2,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_s
 from esp.program.modules         import module_ext, manipulators
 from esp.program.models          import Program, Class, ClassCategories
 from esp.datatree.models         import DataTree, GetNode
-from esp.web.data                import render_to_response
+from esp.web.util                import render_to_response
 from django                      import forms
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
@@ -476,7 +476,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @meets_deadline('/Classes')    
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.json import JsonResponse
+        from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
         from django.db.models import Q
 

@@ -1,4 +1,3 @@
-from esp.web.navBar import makeNavBar
 from esp.cal.models import Event, Series
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser
@@ -16,7 +15,7 @@ from django import forms
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
-from esp.web.data import navbar_data, preload_images, render_to_response
+from esp.web.util.main import navbar_data, preload_images, render_to_response
 from django.contrib.auth.decorators import login_required
 
 def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
@@ -92,7 +91,7 @@ def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):
 @login_required
 def program_profile(request, tl, one, two, module, extra, prog):
 	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
-	from esp.web.myesp import profile_editor
+	from esp.web.views.myesp import profile_editor
 	role = {'teach': 'teacher','learn': 'student'}[tl]
 
 	response = profile_editor(request, prog, False, role)

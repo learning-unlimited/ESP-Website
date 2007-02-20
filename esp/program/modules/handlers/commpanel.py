@@ -1,6 +1,6 @@
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
 from esp.program.modules import module_ext
-from esp.web.data        import render_to_response
+from esp.web.util        import render_to_response
 from esp.program.manipulators import SATPrepInfoManipulator
 from django import forms
 from django.core.cache import cache
@@ -11,41 +11,6 @@ from django.template.defaultfilters import urlencode
 from django.template import Context, Template
 from esp.miniblog.models import Entry
 
-class DBList(object):
-    totalnum = False
-    def count(self, override = False):
-        from esp.users.models import User
-        cache_id = urlencode('DBListCount: %s' % (self.key))
-        
-        if self.QObject:
-            if not self.totalnum:
-                if override:
-                    self.totalnum = User.objects.filter(self.QObject).distinct().count()
-                    cache.set(cache_id, self.totalnum, 60)
-                else:
-                    cachedval = cache.get(cache_id)
-                    if cachedval is None:
-                        self.totalnum = User.objects.filter(self.QObject).distinct().count()
-                        cache.set(cache_id, self.totalnum, 60)
-                    else:
-                        self.totalnum = cachedval
-
-            return self.totalnum
-        else:
-            return 0
-        
-    def id(self):
-        return self.key
-    
-    def __init__(self, **kwargs):
-        self.__dict__ = kwargs
-
-    def __cmp__(self, other):
-        return cmp(self.count(), other.count())
-    
-    def __str__(self):
-        return self.key
-        return "<DBList: %s: \"%s\" (%s total)>\n" % (self.key, self.description, self.count())
 
 class CommModule(ProgramModuleObj):
 
@@ -64,11 +29,12 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
         from django.template import Context, Template
+        from esp.users.models import PersistentQueryFilter
         
         announcements = self.program.anchor.tree_create(['Announcements'])
-        ids, subject, body  = [request.POST['userids'],
-                               request.POST['subject'],
-                               request.POST['body']    ]
+        filterid, subject, body  = [request.POST['filterid'],
+                                    request.POST['subject'],
+                                    request.POST['body']    ]
 
 
         if request.POST.has_key('from') and \
@@ -77,7 +43,9 @@ class CommModule(ProgramModuleObj):
         else:
             fromemail = None
 
-        users = list(ESPUser.objects.filter(id__in = ids.split(',')).distinct())
+        QObj = PersistentQueryFilter.getFilterFromID(filterid, User).get_Q()
+
+        users = list(ESPUser.objects.filter(QObj).distinct())
         users.append(self.user)
 
         bodyTemplate    = Template(body)
@@ -117,59 +85,24 @@ class CommModule(ProgramModuleObj):
 
     @needs_admin
     def commstep2(self, request, tl, one, two, module, extra, prog):
-        import operator
-
-        lists = self.program.getLists(True)
-        
-        opmapping = {'and'  : operator.and_,
-                     'or'   : operator.or_,
-                     'not'  : QNot,
-                     'ident': (lambda x: x)
-                     }
-        keys = request.POST['keys'].split(',,')
-
-        curList = lists[request.POST['base_list']]['list']
-        stringrep = '%s' % (lists[request.POST['base_list']]['list'])
-
-        separated = {'or': [curList], 'and': []}
-        
-        for key in keys:
-            if request.POST.has_key('operator_'+key) and \
-               request.POST['operator_'+key] and \
-               request.POST['operator_'+key] != 'ignore':
-                separated[request.POST['operator_'+key]].append(opmapping[request.POST['not_'+key]](lists[key]['list']))
-
-
-        for i in range(len(separated['or'])):
-            for j in range(len(separated['and'])):
-                separated['or'][i] = opmapping['and'](separated['or'][i], separated['and'][j])
-                
-        curList = separated['or'][0]
-        for List in separated['or'][1:]:
-            curList = opmapping['or'](curList, List)
-        
-        if request.POST['submitform'] == 'Get List Instead':
-            users = [ESPUser(user) for user in ESPUser.objects.filter(curList).distinct() ]
-            users.sort()
-            return render_to_response(self.baseDir()+'userlist.html', request, (prog,tl),
-                                      {'users': users,
-                                       'finalsentence': request.POST['finalsent']})
-                                                               
-        return render_to_response(self.baseDir()+ 'step2.html', request, (prog, tl),
-                                  {'ids': [x['id'] for x in ESPUser.objects.filter(curList).values('id')]})
+        pass
         
 
     @needs_admin
     def maincomm(self, request, tl, one, two, module, extra, prog):
+        from esp.users.views     import get_user_list
+        filterObj, found = get_user_list(request, self.program.getLists(True))
 
-        arrLists = []
-        lists = self.program.getLists(True)
-        for key, value in lists.items():
-            arrLists.append(DBList(key = key, QObject = value['list'], description = value['description'].strip('.')))
-            
-        arrLists.sort(reverse=True)
-        
-        return render_to_response(self.baseDir()+'commmodulefront.html', request, (prog, tl), {'lists': arrLists})
+        if not found:
+            return filterObj
+
+        listcount = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+
+        return render_to_response(self.baseDir()+'step2.html', request,
+                                  (prog, tl), {'listcount': listcount,
+                                               'filterid' : filterObj.id})
+
+        #getFilterFromID(id, model)
 
     @needs_student
     def satprepinfo(self, request, tl, one, two, module, extra, prog):

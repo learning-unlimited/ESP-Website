@@ -1,10 +1,10 @@
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.program.modules import module_ext
-from esp.web.data        import render_to_response
+from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.miniblog.models import Entry
 from esp.datatree.models import GetNode
-from esp.web.myesp       import search_for_user
+from esp.web.views.myesp import search_for_user
 from esp.program.manipulators import SATPrepDiagManipulator
 from django import forms
 from esp.program.models import SATPrepRegInfo

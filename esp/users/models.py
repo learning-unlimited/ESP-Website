@@ -10,6 +10,7 @@ from django.db.models.query import QuerySet
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 from django.core.cache import cache
 from datetime import datetime
+from esp.middleware import ESPError
 from django.template.defaultfilters import urlencode
 
 def user_get_key(user):
@@ -102,7 +103,7 @@ class ESPUser(User, AnonymousUser):
         types = ['Student', 'Teacher','Guardian','Educator']
 
         if strType not in types:
-            assert False, "Invalid type to find all of."
+            raise ESPError(), "Invalid type to find all of."
                 
         Q_useroftype      = Q(userbit__verb = GetNode('V/Flags/UserRole/'+strType)) &\
                             Q(userbit__qsc = GetNode('Q'))                          &\
@@ -832,4 +833,154 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
             return retVal
         else:
             raise
+
+class PersistentQueryFilter(models.Model):
+    """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
+        to pass the query along to multiple pages and retrival (et al). """
+    
+    item_model   = models.CharField(maxlength=256)            # A string representing the model, for instance User or Program
+    q_filter     = models.TextField()                         # A string representing a query filter
+    sha1_hash    = models.CharField(maxlength=256)            # A sha1 hash of the string representing the query filter
+    create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
+    useful_name  = models.CharField(maxlength=1024, blank=True, null=True) # A nice name to apply to this filter.
+
+
+
+    @staticmethod
+    def create_from_Q(item_model, q_filter, description = ''):
+        """ The main constructor, please call this. """
+        
+        import pickle
+        import sha
+
+        foo = PersistentQueryFilter()
+        
+        foo.item_model   = str(item_model)
+        foo.q_filter     = pickle.dumps(q_filter) # we pickle the q_filter
+        foo.sha1_hash    = sha.new(foo.q_filter).hexdigest()
+
+        
+        foo.useful_name = description
+        return foo
+        
+        
+
+    def get_Q(self):
+        """ This will return the Q object that was passed into it. """
+        import pickle
+
+        try:
+            QObj = pickle.loads(self.q_filter)
+        except:
+            raise ESPError(), 'Invalid Q object stored in database.'
+
+
+        return QObj
+
+    def getList(module):
+        """ This will actually return the list generated from the filter applied
+            to the live database. You must supply the model. If the model is not matched,
+            it will become an error. """
+
+        if str(module) != str(self.item_model):
+            raise ESPError(), 'The module given does not match that of the persistent entry.'
+
+        return module.objects.filter(self.get_Q())
+
+    @staticmethod
+    def getFilterFromID(id, model):
+        """ This function will return a PQF object from the id given. """
+        try:
+            id = int(id)
+        except:
+            assert False, 'The query filter id given is invalid.'
+
+ 
+        return PersistentQueryFilter.objects.get(id = id,
+                                                 item_model = str(model))
+    
+ 
+                
+
+
+    @staticmethod
+    def getFilterFromQ(QObject, model, description = ''):
+        """ This function will get the filter from the Q object. It will either create one
+            or use an old one depending on whether it's been used. """
+
+        import pickle
+        import sha
+        
+        try:
+            qobject_string = pickle.dumps(QObject)
+        except:
+            qobject_string = ''
+
+
+        
+        try:
+            filterObj = PersistentQueryFilter.objects.get(sha1_hash = sha.new(qobject_string).hexdigest())#    pass
+        except:
+            filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
+                                                            q_filter    = QObject,
+                                                            description = description)
+            filterObj.save() # create a new one.
+
+        return filterObj
+
+    def __str__(self):
+        return str(self.useful_name)
+        
+
+class DBList(object):
+    """ Useful abstraction for the list of users.
+        Not meant for anything but users_get_list...
+    """
+    totalnum = False # we dont' know how many there are.
+    key      = ''
+    QObject  = None
+    
+    
+    def count(self, override = False):
+        """ This is used to count how many objects wer are talking about.
+            If override is true, it will not retrieve the number from cache
+            or from this instance. If it's true, it will try.
+        """
+        
+        from esp.users.models import User
+
+        cache_id = urlencode('DBListCount: %s' % (self.key))
+
+        retVal   = cache.get(cache_id) # get the cached result
+ 
+        if self.QObject: # if there is a q object we can just 
+            if not self.totalnum:
+                if override:
+                    self.totalnum = User.objects.filter(self.QObject).distinct().count()
+                    cache.set(cache_id, self.totalnum, 60)
+                else:
+                    cachedval = cache.get(cache_id)
+                    if cachedval is None:
+                        self.totalnum = User.objects.filter(self.QObject).distinct().count()
+                        cache.set(cache_id, self.totalnum, 60)
+                    else:
+                        self.totalnum = cachedval
+
+            return self.totalnum
+        else:
+            return 0
+        
+    def id(self):
+        """ The id is the same as the key, it is client-specified. """
+        return self.key
+    
+    def __init__(self, **kwargs):
+        self.__dict__ = kwargs
+
+    def __cmp__(self, other):
+        """ We are going to order by the size of our lists. """
+        return cmp(self.count(), other.count())
+    
+    def __str__(self):
+        return self.key
 

@@ -74,10 +74,10 @@ class ESPMarkdown(Markdown):
         self.media = media
 
         self.LINK_PATTERN = ESPLinkPattern(LINK_RE)
-        self.LINK_ANGLED_PATTERN = ESPLinkPAttern(LINK_ANGLED_RE)
+        self.LINK_ANGLED_PATTERN = ESPLinkPattern(LINK_ANGLED_RE)
         self.IMAGE_LINK_PATTERN = ESPImagePattern(IMAGE_LINK_RE)
 
-        super(ESPMarkdown, Markdown).__init__(source)
+        super(ESPMarkdown, self).__init__(source)
 
         for i in [ IMAGE_LINK_PATTERN,
                    LINK_PATTERN,

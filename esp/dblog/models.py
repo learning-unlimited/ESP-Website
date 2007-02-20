@@ -5,7 +5,9 @@ from django.shortcuts import render_to_response # aseering 2-14-2007: This can't
 
 # Create your models here.
 
+
 class Log(models.Model):
+
     # Store/log errors
     text = models.TextField(blank=True)
     extra = models.TextField(blank=True)
@@ -13,16 +15,17 @@ class Log(models.Model):
     current_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return str(self.current_date) + "\nTEXT: " + self.text + "\nEXTRA:" + self.extra + "\nSTACKTRACE: " + self.stack_trace
+
+        return str(self.current_date) + '\n\nTEXT: ' + \
+               self.text              + '\n\nEXTRA:' + \
+               self.extra             + '\n\nSTACKTRACE: ' + \
+               self.stack_trace
 
     def save(self):
         if LOG_FILE != None:
             errfile = open(LOG_FILE, 'a')
             errfile.write( str(self) )
             errfile.close()
-
-        from esp.dbmail.models import send_mail
-        send_mail('Error: ' + self.text, str(self), 'server@esp.mit.edu', ['esp-webmasters@mit.edu'])
 
         super(Log, self).save()
 

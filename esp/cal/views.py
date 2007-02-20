@@ -1,5 +1,5 @@
 from esp.calendar.models import Event
-from esp.web.data import render_to_response
+from esp.web.util import render_to_response
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django import forms
 import icalendar

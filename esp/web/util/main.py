@@ -1,6 +1,6 @@
 from esp.users.models import ESPUser
 import django.shortcuts
-from esp.web.navBar import makeNavBar
+from esp.web.util.navBar import makeNavBar
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
 

@@ -1,5 +1,5 @@
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
-from esp.web.myesp import profile_editor
+from esp.web.views.myesp import profile_editor
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser
 from django.db.models import Q
@@ -31,7 +31,7 @@ class RegProfileModule(ProgramModuleObj):
 
     def profile(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
-	from esp.web.myesp import profile_editor
+	from esp.web.views.myesp import profile_editor
         role = {'teach': 'teacher','learn': 'student'}[tl]
 
 	response = profile_editor(request, prog, False, role)

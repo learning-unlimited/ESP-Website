@@ -1,9 +1,7 @@
-from esp.web.navBar import makeNavBar
 from esp.users.models import ContactInfo, UserBit, ESPUser
 from esp.datatree.models import GetNode, DataTree
 from esp.program.models import ArchiveClass, ClassCategories
-from esp.web.data import navbar_data, preload_images, render_to_response
-
+from esp.web.util.main import navbar_data, preload_images, render_to_response
 from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required

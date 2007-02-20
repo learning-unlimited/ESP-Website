@@ -1,6 +1,6 @@
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
 from esp.program.modules import module_ext
-from esp.web.data        import render_to_response
+from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import Class, Program
 from esp.users.models import UserBit, ESPUser
@@ -473,7 +473,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.json import JsonResponse
+        from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
         from django.db.models import Q
 

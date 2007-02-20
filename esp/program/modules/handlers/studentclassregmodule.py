@@ -2,7 +2,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.datatree.models import GetNode, DataTree
 from esp.program.models  import Class, ClassCategories, RegistrationProfile
 from esp.program.modules import module_ext
-from esp.web.data        import render_to_response
+from esp.web.util        import render_to_response
+from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit
 from django.db.models    import Q
 
@@ -65,17 +66,18 @@ class StudentClassRegModule(ProgramModuleObj):
             classid = request.POST['class_id']
         else:
             from esp.dblog.models import error
-            return error("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.")
+            raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL."
             
         cobj = Class.objects.filter(id=classid)[0]
         error = cobj.cannotAdd(self.user)
         if error:
-            assert False, error
+            raise ESPError(False), error
         if cobj.preregister_student(self.user):
             cobj.update_cache_students()
             return self.goToCore(tl) # go to the core view.
         else:
-            assert False, 'Class is full'
+            raise ESPError(False), 'Class is full. Please go back to the catalog and choose another class.'
+
 
     @needs_student
     @meets_deadline('/Classes')    

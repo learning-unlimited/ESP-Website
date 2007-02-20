@@ -32,7 +32,7 @@
 
 <br />
 <p>
-There are <strong>{{ids|length}}</strong> distinct users in your query. If you feel this to be off, please
+There are <strong>{{listcount}}</strong> distinct users in your query. If you feel this to be off, please
 <a href="javascript:history.go(-1);">go back</a> now.<br />
 <br />
 Please write your email/message now. Note that you can use <tt>{{ parameter }}</tt> to enter a parameter
@@ -81,6 +81,6 @@ into the text of the message&mdash;the parameters are listed below.
 </table>
 
 <input type="submit" value="Send Message!" name="submitform" />
-<input type="hidden" name="userids" value="{{ids|join:","}}" />
+<input type="hidden" name="filterid" value="{{filterid}}" />
 </form>
 {% endblock %}

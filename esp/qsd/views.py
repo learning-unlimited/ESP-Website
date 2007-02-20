@@ -2,8 +2,8 @@ from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
 from esp.datatree.models import GetNode, DataTree
-from esp.web.navBar import makeNavBar
-from esp.web.data import navbar_data, preload_images, render_to_response
+from esp.web.util.navBar import makeNavBar
+from esp.web.util.main import navbar_data, preload_images, render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
 from esp.lib.markdownaddons import ESPMarkdown
@@ -127,7 +127,9 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 			return ESPError("You don't have permission to edit this page.", log_error = False)
 
 		m = ESPMarkdown(qsd_rec.content, media={})
+
 		m.toString()
+#		assert False, m.BrokenLinks()
 		
 		# Render an edit form
 		return render_to_response('qsd_edit.html', request, (branch, section), {

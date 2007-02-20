@@ -1,6 +1,5 @@
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.decorators import login_required
-from esp.web.navBar import makeNavBar
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
@@ -9,7 +8,7 @@ from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
 from esp.miniblog.views import preview_miniblog, create_miniblog
 from esp.program.models import Program, RegistrationProfile, Class, ClassCategories
-from esp.web.program import program_teacherreg2
+from esp.web.views.program import program_teacherreg2
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
@@ -17,9 +16,10 @@ from django.template import loader, Context
 from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
 from django.contrib.auth.models import User
+from esp.middleware import ESPError
 from esp.web.models import NavBarEntry
 from esp.users.manipulators import UserRegManipulator, UserPasswdManipulator, UserRecoverForm, SetPasswordForm
-from esp.web.data import navbar_data, preload_images, render_to_response
+from esp.web.util.main import navbar_data, preload_images, render_to_response
 from django import forms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
 

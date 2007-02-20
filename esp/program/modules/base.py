@@ -6,7 +6,7 @@
 from django.db import models
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser
-from esp.web.data import render_to_response
+from esp.web.util import render_to_response
 from django.http import HttpResponseRedirect
 from django.contrib.auth import LOGIN_URL, REDIRECT_FIELD_NAME
 from urllib import quote

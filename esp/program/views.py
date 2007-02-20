@@ -1,4 +1,4 @@
-from esp.web.data import render_to_response
+from esp.web.util import render_to_response
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.datatree.models import GetNode, DataTree
