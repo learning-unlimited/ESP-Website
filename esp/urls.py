@@ -18,7 +18,7 @@ section_prefix_keys = {'teach': 'teach', 'learn': 'learn'}
 urlpatterns_list =  [(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/media/'}),
                      (r'^admin/media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/admin/media/'}),
                      # Uncomment this for admin:
-                     (r'^admin/', 'django.contrib.admin.urls'),
+                     (r'^admin/', include('django.contrib.admin.urls')),
                      # Uncomment this for @login_required:
                      (r'^accounts/login/$', 'django.contrib.auth.views.login'),
                     ]
