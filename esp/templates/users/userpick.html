@@ -30,6 +30,8 @@ Please select the user from the list below:
   <th>ID</th>
   <th>Select!</th>
 </tr>
+
+{% if list %}
 <tr>
  <td colspan="6">
    <a href="{{request.path}}?listokay=true&{{request.META.QUERY_STRING}}"
@@ -38,6 +40,7 @@ Please select the user from the list below:
    </a>
  </td>
 </tr>
+{% endif %}
 {% for user in users %}
 <tr>
  <td>{{user.username }}</td>
@@ -50,15 +53,18 @@ Please select the user from the list below:
   </td>
 </tr>
 {% endfor %}
+{% if list %}
 <tr>
  <td colspan="6">
-   <a href="{{request.path}}?listokay=true&{{request.QUERY_STRING}}"
+   <a href="{{request.path}}?listokay=true&{{request.META.QUERY_STRING}}"
       title="Select List" >
      This list is fine as-is!
    </a>
  </td>
 </tr>
+{% endif %}
 </table>
+
 <a href="javascript:history.go(-1);" title="Go back where you were">
     [ Go back and edit your search ]
 </a>

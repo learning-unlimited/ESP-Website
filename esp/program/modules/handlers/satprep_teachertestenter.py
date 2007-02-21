@@ -4,7 +4,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.miniblog.models import Entry
 from esp.datatree.models import GetNode
-from esp.web.views.myesp import search_for_user
+from esp.users.views import search_for_user
 from esp.program.manipulators import SATPrepDiagManipulator
 from django import forms
 from esp.program.models import SATPrepRegInfo

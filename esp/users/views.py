@@ -76,7 +76,10 @@ def get_user_list(request, listDict, extra=''):
         if request.POST['submitform'] == 'I want to search within this list':
             getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
-                newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+                if type(getUser) == User or type(getUser) == ESPUser:
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+                else:
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, User, 'Custom user filter')
                 return (newfilterObj, True)
             else:
                 return (getUser, False)
@@ -91,7 +94,8 @@ def get_user_list(request, listDict, extra=''):
             if type(getUser) == User or type(getUser) == ESPUser:
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
             else:
-                newfilterObj = PersistentQueryFilter.getFilterFromQ(getUser, User, 'Custom user filter')
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, User, 'Custom user filter')                
+
                 
             return (newfilterObj, True)
         else:
@@ -129,25 +133,39 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 		All_Users = ESPUser.getAllOfType(user_type, False)
 
         kwargs = {}
+        kwargs_exclude = {}
 	if request.GET.has_key('userid') and len(request.GET['userid'].strip()) > 0:
             userid = -1
             try:
                 userid = int(request.GET['userid'])
             except:
                 raise ESPError(False), 'User id invalid, please enter a number.'
-            
-            kwargs = {'id': userid}
+
+            if request.GET.has_key('userid__not'):
+                kwargs_exclude = {'id': userid}
+            else:
+                kwargs = {'id': userid}
 
         else:
             for field in ['username','last_name','first_name']:
                 if request.GET.has_key(field) and len(request.GET[field].strip()) > 0:
-                    kwargs.update({'%s__iregex' % field: request.GET[field]})
-
-	if len(kwargs) == 0:
+                    if request.GET.has_key('%s__not' % field):
+                        kwargs_exclude.update({'%s__iregex' % field: request.GET[field]})
+                    else:
+                        kwargs.update({'%s__iregex' % field: request.GET[field]})
+        
+	if len(kwargs) == 0 and len(kwargs_exclude) == 0:
 		users = None
 	else:
             #assert False, kwargs
-            QSUsers = All_Users.filter(**kwargs).distinct()
+            QSUsers = All_Users
+            if len(kwargs) > 0:
+                QSUsers = QSUsers.filter(**kwargs)
+            if len(kwargs_exclude) > 0:
+                QSUsers = QSUsers.exclude(**kwargs_exclude)
+
+            QSUsers = QSUsers.distinct()
+            
             users = [ ESPUser(user) for user in QSUsers ]
 		
 
@@ -164,7 +182,16 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
             users.sort()
 
             if request.GET.has_key('listokay') and request.GET['listokay'] == 'true':
-                return (Q(**kwargs), True)
+                Q_Filter = False
+                if len(kwargs) > 0:
+                    Q_Filter = Q(**kwargs)
+                if len(kwargs_exclude) > 0:
+                    if type(Q_Filter) == Q:
+                        Q_Filter = Q_Filter & QNot(Q(**kwargs_exclude))
+                    else:
+                        Q_Filter = QNot(Q(**kwargs_exclude))
+                        
+                return (Q_Filter, True)
             
             context = {'users': users, 'extra':str(extra), 'list': returnList}
 

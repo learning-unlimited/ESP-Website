@@ -21,6 +21,16 @@ urlpatterns_list =  [(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'do
                      (r'^admin/', include('django.contrib.admin.urls')),
                      # Uncomment this for @login_required:
                      (r'^accounts/login/$', 'django.contrib.auth.views.login'),
+
+                     
+                     # Mini-Blog pages
+                     # These are broken...must fix (axiak)
+                     #(r'^(?P<subsection>teach|learn|help)/(?P<url>.*)/blog/$', 'esp.miniblog.views.show_miniblog', {'section_redirect_keys': section_redirect_keys}),
+                     (r'^blog/(?P<url>.*)/post/$', 'esp.miniblog.views.post_miniblog'),
+                     (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog_entry'),
+                     (r'^blog/$', 'esp.miniblog.views.show_miniblog', {'url': '', 'section_redirect_keys': section_redirect_keys}),
+
+
                     ]
 
 # All of these *must* reside in esp.web.views
@@ -43,13 +53,6 @@ esppatterns_list = [
 
     # JSON
     (r'json/teachers/$', 'teacher_lookup'),
-
-    # Mini-Blog pages
-    # These are broken...must fix (axiak)
-    #(r'^(?P<subsection>teach|learn|help)/(?P<url>.*)/blog/$', 'esp.miniblog.views.show_miniblog', {'section_redirect_keys': section_redirect_keys}),
-    #(r'^blog/(?P<url>.*)/post/$', 'esp.miniblog.views.post_miniblog'),
-    #(r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog_entry'),
-    #(r'^blog/$', 'esp.miniblog.views.show_miniblog', {'url': '', 'section_redirect_keys': section_redirect_keys}),
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages

@@ -27,23 +27,27 @@ Please search for a user: <br />
 <input type="hidden" name="extra" value="{{extra}}" />
 <input type="hidden" name="op" value="usersearch" />
 <label for="userid"><strong>User ID:</strong></label>
-<input type="text" size="6" name="userid" id="userid" />
+<input type="text" size="6" name="userid" id="userid" /> &nbsp; 
+  (<label for="userid_not">Not?</label> <input type="checkbox" value="true" name="userid__not" id="userid_not" />)
 <br />
 
 <br />
 <label for="username"><strong>Username:</strong></label>
-<input type="text" size="30" name="username" id="username" />
+<input type="text" size="30" name="username" id="username" /> &nbsp; 
+  (<label for="username_not">Not?</label> <input type="checkbox" value="true" name="username__not" id="username_not"  />)
 <br />
 
 <br />
 <label for="last_name"><strong>Last Name:</strong></label>
-<input type="text" size="30" name="last_name" id="last_name" />
+<input type="text" size="30" name="last_name" id="last_name" /> &nbsp; 
+   (<label for="last_name_not">Not?</label> <input type="checkbox" value="true" name="last_name__not" id="last_name_not"  />)
 
 <br />
 
 <br />
 <label for="first_name"><strong>First Name:</strong></label>
-<input type="text" size="30" name="first_name" id="first_name" />
+<input type="text" size="30" name="first_name" id="first_name" /> &nbsp; 
+  (<label for="first_name_not">Not?</label> <input type="checkbox" value="true" name="first_name__not" id="first_name_not" />)
 <br />
 <br />
 <input type="submit" value="Search for user" name="submitform" />

@@ -40,5 +40,5 @@ class ListGenModule(ProgramModuleObj):
 
         users.sort()
         
-        return render_to_response(self.baseDir()+('list_%s.html'%strtype), request, (prog, tl), {'users': users})
+        return render_to_response(self.baseDir()+('list_%s.html'%strtype), request, (prog, tl), {'users': users, 'listdesc': filterObj.useful_name})
                                                                                                  
