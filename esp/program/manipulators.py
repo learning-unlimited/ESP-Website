@@ -72,7 +72,6 @@ class TeacherInfoManipulator(forms.Manipulator):
             forms.TextField(field_name="school", length=24, maxlength=128),
             forms.TextField(field_name="major", length=10, maxlength=32),
             HTMLDateField(field_name="dob", is_required=False),
-            forms.LargeTextField(field_name="bio", is_required=True, validator_list=[validators.isNotEmpty])
             )
 
 class EducatorInfoManipulator(forms.Manipulator):
