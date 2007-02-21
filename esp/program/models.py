@@ -42,6 +42,18 @@ class ArchiveClass(models.Model):
 
 	#def __str__(self):
 	#	return '"%s" taught by "%s"' % (self.title, self.teacher)
+
+	def __cmp__(self, other):
+		test = cmp(self.year, other.year)
+		if test != 0:
+			return test
+		test = cmp(self.date, other.date)
+		if test != 0:
+			return test
+		test = cmp(self.title, other.title)
+		if test != 0:
+			return test
+		return 0
 	
 	def heading(self):
 		return ({'label': 'Teacher', 'value': self.teacher},
@@ -62,10 +74,10 @@ class ArchiveClass(models.Model):
 	def getForUser(user):
 		""" Get a list of archive classes for a specific user. """
 		from django.db.models import Q
-		Q_Class = Q(teacher__icontains = user.first_name) | \
-			  Q(teacher__icontains = user.last_name)  | \
-			  Q(teacher_ids__icontains = ('|%s|' % user.id))
-		return ArchiveClass.objects.filter(Q_Class)
+		Q_Class = Q(teacher__icontains = (user.first_name + ' ' + user.last_name)) |\
+			   Q(teacher_ids__icontains = ('|%s|' % user.id))
+		return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')
+	
 
 	
 	
@@ -1014,7 +1026,7 @@ class TeacherBio(models.Model):
 	def save(self):
 		""" update the timestamp """
 		self.last_ts = datetime.now()
-		if self.program is None:
+		if self.program_id is None:
 			try:
 				self.program = Program.objects.get(id = 4)
 			except:

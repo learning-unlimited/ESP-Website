@@ -38,5 +38,7 @@ class ListGenModule(ProgramModuleObj):
 
         users = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
 
+        users.sort()
+        
         return render_to_response(self.baseDir()+('list_%s.html'%strtype), request, (prog, tl), {'users': users})
                                                                                                  

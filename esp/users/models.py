@@ -602,7 +602,7 @@ class TeacherInfo(models.Model):
     college = models.CharField(maxlength=128,blank=True, null=True)
     major = models.CharField(maxlength=32,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
-
+    bio = models.TextField(blank=True, null=True)
     
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year

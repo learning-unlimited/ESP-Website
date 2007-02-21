@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
 
 @login_required
-def bio_edit(request, tl, last, userid, progid = None):
+def bio_edit(request, tl, last, userid, progid = None, external = False):
 	""" Edits a teacher bio """
 	from esp.web.manipulators import TeacherBioManipulator
 
@@ -44,14 +44,16 @@ def bio_edit(request, tl, last, userid, progid = None):
 				# get the last bio for this program.
 				lastbio = TeacherBio.getLastForProgram(founduser, foundprogram)
 
-			# save the image
-			lastbio.save_picture_file(new_data['picture']['filename'], new_data['picture']['content'])
+
 			# the slug bio and bio
 			lastbio.slugbio  = new_data['slugbio']
 			lastbio.bio      = new_data['bio']
 			
 			lastbio.save()
-			
+			# save the image
+			lastbio.save_picture_file(new_data['picture']['filename'], new_data['picture']['content'])			
+			if external:
+				return True
 			return HttpResponseRedirect(lastbio.url())
 		
 	else:
