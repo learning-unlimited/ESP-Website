@@ -372,7 +372,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 return self.goToCore();
             
             new_data = request.POST.copy()
-            #assert False, new_data            
+
             errors = manipulator.get_validation_errors(new_data)
             if not errors:
                 manipulator.do_html2python(new_data)
@@ -399,19 +399,26 @@ class TeacherClassRegModule(ProgramModuleObj):
                     newclass.duration = 0.0
                 else:
                     newclass.duration = float(new_data['duration'])
+
                     
                 # datatree maintenance
                 newclass.parent_program = self.program
                 newclass.category = ClassCategories.objects.get(id=new_data['category'])
                 newclass.anchor = self.program.anchor.tree_create(['DummyClass'])
+
                 newclass.anchor.save()
+                assert False, '3'
                 newclass.enrollment = 0
                 newclass.save()
+                assert False, '4'
                 newclass.anchor.delete()
+                assert False, '5'
                 
                 nodestring = newclass.category.category[:1].upper() + str(newclass.id)
+                assert False, '6'                
                 newclass.anchor = self.program.classes_node().tree_create([nodestring])
                 newclass.anchor.friendly_name = newclass.title
+                assert False, '7'
 
                 newclass.anchor.save()
                 newclass.anchor.tree_create(['TeacherEmail'])
@@ -431,7 +438,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                 for resource in new_data.getlist('resources'):
                     tmpQsc = DataTree.objects.get(id = int(resource))
                     newclass.resources.add(tmpQsc)
-
+                    
+                assert False, 'huh'
                 # add userbits
                 newclass.makeTeacher(self.user)
                 newclass.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)

@@ -643,7 +643,6 @@ class TeacherInfo(models.Model):
         form_dict['school']          = self.college
         form_dict['major']           = self.major
         form_dict['dob']             = self.dob
-        form_dict['bio']             = self.bio
         return form_dict
     
     @staticmethod
@@ -659,7 +658,6 @@ class TeacherInfo(models.Model):
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
         teacherInfo.dob           = new_data['dob']
-        teacherInfo.bio           = new_data['bio']
         
         teacherInfo.save()
         return teacherInfo

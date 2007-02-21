@@ -58,8 +58,8 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
-    'esp.middleware.ESPErrorMiddleware',
     'esp.middleware.StatsMiddleware',
+    'esp.middleware.ESPErrorMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
