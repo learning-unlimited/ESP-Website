@@ -21,47 +21,34 @@ Please search for a user: <br />
 {% if error %}
 <p class="error">Error: No user found by that criteria.</p>
 {% endif %}
+<form action="{{ request.path }}" method="get">
 
 <br />
-<form action="{{ request.path }}" method="get">
 <input type="hidden" name="extra" value="{{extra}}" />
 <input type="hidden" name="op" value="usersearch" />
 <label for="userid"><strong>User ID:</strong></label>
 <input type="text" size="6" name="userid" id="userid" />
-<input type="submit" name="submitid" value="Search by ID" />
-</form>
 <br />
 
 <br />
-<form action="{{ request.path }}" method="get">
-<input type="hidden" name="extra" value="{{extra}}" />
-<input type="hidden" name="op" value="usersearch" />
 <label for="username"><strong>Username:</strong></label>
-<input type="text" size="10" name="username" id="username" />
-<input type="submit" name="submitid" value="Search by Username" />
-</form>
+<input type="text" size="30" name="username" id="username" />
 <br />
 
 <br />
-<form action="{{ request.path }}" method="get">
-<input type="hidden" name="extra" value="{{extra}}" />
-<input type="hidden" name="op" value="usersearch" />
-<label for="lastname"><strong>Last Name:</strong></label>
-<input type="text" size="20" name="lastname" id="lastname" />
-<input type="submit" name="submitid" value="Search by Last Name" />
-</form>
+<label for="last_name"><strong>Last Name:</strong></label>
+<input type="text" size="30" name="last_name" id="last_name" />
+
 <br />
 
 <br />
-<form action="{{ request.path }}" method="get">
-<input type="hidden" name="extra" value="{{extra}}" />
-<input type="hidden" name="op" value="usersearch" />
-<label for="firstname"><strong>First Name:</strong></label>
-<input type="text" size="20" name="firstname" id="firstname" />
-<input type="submit" name="submitid" value="Search by First Name" />
-</form>
+<label for="first_name"><strong>First Name:</strong></label>
+<input type="text" size="30" name="first_name" id="first_name" />
 <br />
+<br />
+<input type="submit" value="Search for user" name="submitform" />
 
+</form>
 
 
 {% endblock %}

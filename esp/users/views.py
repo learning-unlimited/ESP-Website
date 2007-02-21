@@ -74,7 +74,7 @@ def get_user_list(request, listDict, extra=''):
 
 
         if request.POST['submitform'] == 'I want to search within this list':
-            getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+            getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
                 return (newfilterObj, True)
@@ -86,9 +86,13 @@ def get_user_list(request, listDict, extra=''):
     # if we found a single user:
     if request.method == 'GET' and request.GET.has_key('op') and request.GET['op'] == 'usersearch':
         filterObj = PersistentQueryFilter.getFilterFromID(request.GET['extra'], User)
-        getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+        getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
         if found:
-            newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+            if type(getUser) == User or type(getUser) == ESPUser:
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+            else:
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(getUser, User, 'Custom user filter')
+                
             return (newfilterObj, True)
         else:
             return (getUser, False)
@@ -104,7 +108,7 @@ def get_user_list(request, listDict, extra=''):
     return (render_to_response('users/create_list.html', request, None, {'lists': arrLists}), False) # No, we didn't find it yet...
 
 
-def search_for_user(request, user_type='Any', extra=''):
+def search_for_user(request, user_type='Any', extra='', returnList = False):
 	""" Interface to search for a user. If you need a user, just use this.
 	  Returns (user or response, user returned?) """
 
@@ -124,27 +128,27 @@ def search_for_user(request, user_type='Any', extra=''):
 
 		All_Users = ESPUser.getAllOfType(user_type, False)
 
-	if request.GET.has_key('userid'):
-		userid = -1
-		try:
-			userid = int(request.GET['userid'])
-		except:
-			pass
+        kwargs = {}
+	if request.GET.has_key('userid') and len(request.GET['userid'].strip()) > 0:
+            userid = -1
+            try:
+                userid = int(request.GET['userid'])
+            except:
+                raise ESPError(False), 'User id invalid, please enter a number.'
+            
+            kwargs = {'id': userid}
 
-		QSUsers = All_Users.filter(id = userid)
-		
-	elif request.GET.has_key('username'):
-		QSUsers = All_Users.filter(username__regex= request.GET['username'])
-	elif request.GET.has_key('lastname'):
-		QSUsers = All_Users.filter(last_name__regex = request.GET['lastname'])
-	elif request.GET.has_key('firstname'):
-		QSUsers = All_Users.filter(first_name__regex = request.GET['firstname'])
+        else:
+            for field in ['username','last_name','first_name']:
+                if request.GET.has_key(field) and len(request.GET[field].strip()) > 0:
+                    kwargs.update({'%s__iregex' % field: request.GET[field]})
 
-
-	if QSUsers is None:
+	if len(kwargs) == 0:
 		users = None
 	else:
-		users = [ ESPUser(user) for user in QSUsers ]
+            #assert False, kwargs
+            QSUsers = All_Users.filter(**kwargs).distinct()
+            users = [ ESPUser(user) for user in QSUsers ]
 		
 
 	if users is not None and len(users) == 0:
@@ -152,12 +156,16 @@ def search_for_user(request, user_type='Any', extra=''):
                 users = None
         
         if users is None:
-            return (render_to_response('users/usersearch.html', request, None, {'error': error, 'extra':extra}), False)
+            return (render_to_response('users/usersearch.html', request, None, {'error': error, 'extra':extra,  'list': returnList}), False)
         if len(users) == 1:
             return (users[0], True)
         else:
 
             users.sort()
-            context = {'users': users, 'extra':str(extra)}
+
+            if request.GET.has_key('listokay') and request.GET['listokay'] == 'true':
+                return (Q(**kwargs), True)
+            
+            context = {'users': users, 'extra':str(extra), 'list': returnList}
 
             return (render_to_response('users/userpick.html', request, None, context), False)
