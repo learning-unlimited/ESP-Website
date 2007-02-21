@@ -19,8 +19,15 @@ class ListGenModule(ProgramModuleObj):
     def selectList(self, request, tl, one, two, module, extra, prog):
         """ Select the type of list that is requested. """
         from esp.users.views     import get_user_list
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        from esp.users.models    import User
+        from esp.users.models import PersistentQueryFilter
 
+        if not request.GET.has_key('filterid'):
+            filterObj, found = get_user_list(request, self.program.getLists(True))
+        else:
+            filterid  = request.GET['filterid']
+            filterObj = PersistentQueryFilter.getFilterFromID(filterid, User)
+            found     = True
         if not found:
             return filterObj
 
@@ -29,7 +36,7 @@ class ListGenModule(ProgramModuleObj):
 
         strtype = request.GET['type']
 
-        users = ESPUser.objects.filter(filterObj.get_Q()).distinct()
+        users = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
 
         return render_to_response(self.baseDir()+('list_%s.html'%strtype), request, (prog, tl), {'users': users})
                                                                                                  
