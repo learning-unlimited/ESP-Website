@@ -86,7 +86,7 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
     @needs_admin
-    def roomrosters(self, request, tl, one, two, module, extra, prog):
+    def roomschedules(self, request, tl, one, two, module, extra, prog):
         """ generate class room rosters"""
         classes = [ cls for cls in self.program.classes()
                     if cls.isAccepted()                      ]
