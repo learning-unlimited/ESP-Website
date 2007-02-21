@@ -20,6 +20,15 @@ function getListDescription(list, key, def) {
   return def;
 }
 
+function enableRow(title) {
+   select = document.getElementById('operator_'+title);
+   if (select.value == 'ignore') {
+       select.selectedIndex = 1;
+       select.value = 'and';
+       switchrow(select, title);
+       generateSentence();
+   }
+}
 
 function generateSentence() {
 
@@ -64,8 +73,20 @@ function switchrow(object, title) {
 function switchnot(not, title) {
    document.getElementById('are_'+title).checked = !not;
    document.getElementById('arenot_'+title).checked = not;
+   enableRow(title);
    generateSentence();
 }
+
+/* check to make sure the base list is not null. */
+function checkForNobody() {
+   if (document.getElementById('base_list').value == '') {
+       alert('You must select a "beginning of the sentence".');
+       document.getElementById('base_list').focus();
+       return false;
+   }
+   return true;
+}
+
 //-->
 </script>
 {% endblock %}
@@ -89,7 +110,7 @@ function switchnot(not, title) {
 Please generate a list of users from the options below.
 
 
-<form action="{{request.path}}" method="post" name="comm">
+<form action="{{request.path}}" onsubmit="return checkForNobody();" method="post" name="comm">
 <p>
 <em>(If you feel there's a list omitted from this list or this interface is too hard to use, please email <tt>web@esp.mit.edu</tt> with questions!)</em>
 <br />
@@ -130,7 +151,8 @@ And continue adding to the sentence below (the final sentence is at the bottom f
    <input class="notchooser" onchange="generateSentence();" type="radio" name="not_{{dblist.id}}" value="ident" id="are_{{dblist.id}}" checked="checked" disabled="disabled" />
  </td>
  <td class="notchooser" onclick="switchnot(true, '{{dblist.id|addslashes}}');">
-  <input class="notchooser" type="radio" name="not_{{dblist.id}}" onchange="generateSentence();" id="arenot_{{dblist.id}}" value="not" disabled="disabled" />
+  <input class="notchooser" type="radio" name="not_{{dblist.id}}" onchange="generateSentence();" id="arenot_{{dblist.id}}" value="not" disabled="disabled"
+         onclick="enableRow('{{dblist.id|addslashes}}');" />
  </td>
  <td>
    {{ dblist.description }}
