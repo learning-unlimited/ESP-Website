@@ -21,7 +21,7 @@ class TeacherBioModule(ProgramModuleObj):
     def biography(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
         from esp.web.views import bio_edit
-        result = bio_edit(request, tl, self.user.last_name, self.user.id, self.program.id, True)
+        result = bio_edit(request, tl, self.user.last_name, self.user.first_name, self.user.getUserNum(), self.program.id, True)
 
         if result is not True:
             return result

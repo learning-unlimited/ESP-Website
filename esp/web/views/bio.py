@@ -9,12 +9,11 @@ from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
 
 @login_required
-def bio_edit(request, tl, last, userid, progid = None, external = False):
+def bio_edit(request, tl, last, first, usernum=0, progid = None, external = False):
 	""" Edits a teacher bio """
 	from esp.web.manipulators import TeacherBioManipulator
-
 	
-	founduser    = get_from_id(userid, ESPUser, 'user')
+	founduser = ESPUser.getUserFromNum(first, last, usernum)
 
 	if request.user.id != founduser.id and request.user.is_staff != True:
 		raise ESPError(False), 'You are not authorized to edit this biography.'
@@ -43,7 +42,8 @@ def bio_edit(request, tl, last, userid, progid = None, external = False):
 			if foundprogram is not None:
 				# get the last bio for this program.
 				progbio = TeacherBio.getLastForProgram(founduser, foundprogram)
-
+			else:
+				progbio = lastbio
 
 			# the slug bio and bio
 			progbio.slugbio  = new_data['slugbio']
@@ -75,18 +75,19 @@ def bio_edit(request, tl, last, userid, progid = None, external = False):
 	
 	
 
-def bio(request, tl, last, userid):
+def bio(request, tl, last, first, usernum = 0):
 	""" Displays a teacher bio """
-	
-	founduser = get_from_id(userid, ESPUser, 'user')
+
+	founduser = ESPUser.getUserFromNum(first, last, usernum)
+
 
 	bio = TeacherBio.getLastBio(founduser)
 	if bio.picture is None:
 		bio.picture = 'not-available.jpg'
 		
-	if bio.slugbio is None:
+	if bio.slugbio is None or len(bio.slugbio.strip()) == 0:
 		bio.slugbio = 'ESP Teacher'
-	if bio.bio     is None:
+	if bio.bio is None or len(bio.bio.strip()) == 0:
 		bio.bio     = 'Not Available.'
 
 

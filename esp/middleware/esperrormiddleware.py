@@ -37,8 +37,6 @@ class ESPErrorMiddleware(object):
 
         debug = settings.DEBUG  # get the debug value
 
-        debug = False
-
         if debug:
             return view_func(request, *view_args, **view_kwargs)
         else:

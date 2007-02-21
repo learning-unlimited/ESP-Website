@@ -86,6 +86,36 @@ class ESPUser(User, AnonymousUser):
             else:
                 return all_classes.filter(parent_program = program)
 
+
+    def getUserNum(self):
+        """ Returns the "number" of a user, which is distinct from id.
+            It's like the index if you search by lsat and first name."""
+        
+        users = User.objects.filter(last_name__iexact = self.last_name,
+                                    first_name__iexact = self.first_name).order_by('id')
+        i = 0
+        for user in users:
+            if user.id == self.id:
+                break
+            i += 1
+            
+        return (i and i or '')
+
+    @staticmethod
+    def getUserFromNum(first, last, num):
+        if num == '':
+            num = 0
+        try:
+            num = int(num)
+        except:
+            raise ESPError(), 'Could not find user "%s %s"' % (first, last)
+            
+        users = User.objects.filter(last_name__iexact = last,
+                                    first_name__iexact = first).order_by('id')
+        if len(users) <= num:
+            raise ESPError(), 'Could not find user "%s %s"' % (first, last)
+        
+        return ESPUser(users[num])
         
     @staticmethod
     def getTypes():
