@@ -1,0 +1,78 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Edit Teacher Biography{% endblock %}
+
+{% block subsection_name %}Teacher Biography{% endblock %}
+
+{% block content %}
+
+<style type="text/css">
+
+.required { border: 2px solid black; }
+
+.form_error { font-size: 80%; font-style: italic; color: #C00; }
+
+label { font-family: Arial, Lucida, Helvetica, sans-serif; font-size: 0.8em; font-weight: normal;}
+label.groupheader { font-size: 1.2em; font-weight: bold; }
+#divmaintext table td { vertical-align: top; }
+
+</style>
+<br /><br />
+<h1>Teacher Biography - Edit Bio of {{ user.name }}</h1>
+
+
+<p>
+Please complete the form to update your biography:
+</p>
+
+{% if form.has_errors %}
+<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
+{% endif %}
+
+
+<form enctype="multipart/form-data" action="{{request.path}}" method="post">
+<table cellpadding="2" align="center" border="0">
+
+<tr>
+ <td><label for="id_slugbio">Description of you in 10 words or less:<br />
+       <small>(e.g. "MIT sophomore studying Architecture." or "Lifelong teacher of mathematics at the highschool level.")</small></label></td>
+ <td>{{ form.slugbio }} {% if form.slugbio.errors %}
+   <br /><span class="form_error">{{ form.slugbio.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_bio">Biographical Sketch:<br />
+ </label></td>
+
+ <td>{{ form.bio }} {% if form.bio.errors %}
+   <br /><span class="form_error">{{ form.bio.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_picture">Picture of you:<br />
+       <small>(if available)</small></label></td>
+ <td>{{ form.picture }}<br />
+     {% if picture_file %}
+     <img src="/media/uploaded/{{ picture_file}}" title="Your current photo." alt="Your current photo" />
+     {% endif %}
+     {% if form.picture.errors %}
+   <br /><span class="form_error">{{ form.picture.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+</table>
+<br />
+<input type="hidden" name="bio_submitted" value="true" />
+<center><input type='submit' value='Save your Biography' /></center>
+
+<br />
+</form>
+
+</div>
+
+{% endblock %}

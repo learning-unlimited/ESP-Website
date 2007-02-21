@@ -3,6 +3,24 @@ import django.shortcuts
 from esp.web.util.navBar import makeNavBar
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
+from esp.middleware import ESPError
+
+def get_from_id(id, module, strtype = 'object', error = True):
+    """ This function will get an object from its id, and return an appropriate error if need be. """
+    from esp.users.models import ESPUser
+
+    try:
+        newid    = int(id)
+        foundobj = module.objects.get(id = newid)
+        if module == ESPUser:
+            foundobj = ESPUser(foundobj)
+    except:
+        if error:
+            raise ESPError(False), 'Could not find the %s with id %s.' % (strtype, id)
+        return None
+    return foundobj
+    
+
 
 def render_to_response(template, requestOrContext, prog = None, context = None):
     # if there are only two arguments

@@ -38,9 +38,10 @@ class ArchiveClass(models.Model):
 	teacher = models.CharField(maxlength=1024)
 	title = models.CharField(maxlength=1024)
 	description = models.TextField()
+	teacher_ids = models.CharField(maxlength=256, blank=True, null=True)
 
-	def __str__(self):
-		return '"%s" taught by "%s"' % (self.title, self.teacher)
+	#def __str__(self):
+	#	return '"%s" taught by "%s"' % (self.title, self.teacher)
 	
 	def heading(self):
 		return ({'label': 'Teacher', 'value': self.teacher},
@@ -51,6 +52,22 @@ class ArchiveClass(models.Model):
 	def content(self):
 		return self.description
 
+	def __str__(self):
+		from django.template import loader, Context
+		t = loader.get_template('models/ArchiveClass.html')
+		return t.render({'class': self})
+		
+	
+	@staticmethod
+	def getForUser(user):
+		""" Get a list of archive classes for a specific user. """
+		from django.db.models import Q
+		Q_Class = Q(teacher__icontains = user.first_name) | \
+			  Q(teacher__icontains = user.last_name)  | \
+			  Q(teacher_ids__icontains = ('|%s|' % user.id))
+		return ArchiveClass.objects.filter(Q_Class)
+
+	
 	
 class Program(models.Model):
 	""" An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
@@ -894,19 +911,6 @@ class SATPrepRegInfo(models.Model):
 	class Admin:
 		pass
 
-class TeacherBio(models.Model):
-	""" A biography of an ESP teacher """
-	user = models.ForeignKey(User)
-	content = models.TextField()
-
-	def __str__(self):
-		return self.user.first_name + ' ' + self.user.last_name + ', a Biography'
-	
-	def html(self):
-		return markdown(self.content)
-	
-	class Admin:
-		pass
 
 class RegistrationProfile(models.Model):
 	""" A student registration form """
@@ -982,3 +986,54 @@ class RegistrationProfile(models.Model):
 	class Admin:
 		pass
 
+class TeacherBio(models.Model):
+	""" This is the biography of a teacher."""
+
+	program = models.ForeignKey(Program)
+	user    = models.ForeignKey(User)
+	bio     = models.TextField(blank=True, null=True)
+	slugbio = models.CharField(maxlength=50, blank=True, null=True)
+	picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "bio_pictures/%y_%m/",blank=True, null=True)
+	picture_height = models.IntegerField(blank=True, null=True)
+	picture_width  = models.IntegerField(blank=True, null=True)
+	last_ts = models.DateTimeField(auto_now = True)	
+
+	class Admin:
+		pass
+
+	@staticmethod
+	def getLastBio(user):
+		bios = TeacherBio.objects.filter(user__exact=user).order_by('-last_ts','-id')
+		if len(bios) < 1:
+			lastBio = TeacherBio()
+			lastBio.user = user
+		else:
+			lastBio = bios[0]
+		return lastBio
+
+	def save(self):
+		""" update the timestamp """
+		self.last_ts = datetime.now()
+		if self.program is None:
+			try:
+				self.program = Program.objects.get(id = 4)
+			except:
+				raise ESPError(), 'Error: There needs to exist an administrive program with id of 4.'
+
+		super(TeacherBio, self).save()
+
+	def url(self):
+		return '/teach/teachers/%s/%s/bio.html' % \
+		       (self.user.last_name, self.user.id)
+
+	@staticmethod
+	def getLastForProgram(user, program):
+		bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts','-id')
+
+		if bios.count() < 1:
+			lastBio         = TeacherBio()
+			lastBio.user    = user
+			lastBio.program = program
+		else:
+			lastBio = bios[0]
+		return lastBio

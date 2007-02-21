@@ -1,0 +1,28 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Printables{% endblock %}
+
+{% block subsection_name %}Printing Options{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+<br /><br />
+<h1>Generate Lists for {{program.niceName}}</h1>
+
+<p style="text-align: center">
+You can use this to get a list of users for a specific purpose.<br />
+Please select which format you would like this list:
+</p>
+
+<li><a href="{{request.path}}?type=html&filterid={{filterid}}" title="Normal HTML">Normal HTML</a></li>
+
+
+</ul>
+
+
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Edit Teacher Biography{% endblock %}
+
+{% block subsection_name %}Teacher Biography{% endblock %}
+
+{% block stylesheets %}
+{{block.super}}
+<style type="text/css">
+
+.required { border: 2px solid black; }
+
+.form_error { font-size: 80%; font-style: italic; color: #C00; }
+
+label { font-family: Arial, Lucida, Helvetica, sans-serif; font-size: 0.8em; font-weight: normal;}
+label.groupheader { font-size: 1.2em; font-weight: bold; }
+#divmaintext table td { vertical-align: top; }
+
+#divmaintext hr { border: 1px solid black; }
+#divmaintext img { border: 1px solid black; }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 120%;">ESP Biography</h1>
+<br /><br />
+<h2>{{user.name|upper}}, {{bio.slugbio}}</h2>
+<hr />
+<br />
+<br />
+<table cellspacing=0 cellpadding="5" border="0">
+<tr>
+  <td width="300">
+  <strong>Major:</strong> {{user.getLastProfile.teacher_info.major|default:"Not available."}} <br /><br />
+  <strong>College:</strong> {{user.getLastProfile.teacher_info.college|default:"Not available."}} <br /><br />
+  <strong>Year of Graduation:</strong> {{user.getLastProfile.teacher_info.graduation_year|default:"Not available."}} <br /><br />
+  <strong>Email Address:</strong> <tt style="text-size: 130%;">{{user.username}}@esp.mit.edu</tt>
+      
+
+  </td>
+  <td>
+   <img src="/media/uploaded/{{bio.picture}}" title="Picture of {{user.name}}"  
+        alt="Picture of {{user.name}}" align="right" />
+  </td>
+</tr>
+<tr>
+  <td colspan="2">
+  <h2>Brief Biographical Sketch:</h2>
+  <p>
+    {{bio.bio|escape|linebreaks }}
+  </p>
+  <br />
+  <br />
+  <h2>Past Classes</h2>
+  <br />
+  {{ classes|join:"<br /><br />" }}
+  </td>
+  
+</tr>
+</table>
+
+{% endblock %}

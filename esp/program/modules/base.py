@@ -95,6 +95,7 @@ class ProgramModuleObj(models.Model):
         modulesList = esp.program.modules.models.__dict__
 
         if not mod.handler or not modulesList.has_key(mod.handler):
+            return None
             assert False, 'Module name "%s" not in global scope.' % mod.handler
 
         ModuleClass = modulesList[mod.handler]

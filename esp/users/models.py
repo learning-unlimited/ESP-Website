@@ -12,7 +12,7 @@ from django.core.cache import cache
 from datetime import datetime
 from esp.middleware import ESPError
 from django.template.defaultfilters import urlencode
-
+    
 def user_get_key(user):
     """ Returns the key of the user, regardless of anything about the user object. """
     if user is None or type(user) == AnonymousUser or \
@@ -602,8 +602,7 @@ class TeacherInfo(models.Model):
     college = models.CharField(maxlength=128,blank=True, null=True)
     major = models.CharField(maxlength=32,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
-    bio = models.TextField(blank=True, null=True)
-    slugbio = models.CharField(maxlength=50, blank=True, null=True)
+
     
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
@@ -983,4 +982,5 @@ class DBList(object):
     
     def __str__(self):
         return self.key
+
 
