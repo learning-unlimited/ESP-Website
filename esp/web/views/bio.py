@@ -42,19 +42,23 @@ def bio_edit(request, tl, last, userid, progid = None, external = False):
 		if not errors:
 			if foundprogram is not None:
 				# get the last bio for this program.
-				lastbio = TeacherBio.getLastForProgram(founduser, foundprogram)
+				progbio = TeacherBio.getLastForProgram(founduser, foundprogram)
 
 
 			# the slug bio and bio
-			lastbio.slugbio  = new_data['slugbio']
-			lastbio.bio      = new_data['bio']
+			progbio.slugbio  = new_data['slugbio']
+			progbio.bio      = new_data['bio']
 			
-			lastbio.save()
+			progbio.save()
 			# save the image
-			lastbio.save_picture_file(new_data['picture']['filename'], new_data['picture']['content'])			
+			if new_data.has_key('picture'):
+				progbio.save_picture_file(new_data['picture']['filename'], new_data['picture']['content'])
+			else:
+				progbio.picture = lastbio.picture
+				progbio.save()
 			if external:
 				return True
-			return HttpResponseRedirect(lastbio.url())
+			return HttpResponseRedirect(progbio.url())
 		
 	else:
 		errors = {}
