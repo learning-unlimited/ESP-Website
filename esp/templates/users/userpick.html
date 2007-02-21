@@ -38,7 +38,7 @@ Please select the user from the list below:
  <td>{{user.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
  <td>{{user.getLastProfile.contact_user.phone_cell}}/{{user.getLastProfile.contact_user.phone_day}}</td>
  <td>{{user.id}}</td>
- <td><a href="{{request.path}}?userid={{user.id}}" 
+ <td><a href="{{request.path}}?userid={{user.id}}&op=usersearch&extra={{extra|urlencode}}" 
       title="Click to select {{user.username}}">Select User</a>
   </td>
 </tr>

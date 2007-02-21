@@ -14,7 +14,8 @@
 <h1> Search For User</h1>
 
 <p style="text-align: center">
-Please search for a user:
+Please search for a user: <br />
+(Yes, Regular expressions are allowed.)
 </p>
 
 {% if error %}
@@ -23,6 +24,8 @@ Please search for a user:
 
 <br />
 <form action="{{ request.path }}" method="get">
+<input type="hidden" name="extra" value="{{extra}}" />
+<input type="hidden" name="op" value="usersearch" />
 <label for="userid"><strong>User ID:</strong></label>
 <input type="text" size="6" name="userid" id="userid" />
 <input type="submit" name="submitid" value="Search by ID" />
@@ -31,6 +34,8 @@ Please search for a user:
 
 <br />
 <form action="{{ request.path }}" method="get">
+<input type="hidden" name="extra" value="{{extra}}" />
+<input type="hidden" name="op" value="usersearch" />
 <label for="username"><strong>Username:</strong></label>
 <input type="text" size="10" name="username" id="username" />
 <input type="submit" name="submitid" value="Search by Username" />
@@ -39,6 +44,8 @@ Please search for a user:
 
 <br />
 <form action="{{ request.path }}" method="get">
+<input type="hidden" name="extra" value="{{extra}}" />
+<input type="hidden" name="op" value="usersearch" />
 <label for="lastname"><strong>Last Name:</strong></label>
 <input type="text" size="20" name="lastname" id="lastname" />
 <input type="submit" name="submitid" value="Search by Last Name" />
@@ -47,6 +54,8 @@ Please search for a user:
 
 <br />
 <form action="{{ request.path }}" method="get">
+<input type="hidden" name="extra" value="{{extra}}" />
+<input type="hidden" name="op" value="usersearch" />
 <label for="firstname"><strong>First Name:</strong></label>
 <input type="text" size="20" name="firstname" id="firstname" />
 <input type="submit" name="submitid" value="Search by First Name" />

@@ -15,6 +15,10 @@ def bio_edit(request, tl, last, first, usernum=0, progid = None, external = Fals
 	
 	founduser = ESPUser.getUserFromNum(first, last, usernum)
 
+	if not founduser.isTeacher():
+		raise ESPError(False), '%s is not a teacher of ESP.' % \
+		                       (founduser.name())
+
 	if request.user.id != founduser.id and request.user.is_staff != True:
 		raise ESPError(False), 'You are not authorized to edit this biography.'
 		
@@ -80,7 +84,10 @@ def bio(request, tl, last, first, usernum = 0):
 
 	founduser = ESPUser.getUserFromNum(first, last, usernum)
 
-
+	if not founduser.isTeacher():
+		raise ESPError(False), '%s is not a teacher of ESP.' % \
+		                       (founduser.name())
+	
 	bio = TeacherBio.getLastBio(founduser)
 	if bio.picture is None:
 		bio.picture = 'not-available.jpg'

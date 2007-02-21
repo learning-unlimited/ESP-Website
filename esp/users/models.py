@@ -12,7 +12,8 @@ from django.core.cache import cache
 from datetime import datetime
 from esp.middleware import ESPError
 from django.template.defaultfilters import urlencode
-    
+
+
 def user_get_key(user):
     """ Returns the key of the user, regardless of anything about the user object. """
     if user is None or type(user) == AnonymousUser or \
@@ -314,6 +315,9 @@ class UserBit(models.Model):
             UserBit.updateCache(None)
         else:
             UserBit.updateCache(self.user.id)
+
+        if self.startdate is None or self.startdate == '':
+            self.startdate = datetime.now()
 
         super(UserBit, self).save()
 

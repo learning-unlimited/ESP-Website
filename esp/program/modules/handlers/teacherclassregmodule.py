@@ -104,9 +104,9 @@ class TeacherClassRegModule(ProgramModuleObj):
 
 
     def teacherDesc(self):
-        return {'class_approved': """Teachers not teaching an approved class.""",
-                'class_proposed': """Teachers not teaching a class which has yet to be reviewed.""",
-                'class_rejected': """Teachers not teaching a rejected class."""}
+        return {'class_approved': """Teachers teaching an approved class.""",
+                'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
+                'class_rejected': """Teachers teaching a rejected class."""}
 
     
 

@@ -4,7 +4,7 @@ from django.db.models.query import Q, QNot
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User
 from esp.web.util     import render_to_response
 
-def get_user_list(request, listDict):
+def get_user_list(request, listDict, extra=''):
     """ Get a list of users from some complicated mixture of other lists.
         The listDict must be of the form:
           {'list1_key': {'list:         Q_Object,
@@ -72,7 +72,26 @@ def get_user_list(request, listDict):
 
         filterObj = PersistentQueryFilter.getFilterFromQ(curList, User, request.POST['finalsent'])
 
+
+        if request.POST['submitform'] == 'I want to search within this list':
+            getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+            if found:
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+                return (newfilterObj, True)
+            else:
+                return (getUser, False)
+
         return (filterObj, True) # We got the list, return it.
+
+    # if we found a single user:
+    if request.method == 'GET' and request.GET.has_key('op') and request.GET['op'] == 'usersearch':
+        filterObj = PersistentQueryFilter.getFilterFromID(request.GET['extra'], User)
+        getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+        if found:
+            newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+            return (newfilterObj, True)
+        else:
+            return (getUser, False)
 
     # we're going to prepare a list to send out.
     arrLists = []
@@ -83,3 +102,62 @@ def get_user_list(request, listDict):
     arrLists.sort(reverse=True) 
 
     return (render_to_response('users/create_list.html', request, None, {'lists': arrLists}), False) # No, we didn't find it yet...
+
+
+def search_for_user(request, user_type='Any', extra=''):
+	""" Interface to search for a user. If you need a user, just use this.
+	  Returns (user or response, user returned?) """
+
+	users = None
+	error = False
+	QSUsers = None
+
+
+	# Get the "base list" consisting of all the users of a specific type, or all the users.
+	if type(user_type) != str:
+		All_Users = user_type
+	elif user_type == 'All':
+		All_Users = ESPUser.objects.all()
+	else:
+		if user_type not in ESPUser.getTypes():
+                    raise ESPUser(), 'user_type must be one of '+str(ESPUser.getTypes())
+
+		All_Users = ESPUser.getAllOfType(user_type, False)
+
+	if request.GET.has_key('userid'):
+		userid = -1
+		try:
+			userid = int(request.GET['userid'])
+		except:
+			pass
+
+		QSUsers = All_Users.filter(id = userid)
+		
+	elif request.GET.has_key('username'):
+		QSUsers = All_Users.filter(username__regex= request.GET['username'])
+	elif request.GET.has_key('lastname'):
+		QSUsers = All_Users.filter(last_name__regex = request.GET['lastname'])
+	elif request.GET.has_key('firstname'):
+		QSUsers = All_Users.filter(first_name__regex = request.GET['firstname'])
+
+
+	if QSUsers is None:
+		users = None
+	else:
+		users = [ ESPUser(user) for user in QSUsers ]
+		
+
+	if users is not None and len(users) == 0:
+		error = True
+                users = None
+        
+        if users is None:
+            return (render_to_response('users/usersearch.html', request, None, {'error': error, 'extra':extra}), False)
+        if len(users) == 1:
+            return (users[0], True)
+        else:
+
+            users.sort()
+            context = {'users': users, 'extra':str(extra)}
+
+            return (render_to_response('users/userpick.html', request, None, context), False)

@@ -14,6 +14,10 @@
   <br />
   <div class="teachername"><span>{{ item.teacher.name }}</span></div>
   <br />
+  <div class="teachername">Class Email: <tt>{{item.cls.emailcode}}-class@esp.mit.edu</tt><br />
+Students Email: <tt>{{item.cls.emailcode}}-students@esp.mit.edu</tt>
+  </div>
+  <br />
   <br />
   <table align="center" class="pretty" cellspacing="0" cellpadding="3px">
     <tr>
@@ -23,13 +27,14 @@
       <th>#</th>
       <th>Student ID</th>
       <th>Student Name</th>
-      <th>High School YOG</th>
+      <th>Grade</th>
     </tr>{% for student in item.cls.students %}
     <tr>
       <td align="right">{{ forloop.counter }}</td>
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
-      <td>{{ student.getLastProfile.student_info.graduation_year }}&nbsp;</td>
+      <td>
+          {{ student.getGrade }}</td>
     </tr>
     {% endfor %}
   </table>

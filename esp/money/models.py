@@ -40,6 +40,12 @@ class Transaction(models.Model):
     last_ts = models.DateTimeField(default=datetime.now())
     update_ts = models.DateTimeField(default=datetime.now())
 
+    def pretty_amount(self):
+	if self.amount is None:
+		return 'No transaction took place.'
+	else:
+		return '$%02.2f' % self.amount
+
     def __str__(self):
         return str(self.line_item) + ': $' + str(self.amount) + ' <' + str(self.fbo) + '>'
 

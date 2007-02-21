@@ -1,0 +1,25 @@
+<div class="studentreceipt">
+  <div style="height: 1.5in;">&nbsp;<!-- White space --></div>
+
+  <div style="font-size: 2em;">Receipt of Payment for <strong>{{program.niceName }}</strong></div>
+  <br />
+  <br />
+  <br />
+  <strong>Total Amount:</strong> {{receipt.transaction.pretty_amount }}<br />
+  <strong>Payment Type:</strong> {{receipt.transaction.payment_type.description  }}<br />
+  <br />
+  Payed for: <br />
+  <tt style="font-size: 150%">
+  Name: {{ receipt.user.name }} <br />
+  Grade: {{receipt.user.getGrade }}  <br />
+  DOB:   {{receipt.user.getLastProfile.student_info.dob|date:"m/d/Y"}} <br />
+  </tt>
+ 
+  <br />
+  <br />
+  
+  <tt style="font-size: 70%">
+  Reciept generated on {% now "jS F Y H:i"%}.
+  </tt>
+
+</div>

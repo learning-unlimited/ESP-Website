@@ -33,6 +33,7 @@ body { font-family: georgia; }
 
 <table class="pretty" cellspacing="0">
 <tr>
+   <th>Checked In?</th>
    <th>Paid?</th>
    <th>Medical?
    <th>Liability?</th>
@@ -42,6 +43,8 @@ body { font-family: georgia; }
 </tr>
 {% for student in students %}
 <tr>
+   <td><img src="/media/images/nocheckmark.gif"
+        style="border: 2px solid black;" /></td>
    <td><img src="/media/images/nocheckmark.gif"
         style="border: 2px solid black;" /></td>
    <td><img src="/media/images/nocheckmark.gif"

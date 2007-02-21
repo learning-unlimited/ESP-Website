@@ -59,9 +59,14 @@
 <br />
 {% if not isConfirmed and coremodule.deadline_met %}
 <center>
+
 <div class="errormsg">
+{% if not completedAll %}
+Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Save</em> button below (it will be active at this point).
+{% else %}
 Please click <em>Save</em> below to confirm your registration into {{program.niceName}}.<br />
 Upon clicking this you will be given a receipt with further instructions!
+{% endif %}
 </div>
 </center>
 {% endif %}

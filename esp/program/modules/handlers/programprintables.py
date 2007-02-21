@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit
 from esp.datatree.models import GetNode
 from esp.program.models  import Class
+from esp.users.views     import get_user_list
 
 class ProgramPrintables(ProgramModuleObj):
 
@@ -26,40 +27,58 @@ class ProgramPrintables(ProgramModuleObj):
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
 
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+
+
         context = {'module': self     }
-        teachers = self.program.teachers()
+        teachers = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
         teachers.sort()
+
 
         scheditems = []
 
         for teacher in teachers:
             # get list of valid classes
-            for cls in [ cls for cls in teacher.getTaughtClasses()
-                         if cls.parent_program == self.program
-                         and cls.isAccepted()                  ]:
+            classes = [ cls for cls in teacher.getTaughtClasses()
+                    if cls.parent_program == self.program
+                    and cls.isAccepted()                       ]
+            # now we sort them by time/title
+            classes.sort()            
+            for cls in classes:
             
                 scheditems.append({'name': teacher.name(),
                                    'cls' : cls})
 
         context['scheditems'] = scheditems
+
         return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
         
     @needs_admin
     def studentschedules(self, request, tl, one, two, module, extra, prog):
-        """ generate teacher schedules """
+        """ generate student schedules """
+
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
 
         context = {'module': self     }
-        students = self.program.students()
-        students.sort()
+        students = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
 
+        students.sort()
+        
         scheditems = []
 
         for student in students:
             # get list of valid classes
-            for cls in [ cls for cls in student.getEnrolledClasses()
-                         if cls.parent_program == self.program
-                         and cls.isAccepted()                  ]:
+            classes = [ cls for cls in student.getEnrolledClasses()
+                    if cls.parent_program == self.program
+                    and cls.isAccepted()                       ]
+            # now we sort them by time/title
+            classes.sort()
             
+            for cls in classes:
                 scheditems.append({'name': student.name(),
                                    'cls' : cls})
 
@@ -100,6 +119,33 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
         
 
+    @needs_admin
+    def satprepreceipt(self, request, tl, one, two, module, extra, prog):
+        from esp.money.models import Transaction
+        
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        students = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+
+        students.sort()
+
+        receipts = []
+        for student in students:
+            transactions = Transaction.objects.filter(fbo = student, anchor = self.program.anchor)
+            if transactions.count() == 0:
+                transaction = Transaction()
+            else:
+                transaction = transactions[0]
+
+            receipts.append({'user': student, 'transaction': transaction})
+
+        context['receipts'] = receipts
+        
+        return render_to_response(self.baseDir()+'studentreceipts.html', request, (prog, tl), context)
+    
     @needs_admin
     def satpreplabels(self, request, tl, one, two, module, extra, prog):
         finished_verb = GetNode('V/Finished')
@@ -157,10 +203,16 @@ class ProgramPrintables(ProgramModuleObj):
         
     @needs_admin
     def classrosters(self, request, tl, one, two, module, extra, prog):
-        """ generate teacher schedules """
+        """ generate class rosters """
+
+
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+
 
         context = {'module': self     }
-        teachers = self.program.teachers()
+        teachers = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
         teachers.sort()
 
         scheditems = []
@@ -186,8 +238,13 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def studentchecklist(self, request, tl, one, two, module, extra, prog):
         context = {'module': self}
-        students = self.program.students()
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+
+        students= [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
         students.sort()
+
         context['students'] = students
         return render_to_response(self.baseDir()+'studentchecklist.html', request, (prog, tl), context)
 

@@ -41,9 +41,11 @@
 </tr>
 
 <tr>
- <td></td>
- <td>
+ <td colspan="2">
+<span style="font-size:90%">  Forgot your password? <a href="/myesp/passwdrecover" title="Recover your password!">Click here</a> to recover it.
+</span>
  </td>
+
 </tr>
 </table>
 
