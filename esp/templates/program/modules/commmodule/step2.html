@@ -56,7 +56,7 @@ into the text of the message&mdash;the parameters are listed below.
   <label for="body">
   <strong>Body:</strong>
   </label> <br />
-  <textarea cols="60" rows="12" name="body" id="body"></textarea>
+  <textarea cols="80" rows="20" name="body" id="body"></textarea>
   <br />
 
   </td>
@@ -68,8 +68,9 @@ into the text of the message&mdash;the parameters are listed below.
       <th>Description</th>
     </tr>
     <tr>
-      <th>
-     {% templatetag openvariable %} name {% templatetag closevariable %}
+      <th><span style="white-space: nowrap;">
+     {% templatetag openvariable %}user.name{% templatetag closevariable %}
+          </span>
       </th>
       <td>User's Full Name</td>
     </tr>
