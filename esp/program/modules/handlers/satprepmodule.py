@@ -11,6 +11,24 @@ from django.db.models import Q
 
 class SATPrepModule(ProgramModuleObj):
 
+    def get_msg_vars(self, user, key):
+        user = ESPUser(user)
+        if key == 'diag_sat_scores' or key == 'old_sat_scores':
+            test_type = key.split('_')[0]
+            
+            if user.isStudent():
+                foo = SATPrepRegInfo.getLastForProgram(user, self.program)
+                scores = 'Your diagnostic SAT scores:\n'
+                for test in ['Math','Verbal','Writing']:
+                    curscore = foo.__dict__['%s_%s_score' % (test_type, test[0:4].lower())]
+                    if curscore is None or curscore < 200 or curscore > 800:
+                        scores += '%s: Not Available\n' % test
+                    else:
+                        scores += '%s: %s\n' % (test, curscore)
+                return scores
+
+        return ''
+    
     def students(self,QObject = False):
         if QObject:
             return {'satprepinfo': self.getQForUser(Q(satprepreginfo__program = self.program)),
