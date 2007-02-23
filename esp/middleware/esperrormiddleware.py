@@ -38,10 +38,10 @@ class ESPErrorMiddleware(object):
         debug = settings.DEBUG  # get the debug value
 
         if debug:
-            return view_func(request, *view_args, **view_kwargs)
+            return StatsMiddleware.process_view(request, view_func, view_args, view_kwargs)
         else:
             try:
-                return view_func(request, *view_args, **view_kwargs)
+                return StatsMiddleware.process_view(request, view_func, view_args, view_kwargs)
             except:
                 # most of this is from django.core.handlers.base
                 exc_info = sys.exc_info()
@@ -106,7 +106,7 @@ class ESPErrorMiddleware(object):
                     
                     raise exc_info[0], exc_info[1], exc_info[2]
                 
-
+            return StatsMiddleware.process_view(request, view_func, view_args, view_kwargs)
 
             
     def _get_traceback(self, exc_info=None):

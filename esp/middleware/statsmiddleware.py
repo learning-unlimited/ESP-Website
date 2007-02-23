@@ -5,7 +5,8 @@ from django.db import connection
 
 class StatsMiddleware(object):
 
-    def process_view(self, request, view_func, view_args, view_kwargs):
+    @staticmethod
+    def process_view(request, view_func, view_args, view_kwargs):
 
 
         from django.conf import settings

@@ -1,7 +1,7 @@
  # Django settings for esp project.
 
-DEBUG = True
-DISPLAYSQL = True
+DEBUG = False
+DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -54,7 +54,6 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
-    'esp.middleware.StatsMiddleware',
     'esp.middleware.ESPErrorMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

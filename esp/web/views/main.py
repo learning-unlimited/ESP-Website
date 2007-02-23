@@ -96,7 +96,7 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 			branch_name = branch_name + '/' + "/".join(target_node)
 		branch = GetNodeOrNoBits(branch_name, user=request.user)
 	except DataTree.NoSuchNodeException:
-		return ESPError("The requested directory does not exist.", log_error = False)
+		raise ESPError(False), "The requested directory does not exist."
 		
 	if url_parts:
 		root_url = "/" + "/".join(url_parts) + "/" + qsd_name
