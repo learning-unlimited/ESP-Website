@@ -256,7 +256,10 @@ def myesp_passwd(request, module):
 
 def myesp_passrecover(request, module):
 	""" Recover the password for a user """
-
+	from esp.users.models import PersistentQueryFilter
+	from django.template import loader
+	from django.db.models import Q
+	
 	new_data = request.POST.copy()
 	manipulator = UserRecoverForm()
 	
@@ -270,29 +273,32 @@ def myesp_passrecover(request, module):
 			from esp.miniblog.models import Entry
 			symbols = string.ascii_uppercase + string.digits 
 			code = "".join([random.choice(symbols) for x in range(30)])
-			user = User.objects.get(username = new_data['username'])
-			msganchor = GetNode('Q/PasswordRecovery/'+str(user.id))
+			try:
+				user = User.objects.get(username = new_data['username'])
+			except:
+				raise ESPError(), 'Could not find user %s.' % new_data['username']
 
-			
-			ub = UserBit(user = user, qsc = msganchor, verb = GetNode('V/Subscribe'))
-			ub.save()
-
+			# get the filter object
+			filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = user.id),
+									 User,
+									 'User %s' % user.username)
 			user.password = code
 			user.save()
+			
+			# create the variable modules
+			variable_modules = {'user': ESPUser(user)}
 
 
-			Entry.post( None, msganchor,
-			      '[ESP] Your Password Recovery For esp.mit.edu',
-			      """Hello,
-You (or someone imposing as you) requested to recover your account for esp.mit.edu.
+			newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
+                                                      subject    = '[ESP] Your Password Recovery For esp.mit.edu',
+                                                      recipients = filterobj,
+                                                      sender     = '"MIT Educational Studies Program" <esp@mit.edu>',
+                                                      creator    = user,
+                                                      msgtext    = loader.find_template_source('email/password_recover')[0])
 
-Please go to:
-http://esp.mit.edu/myesp/recoveremail/?code="""+code+"""
+			newmsg_request.save()
 
-to set a new password for your account.
 
-MIT Educational Studies Program
-esp.mit.edu""", True)
 			return render_to_response('users/requestrecover.html', request, GetNode('Q/Web/myesp'),{'Success': True})
 
 	else:

@@ -6,3 +6,4 @@ from esp.web.views.redirect_module import *
 from esp.web.views.sched import *
 from esp.web.views.program import *
 from esp.web.views.bio import *
+from esp.web.views.navBar import *

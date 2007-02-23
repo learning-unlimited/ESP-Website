@@ -2,7 +2,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit
+from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
 from esp.program.models  import Class
 from esp.users.views     import get_user_list
@@ -33,7 +33,7 @@ class ProgramPrintables(ProgramModuleObj):
 
 
         context = {'module': self     }
-        teachers = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+        teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct()]
         teachers.sort()
 
 

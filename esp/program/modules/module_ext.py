@@ -2,6 +2,12 @@ from django.db import models
 from esp.datatree.models import DataTree
 from esp.program.modules.base import ProgramModuleObj
 
+class SATPrepAdminModuleInfo(models.Model):
+    module        = models.ForeignKey(ProgramModuleObj)
+    num_divisions = models.IntegerField(blank=True, null=True)
+    
+        
+
 class ClassRegModuleInfo(models.Model):
     module       = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, null=True)

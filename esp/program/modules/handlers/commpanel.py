@@ -5,7 +5,7 @@ from esp.program.manipulators import SATPrepInfoManipulator
 from django import forms
 from django.core.cache import cache
 from esp.program.models import SATPrepRegInfo
-from esp.users.models   import ESPUser
+from esp.users.models   import ESPUser, User
 from django.db.models.query import Q, QNot
 from django.template.defaultfilters import urlencode
 from django.template import Context, Template
@@ -28,7 +28,7 @@ class CommModule(ProgramModuleObj):
 
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
-        from django.template import Context, Template
+        from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
         
         announcements = self.program.anchor.tree_create(['Announcements'])
@@ -43,38 +43,33 @@ class CommModule(ProgramModuleObj):
         else:
             fromemail = None
 
-        QObj = PersistentQueryFilter.getFilterFromID(filterid, User).get_Q()
+        filterobj = PersistentQueryFilter.getFilterFromID(filterid, User)
 
-        users = list(ESPUser.objects.filter(QObj).distinct())
-        users.append(self.user)
+        variable_modules = {'user': self.user, 'program': self.program}
 
-        bodyTemplate    = Template(body)
-        subjectTemplate = Template(subject)
+        newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
+                                                      subject    = subject,
+                                                      recipients = filterobj,
+                                                      sender     = fromemail,
+                                                      creator    = self.user,
+                                                      msgtext    = body)
 
-        for user in users:
-            
-            anchor = announcements.tree_create([user.id])
-            context_dict = {'name': ESPUser(user).name() }
-            context = Context(context_dict)
-            
-            newentry = Entry(content   = bodyTemplate.render(context),
-                             title     = subjectTemplate.render(context),
-                             anchor    = anchor,
-                             email     = True,
-                             sent      = False,
-                             fromuser  = self.user,
-                             fromemail = fromemail
-                            )
+        newmsg_request.save()
 
-            newentry.save()
+        foo = MessageRequest.objects.all()[0]
 
-            newentry.subscribe_user(user)
+        # now we're going to process everything
+        # nah, we'll do this later.
+        #newmsg_request.process()
+
+        numusers = filterobj.getList(User).count()
+
         from django.conf import settings
         if hasattr(settings, 'EMAILTIMEOUT') and \
                settings.EMAILTIMEOUT is not None:
             est_time = settings.EMAILTIMEOUT * len(users)
         else:
-            est_time = 1.5 * len(users)
+            est_time = 1.5 * numusers
             
 
         #        assert False, self.baseDir()+'finished.html'

@@ -13,13 +13,42 @@ class SATPrepModule(ProgramModuleObj):
 
     def students(self,QObject = False):
         if QObject:
-            return {'satprepinfo': self.getQForUser(Q(satprepreginfo__program = self.program))}
+            return {'satprepinfo': self.getQForUser(Q(satprepreginfo__program = self.program)),
+                    'satprep_mathdiag': self.getQForUser(Q(satprepreginfo__diag_math_score__isnull = False)),
+                    'satprep_mathold' : self.getQForUser(Q(satprepreginfo__old_math_score__isnull = False)),
+                    'satprep_writdiag': self.getQForUser(Q(satprepreginfo__diag_writ_score__isnull = False)),
+                    'satprep_writold': self.getQForUser(Q(satprepreginfo__old_writ_score__isnull = False)),
+                    'satprep_verbdiag': self.getQForUser(Q(satprepreginfo__diag_verb_score__isnull = False)),
+                    'satprep_verbold': self.getQForUser(Q(satprepreginfo__old_verb_score__isnull = False))}
+        
+        studentswritold = ESPUser.objects.filter(Q(satprepreginfo__old_writ_score__isnull = False)).distinct()
+        studentsmathold = ESPUser.objects.filter(Q(satprepreginfo__old_math_score__isnull = False)).distinct()
+        studentsverbold = ESPUser.objects.filter(Q(satprepreginfo__old_verb_score__isnull = False)).distinct()
+        
+        studentswritdiag = ESPUser.objects.filter(Q(satprepreginfo__diag_writ_score__isnull = False)).distinct()
+        studentsmathdiag = ESPUser.objects.filter(Q(satprepreginfo__diag_math_score__isnull = False)).distinct()
+        studentsverbdiag = ESPUser.objects.filter(Q(satprepreginfo__diag_verb_score__isnull = False)).distinct()
+
         students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
-        return {'satprepinfo': students }
+
+        return {'satprepinfo': students,
+                'satprep_mathold': studentsmathold,
+                'satprep_verbold': studentsverbold,
+                'satprep_writold': studentswritold,
+                'satprep_mathdiag': studentsmathdiag,
+                'satprep_verbdiag': studentsverbdiag,
+                'satprep_writdiag': studentswritdiag}
+    
 
     def studentDesc(self):
-        return {'satprepinfo': """Students who have filled out the SAT Prep information."""}
-
+        return {'satprepinfo': """Students who have filled out the SAT Prep information.""",
+                'satprep_mathdiag': """Students who have an SAT math diagnostic score.""",
+                'satprep_writdiag': """Students who have an SAT writing diagnostic score.""",
+                'satprep_verbdiag': """Students who have an SAT verbal diagnostic score.""",
+                'satprep_mathold': """Students who have an old SAT math score.""",
+                'satprep_writold': """Students who have an old SAT writing score.""",
+                'satprep_verbold': """Students who have an old SAT verbal score."""}
+    
     def isCompleted(self):
         
 	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)

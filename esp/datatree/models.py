@@ -3,6 +3,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from django.core.cache import cache
 from django.db.models import Q
 from django.template.defaultfilters import urlencode
+from esp.middleware import ESPError
 
 # Create your models here.
     
@@ -165,6 +166,7 @@ class DataTree(models.Model):
         if childsize > selfsize - 1:
             self.resize(childsize + selfsize + 1)
 
+
         # If we don't have any children, don't continue; all future code deals with recursing through children and making space for, or refactoring, them
         if numchildren == 0:
             return
@@ -179,11 +181,49 @@ class DataTree(models.Model):
             child.move(curr_location)
             curr_location += child.sizeof() + spacing
 
-    def resize(self, newsize):
+    def rcopy(self, other, first=True):
+        """ Recursively copy datatree branches from one section to the next.
+            Example: foo = GetNode('V')
+                     foo.rcopy(GetNode('v2')
+            Now everything in 'V'is copied to live in 'V2' """
+        # we have no children, return
+        if self.children().count() == 0:
+            return
+
+        # let's resize
+        other.resize(self.sizeof(), False)
+
+        #get a list of all descendents
+        proper_descendants =  list(self.descendants().exclude(id = self.id).order_by('parent'))
+        new_descendants = []
+        
+        for child in self.children():
+            # Create the child node
+            
+            other_child, created = DataTree.objects.get_or_create(parent = other.id,
+                                                                  name   = child.name)
+            
+            other_child.friendly_name = child.friendly_name
+            models.Model.save(other_child)
+
+            # recursive...
+            child.rcopy(other_child)
+
+        # return the other node
+        if first:
+            # since refactor() is recursive, we'll refactor at the end of the day.
+            other.refactor()
+            return other
+
+        return None
+    
+    
+
+    def resize(self, newsize, refactor = True):
         """ Resize the nested-set range for this node; refactor this tree's parent if we don't have enough room to do that """
         self.rangeend = self.rangestart + newsize
         super(DataTree, self).save()
-        if self.parent != None and self.parent != self:
+        if self.parent != None and self.parent != self and refactor:
             self.parent.refactor()
 
     def autoenlarge(self):

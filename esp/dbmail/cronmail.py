@@ -1,5 +1,5 @@
 from esp.cal.models import Event
-from esp.dbmail.models import MessageRequest, EmailRequest, send_mail
+from esp.dbmail.models import MessageRequest, EmailRequest, send_mail, TextOfEmail
 from esp.dbmail.controllers import EmailController
 from esp.users.models import UserBit
 from esp.datatree.models import GetNode
@@ -12,6 +12,35 @@ from esp.miniblog.models import Entry
 
 from django.conf import settings
 import time
+
+def process_messages():
+    """ Go through all unprocessed messages and process them. """
+    
+    messages = list(MessageRequest.objects.filter(processed = False))
+    for message in messages:
+        message.processed = True
+        message.save()
+
+    for message in messages:
+        message.process(True)
+
+
+def send_email_requests():
+    """ Go through all email requests that aren't sent and send them. """
+    mailtxts = list(TextOfEmail.objects.filter(sent__isnull = True))
+    for mailtxt in mailtxts:
+        mailtxt.sent = datetime.now()
+
+        mailtxt.save()
+        
+    if hasattr(settings, 'EMAILTIMEOUT') and settings.EMAILTIMEOUT is not None:
+        wait = settings.EMAILTIMEOUT
+    else:
+        wait = 1.5
+    
+    for mailtxt in mailtxts:
+        mailtxt.send()
+    
 
 def event_to_message(event):
     m = MessageRequest()
@@ -97,4 +126,5 @@ def send_miniblog_messages():
                       True)
             print "Sent mail to %s" % (name)
             time.sleep(wait)
+
 

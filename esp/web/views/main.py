@@ -20,7 +20,7 @@ from esp.web.views.myesp import myesp_handlers
 from esp.web.views.program import program_handlers
 from esp.web.views.archives import archive_handlers
 from esp.miniblog.views import preview_miniblog
-from esp.dblog.views import ESPError
+from esp.middleware import ESPError
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 
@@ -120,6 +120,27 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 @cache_control(private=True)
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
+
+	#rom esp.dbmail.models import MessageRequest
+
+	#oo = MessageRequest.objects.filter(processed = False)
+	# = str(foo[0])
+	
+	#from django.http import HttpResponse
+	
+	#foo = 'Q/Programs/HSSP/2007_Test/Templates/Classrooms/26-332'
+	#foo = GetNode(foo)
+	#foo.save()
+	#from esp.program.models import Program
+	#hssp = Program.objects.filter(id=7)[0]
+	#newhssp_anchor = hssp.anchor.parent.tree_create(['2007_Test'])
+	#hssp.anchor.tree_create(['Classes']).rcopy(newhssp_anchor)
+	
+	#newhssp_anchor.tree_create(['foobar'])
+	
+	#return HttpResponse('Foo')
+	#raise ESPError(), 'done'
+	
 	treeItem = "Q/Programs/" + one + "/" + two
 	prog = GetNode(treeItem).program_set.all()
 	if len(prog) < 1:

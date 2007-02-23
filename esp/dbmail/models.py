@@ -9,28 +9,52 @@ import django.core.mail
 
 from esp.datatree.models import DataTree, GetNode, StringToPerm, PermToString
 from esp.users.models import UserBit, PersistentQueryFilter, ESPUser
-from django.template import Template, VariableNode, TextNode
+from django.template import Template, VariableNode, TextNode, DebugVariableNode
 
 def send_mail(subject, message, from_email, recipient_list,
               fail_silently=False, *args, **kwargs):
-    new_list = [ x for x in recipient_list ]
+    if type(recipient_list) == str:
+        new_list = [ recipient_list ]
+    else:
+        new_list = [ x for x in recipient_list ]
     new_list.append('esparchive@gmail.com')
 
     from django.core.mail import send_mail as django_send_mail
+    print "Sent mail to %s" % str(new_list)
     django_send_mail(subject, message, from_email, new_list,
                                fail_silently, *args, **kwargs)
     
 
-# Create your models here.
+
+class ActionHandler(object):
+    """ This class passes variable keys in such a way that django templates can use them."""
+    def __init__(self, obj, user):
+        self._obj  = obj
+        self._user = user
+        
+    def __getattribute__(self, key):
+        
+        # get the object, can't use self.obj since we're doing fun stuff
+        if key == '_obj' or key == '_user':
+            return super(ActionHandler, self).__getattribute__(key)
+
+        obj = super(ActionHandler, self).__getattribute__('_obj')
+        
+        if not hasattr(obj, 'get_msg_vars'):
+            return ''
+        
+        return obj.get_msg_vars(self._user, key)
+    
 
 class MessageRequest(models.Model):
     """ An initial request to broadcast an e-mail message """
+    id = models.AutoField(primary_key=True)
     subject = models.TextField(null=True,blank=True) 
     msgtext = models.TextField(blank=True, null=True) 
     special_headers = models.TextField(blank=True, null=True) 
     recipients = models.ForeignKey(PersistentQueryFilter) # We will get the user from a query filter
     sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string 
-    creator = models.ForiegnKey(User,blank=True, null=True) # the person who sent this message
+    creator = models.ForeignKey(User) # the person who sent this message
     processed = models.BooleanField(default=False) # Have we made EmailRequest objects from this MessageRequest yet?
     email_all = models.BooleanField(default=True) # do we just want to create an emailrequest for each user?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
@@ -38,13 +62,16 @@ class MessageRequest(models.Model):
     def __str__(self):
         return str(self.subject)
 
-    def __init__(self, var_dict, *args, **kwargs):
+    @staticmethod
+    def createRequest(var_dict = None, *args, **kwargs):
+        """ To create a new MessageRequest, you should provide a dictionary of
+            the variables you want substituted, if you want any. """
+        new_request = MessageRequest(*args, **kwargs)
 
-        super(MessageRequest, self).__init__(*args, **kwargs)
-
-        self.save()
-
-        MessageVars.createMessageVars(self, var_dict) # create the message Variables
+        if var_dict is not None:
+            new_request.save()
+            MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
+        return new_request
 
     def parseSmartText(self, text, user):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
@@ -53,24 +80,23 @@ class MessageRequest(models.Model):
         text = str(text)
         user = ESPUser(user)
 
+        
+
+        context = MessageVars.getContext(self, user)
+
         newtext = ''
         template = Template(text)
-        for node in template.nodelist:
-            # loop through each node, ignore if not var or string.
-            if type(node) == TextNode:
-                newtext += node.s
-            elif type(node) == VariableNode:
-                newtext += node.filter_expression.var
 
-        return newtext
+        return template.render(context)
+
                 
         
 
-    def process(self):
+    def process(self, processoverride = False):
         """ Process this request...if it's an email, create all the necessary email requests. """
 
         # if we already processed, return
-        if self.processed:
+        if self.processed and not processoverride:
             return
 
         # there's no real thing for this...yet
@@ -98,6 +124,7 @@ class MessageRequest(models.Model):
         for user in users:
             user = ESPUser(user)
             newemailrequest = EmailRequest(target = user, msgreq = self)
+
             
             newtxt = TextOfEmail(send_to   = '%s <%s>' % (user.name(), user.email),
                                  send_from = send_from,
@@ -113,8 +140,7 @@ class MessageRequest(models.Model):
 
             
             
-  target = models.ForeignKey(User)
-      msgreq 
+
 
     class Admin:
         pass
@@ -122,8 +148,8 @@ class MessageRequest(models.Model):
 
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
-    send_to = models.CharField(length=64)  # Valid email address, "Name" <foo@bar.com>
-    send_from = models.CharField(length=64) # Valid email address
+    send_to = models.CharField(maxlength=64)  # Valid email address, "Name" <foo@bar.com>
+    send_from = models.CharField(maxlength=64) # Valid email address
     subject = models.TextField() # E-mail subject; plain text
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)
@@ -134,6 +160,12 @@ class TextOfEmail(models.Model):
     def send(self):
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
         now = datetime.now()
+        
+        send_mail(self.subject,
+                  self.msgtext,
+                  self.send_from,
+                  self.send_to,
+                  True)
 
         #send_mail(str(self.subject),
         #          str(self.msgtext),
@@ -179,6 +211,18 @@ class MessageVars(models.Model):
 
         return newMessageVar
 
+    def getDict(self, user):
+        import pickle
+        try:
+            provider = pickle.loads(self.pickled_provider)
+        except:
+            raise ESPError(), 'Coule not load variable provider object!'
+
+        actionhandler = ActionHandler(provider, user)
+
+        
+        return {self.provider_name: actionhandler}
+
     def getVar(self, key, user):
         """ Get a variable from this object. """
         import pickle
@@ -192,6 +236,17 @@ class MessageVars(models.Model):
             return str(provider.get_msg_vars(user, key))
         else:
             return None
+
+    @staticmethod
+    def getContext(msgrequest, user):
+        """ Get a context-like dictionary for template rendering. """
+
+        context = {}
+        msgvars = msgrequest.messagevars_set.all()
+        
+        for msgvar in msgvars:
+            context.update(msgvar.getDict(user))
+        return context
 
     @staticmethod
     def createMessageVars(msgrequest, var_dict):
@@ -222,7 +277,10 @@ class MessageVars(models.Model):
         try:
             msgVar = MessageVars.objects.get(provider_name = module, messagerequest = msgrequest)
         except:
-            raise ESPError(False), "Could not get the variable provider... %s is an invalid variable module." % module
+            #raise ESPError(False), "Could not get the variable provider... %s is an invalid variable module." % module
+            # instead of erroring, I'm just going to ignore it.
+            return '{{%s}}' % varstring
+    
 
         result = msgVar.getVar(varname, user)
 

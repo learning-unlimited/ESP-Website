@@ -71,6 +71,17 @@ class ESPUser(User, AnonymousUser):
 
     def canEdit(self, object):
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
+
+    def get_msg_vars(self, otheruser, key):
+        """ This function will be called when rendering a message. """
+        
+        if key == 'name':
+            return ESPUser(otheruser).name()
+        elif key == 'recover_url':
+            return 'http://esp.mit.edu/myesp/recoveremail/?code=%s' % \
+                         otheruser.password
+            
+        return ''
     
     def getTaughtClasses(self, program = None):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
@@ -908,7 +919,7 @@ class PersistentQueryFilter(models.Model):
 
         return QObj
 
-    def getList(module):
+    def getList(self, module):
         """ This will actually return the list generated from the filter applied
             to the live database. You must supply the model. If the model is not matched,
             it will become an error. """
