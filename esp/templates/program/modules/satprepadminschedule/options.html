@@ -1,0 +1,34 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Schedule{% endblock %}
+
+{% block subsection_name %}Scheduling Options{% endblock %}
+
+{% block stylesheets %}
+{{block.super}}
+
+{% endblock %}
+
+{% block content %}
+<br />
+<br />
+
+<br /><br />
+<h1>
+Scheduling {{program.niceName}}
+</h1>
+
+<p style="text-align: center">
+On this page you can schedule {{program.niceName}}! You have multiple steps.
+</p>
+
+
+<ol>
+<li><a href="/manage/{{program.getUrlBase}}/satprep_teachassign" title="Assign Teachers to Sections">Assign Teachers to Sections</a></li>
+<li><a href="/manage/{{program.getUrlBase}}/satprep_classgen" title="Generate Classes">Generate the Classes</a></li>
+<li><a href="/manage/{{program.getUrlBase}}/satprep_schedulestud" title="Schedule Students">Schedule Students</a></li>
+
+</ol>
+
+
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Schedule{% endblock %}
+
+{% block subsection_name %}Scheduling Options{% endblock %}
+
+{% block stylesheets %}
+{{block.super}}
+<style type="text/css">
+#divmaintext table, #divmaintext th, #divmaintext td { border: 1px solid black; border-collapse: collapse; }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<br />
+<br />
+
+<br /><br />
+<h1>
+Scheduling {{program.niceName}}
+</h1>
+
+<br />
+<br />
+<h2>
+Set Teacher Sections
+</h2>
+
+<br />
+
+<p style="text-align: center">
+Please set the teacher sections below:
+</p>
+
+<form action="{{request.path}}" method="post" name="teachersections" >
+
+<table cellspacing="0" cellpadding="2" width="300" >
+<thead>
+<tr>
+  <th>#</th>
+  <th>Teacher Name</th>
+  <th>Section</th>
+</tr>
+</thead>
+<tbody>
+{% for user in users %}
+{% ifchanged %}
+<tr>
+  <th colspan="3">
+   SUBJECT: {{user.satprepmodule.get_subject_display}}
+  </th>
+</tr>
+{% endifchanged %}
+<tr>
+  <td>{{forloop.counter}}</td>
+  <td>{{user.user.name}}</td>
+  <td><select name="section__{{user.user.id}}">
+       <option value=""></option>
+      {% for section in sections %}
+       <option value="{{section}}" {% ifequal section user.satprepmodule.section %} selected="selected" {% endifequal %}>{{section}}</option>{% endfor %}
+      </td>
+</tr>
+{% endfor %}
+<tr>
+  <th colspan="3"><input type="submit" value="Save Teacher Sections" /></th>
+</tr>
+</tbody>
+
+</table>
+
+<input type="hidden" name="teacher_section_form" value="true" />
+
+</form>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Schedule{% endblock %}
+
+{% block subsection_name %}Scheduling Options{% endblock %}
+
+{% block stylesheets %}
+{{block.super}}
+
+{% endblock %}
+
+{% block content %}
+<br />
+<br />
+
+<br /><br />
+<h1>
+Scheduling {{program.niceName}}
+</h1>
+
+<h2>
+Generate New Classes
+</h2>
+
+<p style="text-align: center">
+Please press the button below to create all the classes for {{program.niceName}}.<br />
+
+</p>
+<div class="errormsg">Warning: This may take a while!</div>
+
+<form method="post" action="{{request.path}}" name="confirm">
+<input type="submit" value="Create the classes!" />
+<input type="hidden" name="newclass_create" value="true" />
+</form>
+
+{% endblock %}

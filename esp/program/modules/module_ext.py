@@ -6,7 +6,8 @@ class SATPrepAdminModuleInfo(models.Model):
     module        = models.ForeignKey(ProgramModuleObj)
     num_divisions = models.IntegerField(blank=True, null=True)
     
-        
+    class Admin:
+        pass
 
 class ClassRegModuleInfo(models.Model):
     module       = models.ForeignKey(ProgramModuleObj)
@@ -61,6 +62,7 @@ class SATPrepTeacherModuleInfo(models.Model):
 
     user     = models.ForeignKey(User,blank=True, null=True)
     program  = models.ForeignKey(Program,blank=True, null=True)
+    section  = models.CharField(maxlength=5)
    
     def __str__(self):
         return 'SATPrep Information for teacher %s in %s' % \

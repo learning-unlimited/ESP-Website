@@ -55,6 +55,43 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
         
+    def get_msg_vars(self, user, key):
+        user = ESPUser(user)
+        if key == 'schedule':
+            if user.isStudent():
+                return ProgramPrintables.getStudentSchedule(self.program, user)
+
+        return ''
+
+    @staticmethod
+    def getStudentSchedule(program, student):
+        schedule = """
+Student schedule for %s:
+
+ Time               | Class                   | Room""" % student.name()
+
+        
+        # get list of valid classes
+        classes = [ cls for cls in student.getEnrolledClasses()
+                    if cls.parent_program == program
+                    and cls.isAccepted()                       ]
+        # now we sort them by time/title
+        classes.sort()
+        
+        for cls in classes:
+            rooms = cls.prettyrooms()
+            if len(rooms) == 0:
+                rooms = 'N/A'
+            else:
+                rooms = ", ".join(rooms)
+                
+            schedule += """
+%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
+               cls.title().ljust(25),
+               rooms)
+               
+        return schedule
+
     @needs_admin
     def studentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """

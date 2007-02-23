@@ -1,0 +1,36 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Schedule{% endblock %}
+
+{% block subsection_name %}Scheduling Options{% endblock %}
+
+{% block stylesheets %}
+{{block.super}}
+
+{% endblock %}
+
+{% block content %}
+<br />
+<br />
+
+<br /><br />
+<h1>
+Scheduling {{program.niceName}}
+</h1>
+
+<h2>
+Generate New Classes
+</h2>
+
+<p style="text-align: center">
+Press the button below to schedule all of the students into their remaining classes!<br />
+</p>
+
+<div class="info">NOTE: You will be asked to get a list of users. Please select which group of users you feel need to be scheduled (that is, all who attended? All who have tests, etc...)</div>
+
+<form method="post" action="{{request.path}}" name="confirm">
+<input type="submit" value="Schedule those students!!" />
+<input type="hidden" name="schedule_confirm" value="true" />
+</form>
+
+{% endblock %}

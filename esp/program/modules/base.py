@@ -31,6 +31,9 @@ class ProgramModuleObj(models.Model):
 
         return []
 
+    def get_msg_vars(self, user, key):
+        return None
+
     def getCoreView(self, tl):
         import esp.program.modules.models
         modules = self.program.getModules(self.user, tl)

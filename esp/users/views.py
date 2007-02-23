@@ -147,7 +147,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                 kwargs = {'id': userid}
 
         else:
-            for field in ['username','last_name','first_name']:
+            for field in ['username','last_name','first_name', 'email']:
                 if request.GET.has_key(field) and len(request.GET[field].strip()) > 0:
                     if request.GET.has_key('%s__not' % field):
                         kwargs_exclude.update({'%s__iregex' % field: request.GET[field]})

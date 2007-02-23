@@ -130,6 +130,15 @@ class Program(models.Model):
 							    verb = v)
 		return True
 
+
+	def get_msg_vars(self, user, key):
+		modules = self.getModules(user)
+		for module in modules:
+			retVal = module.get_msg_vars(user, key)
+			if retVal is not None and len(str(retVal).strip()) > 0:
+				return retVal
+
+		return ''
 	
 	def teachers(self, QObjects = False):
 		modules = self.getModules(None, 'teach')
