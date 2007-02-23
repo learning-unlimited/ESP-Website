@@ -40,6 +40,7 @@ def send_email_requests():
     
     for mailtxt in mailtxts:
         mailtxt.send()
+        time.sleep(wait)
     
 
 def event_to_message(event):
