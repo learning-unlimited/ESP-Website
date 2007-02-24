@@ -136,7 +136,8 @@ class ProgramModuleObj(models.Model):
             
         if len(classes) == 1:
             if not self.user.canEdit(classes[0]):
-                return (render_to_response(self.baseDir()+'cannoteditclass.html', request, (self.program, tl), {}), False)
+                raise ESPError(False), 'You do not have permission to edit %s.' %\
+                      classes[0].title()
             else:
                 Found = True
                 return (classes[0], True)
