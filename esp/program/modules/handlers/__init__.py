@@ -22,3 +22,4 @@ from esp.program.modules.handlers.satprep_schedule import *
 from esp.program.modules.handlers.satpreponsite_newreg import *
 from esp.program.modules.handlers.onsitecheckin import *
 from esp.program.modules.handlers.onsiteclassschedule import *
+from esp.program.modules.handlers.onsite_newreg import *

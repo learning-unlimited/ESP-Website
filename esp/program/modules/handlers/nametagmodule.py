@@ -21,23 +21,16 @@ class NameTagModule(ProgramModuleObj):
     def generatetags(self, request, tl, one, two, module, extra, prog):
         """ generate nametags """
 
-        context = {'module': self,
-                   'programname': request.POST['progname']                   
-                   }
-
         idtype = request.POST['type']
 
+        users = []
+
+        
         if idtype == 'students':
-
-            userlist, found = get_user_list(request, self.program.getLists(True))
-
-            if not found:
-                return userlist
-
-                      
+            students = self.program.students_union()
             
             students = [ ESPUser(student) for student in
-                         userlist.getList(User).distinct() ]
+                         students ]
             students.sort()
 
             
@@ -47,7 +40,7 @@ class NameTagModule(ProgramModuleObj):
                               'id'   : student.id})
                 
         elif idtype == 'teacher':
-            teachers = self.program.teachers()
+            teachers = self.program.teachers_union()
             users = []
             teachers.sort()
 
@@ -74,7 +67,13 @@ class NameTagModule(ProgramModuleObj):
                               'name' : '',
                               'id'   : ''})
                 
+        context = {'module': self,
+                   'programname': request.POST['progname']                   
+                   }
+
+        
         numperpage = 6
+
 
         expanded = [[] for i in range(numperpage)]
 

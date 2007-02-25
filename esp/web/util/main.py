@@ -51,7 +51,10 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
                 context['navbar_list'] = makeNavBar(request.user, prog.anchor, section)
             else:
                 context['navbar_list'] = makeNavBar(request.user, prog, section)
-        context['randquote'] = ESPQuotations.getQuotation()   
+        if context.has_key('qsd') and context['qsd'] == True:
+            context['randquote'] = ESPQuotations.getQuotation()
+
+            
         # get the preload_images list
         if not context.has_key('preload_images'):
                 context['preload_images'] = preload_images

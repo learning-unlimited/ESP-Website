@@ -1,4 +1,4 @@
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -97,7 +97,7 @@ Student schedule for %s:
                
         return schedule
 
-    @needs_admin
+    @needs_onsite(False)
     def studentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
 
@@ -115,16 +115,14 @@ Student schedule for %s:
         for student in students:
             # get list of valid classes
             classes = [ cls for cls in student.getEnrolledClasses()
-                    if cls.parent_program == self.program
-                    and cls.isAccepted()                       ]
+                                if cls.parent_program == self.program
+                                and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
-            
-            for cls in classes:
-                scheditems.append({'name': student.name(),
-                                   'cls' : cls})
 
-        context['scheditems'] = scheditems
+            student.classes = classes
+            
+        context['students'] = students
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
     @needs_admin
@@ -282,6 +280,7 @@ Student schedule for %s:
         filterObj, found = get_user_list(request, self.program.getLists(True))
         if not found:
             return filterObj
+
 
 
         context = {'module': self     }

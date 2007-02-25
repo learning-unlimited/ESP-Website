@@ -378,6 +378,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 manipulator.do_html2python(new_data)
 
                 if newclass is None:
+                    newclass_isnew = True
                     newclass = Class()
 
                 if len(new_data['message_for_directors'].strip()) > 0 and \
@@ -398,25 +399,32 @@ class TeacherClassRegModule(ProgramModuleObj):
                 if new_data['duration'] == '':
                     newclass.duration = 0.0
                 else:
-                    newclass.duration = float(new_data['duration'])
+                    try:
+                        newclass.duration = float(new_data['duration'])
+                    except:
+                        newclass.duration = 0.0
 
+                newclass_isnew = False
                     
                 # datatree maintenance
-                newclass.parent_program = self.program
-                newclass.category = ClassCategories.objects.get(id=new_data['category'])
-                newclass.anchor = self.program.anchor.tree_create(['DummyClass'])
+                if newclass_isnew:
+                    newclass.parent_program = self.program
+                    newclass.category = ClassCategories.objects.get(id=new_data['category'])
+                    newclass.anchor = self.program.anchor.tree_create(['DummyClass'])
 
-                newclass.anchor.save()
-                newclass.enrollment = 0
-                newclass.save()
-                newclass.anchor.delete()
+                    newclass.anchor.save()
+                    newclass.enrollment = 0
+                    newclass.save()
+                    newclass.anchor.delete()
                 
-                nodestring = newclass.category.category[:1].upper() + str(newclass.id)
-                newclass.anchor = self.program.classes_node().tree_create([nodestring])
+                    nodestring = newclass.category.category[:1].upper() + str(newclass.id)
+                    newclass.anchor = self.program.classes_node().tree_create([nodestring])
+                    newclass.anchor.tree_create(['TeacherEmail'])
+                    
                 newclass.anchor.friendly_name = newclass.title
 
                 newclass.anchor.save()
-                newclass.anchor.tree_create(['TeacherEmail'])
+
                 newclass.save()
 
                 #cache this result
@@ -433,14 +441,19 @@ class TeacherClassRegModule(ProgramModuleObj):
                 for resource in new_data.getlist('resources'):
                     tmpQsc = DataTree.objects.get(id = int(resource))
                     newclass.resources.add(tmpQsc)
-                    
-                # add userbits
-                newclass.makeTeacher(self.user)
-                newclass.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
-                newclass.subscribe(self.user)
-                self.program.teacherSubscribe(self.user)
-                newclass.propose()
 
+                
+                # add userbits
+                if newclass_isnew:
+                    newclass.makeTeacher(self.user)
+                    newclass.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
+                    newclass.subscribe(self.user)
+                    self.program.teacherSubscribe(self.user)
+                    newclass.propose()
+                else:
+                    if self.user.isAdmin(self.program):
+                        return self.goToCore('manage')
+                
                 return self.goToCore(tl)
                             
         else:

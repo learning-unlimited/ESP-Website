@@ -83,13 +83,28 @@ p.category {
         Course Catalog
 </h1>
 
+<br />
+
+<br />
 {% if timeslot %}
 <h2 style="text-align: center;">
 Viewing classes for: {{ timeslot.friendly_name }}
 </h2>
 {% endif %}
 
+      </p>
+{% if request.user.onsite_local %}
 
+{% if not request.GET.filter %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}?filter=True">Filter out invalid classes</a>
+</h2>
+{% else %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}">Show all classes</a>
+</h2>
+{% endif %}
+{% endif %}
 
 <p style="text-align: center;">
 
@@ -104,6 +119,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% if forloop.counter0|divisibleby:2 %}
 <tr>{% endif %}
   <td style="width: 50%; vertical-align: top;" valign="top" align="center">
+
     <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
               {{category.category}}
     </a>
@@ -119,11 +135,25 @@ Viewing classes for: {{ timeslot.friendly_name }}
 
 {% for aclass in courses %}
 
+{% if not aclass.errormsg or not request.GET.filter %}
 {% ifchanged %}<hr />
+
     <a name="cat{{aclass.class.category.id}}"></a>
       <p style="font-size: 1.2em;" class="category">
          {{ aclass.class.category }}
       </p>
+{% if request.user.onsite_local %}
+
+{% if not request.GET.filter %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}?filter=True">Filter out invalid classes</a>
+</h2>
+{% else %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}">Show all classes</a>
+</h2>
+{% endif %}
+{% endif %}
       <p class="linktop">
          <a href="#top">[ Return to Category List ]</a>
       </p> {% endifchanged %}
@@ -188,5 +218,6 @@ Viewing classes for: {{ timeslot.friendly_name }}
 </table>
 
 <br />
+{% endif %}
 {% endfor %}
 {% endblock %}

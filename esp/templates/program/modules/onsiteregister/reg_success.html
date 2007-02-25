@@ -1,0 +1,38 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+
+<br /><br />
+<h1>Registration for {{student.name}} &mdash; Success!</h1>
+
+<p>
+Congratulations, {{student.name}} was registered for {{program.niceName}}
+<br />
+An account, with username <strong>{{student.username}}</strong> was created for this student. An email has been sent to <tt>{{student.email}}</tt> with further instructions on how to access this account.
+<br />
+<h2>For Reference:</h2><br />
+<strong>User ID</strong>: {{student.id }}<br />
+<strong>Username</strong>: {{student.username}}<br />
+<br />
+<br />
+<a href="{{retUrl}}" title="Schedule this student">Proceed to scheduling this student...</a>
+<br />
+<br />
+<a href="/onsite/{{program.getUrlBase}}/main">(click here to return to onsite reg.)</a>
+</p>
+
+
+
+
+
+{% endblock %}

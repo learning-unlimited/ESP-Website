@@ -3,6 +3,7 @@ from esp.middleware   import ESPError
 from django.db.models.query import Q, QNot
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User
 from esp.web.util     import render_to_response
+import pickle
 
 def get_user_list(request, listDict, extra=''):
     """ Get a list of users from some complicated mixture of other lists.
@@ -94,15 +95,24 @@ def get_user_list(request, listDict, extra=''):
             if type(getUser) == User or type(getUser) == ESPUser:
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
             else:
-                newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, User, 'Custom user filter')                
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, User, 'Custom user filter')         
 
-                
+            if 'usersearch_containers' in request.session:
+                request.POST, request.GET = request.session['usersearch_containers']
+                del request.session['usersearch_containers']   
+
             return (newfilterObj, True)
+        
         else:
             return (getUser, False)
 
     # we're going to prepare a list to send out.
     arrLists = []
+
+    pickled_post = pickle.dumps(request.POST)
+    pickled_get  = pickle.dumps(request.GET)
+
+    request.session['usersearch_containers'] = (pickled_post, pickled_get)
 
     for key, value in listDict.items():
         arrLists.append(DBList(key = key, QObject = value['list'], description = value['description'].strip('.'))) # prepare a nice list thing.

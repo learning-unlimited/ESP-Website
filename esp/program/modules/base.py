@@ -292,22 +292,25 @@ def needs_admin(method):
 
     return _checkAdmin
 
-def needs_onsite(method):
-    def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if not moduleObj.user or not moduleObj.user.is_authenticated():
-            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-        is_onsite = moduleObj.user.updateOnsite(request)
+def needs_onsite(switch=True):
+    def _needs_onsite(method):
+        def _checkAdmin(moduleObj, request, *args, **kwargs):
+            if not moduleObj.user or not moduleObj.user.is_authenticated():
+                return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            is_onsite = moduleObj.user.updateOnsite(request)
 
-        if is_onsite:
-            url = moduleObj.user.switch_back(request)
-            return HttpResponseRedirect(request.path)
+            if is_onsite and switch:
+                url = moduleObj.user.switch_back(request)
+                return HttpResponseRedirect(request.path)
         
-        if not moduleObj.user.isOnsite(moduleObj.program) and \
-           not moduleObj.user.isAdmin(moduleObj.program):
-            return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
-        return method(moduleObj, request, *args, **kwargs)
+            if not is_onsite and not moduleObj.user.isOnsite(moduleObj.program) and \
+                   not moduleObj.user.isAdmin(moduleObj.program):
+                return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
+            return method(moduleObj, request, *args, **kwargs)
 
-    return _checkAdmin
+        return _checkAdmin
+    
+    return _needs_onsite
 
 def needs_student(method):
     def _checkStudent(moduleObj, request, *args, **kwargs):

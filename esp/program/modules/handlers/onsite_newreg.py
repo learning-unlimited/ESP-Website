@@ -2,16 +2,16 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser, UserBit, User, ContactInfo, StudentInfo
 from esp.datatree.models import GetNode
 from django              import forms
 from django.http import HttpResponseRedirect
-from esp.program.models import SATPrepRegInfo
-from esp.program.modules.manipulators import OnSiteRegManipulator
+from esp.program.models import RegistrationProfile
+from esp.program.modules.manipulators import OnSiteNormalRegManipulator
 
 
 
-class SATPrepOnSiteRegister(ProgramModuleObj):
+class OnSiteRegister(ProgramModuleObj):
 
 
     def createBit(self, extension):
@@ -31,8 +31,8 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
         return True
     
     @needs_onsite()
-    def satprep_create(self, request, tl, one, two, module, extra, prog):
-        manipulator = OnSiteRegManipulator()
+    def onsite_create(self, request, tl, one, two, module, extra, prog):
+        manipulator = OnSiteNormalRegManipulator()
 	new_data = {}
 	if request.method == 'POST':
             new_data = request.POST.copy()
@@ -59,17 +59,25 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
 
                 self.student = new_user
 
+                new_user.save()
+
+                regProf = RegistrationProfile.getLastForProgram(new_user,
+                                                                self.program)
+                contact_user = ContactInfo(first_name = new_user.first_name,
+                                           last_name  = new_user.last_name,
+                                           e_mail     = new_user.email)
+                contact_user.save()
+                regProf.contact_user = contact_user
+
+                student_info = StudentInfo(graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
+                student_info.save()
+                regProf.student_info = student_info
+
+                regProf.save()
+
                 new_user = ESPUser(new_user)
                 
-                new_user.save()
                 new_user.recoverPassword()
-
-                #update satprep information
-                satprep = SATPrepRegInfo.getLastForProgram(new_user, self.program)
-                satprep.old_math_score = new_data['old_math_score']
-                satprep.old_verb_score = new_data['old_verb_score']
-                satprep.old_writ_score = new_data['old_writ_score']
-                satprep.save()
 
                 if new_data['paid']:
                     self.createBit('Paid')
@@ -94,8 +102,13 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
                 
                 new_user = ESPUser(new_user)
 
-                
-                return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'user': new_user})
+                return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'student': new_user, 'retUrl': '/onsite/%s/schedule_students?extra=115&op=usersearch&userid=%s' % \
+                                                                                                   (self.program.getUrlBase(), new_user.id)})
+
+
+
+                            
+
         
         else:
             new_data = {}

@@ -124,7 +124,7 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 	if url_verb == 'edit':
 		# Enforce authorizations (FIXME: SHOW A REAL ERROR!)
 		if not have_edit:
-			return ESPError("You don't have permission to edit this page.", log_error = False)
+			raise ESPError(False), "You don't have permission to edit this page."
 
 		m = ESPMarkdown(qsd_rec.content, media={})
 
@@ -133,11 +133,12 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 		
 		# Render an edit form
 		return render_to_response('qsd_edit.html', request, (branch, section), {
-			'title': qsd_rec.title,
-			'content': qsd_rec.content,
-			'qsdrec': qsd_rec,
+			'title'        : qsd_rec.title,
+			'content'      : qsd_rec.content,
+			'qsdrec'       : qsd_rec,
+			'qsd'          : True,
 			'missing_files': m.BrokenLinks(),
-			'target_url': base_url.split("/")[-1] + ".edit.html",
+			'target_url'   : base_url.split("/")[-1] + ".edit.html",
 			'return_to_view': base_url.split("/")[-1] + ".html" })
 
 	# Detect the standard read verb
