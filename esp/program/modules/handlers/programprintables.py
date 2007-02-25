@@ -167,7 +167,7 @@ Student schedule for %s:
         classes.sort()
 
         rooms = {}
-        scheditems = []
+        scheditems = ['']
 
         for cls in classes:
             roomassignments = cls.classroomassignments()
@@ -297,7 +297,11 @@ Student schedule for %s:
                                        'cls'    : cls})
 
         context['scheditems'] = scheditems
-        return render_to_response(self.baseDir()+'classrosters.html', request, (prog, tl), context)
+        if extra == 'attendance':
+            tpl = 'classattendance.html'
+        else:
+            tpl = 'classrosters.html'
+        return render_to_response(self.baseDir()+tpl, request, (prog, tl), context)
         
 
     @needs_admin

@@ -2,7 +2,9 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, User
+from django.db.models import Q
+from esp.users.views  import get_user_list
 
 class NameTagModule(ProgramModuleObj):
 
@@ -26,11 +28,16 @@ class NameTagModule(ProgramModuleObj):
         idtype = request.POST['type']
 
         if idtype == 'students':
-            students = self.program.students_union()
-            from esp.users.models import User
-            from django.db.models import Q
-            users = []
-            students = [ ESPUser(student) for student in students ]
+
+            userlist, found = get_user_list(request, self.program.getLists(True))
+
+            if not found:
+                return userlist
+
+                      
+            
+            students = [ ESPUser(student) for student in
+                         userlist.getList(User).distinct() ]
             students.sort()
 
             
@@ -63,7 +70,7 @@ class NameTagModule(ProgramModuleObj):
         elif idtype == 'blank':
             users = []
             for i in range(int(request.POST['number'])):
-                users.append({'title': 'Student',
+                users.append({'title': request.POST['blanktitle'],
                               'name' : '',
                               'id'   : ''})
                 
