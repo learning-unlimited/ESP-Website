@@ -57,22 +57,24 @@
 {% endif %}
 {% endfor %}
 <br />
+{% if request.user.onsite_local %}
+<div class="errormsg">
+  WARNING: Your browser's back button will NOT work! (Please use the On-Site button to the right!
+</div>
+{% endif %}
+
 {% if not isConfirmed and coremodule.deadline_met %}
 <center>
 
 
 <div class="errormsg">
-
-{% if request.user.onsite_local %}
-  WARNING: Your browser's back button will NOT work! (Please use the On-Site button to the right!
-{% else %}
 {% if not completedAll %}
 Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Save</em> button below (it will be active at this point).
 {% else %}
 Please click <em>Save</em> below to confirm your registration into {{program.niceName}}.<br />
 Upon clicking this you will be given a receipt with further instructions!
 {% endif %}
-{% endif %}
+
 </div>
 </center>
 {% endif %}
