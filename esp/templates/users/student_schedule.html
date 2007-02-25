@@ -25,7 +25,10 @@ Note: Student registration is no longer open. Please use this page to view your 
 
 <tr><td width="25%" valign="top" align="center"> {{ timeslot.0.friendly_name }} </td>
 	{% if timeslot.1 %}
-	<td>{{timeslot.1.title}}</td>
+	<td>{{timeslot.1.title}} 
+        {% if request.user.onsite_local %}
+        ({{timeslot.1.prettyrooms|join:", " }})
+        {% endif %}</td>
 {% if module.deadline_met %}
         <td width='20%' align='center'>
 	<a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[remove]</a>

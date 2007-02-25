@@ -57,13 +57,8 @@
 {% endif %}
 {% endfor %}
 <br />
-{% if request.user.onsite_local %}
-<div class="errormsg">
-  WARNING: Your browser's back button will NOT work! (Please use the On-Site button to the right!
-</div>
-{% endif %}
 
-{% if not isConfirmed and coremodule.deadline_met %}
+{% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
 
 

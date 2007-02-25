@@ -4,3 +4,12 @@
 <p style="font-family: arial; font-size:130%; margin-left:10px; text-align: center"><b>Select Your {{one}} Classes</p></b></center>
 
 {% include "users/student_schedule.html" %}
+{% if request.user.onsite_local %}
+<center>
+<a href="/onsite/{{program.getUrlBase}}/studentschedule">Get Student Schedule</a>
+
+<div class="errormsg">
+  WARNING: Your browser's back button will NOT work! (Please use the On-Site button to the (top)right!
+</div>
+</div>
+{% endif %}
