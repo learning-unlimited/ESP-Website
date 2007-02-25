@@ -233,7 +233,9 @@ class ESPUser(User, AnonymousUser):
     def isOnsite(self, program = None):
         verb = GetNode('V/Registration/OnSite')
         if program is None:
-            return hasattr(self, 'onsite_local') and self.onsite_local is True
+            return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
+                    UserBit.bits_get_qsc(user=self, verb=verb).count() > 0
+        
         else:
             return UserBit.UserHasPerms(self, program.anchor, verb)
 

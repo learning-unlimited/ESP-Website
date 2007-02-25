@@ -1,0 +1,53 @@
+<html>
+<head>
+<title>Student Schedules for {{program.niceName}}</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; margin: 0; font-size: 12px;}
+.title { text-align: center; font-size: 12pt; font-family: georgia; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+.facts { text-align: center; border: 0; }
+.facts th { text-align: right; font-size: 12pt; font-weight: bold; }
+.facts td { text-align: left; font-size: 12pt;}
+.facts td.paid { border: 1px solid black; text-align: center;
+                 }
+.title { padding: 1in 0 0 0; }
+.schedule {border: 1px solid black; }
+.schedule td { border: 1px solid black; }
+.schedule th { border: 1px solid black; vertical-align: top; }
+.schedule td { vertical-align: top; }
+.schedule th.day { border-bottom: 0; }
+.schedule td.oldday { border-bottom: 0;
+                      border-top: 0;}
+td.newday { border-width: 2px 1px 0 1px;}
+#pagebreak {page-break-after: always; }
+.description { text-align: center; padding: .2in 0 .2in 0; }
+#divmaintext td, #divmaintext th {border: 1px solid black; border-collapse: collapse}
+</style>
+
+</head>
+<body>
+
+<table style="border: 1px solid black; border-collapse: collapse;">
+<tr>
+ <th>Num</th>
+ <th>Name</th>
+ <th>Class</th>
+ <th>Teacher(s)</th>
+ <th>Room(s)</th>
+ <th>Time(s)</th>
+</tr>
+{% for scheditem in scheditems %}
+<tr>
+ <td>{{forloop.counter}}</td>
+ <td>{{ scheditem.name }}</td>
+ <td>{{ scheditem.cls.title }}</td>
+ <td>{{ scheditem.cls.getTeacherNames|join:", " }}</td>
+ <td>{{ scheditem.cls.prettyrooms|join:"<br />"}}</td>
+ <td>{{ scheditem.cls.friendly_times|join:"<br />"}}</td>
+</tr>
+{% endfor %}
+</table>
+
+</body>
+</html>

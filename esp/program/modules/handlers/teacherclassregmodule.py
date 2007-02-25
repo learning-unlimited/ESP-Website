@@ -481,29 +481,27 @@ class TeacherClassRegModule(ProgramModuleObj):
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
         from django.db.models import Q
+        from esp.users.models import ESPUser
 
-        # Initialize anchors for identifying teachers
-        q = GetNode( 'Q' )
-        v = GetNode( 'V/Flags/UserRole/Teacher' )
-
-        # Select teachers
-        queryset = UserBit.bits_get_users(q, v)
+        Q_teacher = Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))
 
         # Search for teachers with names that start with search string
         if not request.GET.has_key('q'):
             return self.goToCore()
+
+        queryset = ESPUser.objects.filter(Q_teacher)
         
         startswith = request.GET['q']
         parts = [x.strip() for x in startswith.split(',')]
-        Q_name = Q(user__last_name__istartswith=parts[0])
+        Q_name = Q(last_name__istartswith=parts[0])
+
         if len(parts) > 1:
-            Q_name = Q_name & Q(user__first_name__istartswith=parts[1])
+            Q_name = Q_name & Q(first_name__istartswith=parts[1])
 
         # Isolate user objects
         queryset = queryset.filter(Q_name)[:(limit*10)]
-        users = [ub.user for ub in queryset]
         user_dict = {}
-        for user in users:
+        for user in queryset:
             user_dict[user.id] = user
         users = user_dict.values()
 

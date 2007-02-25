@@ -19,7 +19,6 @@ if len(classes) != 1:
     sys.exit()
 
 clsobj = classes[0]
-
 request = sys.argv[2]
 if request == 'class':
     users = list(clsobj.teachers()) + clsobj.students()

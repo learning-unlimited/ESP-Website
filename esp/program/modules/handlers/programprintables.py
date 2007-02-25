@@ -128,6 +128,37 @@ Student schedule for %s:
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
     @needs_admin
+    def flatstudentschedules(self, request, tl, one, two, module, extra, prog):
+        """ generate student schedules """
+
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        students = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+
+        students.sort()
+        
+        scheditems = []
+
+        for student in students:
+            # get list of valid classes
+            classes = [ cls for cls in student.getEnrolledClasses()
+                    if cls.parent_program == self.program
+                    and cls.isAccepted()                       ]
+            # now we sort them by time/title
+            classes.sort()
+            
+            for cls in classes:
+                scheditems.append({'name': student.name(),
+                                   'cls' : cls})
+
+        context['scheditems'] = scheditems
+        return render_to_response(self.baseDir()+'flatstudentschedule.html', request, (prog, tl), context)
+
+
+    @needs_admin
     def roomschedules(self, request, tl, one, two, module, extra, prog):
         """ generate class room rosters"""
         classes = [ cls for cls in self.program.classes()
