@@ -11,6 +11,16 @@
      document.getElementById('submitbutton'+clsid).disabled = true;
      return true;
   }
+
+  function submit_override_prereg(clsid) {
+     // prereg for a class
+     if (confirm('Are you sure you want to override this block?') &&
+         confirm('Are you really sure?!?')) {
+        document.getElementById('submitbutton'+clsid).disabled = true;
+        return true;
+     }
+     return false;
+  }
 //-->
 </script>
 {% endblock %}
@@ -157,7 +167,17 @@ Viewing classes for: {{ timeslot.friendly_name }}
     <tr>
       <td colspan="2" style="text-align: center;" align="center">
      {% if aclass.errormsg %}
-<span class="error">{{ aclass.errormsg }}</span> {% else %}
+<span class="error">{{ aclass.errormsg }}</span> 
+{% if request.user.onsite_local %}
+<br />
+<form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ aclass.class.id }}');" method="post" action="{{ prereg_url }}">
+	  <input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
+  	  <input type="submit" name="action" value="Add this class anyway!"
+                 id="submitbutton{{ aclass.class.id }}" />
+</form>
+{% endif %}
+
+{% else %}
 	<form name="prereg_submitform" onsubmit="return submit_prereg('{{ aclass.class.id }}');" method="post" action="{{ prereg_url }}">
 	  <input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
   	  <input type="submit" name="action" value="Add this class"

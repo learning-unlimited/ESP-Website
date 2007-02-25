@@ -19,3 +19,6 @@ from esp.program.modules.handlers.satprep_teachertestenter import *
 from esp.program.modules.handlers.listgen import *
 from esp.program.modules.handlers.teacherbio import *
 from esp.program.modules.handlers.satprep_schedule import *
+from esp.program.modules.handlers.satpreponsite_newreg import *
+from esp.program.modules.handlers.onsitecheckin import *
+from esp.program.modules.handlers.onsiteclassschedule import *

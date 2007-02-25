@@ -24,9 +24,16 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 {% block content %}
 <h1 style="font-size: 120%;">ESP Biography</h1>
+{% ifequal user.id request.user.id %}
+<a href="{{ bio.edit_url }}" title="Edit this bio!">
+  Edit this biography!
+</a>
+{% endifequal %}
 <br /><br />
 <h2>{{user.name|upper}}, {{bio.slugbio}}</h2>
 <hr />
+
+
 <br />
 <br />
 <table cellspacing=0 cellpadding="5" border="0">

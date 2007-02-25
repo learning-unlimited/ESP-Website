@@ -245,7 +245,13 @@ Create a new entry:
   <td width="100%"><div class="divformcol1">&nbsp;</div></td>
   <td style="text-align:left">
   {% if logged_in %}
+     {% if request.user.onsite_local %}
+         <div class="divformcol1" style="text-align:left">
+         <a href="{{ request.session.user_morph.retUrl }}">Go back to {{ request.session.user_morph.retTitle }}</a>
+         </div>
+     {% else %}
 		<div class="divformcol1" style="text-align:left">Welcome, {{ request.user.first_name }}! &nbsp; <!-- <a href="/myesp/manage/">Manage Subscriptions</a> --></div>
+     {% endif %}
   {% else %}
 		<div class="divformcol1" style="text-align:left"><a href="/myesp/register/">Join ESP!</a></div>
   {% endif %}

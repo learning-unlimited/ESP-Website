@@ -169,6 +169,7 @@ def myesp_login(request, module):
 		user.set_password(request.POST['password'])
 		user.save()
 		login(request, user)
+		
 	
 
 	return HttpResponseRedirect(formURL)
@@ -267,37 +268,13 @@ def myesp_passrecover(request, module):
 	if request.method == 'POST' and request.POST.has_key('prelim'):
 		errors = manipulator.get_validation_errors(new_data)
 		if not errors:
-			# generate the code, send the email.
-			import string
-			import random
-			from esp.miniblog.models import Entry
-			symbols = string.ascii_uppercase + string.digits 
-			code = "".join([random.choice(symbols) for x in range(30)])
 			try:
 				user = User.objects.get(username = new_data['username'])
 			except:
 				raise ESPError(), 'Could not find user %s.' % new_data['username']
 
-			# get the filter object
-			filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = user.id),
-									 User,
-									 'User %s' % user.username)
-			user.password = code
-			user.save()
-			
-			# create the variable modules
-			variable_modules = {'user': ESPUser(user)}
-
-
-			newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
-                                                      subject    = '[ESP] Your Password Recovery For esp.mit.edu',
-                                                      recipients = filterobj,
-                                                      sender     = '"MIT Educational Studies Program" <esp@mit.edu>',
-                                                      creator    = user,
-                                                      msgtext    = loader.find_template_source('email/password_recover')[0])
-
-			newmsg_request.save()
-
+			user = ESPUser(user)
+			user.recoverPassword()
 
 			return render_to_response('users/requestrecover.html', request, GetNode('Q/Web/myesp'),{'Success': True})
 

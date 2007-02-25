@@ -58,13 +58,13 @@ class ProgramPrintables(ProgramModuleObj):
     def get_msg_vars(self, user, key):
         user = ESPUser(user)
         if key == 'schedule':
-            if user.isStudent():
-                return ProgramPrintables.getStudentSchedule(self.program, user)
+            return ProgramPrintables.getStudentSchedule(self.program, user)
 
         return ''
 
     @staticmethod
-    def getStudentSchedule(program, student):
+    def getSchedule(program, student):
+        
         schedule = """
 Student schedule for %s:
 
@@ -72,7 +72,12 @@ Student schedule for %s:
 
         
         # get list of valid classes
-        classes = [ cls for cls in student.getEnrolledClasses()
+        classes = [ cls for cls in student.getEnrolledClasses()]
+
+        # add taugtht classes
+        classes += [ cls for cls in student.getTaughtClasses()  ]
+            
+        classes = [ cls for cls in classes
                     if cls.parent_program == program
                     and cls.isAccepted()                       ]
         # now we sort them by time/title

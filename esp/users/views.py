@@ -134,10 +134,14 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
         kwargs = {}
         kwargs_exclude = {}
-	if request.GET.has_key('userid') and len(request.GET['userid'].strip()) > 0:
+	if (request.GET.has_key('userid') and len(request.GET['userid'].strip()) > 0) or (request.POST.has_key('userid') and len(request.POST['userid'].strip()) > 0):
             userid = -1
             try:
-                userid = int(request.GET['userid'])
+                if request.GET.has_key('userid'):
+                    userid = int(request.GET['userid'])
+                if request.POST.has_key('userid'):
+                    userid = int(request.POST['userid'])
+                    
             except:
                 raise ESPError(False), 'User id invalid, please enter a number.'
 

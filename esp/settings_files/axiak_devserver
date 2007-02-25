@@ -1,4 +1,4 @@
- # Django settings for esp project.
+# Django settings for esp project.
 
 DEBUG = True
 DISPLAYSQL = True
@@ -56,6 +56,7 @@ TEMPLATE_LOADERS = (
 MIDDLEWARE_CLASSES = (
     'esp.middleware.ESPErrorMiddleware',
     'django.middleware.common.CommonMiddleware',
+    #'django.contrib.csrf.middleware.CsrfMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
@@ -107,3 +108,5 @@ CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
 
 
 LOG_FILE="/var/log/django/esp_errlog"
+
+SESSION_EXPIRE_AT_BROWSER_CLOSE=True

@@ -34,10 +34,9 @@ class StudentClassRegModule(ProgramModuleObj):
         return self.user.getEnrolledClasses().filter(parent_program = self.program).count() > 0
 
     def deadline_met(self):
-        tmpModule = ProgramModuleObj()
-        tmpModule.__dict__ = self.__dict__
-        return tmpModule.deadline_met('/Classes')
-
+        #tmpModule = ProgramModuleObj()
+        #tmpModule.__dict__ = self.__dict__
+        return super(StudentClassRegModule, self).deadline_met('/Classes')
     
     @needs_student
     def prepare(self, context={}):
@@ -70,7 +69,7 @@ class StudentClassRegModule(ProgramModuleObj):
             
         cobj = Class.objects.filter(id=classid)[0]
         error = cobj.cannotAdd(self.user)
-        if error:
+        if error and not self.user.onsite_local:
             raise ESPError(False), error
         if cobj.preregister_student(self.user):
             cobj.update_cache_students()

@@ -60,6 +60,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
             context['logged_in'] = request.user.is_authenticated()
         # upgrade user
         request.user = ESPUser(request.user)
+        request.user.updateOnsite(request)
         context['request'] = request
         return django.shortcuts.render_to_response(template, context)
         
@@ -74,7 +75,10 @@ def get_page_setup(request):
     page_setup = {}
 
     is_admin = ESPUser(request.user).isAdmin()
-    is_onsite = ESPUser(request.user).isOnsite()
+    curuser = ESPUser(request.user)
+    is_onsite = curuser.updateOnsite(request)
+    if not is_onsite:
+        is_onsite = ESPUser(request.user).isOnsite()
     
     # if we are at a level 2 site, like /myesp/home/
     if len(path) == 2 and request.path.lower() in [ x[2] for x in sections.values() ]:

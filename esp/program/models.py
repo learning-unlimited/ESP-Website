@@ -265,7 +265,10 @@ class Program(models.Model):
 
 		def cmpModules(mod1, mod2):
 			""" comparator function for two modules """
-			return mod1.seq - mod2.seq
+			try:
+				return mod1.seq - mod2.seq
+			except:
+				return 0
 		if tl:
 			modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
 				     for module in self.program_modules.all()
@@ -1046,6 +1049,13 @@ class TeacherBio(models.Model):
 	def url(self):
 		from esp.users.models import ESPUser	
 		return '/teach/teachers/%s/%s%s/bio.html' % \
+		       (self.user.last_name, self.user.first_name, ESPUser(self.user).getUserNum())
+
+
+
+	def edit_url(self):
+		from esp.users.models import ESPUser	
+		return '/teach/teachers/%s/%s%s/bio.edit.html' % \
 		       (self.user.last_name, self.user.first_name, ESPUser(self.user).getUserNum())
 
 	@staticmethod

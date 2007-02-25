@@ -21,12 +21,21 @@ Welcome to the Administrative Portal for {{program.niceName }}.<br />
 If you need any assistance, please email <tt>web@esp.mit.edu</tt>.
 </p>
 
+
+
 <center>
 <strong>Your options:</strong>
 <br />
 <ul>
 
+
+<li><a href="/onsite/{{program.getUrlBase}}/main">
+     Go To On-Site Page
+    </a>
+</li>
+
 {% for module in modules %}
+
 
 {% if module.isStep %}
   {% if not module.useTemplate %}

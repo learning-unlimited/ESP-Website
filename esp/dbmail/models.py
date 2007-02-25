@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from esp.middleware import ESPError
 from datetime import datetime
 from esp.lib.markdown import markdown
 
@@ -36,9 +36,10 @@ class ActionHandler(object):
         
         # get the object, can't use self.obj since we're doing fun stuff
         if key == '_obj' or key == '_user':
+            # use the parent's __getattribute__
             return super(ActionHandler, self).__getattribute__(key)
 
-        obj = super(ActionHandler, self).__getattribute__('_obj')
+        obj = self._obj
         
         if not hasattr(obj, 'get_msg_vars'):
             return ''
@@ -213,10 +214,10 @@ class MessageVars(models.Model):
 
     def getDict(self, user):
         import pickle
-        try:
-            provider = pickle.loads(self.pickled_provider)
-        except:
-            raise ESPError(), 'Coule not load variable provider object!'
+        #try:
+        provider = pickle.loads(self.pickled_provider)
+        #except:
+        #    raise ESPError(), 'Coule not load variable provider object!'
 
         actionhandler = ActionHandler(provider, user)
 

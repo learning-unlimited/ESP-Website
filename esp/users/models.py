@@ -12,6 +12,8 @@ from django.core.cache import cache
 from datetime import datetime
 from esp.middleware import ESPError
 from django.template.defaultfilters import urlencode
+from django.contrib.auth import logout, login, authenticate
+
 
 
 def user_get_key(user):
@@ -71,6 +73,57 @@ class ESPUser(User, AnonymousUser):
 
     def canEdit(self, object):
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
+
+    def updateOnsite(self, request):
+        if 'user_morph' in request.session and \
+           request.session['user_morph']['onsite'] == True:
+            self.onsite_local = True
+            self.onsite_retTitle = request.session['user_morph']['retTitle']
+            
+            return True
+        else:
+            self.onsite_local = False
+            return False
+
+
+    def switch_to_user(self, request, user, retUrl, retTitle, onsite = False):
+        user_morph = {'olduser' : self,
+                      'retUrl'  : retUrl,
+                      'retTitle': retTitle,
+                      'onsite'  : onsite}
+
+        request.session['user_morph'] = user_morph
+
+        if type(user) == ESPUser:
+            user = user.getOld()
+            
+        logout(request)
+        
+        user.backend = 'django.contrib.auth.backends.ModelBackend'
+        
+        login(request, user)
+
+
+    def switch_back(self, request):
+        if not 'user_morph' in request.session:
+            raise ESPError(), 'Error: You were not another user to begin with!'
+
+        retUrl   = request.session['user_morph']['retUrl']
+        new_user = request.session['user_morph']['olduser']
+        
+        del request.session['user_morph']
+        
+        logout(request)
+
+        if type(new_user) == ESPUser:
+            old_user = new_user.getOld()
+            
+        old_user.backend = 'django.contrib.auth.backends.ModelBackend'
+        
+        login(request, old_user)
+
+        return retUrl
+        
 
     def get_msg_vars(self, otheruser, key):
         """ This function will be called when rendering a message. """
@@ -180,9 +233,47 @@ class ESPUser(User, AnonymousUser):
     def isOnsite(self, program = None):
         verb = GetNode('V/Registration/OnSite')
         if program is None:
-            return UserBit.bits_get_qsc(user=self, verb=verb).count() > 0
+            return hasattr(self, 'onsite_local') and self.onsite_local is True
         else:
             return UserBit.UserHasPerms(self, program.anchor, verb)
+
+    def recoverPassword(self):
+        # generate the code, send the email.
+        
+        import string
+        import random
+        from esp.users.models import PersistentQueryFilter
+        from django.db.models import Q
+        from esp.dbmail.models import MessageRequest
+        from django.template import loader, Context
+        
+        
+        symbols = string.ascii_uppercase + string.digits 
+        code = "".join([random.choice(symbols) for x in range(30)])
+        
+        # get the filter object
+        filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = self.id),
+                                                         User,
+                                                         'User %s' % self.username)
+        
+        curuser = User.objects.get(id = self.id)
+        
+        curuser.password = code
+        curuser.save()
+			
+        # create the variable modules
+        variable_modules = {'user': ESPUser(curuser)}
+
+
+        newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
+                                                      subject    = '[ESP] Your Password Recovery For esp.mit.edu',
+                                                      recipients = filterobj,
+                                                      sender     = '"MIT Educational Studies Program" <esp@mit.edu>',
+                                                      creator    = self,
+                                                      msgtext    = loader.find_template_source('email/password_recover')[0])
+
+        newmsg_request.save()
+
 
 
     def isAdministrator(self, program = None):
