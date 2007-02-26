@@ -858,7 +858,10 @@ class ZipCode(models.Model):
 
     def distance(self, other):
         """ Returns the distance from one point to another """
-        import radians
+        import math
+
+        earth_radius = 3963.1676 # From google...
+        
         lat1 = math.radians(self.latitude)
         lon1 = math.radians(self.longitude)
         lat2 = math.radians(other.latitude)
@@ -871,15 +874,57 @@ class ZipCode(models.Model):
               math.cos(lat1)*math.cos(lat2) * \
               math.sin(delta_lon/2.0)**2
 
-        distance = 2 * math.atan2(math.sqrt(tmp), math.sqrt(1-tmp))
+        distance = 2 * math.atan2(math.sqrt(tmp), math.sqrt(1-tmp)) * \
+                   earth_radius
 
         return distance
     
+    def close_zipcodes(self, distance):
+        """ Get a list of zip codes less than or equal to
+            distance from this zip code. """
+
+        try:
+            distance = float(distance)
+        except:
+            raise ESPError(), '%s should be a valid number!' % distance
+
+        if distance < 0:
+            distance *= -1
+
+        oldsearches = ZipCodeSearches.objects.filter(zip_code = self,
+                                                     distance = distance)
+
+        if len(oldsearches) > 0:
+            return oldsearches[0].zipcodes.split(',')
+                                             
         
+        all_zips = list(ZipCode.objects.exclude(id = self.id))
+        winners  = [ self.zip_code ]
+
+        winners += [ zipc.zip_code for zipc in all_zips
+                     if self.distance(zipc) <= distance ]
+
+        newsearch = ZipCodeSearches(zip_code = self,
+                                    distance = distance,
+                                    zipcodes = ','.join(winners))
+        newsearch.save()
+        
+        return winners
 
     def __str__(self):
-        return '%s (%s, %s)' % (zip_code, longitude, latitude)
-    
+        return '%s (%s, %s)' % (self.zip_code,
+                                self.longitude,
+                                self.latitude)
+
+class ZipCodeSearches(models.Model):
+    zip_code = models.ForeignKey(ZipCode)
+    distance = models.FloatField(max_digits = 15, decimal_places = 3)
+    zipcodes = models.TextField()
+
+    def __str__(self):
+        return '%s Zip Codes that are less than %s miles from %s' % \
+               (len(self.zipcodes.split(',')), self.distance, self.zip_code)
+
 class ContactInfo(models.Model):
 	""" ESP-specific contact information for (possibly) a specific user """
 	user = models.ForeignKey(User, blank=True, null=True)
@@ -1096,6 +1141,7 @@ class PersistentQueryFilter(models.Model):
     def __str__(self):
         return str(self.useful_name)
         
+
 
 class DBList(object):
     """ Useful abstraction for the list of users.
