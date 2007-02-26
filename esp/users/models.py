@@ -849,6 +849,36 @@ class EducatorInfo(models.Model):
     
     class Admin:
         pass
+
+class ZipCode(models.Model):
+    """ Zip Code information """
+    zip_code = models.CharField(maxlength=5)
+    latitude = models.FloatField(max_digits=10, decimal_places = 6)
+    longitude = models.FloatField(max_digits=10, decimal_places = 6)
+
+    def distance(self, other):
+        """ Returns the distance from one point to another """
+        import radians
+        lat1 = math.radians(self.latitude)
+        lon1 = math.radians(self.longitude)
+        lat2 = math.radians(other.latitude)
+        lon2 = math.radians(other.longitude)
+
+        delta_lat = lat2 - lat1
+        delta_lon = lon2 - lon1
+
+        tmp = math.sin(delta_lat/2.0)**2 + \
+              math.cos(lat1)*math.cos(lat2) * \
+              math.sin(delta_lon/2.0)**2
+
+        distance = 2 * math.atan2(math.sqrt(tmp), math.sqrt(1-tmp))
+
+        return distance
+    
+        
+
+    def __str__(self):
+        return '%s (%s, %s)' % (zip_code, longitude, latitude)
     
 class ContactInfo(models.Model):
 	""" ESP-specific contact information for (possibly) a specific user """
