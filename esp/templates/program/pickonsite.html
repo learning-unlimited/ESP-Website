@@ -1,0 +1,30 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}On-Site Registration{% endblock %}
+
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+<br /><br />
+<h1>Select Program to run on-site registration for!</h1>
+
+
+<br />
+<h2>It seems there are multiple programs that are having registrations on the same day?</h2>
+<br />
+Please choose the program you want to run on-site registration for below:<br />
+
+<br />
+{% for prog in progs %}
+<span style="font-size: 16pt; font-weight: bold;">
+ <a href="/onsite/{{prog.getUrlBase}}/main">{{prog.niceName}}</a>
+</span>
+<br />
+{% endfor %}
+
+{% endblock %}

@@ -53,7 +53,8 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
                 context['navbar_list'] = makeNavBar(request.user, prog, section)
         if context.has_key('qsd') and context['qsd'] == True:
             context['randquote'] = ESPQuotations.getQuotation()
-
+        else:
+            context['randquote'] = False
             
         # get the preload_images list
         if not context.has_key('preload_images'):
@@ -163,7 +164,7 @@ sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/i
             'myesp'            : ('myesp',      'myESP',               '/myesp/home/',           ['takeaclass','getinvolved','volunteertoteach'], True),
             'contactinfo'      : ('about',      'Contact Us!',         '/about/contact.html',    [], False),
             'admin'            : ('admin',      'Admin Section',       '/myesp/admin/',          [], False),
-            'onsite'           : ('onsite',     'Onsite Registration', '/onsite/SATPrep/2007_Spring/main',     [], False)}
+            'onsite'           : ('onsite',     'Onsite Registration', '/myesp/onsite/',         [], False)}
 
 
 known_navlinks = ['about','learn','teach','getinvolved','archives','myesp','contactinfo']

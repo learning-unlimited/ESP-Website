@@ -565,6 +565,22 @@ def profile_editor(request, prog=None, responseuponCompletion = True, role=''):
 	return render_to_response('users/profile.html', request, navnode, context)
 
 @login_required
+def myesp_onsite(request, module):
+	
+	user = ESPUser(request.user)
+	if not user.isOnsite():
+		raise ESPError(False), 'You are not a valid on-site user, please go away.'
+	verb = GetNode('V/Registration/OnSite')
+	
+	progs = UserBit.find_by_anchor_perms(Program, user = user, verb = verb)
+
+	if len(progs) == 1:
+		return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
+	else:
+		navnode = GetNode('Q/Web/myesp')
+		return render_to_response('program/pickonsite.html', request, navnode, {'progs': progs})
+
+@login_required
 def myesp_battlescreen_teacher(request, module):
 	qscs = UserBit.bits_get_qsc(user=request.user, verb=GetNode("V/Flags/UserRole/Teacher"))
 	if qscs.count() > 0:
@@ -581,6 +597,7 @@ myesp_handlers = { 'register': myesp_register,
 		   'login': myesp_login,
 		   'logfin': myesp_logfin,
 		   'home': myesp_home,
+		   'onsite': myesp_onsite,
 		   'passwd': myesp_passwd,
 		   'passwdrecover': myesp_passrecover,
 		   'recoveremail': myesp_passemailrecover,
