@@ -14,7 +14,7 @@ from esp.program.modules.manipulators import OnSiteRegManipulator
 class OnsiteCore(ProgramModuleObj):
 
         
-    @needs_onsite()
+    @needs_onsite
     def main(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
         context = {}

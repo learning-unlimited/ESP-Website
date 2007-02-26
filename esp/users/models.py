@@ -107,6 +107,10 @@ class ESPUser(User, AnonymousUser):
         
         login(request, user)
 
+    def get_old(self, request):
+        if not 'user_morph' in request.session:
+            return False
+        return request.session['user_morph']['olduser']
 
     def switch_back(self, request):
         if not 'user_morph' in request.session:

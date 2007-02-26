@@ -7,7 +7,7 @@ from esp.users.models import ESPUser
 class OnsiteClassSchedule(ProgramModuleObj):
 
 
-    @needs_onsite(False)
+    @needs_student
     def studentschedule(self, request, *args, **kwargs):
         request.GET = {'extra': str(115), 'op':'usersearch',
                        'userid': str(self.user.id) }
@@ -20,7 +20,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
         return module.studentschedules(request, *args, **kwargs)
 
         
-    @needs_onsite()
+    @needs_onsite
     def schedule_students(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
 

@@ -13,7 +13,7 @@ class AdminMorph(ProgramModuleObj):
         
         Q_Everyone = self.program.students_union(True) | self.program.teachers_union(True)
         
-        user, found = search_for_user(request, ESPuser.objects.filter(Q_Everyone))
+        user, found = search_for_user(request, ESPUser.objects.filter(Q_Everyone))
 
         if not found:
             return user

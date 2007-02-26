@@ -30,7 +30,7 @@ class OnSiteRegister(ProgramModuleObj):
         ub.save()
         return True
     
-    @needs_onsite()
+    @needs_onsite
     def onsite_create(self, request, tl, one, two, module, extra, prog):
         manipulator = OnSiteNormalRegManipulator()
 	new_data = {}

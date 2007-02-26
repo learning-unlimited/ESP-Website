@@ -1,0 +1,31 @@
+<div class="title">Student Schedule for <br /><br />
+    <span>{{ student.name }}</span>
+</div>
+<div class="description">Here is your schedule.
+<br />
+If you have any questions, please go to the ESP help desk.
+</div>
+
+<div style="height: 2in;">&nbsp;</div>
+<br />
+<br />
+<table align="center" cellspacing="0" cellpadding="2px" class="schedule">
+   <tr>
+     <th colspan="4">Schedule</th>
+   </tr>
+   <tr>
+{% comment %}
+     <th class="day">Day</th>
+{% endcomment %}
+     <th>Time</th>
+     <th>Room</th>
+     <th>Class</th>
+     <th>Teacher(s)</th>
+   </tr>{% for cls in student.classes %}
+   <tr>
+     <td>{{ cls.friendly_times|join:"<br />" }}</td>
+     <td>{% if cls.classrooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</td>
+     <td>{{ cls.title }}</td>
+     <td>{{ cls.getTeacherNames|join:", " }}</td>
+   </tr>
+{% endfor %}

@@ -149,8 +149,8 @@ class MessageRequest(models.Model):
 
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
-    send_to = models.CharField(maxlength=64)  # Valid email address, "Name" <foo@bar.com>
-    send_from = models.CharField(maxlength=64) # Valid email address
+    send_to = models.CharField(maxlength=1024)  # Valid email address, "Name" <foo@bar.com>
+    send_from = models.CharField(maxlength=1024) # Valid email address
     subject = models.TextField() # E-mail subject; plain text
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)

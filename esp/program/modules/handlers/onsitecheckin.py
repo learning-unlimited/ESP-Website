@@ -65,7 +65,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
         
 
-    @needs_onsite()
+    @needs_onsite
     def checkin(self, request, tl, one, two, module, extra, prog):
 
         user, found = search_for_user(request, self.program.students_union())

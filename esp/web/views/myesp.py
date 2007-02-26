@@ -472,6 +472,17 @@ def myesp_battlescreen_student(request, module):
 
 
 @login_required
+def myesp_switchback(request, module):
+	user = request.user
+	user = ESPUser(user)
+	user.updateOnsite(request)
+
+	if not user.other_user:
+		raise ESPError(), 'You were not another user!'
+
+	return HttpResponseRedirect(user.switch_back(request))
+
+@login_required
 def edit_profile(request, module):
 
 
@@ -597,6 +608,7 @@ myesp_handlers = { 'register': myesp_register,
 		   'login': myesp_login,
 		   'logfin': myesp_logfin,
 		   'home': myesp_home,
+		   'switchback': myesp_switchback,
 		   'onsite': myesp_onsite,
 		   'passwd': myesp_passwd,
 		   'passwdrecover': myesp_passrecover,

@@ -68,6 +68,13 @@
 {% endif %}
 </div>
 {% endfor %}
+{% if request.user.onsite_local %}
+<div id="divnav7">
+<a href="/myesp/switchback/" onmouseover="MM_swapImage('onsite','','/media/images/lev2/nav/onsite_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/lev2/nav/onsite.gif" border="0" alt="Go Back to Onsite" title="" name="onsite" id="onsite" />
+</a>
+</div>
+{% endif %}
 {% else %}
 <div id="divnav0">
 <a href="/about/index.html" onmouseover="MM_swapImage('discoveresp','','/media/images/lev2/nav/discoveresp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
@@ -247,7 +254,7 @@ Create a new entry:
   {% if logged_in %}
      {% if request.user.other_user %}
          <div class="divformcol1" style="text-align:left">
-         <a href="{{ request.session.user_morph.retUrl }}">Go back to {{ request.session.user_morph.retTitle }}</a>
+         <a href="/myesp/switchback/">Go back to {{ request.session.user_morph.retTitle }}</a>
          </div>
      {% else %}
 		<div class="divformcol1" style="text-align:left">Welcome, {{ request.user.first_name }}! &nbsp; <!-- <a href="/myesp/manage/">Manage Subscriptions</a> --></div>

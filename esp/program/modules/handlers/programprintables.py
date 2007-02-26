@@ -97,7 +97,7 @@ Student schedule for %s:
                
         return schedule
 
-    @needs_onsite(False)
+
     def studentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
 

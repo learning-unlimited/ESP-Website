@@ -30,7 +30,7 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
         ub.save()
         return True
     
-    @needs_onsite()
+    @needs_onsite
     def satprep_create(self, request, tl, one, two, module, extra, prog):
         manipulator = OnSiteRegManipulator()
 	new_data = {}

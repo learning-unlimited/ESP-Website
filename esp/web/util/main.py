@@ -80,9 +80,8 @@ def get_page_setup(request):
 
     is_admin = ESPUser(request.user).isAdmin()
     curuser = ESPUser(request.user)
-    is_onsite = curuser.updateOnsite(request)
-    if not is_onsite:
-        is_onsite = ESPUser(request.user).isOnsite()
+    
+    is_onsite = ESPUser(request.user).isOnsite()
     
     # if we are at a level 2 site, like /myesp/home/
     if len(path) == 2 and request.path.lower() in [ x[2] for x in sections.values() ]:
