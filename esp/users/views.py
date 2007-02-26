@@ -170,10 +170,10 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
             if request.GET.has_key('zipcode') and request.GET.has_key('zipdistance') and \
                len(request.GET['zipcode'].strip()) > 0 and len(request.GET['zipdistance'].strip()) > 0:
-                #try:
-                zipc = ZipCode.objects.get(zip_code = request.GET['zipcode'])
-                #except:
-                #    raise ESPError(False), 'Please enter a valid US zipcode.'
+                try:
+                    zipc = ZipCode.objects.get(zip_code = request.GET['zipcode'])
+                except:
+                    raise ESPError(False), 'Please enter a valid US zipcode.'
                 zipcodes = zipc.close_zipcodes(request.GET['zipdistance'])
                 if len(zipcodes) > 0:
                     kwargs.update({'registrationprofile__contact_user__address_zip__in': zipcodes})
@@ -183,7 +183,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 	if len(kwargs) == 0 and len(kwargs_exclude) == 0:
 		users = None
 	else:
-            #assert False, kwargs
+
             QSUsers = All_Users
             if len(kwargs) > 0:
                 QSUsers = QSUsers.filter(**kwargs)
@@ -207,7 +207,8 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
             users.sort()
 
-            if request.GET.has_key('listokay') and request.GET['listokay'] == 'true':
+            if (request.GET.has_key('listokay') and request.GET['listokay'] == 'true') or \
+               (request.GET.has_key('submitform') and request.GET['submitform'] == 'Use Filtered List'):
                 Q_Filter = False
                 if len(kwargs) > 0:
                     Q_Filter = Q(**kwargs)

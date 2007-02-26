@@ -75,14 +75,18 @@ class ESPUser(User, AnonymousUser):
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
 
     def updateOnsite(self, request):
-        if 'user_morph' in request.session and \
-           request.session['user_morph']['onsite'] == True:
-            self.onsite_local = True
-            self.onsite_retTitle = request.session['user_morph']['retTitle']
-            
-            return True
+        if 'user_morph' in request.session:
+            if request.session['user_morph']['onsite'] == True:
+                self.onsite_local = True
+                self.other_user   = True
+                self.onsite_retTitle = request.session['user_morph']['retTitle']
+                return True
+            elif request.session['user_morph']['olduser'] is not None:
+                self.other_user = True
+                return False
         else:
             self.onsite_local = False
+            self.other_user   = False
             return False
 
 

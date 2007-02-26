@@ -63,7 +63,9 @@ miles from <input type="text" size="5" name="zipcode" value="02139" />.
 <br />
 <br />
 <input type="submit" value="Search for user" name="submitform" />
-
+{% if list %}
+&nbsp;&nbsp;<input type="submit" value="Use Filtered List" name="submitform" />
+{% endif %}
 </form>
 
 

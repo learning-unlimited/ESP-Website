@@ -245,7 +245,7 @@ Create a new entry:
   <td width="100%"><div class="divformcol1">&nbsp;</div></td>
   <td style="text-align:left">
   {% if logged_in %}
-     {% if request.user.onsite_local %}
+     {% if request.user.other_user %}
          <div class="divformcol1" style="text-align:left">
          <a href="{{ request.session.user_morph.retUrl }}">Go back to {{ request.session.user_morph.retTitle }}</a>
          </div>
