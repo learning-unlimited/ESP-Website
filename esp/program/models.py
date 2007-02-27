@@ -708,7 +708,7 @@ class Class(models.Model):
 	def update_cache(self):
 		cache.delete('Class__'+str(self.id))
 
-	def preregister_student(self, user):
+	def preregister_student(self, user, overridefull=False):
 
 		
 		prereg_verb = GetNode( 'V/Flags/Registration/Preliminary' )
@@ -720,7 +720,7 @@ class Class(models.Model):
 		#if class_qset.count() > 0:
 		#		b.delete()
 				
-		if not self.isFull():
+		if overridefull or not self.isFull():
 			#	Then, create the userbit denoting preregistration for this class.
 			prereg = UserBit()
 			prereg.user = user

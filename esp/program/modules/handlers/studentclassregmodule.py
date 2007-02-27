@@ -72,7 +72,7 @@ class StudentClassRegModule(ProgramModuleObj):
         error = cobj.cannotAdd(self.user)
         if error and not self.user.onsite_local:
             raise ESPError(False), error
-        if cobj.preregister_student(self.user):
+        if cobj.preregister_student(self.user, self.user.onsite_local):
             cobj.update_cache_students()
             return self.goToCore(tl) # go to the core view.
         else:

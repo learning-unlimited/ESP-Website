@@ -377,6 +377,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             if not errors:
                 manipulator.do_html2python(new_data)
 
+                newclass_isnew = False
+
                 if newclass is None:
                     newclass_isnew = True
                     newclass = Class()
@@ -404,7 +406,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                     except:
                         newclass.duration = 0.0
 
-                newclass_isnew = False
                     
                 # datatree maintenance
                 if newclass_isnew:
