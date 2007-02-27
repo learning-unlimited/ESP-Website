@@ -58,7 +58,7 @@ class ProgramPrintables(ProgramModuleObj):
     def get_msg_vars(self, user, key):
         user = ESPUser(user)
         if key == 'schedule':
-            return ProgramPrintables.getStudentSchedule(self.program, user)
+            return ProgramPrintables.getSchedule(self.program, user)
 
         return ''
 
