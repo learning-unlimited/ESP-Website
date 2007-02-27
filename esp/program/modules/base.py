@@ -172,20 +172,26 @@ class ProgramModuleObj(models.Model):
         from esp.users.models import UserBit
         from esp.datatree.models import GetNode
 
+
         if not self.user or not self.program:
             raise ESPError(False), "There is no user or program object!"
+
 
             
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True
 
-        canView = self.user.onsite_local
-        
+        canView = False
+
+        if self.user.__dict__.has_key('onsite_local'):
+            canView = self.user.__dict__['onsite_local']
+
         if not canView:
             canView = UserBit.UserHasPerms(self.user,
                                            self.program.anchor,
                                            GetNode('V/Deadline/Registration/'+{'learn':'Student',
                                                                                'teach':'Teacher'}[self.module.module_type]+extension))
+
 
         return canView
 

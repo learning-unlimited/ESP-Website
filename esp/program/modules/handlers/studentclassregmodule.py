@@ -37,6 +37,7 @@ class StudentClassRegModule(ProgramModuleObj):
         #tmpModule = ProgramModuleObj()
         #tmpModule.__dict__ = self.__dict__
         return super(StudentClassRegModule, self).deadline_met('/Classes')
+
     
     @needs_student
     def prepare(self, context={}):

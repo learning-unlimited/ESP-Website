@@ -1,6 +1,6 @@
 """ This is the views portion of the users utility, which has some user-oriented views."""
 from esp.middleware   import ESPError
-from django.db.models.query import Q, QNot
+from esp.db.models    import Q, QNot
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User, ZipCode
 from esp.web.util     import render_to_response
 import pickle
