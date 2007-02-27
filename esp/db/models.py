@@ -1,24 +1,32 @@
-from django.db.models.query import Q as DjangoQ, QNot as DjangoQNot, QAnd as DjangoQAnd, QOr as DjangoQOr, QOperator as DjangoQOperator, parse_lookup
+""" ESP's own implementation of the Q objects as spelled out by django. """
+
+from django.db.models.query import Q as DjangoQ, QAnd as DjangoQAnd, QOr as DjangoQOr, QOperator as DjangoQOperator, QNot, parse_lookup
 from django.utils.datastructures import SortedDict
 
 class QOperator(DjangoQOperator):
     "Base class for QAnd and QOr"
-    def __init__(self, *args):
-        self.inside_or = False
-        self.set_or    = False
-        
-        self.args = args
+    inside_or = False
+    set_or    = False
 
     def set_OR(self, or_value):
         """ Set the value of .inside_or """
+
+        if self.set_or:
+            return
+        
+        self.inside_or = or_value # set this value
+        self.set_or    = True
+
+        
         for val in self.args:
-            self.inside_or = or_value
-            self.set_or    = True
+            val.set_OR(or_value) # set the value for all the children
 
     def some_OR_exists(self):
         """ Returns true if an OR exists. """
+        
         if type(self) == QOr:
             return True
+        
         for val in self.args:
             if val.some_OR_exists():
                 return True
@@ -32,17 +40,10 @@ class QOperator(DjangoQOperator):
             some_OR_exists = self.some_OR_exists()
             self.set_OR(some_OR_exists)
 
-        joins, where, params = SortedDict(), [], []
-        for val in self.args:
-            joins2, where2, params2 = val.get_sql(opts)
-            joins.update(joins2)
-            where.extend(where2)
-            params.extend(params2)
+        self.set_or = False # remove the fact that we know if we're OR'd
+        
+        return super(QOperator, self).get_sql(opts)
 
-
-        if where:
-            return joins, ['(%s)' % self.operator.join(where)], params
-        return joins, [], params
 
 class QAnd(QOperator, DjangoQAnd):
     "Encapsulates a combined query that uses 'AND'."
@@ -74,25 +75,22 @@ class QOr(QOperator, DjangoQOr):
 
 class Q(DjangoQ):
     "Encapsulates queries as objects that can be combined logically."
+    inside_or = False # Whether or not this Q is inside an or
+    set_or    = False
 
     def some_OR_exists(self):
         return False
 
     def set_OR(self, value):
-        self.set_or = True
-        self.inside_or = value
-    
-
-    def __init__(self, **kwargs):
-        self.inside_or = False
-        self.set_or    = False
-        self.kwargs = kwargs
+        if not self.set_or:
+            self.inside_or = value
+            self.set_or    = True
 
     def __and__(self, other):
-        return QAnd(self, other)
+        return QAnd(self, other) # not django's QAnd
 
     def __or__(self, other):
-        return QOr(self, other)
+        return QOr(self, other) # not django's QOr
 
     def get_sql(self, opts):
 
@@ -107,15 +105,7 @@ class Q(DjangoQ):
         for item, key in joins.items():
             joins2[item] = (key[0], join_text, key[2])
 
+        self.set_or = False # remove the fact that we know if we're OR'd
+        
         return joins2, where, params
 
-class QNot(QOperator, DjangoQNot):
-    "Encapsulates NOT (...) queries as objects"
-    def __init__(self, q):
-        "Creates a negation of the q object passed in."
-        self.q = q
-
-    def get_sql(self, opts):
-        joins, where, params = self.q.get_sql(opts)
-        where2 = ['(NOT (%s))' % " AND ".join(where)]
-        return joins, where2, params
