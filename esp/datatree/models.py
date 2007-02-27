@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from django.core.cache import cache
-from django.db.models import Q
+from esp.db.models import Q
 from django.template.defaultfilters import urlencode
 from esp.middleware import ESPError
 

@@ -259,7 +259,7 @@ def myesp_passrecover(request, module):
 	""" Recover the password for a user """
 	from esp.users.models import PersistentQueryFilter
 	from django.template import loader
-	from django.db.models import Q
+	from esp.db.models import Q
 	
 	new_data = request.POST.copy()
 	manipulator = UserRecoverForm()

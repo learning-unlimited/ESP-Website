@@ -10,7 +10,7 @@ from esp.web.util import render_to_response
 from django.http import HttpResponseRedirect
 from django.contrib.auth import LOGIN_URL, REDIRECT_FIELD_NAME
 from urllib import quote
-from django.db.models import Q
+from esp.db.models import Q
 
 
 class ProgramModuleObj(models.Model):
@@ -60,6 +60,9 @@ class ProgramModuleObj(models.Model):
         return HttpResponseRedirect(self.getCoreURL(tl))
 
     def getQForUser(self, QRestriction):
+        # Let's not do anything and say we did...
+        return QRestriction
+    
         from esp.users.models import User
         ids = [ x['id'] for x in User.objects.filter(QRestriction).values('id')]
         if len(ids) == 0:

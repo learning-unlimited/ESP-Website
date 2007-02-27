@@ -6,7 +6,7 @@ from django import forms
 from django.core.cache import cache
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser, User
-from django.db.models.query import Q, QNot
+from esp.db.models      import Q, QNot
 from django.template.defaultfilters import urlencode
 from django.template import Context, Template
 from esp.miniblog.models import Entry

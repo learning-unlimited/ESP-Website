@@ -475,7 +475,7 @@ class AdminClass(ProgramModuleObj):
         limit = 10
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
-        from django.db.models import Q
+        from esp.db.models import Q
 
         # Initialize anchors for identifying teachers
         q = GetNode( 'Q' )

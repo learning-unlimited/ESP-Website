@@ -3,7 +3,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
-from django.db.models    import Q
+from esp.db.models       import Q
 
 class CreditCardModule(ProgramModuleObj):
     def extensions(self):
@@ -21,6 +21,7 @@ class CreditCardModule(ProgramModuleObj):
         transactions = Transaction.objects.filter(anchor = self.program.anchor)
         userids = [ x.fbo.id for x in transactions ]
         QObj = Q(id__in = userids)
+
         if QObject:
             return {'creditcard': QObj}
         else:

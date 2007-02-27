@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from django.utils import simplejson
 from esp.users.models import UserBit
-from django.db.models import Q
+from esp.db.models import Q
 from esp.datatree.models import GetNode
 
 class JsonResponse(HttpResponse):

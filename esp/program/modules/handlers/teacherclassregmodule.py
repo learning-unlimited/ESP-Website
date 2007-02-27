@@ -9,7 +9,7 @@ from esp.cal.models              import Event
 from django.core.mail            import send_mail
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
-from django.db.models            import Q
+from esp.db.models               import Q
 
 class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -493,7 +493,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         limit = 10
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
-        from django.db.models import Q
         from esp.users.models import ESPUser
 
         Q_teacher = Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))

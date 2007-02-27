@@ -5,7 +5,7 @@ from esp.program.manipulators import SATPrepInfoManipulator
 from django import forms
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser
-from django.db.models import Q
+from esp.db.models      import Q
 
 
 

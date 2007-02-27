@@ -73,7 +73,7 @@ class ArchiveClass(models.Model):
 	@staticmethod
 	def getForUser(user):
 		""" Get a list of archive classes for a specific user. """
-		from django.db.models import Q
+		from esp.db.models import Q
 		Q_Class = Q(teacher__icontains = (user.first_name + ' ' + user.last_name)) |\
 			   Q(teacher_ids__icontains = ('|%s|' % user.id))
 		return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')

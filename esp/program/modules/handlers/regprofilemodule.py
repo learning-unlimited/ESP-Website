@@ -2,7 +2,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.web.views.myesp import profile_editor
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser
-from django.db.models import Q
+from esp.db.models import Q
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):

@@ -4,7 +4,7 @@ from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm
 #from peak.api import security, binding
 from esp.workflow.models import Controller
 from datetime import datetime
-from django.db.models import Q
+from esp.db.models import Q
 from esp.dblog.models import error
 from django.db.models.query import QuerySet
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
@@ -253,7 +253,7 @@ class ESPUser(User, AnonymousUser):
         import string
         import random
         from esp.users.models import PersistentQueryFilter
-        from django.db.models import Q
+        from esp.db.models import Q
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
         

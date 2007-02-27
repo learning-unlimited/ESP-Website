@@ -6,7 +6,7 @@ from django import forms
 from django.core.cache import cache
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser
-from django.db.models.query import Q, QNot
+from esp.db.models      import Q, QNot
 from django.template.defaultfilters import urlencode
 from django.template import Context, Template
 from esp.miniblog.models import Entry
@@ -31,7 +31,7 @@ class ListGenModule(ProgramModuleObj):
         if not found:
             return filterObj
 
-        if not request.GET.has_key('type'):
+        if not 'type' in request.GET:
             return render_to_response(self.baseDir()+'options.html', request, (prog, tl), {'filterid': filterObj.id})
 
         strtype = request.GET['type']

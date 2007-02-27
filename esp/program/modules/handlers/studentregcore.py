@@ -3,7 +3,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser
 from esp.datatree.models import GetNode
-from django.db.models import Q
+from esp.db.models import Q
 from esp.middleware   import ESPError
 
 import operator

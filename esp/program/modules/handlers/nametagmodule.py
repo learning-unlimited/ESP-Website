@@ -3,7 +3,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models import ESPUser, User
-from django.db.models import Q
+from esp.db.models import Q
 from esp.users.views  import get_user_list
 
 class NameTagModule(ProgramModuleObj):
