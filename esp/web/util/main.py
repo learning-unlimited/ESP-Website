@@ -1,6 +1,5 @@
 from esp.users.models import ESPUser
 import django.shortcuts
-from esp.web.util.navBar import makeNavBar
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
 from esp.middleware import ESPError
@@ -23,6 +22,8 @@ def get_from_id(id, module, strtype = 'object', error = True):
 
 
 def render_to_response(template, requestOrContext, prog = None, context = None):
+    from esp.web.views.navBar import makeNavBar
+
     # if there are only two arguments
     if context is None and prog is None:
         return django.shortcuts.render_to_response(template, requestOrContext)

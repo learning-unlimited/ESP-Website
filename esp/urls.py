@@ -110,7 +110,7 @@ esppatterns_list = [
 
 
 # Now we turn what was above into a neat little urlpatterns for Django
-root = 'esp.web.views.'
+root = 'esp.web.views.everything.'
 for i in range(len(esppatterns_list)):
     # Since tuples are immutable...
     if len(esppatterns_list[i]) == 2:
