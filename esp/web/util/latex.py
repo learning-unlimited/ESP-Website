@@ -40,7 +40,8 @@ def gen_latex(texcode, type='pdf'):
     elif type=='log':
         mime = 'text/plain'
         os.system('cd /tmp; latex %s.tex' % file_base)
-        
+    elif type=='tex':
+        mime = 'text/plain'
     else:
         raise ESPError(), 'Invalid type received for latex generation: %s should be one of %s' % (type, file_types)
     

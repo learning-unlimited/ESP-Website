@@ -94,7 +94,6 @@ INSTALLED_APPS = (
     'esp.web',
     'esp.qsd',
     'esp.qsdmedia',
-    'esp.satprep',
     'esp.money',
     'esp.resources',
     'esp.poll',
