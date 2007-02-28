@@ -6,6 +6,7 @@ from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
 from esp.program.models  import Class
 from esp.users.views     import get_user_list
+from esp.web.util.latex  import gen_latex
 
 class ProgramPrintables(ProgramModuleObj):
 
@@ -15,6 +16,34 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'module': self}
 
         return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
+
+    @needs_admin
+    def coursecatalog(self, request, tl, one, two, module, extra, prog):
+        " This renders the course catalog in LaTeX. "
+        from django.template import Context, Template, loader
+        
+        from django.http     import HttpResponse
+
+
+        classes = Class.objects.filter(parent_program = self.program).order_by('category','id')
+
+        classes = [cls for cls in classes
+                   if cls.isAccepted()   ]
+
+        catalogsrc = loader.find_template_source(self.baseDir() + 'catalog.tex')[0]
+
+        context = Context({'classes': classes, 'program': self.program})
+
+        t = Template(catalogsrc)
+
+        catalog_rendered = t.render(context)
+
+        if extra is None or len(str(extra).strip()) == 0:
+            extra = 'pdf'
+
+        return gen_latex(catalog_rendered, extra)
+
+        
 
 
     @needs_admin

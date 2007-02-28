@@ -1,0 +1,48 @@
+{% load latex %}
+\documentclass[letterpaper,9pt]{article}
+
+\usepackage{multicol}
+\usepackage{fullpage}
+\usepackage{fancyhdr}
+\usepackage[left=.5in,top=1cm,right=.5in]{geometry}
+
+\pagestyle{fancy}
+
+\headheight=20pt
+\parindent=0pt
+\setlength{\columnsep}{10pt}
+\setlength{\headsep}{10pt}
+%%\setlength{\textwidth}{7in}
+\setlength{}{}
+
+\lhead{MIT Educational Studies Program}
+\chead{% templatetag openbrace %} {{program.niceName}} }
+
+\newcommand{\cat}[1]{\begin{center}\section*{#1}\end{center} }
+
+\begin{document}
+\begin{multicols}{2}
+\vspace{.05in}
+{% for cls in classes %}
+  {% ifchanged %}
+\end{multicols}
+\newpage
+\cat{\Huge Course Catalog -- \textit{ {{ cls.category.category }} } }
+\rhead{% templatetag openbrace %}{{cls.category.category }} }
+\vspace{.1in}
+\begin{multicols}{2} 
+ {%endifchanged %}
+\begin{tabular}{p{.45\textwidth} }
+\textbf{% templatetag openbrace %}{{cls.emailcode}}: {{ cls.title|texescape }} } \\
+\textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
+{{ cls.class_info|texescape }} \\
+\textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
+\textit{Maximum Size: {{cls.class_size_max }} } \\
+\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"\\" }} } \\
+{% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}
+
+\end{tabular}
+\vspace{.1in}
+{% endfor %}
+\end{multicols}
+\end{document}
