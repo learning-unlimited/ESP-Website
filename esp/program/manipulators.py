@@ -4,67 +4,90 @@ import re
 
 class UserContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
-    def __init__(self):
+    def __init__(self, user=None):
+        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+            makeRequired = True
+        else:
+            makeRequired = False
+            
         phone_validators = [OneOfSetAreFilled(['phone_day','phone_even','phone_cell'])]
         self.fields = (
-            forms.TextField(field_name="first_name", length=15, maxlength=64, is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="first_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="last_name", length=15, maxlength=64, is_required=False, validator_list=[validators.isNotEmpty]),            
-            forms.EmailField(field_name="e_mail", is_required=True, length=25, validator_list=[validators.isNotEmpty]),
-            ESPPhoneNumberField(field_name="phone_day", local_areacode='617', is_required=True),
+            forms.EmailField(field_name="e_mail", is_required=makeRequired, length=25, validator_list=[validators.isNotEmpty]),
+            ESPPhoneNumberField(field_name="phone_day", local_areacode='617', is_required=makeRequired),
             ESPPhoneNumberField(field_name="phone_cell", local_areacode='617'),
             ESPPhoneNumberField(field_name="phone_even", local_areacode='617'),
-            forms.TextField(field_name="address_street", length=20, maxlength=100, is_required=True, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="address_city", length=20, maxlength=50, is_required=True, validator_list=[validators.isNotEmpty]),
-            USStateSelectField(field_name="address_state", is_required=True),
-            forms.TextField(field_name="address_zip", length=5, maxlength=5, is_required=True, validator_list=[validators.isNotEmpty])
+            forms.TextField(field_name="address_street", length=20, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="address_city", length=20, maxlength=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            USStateSelectField(field_name="address_state", is_required=makeRequired),
+            forms.TextField(field_name="address_zip", length=5, maxlength=5, is_required=makeRequired, validator_list=[validators.isNotEmpty])
         )
         
 class EmergContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
-    def __init__(self):
+    def __init__(self, user = None):
+        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+            makeRequired = True
+        else:
+            makeRequired = False
+            
+        
         self.fields = (
-            forms.TextField(field_name="emerg_first_name", length=15, maxlength=64, is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="emerg_first_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="emerg_last_name", length=15, maxlength=64, is_required=False, validator_list=[validators.isNotEmpty]),            
-            forms.EmailField(field_name="emerg_e_mail", is_required=True, length=25),
-            ESPPhoneNumberField(field_name="emerg_phone_day", is_required=True, local_areacode='617'),
+            forms.EmailField(field_name="emerg_e_mail", is_required=makeRequired, length=25),
+            ESPPhoneNumberField(field_name="emerg_phone_day", is_required=makeRequired, local_areacode='617'),
             ESPPhoneNumberField(field_name="emerg_phone_cell", local_areacode='617'),
             ESPPhoneNumberField(field_name="emerg_phone_even", local_areacode='617'),    
-            forms.TextField(field_name="emerg_address_street", length=20, maxlength=100, is_required=True, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="emerg_address_city", length=20, maxlength=50, is_required=True, validator_list=[validators.isNotEmpty]),
-            USStateSelectField(field_name="emerg_address_state", is_required=True),
-            forms.TextField(field_name="emerg_address_zip", length=5, maxlength=5, is_required=True, validator_list=[validators.isNotEmpty])
+            forms.TextField(field_name="emerg_address_street", length=20, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="emerg_address_city", length=20, maxlength=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            USStateSelectField(field_name="emerg_address_state", is_required=makeRequired),
+            forms.TextField(field_name="emerg_address_zip", length=5, maxlength=5, is_required=makeRequired, validator_list=[validators.isNotEmpty])
         )
 
 class GuardContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
-    def __init__(self):
+    def __init__(self, user=None):
+        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+            makeRequired = True
+        else:
+            makeRequired = False
+            
+        
         self.fields = (
-            forms.TextField(field_name="guard_first_name", length=15, maxlength=64, is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="guard_first_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="guard_last_name", length=15, maxlength=64, is_required=False, validator_list=[validators.isNotEmpty]),
-            forms.EmailField(field_name="guard_e_mail", is_required=True, length=25),
-            ESPPhoneNumberField(field_name="guard_phone_day", is_required=True, local_areacode='617'),
+            forms.EmailField(field_name="guard_e_mail", is_required=makeRequired, length=25),
+            ESPPhoneNumberField(field_name="guard_phone_day", is_required=makeRequired, local_areacode='617'),
             ESPPhoneNumberField(field_name="guard_phone_cell", local_areacode='617'),
             ESPPhoneNumberField(field_name="guard_phone_even", local_areacode='617'),
             )
 
 class StudentInfoManipulator(forms.Manipulator):
     """ Manipulator for student info """
-    def __init__(self):
+    def __init__(self, user=None):
+
+        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+            makeRequired = True
+        else:
+            makeRequired = False
+            
         import datetime
         cur_year = datetime.date.today().year
         
         self.fields = (
-            GraduationYearField(field_name="graduation_year", is_required=True, choices=zip(range(6,13),range(6,13))),
+            GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=zip(range(6,13),range(6,13))),
             
-#            forms.SelectField(field_name="graduation_year", choices=zip(range(cur_year,cur_year+20),range(cur_year,cur_year+20)), is_required=True),
+#            forms.SelectField(field_name="graduation_year", choices=zip(range(cur_year,cur_year+20),range(cur_year,cur_year+20)), is_required=makeRequired),
             forms.TextField(field_name="school", length=24, maxlength=128),
-            HTMLDateField(field_name="dob", is_required=True)
+            HTMLDateField(field_name="dob", is_required=makeRequired)
             )
 
 
 class TeacherInfoManipulator(forms.Manipulator):
     """ Manipulator for Teacher info """
-    def __init__(self):
+    def __init__(self, user = None):
         import datetime
         cur_year = datetime.date.today().year
         self.fields = (
@@ -76,7 +99,7 @@ class TeacherInfoManipulator(forms.Manipulator):
 
 class EducatorInfoManipulator(forms.Manipulator):
     """ Manipulator for Educator Info """
-    def __init__(self):
+    def __init__(self, user = None):
         self.fields = (
             forms.TextField(field_name="subject_taught", length=12, maxlength=64),
             forms.TextField(field_name="grades_taught", length=10, maxlength=16),
@@ -86,7 +109,7 @@ class EducatorInfoManipulator(forms.Manipulator):
         
 class GuardianInfoManipulator(forms.Manipulator):
     """ Manipulator for Educator Info """
-    def __init__(self):
+    def __init__(self, user = None):
         self.fields = (
             forms.PositiveIntegerField(field_name="year_finished", length=4, maxlength=4),
             forms.PositiveIntegerField(field_name="num_kids", length=3, maxlength=16)
@@ -94,23 +117,30 @@ class GuardianInfoManipulator(forms.Manipulator):
 
 class StudentProfileManipulator(forms.Manipulator):
     """ Create the student profile manipulator from the other manipulators """
-    def __init__(self):
-        self.fields = UserContactManipulator().fields + EmergContactManipulator().fields + GuardContactManipulator().fields + StudentInfoManipulator().fields
+    def __init__(self, user = None):
+        self.fields = UserContactManipulator(user).fields + \
+                      EmergContactManipulator(user).fields + \
+                      GuardContactManipulator(user).fields + \
+                      StudentInfoManipulator(user).fields
         
 class TeacherProfileManipulator(forms.Manipulator):
     """ The teacher profile manipulator created from other manipulators """
-    def __init__(self):
-        self.fields = UserContactManipulator().fields + EmergContactManipulator().fields + TeacherInfoManipulator().fields
+    def __init__(self, user = None):
+        self.fields = UserContactManipulator(user).fields + \
+                      EmergContactManipulator(user).fields + \
+                      TeacherInfoManipulator(user).fields
 
 class GuardianProfileManipulator(forms.Manipulator):
     """ The guardian profile manipulator created from other manipulators """
-    def __init__(self):
-        self.fields = UserContactManipulator().fields + GuardianInfoManipulator().fields
+    def __init__(self, user = None):
+        self.fields = UserContactManipulator(user).fields + \
+                      GuardianInfoManipulator(user).fields
 
 class EducatorProfileManipulator(forms.Manipulator):
     """ The educator profile manipulator created from other manipulators """
-    def __init__(self):
-        self.fields = UserContactManipulator().fields + EducatorInfoManipulator().fields
+    def __init__(self, user = None):
+        self.fields = UserContactManipulator(user).fields + \
+                      EducatorInfoManipulator(user).fields
 
 def YOGValidator(self, field_data, all_data):
     import datetime

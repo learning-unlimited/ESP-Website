@@ -520,12 +520,14 @@ def profile_editor(request, prog=None, responseuponCompletion = True, role=''):
 	context = {'logged_in': request.user.is_authenticated() }
 	context['user'] = request.user
 	
-
-	manipulator = {'': UserContactManipulator(),
-		       'student': StudentProfileManipulator(),
-		       'teacher': TeacherProfileManipulator(),
-		       'guardian': GuardianProfileManipulator(),
-		       'educator': EducatorProfileManipulator()}[role]
+	curUser = ESPUser(curUser)
+	curUser.updateOnsite(request)
+	
+	manipulator = {'': UserContactManipulator(curUser),
+		       'student': StudentProfileManipulator(curUser),
+		       'teacher': TeacherProfileManipulator(curUser),
+		       'guardian': GuardianProfileManipulator(curUser),
+		       'educator': EducatorProfileManipulator(curUser)}[role]
 	context['profiletype'] = role
 
 	if request.method == 'POST' and request.POST.has_key('profile_page'):
