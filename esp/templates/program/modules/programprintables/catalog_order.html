@@ -1,0 +1,74 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Printables{% endblock %}
+
+{% block subsection_name %}Printing Options{% endblock %}
+
+{% block content %}
+<style type="text/css">
+#divmaintext table, #divmaintext th, #divmaintext td {
+  border: 1px solid black; border-collapse: collapse;
+}
+</style>
+<br />
+<br />
+
+<br /><br />
+<h1>Catalog order for {{program.niceName}}</h1>
+
+<p style="text-align: center">
+Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. 
+<br />
+(Sometimes it will look unbalanced etc.).
+</p>
+<p>
+<a href="{{request.path}}">Reset Order</a> (default is by catagory, timeblock, title)
+<br /><br />
+Get Catalog: 
+(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?clsids={{clsids}}">pdf</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?clsids={{clsids}}">dvi</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?clsids={{clsids}}">ps</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?clsids={{clsids}}">tex</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?clsids={{clsids}}">log</a>)
+
+</p>
+<table cellspacing="0" cellpadding="0">
+<tr>
+  <th>#</th>
+  <th>ID</th>
+  <th>Teachers</th>
+  <th>Time</th>
+  <th>Short Title</th>
+  <th>Up or down?</th>
+</tr>
+{% for cls in classes %}
+<tr>
+  <th>{{forloop.counter}}</th>
+  <td>{{cls.emailcode}}</td>
+  <td>{{cls.getTeacherNames|join:", "}}</td>
+  <td>{{cls.friendly_times|join:", "}}</td>
+  <td>{{cls.title|truncatewords:3}}</td>
+  <td>
+    {% if not forloop.first %}
+    <a href="{{request.path}}?clsid={{cls.id}}&op=up&ids={{clsids|urlencode}}"
+      title="Move Class up one!">[up]</a>
+    {% endif %} {% if not forloop.last %}
+    <a href="{{request.path}}?op=down&ids={{clsids|urlencode}}&clsid={{cls.id}}"
+     title="Move Class down one!">[down]</a>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+
+</table>
+<p>
+Get Catalog: 
+(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?clsids={{clsids}}">pdf</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?clsids={{clsids}}">dvi</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?clsids={{clsids}}">ps</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?clsids={{clsids}}">tex</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?clsids={{clsids}}">log</a>)
+</p>
+
+
+{% endblock %}

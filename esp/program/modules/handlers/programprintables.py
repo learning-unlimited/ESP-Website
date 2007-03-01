@@ -20,15 +20,95 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
 
     @needs_admin
+    def catalog(self, request, tl, one, two, module, extra, prog):
+        " this sets the order of classes for the catalog. "
+
+        if request.GET.has_key('ids') and request.GET.has_key('op') and \
+           request.GET.has_key('clsid'):
+            try:
+                clsid = int(request.GET['clsid'])
+                cls   = Class.objects.get(parent_program = self.program,
+                                          id             = clsid)
+            except:
+                raise ESPError(), 'Could not get the class object.'
+
+            classes = Class.objects.filter(parent_program = self.program)
+            classes = [cls for cls in classes
+                       if cls.isAccepted() ]
+
+            cls_dict = {}
+            for cur_cls in classes:
+                cls_dict[str(cur_cls.id)] = cur_cls
+            
+
+            clsids = request.GET['ids'].split(',')
+            found  = False
+            
+            if request.GET['op'] == 'up':
+                for i in range(1,len(clsids)):
+                    if not found and str(clsids[i]) == request.GET['clsid']:
+                        tmp         = str(clsids[i-1])
+                        clsids[i-1] = str(clsids[i])
+                        clsids[i]   = tmp
+                        found       = True
+                        
+            elif request.GET['op'] == 'down':
+                for i in range(len(clsids)-1):
+                    if not found and str(clsids[i]) == request.GET['clsid']:
+                        tmp         = str(clsids[i])
+                        clsids[i]   = str(clsids[i+1])
+                        clsids[i+1] = tmp
+                        found       = True
+            else:
+                raise ESPError(), 'Received invalid operation for class list.'
+
+            
+            classes = []
+
+            for clsid in clsids:
+                classes.append(cls_dict[clsid])
+
+            clsids = ','.join(clsids)
+            return render_to_response(self.baseDir()+'catalog_order.html',
+                                      request,
+                                      (self.program, tl),
+                                      {'clsids': clsids, 'classes': classes})
+
+        
+        classes = Class.objects.filter(parent_program = self.program)
+
+        classes = [cls for cls in classes
+                   if cls.isAccepted()    ]
+
+        classes.sort(Class.catalog_sort)
+
+        clsids = ','.join([str(cls.id) for cls in classes])
+
+        return render_to_response(self.baseDir()+'catalog_order.html',
+                                  request,
+                                  (self.program, tl),
+                                  {'clsids': clsids, 'classes': classes})
+        
+
+    @needs_admin
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
 
-        classes = Class.objects.filter(parent_program = self.program).order_by('category','id')
+        classes = Class.objects.filter(parent_program = self.program)
+
 
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
 
-        classes.sort(Class.catalog_sort)
+        if request.GET.has_key('clsids'):
+            clsids = request.GET['clsids'].split(',')
+            cls_dict = {}
+            for cls in classes:
+                cls_dict[str(cls.id)] = cls
+            classes = [cls_dict[clsid] for clsid in clsids]
+            
+        else:
+            classes.sort(Class.catalog_sort)
         context = {'classes': classes, 'program': self.program}
 
         if extra is None or len(str(extra).strip()) == 0:
