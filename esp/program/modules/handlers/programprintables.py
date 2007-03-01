@@ -28,6 +28,7 @@ class ProgramPrintables(ProgramModuleObj):
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
 
+        classes.sort(Class.catalog_sort)
         context = {'classes': classes, 'program': self.program}
 
         if extra is None or len(str(extra).strip()) == 0:

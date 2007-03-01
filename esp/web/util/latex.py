@@ -48,18 +48,18 @@ def gen_latex(texcode, type='pdf'):
 
     if type=='pdf':
         mime = 'application/pdf'
-        
         os.system('cd /tmp; pdflatex %s.tex' % file_base)
+        
     elif type=='dvi':
         mime = 'application/x-dvi'
-
         os.system('cd /tmp; latex %s.tex' % file_base)
+        
     elif type=='ps':
         mime = 'application/postscript'
-
         os.system('cd /tmp; latex %s.tex' % file_base)
         os.system('cd /tmp; dvips %s -o %s.ps' % (file_base, file_base))
         os.remove('%s.dvi' % file_base)
+        
     elif type=='log':
         mime = 'text/plain'
         os.system('cd /tmp; latex %s.tex' % file_base)

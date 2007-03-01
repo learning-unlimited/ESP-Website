@@ -625,6 +625,13 @@ class Class(models.Model):
 	@staticmethod
 	def idcmp(one, other):
 		return cmp(one.id, other.id)
+
+	@staticmethod
+	def catalog_sort(one, other):
+		cmp1 = cmp(one.category.category, other.category.category)
+		if cmp1 != 0:
+			return cmp1
+		return cmp(one, other)
 	
 	def __cmp__(self, other):
 		selfevent = self.firstBlockEvent()

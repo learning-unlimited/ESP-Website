@@ -83,6 +83,12 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_deadline('/Classes')    
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
+        try:
+            extra = int(extra)
+        except:
+            id = None
+            return self.catalog(request, tl, one, two, module, extra, prog)
+        
         ts = DataTree.objects.filter(id=extra)
         if len(ts) < 1:
             raise Http404()

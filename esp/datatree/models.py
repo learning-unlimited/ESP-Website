@@ -245,12 +245,13 @@ class DataTree(models.Model):
         return node.rangeend - min_start
 
 
-    def __getitem__(self, key):
-        """ A hook to get the children of a node. """
-        try:
-            return self.tree_decode([key])
-        except:
-            return None
+    #def __getitem__(self, key):
+    #""" A hook to get the children of a node. """
+    #    try:
+    #        return self.tree_decode([key])
+    #    except:
+    #        assert False
+    #        return None
 
     def __setitem__(self, key, value):
         """ A hook to reset the value of a key. """

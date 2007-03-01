@@ -47,11 +47,11 @@ class LatexImage(models.Model):
         os.system('cd %s; %s -interaction=nonstopmode %s &>/dev/null' % \
                   (TMP, commands['latex'], self.filename))
 
-        os.system( '%s -q -T tight -bg white -D 150 -o /dev/stdout %s.dvi | %s png:- %s/%s.%s &> /tmp/debug' % \
-                  (commands['dvipng'], fullpath, commands['convert'],  
+        os.system( '%s -q -T tight -bg white -D 150 -o %s.png %s.dvi &&  %s %s.png %s/%s.%s &> /dev/null' % \
+                  (commands['dvipng'], fullpath, fullpath, commands['convert'], fullpath,
                    TEXIMAGE_BASE, self.filename, self.filetype))
 
-        #os.system('rm -f %s/%s*' % (TMP, self.filename))
+        os.system('rm -f %s/%s*' % (TMP, self.filename))
         
         return True
         
