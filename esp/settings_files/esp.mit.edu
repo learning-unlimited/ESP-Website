@@ -99,6 +99,7 @@ INSTALLED_APPS = (
     'esp.resources',
     'esp.poll',
     'esp.dblog',
+    'esp.gen_media',
 )
 
 APPEND_SLASH=False

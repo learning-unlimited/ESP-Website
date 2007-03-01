@@ -13,7 +13,7 @@ from esp.miniblog.models import Entry
 
 
 class ListGenModule(ProgramModuleObj):
-    """ This module is useful to generate lists for the program directors. """
+    """ While far from complete, this will allow you to just generate a simple list of users matching a criteria (criteria very similar to the communications panel)."""
 
     @needs_admin
     def selectList(self, request, tl, one, two, module, extra, prog):

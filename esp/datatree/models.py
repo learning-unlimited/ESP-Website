@@ -42,6 +42,8 @@ class DataTree(models.Model):
             else:
                 return filtered[0].tree_decode(tree_nodenames[1:])
 
+
+
     def tree_create(self, tree_nodenames):
         """ Given a list of nodes leading from the current node to a direct descendant, return that descendant, creating it if it does not exist """
         # This is blatant code copying from tree_decode(); anyone know
@@ -241,6 +243,36 @@ class DataTree(models.Model):
                 min_start = min(child.rangestart, min_start)
 
         return node.rangeend - min_start
+
+
+    def __getitem__(self, key):
+        """ A hook to get the children of a node. """
+        try:
+            return self.tree_decode([key])
+        except:
+            return None
+
+    def __setitem__(self, key, value):
+        """ A hook to reset the value of a key. """
+        if type(value) != DataTree:
+            assert False, 'Invalid data type! Expected data tree'
+
+        try:
+            other_child = DataTree.objects.get(parent = self,
+                                               name = key)
+            other_child.friendly_name = value.friendly_name
+            other_child.save()
+            return other_child
+        except:
+            value.name = key
+            value.parent = self
+            value.save()
+
+    def __len__(self):
+        return self.descendants().count()
+
+    
+    
 
     class Admin:
         pass

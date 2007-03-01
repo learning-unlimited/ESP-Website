@@ -7,7 +7,8 @@ from django.contrib.auth.decorators import login_required
 
 
 class ClassRoomModule(ProgramModuleObj):
-
+    """ While at some point this will be deprecated, for now this is how you add a room to your program.
+    At some point, rooms will have useful things tied to them magically."""
     @needs_admin
     def managerooms(self, request, tl, one, two, module, extra, prog):
 

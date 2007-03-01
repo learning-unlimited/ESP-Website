@@ -13,6 +13,10 @@ from esp.miniblog.models import Entry
 
 
 class CommModule(ProgramModuleObj):
+    """ Want to email all ESP students within a 60 mile radius of NYC?
+    How about emailing all esp users within a 30 mile radius of New Hampshire whose last name contains 'e' and 'a'?
+    Do that and even more useful things in the communication panel.
+    """
 
 
     def students(self,QObject = False):

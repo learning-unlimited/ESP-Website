@@ -723,3 +723,26 @@ div.question {
   height: 700px;
   overflow: scroll;
 }
+
+.helpbox {
+  border: 1px solid #f8e403;
+  padding: 13px 6px 7px 6px;
+  width: 300px;
+  margin-top: 6px; margin-bottom: 10px;
+  position: relative;
+  text-align: left;
+}
+
+.helpbox h4 {
+  position: absolute;
+  top: -10px; margin: 0 0 0 -7px;
+  left: 100px;
+  background: white;
+  font-color: #f8e403;
+  padding: 0 7px 0 7px;
+
+} 
+.helpbox h4 span {
+     color: #d8c303;
+     font-size: 1.2em	
+}

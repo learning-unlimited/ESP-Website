@@ -1,5 +1,7 @@
 from esp.users.models import ESPUser
+from django.template import Context, Template, loader
 import django.shortcuts
+from django.http import HttpResponse
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
 from esp.middleware import ESPError
@@ -20,13 +22,21 @@ def get_from_id(id, module, strtype = 'object', error = True):
     return foundobj
     
 
+def our_renderer(filepath, context_dict):
+
+    src = loader.find_template_source(filepath)[0]
+    src = '{% load latex %}\n' + src
+    context = Context(context_dict)
+    t = Template(src)
+    rendered_source = t.render(context)
+    return HttpResponse(rendered_source)
 
 def render_to_response(template, requestOrContext, prog = None, context = None):
     from esp.web.views.navBar import makeNavBar
 
     # if there are only two arguments
     if context is None and prog is None:
-        return django.shortcuts.render_to_response(template, requestOrContext)
+        return our_renderer(template, requestOrContext)
     
     if context is not None:
         request = requestOrContext
@@ -67,7 +77,8 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         request.user = ESPUser(request.user)
         request.user.updateOnsite(request)
         context['request'] = request
-        return django.shortcuts.render_to_response(template, context)
+
+        return our_renderer(template, context)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
 

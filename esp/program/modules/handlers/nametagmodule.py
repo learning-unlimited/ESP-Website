@@ -7,7 +7,7 @@ from esp.db.models import Q
 from esp.users.views  import get_user_list
 
 class NameTagModule(ProgramModuleObj):
-
+    """ This module allows you to generate a bunch of IDs for everyone in the program. """
     @needs_admin
     def selectidoptions(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """

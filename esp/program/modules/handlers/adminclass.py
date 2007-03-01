@@ -12,7 +12,10 @@ from django import forms
 from django.http import HttpResponseRedirect
 
 class AdminClass(ProgramModuleObj):
-
+    """ This module is extremely useful for managing classes if you have them them in your program.
+        Works best with student and teacher class modules, but they are not necessary.
+        Options for this are available on the main manage page.
+        """
     def getManageSteps(self):
         return [('Scheduled', 'Schedule Completed'),
                 ('RoomAssigned','Room Assignment Completed'),

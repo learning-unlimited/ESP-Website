@@ -22,4 +22,3 @@ def UserHasPerms(branch, verb, error_msg = 'You do not have permission to view t
 
     return _checkUserDecorator
 
-

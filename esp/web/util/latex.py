@@ -10,10 +10,33 @@ from django.http import HttpResponse
 TEX_TEMP = '/tmp/'
 TEX_EXT  = '.tex'
 
+def render_to_latex(filepath, context_dict={}, filetype='pdf'):
+    """ Render some tex source to latex. This will run the latex
+        interpreter and generate the necessary file type
+        (either pdf, tex, ps, dvi, or a log file)   """
+    from django.template import Context, Template, loader
+
+    src = loader.find_template_source(filepath)[0]
+
+    src = '{% load latex %}\n' + src
+
+    context = Context(context_dict)
+
+    t = Template(src)
+
+    rendered_source = t.render(context)
+
+    return gen_latex(rendered_source, filetype)
+    
+
 def gen_latex(texcode, type='pdf'):
     """ Generate the latex code. """
 
     file_base = get_rand_file_base()
+
+    if type == 'tex':
+        return HttpResponse(texcode, mimetype='text/plain')
+    
 
     # write to the LaTeX file
     texfile   = open(file_base+'.tex', 'w')
@@ -21,7 +44,7 @@ def gen_latex(texcode, type='pdf'):
     texfile.close()
     
 
-    file_types = ['pdf','dvi','ps','log']
+    file_types = ['pdf','dvi','ps','log','tex']
 
     if type=='pdf':
         mime = 'application/pdf'
@@ -40,8 +63,6 @@ def gen_latex(texcode, type='pdf'):
     elif type=='log':
         mime = 'text/plain'
         os.system('cd /tmp; latex %s.tex' % file_base)
-    elif type=='tex':
-        mime = 'text/plain'
     else:
         raise ESPError(), 'Invalid type received for latex generation: %s should be one of %s' % (type, file_types)
     
@@ -63,7 +84,7 @@ def gen_latex(texcode, type='pdf'):
             os.remove(file_base+'.tex')
         
         except:
-            raise ESPError(), 'Could not read contents of %s.' % file_base+'.'+type
+            raise ESPError(), 'Could not read contents of %s. (Hint: try looking at the log file)' % file_base+'.'+type
 
     if type=='log':
         new_contents = tex_log
@@ -81,3 +102,7 @@ def get_rand_file_base():
 
    
     return TEX_TEMP + rand
+
+
+
+    

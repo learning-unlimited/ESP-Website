@@ -6,10 +6,12 @@ from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
 from esp.program.models  import Class
 from esp.users.views     import get_user_list
-from esp.web.util.latex  import gen_latex
+from esp.web.util.latex  import render_to_latex
 
 class ProgramPrintables(ProgramModuleObj):
-
+    """ This is extremely useful for printing a wide array of documents for your program.
+    Things from checklists to rosters to attendance sheets can be found here. """
+    
     @needs_admin
     def printoptions(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
@@ -20,29 +22,18 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
-        from django.template import Context, Template, loader
-        
-        from django.http     import HttpResponse
-
 
         classes = Class.objects.filter(parent_program = self.program).order_by('category','id')
 
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
 
-        catalogsrc = loader.find_template_source(self.baseDir() + 'catalog.tex')[0]
-
-        context = Context({'classes': classes, 'program': self.program})
-
-        t = Template(catalogsrc)
-
-        catalog_rendered = t.render(context)
+        context = {'classes': classes, 'program': self.program}
 
         if extra is None or len(str(extra).strip()) == 0:
             extra = 'pdf'
 
-        return gen_latex(catalog_rendered, extra)
-
+        return render_to_latex(self.baseDir()+'catalog.tex', context, extra)
         
 
 

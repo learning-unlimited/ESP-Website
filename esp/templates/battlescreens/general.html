@@ -47,6 +47,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
 {% endif %}
 
 <br />
+{% if not admin_details %}
 <br />
 <table cellpadding="4px" cellspacing="0" align="center">
 <tbody>
@@ -163,7 +164,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
 {% endfor %}
 </table>
 
-
+{% endif %}
 <p style="height: .5in;">
   <!-- v-space -->
   &nbsp;

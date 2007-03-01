@@ -19,6 +19,11 @@ class ProgramModuleObj(models.Model):
     seq      = models.IntegerField()
     required = models.BooleanField()
 
+    def docs(self):
+        if self.__doc__ is not None and str(self.__doc__).strip() != '':
+            return self.__doc__
+        return self.module.link_title
+
     def __str__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
@@ -213,8 +218,12 @@ class ProgramModuleObj(models.Model):
 
 
     def makeLink(self):
-        return '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.module.link_title, self.module.link_title)
+        if not self.module.module_type == 'manage':
+            return '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+                   (self.get_full_path(), self.module.link_title, self.module.link_title)
+
+        return '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
 
 
     def useTemplate(self):
