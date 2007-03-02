@@ -119,6 +119,10 @@ class MessageRequest(models.Model):
 
 
         users = self.recipients.getList(User)
+        try:
+            users = users.distinct()
+        except:
+            pass
         
         # go through each user and parse the text...then create the proper
         # emailrequest and textofemail object

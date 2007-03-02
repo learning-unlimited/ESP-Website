@@ -22,7 +22,11 @@ def process_messages():
         message.save()
 
     for message in messages:
-        message.process(True)
+        try:
+            message.process(True)
+        else:
+            message.processed = False
+            message.save()
 
 
 def send_email_requests():
@@ -39,7 +43,13 @@ def send_email_requests():
         wait = 1.5
     
     for mailtxt in mailtxts:
-        mailtxt.send()
+        try:
+            mailtxt.send()
+        except:
+            #failed
+            mailtxt.sent = None
+            mailtxt.save()
+        
         time.sleep(wait)
     
 

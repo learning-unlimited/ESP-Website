@@ -143,9 +143,8 @@ class DataTree(models.Model):
     def __str__(self):
         """ Returns a string """
 	#res = str(self.rangestart) + ' .. ' + str(self.rangeend) + ' '*self.depth() + ' <' + str(self.full_name()) + '>'
-        res = str(self.full_name()) + ' (' + str(self.rangestart) + ' .. ' + str(self.rangeend) + ')'
-	if self.friendly_name is not None:
-		res = res + ' (' + self.friendly_name + ')'
+        res = str(self.full_name()) 
+	
 	return res
 
     def total_size_of_children(self):
@@ -245,13 +244,21 @@ class DataTree(models.Model):
         return node.rangeend - min_start
 
 
-    #def __getitem__(self, key):
-    #""" A hook to get the children of a node. """
-    #    try:
-    #        return self.tree_decode([key])
-    #    except:
-    #        assert False
-    #        return None
+    def __getitem__(self, key):
+        """ A hook to get the children of a node. """
+        import exceptions
+        try:
+            return self.tree_decode([key])
+        except:
+            raise exceptions.KeyError, key
+
+    def keys(self):
+        return [ x.name for x in self.children() ]
+
+    def items(self):
+        return [ (x.name, x) for x in self.children() ]
+
+    values = children
 
     def __setitem__(self, key, value):
         """ A hook to reset the value of a key. """
@@ -272,8 +279,15 @@ class DataTree(models.Model):
     def __len__(self):
         return self.descendants().count()
 
-    
-    
+    def has_key(self, key):
+        return self.children().filter(name__exact = key).count() > 0
+
+    def __contains__(self, child):
+        ' Returns true if the child is underneath self. '
+        if type(child) != DataTree:
+            return False
+
+        return self.descendants().filter(id = child.id).count() > 0
 
     class Admin:
         pass

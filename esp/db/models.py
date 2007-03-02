@@ -3,6 +3,19 @@
 from django.db.models.query import Q as DjangoQ, QAnd as DjangoQAnd, QOr as DjangoQOr, QOperator as DjangoQOperator, QNot, parse_lookup
 from django.utils.datastructures import SortedDict
 
+class qlist(list):
+    def count(self):
+        return len(self)
+    
+    def filter(self, *args, **kwargs):
+        if len(self) == 0:
+            return []
+        model = type(self[0])
+
+        return model.objects.filter(id__in = [x.id for x in self]).filter(*args, **kwargs)
+        
+
+
 class QOperator(DjangoQOperator):
     "Base class for QAnd and QOr"
     inside_or = False

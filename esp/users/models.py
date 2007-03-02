@@ -4,7 +4,7 @@ from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm
 #from peak.api import security, binding
 from esp.workflow.models import Controller
 from datetime import datetime
-from esp.db.models import Q
+from esp.db.models import Q, qlist
 from esp.dblog.models import error
 from django.db.models.query import QuerySet
 from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
@@ -433,6 +433,8 @@ class UserBit(models.Model):
 
         super(UserBit, self).save()
 
+        UserBitImplication.addUserBit(self) # follow implications
+        
     def delete(self):
         if self.user is None or type(self.user) == AnonymousUser \
               or (type(self.user) != ESPUser and type(self.user) != User) \
@@ -442,6 +444,8 @@ class UserBit(models.Model):
             UserBit.updateCache(self.user.id)
 
         super(UserBit, self).delete()
+        
+        UserBitImplication.deleteUserBit(self) #follow implications
 
     @staticmethod
     def updateCache(user_id):
@@ -541,28 +545,24 @@ class UserBit(models.Model):
 
     @staticmethod
     def bits_get_users(qsc, verb, now = datetime.now(), end_of_now = None):
-        """ Return all users who have been granted 'verb' on 'qsc' """
+        """ Return all users who have been granted 'verb' on 'qsc'
+           Note that this requires the Q objects to work correctly. """
         if end_of_now == None: end_of_now = now
-
             
-            
-        # fix in django 1.0...
-        
-        Q_correct_userbit = Q(recursive = True, verb__rangestart__lte = verb.rangestart, verb__rangeend__gte = verb.rangeend)
-#        Q_correct_qsc = Q(qsc=qsc)
-        # in django 1.0, replace with OUTER JOINS!
-        qsc_parent_ids      = [qsc.id ] + [x['id'] for x in  qsc.antecedents(False).values('id')]
-        verb_parent_ids     = [verb.id] + [x['id'] for x in verb.antecedents(False).values('id')]
+        Q_recursive      = Q(recursive = True)
+        Q_verb_recursive = Q(verb__rangestart__lte = verb.rangestart) & Q(verb__rangeend__gte = verb.rangeend)
+        Q_qsc_recursive  = Q(qsc__rangestart__lte  = qsc.rangestart)  & Q(qsc__rangeend__gte  = qsc.rangeend )
 
-        Q_recursive_search = Q(recursive = True) & Q(qsc__in = qsc_parent_ids) & Q(verb__in = verb_parent_ids)
-        Q_exact_match      = Q(qsc = qsc) & Q(verb = verb)
+        Q_exact_match    = Q(verb = verb.id) & Q(qsc = qsc.id) # & Q(recursive = False), not needed
+
+        Q_recursive_search = Q_verb_recursive & Q_qsc_recursive & Q_recursive
 
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
-        users = UserBit.objects.filter(Q_after_start & Q_before_end).filter(Q_recursive_search or Q_exact_match)
+        userbits = UserBit.objects.filter(Q_after_start & Q_before_end).filter(Q_recursive_search | Q_exact_match)
 
-        return users.distinct()
+        return userbits.distinct()
     
 
     @staticmethod
@@ -580,85 +580,110 @@ class UserBit(models.Model):
         if type(userbit_cache) == dict:
             if userbit_cache.has_key(user_cache_id):
                 usedCache = True
-                str_userbit_ids = userbit_cache[user_cache_id]
+                userbits  = userbit_cache[user_cache_id]
         else:
             userbit_cache = {}
 
         if now == True:
             now = datetime.now()
 
+        # the cache hasn't been used
         if not usedCache:
             if end_of_now == None: end_of_now = now
 
-            #	Hopefully it's easier to understand this query now...
+            # this should make sense...we're going to recursively search
 
-            # in django 1.0, replace with OUTER JOINS!
-            verb_parent_ids     = [verb.id] + [x['id'] for x in verb.antecedents(False).values('id')]
+            #first we make sure the verbs are correct
+            Q_verb_recursive = Q(recursive = True) & \
+                               Q(verb__rangestart__lte = verb.rangestart) & \
+                               Q(verb__rangeend__gte = verb.rangeend)
+            
+            Q_exact_match    = Q(verb = verb)
 
-            Q_recursive_search = Q(recursive = True) & Q(verb__in = verb_parent_ids)
-            Q_exact_match      = Q(verb = verb)
-
+            # now we make sure the dates are correct
             Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
             Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
 		
-            Q_correct_user = Q(user__isnull = True) | Q(user=user)
-            
-            if user is None or not user.is_authenticated():
-                Q_correct_user = Q(user__isnull = True)
-            
-            
-            qscs = UserBit.objects.filter(Q_correct_user & Q_after_start & Q_before_end).filter(Q_recursive_search | Q_exact_match)
+            # and now we make sure the user is correct
+            Q_correct_user = Q(user__isnull = True)
+            if user is not None and user.is_authenticated():
+                Q_correct_user |= Q(user = user.id)
 
+            # now we put it all together
+            qscs = UserBit.objects.filter(Q_correct_user & Q_after_start & Q_before_end & (Q_verb_recursive | Q_exact_match))
+            # now we have to filter for the root
             if qsc_root is None:
-                userbit_ids = qscs.values('id')
+                userbits = qlist(qscs)
             else:
-                qsc_children_ids = [ x['id'] for x in qsc_root.descendants(False).values('id') ]
-                Q_under_root = Q(qsc__in = qsc_children_ids)
-                userbit_ids = qscs.filter(Q_under_root).values('id')
-            str_userbit_ids = ','.join([str(userbit['id']) for userbit in userbit_ids])
-            
-            userbit_cache[user_cache_id] = str_userbit_ids
+                Q_under_root = Q(qsc__rangestart__gte = qsc_root.rangestart) & \
+                               Q(qsc__rangeend__lte   = qsc_root.rangeend)
+
+                
+                userbits = qlist(qscs.filter(Q_under_root).distinct())
+
+            # we're saving the cache: N.B. if we don't use list() on it first, we
+            # might be saving the lazy'd query, and not the db work!
+            userbit_cache[user_cache_id] = userbits
             
         cache.set(cache_id, userbit_cache, userBitCacheTime())
         
-        if len(str_userbit_ids.strip()) == 0:
-            userbit_ids_array = []
-        else:
-            userbit_ids_array = str_userbit_ids.split(',')
-            
-        try:
-            userbit_ids_array = [ int(userbit_id) for userbit_id in userbit_ids_array ]
-        except:
-            assert False, 'USERBIT_ID MUST BE AN INTEGER, RECEIVED NON-INTEGER: %s' % str_userbit_ids 
-
-
-        if len(userbit_ids_array) == 0:
-            return UserBit.objects.filter(id = -1)
-        else:
-            return UserBit.objects.filter(id__in = userbit_ids_array).distinct()
+        return userbits
 
 
     @staticmethod
-    def bits_get_verb(user, qsc, now = datetime.now(), end_of_now = None):
+    def bits_get_verb(user, qsc, now = None, end_of_now = None):
         """ Return all verbs that 'user' has been granted on 'qsc' """
-        if end_of_now == None: end_of_now = now
+        user_cache_id = 'bit_get_verb:' + str(user.id) + ',' + str(now) + ',' + str(end_of_now) + ',' + str(qsc.id)
 
-        #	Hopefully it's easier to understand this query now...
-        Q_correct_userbit = Q(recursive = True, qsc__rangestart__lte = qsc.rangestart, qsc__rangeend__gte = qsc.rangeend)
-        Q_exact_match = Q(recursive = False, qsc=qsc)
-        Q_correct_user = Q(user__isnull = True) | Q(user=user)
+        cache_id = 'UserBit__' + user_get_key(user)
 
-        if not user.is_authenticated():
-            Q_correct_user = Q(user__isnull = True)
+        userbit_cache = cache.get(cache_id)
+
+        usedCache = False
+        if type(userbit_cache) == dict:
+            if userbit_cache.has_key(user_cache_id):
+                usedCache = True
+                userbits  = userbit_cache[user_cache_id]
+        else:
+            userbit_cache = {}
+
+        if now is None:
+            now = datetime.now()
+
+        # the cache hasn't been used
+        if not usedCache:
+            if end_of_now == None: end_of_now = now
+
+            # this should make sense...we're going to recursively search
+
+            #first we make sure the verbs are correct
+            Q_qsc_recursive = Q(recursive = True) & \
+                              Q(qsc__rangestart__lte = qsc.rangestart) & \
+                              Q(qsc__rangeend__gte = qsc.rangeend)
             
-        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
-        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
-		
-        verbs = UserBit.objects.filter(Q_exact_match).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end) | UserBit.objects.filter(Q_correct_userbit).filter(Q_correct_user).filter(Q_after_start).filter(Q_before_end)
+            Q_exact_match    = Q(qsc = qsc)
 
-        return verbs.distinct()
+            # now we make sure the dates are correct
+            Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
+            Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
+		
+            # and now we make sure the user is correct
+            Q_correct_user = Q(user__isnull = True)
+            if user is not None and user.is_authenticated():
+                Q_correct_user |= Q(user = user.id)
+
+            # now we put it all together
+            userbits = qlist(UserBit.objects.filter(Q_correct_user & Q_after_start & Q_before_end & (Q_qsc_recursive | Q_exact_match)))
+
+
+            # we're saving the cache: N.B. if we don't use list() on it first, we
+            # might be saving the lazy'd query, and not the db work!
+            userbit_cache[user_cache_id] = userbits
+            
+        cache.set(cache_id, userbit_cache, userBitCacheTime())
         
-        #return UserBit.objects.filter(Q(recursive=True, qsc__rangestart__gte=qsc.rangestart, qsc__rangeend__lte=qsc.rangeend) | Q(qsc__pk=qsc.id)).filter(Q(user__isnull=True)|Q(user__pk=user.id)).filter(Q(startdate__isnul=True) | Q(startdate__lte=end_of_now), Q(enddate__isnull=True) | Q(enddate__gte=now))
+        return userbits
+        
 
     @staticmethod
     def has_bits(queryset):
@@ -710,6 +735,7 @@ class StudentInfo(models.Model):
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     school = models.CharField(maxlength=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
+    studentrep = models.BooleanField(blank=True, null=True, default = False)
     
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
@@ -1204,3 +1230,133 @@ class DBList(object):
         return self.key
 
 
+
+
+class UserBitImplication(models.Model):
+    """ This model will create implications for userbits...
+      that is, if a user has A permission, they will get B """
+    
+    qsc_original  = models.ForeignKey(DataTree, related_name = 'qsc_original')
+    verb_original = models.ForeignKey(DataTree, related_name = 'verb_original')
+    qsc_implied   = models.ForeignKey(DataTree, related_name = 'qsc_implied')
+    verb_implied  = models.ForeignKey(DataTree, related_name = 'verb_implied')
+    recursive     = models.BooleanField(default = True)
+    created_bits  = models.ManyToManyField(UserBit, blank=True, null=True)
+
+    def __str__(self):
+        string = '%s on %s ==> %s on %s' % \
+                 (self.verb_original, self.qsc_original,
+                  self.verb_implied,  self.qsc_implied)
+        if self.recursive:
+            string += ' (recursive)'
+        return string
+
+
+    @staticmethod
+    def get_under_bit(userbit):
+        """ Return all implications under a userbit.
+        That is, the set of all A ==> B such that A is true
+        because of userbit. """
+        if not userbit.recursive:
+            Q_qsc  = Q(qsc_original  = userbit.qsc)
+            Q_verb = Q(verb_original = userbit.verb)
+        else:
+            Q_qsc  = Q(qsc_original__rangestart__gte = userbit.qsc.rangestart,
+                       qsc_original__rangeend__lte   = userbit.qsc.rangeend)
+            Q_verb = Q(verb_original__rangestart__gte = userbit.verb.rangestart,
+                       verb_original__rangeend__lte   = userbit.verb.rangeend)
+
+        return UserBitImplication.objects.filter(Q_qsc & Q_verb).distinct()
+                       
+
+    @staticmethod
+    def deleteUserBit(old_userbit):
+        """ Delete all the userbits that depended on this one.
+            This should be executed *after* a userbit has been deleted.
+            (i.e. this should be run from UserBit.delete() 
+        """
+        implications = UserBitImplication.get_under_bit(old_userbit)
+
+        # first we go through all implications
+        for implication in implications:
+            # now we get all the bits this implication created
+            for bit in implication.created_bits.all():
+                # if there is no other way this implication is valid for this user
+                # delete...
+                if not UserBit.UserHasPerms(user = bit.user,
+                                            qsc  = old_userbit.qsc,
+                                            verb = old_userbit.verb):
+                    bit.delete()
+        
+        
+    
+
+
+    @staticmethod
+    def addUserBit(userbit):
+        """ This will check to see if the addition of this userbit
+            should force other userbits to be created via implications.
+        """
+        implications = UserBitImplication.get_under_bit(userbit)
+
+        for implication in implications:
+            newbit = UserBit(user = userbit.user,
+                             qsc  = implication.qsc_implied,
+                             verb = implication.verb_implied,
+                             recursive = implication.recursive)
+
+            newbit.save()
+
+            implication.created_bits.add(newbit)
+            implication.save()
+
+    def save(self):
+        super(UserBitImplication, self).save()
+
+        self.apply()
+    
+    def delete(self):
+        for bit in self.created_bits.all():
+            bit.delete()
+            
+        super(UserBitImplication, self).delete()
+
+
+
+    def apply(self):
+        " This will generate the userbits for this implication. "
+        userbits = UserBit.bits_get_users(qsc  = self.qsc_original,
+                                          verb = self.verb_original)
+
+        users = [ userbit.user for userbit in userbits ]
+
+        
+        for user in users:
+            # for each user that's affected we're going to create
+            # a bit.
+            bits = UserBit.objects.filter(user = user,
+                                          verb = self.verb_implied,
+                                          qsc  = self.qsc_implied)
+
+            if self.recursive:
+                bits = bits.filter(recursive = True)
+
+            if bits.count() == 0:
+                newbit = UserBit(user      = user,
+                                 verb      = self.verb_implied,
+                                 qsc       = self.qsc_implied,
+                                 recursive = self.recursive)
+                newbit.save()
+                self.created_bits.add(newbit)
+                self.save()
+            
+        
+    @staticmethod
+    def applyAllImplications():
+        """ This function will make implications work, no matter what.
+          In the entire tree.
+        """
+        for implication in UserBitImplication.objects.all():
+            implication.apply()
+    
+        
