@@ -4,6 +4,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
+from esp.money.models    import Transaction
 from esp.program.models  import Class
 from esp.users.views     import get_user_list
 from esp.web.util.latex  import render_to_latex
@@ -419,10 +420,23 @@ Student schedule for %s:
         if not found:
             return filterObj
 
-        students= [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+
+        students= [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct() ]
         students.sort()
 
+        studentList = []
+        for student in students:
+            t = Transaction.objects.filter(fbo = student, anchor = self.program.anchor)
+            if t.count() == 0:
+                studentList.append({'user': student,
+                                    'paid': False})
+            else:
+                studentList.append({'user': student,
+                                    'paid': t[0].executed})
+
+
         context['students'] = students
+        context['studentList'] = studentList
         return render_to_response(self.baseDir()+'studentchecklist.html', request, (prog, tl), context)
 
 

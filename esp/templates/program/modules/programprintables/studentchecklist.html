@@ -24,6 +24,9 @@ body { font-family: georgia; }
 .pretty td.old { border-bottom: 0;
                       border-top: 0;}
 #pagebreak {page-break-after: always; }
+.box { width: 15px; height: 15px; border: 2px solid black; 
+   font-weight: bold; text-align: center; vertical-align: middle;
+}
 </style>
 </head>
 <body>
@@ -33,20 +36,32 @@ body { font-family: georgia; }
 
 <table class="pretty" cellspacing="0">
 <tr>
+   <th>#</th>
+   <th>Checked In?</th>
    <th>Paid?</th>
+   <th>Medical?</th>
+   <th>Liability?</th>
    <th>Name</th>
-   <th>Address</th>
+   <th>Email</th>
+   <th>DOB</th>
    <th>ID</th>
 </tr>
-{% for student in students %}
+{% for student in studentList %}
 <tr>
-   <td><img src="/media/images/nocheckmark.gif"
-        style="border: 2px solid black;" /></td>
-   <td>{{ student.name }}</td>
-   <td>{{ student.getLastProfile.contact_user.address }}</td>
-   <td><strong>{{student.id}}</strong></td>
+   <td>{{forloop.counter}}</td>
+   <td><div class="box">&nbsp;</div></td>
+   <td><div class="box">{% if student.paid %}X{% endif %}</div></td>
+   <td><div class="box">&nbsp;</div></td>
+   <td><div class="box">&nbsp;</div></td>
+   <td>{{ student.user.name }}</td>
+   <td>{{ student.user.email}}</td>
+   <td>{{ student.user.getLastProfile.student_info.dob|date:"jS" }}</td>
+   <td><strong>{{student.user.id}}</strong></td>
 </tr>
  {% endfor %}
 </table>
+<br />
+<br />
+{{studentList}}
 </body>
 </html>

@@ -1,4 +1,4 @@
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.money.models    import PaymentType, Transaction
@@ -34,6 +34,7 @@ class CreditCardModule(ProgramModuleObj):
     def studentDesc(self):
         return {'creditcard': """Students who have filled out the credit card form."""}
      
+    @meets_deadline('/Payment')
     @usercheck_usetl
     def startpay(self, request, tl, one, two, module, extra, prog):
         context = {}

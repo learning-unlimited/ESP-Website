@@ -1236,17 +1236,26 @@ class UserBitImplication(models.Model):
     """ This model will create implications for userbits...
       that is, if a user has A permission, they will get B """
     
-    qsc_original  = models.ForeignKey(DataTree, related_name = 'qsc_original')
-    verb_original = models.ForeignKey(DataTree, related_name = 'verb_original')
-    qsc_implied   = models.ForeignKey(DataTree, related_name = 'qsc_implied')
-    verb_implied  = models.ForeignKey(DataTree, related_name = 'verb_implied')
+    qsc_original  = models.ForeignKey(DataTree, related_name = 'qsc_original',  blank=True, null=True)
+    verb_original = models.ForeignKey(DataTree, related_name = 'verb_original', blank=True, null=True)
+    qsc_implied   = models.ForeignKey(DataTree, related_name = 'qsc_implied',   blank=True, null=True)
+    verb_implied  = models.ForeignKey(DataTree, related_name = 'verb_implied',  blank=True, null=True)
     recursive     = models.BooleanField(default = True)
     created_bits  = models.ManyToManyField(UserBit, blank=True, null=True)
 
     def __str__(self):
+        var = {}
+        for k in ['verb_original_id', 'qsc_original_id',
+                  'verb_implied_id',  'qsc_implied_id' ]:
+            if getattr(self, k) is None:
+                var[k[:-3]] = '*'
+            else:
+                var[k[:-3]] = str(getattr(self, k[:-3]))
+                
         string = '%s on %s ==> %s on %s' % \
-                 (self.verb_original, self.qsc_original,
-                  self.verb_implied,  self.qsc_implied)
+                 (var['verb_original'], var['qsc_original'],
+                  var['verb_implied'],  var['qsc_implied'])
+        
         if self.recursive:
             string += ' (recursive)'
         return string
@@ -1257,6 +1266,9 @@ class UserBitImplication(models.Model):
         """ Return all implications under a userbit.
         That is, the set of all A ==> B such that A is true
         because of userbit. """
+        Q_qsc_null  = Q(qsc_original__isnull = True)
+        Q_verb_null = Q(verb_original__isnull = True)
+        
         if not userbit.recursive:
             Q_qsc  = Q(qsc_original  = userbit.qsc)
             Q_verb = Q(verb_original = userbit.verb)
@@ -1266,7 +1278,10 @@ class UserBitImplication(models.Model):
             Q_verb = Q(verb_original__rangestart__gte = userbit.verb.rangestart,
                        verb_original__rangeend__lte   = userbit.verb.rangeend)
 
-        return UserBitImplication.objects.filter(Q_qsc & Q_verb).distinct()
+        # if one of the two are null, the other one can match and it'd be fine.
+        Q_match = (Q_qsc & Q_verb) | (Q_qsc_null & Q_verb) | (Q_qsc & Q_verb_null)
+        
+        return UserBitImplication.objects.filter(Q_match).distinct()
                        
 
     @staticmethod
@@ -1289,7 +1304,19 @@ class UserBitImplication(models.Model):
                     bit.delete()
         
         
-    
+    def impliedBit(self, originalBit):
+        """ Returns the implied userbit if a bit is given. """
+        qsc_implied = self.qsc_implied
+        verb_implied = self.verb_implied
+
+        if qsc_implied is None:
+            qsc_implied = originalBit.qsc
+        if verb_implied is None:
+            verb_implied = originalBit.verb
+        return UserBit(user = originalBit.user,
+                       qsc  = qsc_implied,
+                       verb = verb_implied,
+                       recursive = self.recursive)
 
 
     @staticmethod
@@ -1300,10 +1327,7 @@ class UserBitImplication(models.Model):
         implications = UserBitImplication.get_under_bit(userbit)
 
         for implication in implications:
-            newbit = UserBit(user = userbit.user,
-                             qsc  = implication.qsc_implied,
-                             verb = implication.verb_implied,
-                             recursive = implication.recursive)
+            newbit = implication.impliedBit(userbit)
 
             newbit.save()
 
@@ -1325,31 +1349,46 @@ class UserBitImplication(models.Model):
 
     def apply(self):
         " This will generate the userbits for this implication. "
-        userbits = UserBit.bits_get_users(qsc  = self.qsc_original,
-                                          verb = self.verb_original)
+        if self.qsc_original_id is None and self.verb_original_id is None:
+            return
+        if self.qsc_original_id is not None:
+            Q_qsc = (Q(qsc__rangestart__lte = self.qsc_original.rangestart) &\
+                     Q(qsc__rangeend__gte   = self.qsc_original.rangeend)   &\
+                     Q(recursive       = True)) \
+                     | \
+                     Q(qsc = self.qsc_original_id)
+            
+        if self.verb_original_id is not None:
+            Q_verb = (Q(verb__rangestart__lte = self.verb_original.rangestart)&\
+                      Q(verb__rangeend__gte   = self.verb_original.rangeend)  &\
+                      Q(recursive       = True)) \
+                      | \
+                      Q(verb = self.verb_original_id)
 
-        users = [ userbit.user for userbit in userbits ]
+        userbits = UserBit.objects
 
+        if self.qsc_original_id is not None:
+            userbits = userbits.filter(Q_qsc)
+        if self.verb_original_id is not None:
+            userbits = userbits.filter(Q_verb)
         
-        for user in users:
-            # for each user that's affected we're going to create
-            # a bit.
-            bits = UserBit.objects.filter(user = user,
-                                          verb = self.verb_implied,
-                                          qsc  = self.qsc_implied)
+        
+        for userbit in userbits:
+            # for each userbit we're going to create the correct
+            # corresponding userbits.
 
+            newbit = self.impliedBit(userbit) # get this bit this implies
+
+            bits = UserBit.objects.filter(user = newbit.user,
+                                          qsc  = newbit.qsc,
+                                          verb = newbit.verb)
             if self.recursive:
-                bits = bits.filter(recursive = True)
+                bits.filter(recursive = True)
 
             if bits.count() == 0:
-                newbit = UserBit(user      = user,
-                                 verb      = self.verb_implied,
-                                 qsc       = self.qsc_implied,
-                                 recursive = self.recursive)
                 newbit.save()
                 self.created_bits.add(newbit)
                 self.save()
-            
         
     @staticmethod
     def applyAllImplications():

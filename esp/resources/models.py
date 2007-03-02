@@ -1,5 +1,5 @@
 """ Models for Resources application """
-
+from django.db import models
 
 
 class ResourceType(models.Model):
