@@ -1359,4 +1359,5 @@ class UserBitImplication(models.Model):
         for implication in UserBitImplication.objects.all():
             implication.apply()
     
-        
+    class Admin:
+        pass
