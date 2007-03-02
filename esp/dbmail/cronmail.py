@@ -24,7 +24,7 @@ def process_messages():
     for message in messages:
         try:
             message.process(True)
-        else:
+        except:
             message.processed = False
             message.save()
 
