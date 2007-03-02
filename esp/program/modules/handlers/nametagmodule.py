@@ -41,7 +41,9 @@ class NameTagModule(ProgramModuleObj):
                 
         elif idtype == 'teacher':
             teachers = self.program.teachers_union()
-            users = []
+
+	    teachers = [ ESPUser(teacher) for teacher in
+                         teachers ]
             teachers.sort()
 
             for teacher in teachers:
