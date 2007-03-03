@@ -234,6 +234,8 @@ def search_for_user(request, user_type='Any'):
 @login_required
 def myesp_passwd(request, module):
 	""" Change password """
+	if request.user.username == 'onsite':
+		raise ESPError(), "Sorry, you're not allowed to change the password of this user. It's special."
 	new_data = request.POST.copy()
 	manipulator = UserPasswdManipulator(request.user)
 	if request.method == "POST":
