@@ -1,7 +1,7 @@
 # Django settings for esp project.
 
 DEBUG = True
-DISPLAYSQL = True
+DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (

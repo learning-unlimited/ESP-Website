@@ -1,0 +1,43 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Printables{% endblock %}
+
+{% block subsection_name %}Printing Options{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+<br /><br />
+<h1>Print student schedules</h1>
+
+
+
+<p style="text-align: center">
+Using this tool you can print student schedules for students on the fly.
+<br />
+To use this tool as intended you must:<br />
+<ol>
+<li>Get a printer that can reliably sit and be plugged into a printer</li>
+<li>Install a printer, and make SURE it's default (at least in firefox)</li>
+<li>Use firefox :-D</li>
+<li>Set up the printer as default:<br />
+<ol>
+<li>Goto <tt>about:config</tt> and type `<tt>print.print_printer</tt>'. Enter the string title (exactly) for the ESP Printer.</li>
+<li>Rightclick on some whitespace and click on "New --> Boolean". Add <tt>print.always_print_silent</tt> and make it TRUE.</li>
+<li>While you're at it, you might as well make <tt>print.print_color</tt> false.</li>
+</ol>
+Now your printer will now automatically print from firefox. Test this by printing this page. Notice it shouldn't open a dialog box or anything.
+</li>
+<li>Now you should be ready to go to the next page!</li>
+</ol>
+
+<strong>MAKE SURE YOU DO THIS ON ONE COMPUTER. IF YOU DON'T KNOW WHAT YOU ARE DOING, PLEASE <a href="javascript:history.go(-1);">GO BACK</a> NOW!</strong>
+<br /><br />
+<a href="{{request.path}}?sure">I am ready to go print schedules automatically!</a>
+</p>
+
+{% endblock %}

@@ -214,11 +214,7 @@ class ESPUser(User, AnonymousUser):
                             Q_before_end
 
         if QObject:
-            ids = [x['id'] for x in User.objects.filter(Q_useroftype).values('id')]
-            if len(ids) == 0:
-                return Q(id=-1)
-            else:
-                return Q(id__in = ids)
+            return Q_useroftype
 
         else:
             return User.objects.filter(Q_useroftype)

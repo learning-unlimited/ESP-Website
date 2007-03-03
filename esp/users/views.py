@@ -71,6 +71,7 @@ def get_user_list(request, listDict, extra=''):
         for List in separated['or'][1:]:
             curList = opmapping['or'](curList, List)
 
+
         filterObj = PersistentQueryFilter.getFilterFromQ(curList, User, request.POST['finalsent'])
 
 
@@ -86,6 +87,7 @@ def get_user_list(request, listDict, extra=''):
                 return (getUser, False)
 
         return (filterObj, True) # We got the list, return it.
+
 
     # if we found a single user:
     if request.method == 'GET' and request.GET.has_key('op') and request.GET['op'] == 'usersearch':
@@ -144,17 +146,23 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
         kwargs = {}
         kwargs_exclude = {}
+
+
 	if (request.GET.has_key('userid') and len(request.GET['userid'].strip()) > 0) or (request.POST.has_key('userid') and len(request.POST['userid'].strip()) > 0):
+
+            
             userid = -1
+
             try:
                 if request.GET.has_key('userid'):
                     userid = int(request.GET['userid'])
                 if request.POST.has_key('userid'):
                     userid = int(request.POST['userid'])
-                    
+
             except:
                 raise ESPError(False), 'User id invalid, please enter a number.'
 
+            
             if request.GET.has_key('userid__not'):
                 kwargs_exclude = {'id': userid}
             else:
@@ -179,12 +187,14 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                     kwargs.update({'registrationprofile__contact_user__address_zip__in': zipcodes})
                 
                 
-                    
+
+        
 	if len(kwargs) == 0 and len(kwargs_exclude) == 0:
 		users = None
 	else:
 
             QSUsers = All_Users
+
             if len(kwargs) > 0:
                 QSUsers = QSUsers.filter(**kwargs)
             if len(kwargs_exclude) > 0:
@@ -193,7 +203,6 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
             QSUsers = QSUsers.distinct()
             
             users = [ ESPUser(user) for user in QSUsers ]
-		
 
 	if users is not None and len(users) == 0:
 		error = True

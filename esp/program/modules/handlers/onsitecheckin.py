@@ -34,7 +34,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             
 
     def createBit(self, extension):
-        if key == 'Paid':
+        if extension == 'Paid':
             self.updatePaid(True)
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,
@@ -52,7 +52,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return True
 
     def deleteBit(self, extension):
-        if key == 'Paid':
+        if extension == 'Paid':
             self.updatePaid(False)
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,

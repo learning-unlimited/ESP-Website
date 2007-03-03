@@ -15,7 +15,9 @@
 {% include "users/student_schedule.html" %}
 {% if request.user.onsite_local %}
 <center>
-<a href="/onsite/{{program.getUrlBase}}/studentschedule">Get Student Schedule</a>
+<a target="_new" href="/onsite/{{program.getUrlBase}}/studentschedule">Get Student Schedule</a>
+<br />
+<a href="/onsite/{{program.getUrlBase}}/printschedule">Print Student Schedule (may not be working)</a>
 
 <div class="errormsg">
   WARNING: Your browser's back button will NOT work! (Please use the On-Site button to the (top)right!
