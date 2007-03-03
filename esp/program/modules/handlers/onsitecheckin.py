@@ -9,12 +9,33 @@ from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
 from esp.users.views    import search_for_user
 from esp.program.modules.manipulators import OnSiteRegManipulator
-
+from esp.money.models   import Transaction
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
 
+    def updatePaid(self, paid=True):
+        t = Transaction.objects.filter(fbo    = self.student,
+                                       anchor = self.program.anchor)
+        if t.count() > 0 and not paid:
+            for trans in t:
+                trans.delete()
+
+        if t.count() == 0 and paid:
+            trans = Transaction(anchor = self.program.anchor,
+                                fbo    = self.student,
+                                payer  = self.student,
+                                amount = 30.00,
+                                line_item = 'Onsite payment for %s' % self.program.niceName(),
+                                executed = True,
+                                payment_type_id = 6
+                                )
+            trans.save()
+            
+
     def createBit(self, extension):
+        if key == 'Paid':
+            self.updatePaid(True)
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,
                                     verb = verb,
@@ -31,6 +52,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return True
 
     def deleteBit(self, extension):
+        if key == 'Paid':
+            self.updatePaid(False)
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,
                                     verb = verb,
@@ -50,7 +73,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
         verb = GetNode('V/Flags/Registration/Paid')
         return UserBit.UserHasPerms(self.student,
                                     self.program.anchor,
-                                    verb)
+                                    verb) or \
+               Transaction.objects.filter(fbo = self.student,
+                                          anchor = self.program.anchor).count() > 0
     
     def hasMedical(self):
         verb = GetNode('V/Flags/Registration/MedicalFiled')
@@ -80,6 +105,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     self.createBit(key)
                 else:
                     self.deleteBit(key)
+                
 
             return self.goToCore(tl)
 

@@ -293,6 +293,12 @@ class ESPUser(User, AnonymousUser):
             return UserBit.UserHasPerms(self, program.anchor, GetNode('V/Administer'))
 
     isAdmin = isAdministrator
+
+    def delete(self):
+        for x in self.userbit_set.all():
+            x.delete()
+        super(ESPUser, self).delete()
+        
     
     def isTeacher(self):
         """Returns true if this user is a teacher"""

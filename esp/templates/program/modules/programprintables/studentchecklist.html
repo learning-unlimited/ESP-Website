@@ -31,7 +31,7 @@ body { font-family: georgia; }
 </head>
 <body>
 <div class="title" style="text-align: center;">
-<span>Student Checklist</span>
+<span>Student Checklist for {{program.niceName}}</span>
 </div>
 
 <table class="pretty" cellspacing="0">
@@ -55,13 +55,11 @@ body { font-family: georgia; }
    <td><div class="box">&nbsp;</div></td>
    <td>{{ student.user.name }}</td>
    <td>{{ student.user.email}}</td>
-   <td>{{ student.user.getLastProfile.student_info.dob|date:"jS" }}</td>
+   <td>{{ student.user.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
    <td><strong>{{student.user.id}}</strong></td>
 </tr>
  {% endfor %}
 </table>
-<br />
-<br />
-{{studentList}}
+
 </body>
 </html>

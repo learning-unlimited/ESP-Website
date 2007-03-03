@@ -8,13 +8,34 @@ from django              import forms
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
 from esp.program.modules.manipulators import OnSiteNormalRegManipulator
-
+from esp.money.models   import Transaction
 
 
 class OnSiteRegister(ProgramModuleObj):
 
+    def updatePaid(self, paid=True):
+        t = Transaction.objects.filter(fbo    = self.student,
+                                       anchor = self.program.anchor)
+        if t.count() > 0 and not paid:
+            for trans in t:
+                trans.delete()
+
+        if t.count() == 0 and paid:
+            trans = Transaction(anchor = self.program.anchor,
+                                fbo    = self.student,
+                                payer  = self.student,
+                                amount = 30.00,
+                                line_item = 'Onsite payment for %s' % self.program.niceName(),
+                                executed = True,
+                                payment_type_id = 6
+                                )
+            trans.save()
+            
 
     def createBit(self, extension):
+        if extension == 'Paid':
+            self.updatePaid(True)
+            
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,
                                     verb = verb,
