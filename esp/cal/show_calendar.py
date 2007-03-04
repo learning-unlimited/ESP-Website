@@ -118,3 +118,4 @@ def genPlan(events, minDate = None, maxDate = None):
         curr_date = day_after(curr_date)
 
     return loader.get_template('events/minicalendar').render(Context( { 'events_by_week': event_weeks } )
+

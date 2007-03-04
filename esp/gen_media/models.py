@@ -47,7 +47,7 @@ class LatexImage(models.Model):
         os.system('cd %s; %s -interaction=nonstopmode %s &>/dev/null' % \
                   (TMP, commands['latex'], self.filename))
 
-        os.system( '%s -q -T tight -bg white -D 150 -o %s.png %s.dvi &&  %s %s.png %s/%s.%s &> /dev/null' % \
+        os.system( '%s -q -T tight -bg Transparent -D 150 -o %s.png %s.dvi &&  %s %s.png %s/%s.%s &> /dev/null' % \
                   (commands['dvipng'], fullpath, fullpath, commands['convert'], fullpath,
                    TEXIMAGE_BASE, self.filename, self.filetype))
 

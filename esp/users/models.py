@@ -381,8 +381,8 @@ class ESPUser(User, AnonymousUser):
 class UserBit(models.Model):
     """ Grant a user a bit on a Q """
     user = models.ForeignKey(User, blank=True, null=True) # User to give this permission
-    qsc = models.ForeignKey(DataTree, related_name='permission_related_field') # Controller to grant access to
-    verb = models.ForeignKey(DataTree, related_name='subject_related_field') # Do we want to use Subjects?
+    qsc = models.ForeignKey(DataTree, related_name='userbit_qsc') # Controller to grant access to
+    verb = models.ForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
 
     startdate = models.DateTimeField(blank=True, null=True)
     enddate = models.DateTimeField(blank=True, null=True)

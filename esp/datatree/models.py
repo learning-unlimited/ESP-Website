@@ -295,6 +295,29 @@ class DataTree(models.Model):
     class Meta:
 	    ordering = ['rangestart']
 
+    def delete(self, recurse = False, superDelete = False):
+        """ Delete this tree node.
+            If you call node.delete() and this node has children,
+            it will result in an error. Please call:
+            node.delete(recurse=True) or node.delete(True) to delete
+            recursively."""
+        # we're going to bypass this entirely
+        if superDelete:
+
+            return super(DataTree, self).delete()
+
+        # if we are not overriding and we have children
+        if not recurse and self.children().count() > 0:
+            assert False, 'Cannot delete this node--it has children!'
+
+        # if we are overriding we're going to deleve all subnodes
+        if self.children().count() > 0:
+            for child in self.descendants():
+                child.delete(superDelete = True)
+            return None
+        
+        super(DataTree, self).delete()
+
     # aseering: Including this line seems to break things badly, but excluding it makes node refactors not thread-safe
 #    @transaction.commit_on_success
     def save(self):
