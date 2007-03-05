@@ -149,6 +149,7 @@ class AdminClass(ProgramModuleObj):
 
                 cls.meeting_times.clear()
                 cls.directors_notes = new_data['directors_notes']
+                cls.message_for_directors = new_data['message_for_directors']                
                 for meeting_time in new_data.getlist('meeting_times'):
                     cls.meeting_times.add(DataTree.objects.get(id = str(meeting_time)))
                 cls.save()
@@ -164,6 +165,7 @@ class AdminClass(ProgramModuleObj):
         else:
             new_data['meeting_times']   = [x.id for x in cls.meeting_times.all()]
             new_data['directors_notes'] = cls.directors_notes
+            new_data['message_for_directors'] = cls.message_for_directors            
             new_data['resources'] = [ resource.id for resource in cls.resources.all() ]
 
             steps = []

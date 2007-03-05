@@ -11,6 +11,14 @@
 <div id="vitals">
 <table style="border: 1px solid black; border-collapse: collapse;">
 <tr>
+  <th>Useful Links</th>
+  <td>
+      <a href="/learn/{{program.getUrlBase}}/studentreg">Student Reg</a><br />
+      <a href="/learn/{{program.getUrlBase}}/catalog">Catalog</a><br />
+      <a href="/teach/{{program.getUrlBase}}/teacherreg">Teacher Reg</a><br />
+  </td>
+</tr>
+<tr>
   <th>Total # of Students</th>
   <td>{% for value in vitals.studentnum %}
        <strong>{{ value.0 }}</strong> &ndash; {{value.1|length}}

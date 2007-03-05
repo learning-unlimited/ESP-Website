@@ -386,7 +386,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 if len(new_data['message_for_directors'].strip()) > 0 and \
                        new_data['message_for_directors'] != newclass.message_for_directors and \
                        self.program.director_email:
-
+                    
                     send_mail('['+self.program.anchor.parent.friendly_name+"] Directors' Comments for Teacher Reg", \
                               """ Directors\' comments below:\nClass Title: %s\n\n %s\n\n>>>>>>>>>>>EOM""" % \
                               (new_data['title'], new_data['message_for_directors']) , \
@@ -416,7 +416,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     newclass.anchor.save()
                     newclass.enrollment = 0
                     newclass.save()
-                    newclass.anchor.delete()
+                    newclass.anchor.delete(True)
                 
                     nodestring = newclass.category.category[:1].upper() + str(newclass.id)
                     newclass.anchor = self.program.classes_node().tree_create([nodestring])

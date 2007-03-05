@@ -418,7 +418,7 @@ class Class(models.Model):
 
 
 		if self.anchor:
-			self.anchor.delete()
+			self.anchor.delete(True)
 		
 		self.viable_times.clear()
 		self.meeting_times.clear()

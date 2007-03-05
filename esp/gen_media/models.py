@@ -5,7 +5,9 @@ import os
 
 TEXIMAGE_BASE = settings.MEDIA_ROOT+'/latex'
 TEXIMAGE_URL  = '/media/uploaded/latex'
-IMAGE_TYPE    = 'gif'
+IMAGE_TYPE    = 'png'
+LATEX_DPI     = 200
+LATEX_BG      = 'Transparent' #'white'
 
 mimes         = {'gif': 'image/gif',
                  'png': 'image/png'}
@@ -47,8 +49,8 @@ class LatexImage(models.Model):
         os.system('cd %s; %s -interaction=nonstopmode %s &>/dev/null' % \
                   (TMP, commands['latex'], self.filename))
 
-        os.system( '%s -q -T tight -bg Transparent -D 150 -o %s.png %s.dvi &&  %s %s.png %s/%s.%s &> /dev/null' % \
-                  (commands['dvipng'], fullpath, fullpath, commands['convert'], fullpath,
+        os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi &&  %s %s.png %s/%s.%s &> /dev/null' % \
+                  (commands['dvipng'], LATEX_BG, LATEX_DPI, fullpath, fullpath, commands['convert'], fullpath,
                    TEXIMAGE_BASE, self.filename, self.filetype))
 
         os.system('rm -f %s/%s*' % (TMP, self.filename))
