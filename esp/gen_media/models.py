@@ -1,12 +1,13 @@
 from django.db   import models
 from django.conf import settings
 from esp.users.models import User
+from esp.middleware   import ESPError
 import os
 
 TEXIMAGE_BASE = settings.MEDIA_ROOT+'/latex'
 TEXIMAGE_URL  = '/media/uploaded/latex'
 IMAGE_TYPE    = 'png'
-LATEX_DPI     = 200
+LATEX_DPI     = 150
 LATEX_BG      = 'Transparent' #'white'
 
 mimes         = {'gif': 'image/gif',
@@ -27,6 +28,7 @@ class LatexImage(models.Model):
 
     def getImage(self):
         if not self.file_exists():
+            raise ESPError(False), 'Youre wrong'
             self.genImage()
             self.save()
         return str(self)
@@ -59,7 +61,7 @@ class LatexImage(models.Model):
         
 
     def __str__(self):
-        return '<img src="%s/%s.%s" alt="%s" title="%s" border="0" class="LaTeX" />' % \
+        return '<img src="%s/%s.%s" alt="%s" title="%s" border="0" class="LaTeX" align="absmiddle" />' % \
                (TEXIMAGE_URL, self.filename, self.filetype, self.content, self.content)
         
 
