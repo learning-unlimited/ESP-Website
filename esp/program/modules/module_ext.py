@@ -40,6 +40,28 @@ class CreditCardModuleInfo(models.Model):
     class Admin:
         pass
 
+class RemoteTeacherParticipationProfile(models.Model):
+    from esp.users.models import User
+    from esp.program.models import Program
+
+    user      = models.ForeignKey(User,blank=True, null=True)
+    program   = models.ForeignKey(Program,blank=True, null=True)
+    volunteer = models.BooleanField(default = False)
+    need_bus  = models.BooleanField(default = False)
+    bus_runs  = models.ManyToManyField(DataTree,
+                                       related_name="bus_teachers",
+                                       blank=True)
+    volunteer_times = models.ManyToManyField(DataTree,
+                                             related_name='teacher_volunteer_set',
+                                             blank=True)
+
+    
+    def __str__(self):
+        return 'Remote participation info for teacher %s in %s' % \
+                 (str(self.user), str(self.program))      
+
+    class Admin:
+        pass
 
 class SATPrepTeacherModuleInfo(models.Model):
     from esp.users.models import User

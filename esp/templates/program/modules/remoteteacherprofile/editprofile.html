@@ -1,0 +1,85 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Teacher Registration{% endblock %}
+
+{% block subsection_name %}Teach for {{one}} <br>{% endblock %}
+{% block xtrajs %}
+{% endblock %}
+
+{% block content %}
+
+<h1>Edit your profile for {{ program.niceName }}!</h1>
+
+<p>
+Please fill out the field below to tell us information regarding your overall involvement with {{program.niceName}}.
+</p>
+
+<br />
+
+{% if form.has_errors %}
+<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
+{% endif %}
+
+<form action="{{request.path}}" name="profileform" method="post">
+
+<label for="id_volunteer" class="header">
+I am willing to volunteer *:
+</label>
+{{ form.volunteer }} 
+{% if form.volunteer.errors %}
+<br />
+<span class="form_error">{{ form.volunteer.errors|join:", " }}</span>
+{% endif %}
+<br />
+<br />
+
+<label class="header">
+Times I can Volunteer (check all that apply, please list times you might be teaching as well) *:
+</label>
+<br />
+{{form.volunteer_times}}
+
+{% if form.volunteer_times.errors %}
+   <br /><span class="form_error">{{ form.volunteer_times.errors|join:", " }}</span><br />
+{% endif %}
+
+<br />
+
+<label for="id_need_bus" class="header">
+I require transportation to <br />
+&quot;{{program.niceName}}&quot; (I cannot provide my own) *:
+</label>
+{{ form.need_bus }} 
+{% if form.need_bus.errors %}
+<br />
+<span class="form_error">{{ form.need_bus.errors|join:", " }}</span>
+{% endif %}
+<br />
+<br />
+
+{% comment %}
+<!-- FOR BUS SCHEDULE -->
+{% if form.viable_times %}
+<label class="header">
+Acceptable Course Times (check all that apply) *:
+</label>
+<br />
+{% if form.viable_times.errors %}
+   <br /><span class="form_error">{{ form.viable_times.errors|join:", " }}</span><br />
+{% endif %}
+{{ form.viable_times }}
+
+<br />
+<br />
+{% endif %}
+{% endcomment %}
+
+<input class="button" type="submit" value="Save your profile information!" />
+<input class="button" type="button"
+  onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
+
+</center>
+
+</form></div>
+
+{% endblock %}

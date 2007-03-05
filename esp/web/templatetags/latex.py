@@ -48,7 +48,7 @@ def texescape(value):
     return value
 
 @register.filter
-def teximages(value):
+def teximages(value,dpi=200):
 
     value = str(value).strip()
 

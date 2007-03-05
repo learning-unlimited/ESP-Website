@@ -28,7 +28,6 @@ class LatexImage(models.Model):
 
     def getImage(self):
         if not self.file_exists():
-            raise ESPError(False), 'Youre wrong'
             self.genImage()
             self.save()
         return str(self)
@@ -66,8 +65,12 @@ class LatexImage(models.Model):
         
 
     def file_exists(self):
+        
         if not self.filename:
+            assert False, 'oops'
             return False
+        if not os.path.exists('%s/%s' % (TEXIMAGE_BASE, self.filename)):
+            raise ESPError(True), '%s/%s' % (TEXIMAGE_BASE, self.filename)
         return os.path.exists('%s/%s' % (TEXIMAGE_BASE, self.filename))
     
 def get_rand_file_base():

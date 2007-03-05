@@ -134,6 +134,16 @@ class TeacherClassRegManipulator(forms.Manipulator):
 
 
 
+class RemoteTeacherManipulator(forms.Manipulator):
+    def __init__(self, module = None):
+        self.fields = (
+            forms.CheckboxField(field_name="volunteer"),
+            forms.CheckboxField(field_name="need_bus"),
+            CheckboxSelectMultipleField(field_name="volunteer_times",
+                                        choices = module.getTimes()),
+            )
+        
+
             
 class ClassManageManipulator(forms.Manipulator):
     """Manipulator for managing a class. """
