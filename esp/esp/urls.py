@@ -5,7 +5,7 @@ from esp.poll.views import poll
 from esp.qsdmedia.views import qsdmedia
 
 
-#	This is a lookup for the redirector, to insert a certain string for the tree node 
+#	This is some lookup for the redirector, to insert a certain string for the tree node 
 section_redirect_keys = {'teach': 'Programs',
                          'learn': 'Programs',
                          'program': 'Programs',
