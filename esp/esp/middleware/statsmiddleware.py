@@ -4,7 +4,7 @@ from time import time
 from django.db import connection
 
 class StatsMiddleware(object):
-
+    """ Inspiration from http://davidavraamides.net/blog/2006/07/03/page-stats-middleware/"""
     @staticmethod
     def process_view(request, view_func, view_args, view_kwargs):
 
