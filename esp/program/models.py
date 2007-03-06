@@ -954,7 +954,9 @@ class RegistrationProfile(models.Model):
 	teacher_info = models.ForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
 	guardian_info = models.ForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
 	educator_info = models.ForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
-	last_ts = models.DateTimeField(default=datetime.now())	
+	last_ts = models.DateTimeField(default=datetime.now())
+	emailverifycode = models.TextField(blank=True, null=True)
+	email_verified  = models.BooleanField(default=False, blank=True, null = True)
 
 	@staticmethod
 	def getLastProfile(user):

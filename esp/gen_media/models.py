@@ -24,6 +24,8 @@ class LatexImage(models.Model):
 
     content  = models.TextField()
     filename = models.TextField()
+    dpi      = models.IntegerField(blank=True, null=True)
+    style    = models.CharField(maxlength=16, choices = (('INLINE','INLINE'),('DISPLAY','DISPLAY')))
     filetype = models.CharField(maxlength=10)
 
     def getImage(self):
@@ -36,10 +38,20 @@ class LatexImage(models.Model):
         if not self.filename:
             self.filename = get_rand_file_base()
             self.filetype = IMAGE_TYPE
+
+
+        if self.style == 'INLINE':
+            style = '$'
+        elif self.style == 'DISPLAY':
+            style = '$$'
+        else:
+            raise ESPError(False), 'Unknown display style'
+
             
         tex = r"""\documentclass[fleqn]{article} \usepackage{amssymb,amsmath} """ +\
               r"""\usepackage[latin1]{inputenc} \begin{document} \\""" + \
-              r""" \thispagestyle{empty} \mathindent0cm \parindent0cm $%s$ \end{document}""" % self.content
+              r""" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}""" % \
+              (style, self.content, style)
 
         fullpath = TMP+'/'+self.filename
 
@@ -47,11 +59,16 @@ class LatexImage(models.Model):
         tex_file.write(tex)
         tex_file.close()
 
+        if self.dpi is None:
+            cur_dpi = LATEX_DPI
+        else:
+            cur_dpi = self.dpi
+
         os.system('cd %s; %s -interaction=nonstopmode %s &>/dev/null' % \
                   (TMP, commands['latex'], self.filename))
 
         os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi &&  %s %s.png %s/%s.%s &> /dev/null' % \
-                  (commands['dvipng'], LATEX_BG, LATEX_DPI, fullpath, fullpath, commands['convert'], fullpath,
+                  (commands['dvipng'], LATEX_BG, cur_dpi, fullpath, fullpath, commands['convert'], fullpath,
                    TEXIMAGE_BASE, self.filename, self.filetype))
 
         os.system('rm -f %s/%s*' % (TMP, self.filename))
@@ -67,11 +84,9 @@ class LatexImage(models.Model):
     def file_exists(self):
         
         if not self.filename:
-            assert False, 'oops'
             return False
-        if not os.path.exists('%s/%s' % (TEXIMAGE_BASE, self.filename)):
-            raise ESPError(True), '%s/%s' % (TEXIMAGE_BASE, self.filename)
-        return os.path.exists('%s/%s' % (TEXIMAGE_BASE, self.filename))
+
+        return os.path.exists('%s/%s.%s' % (TEXIMAGE_BASE, self.filename, self.filetype))
     
 def get_rand_file_base():
     import sha

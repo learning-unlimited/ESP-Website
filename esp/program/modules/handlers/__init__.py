@@ -26,3 +26,4 @@ from esp.program.modules.handlers.onsite_newreg import *
 from esp.program.modules.handlers.adminmorph import *
 from esp.program.modules.handlers.onsiteprintschedules import *
 from esp.program.modules.handlers.remoteteacherprofile import *
+from esp.program.modules.handlers.emailverifymodule    import *

@@ -48,11 +48,12 @@ def texescape(value):
     return value
 
 @register.filter
-def teximages(value,dpi=200):
+def teximages(value,dpi=150):
 
     value = str(value).strip()
 
     strings = value.split('$$')
+    style   = 'DISPLAY'
 
     converted = [ False for i in range(len(strings)) ]
 
@@ -60,11 +61,15 @@ def teximages(value,dpi=200):
         if i % 2 == 1 and i < len(strings) - 1:
             if len(strings[i].strip()) > 0:
                 converted[i] = True
-                try:
-                    cur_img, created = LatexImage.objects.get_or_create(content = strings[i])
+                #try:
+                if True:
+                    cur_img, created = LatexImage.objects.get_or_create(content = strings[i],
+                                                                        dpi     = dpi,
+                                                                        style   = style
+                                                                        )
                     strings[i] = cur_img.getImage()
-                except:
-                    strings[i] = strings[i]
+                #except:
+                #    strings[i] = strings[i]
 
     value = strings[0]
 

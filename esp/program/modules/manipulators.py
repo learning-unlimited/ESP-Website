@@ -253,6 +253,7 @@ class CheckboxSelectMultipleField(forms.SelectMultipleField):
     def render(self, data):
         output = ['<ul%s>' % (self.ul_class and ' class="%s"' % self.ul_class or '')]
         str_data_list = map(str, data) # normalize to strings
+
         for value, choice in self.choices:
             checked_html = ''
             if str(value) in str_data_list:

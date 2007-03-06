@@ -1,0 +1,10 @@
+Hello {{user.name}},
+
+Please verify your email account by clicking on the link below:
+{{program.emailverifylink}}
+
+
+Thank you for your interest in ESP!
+
+MIT Educational Studies Program
+esp.mit.edu

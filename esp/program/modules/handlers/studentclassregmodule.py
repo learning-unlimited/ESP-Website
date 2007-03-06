@@ -6,6 +6,7 @@ from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit
 from esp.db.models       import Q
+from django.template.loader import get_template
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):

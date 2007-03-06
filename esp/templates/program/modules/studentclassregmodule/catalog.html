@@ -162,7 +162,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
   <table cellpadding="5px">
     <tr>
       <th colspan="2">
-       {{ aclass.class.title|escape|teximages }}
+       {{ aclass.class.title|escape|teximages:175 }}
        <br />
        <span class="teachers">
        {% for teacher in aclass.class.teachers %}

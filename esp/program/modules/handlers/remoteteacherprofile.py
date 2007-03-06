@@ -82,9 +82,9 @@ class RemoteTeacherProfile(ProgramModuleObj):
         else:
             errors = {}
             new_data.update(profile.__dict__)
-            new_data['volunteer_times'] = [x.id for x in profile.volunteer_times.all()]
-
             
+            new_data['volunteer_times'] = [x.id for x in profile.volunteer_times.all()]
+            new_data.setlist('volunteer_times', [x.id for x in profile.volunteer_times.all()])
             #assert False, new_data
         context['form'] = forms.FormWrapper(manipulator, new_data, errors)
 
