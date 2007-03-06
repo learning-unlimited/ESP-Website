@@ -20,5 +20,6 @@ NameVirtualHost *:81
         </Location>
 
         Include /etc/request-tracker3.6/apache2-esp.conf
+        Include /esp/esp/webserver_settings/trac-apache.conf
 	
 </VirtualHost>
