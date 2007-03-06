@@ -15,8 +15,7 @@ EMAIL_PORT = '25'
 
 DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
 DATABASE_NAME = 'django'             # Or path to database file if using sqlite3.
-DATABASE_USER = 'esp'             # Not used with sqlite3.
-DATABASE_PASSWORD = 'RyM^djcE!'         # Not used with sqlite3.
+from database_settings import *
 DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
 DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
 
