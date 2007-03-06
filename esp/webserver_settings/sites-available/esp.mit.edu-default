@@ -8,7 +8,7 @@ NameVirtualHost *:81
 	<Location "/">
 	    SetHandler python-program
 	    PythonHandler django.core.handlers.modpython
-	    PythonPath "['/esp/code/'] + sys.path"
+	    PythonPath "['/esp/esp/'] + sys.path"
 	    SetEnv DJANGO_SETTINGS_MODULE esp.settings
 	    #PythonDebug On
 	</Location>

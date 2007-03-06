@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys
-sys.path += ['/esp/']
+sys.path += ['/esp/esp/']
 
 import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
