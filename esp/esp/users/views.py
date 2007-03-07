@@ -1,11 +1,11 @@
 """ This is the views portion of the users utility, which has some user-oriented views."""
 from esp.middleware   import ESPError
-from esp.db.models    import Q, QNot
+from esp.db.models    import Q, QNot, QSplit
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User, ZipCode
 from esp.web.util     import render_to_response
 import pickle
 
-def get_user_list(request, listDict, extra=''):
+def get_user_list(request, listDict2, extra=''):
     """ Get a list of users from some complicated mixture of other lists.
         The listDict must be of the form:
           {'list1_key': {'list:         Q_Object,
@@ -19,8 +19,16 @@ def get_user_list(request, listDict, extra=''):
         Otherwise, it returns a response that's expected to be returned to django.
         """
 
-    if type(listDict) != dict or len(listDict) == 0:
+    if type(listDict2) != dict or len(listDict2) == 0:
         raise ESPError(), 'User lists were not specified correctly!'
+
+    listDict = {}
+
+    for key, value in listDict2.items():
+        listDict[key] = {'list': getQForUser(value['list']),
+                         'description': value['description']}
+
+    
 
     if request.POST.has_key('submit_user_list') and \
        request.POST['submit_user_list'] == 'true':
@@ -232,3 +240,15 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
             context = {'users': users, 'extra':str(extra), 'list': returnList}
 
             return (render_to_response('users/userpick.html', request, None, context), False)
+
+
+def getQForUser(QRestriction):
+    # Let's not do anything and say we did...
+    #return QRestriction
+    
+    from esp.users.models import User
+    ids = [ x['id'] for x in User.objects.filter(QRestriction).values('id')]
+    if len(ids) == 0:
+        return Q(id = -1)
+    else:
+        return Q(id__in = ids)

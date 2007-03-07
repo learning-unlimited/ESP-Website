@@ -1,6 +1,6 @@
 """ ESP's own implementation of the Q objects as spelled out by django. """
 
-from django.db.models.query import Q as DjangoQ, QAnd as DjangoQAnd, QOr as DjangoQOr, QOperator as DjangoQOperator, QNot, parse_lookup
+from django.db.models.query import Q as DjangoQ, QAnd as DjangoQAnd, QOr as DjangoQOr, QOperator as DjangoQOperator, QNot as DjangoQNot, parse_lookup
 from django.utils.datastructures import SortedDict
 
 class qlist(list):
@@ -13,7 +13,114 @@ class qlist(list):
         model = type(self[0])
 
         return model.objects.filter(id__in = [x.id for x in self]).filter(*args, **kwargs)
+
+def replaceDict(string, dict):
+    " Will take a dictioary and an arbitrary string, and replace the string with the dictioary."
+    if len(dict) == 0:
+        return string
+    
+    curDict = dict.copy()
+    keys = curDict.keys()
+    keys.sort(lambda x,y: cmp(len(y), len(x)))
+    key = keys[0]
+    val = curDict[key]
+
+    del curDict[key]
+
+    offset  = 0
+    strings = [string]
+
+    
+    while strings[-1].find(key) != -1:
+        loc = strings[-1].find(key)
         
+        strings.append(strings[-1][len(key) + loc:])
+
+        strings[-2] = strings[-2][:loc]
+        
+
+    return val.join([replaceDict(s,curDict) for s in strings])
+    
+
+    
+
+class QSplit(DjangoQ):
+    " Encapsulates a single JOIN-type query into one object "
+    set_or = False
+
+    def __init__(self, q):
+        " Creates a single Q-ish object that separates itself from other Q objects. "
+        self.q = q
+
+    def set_OR(self, or_value):
+        """ Set the value of .inside_or """
+
+        if self.set_or:
+            return
+        
+        self.set_or    = True
+
+        self.q.set_OR(or_value) # set the value for all the children
+
+
+    def some_OR_exists(self):
+        """ Returns true if an OR exists. """
+        return self.q.some_OR_exists()
+
+    def get_sql(self, opts):
+        joins, where, params = self.q.get_sql(opts)
+        key_replace = {}
+        joins2      = {}
+        where2      = []
+
+        for key, val in joins.items():
+            cur_key = key.strip('"')
+            cur_val = '%s__%s' % (key.strip('"'), hash(self))
+            
+            key_replace[cur_key] = cur_val
+
+            joins2['"%s"' % cur_val] = val
+
+            
+
+        for key, val in joins2.items():
+            joins2[key] = (val[0],val[1],replaceDict(val[2],key_replace))
+            
+        for key, val in joins2.items():
+            joins2[key] = val
+
+        where2 = [replaceDict(clause, key_replace) for clause in where]
+
+
+        return joins2, where2, params
+
+class QNot(DjangoQNot):
+    "Encapsulates NOT (...) queries as objects"
+    set_or = False
+    
+    def __init__(self, q):
+        "Creates a negation of the q object passed in."
+        self.q = q
+
+    def get_sql(self, opts):
+        joins, where, params = self.q.get_sql(opts)
+        where2 = ['(NOT (%s))' % " AND ".join(where)]
+        return joins, where2, params
+
+    def set_OR(self, or_value):
+        """ Set the value of .inside_or """
+
+        if self.set_or:
+            return
+        
+        self.set_or    = True
+
+        self.q.set_OR(or_value) # set the value for all the children
+
+
+    def some_OR_exists(self):
+        """ Returns true if an OR exists. """
+        return self.q.some_OR_exists()
 
 
 class QOperator(DjangoQOperator):
@@ -114,11 +221,15 @@ class Q(DjangoQ):
         
         joins, where, params = parse_lookup(self.kwargs.items(), opts)
         joins2 = joins
-        
-        for item, key in joins.items():
-            joins2[item] = (key[0], join_text, key[2])
+        where2 = where
 
+        for item, key in joins.items():
+            if self.inside_or:
+                where2 += [key[2]]
+            
+            joins2[item] = (key[0], join_text, key[2])
+        #assert False, key
         self.set_or = False # remove the fact that we know if we're OR'd
         
-        return joins2, where, params
+        return joins2, where2, params
 
