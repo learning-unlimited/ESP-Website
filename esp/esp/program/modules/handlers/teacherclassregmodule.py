@@ -141,6 +141,9 @@ class TeacherClassRegModule(ProgramModuleObj):
     
 
     def deadline_met(self):
+        if self.user.isAdmin(self.program):
+            return True
+        
         tmpModule = ProgramModuleObj()
         tmpModule.__dict__ = self.__dict__
         return tmpModule.deadline_met('/Classes')
