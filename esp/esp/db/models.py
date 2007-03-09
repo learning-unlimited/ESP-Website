@@ -98,18 +98,23 @@ class QSplit(DjangoQ):
         return self.q.some_OR_exists()
 
     def get_sql(self, opts):
+        from django.conf import settings
+
+        tick = settings.DATABASE_ENGINE == 'mysql' and "`" or '"'
+        
         joins, where, params = self.q.get_sql(opts)
         key_replace = {}
         joins2      = {}
         where2      = []
+        
 
         for key, val in joins.items():
-            cur_key = key.strip('"')
-            cur_val = '%s__%s' % (key.strip('"'), hash(self))
+            cur_key = key.strip(tick)
+            cur_val = '%s__%s' % (key.strip(tick), hash(self))
             
             key_replace[cur_key] = cur_val
 
-            joins2['"%s"' % cur_val] = val
+            joins2['%s%s%s' % (tick, cur_val, tick)] = val
 
             
 
