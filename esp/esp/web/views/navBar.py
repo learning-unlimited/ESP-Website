@@ -40,8 +40,13 @@ from esp.dblog.views import ESPError
 def makeNavBar(user, node, section = ''):
 	""" Query the navbar-entry table for all navbar entries associated with this tree node """
 	edit_verb = GetNode('V/Administer/Edit/QSD')
+
+	rangestart = node.rangestart
+	rangeend   = node.rangeend
+	qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=rangestart,
+					     path__rangeend__gte=rangeend,
+					     section=section).order_by('sort_rank')
 	
-	qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=node.rangestart,path__rangeend__gte=node.rangeend,section=section).order_by('sort_rank')
 	if user is None or type(user) == AnonymousUser or user.id is None:
 		
 		context = { 'node': node,

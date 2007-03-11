@@ -76,35 +76,36 @@ def replaceDict(string, dict):
 
 class QSplit(DjangoQ):
     " Encapsulates a single JOIN-type query into one object "
-    set_or = False
+    checked_or= False
 
     def __init__(self, q):
         " Creates a single Q-ish object that separates itself from other Q objects. "
         self.q = q
 
-    def set_OR(self, or_value):
-        """ Set the value of .inside_or """
+    def set_or_found(self, or_value):
+        """ Set the value of .underneath_an_or """
 
-        if self.set_or:
+        if self.checked_or:
             return
         
-        self.set_or    = True
+        self.checked_or   = True
 
-        self.q.set_OR(or_value) # set the value for all the children
+        self.q.set_or_found(or_value) # set the value for all the children
 
 
-    def some_OR_exists(self):
+    def search_for_or(self):
         """ Returns true if an OR exists. """
-        return self.q.some_OR_exists()
+        return self.q.search_for_or()
 
     def get_sql(self, opts):
+        " This will generate the correct (joins, where, params) tuple. "
         from django.conf import settings
 
         tick = settings.DATABASE_ENGINE == 'mysql' and "`" or '"'
         
         joins, where, params = self.q.get_sql(opts)
         key_replace = {}
-        joins2      = {}
+        joins2      = SortedDict()
         where2      = []
         
 
@@ -120,18 +121,14 @@ class QSplit(DjangoQ):
 
         for key, val in joins2.items():
             joins2[key] = (val[0],val[1],replaceDict(val[2],key_replace))
-            
-        for key, val in joins2.items():
-            joins2[key] = val
+
 
         where2 = [replaceDict(clause, key_replace) for clause in where]
-
-
         return joins2, where2, params
 
 class QNot(DjangoQNot):
     "Encapsulates NOT (...) queries as objects"
-    set_or = False
+    checked_or= False
     
     def __init__(self, q):
         "Creates a negation of the q object passed in."
@@ -142,48 +139,48 @@ class QNot(DjangoQNot):
         where2 = ['(NOT (%s))' % " AND ".join(where)]
         return joins, where2, params
 
-    def set_OR(self, or_value):
-        """ Set the value of .inside_or """
+    def set_or_found(self, or_value):
+        """ Set the value of .underneath_an_or """
 
-        if self.set_or:
+        if self.checked_or:
             return
         
-        self.set_or    = True
+        self.checked_or   = True
 
-        self.q.set_OR(or_value) # set the value for all the children
+        self.q.set_or_found(or_value) # set the value for all the children
 
 
-    def some_OR_exists(self):
+    def search_for_or(self):
         """ Returns true if an OR exists. """
-        return self.q.some_OR_exists()
+        return self.q.search_for_or()
 
 
 class QOperator(DjangoQOperator):
     "Base class for QAnd and QOr"
-    inside_or = False
-    set_or    = False
+    underneath_an_or = False
+    checked_or = False
 
-    def set_OR(self, or_value):
-        """ Set the value of .inside_or """
+    def set_or_found(self, or_value):
+        """ Set the value of .underneath_an_or """
 
-        if self.set_or:
+        if self.checked_or:
             return
         
-        self.inside_or = or_value # set this value
-        self.set_or    = True
+        self.underneath_an_or = or_value # set this value
+        self.checked_or   = True
 
         
         for val in self.args:
-            val.set_OR(or_value) # set the value for all the children
+            val.set_or_found(or_value) # set the value for all the children
 
-    def some_OR_exists(self):
+    def search_for_or(self):
         """ Returns true if an OR exists. """
         
         if type(self) == QOr:
             return True
         
         for val in self.args:
-            if val.some_OR_exists():
+            if val.search_for_or():
                 return True
 
         return False
@@ -191,11 +188,11 @@ class QOperator(DjangoQOperator):
         
     def get_sql(self, opts):
 
-        if not self.set_or:
-            some_OR_exists = self.some_OR_exists()
-            self.set_OR(some_OR_exists)
+        if not self.checked_or:
+            search_for_or = self.search_for_or()
+            self.set_or_found(search_for_or)
 
-        self.set_or = False # remove the fact that we know if we're OR'd
+        self.checked_or= False # remove the fact that we know if we're OR'd
         
         return super(QOperator, self).get_sql(opts)
 
@@ -230,16 +227,16 @@ class QOr(QOperator, DjangoQOr):
 
 class Q(DjangoQ):
     "Encapsulates queries as objects that can be combined logically."
-    inside_or = False # Whether or not this Q is inside an or
-    set_or    = False
+    underneath_an_or = False # Whether or not this Q is inside an or
+    checked_or   = False
 
-    def some_OR_exists(self):
+    def search_for_or(self):
         return False
 
-    def set_OR(self, value):
-        if not self.set_or:
-            self.inside_or = value
-            self.set_or    = True
+    def set_or_found(self, value):
+        if not self.checked_or:
+            self.underneath_an_or = value
+            self.checked_or   = True
 
     def __and__(self, other):
         return QAnd(self, other) # not django's QAnd
@@ -249,7 +246,7 @@ class Q(DjangoQ):
 
     def get_sql(self, opts):
 
-        if self.inside_or:
+        if self.underneath_an_or:
             join_text = 'LEFT OUTER JOIN'
         else:
             join_text = 'INNER JOIN'
@@ -259,12 +256,12 @@ class Q(DjangoQ):
         where2 = where
 
         for item, key in joins.items():
-            if self.inside_or:
+            if self.underneath_an_or:
                 where2 += [key[2]]
             
             joins2[item] = (key[0], join_text, key[2])
         #assert False, key
-        self.set_or = False # remove the fact that we know if we're OR'd
+        self.checked_or = False # remove the fact that we know if we're OR'd
         
         return joins2, where2, params
 

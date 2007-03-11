@@ -535,23 +535,24 @@ class UserBit(models.Model):
         else:
             Q_user_correct = Q(user__isnull=True)
 
+        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
         # Filter by date/time range
         Q_date_correct = (Q(startdate__isnull=True) | Q(startdate__lte=now)) & \
                          (Q(enddate__isnull=True) | Q(enddate__gt=now))
 
-        # filter by qsc and verb
-        # these ids make bad inner joins go away
-        # in django 1.0, replace with OUTER JOINS!
-        qsc_parent_ids      = [qsc.id ] + [x['id'] for x in  qsc.antecedents(False).values('id')]
-        verb_parent_ids     = [verb.id] + [x['id'] for x in verb.antecedents(False).values('id')]
+        Q_recursive      = Q(recursive = True)
+        Q_verb_recursive = Q(verb__rangestart__lte = verb.rangestart) & \
+                           Q(verb__rangeend__gte = verb.rangeend)
+        Q_qsc_recursive  = Q(qsc__rangestart__lte  = qsc.rangestart)  & \
+                           Q(qsc__rangeend__gte  = qsc.rangeend )
 
-        Q_recursive_search = Q(recursive = True) & Q(qsc__in = qsc_parent_ids) & Q(verb__in = verb_parent_ids)
+        Q_exact_match    = Q(verb = verb.id) & Q(qsc = qsc.id) # & Q(recursive = False), not needed
 
-        Q_flat_userbit     = Q(qsc = qsc) & Q(verb = verb)
+        Q_recursive_search = Q_verb_recursive & Q_qsc_recursive & Q_recursive
 
 
         # the final query:
-        num = UserBit.objects.filter(Q_user_correct & Q_date_correct).filter(Q_recursive_search | Q_flat_userbit).count()
+        num = UserBit.objects.filter(Q_user_correct & Q_date_correct).filter(Q_recursive_search | Q_exact_match).count()
         # If we have at least one UserBit meeting these criteria, we have perms.
 
         retVal = (num > 0)
@@ -582,8 +583,10 @@ class UserBit(models.Model):
         if end_of_now == None: end_of_now = now
             
         Q_recursive      = Q(recursive = True)
-        Q_verb_recursive = Q(verb__rangestart__lte = verb.rangestart) & Q(verb__rangeend__gte = verb.rangeend)
-        Q_qsc_recursive  = Q(qsc__rangestart__lte  = qsc.rangestart)  & Q(qsc__rangeend__gte  = qsc.rangeend )
+        Q_verb_recursive = Q(verb__rangestart__lte = verb.rangestart) & \
+                           Q(verb__rangeend__gte = verb.rangeend)
+        Q_qsc_recursive  = Q(qsc__rangestart__lte  = qsc.rangestart)  & \
+                           Q(qsc__rangeend__gte  = qsc.rangeend )
 
         Q_exact_match    = Q(verb = verb.id) & Q(qsc = qsc.id) # & Q(recursive = False), not needed
 

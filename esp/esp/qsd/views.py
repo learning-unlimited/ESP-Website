@@ -65,7 +65,10 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 
 	# Detect edit authorizations
 	have_edit = UserBit.UserHasPerms( request.user, branch, GetNode('V/Administer/Edit') )
-	have_read = UserBit.UserHasPerms( request.user, branch, GetNode('V/Flags/Public') )
+	if have_edit:
+		have_read = True
+	else:
+		have_read = UserBit.UserHasPerms( request.user, branch, GetNode('V/Flags/Public') )
 
 	# Fetch the QSD object
 	try:
