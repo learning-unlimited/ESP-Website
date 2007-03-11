@@ -82,6 +82,7 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'esp.datatree.middleware.DataTreeLockMiddleware',
     'esp.middleware.ESPErrorMiddleware',
     'django.middleware.common.CommonMiddleware',
     #'django.contrib.csrf.middleware.CsrfMiddleware',
