@@ -1,0 +1,18 @@
+NameVirtualHost *:81
+# Default virtual host for ~datkin/esp
+# Please copy and create more dev servers if you want!
+# Using mod_python
+<VirtualHost *:81>
+        ServerName datkin.axiak.net
+	ServerAdmin esp@mit.edu
+	DocumentRoot /home/datkin/esp
+
+	<Location "/">
+	    SetHandler python-program
+	    PythonHandler django.core.handlers.modpython
+	    PythonPath "['/home/datkin/esp'] + sys.path"
+	    SetEnv DJANGO_SETTINGS_MODULE esp.settings
+	    PythonDebug On
+	</Location>
+	
+</VirtualHost>
