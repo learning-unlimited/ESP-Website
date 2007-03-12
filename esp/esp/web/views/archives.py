@@ -85,7 +85,7 @@ def filter_archive(records, criteria):
 		if c.category == 'year':
 			result = result.filter(year__icontains = c.options)
 		elif c.category == 'program':
-			result = result.filter(program__icontains = c.options)
+			result = result.filter(program__iexact = c.options)
 		elif c.category == 'title':
 			result = result.filter(title__istartswith = c.options)
 		elif c.category == 'category':
@@ -108,15 +108,16 @@ def archive_classes(request, category, options, sortorder = None):
 	context['category'] = category
 	context['options'] = options
 	
+	#	Take filtering criteria both from form and from URL
 	if category != None and options != None:
 		url_criterion = ArchiveFilter(category = category, options = options)
 		criteria_list = [url_criterion]
 	else:
 		criteria_list = []
-	
+
 	criteria_list += extract_criteria(request.POST)
-	#	assert False, [c.__str__() for c in criteria_list ]
-	
+	criteria_list += extract_criteria(request.GET)
+
 	category_list = [n['category'] for n in ArchiveClass.objects.all().values('category').distinct()]
 	program_list = [p['program'] for p in ArchiveClass.objects.all().values('program').distinct()]
 	
@@ -161,9 +162,15 @@ def archive_classes(request, category, options, sortorder = None):
 	context['sortparams'] = [{'name': k, 'options': filter_keys[k]} for k in filter_keys.keys()]
 
 	#	Display the appropriate range of results
-	res_range = compute_range(request.POST, results.count())
+	postvars = request.POST.copy()
+	relevant_keys = ['max_num_results', 'results_start', 'results_end']
+	for k in relevant_keys:
+		if request.GET.has_key(k):
+			postvars[k] = request.GET[k]
+	
+	res_range = compute_range(postvars, results.count())
 	context['results_range'] = res_range
-		
+	
 	#	Deal with the Django bug preventing you from using no "end"
 	if res_range['end'] is None:
 		res_range['end'] = results.count()
