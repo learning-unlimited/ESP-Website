@@ -891,6 +891,17 @@ class DataTree(models.Model):
     class PermissionDenied(Exception):
         pass
 
+    class NoSuchNodeException(Exception):
+        """ Raised if a required node in a DataTree doesn't exist """
+        def __init__(self, anchor, remainder):
+            self.anchor = anchor
+            self.remainder = remainder
+
+        def __str__(self):
+            return "Node not found: " + repr(self.remainder[0])
+
+                                                        
+
     ###########################
     # BACKWARDS Compatibility #
     ###########################
