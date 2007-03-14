@@ -525,7 +525,7 @@ class DataTree(models.Model):
             node = parent[cur_name]
             return node
         except:
-            pass
+            raise DataTree.NoSuchNodeException
 
         if not create:
             return None
