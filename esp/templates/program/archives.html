@@ -1,25 +1,21 @@
 
 {% extends "outlines/series-3.html" %}
 
-{% block title %}Archives: Viewing {{ selection }} by {{ category }} {% endblock %}
+{% block title %}Archives: Viewing {{ selection|capfirst }} by {{ sortorder.0|capfirst }} {% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/archives.css" type="text/css" />
 {% endblock %}
 
 {% block subsection_name %}Archives/Resources{% endblock %}
 
 {% block content %}
-
-<style type="text/css">
-#archives td.classheading {font-family: Arial, sans-serif; font-size: 12px}
-#archives td.classdesc {font-size: 13px}
-#archives a.returntotop {font-family: Arial, sans-serif; font-size: 12px}
-</style>
-
 <h1>ESP Archives: Past Classes</h1>
+</div>
 
+<div id="battlescreen">
 Found {{ num_results }} results.
 
 {% if sortparams %}
@@ -27,14 +23,14 @@ Showing {{ num_results_shown }} (#{{ results_range.start }} to #{{ results_range
 {% else %}
 These {{ num_results_shown }} results (#{{ results_range.start }} to #{{ results_range.end }}) are not sorted in any particular order.
 {% endif %}
-<br>
+<br />
 <!--
 Debug information:
 <p>
 {{ debug_str }}
 </p>
 -->
-<br>
+<br />
 <!--
 {% if old_sortparams %}
 Old sort params:
@@ -45,16 +41,13 @@ Old sort params:
 -->
 
 <br />
+
 <a name="top"></a>
-<form method="POST" action="{{request.path}}">
+<form method="post" action="{{request.path}}">
 
-{% for p in sortparams %}
-<input type="hidden" name="sortparam{{ forloop.counter }}" value = "{{ p.name }}">
-{% endfor %}
-
-<div id="battlescreen">
 <table cellspacing="0" cellpadding="4" width="600" align="center">
-<tbody>
+
+
 <tr><th colspan="2">
 Archive Viewing Options
 </th></tr>
@@ -64,9 +57,10 @@ Archive Viewing Options
 
 {% for p in sortparams %}
 	<tr><td>
+		<input type="hidden" name="sortparam{{ forloop.counter }}" value = "{{ p.name }}" />
 		{{ p.name|capfirst }}: </td><td>
 		{% if p.options|length_is:1 %}
-		<input class="text" type="text" width="50" name="filter_{{ p.name }}" value="{{ p.options.0.default_value }}">
+		<input class="text" type="text" size="40" name="filter_{{ p.name }}" value="{{ p.options.0.default_value }}" />
 		{% else %}
 		<select name="filter_{{ p.name }}"> 
 		<option value="">Any</option>
@@ -101,17 +95,19 @@ Archive Viewing Options
 </select>
 </td></tr>
 <tr><td colspan="2" align="center">
-<input class="button" type="submit" value="Reload">
-</form>
-
+<input class="button" type="submit" value="Reload" />
 <br />
 <br />
 </td></tr>
+</table>
+</form>
+
+<table cellspacing="0" cellpadding="4" width="600" align="center">
 <tr><th align="center" colspan="2">Navigation Options</th></tr>
 <tr><td colspan="2">
 <h3>Jump to {{ sortorder.0 }}</h3>
 {% for l in headings %}
-&nbsp; &nbsp; &nbsp; <a href="#{{ l }}">{{ l|capfirst }}</a>
+&nbsp; &nbsp; &nbsp; <a href="#{{ l|slugify }}">{{ l|capfirst }}</a>
 {% endfor %}
 </td></tr>
 
@@ -119,13 +115,13 @@ Archive Viewing Options
 <tr><td>
 <h3>Browse current set of results</h3></td>
 <td>
-<form method="POST" action="{{request.path}}">
-<input type="hidden" name="max_num_results" value="{{ max_num_results }}">
-<input type="hidden" name="results_end" value="{{ results_range.start }}">
-<input type="hidden" name="newparam" value="{{ sortorder.0 }}">
+<form method="post" action="{{request.path}}">
+<input type="hidden" name="max_num_results" value="{{ max_num_results }}" />
+<input type="hidden" name="results_end" value="{{ results_range.start }}" />
+<input type="hidden" name="newparam" value="{{ sortorder.0 }}" />
 {% for p in sortparams %}
 {% for h in p.options %}
-{% if h.selected %}<input type="hidden" name="filter_{{ p.name }}" value="{{ h.value }}">{% endif %}
+{% if h.selected %}<input type="hidden" name="filter_{{ p.name }}" value="{{ h.value }}" />{% endif %}
 {% endfor %}
 {% endfor %}
 <input class="button" type="submit" value="Previous {{ max_num_results }}"
@@ -134,13 +130,13 @@ disabled
 {% endifequal %}
 />
 </form>
-<form method="POST" action="{{request.path}}">
-<input type="hidden" name="max_num_results" value="{{ max_num_results }}">
-<input type="hidden" name="results_start" value="{{ results_range.end }}">
-<input type="hidden" name="newparam" value="{{ sortorder.0 }}">
+<form method="post" action="{{request.path}}">
+<input type="hidden" name="max_num_results" value="{{ max_num_results }}" />
+<input type="hidden" name="results_start" value="{{ results_range.end }}" />
+<input type="hidden" name="newparam" value="{{ sortorder.0 }}" />
 {% for p in sortparams %}
 {% for h in p.options %}
-{% if h.selected %}<input type="hidden" name="filter_{{ p.name }}" value="{{ h.value }}">{% endif %}
+{% if h.selected %}<input type="hidden" name="filter_{{ p.name }}" value="{{ h.value }}" />{% endif %}
 {% endfor %}
 {% endfor %}
 <input class="button" type="submit" value="Next {{ max_num_results }}"
@@ -152,7 +148,6 @@ disabled
 </td></tr>
 {% endifnotequal %}
 
-</tbody>
 </table>
 </div>
 
@@ -167,8 +162,9 @@ disabled
 
 {% ifequal sortorder.0 "category" %}
 {% ifchanged %}
-<a name="{{ entry.category }}"><h2 align="center">Category: {{ entry.category }}</h2></a>
-<center><a class="returntotop" href="#top">Return to top of page</a></center><hr size="1" width="75%">
+<a name="{{ entry.category|slugify }}"></a><br /><h2 align="center">Category: {{ entry.category }}</h2>
+<center><a class="returntotop" href="#top">Return to top of page</a></center>
+<hr size="1" width="75%" />
 </td></tr>
 <tr><td>
 {% endifchanged %}
@@ -176,9 +172,9 @@ disabled
 
 {% ifequal sortorder.0 "title" %}
 {% ifchanged %}
-<a name="{{ entry.title.0 }}"><h2 align="center">Title starts with: {{ entry.title.0 }}</h2></a>
+<a name="{{ entry.title.0|slugify }}"></a><br /><h2 align="center">Title starts with: {{ entry.title.0 }}</h2>
 <center><a class="returntotop" href="#top">Return to top of page</a></center>
-<hr size="1" width="75%">
+<hr size="1" width="75%" />
 </td></tr>
 <tr><td>
 {% endifchanged %}
@@ -186,9 +182,9 @@ disabled
 
 {% ifequal sortorder.0 "program" %}
 {% ifchanged %}
-<a name="{{ entry.program }}"><h2 align="center">Program: {{ entry.program }}</h2></a>
+<a name="{{ entry.program|slugify }}"></a><br /><h2 align="center">Program: {{ entry.program }}</h2>
 <center><a class="returntotop" href="#top">Return to top of page</a></center>
-<hr size="1" width="75%">
+<hr size="1" width="75%" />
 </td></tr>
 <tr><td>
 {% endifchanged %}
@@ -196,9 +192,9 @@ disabled
 
 {% ifequal sortorder.0 "year" %}
 {% ifchanged %}
-<a name="{{ entry.year }}"><h2 align="center">Year: {{ entry.year }}</h2></a>
+<a name="{{ entry.year }}"></a><br /><h2 align="center">Year: {{ entry.year }}</h2>
 <center><a class="returntotop" href="#top">Return to top of page</a></center>
-<hr size="1" width="75%">
+<hr size="1" width="75%" />
 </td></tr>
 <tr><td>
 {% endifchanged %}
@@ -206,9 +202,9 @@ disabled
 
 {% ifequal sortorder.0 "teacher" %}
 {% ifchanged %}
-<a name="{{ entry.teacher }}"><h2 align="center">Teacher: {{ entry.teacher }}</h2></a>
+<a name="{{ entry.teacher|slugify }}"></a><br /><h2 align="center">Teacher: {{ entry.teacher }}</h2>
 <center><a class="returntotop" href="#top">Return to top of page</a></center>
-<hr size="1" width="75%">
+<hr size="1" width="75%" />
 </td></tr>
 <tr><td>
 {% endifchanged %}
@@ -226,7 +222,7 @@ disabled
 <tr><td colspan="2" class="classheading" bgcolor="#a6cedf">
 	{% for item in entry.heading %}
 	<b>{{ item.label }}:</b> {{ item.value }}
-	<br>
+	<br />
 	{% endfor %}
 </td></tr>
 <tr><td colspan="2" class="classdesc">
@@ -234,10 +230,15 @@ disabled
 {{ entry.content|default:"No description available." }}
 </p>
 </td></tr>
-
+{% if entry.num_students %}
+<tr><td colspan="2" class="classdesc" bgcolor="#cccccc">
+Estimated attendance: <b>{{ entry.num_students }}</b> students (including other versions of the same class).
+</td></tr>
+{% endif %}
 </table></td></tr>
 {% endfor %}
 </table></center>
 </div>
-
+<div>
+&nbsp;
 {% endblock %}

@@ -69,6 +69,7 @@ class ArchiveClass(models.Model):
 	title = models.CharField(maxlength=1024)
 	description = models.TextField()
 	teacher_ids = models.CharField(maxlength=256, blank=True, null=True)
+	student_ids = models.TextField()
 
 	#def __str__(self):
 	#	return '"%s" taught by "%s"' % (self.title, self.teacher)
@@ -99,13 +100,43 @@ class ArchiveClass(models.Model):
 		t = loader.get_template('models/ArchiveClass.html')
 		return t.render({'class': self})
 		
+	def num_students(self):
+		return len(self.student_ids.strip('|').split('|'))
+	
+	def add_students(self, users):
+		if self.student_ids is not None:
+			self.student_ids += '%s|' % '|'.join([str(u.id) for u in users])
+		else:
+			self.student_ids = '|%s|' % '|'.join([str(u.id) for u in users])
+			
+	def add_teachers(self, users):
+		if self.teacher_ids is not None:
+			self.teacher_ids += '%s|' % '|'.join([str(u.id) for u in users])
+		else:
+			self.teacher_ids = '|%s|' % '|'.join([str(u.id) for u in users])
+		
+	def students(self):
+		from esp.users.models import ESPUser
+		userlist = []
+		for uid in self.student_ids.strip('|').split('|'):
+			userlist += ESPUser.objects.filter(id = uid)
+		return userlist
+	
+	def teachers(self):
+		from esp.users.models import ESPUser
+		userlist = []
+		for uid in self.teacher_ids.strip('|').split('|'):
+			userlist += ESPUser.objects.filter(id = uid)
+		return userlist
 	
 	@staticmethod
 	def getForUser(user):
 		""" Get a list of archive classes for a specific user. """
 		from esp.db.models import Q
-		Q_Class = Q(teacher__icontains = (user.first_name + ' ' + user.last_name)) |\
+		Q_ClassTeacher = Q(teacher__icontains = (user.first_name + ' ' + user.last_name)) |\
 			   Q(teacher_ids__icontains = ('|%s|' % user.id))
+		Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
+		Q_Class = Q_ClassTeacher | Q_ClassStudent
 		return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')
 	
 

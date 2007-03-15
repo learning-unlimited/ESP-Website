@@ -75,7 +75,7 @@ def extract_criteria(postvars):
 	#	Use filters
 	criteria = []
 	for key in postvars.keys():
-		if key.find("filter_") != -1 and len(key) > 7: criteria.append(ArchiveFilter(category = key[7:], options = postvars[key]))
+		if len(postvars[key]) > 0 and key.find("filter_") != -1 and len(key) > 7: criteria.append(ArchiveFilter(category = key[7:], options = postvars[key]))
 	
 	return criteria
 
@@ -187,7 +187,7 @@ def archive_classes(request, category, options, sortorder = None):
 	else:
 		headings = [item.__dict__[sortorder[0]] for item in results[res_range['start']:res_range['end']]]
 	
-	context['headings'] = list(set(headings))
+	context['headings'] = list(set([str(h) for h in headings]))
 	context['headings'].sort()
 	
 	#	Fill in context some more
