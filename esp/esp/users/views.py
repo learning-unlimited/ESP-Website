@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 """ This is the views portion of the users utility, which has some user-oriented views."""
 from esp.middleware   import ESPError
-from esp.db.models    import Q, QNot, QSplit
+from esp.db.models    import Q, QNot, QSplit, QRegex
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User, ZipCode
 from esp.web.util     import render_to_response
 import pickle
@@ -182,8 +182,8 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
 		All_Users = ESPUser.getAllOfType(user_type, False)
 
-        kwargs = {}
-        kwargs_exclude = {}
+        Q_include = Q()
+        Q_exclude = Q()
 
 
 	if (request.GET.has_key('userid') and len(request.GET['userid'].strip()) > 0) or (request.POST.has_key('userid') and len(request.POST['userid'].strip()) > 0):
@@ -202,17 +202,17 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
             
             if request.GET.has_key('userid__not'):
-                kwargs_exclude = {'id': userid}
+                Q_exclude &= Q(id = userid)
             else:
-                kwargs = {'id': userid}
+                Q_include &= Q(id = userid)
 
         else:
             for field in ['username','last_name','first_name', 'email']:
                 if request.GET.has_key(field) and len(request.GET[field].strip()) > 0:
                     if request.GET.has_key('%s__not' % field):
-                        kwargs_exclude.update({'%s__iregex' % field: request.GET[field]})
+                        Q_exclude &= QRegex('%s__iregex' % field: request.GET[field])
                     else:
-                        kwargs.update({'%s__iregex' % field: request.GET[field]})
+                        Q_include &= QRegex('%s__iregex' % field: request.GET[field])
 
             if request.GET.has_key('zipcode') and request.GET.has_key('zipdistance') and \
                len(request.GET['zipcode'].strip()) > 0 and len(request.GET['zipdistance'].strip()) > 0:
@@ -222,7 +222,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                     raise ESPError(False), 'Please enter a valid US zipcode.'
                 zipcodes = zipc.close_zipcodes(request.GET['zipdistance'])
                 if len(zipcodes) > 0:
-                    kwargs.update({'registrationprofile__contact_user__address_zip__in': zipcodes})
+                    Q_include &= Q('registrationprofile__contact_user__address_zip__in': zipcodes)
                 
                 
 
@@ -233,10 +233,10 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
             QSUsers = All_Users
 
-            if len(kwargs) > 0:
-                QSUsers = QSUsers.filter(**kwargs)
-            if len(kwargs_exclude) > 0:
-                QSUsers = QSUsers.exclude(**kwargs_exclude)
+            if len(Q_include.kwargs) > 0:
+                QSUsers = QSUsers.filter(Q_include)
+            if len(Q_exclude.kwargs) > 0:
+                QSUsers = QSUsers.exclude(Q_exclude)
 
             QSUsers = QSUsers.distinct()
             

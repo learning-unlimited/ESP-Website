@@ -73,6 +73,51 @@ def replaceDict(string, dict):
     
 
     
+class QRegex(DjangoQ):
+    """
+    This Q-object-esque class is meant to encapsulate searches
+    using regular expressions.
+    Using this, you can do:
+    Q(foo__username__regex = '^hi')
+    or
+    Q(foo__username__iregex = '^hi')
+
+    Both of these will match.
+    There are two reasons why this may break:
+    1) DO NOT USE THIS WITH SOMETHING BESIDES regex/iregex!
+    2) DO NOT USE WITH SOMETHING OTHER THAN PostgreSQL
+
+    """
+    
+    def get_sql(self, opts):
+        regexes = [('iregex','~'),('iregex','~*')]
+        safe    = [('exact', '='),('contains','LIKE')]
+        delimiter = '__'
+
+        safe_kwargs  = []
+        regex_kwargs = []
+        for key, value in self.kwargs.items():
+            found_regex = False
+            for i in range(len(regexes)):
+                regex = regexes[i][0]
+                replacement = safe[i][0]
+                
+                if not found_regex                        and \
+                   len(key) > (len(delimiter)+len(regex)) and \
+                   key[-(len(delimiter)+len(regex)):].lower() == (delimiter+regex):
+                    safe_kwargs  += [(key[:-len(regex)]+replacement, value)]
+                    found_regex = True
+                    
+            if not found_regex:
+                assert False, 'DO NOT USE THIS FOR NON-REGEX MATCHING!'
+                
+        joins, where, params = parse_lookup(safe_kwargs, opts)
+        for i in range(len(regexes)):
+            start = safe[i][1]
+            regex = regexes[i][1]
+            where = [x.replace(start, regex) for x in where]
+
+        return joins, where, params
 
 class QSplit(DjangoQ):
     " Encapsulates a single JOIN-type query into one object "
