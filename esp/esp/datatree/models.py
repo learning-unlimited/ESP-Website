@@ -317,7 +317,7 @@ class DataTree(models.Model):
             # we dont' have enough room...time to expand
             self.expand(expand_func)
                 
-        return upperbound + 1, upperbound + start_size
+        return upperbound+1, upperbound + start_size+1
 
     def tree_encode(self):
         " Returns a list of nodes leading from root to this node. "
@@ -959,6 +959,23 @@ class DataTree(models.Model):
 ####################
 # HELPER FUNCTIONS #
 ####################
+
+
+def get_lowest_parent(uri):
+    " Returns the lowest parent of a given URI. "
+    try:
+        node = DataTree.get_by_uri(uri)
+    except:
+        node = None
+        
+    while node is None:
+        uri  = DataTree.DELIMITER.join(uri.split(DataTree.DELIMITER)[:-1])
+        try:
+            node = DataTree.get_by_uri(uri)
+        except:
+            node = None
+
+    return node
 
 def GetNode(nodename):
     " Get a datatree node and create it if it doesn't exist. "
