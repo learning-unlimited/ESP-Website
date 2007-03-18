@@ -174,7 +174,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 	# Get the "base list" consisting of all the users of a specific type, or all the users.
 	if type(user_type) != str:
 		All_Users = user_type
-	elif user_type == 'All':
+	elif user_type == 'Any':
 		All_Users = ESPUser.objects.all()
 	else:
 		if user_type not in ESPUser.getTypes():
@@ -209,10 +209,11 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
         else:
             for field in ['username','last_name','first_name', 'email']:
                 if request.GET.has_key(field) and len(request.GET[field].strip()) > 0:
+                    filter_dict = {'%s__iregex' % field: request.GET[field]}
                     if request.GET.has_key('%s__not' % field):
-                        Q_exclude &= QRegex('%s__iregex' % field: request.GET[field])
+                        Q_exclude &= QRegex(**filter_dict)
                     else:
-                        Q_include &= QRegex('%s__iregex' % field: request.GET[field])
+                        Q_include &= QRegex(**filter_dict)
 
             if request.GET.has_key('zipcode') and request.GET.has_key('zipdistance') and \
                len(request.GET['zipcode'].strip()) > 0 and len(request.GET['zipdistance'].strip()) > 0:
@@ -222,23 +223,18 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                     raise ESPError(False), 'Please enter a valid US zipcode.'
                 zipcodes = zipc.close_zipcodes(request.GET['zipdistance'])
                 if len(zipcodes) > 0:
-                    Q_include &= Q('registrationprofile__contact_user__address_zip__in': zipcodes)
+                    Q_include &= Q('registrationprofile__contact_user__address_zip__in' = zipcodes)
                 
                 
 
         
-	if len(kwargs) == 0 and len(kwargs_exclude) == 0:
+	if len(Q_include.kwargs) == 0 and len(Q_exclude.kwargs) == 0:
 		users = None
 	else:
 
             QSUsers = All_Users
 
-            if len(Q_include.kwargs) > 0:
-                QSUsers = QSUsers.filter(Q_include)
-            if len(Q_exclude.kwargs) > 0:
-                QSUsers = QSUsers.exclude(Q_exclude)
-
-            QSUsers = QSUsers.distinct()
+            QSUsers = QSUsers.filter(Q_include).exclude(Q_exclude).distinct()
             
             users = [ ESPUser(user) for user in QSUsers ]
 
@@ -256,15 +252,8 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
             if (request.GET.has_key('listokay') and request.GET['listokay'] == 'true') or \
                (request.GET.has_key('submitform') and request.GET['submitform'] == 'Use Filtered List'):
-                Q_Filter = False
-                if len(kwargs) > 0:
-                    Q_Filter = Q(**kwargs)
-                if len(kwargs_exclude) > 0:
-                    if type(Q_Filter) == Q:
-                        Q_Filter = Q_Filter & QNot(Q(**kwargs_exclude))
-                    else:
-                        Q_Filter = QNot(Q(**kwargs_exclude))
-                        
+                Q_Filter = Q_include & QNot(Q_exclude)
+
                 return (Q_Filter, True)
             
             context = {'users': users, 'extra':str(extra), 'list': returnList}
