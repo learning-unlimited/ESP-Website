@@ -184,6 +184,11 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
         Q_include = Q()
         Q_exclude = Q()
+        
+        Q_exclude.old = True
+        Q_include.old = True
+        
+        updated   = False
 
 
 	if (request.GET.has_key('userid') and len(request.GET['userid'].strip()) > 0) or (request.POST.has_key('userid') and len(request.POST['userid'].strip()) > 0):
@@ -205,11 +210,13 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                 Q_exclude &= Q(id = userid)
             else:
                 Q_include &= Q(id = userid)
+            update = True
 
         else:
             for field in ['username','last_name','first_name', 'email']:
                 if request.GET.has_key(field) and len(request.GET[field].strip()) > 0:
                     filter_dict = {'%s__iregex' % field: request.GET[field]}
+                    update = True
                     if request.GET.has_key('%s__not' % field):
                         Q_exclude &= QRegex(**filter_dict)
                     else:
@@ -223,18 +230,23 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                     raise ESPError(False), 'Please enter a valid US zipcode.'
                 zipcodes = zipc.close_zipcodes(request.GET['zipdistance'])
                 if len(zipcodes) > 0:
-                    Q_include &= Q('registrationprofile__contact_user__address_zip__in' = zipcodes)
-                
+                    Q_include &= Q(registrationprofile__contact_user__address_zip__in = zipcodes)
+                    update = True
                 
 
         
-	if len(Q_include.kwargs) == 0 and len(Q_exclude.kwargs) == 0:
-		users = None
+        if not update:
+            users = None
 	else:
 
             QSUsers = All_Users
 
-            QSUsers = QSUsers.filter(Q_include).exclude(Q_exclude).distinct()
+            if not hasattr(Q_include,'old') or Q_include.old is False:
+                QSUsers = QSUsers.filter(Q_include)
+            if not hasattr(Q_exclude,'old') or Q_exclude.old is False:
+                QSUsers = QSUsers.exclude(Q_include)
+            QSUsers = QSUsers.distinct()
+
             
             users = [ ESPUser(user) for user in QSUsers ]
 
@@ -252,7 +264,15 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
             if (request.GET.has_key('listokay') and request.GET['listokay'] == 'true') or \
                (request.GET.has_key('submitform') and request.GET['submitform'] == 'Use Filtered List'):
-                Q_Filter = Q_include & QNot(Q_exclude)
+                Q_Filter = None
+                if not hasattr(Q_include, 'old'):
+                    Q_Filter = Q_include
+                    if not hasattr(Q_exclude, 'old'):
+                        Q_Filter &= QNot(Q_exclude)
+                else:
+                    if not hasattr(Q_exclude, 'old'):
+                        Q_Filter = QNot(Q_exclude)
+                
 
                 return (Q_Filter, True)
             

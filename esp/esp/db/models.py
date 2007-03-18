@@ -88,7 +88,19 @@ class QRegex(DjangoQ):
     2) DO NOT USE WITH SOMETHING OTHER THAN PostgreSQL
 
     """
-    
+
+    underneath_an_or = False # Whether or not this Q is inside an or
+    checked_or   = False
+
+    def search_for_or(self):
+        return False
+
+    def set_or_found(self, value):
+        if not self.checked_or:
+            self.underneath_an_or = value
+            self.checked_or   = True
+
+        
     def get_sql(self, opts):
         regexes = [('iregex','~'),('iregex','~*')]
         safe    = [('exact', '='),('contains','LIKE')]
