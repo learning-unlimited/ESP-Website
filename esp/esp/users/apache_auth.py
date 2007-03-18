@@ -87,10 +87,10 @@ def authenhandler(req, **kwargs):
     
         # check the password and any permission given
         if user.check_password(req.get_basic_auth_pw()):
-            if request.user.is_authenticated():
+            if user.is_authenticated():
                 qsc  = get_lowest_parent('Q/Static/' + uri.strip('/'))
                 verb = get_lowest_parent(permission_verb_name)
-                if UserBit.UserHasPerms(request.user, qsc, verb):
+                if UserBit.UserHasPerms(user, qsc, verb):
                     return apache.OK
                 else:
                     return apache.HTTP_UNAUTHORIZED
