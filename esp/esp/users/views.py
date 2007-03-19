@@ -174,7 +174,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 	# Get the "base list" consisting of all the users of a specific type, or all the users.
 	if type(user_type) != str:
 		All_Users = user_type
-	elif user_type == 'Any':
+	elif u5Aser_type == 'Any':
 		All_Users = ESPUser.objects.all()
 	else:
 		if user_type not in ESPUser.getTypes():
@@ -188,7 +188,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
         Q_exclude.old = True
         Q_include.old = True
         
-        updated   = False
+        update   = False
 
 
 	if (request.GET.has_key('userid') and len(request.GET['userid'].strip()) > 0) or (request.POST.has_key('userid') and len(request.POST['userid'].strip()) > 0):
