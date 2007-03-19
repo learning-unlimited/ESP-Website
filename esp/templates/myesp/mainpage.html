@@ -1,0 +1,59 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}My ESP{% endblock %}
+
+{% block subsection_name %}Welcome to your ESP!{% endblock %}
+
+{% block stylesheets %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+#divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
+  { border: 1px solid black; border-collapse: collapse; 
+    vertical-align: baseline;}
+#divmaintext .blogentry { border: 2px solid black; }
+#divmaintext .blogentry .heading { background-color: #d7eeff; padding: 5px; }
+#divmaintext .blogentry .title { font-weight: bolder; }
+#divmaintext .blogentry .date { font-style: italic; margin: 0 5px 0 0;  }
+#divmaintext .blogentry .contents { margin: 0 0 0 30px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1>myESP</h1>
+<h2>How am I involved in ESP?</h2>
+
+<center>
+<table style="text-align: center" align="center">
+{% for module in modules %}
+{% if module.subpages %}
+{% cycle ,,,,,</tr><tr> %}
+ <tr>
+  <td>
+    <h3>{{ module.module.getFriendlyName }}</h3>
+    <p>
+    {% for subpage in module.subpages %}
+      {{ module.makeSummaryLink|subpage.function }}<br />
+    {% endfor %}
+    </p>
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+</center>
+<br />
+<br />
+<br />
+
+{% for module in modules %}
+{% if module.page %}
+<br />
+ {% include module.page %}
+
+{% endif %}
+{% endfor %}
+
+<br />
+
+{% endblock %}

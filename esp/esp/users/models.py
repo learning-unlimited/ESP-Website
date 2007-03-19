@@ -1093,25 +1093,29 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     try:
         retVal = node.tree_decode(perm)
 
-        if retVal.id == -1:
+        if retVal == None or retVal.id == -1:
             pass
 
         cache.set(urlencode(cache_id), retVal)
         return retVal
     except DataTree.NoSuchNodeException, e:
-        if verb == None:
-            verb = GetNode("V/Administer/Program/Class")
+        pass
 
-        if UserBit.UserHasPerms(user, e.anchor, verb):
-            retVal = e.anchor.tree_create(e.remainder)
+    if verb == None:
+        verb = GetNode("V/Administer/Program/Class")
 
-            if retVal.id == -1:
-                pass
+    if UserBit.UserHasPerms(user, e.anchor, verb):
+        retVal = DataTree.objects.get(name='ROOT',parent=None).tree_create(perm)
 
-            cache.set(urlencode(cache_id), retVal)
-            return retVal
-        else:
+        if retVal.id == -1:
             raise
+
+        cache.set(urlencode(cache_id), retVal)
+        return retVal
+    else:
+        raise
+
+
 
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and

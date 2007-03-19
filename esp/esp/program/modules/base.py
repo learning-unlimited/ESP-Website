@@ -114,6 +114,43 @@ class ProgramModuleObj(models.Model):
         return baseObj.save()
 
     @staticmethod
+    def renderMyESP():
+        """
+        Returns a rendered myESP home template, with content from all relevant modules
+
+        Renders the page based on content from all 
+        """
+        all_modules = []
+        context = {}
+
+        for x in ProgramModules.objects.all():
+            try:
+                thisClass = x.getPythonClass()
+
+                try:
+                    page = thisClass.summaryPage()
+                    context = thisClass.prepareSummary(context)
+                except:
+                    page = None
+
+                
+                    subpages = [ { 'name': i.__name__, 'link_title': i.__doc__.split('\n')[0], 'function': i } for i in thisClass.getSummaryCalls() ]
+                    if subpages == []:
+                        subpages = None
+
+               
+                    all_modules.append({ 'module': thisClass,
+                                         'page': page,
+                                         'subpages': subpages })
+            except:
+                pass
+
+        context['modules'] = all_modules
+        return render_to_response("myesp/mainpage.html", context)
+            
+        
+        
+    @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
         module_list = prog.getModules(ESPUser(request.user), tl)
         # first look for a mainview
@@ -241,7 +278,18 @@ class ProgramModuleObj(models.Model):
               +'/'+'/'.join(str_array[2:])+'/'+self.module.main_call
         return url
 
+    @classmethod
+    def get_summary_path(cls, function):
+        """
+        Returns the base url of a view function
 
+        'function' must be a member of 'cls'.  Both 'cls' and 'function' must
+        not be anonymous (ie., they musht have __name__ defined).
+        """
+        
+        url = '/myesp/modules/' + cls.__name__ + '/' + function.__name__
+        return url
+    
     def setUser(self, user):
         self.user = user
         self.curUser = user
@@ -256,14 +304,27 @@ class ProgramModuleObj(models.Model):
                (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
 
 
+    @classmethod
+    def makeSummaryLink(cls, function):
+        """
+        Makes a nice HTML link that points to the specified view function, as a member of 'cls'
+
+        'function' must be a member function of 'cls'; 'cls' must be a valid program module class.  Both must be non-anonymous; ie., __name__ must be definned for both.
+        """
+        try:
+            function_pretty_name = function.__doc__.split('\n')[0]
+        except AttributeError: # Someone forgot to define a docstring!
+            function_pretty_name = "[%s.%s]" % (cls.__name__, function.__name__)        
+
+        return '<a href="%s" class="vModuleLink" onmouseover="updateDocs(\'<p>%s</p>\')">%s</a>' % \
+               (cls.get_summary_path(function), function.__doc__, function_pretty_name, )
+
     def useTemplate(self):
         """ Use a template if the `mainView' function doesn't exist. """
         return (not self.module.main_call) or (not hasattr(self, self.module.main_call))
 
     def isCompleted(self):
         return False
-
-
 
     def prepare(self, context):
         return context
@@ -275,11 +336,8 @@ class ProgramModuleObj(models.Model):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'+ \
                self.module.main_call+'.html'
 
-
-
     def teachers(self, QObject = False):
         return {}
-
 
     def studentDesc(self):
         return {}
@@ -296,6 +354,30 @@ class ProgramModuleObj(models.Model):
     def extensions(self):
         return []
 
+    @classmethod
+    def getSummary(cls):
+        """
+        Return  the name of a template file that renders the myESP view for this class.
+        Returns None if no such view exists for this class.
+
+        This is a stub, to be overridden by subclasses.
+        """
+        return None
+
+    @classmethod
+    def prepareSummary(cls, context):
+        """
+        Modifies the 'context' dictionary by adding any data that the template pointed to
+        by 'getSummary', needs in its context in order to render proprerly.
+
+        Keys added to 'context' should be strings that contain an identifier that's
+        unique to this class, such as self.__name__.  This is not strictly enforced, though.
+
+        Returns the modified context.
+
+        This is a stub, to be overridden by subclasses.
+        """
+        return context
 
 # will check and depending on the value of tl
 # will use .isTeacher or .isStudent()

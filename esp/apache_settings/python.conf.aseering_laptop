@@ -1,7 +1,7 @@
 <Location "/">
     SetHandler python-program
     PythonHandler django.core.handlers.modpython
-    PythonPath "['/sw/local/esp/trunk/'] + sys.path"
+    PythonPath "['/sw/local/esp/trunk/esp/'] + sys.path"
     SetEnv DJANGO_SETTINGS_MODULE esp.settings
     PythonDebug On
 </Location>

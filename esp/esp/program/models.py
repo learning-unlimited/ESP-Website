@@ -43,15 +43,87 @@ from esp.miniblog.models import Entry
 # Create your models here.
 class ProgramModule(models.Model):
 	""" Program Modules for a Program """
+
+	# Title for the link displayed for this Program Module in the Programs form
 	link_title = models.CharField(maxlength=64, blank=True, null=True)
+
+	# Human-readable name for the Program Module
 	admin_title = models.CharField(maxlength=128)
+
+	# Main view function associated with this Program Module
 	main_call  = models.CharField(maxlength=32)
+
+	# aseering 3-19-2007 -- ??; no idea what this is for
 	check_call = models.CharField(maxlength=32, blank=True, null=True)
+
+	# One of teach/learn/etc.; What is this module typically used for?
 	module_type = models.CharField(maxlength=32)
+
+	# self.__name__, stored neatly in the database
 	handler    = models.CharField(maxlength=32)
+
+	# Sequence orderer.  When ProgramModules are listed on a page, order them
+	# from smallest to largest 'seq' value
 	seq = models.IntegerField()
+
+	# Secondary view functions associated with this ProgramModule
 	aux_calls = models.CharField(maxlength=512, blank=True, null=True)
+
+	# Summary view functions, that summarize data for all instances of this ProgramModule
+	summary_calls = models.CharField(maxlength=512, blank=True, null=True)
+
+	# Must the user supply this ProgramModule with data in order to complete program registration?
 	required = models.BooleanField()
+
+	def getFriendlyName(self):
+		""" Return a human-readable name that identifies this Program Module """
+		return self.admin_title
+
+	def getSummaryCalls(self):
+		"""
+		Returns a list of the summary view functions for the specified module
+
+		Only returns functions that are both listed in summary_calls,
+		and that are valid functions for this class.
+
+		Returns an empty list if no calls are found.
+		"""
+		callNames = this.summary_calls.split(',')
+
+		calls = []
+		myClass = this.getPythonClass()
+		
+		for i in callNames:
+			try:
+				calls.append(getattr(myClass, i))
+			except:
+				pass
+
+		return calls
+
+
+	def getPythonClass(self):
+		"""
+		Gets the Python class that's associated with this ProgramModule database record
+
+		The file 'esp/program/module/handlers/[self.handler]' must contain
+		a class named [self.handler]; we return that class.
+
+		Raises a PrograModule.CannotGetClassException() if the class can't be imported.
+		"""
+		try:
+			mod = __import__("esp.program.module.handlers.%s" % self.handler,
+					 globals(), locals(),
+					 [self.handler])
+
+			return getattr(mod, self.handler)
+		except ImportError:
+			raise ProgramModule.CannotGetClassException()
+		except AttributeError:
+			raise ProgramModule.CannotGetClassException()
+
+	class CannotGetClassException(Exception):
+		pass
 	
 	def __str__(self):
 		return 'Program Module "%s"' % self.admin_title
