@@ -39,6 +39,7 @@ import exceptions
 
 class DataTree(models.Model):
     " This model organizes the site into a tight heirarchy. "
+    FIXING_TREE = False
 
     # choices for LOCK state
     lock_choices = (
@@ -313,7 +314,7 @@ class DataTree(models.Model):
         if upperbound < self.rangestart:
             upperbound = self.rangestart
 
-        if self.rangeend < (upperbound + start_size):
+        if self.rangeend < (upperbound + start_size + 1):
             # we dont' have enough room...time to expand
             self.expand(expand_func)
                 
@@ -654,9 +655,15 @@ class DataTree(models.Model):
     def fix_tree_if_broken():
         " This will fix all the broken nodes in the table. "
 
+        if DataTree.FIXING_TREE:
+            return
+        
+        DataTree.FIXING_TREE = True
+
         res = DataTree.all_violators()
         num_bad = res.count()
         if num_bad == 0:
+            DataTree.FIXING_TREE = False
             return False
 
         total = DataTree.objects.count()
@@ -667,10 +674,12 @@ class DataTree(models.Model):
                 parent.reinsert()
 
             if DataTree.all_violators().count() == 0:
+                DataTree.FIXING_TREE = False
                 return True
 
         DataTree.rebuild_tree_ranges()
         
+        DataTree.FIXING_TREE = False
         return True
 
 
