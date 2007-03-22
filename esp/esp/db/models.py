@@ -103,7 +103,7 @@ class QRegex(DjangoQ):
         
     def get_sql(self, opts):
         regexes = [('regex','~'),('iregex','~*')]
-        safe    = [('exact', '='),('contains','LIKE')]
+        safe    = [('exact', '='),('contains','LIKE',(1,-1))]
         delimiter = '__'
 
         safe_kwargs  = []
@@ -124,10 +124,16 @@ class QRegex(DjangoQ):
                 assert False, 'DO NOT USE THIS FOR NON-REGEX MATCHING!'
                 
         joins, where, params = parse_lookup(safe_kwargs, opts)
-        for i in range(len(regexes)):
-            start = safe[i][1]
-            regex = regexes[i][1]
-            where = [x.replace(start, regex) for x in where]
+        for j in range(len(where)):
+            for i in range(len(regexes)):
+                start = safe[i][1]
+                regex = regexes[i][1]
+            
+                where[j] = where[j].replace(start, regex)
+                if len(safe[i]) > 2:
+                    start, end = safe[i][2]
+                    params[j] = params[j][start:end]
+                
 
         return joins, where, params
 
