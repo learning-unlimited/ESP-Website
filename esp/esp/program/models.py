@@ -92,7 +92,9 @@ class ProgramModule(models.Model):
 
 		calls = []
 		myClass = this.getPythonClass()
-		
+
+			 
+
 		for i in callNames:
 			try:
 				calls.append(getattr(myClass, i))
@@ -118,9 +120,9 @@ class ProgramModule(models.Model):
 
 			return getattr(mod, self.handler)
 		except ImportError:
-			raise ProgramModule.CannotGetClassException()
+			raise ProgramModule.CannotGetClassException
 		except AttributeError:
-			raise ProgramModule.CannotGetClassException()
+			raise ProgramModule.CannotGetClassException
 
 	class CannotGetClassException(Exception):
 		pass

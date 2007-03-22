@@ -309,6 +309,7 @@ class Q(DjangoQ):
             join_text = 'INNER JOIN'
         
         joins, where, params = parse_lookup(self.kwargs.items(), opts)
+
         joins2 = joins
         where2 = where
 
@@ -319,8 +320,11 @@ class Q(DjangoQ):
             joins2[item] = (key[0], join_text, key[2])
         #assert False, key
         self.checked_or = False # remove the fact that we know if we're OR'd
-        if 'IN (' in where2:
-            assert False, (where2, params)
+        for i in range(len(where2)):
+            clause = where2[i]
+            if 'IN ()' in clause:
+                where2[i] = '1 = 0'
+
         return joins2, where2, params
 
 
