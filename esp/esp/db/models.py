@@ -102,7 +102,7 @@ class QRegex(DjangoQ):
 
         
     def get_sql(self, opts):
-        regexes = [('iregex','~'),('iregex','~*')]
+        regexes = [('regex','~'),('iregex','~*')]
         safe    = [('exact', '='),('contains','LIKE')]
         delimiter = '__'
 
@@ -319,7 +319,8 @@ class Q(DjangoQ):
             joins2[item] = (key[0], join_text, key[2])
         #assert False, key
         self.checked_or = False # remove the fact that we know if we're OR'd
-        
+        if 'IN (' in where2:
+            assert False, (where2, params)
         return joins2, where2, params
 
 
