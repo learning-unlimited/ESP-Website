@@ -26,10 +26,11 @@ class ESPUserTestCase(TestCase):
 
 
     def test_dtails(self):
-        test_user_params = dict()
-        test_user_joins  = dict()
 
-        
+
+        print "Testing User Reg Form\n===============================\n"
+        test_user_params = dict()
+        test_user_joins  = dict()       
 
         # First we are going to test the user account creation form.
         # We create a list of test data in the following format:
@@ -156,7 +157,42 @@ class ESPUserTestCase(TestCase):
             print "User Reg Form: Test %s succeeded (form %s)" % (i, (success_expected == True) and 'succeeded' or 'failed')
             i += 1
             
-            
+        print "User Reg Form Test Completed\n===============================\n\n"
+
+        test_user_list = []
+
+        for role in ['Student','Teacher','Educator','Guardian']:
+            test_user_list.append({'username'        : 'test' + role,
+                                   'password'        : 'abcdef',
+                                   'password_confirm': 'abcdef',
+                                   'first_name'      : 'testx',
+                                   'last_name'       :  'testy',
+                                   'role'            :  role,
+                                   'email'           :  'esp-webmasters@mit.edu'})
+
+        for post_kwargs in test_user_list:
+            response = self.client.post('/myesp/finish/', post_kwargs)
+
+
+
+        test_user_params = dict()
+        test_user_joins  = dict()       
+
+        # First we are going to test the user account creation form.
+        # We create a list of test data in the following format:
+        # tuple of tuples: the second term in each tuple says whether or
+        # not the creation should fail (by failure, status code is still 200).
+        test_user_params['first_name'] = (
+            # Disabled for now:
+            #(None, False), # null
+            ('', False), # blank
+            ('   ', False), # blank
+            ('52av3fasdf', True),
+            ('a', True),
+            ('%'*12, True),
+            ('A'*128, False), # too long
+        )
+        
             
             
             

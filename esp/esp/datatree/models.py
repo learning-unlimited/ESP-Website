@@ -819,7 +819,16 @@ class DataTree(models.Model):
         if self.rangestart is None or self.rangeend is None:
             return
 
-        false = settings.DATABASE_ENGINE == 'mysql' and '0' or 'f'
+
+        if 'postgresql' in settings.DATABASE_ENGINE.lower():
+            false = 'f'
+        elif 'mysql' in settings.DATABASE_ENGINE.lower():
+            false = '0'
+        elif 'sqlite' in settings.DATABASE_ENGINE.lower():
+            false = 'False'
+        else:
+            false = '0'
+            
         cursor = connection.cursor()
 
         cursor.execute(("UPDATE %s SET uri_correct = '%s' WHERE " + \
@@ -850,28 +859,45 @@ class DataTree(models.Model):
         op = (above_base and '>=' or '<=')
 
 
-        template = settings.DATABASE_ENGINE == 'postgresql' and \
-                   "CASE WHEN %s %s %s THEN %s %s ELSE %s END" or \
-                   "IF(%s %s %s, %s %s, %s)"                         
+        if 'postgres' in settings.DATABASE_ENGINE.lower() or \
+           'mysql'    in settings.DATABASE_ENGINE.lower():
+            template = 'postgresql' in settings.DATABASE_ENGINE.lower() and \
+                       "CASE WHEN %s %s %s THEN %s %s ELSE %s END" or \
+                       "IF(%s %s %s, %s %s, %s)"                         
 
-        rangestart_result = template % \
-                            ('rangestart', op, baserange, 'rangestart', stramount, 'rangestart')
+            rangestart_result = template % \
+                                ('rangestart', op, baserange, 'rangestart', stramount, 'rangestart')
         
-        rangeend_result   = template %\
-                            ('rangeend', op, baserange, 'rangeend', stramount, 'rangeend')
+            rangeend_result   = template %\
+                                ('rangeend', op, baserange, 'rangeend', stramount, 'rangeend')
 
         
-                                        
-        # this MUST stay as one query, even though it could be two for sanity's sake
-        cursor.execute(("UPDATE %s SET rangestart = %s, " +\
-                        "rangeend = %s WHERE "            +\
-                        "rangestart %s %s OR rangeend %s %s") %
-                       (DataTree._meta.db_table,
-                        rangestart_result,
-                        rangeend_result,
-                        op,baserange,
-                        op,baserange))
-    
+            sql = ("UPDATE %s SET rangestart = %s, " +\
+                   "rangeend = %s WHERE "            +\
+                   "rangestart %s %s OR rangeend %s %s") % \
+                        (DataTree._meta.db_table,
+                         rangestart_result,
+                         rangeend_result,
+                         op,baserange,
+                         op,baserange)
+            
+            
+        elif 'sqlite' in settings.DATABASE_ENGINE.lower():
+            sql = ['UPDATE %s SET rangestart = rangestart %s WHERE rangestart %s %s;' % \
+                    (DataTree._meta.db_table,
+                    stramount, op, baserange),
+                   'UPDATE %s SET rangeend   = rangeend   %s WHERE rangeend   %s %s;' % \
+                   (DataTree._meta.db_table,
+                    stramount, op, baserange)]
+        else:
+            assert False, 'Unkown database engine %s.' % settings.DATABASE_ENGINE
+
+        if isinstance(sql, basestring):
+            sql = [sql]
+        
+        for strsql in sql:
+            cursor.execute(strsql)
+            
         if not commit_wait:
             transaction.commit()
         
