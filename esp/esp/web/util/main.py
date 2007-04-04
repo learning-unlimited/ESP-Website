@@ -58,7 +58,7 @@ def our_renderer(filepath, context_dict):
     src = '{% load latex %}\n' + src
     context = Context(context_dict)
     t = Template(src)
-    rendered_source = t.render(context)
+    rendered_source = t.render(context).strip()
     return HttpResponse(rendered_source)
 
 def render_to_response(template, requestOrContext, prog = None, context = None):

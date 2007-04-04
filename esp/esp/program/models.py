@@ -224,7 +224,7 @@ class Program(models.Model):
 	director_email = models.CharField(maxlength=64)
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
-	program_modules = models.ManyToManyField(ProgramModule)
+	program_modules = models.ManyToManyField(ProgramModule, blank=True,null=True)
 
 
 	def url(self):

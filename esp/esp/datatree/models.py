@@ -37,6 +37,8 @@ from django.db.models import Q
 from django.db import transaction
 import exceptions
 
+
+
 class DataTree(models.Model):
     " This model organizes the site into a tight heirarchy. "
     FIXING_TREE = False
@@ -51,7 +53,8 @@ class DataTree(models.Model):
     # Parameters for the tree
     START_SIZE  = 2
     DELIMITER   = '/'
-    ROOT_ID     = 1
+    ROOT_NODE   = None
+    ROOT_NAME   = 'ROOT'
     MAX_DEPTH   = 50
     LOCK_WAIT   = .01
     MAX_WAIT    = 15  # Maximum time to wait for a tree unlock
@@ -175,8 +178,8 @@ class DataTree(models.Model):
                     
                 return new_node
         
-        if not create_root and self.parent is None:
-            raise DataTree.CannotCreateRootException, "You cannot create a root node."
+#        if not create_root and self.parent is None:
+#            raise DataTree.CannotCreateRootException, "You cannot create a root node."
         # if the parent is something
         if self.parent_id is not None:
             # get the ranges for a new child
@@ -429,6 +432,9 @@ class DataTree(models.Model):
         if type(value) != DataTree:
             assert False, "Expected a DataTree"
         try:
+            if self.id is None:
+                self.save()
+                
             other_child = DataTree.objects.get(parent = self,
                                            name   = key)
             other_child.friendly_name = value.friendly_name
@@ -468,15 +474,22 @@ class DataTree(models.Model):
     #############################
 
 
-    @staticmethod
-    def root():
+    @classmethod
+    def root(cls):
         " Get the root node of this tree. "
+        if cls.ROOT_NODE is not None:
+            return cls.ROOT_NODE
+        
         try:
-            return DataTree.objects.get(id = DataTree.ROOT_ID)
+            cls.ROOT_NODE = cls.objects.get(name = cls.ROOT_NAME,
+                                            parent__isnull = True)
+            return cls.ROOT_NODE
         except:
-            root = DataTree( name = 'ROOT', id = DataTree.ROOT_ID,
-                         rangestart = 0,
-                         rangeend = 0+DataTree.START_SIZE - 1)
+            root = cls( name = cls.ROOT_NAME,
+                        uri  = '/',
+                        uri_correct = True,
+                        rangestart = 0,
+                        rangeend = 0+cls.START_SIZE - 1)
             root.save(True, old_save = True)
 
             return root
@@ -502,6 +515,7 @@ class DataTree(models.Model):
     def get_by_uri(uri, create = False):
         " Get the node by the URI, A/B/.../asdf "
         # first we strip
+        
         uri = uri.strip(DataTree.DELIMITER)
         
         try:
@@ -1000,3 +1014,6 @@ def PermToString(perm):
         return ''
     else:
         return "/".join(perm)
+
+#root = DataTree.root()
+#root.save()

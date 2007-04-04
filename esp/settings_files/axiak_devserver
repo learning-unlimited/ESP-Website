@@ -119,7 +119,6 @@ INSTALLED_APPS = (
     'esp.cal',
     'esp.lib',
     'esp.setup',
-    'esp.unittest',
     'esp.web',
     'esp.qsd',
     'esp.qsdmedia',
@@ -128,6 +127,7 @@ INSTALLED_APPS = (
     'esp.poll',
     'esp.dblog',
     'esp.gen_media',
+    'esp.discussarchive',
 
 )
 

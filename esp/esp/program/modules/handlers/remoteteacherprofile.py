@@ -51,7 +51,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
         return [(str(x.id),x.friendly_name) for x in times]
 
     def teachers(self, QObject = False):
-        Q_teachers = Q(remoteteacherparticipationprofile__program = self.program)
+        Q_teachers = Q(remoteteacherpartprofile__program = self.program)
         if QObject:
             return {'teacher_remoteprofile': Q_teachers}
 
@@ -62,8 +62,8 @@ class RemoteTeacherProfile(ProgramModuleObj):
         return {'teacher_remoteprofile': """Teachers who have completed the remote volunteer profile."""}
 
     def isCompleted(self):
-        regProf, created = module_ext.RemoteTeacherParticipationProfile.objects.get_or_create(user = self.user,
-                                                                                              program = self.program)
+        regProf, created = module_ext.RemoteTeacherPartProfile.objects.get_or_create(user = self.user,
+                                                                                     program = self.program)
         
         return not created
 
@@ -78,7 +78,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
         
         manipulator = manipulators.RemoteTeacherManipulator(self)
 
-        profile, created  = module_ext.RemoteTeacherParticipationProfile.objects.get_or_create(user = self.user, program = self.program)
+        profile, created  = module_ext.RemoteTeacherPartProfile.objects.get_or_create(user = self.user, program = self.program)
         profile.save()
         
 

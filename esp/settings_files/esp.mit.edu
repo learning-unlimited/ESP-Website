@@ -120,7 +120,6 @@ INSTALLED_APPS = (
     'esp.cal',
     'esp.lib',
     'esp.setup',
-    'esp.unittest',
     'esp.web',
     'esp.qsd',
     'esp.qsdmedia',
