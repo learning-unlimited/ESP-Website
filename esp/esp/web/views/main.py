@@ -60,6 +60,7 @@ def index(request):
 	# Catherine: This does nothing
 	# aseering: Yay.
 	# axiak:    hmm...
+
 	announcements = preview_miniblog(request)
 
 	backgrounds = ["/media/images/home/pagebkg1.jpg",
