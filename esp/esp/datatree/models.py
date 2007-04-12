@@ -241,7 +241,7 @@ class DataTree(models.Model):
         self.rangeend = rangeend
         
         self.save(old_save = True)
-        return rangeend
+        return rangeend+1
 
     def reinsert(self, top = True):
         " Will perform a Re-insert. That is, it will rotate this to the last node. "
@@ -284,6 +284,12 @@ class DataTree(models.Model):
     ######################
     # ACCESSORS          #
     ######################
+
+    def is_root(self):
+        """ If this node is the root node, returns True, otherwise False."""
+        return self.parent_id == None and self.name == DataTree.ROOT_NAME
+        
+    
     def __str__(self):
         return '%s (%s--%s)' % (self.get_uri(),
                                 self.rangestart,
@@ -309,7 +315,7 @@ class DataTree(models.Model):
         if start_size is None: start_size = DataTree.START_SIZE
 
         children = self.children().filter(range_correct = True).order_by('-rangeend')
-        if children.count() > 0:
+        if children.count() > 0:           
             upperbound = children[0].rangeend
         else:
             upperbound = self.rangestart
@@ -317,7 +323,7 @@ class DataTree(models.Model):
         if upperbound < self.rangestart:
             upperbound = self.rangestart
 
-        if self.rangeend < (upperbound + start_size + 1):
+        if self.rangeend < (upperbound + start_size + 2):
             # we dont' have enough room...time to expand
             self.expand(expand_func)
                 
@@ -332,7 +338,7 @@ class DataTree(models.Model):
         if self.uri_correct:
             return self.uri
 
-        if self.id == DataTree.ROOT_ID:
+        if self.is_root():
             self.uri_correct = True
             self.uri = ''
             self.save(uri_fix = True)

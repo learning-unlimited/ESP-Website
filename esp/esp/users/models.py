@@ -497,7 +497,7 @@ class UserBit(models.Model):
         
 
     @staticmethod
-    def UserHasPerms(user, qsc, verb, now = None):
+    def UserHasPerms(user, qsc, verb, now = None, recursive_required = False):
         """ Given a user, a permission, and a subject, return True if the user, or all users, has been Granted [subject] on [permission]; False otherwise """
         # aseering: This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
         # aseering 1-11-2007: Even better; single query!
@@ -518,7 +518,7 @@ class UserBit(models.Model):
         else:
             verb_id = verb.id
 
-        user_cache_id = 'UserHasPerms:' + str(qsc_id) + ',' + str(verb_id) + ',' + now_id
+        user_cache_id = 'UserHasPerms:' + str(qsc_id) + ',' + str(verb_id) + ',' + now_id + ',' + str(recursive_required)
 
         cache_id = 'UserBit__' + user_get_key(user)
 
@@ -553,7 +553,13 @@ class UserBit(models.Model):
 
 
         # the final query:
-        num = UserBit.objects.filter(Q_user_correct & Q_date_correct).filter(Q_recursive_search | Q_exact_match).count()
+        if recursive_required:
+            num = UserBit.objects.filter(Q_user_correct & Q_date_correct).filter(Q_recursive_search | Q_exact_match).filter(Q_recursive).count()
+        else:
+            num = UserBit.objects.filter(Q_user_correct & Q_date_correct).filter(Q_recursive_search | Q_exact_match).count()
+            
+
+        
         # If we have at least one UserBit meeting these criteria, we have perms.
 
         retVal = (num > 0)
@@ -1076,7 +1082,7 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     # get the lowest parent that exists
     lowest_parent = get_lowest_parent(nodename)
 
-    if UserBit.UserHasPerms(user, lowest_parent, verb):
+    if UserBit.UserHasPerms(user, lowest_parent, verb, recursive_required = True):
         # we can now create it
         return GetNode(nodename)
     else:
