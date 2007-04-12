@@ -86,6 +86,7 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
     'esp.middleware.ESPErrorMiddleware',
     'django.middleware.common.CommonMiddleware',

@@ -70,7 +70,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
     
     if context is not None:
         request = requestOrContext
-
+        
         context['page_setup'] = get_page_setup(request)
         
         section = ''

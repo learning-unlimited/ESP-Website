@@ -83,16 +83,12 @@ def myesp(request, module):
 	return render_to_response('users/construction', request, GetNode('Q/Web/myesp'), {})
 
 
-@vary_on_headers('User-Agent')
+@vary_on_headers('Cookie')
 def redirect(request, url, subsection = None, filename = "", section_redirect_keys = {}, section_prefix_keys = {}, renderer = qsd ):
 	""" Universal mapping function between urls.py entries and QSD pages
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
-
-
-
-
 	if filename != "":
 		url = url + "/" + filename
 

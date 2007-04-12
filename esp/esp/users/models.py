@@ -29,8 +29,9 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
+from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
-from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm
+from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
 #from peak.api import security, binding
 from esp.workflow.models import Controller
 from datetime import datetime
@@ -1054,67 +1055,33 @@ class ContactInfo(models.Model):
 	class Admin:
 		pass
 
+
+
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
-    if user == None or not user.is_authenticated():
-        user_id = "None"
-    else:
-        user_id = user.username
 
-    if verb == None:
-        verb_id = "None"
-    else:
-        verb_id = str(verb.id)
+    DEFAULT_VERB = 'V/Administer/Edit'
 
-    cache_id = 'datatree:' + user_id + ',' + str(verb_id) + ',' + nodename
-
-    cached_val = cache.get(urlencode(cache_id))
-    if cached_val != None:
-        return cached_val
-
-    nodes = DataTree.objects.filter(name='ROOT', parent__isnull=True)
-    node = None
-    if nodes.count() < 1L:
-        error("Trying to create a new root node here.  Dying...")
-        assert False, "Trying to create a new root node here.  Dying..."
-        node = DataTree()
-        node.name = 'ROOT'
-        node.parent = None
-        node.save()
-    elif nodes.count() == 1L:
-        node = nodes[0]
-    else:
-        raise DataTree.NoRootNodeException(nodes.count())
-    
-    perm = StringToPerm(nodename)
-    if nodename == '':
-        perm = []
-
+    # get a node, if it exists, return it.
     try:
-        retVal = node.tree_decode(perm)
+        node = DataTree.get_by_uri(nodename)
+    finally:
+        return node
 
-        if retVal == None or retVal.id == -1:
-            pass
 
-        cache.set(urlencode(cache_id), retVal)
-        return retVal
-    except DataTree.NoSuchNodeException, e:
-        pass
-
+    # if we weren't given a verb, use the default one
     if verb == None:
-        verb = GetNode("V/Administer/Program/Class")
+        verb = GetNode(DEFAULT_VERB)
 
-    if UserBit.UserHasPerms(user, e.anchor, verb):
-        retVal = DataTree.objects.get(name='ROOT',parent=None).tree_create(perm)
+    # get the lowest parent that exists
+    lowest_parent = get_lowest_parent(nodename)
 
-        if retVal.id == -1:
-            raise
-
-        cache.set(urlencode(cache_id), retVal)
-        return retVal
+    if UserBit.UserHasPerms(user, lowest_parent, verb):
+        # we can now create it
+        return GetNode(nodename)
     else:
-        raise
-
+        # person not allowed to
+        raise PermissionDenied
 
 
 class PersistentQueryFilter(models.Model):

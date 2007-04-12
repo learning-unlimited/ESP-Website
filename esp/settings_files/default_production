@@ -29,43 +29,41 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-DEBUG = True
-DISPLAYSQL = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
+DISPLAYSQL = False
+
+# Change this to whatever directory the trunk is in.
+ESP_ROOT = '/esp/esp'
 
 ADMINS = (
-    ('Adam Seering', 'aseering@mit.edu'),
-    ('Mike Axiak', 'axiak@mit.edu')
+    ('Webmasters', 'esp-webmasters@mit.edu'),
 )
-MANAGERS = ADMINS
+
+EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
+SERVER_EMAIL         = 'server@esp.mit.edu'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = '25'
 
+MANAGERS = ADMINS
+
 DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
-#DATABASE_ENGINE = 'sqlite3'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
 DATABASE_NAME = 'django'             # Or path to database file if using sqlite3.
 from database_settings import *
 DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
+DATABASE_PORT = '5432'             # Set to empty string for default. Not used with sqlite3.
 
-# Local time zone for this installation. All choices can be found here:
-# http://www.postgresql.org/docs/current/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
 TIME_ZONE = 'America/New_York'
 
-# Language code for this installation. All choices can be found here:
-# http://www.w3.org/TR/REC-html40/struct/dirlang.html#langcodes
-# http://blogs.law.harvard.edu/tech/stories/storyReader$15
 LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
 
-# Absolute path to the directory that holds media.
-# Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = '/var/www/esp-devel/trunk/esp/media/uploaded'
+MEDIA_ROOT = '%s/media/uploaded/' % ESP_ROOT
 
 # URL that handles the media served from MEDIA_ROOT.
 # Example: "http://media.lawrence.com"
-MEDIA_URL = '/media/'
+MEDIA_URL = '/media/uploaded/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
@@ -91,7 +89,6 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',
-
 )
 
 ROOT_URLCONF = 'esp.urls'
@@ -99,10 +96,8 @@ ROOT_URLCONF = 'esp.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
-    '/var/www/esp-devel/trunk/esp/templates'
+    '%s/templates' % ESP_ROOT
 )
-
-APPEND_SLASH=False
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -128,15 +123,13 @@ INSTALLED_APPS = (
     'esp.poll',
     'esp.dblog',
     'esp.gen_media',
-    'esp.discussarchive',
-
 )
 
+APPEND_SLASH=False
 
 #aseering 12-15-2006: Make memcached happen
 CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
 
 
 LOG_FILE="/var/log/django/esp_errlog"
-
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
