@@ -1,10 +1,12 @@
-Online Comment Form:
+Someone filled a form out on the web site:
 
-Name: {{ name }}
-I am a: {{ relation }}
-How did you hear about us?: {{ publicity }}
-Program of Interest: {{ program }}
+Name: {{ form.clean_data.name }}
+I am a: {{ form.clean_data.person_type }}
+How did you hear about us?: {{ form.clean_data.hear_about }}
+Topic of interest: {{ form.clean_data.topic }}
 
-Comment:
+Subject: {{ form.clean_data.subject }}
 
-{{ comment }}
+Message:
+
+{{ form.clean_data.message }}

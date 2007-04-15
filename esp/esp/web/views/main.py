@@ -51,8 +51,10 @@ from esp.web.views.program import program_handlers
 from esp.web.views.archives import archive_handlers
 from esp.miniblog.views import preview_miniblog
 from esp.middleware import ESPError
+from esp.web.forms.contact_form import ContactForm, email_addresses, email_choices
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
+
 
 @vary_on_headers('Cookie')
 def index(request):
@@ -213,38 +215,98 @@ def archives(request, selection, category = None, options = None):
 		return archive_handlers[selection](request, category, options, sortparams)
 	
 	return render_to_response('users/construction', request, GetNode('Q/Web'), {})
-def contact(request, section='main'):
-	return render_to_response('contact.html', request, GetNode('Q/Web'),{'programs': UserBit.bits_get_qsc(AnonymousUser(),
-								    GetNode('V/Publish'),
-								    qsc_root=GetNode('Q/Programs')) })
 
-def contact_submit(request):
-	# I think we want to accept comments as long as they're submitted, regardless of what they contain. - aseering 7-20-2006
-	for key in ['name', 'email', 'relation', 'publicity', 'program', 'comment']:
-		if not request.POST.has_key(key):
-			request.POST[key] = '(none)'
+def contact(request, section='esp'):
+	"""
+	This view should take an email and post to those people.
+	"""
+	from django.core.mail import send_mail
 
-	t = loader.get_template('email/comment')
-
-	m = MessageRequest()
-	m.subject = 'User Comment: ' + request.POST['name']
+	if request.GET.has_key('success'):
+		return render_to_response('contact_success.html', request, GetNode('Q/Web/about'), {})
 	
-	m.msgtext = t.render({
-		'name': request.POST['name'],
-		'email': request.POST['email'],
-		'relation': request.POST['relation'],
-		'publicity': request.POST['publicity'],
-		'program': request.POST['program'],
-		'comment': request.POST['comment'] })
-	m.sender = request.POST['email']
-	if not request.POST['program'] in GetNode('Q/Programs').children():
-		m.category = GetNode('Q/ESP/Committees/Executive')
-	else:
-	        m.category = GetNode('Q/Programs/' + request.POST['program'])
 		
-	m.save()
+	
+	if request.method == 'POST':
+		data = request.POST.copy()
+		form = ContactForm(data)
+		SUBJECT_PREPEND = '[ ESP WEB ]'
+		
+		if form.is_valid():
+			
+			to_email = []
 
-	return HttpResponseRedirect("/contact/thanks.html")
+			if len(form.clean_data['sender'].strip()) == 0:
+				email = 'esp@mit.edu'
+			else:
+				email = form.clean_data['sender']
+                
+			if form.clean_data['cc_myself']:
+				to_email.append(email)
+
+
+			try:
+				to_email.append(email_addresses[form.clean_data['topic'].lower()])
+			except KeyError:
+				to_email.append(fallback_email)
+
+			if len(form.clean_data['name'].strip()) > 0:
+				email = '%s <%s>' % (form.clean_data['name'], email)
+
+
+			t = loader.get_template('email/comment')
+
+			msgtext = t.render({'form': form})
+				
+			send_mail(SUBJECT_PREPEND + ' '+ form.clean_data['subject'],
+				  msgtext,
+				  email, to_email, fail_silently = True)
+
+			return HttpResponseRedirect(request.path + '?success')
+
+        
+	else:
+		if section != '':
+			form = ContactForm(initial={'topic': section.lower()})
+		else:
+			form = ContactForm()
+			
+	return render_to_response('contact.html', request, GetNode('Q/Web/about'),
+						 {'contact_form': form})
+
+
+#def contact(request, section='main'):
+#	return render_to_response('contact.html', request, GetNode('Q/Web'),{'programs': UserBit.bits_get_qsc(AnonymousUser(),
+#								    GetNode('V/Publish'),
+#								    qsc_root=GetNode('Q/Programs')) })
+#
+#def contact_submit(request):
+#	# I think we want to accept comments as long as they're submitted, regardless of what they contain. - aseering 7-20-2006
+#	for key in ['name', 'email', 'relation', 'publicity', 'program', 'comment']:
+#		if not request.POST.has_key(key):
+#			request.POST[key] = '(none)'
+#
+#	t = loader.get_template('email/comment')
+#
+#	m = MessageRequest()
+#	m.subject = 'User Comment: ' + request.POST['name']
+#	
+#	m.msgtext = t.render({
+#		'name': request.POST['name'],
+#		'email': request.POST['email'],
+#		'relation': request.POST['relation'],
+#		'publicity': request.POST['publicity'],
+#		'program': request.POST['program'],
+#		'comment': request.POST['comment'] })
+#	m.sender = request.POST['email']
+#	if not request.POST['program'] in GetNode('Q/Programs').children():
+#		m.category = GetNode('Q/ESP/Committees/Executive')
+#	else:
+#	        m.category = GetNode('Q/Programs/' + request.POST['program'])
+#		
+#	m.save()
+#
+#	return HttpResponseRedirect("/contact/thanks.html")
 
 
 
