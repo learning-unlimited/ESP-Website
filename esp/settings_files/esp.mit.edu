@@ -62,6 +62,9 @@ LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
 
+# An optimization since we don't do i18n
+USE_I18N = False
+
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
 MEDIA_ROOT = '/esp/esp/media/uploaded/'
@@ -127,7 +130,7 @@ INSTALLED_APPS = (
     'esp.cal',
     'esp.lib',
     'esp.setup',
-    'esp.unittest',
+#    'esp.unittest',
     'esp.web',
     'esp.qsd',
     'esp.qsdmedia',
