@@ -266,10 +266,15 @@ def contact(request, section='esp'):
 
         
 	else:
+		initial = {}
+		if request.user.is_authenticated():
+			initial['sender'] = request.user.email
+			initial['name']   = request.user.first_name + ' '+request.user.last_name
+		
 		if section != '':
-			form = ContactForm(initial={'topic': section.lower()})
-		else:
-			form = ContactForm()
+			initial['topic'] = section.lower()
+
+		form = ContactForm(initial = initial)
 			
 	return render_to_response('contact.html', request, GetNode('Q/Web/about'),
 						 {'contact_form': form})
