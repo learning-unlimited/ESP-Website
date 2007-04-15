@@ -89,6 +89,8 @@ CACHE_MIDDLEWARE_SECONDS = 595
 CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 
 MIDDLEWARE_CLASSES = (
+    'django.middleware.http.SetRemoteAddrFromForwardedFor',
+    'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

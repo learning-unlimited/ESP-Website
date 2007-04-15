@@ -180,19 +180,24 @@ form {
 
 /* SECONDARY NAVIGATION */
 
-#divsecondarynav {
+#secondarynav {
   width: 199px;
   position: absolute;
   left: 0px;
   top: 223px;
   z-index: 10;
+  margin: 10px 0 0 0;
+  border-collapse: collapse;
+  list-style-type: none;
+  padding: 0 10px 0 0;
 }
 
 /* secondary navigation link */
 .divsecondarynavlink {
   background-image: url(/media/images/dashedline.gif);
   background-repeat: no-repeat;
-  padding: 6px 20px 5px 36px;
+  padding: 6px 20px 5px 0px;
+/*  padding: 0;*/
   font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   color: #3366cc;
@@ -201,54 +206,51 @@ form {
 }
 /* outdent 'bullet' in secondary nav */
 .divsecondarynavlink .bullet {
-  margin-left: -8px;
-}
-/* tertiary navigation */
-.divtertiarynav {
-  padding: 0px 20px 4px 56px;
-  font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.75em;
-  color: #3366cc;
-  line-height: 133%;
-  margin: 0px;
-}
-.divtertiarynav ul {
-  padding: 0px;
-  margin: 0px;
-  list-style-type: none;
-}
-.divtertiarynav ul li {
-  padding: 0px 0px 4px 0px;
-  margin: 0px;
-}
-/* tertiary navigation link */
-.divtertiarynavlink {
-  padding: 0px 3px 4px 36px;
-  font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.65em;
-  color: #3366cc;
-  line-height: 133%;
-  margin: 0px;
-}
-#divsecondarynav p {
-  margin: 0px;
+  margin-left: 8px;
 }
 
+
 /* link characteristics */
-#divsecondarynav a,
-#divsecondarynav a:link {
+#secondarynav a,
+#secondarynav a:link {
   font-weight: bold;
+  display: block;
   color: #3366cc;
+  width: 100%;
   text-decoration: none;
 }
-#divsecondarynav a:visited {
+
+#secondarynav .movable {
+  /*border: 1px solid #009;
+  border-width: 0 4px 0 0;*/
+  cursor: move;
+}
+
+#secondarynav li.movable:hover {
+  /*border: 1px solid #aaa;*/
+  background: #ddefff;
+
+}
+
+#secondarynav .movable a {
+  display: inline;
+}
+
+#secondarynav .indent {
+  padding-top: 0px;
+  background-image: none;
+  font-size: 55%;
+  padding-left: 60px;
+}
+
+#secondarynav a:visited {
   font-weight: bold;
   color: #993399;
   text-decoration: none;
 }
-#divsecondarynav a:active,
-#divsecondarynav a:hover,
-#divsecondarynav a:focus {
+#secondarynav a:active,
+#secondarynav a:hover,
+#secondarynav a:focus {
   font-weight: bold;
   color: #3366cc;
   text-decoration: underline;
@@ -738,7 +740,7 @@ div.question {
   top: -10px; margin: 0 0 0 -7px;
   left: 100px;
   background: white;
-  font-color: #f8e403;
+  color: #f8e403;
   padding: 0 7px 0 7px;
 
 } 

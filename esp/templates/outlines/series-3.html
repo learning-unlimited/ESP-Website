@@ -1,5 +1,86 @@
 {% extends "elements/html" %}
 
+
+{% block xtrajs %}
+{{ block.super }}
+{% if navbar_list.has_edit_bits %}
+<script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
+
+<script type="text/javascript" src="/media/scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/dom/dom-min.js"></script>
+
+<script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
+
+<script type="text/javascript" src="/media/scripts/yui/logger/logger-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-debug.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script>
+<script type="text/javascript" src="/media/scripts/ddlist.js"></script><script type="text/javascript">
+<!--
+YAHOO.example.DDApp = function() {
+    var Dom = YAHOO.util.Dom;
+    var DDM = YAHOO.util.DragDropMgr;
+    return {
+        init: function() {
+{% for nav_entry in navbar_list.qsdTree %}{% if nav_entry.has_bits %}
+new YAHOO.example.DDList("nav_entry__{{ nav_entry.entry.id }}");
+document.getElementById('nav_entry__control__{{nav_entry.entry.id}}').innerHTML = '';{% endif %}{% endfor %}
+
+       
+            DDM.mode = 0;
+        }
+    };
+} ();
+
+YAHOO.util.Event.addListener(window, "load", YAHOO.example.DDApp.init);
+
+
+
+function delete_navbar(navbar_id) {
+   if (!confirm("Are you SURE you want to delete this navbar?")) {
+      return;
+   }
+
+   var callback = {
+    success:function(o) {
+       document.getElementById('nav_entry__'+o.argument.nav_entry_id).innerHTML = '';
+       document.getElementById('nav_entry__'+o.argument.nav_entry_id).style.display = 'none';
+    },
+    failure:function(o) {},
+    argument: {nav_entry_id: navbar_id}};
+
+   sUrl = '/navbar/edit.scm?new_url={{request.path}}&navbar_id='+navbar_id+'&node_id=&action=delete'
+
+   var request = YAHOO.util.Connect.asyncRequest('GET',sUrl,callback);
+
+}
+
+var handleSuccess = function(o){
+   if (o.responseText !== undefined && o.responseText.length > 0) {
+      alert(o.responseText);
+
+   }
+};
+
+var callback =
+{
+  success:function(o) {},
+  failure:function(o) {},
+  argument: {}
+};
+
+function move_seq(new_seq) {
+
+   sUrl = '?ajax_movepage&seq='+new_seq;
+   //   alert(sUrl);
+   var request = YAHOO.util.Connect.asyncRequest('GET',sUrl,callback);
+}
+
+
+//-->
+</script>
+{% endif %}
+{% endblock %}
+
 {% block stylesheets %}
 
 <link rel="stylesheet" href="/media/styles/level3.css" type="text/css" />
@@ -150,39 +231,35 @@
  
 <!-- image sizes may vary -->
 
-
 {% block secondary_nav %}
 <!-- secondary nav -->
-<div id="divsecondarynav">
+<ul id="secondarynav">
 
 {% for nav_entry in navbar_list.qsdTree %}
-{% if nav_entry.entry.indent %}
-  <div class="divtertiarynavlink">
-    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="bullet">- </span>
-{% else %}
-  <div class="divsecondarynavlink">
-    <p><span class="bullet">- </span>
-{% endif %}
+  <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}{% if nav_entry.has_bits %} movable{% endif %} " id="nav_entry__{{nav_entry.entry.id}}"> 
       <a href="{{ nav_entry.entry.makeUrl }}"
         title="Click for `{{ nav_entry.entry.makeTitle }}'">
+       <span class="bullet">- </span>
         {{ nav_entry.entry.makeTitle }}
       </a>
 {% if nav_entry.has_bits %}
 <tt>
+<span id="nav_entry__control__{{nav_entry.entry.id}}">
 <a href="/navbar/edit.scm?new_url={{ request.path }}&amp;navbar_id={{ nav_entry.entry.id }}&amp;node_id={{ navbar_list.entry.node.id }}&amp;action=up">[+]</a>
 <a href="/navbar/edit.scm?new_url={{ request.path }}&amp;navbar_id={{ nav_entry.entry.id }}&amp;node_id={{ navbar_list.entry.node.id }}&amp;action=down">[-]</a>
-<a href="/navbar/edit.scm?new_url={{ request.path }}&amp;navbar_id={{ nav_entry.entry.id }}&amp;node_id={{ navbar_list.entry.node.id }}&amp;action=delete" onclick="return confirm('Are you sure you want to delete this node?')">[X]</a>
+</span>
+
+<a href="/navbar/edit.scm?new_url={{ request.path }}&amp;navbar_id={{ nav_entry.entry.id }}&amp;node_id={{ navbar_list.entry.node.id }}&amp;action=delete" onclick="delete_navbar({{nav_entry.entry.id}}); return false;">[X]</a>
 </tt>
 {% endif %}
-    </p>
-  </div>
+ </li>
 {% endfor %}
 
 {% if navbar_list.has_edit_bits %}
 
+<li class="divsecondarynavlink">
+
 <form name="shiftform" method="post" action="/navbar/edit.scm">
-<div class="divsecondarynavlink">
-<p>
 Create a new entry:
 <input type="hidden" name="new_url" value="{{ request.path }}" />
 <input type="hidden" name="section" value="{{ navbar_list.section }}" />
@@ -196,17 +273,12 @@ Create a new entry:
 <option value="True">Indented</option>
 </select>
 <input name="submit" value="Create!" type="Submit" />
-</p>
-</div>
 </form>
-<br />
-<br />
-{% endif %}
-<div class="divsecondarynavlink"><!-- final dashed line -->   
-  <p>&nbsp;</p>
-</div>
+</li>
 
-</div>
+{% endif %}
+<li class="divsecondarynavlink">&nbsp;</li>
+</ul>
 
 {% endblock %}
 

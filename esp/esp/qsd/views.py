@@ -33,6 +33,7 @@ from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
 from esp.datatree.models import GetNode, DataTree
 from esp.web.views.navBar import makeNavBar
+from esp.web.models import NavBarEntry
 from esp.web.util.main import navbar_data, preload_images, render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
@@ -44,29 +45,68 @@ from django.core.cache import cache
 from esp.dblog.views import ESPError
 from django.template.defaultfilters import urlencode
 
-#def qsd_raw(request, url):
-#	""" Return raw QSD data as a text file """
-#	try:
-#		qsd_rec = QuasiStaticData.find_by_url_parts(GetNode('Q/Web'),url.split('/'))
-#	except QuasiStaticData.DoesNotExist:
-#		raise Http404
-#
-#	# aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Publish on this node
-#	have_view = UserBit.UserHasPerms( request.user, qsd_rec.path, GetNode('V/Publish') )
-#	if have_view:
-#		return HttpResponse(qsd_rec.content, mimetype='text/plain')
-#	else:
-#		return Http404
 
+# default edit permission
+EDIT_PERM = 'V/Administer/Edit'
+
+# spacing between separate nav bar entries
+DEFAULT_SPACING = 5
+
+def handle_ajax_mover(method):
+	"""
+	Takes a view and wraps it in such a way that a user can
+	submit AJAX requests for changing the order of navbar entries.
+	"""
+
+	def ajax_mover(request, *args, **kwargs):
+		START = 'nav_entry__'
+		
+		if not request.GET.has_key('ajax_movepage') or \
+		   not request.GET.has_key('seq'):
+			return method(request, *args, **kwargs)
+		
+		entries = request.GET['seq'].strip(',').split(',')
+		try:
+			entries = [x[len(START):] for x in entries]
+		except:
+			return method(request, *args, **kwargs)
+
+		# using some good magic we get a list of tree_node common
+		# ancestors
+		tree_nodes = DataTree.get_only_parents(DataTree.objects.filter(navbar__in = entries))
+
+		edit_verb = GetNode(EDIT_PERM)
+		for node in tree_nodes:
+			if not UserBit.UserHasPerms(request.user,
+						    node,
+						    edit_verb):
+				return method(request, *args, **kwargs)
+
+		# now we've properly assessed the person knows what
+		# they're doing. We actually do the stuff we wanted.
+		rank = 0
+		for entry in entries:
+			try:
+				navbar = NavBarEntry.objects.get(pk = entry)
+				navbar.sort_rank = rank
+				navbar.save()
+				rank += DEFAULT_SPACING
+			except:
+				pass
+			
+		return HttpResponse('Success')
+
+	return ajax_mover
+
+@handle_ajax_mover
 def qsd(request, branch, section, url_name, url_verb, base_url):
 
-	print branch
 
 	# Pages are global per-user (not unique per-user)
 	cache_id = str(branch.id) + ':' + str(url_name)
 
 	# Detect edit authorizations
-	have_edit = UserBit.UserHasPerms( request.user, branch, GetNode('V/Administer/Edit') )
+	have_edit = UserBit.UserHasPerms( request.user, branch, GetNode(EDIT_PERM))
 	if have_edit:
 		have_read = True
 	else:

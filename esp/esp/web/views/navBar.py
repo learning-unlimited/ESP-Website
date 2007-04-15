@@ -31,15 +31,20 @@ Email: web@esp.mit.edu
 from esp.web.models import NavBarEntry
 from esp.users.models import UserBit, AnonymousUser
 from esp.datatree.models import GetNode
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect, Http404, HttpResponse
 from esp.datatree.models import DataTree
 from esp.dblog.models import error
 from esp.dblog.views import ESPError
+from django.core.exceptions import PermissionDenied
+from django.contrib.auth.decorators import login_required
+
+
+EDIT_VERB_STRING = 'V/Administer/Edit/QSD'
 
 
 def makeNavBar(user, node, section = ''):
 	""" Query the navbar-entry table for all navbar entries associated with this tree node """
-	edit_verb = GetNode('V/Administer/Edit/QSD')
+	edit_verb = GetNode(EDIT_VERB_STRING)
 
 	rangestart = node.rangestart
 	rangeend   = node.rangeend
@@ -63,16 +68,22 @@ def makeNavBar(user, node, section = ''):
 	return context
 
 
-
+@login_required
 def updateNavBar(request, section = ''): 
-	""" Update a NavBar entry with the specified data """
+	"""
+	Update a NavBar entry with the specified data.
+	Expects four POST/GET variables:
+
+	navbar_id: The ID of the navbar being modified.
+	action:    One of ['up','down','new','delete']
+	new_url:   The URL to be redirected to afterwards.
+	node_id:   The ID of the datatree you want the path of a new
+	           navbar to be.
+
+	"""
 
 	for i in [ 'navbar_id', 'action', 'new_url', 'node_id' ]:
-		# Info can come by way of GET or POST, so we're using REQUEST
-		# Could trusting GET be a problem?; I'm assuming Django
-		# sessions are still maintained properly, so I can do security that way
 		if not request.REQUEST.has_key(i):
-			#raise Http404
 			assert False, "Need " + str(i)
 
 	action = request.REQUEST['action']
@@ -95,7 +106,7 @@ def updateNavBar(request, section = ''):
 		#raise Http404
 		raise
 
-	if not actions.has_key(request.REQUEST['action']):
+	if not actions.has_key(action):
 		#raise Http404
 		assert False, "Need action"
 
@@ -104,6 +115,9 @@ def updateNavBar(request, section = ''):
 
 	actions[action](request, navbar, node, section)
 
+	if request.REQUEST['new_url'].strip() == '':
+		return HttpResponse('Success')
+	
 	return HttpResponseRedirect(request.REQUEST['new_url'])
 
 def navBarUp(request, navbar, node, section):
@@ -112,7 +126,7 @@ def navBarUp(request, navbar, node, section):
 	Fail silently if this is not possible
 	"""
 	if not UserBit.UserHasPerms(request.user, navbar.path, GetNode("V/Administer/Edit/QSD")):
-		assert False, "You don't have permisssion to do that!"
+		raise PermissionDenied, "You don't have permisssion to do that!"
 
 	navbarList = NavBarEntry.objects.filter(path=navbar.path).order_by('sort_rank')
 
@@ -138,8 +152,8 @@ def navBarDown(request, navbar, node, section):
 
 	Fail silently if this is not possible
 	"""
-	if not UserBit.UserHasPerms(request.user, navbar.path, GetNode("V/Administer/Edit/QSD")):
-		assert False, "You don't have permisssion to do that!"
+	if not UserBit.UserHasPerms(request.user, navbar.path, GetNode(EDIT_VERB_STRING)):
+		raise PermissionDenied, "You don't have permisssion to do that!"
 
 	navbarList = NavBarEntry.objects.filter(path=navbar.path).order_by('sort_rank')
 
@@ -162,8 +176,8 @@ def navBarDown(request, navbar, node, section):
 
 def navBarNew(request, navbar, node, section):
 	""" Create a new NavBarEntry.  Put it at the bottom of the current sort_rank. """
-	if not UserBit.UserHasPerms(request.user, node, GetNode("V/Administer/Edit/QSD")):
-		assert False, "You don't have permisssion to do that!"
+	if not UserBit.UserHasPerms(request.user, node, GetNode(EDIT_VERB_STRING)):
+		raise PermissionDenied, "You don't have permisssion to do that!"
 
 	try:
 		max_sort_rank = NavBarEntry.objects.filter(path=node).order_by('-sort_rank')[0].sort_rank
@@ -190,11 +204,10 @@ def navBarNew(request, navbar, node, section):
 
 	
 def navBarDelete(request, navbar, node, section):
-	if not UserBit.UserHasPerms(request.user, navbar.path, GetNode("V/Administer/Edit/QSD")):
-		assert False, "You don't have permisssion to do that!"
+	if not UserBit.UserHasPerms(request.user, navbar.path, GetNode(EDIT_VERB_STRING)):
+		raise PermissionDenied, "You don't have permisssion to do that!"
 
-	error("NavBar Delete logged", "We're disallowing NavBar deletes because we don't trust them")
-	#navbar.delete()
+	navbar.delete()
 
 
 actions = { 'up': navBarUp,

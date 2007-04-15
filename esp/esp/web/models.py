@@ -37,7 +37,7 @@ from esp.users.models import UserBit
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
-    path = models.ForeignKey(DataTree)
+    path = models.ForeignKey(DataTree, related_name = 'navbar')
     sort_rank = models.IntegerField()
     link = models.CharField(maxlength=256)
     text = models.CharField(maxlength=64)

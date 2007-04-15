@@ -79,17 +79,22 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.load_template_source',
 )
 
+CACHE_MIDDLEWARE_SECONDS = 595
+CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
+
 MIDDLEWARE_CLASSES = (
     'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.middleware.cache.CacheMiddleware',
     'esp.middleware.ESPErrorMiddleware',
     'django.middleware.common.CommonMiddleware',
     #'django.contrib.csrf.middleware.CsrfMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',
-)
+    'esp.middleware.StripWhitespaceMiddleware',
+    )
 
 ROOT_URLCONF = 'esp.urls'
 
@@ -128,7 +133,7 @@ INSTALLED_APPS = (
 APPEND_SLASH=False
 
 #aseering 12-15-2006: Make memcached happen
-CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
+CACHE_BACKEND="memcached://127.0.0.1:11211"
 
 
 LOG_FILE="/var/log/django/esp_errlog"
