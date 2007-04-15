@@ -186,7 +186,7 @@ form {
   left: 0px;
   top: 223px;
   z-index: 10;
-  margin: 10px 0 0 0;
+  margin: 10px 0 0 20px;
   border-collapse: collapse;
   list-style-type: none;
   padding: 0 10px 0 0;
@@ -206,7 +206,7 @@ form {
 }
 /* outdent 'bullet' in secondary nav */
 .divsecondarynavlink .bullet {
-  margin-left: 8px;
+  margin-left: 1px;
 }
 
 
@@ -240,7 +240,7 @@ form {
   padding-top: 0px;
   background-image: none;
   font-size: 55%;
-  padding-left: 60px;
+  padding-left: 20px;
 }
 
 #secondarynav a:visited {
