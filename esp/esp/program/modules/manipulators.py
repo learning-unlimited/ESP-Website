@@ -278,7 +278,6 @@ class CheckboxSelectMultipleField(forms.SelectMultipleField):
             if new_data.get('%s%s' % (self.field_name, value), '') == 'on':
                 data_list.append(value)
         new_data.setlist(self.field_name, data_list)
-        assert False, self.field_name
 
     def render(self, data):
         output = ['<ul%s>' % (self.ul_class and ' class="%s"' % self.ul_class or '')]
