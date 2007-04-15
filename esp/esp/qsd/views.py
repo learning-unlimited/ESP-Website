@@ -60,6 +60,8 @@ from django.template.defaultfilters import urlencode
 
 def qsd(request, branch, section, url_name, url_verb, base_url):
 
+	print branch
+
 	# Pages are global per-user (not unique per-user)
 	cache_id = str(branch.id) + ':' + str(url_name)
 
@@ -73,6 +75,8 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 	# Fetch the QSD object
 	try:
 		cache_qsd = cache.get(urlencode('quasistaticdata:' + cache_id))
+		print cache_qsd
+		
 		if cache_qsd != None:
 			qsd_rec = cache_qsd
 		else:			

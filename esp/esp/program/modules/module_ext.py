@@ -70,7 +70,7 @@ class CreditCardModuleInfo(models.Model):
     class Admin:
         pass
 
-class RemoteTeacherPartProfile(models.Model):
+class RemoteTeacherParticipationProfile(models.Model):
     from esp.users.models import User
     from esp.program.models import Program
 

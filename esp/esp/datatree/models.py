@@ -198,6 +198,7 @@ class DataTree(models.Model):
         " Make this parent now have room."
 
         if expand_func is None: expand_func = DataTree.expanded_size
+        
         DataTree.shift_many_ranges(self.rangeend,
                                    expand_func(self),
                                    commit_wait = True)
@@ -322,12 +323,12 @@ class DataTree(models.Model):
 
         if upperbound < self.rangestart:
             upperbound = self.rangestart
-
+        
         if self.rangeend < (upperbound + start_size + 2):
             # we dont' have enough room...time to expand
             self.expand(expand_func)
                 
-        return upperbound+1, upperbound + start_size+1
+        return upperbound+1, upperbound + start_size
 
     def tree_encode(self):
         " Returns a list of nodes leading from root to this node. "
@@ -483,8 +484,6 @@ class DataTree(models.Model):
     @classmethod
     def root(cls):
         " Get the root node of this tree. "
-        if cls.ROOT_NODE is not None:
-            return cls.ROOT_NODE
         
         try:
             cls.ROOT_NODE = cls.objects.get(name = cls.ROOT_NAME,
@@ -900,7 +899,7 @@ class DataTree(models.Model):
 
         if isinstance(sql, basestring):
             sql = [sql]
-        
+
         for strsql in sql:
             cursor.execute(strsql)
             

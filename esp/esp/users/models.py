@@ -1071,8 +1071,9 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     # get a node, if it exists, return it.
     try:
         node = DataTree.get_by_uri(nodename)
-    finally:
         return node
+    except:
+        pass
 
 
     # if we weren't given a verb, use the default one

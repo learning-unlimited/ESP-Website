@@ -364,7 +364,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     cls.makeTeacher(teacher)
                     cls.subscribe(teacher)
                     cls.makeAdmin(teacher, self.classRegInfo.teacher_class_noedit)                    
-                
+                cls.update_cache()
                 return self.goToCore(tl)
 
 
@@ -420,7 +420,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                        new_data['message_for_directors'] != newclass.message_for_directors and \
                        self.program.director_email:
                     
-                    send_mail('['+self.program.anchor.parent.friendly_name+"] Directors' Comments for Teacher Reg", \
+                    send_mail('['+self.program.niceName()+"] Directors' Comments for Teacher Reg", \
                               """ Directors\' comments below:\nClass Title: %s\n\n %s\n\n>>>>>>>>>>>EOM""" % \
                               (new_data['title'], new_data['message_for_directors']) , \
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
@@ -461,8 +461,6 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 newclass.save()
 
-                #cache this result
-                newclass.update_cache()
 
                 # ensure multiselect fields are set
                 newclass.viable_times.clear()
@@ -486,8 +484,12 @@ class TeacherClassRegModule(ProgramModuleObj):
                     newclass.propose()
                 else:
                     if self.user.isAdmin(self.program):
+
+                        newclass.update_cache()
                         return self.goToCore('manage')
-                
+
+                #cache this result
+                newclass.update_cache()                
                 return self.goToCore(tl)
                             
         else:

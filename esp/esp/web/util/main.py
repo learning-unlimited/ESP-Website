@@ -58,7 +58,7 @@ def our_renderer(filepath, context_dict):
     src = '{% load latex %}\n' + src
     context = Context(context_dict)
     t = Template(src)
-    rendered_source = t.render(context).strip()
+    rendered_source = t.render(context)
     return HttpResponse(rendered_source)
 
 def render_to_response(template, requestOrContext, prog = None, context = None):
@@ -70,7 +70,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
     
     if context is not None:
         request = requestOrContext
-        
+
         context['page_setup'] = get_page_setup(request)
         
         section = ''
@@ -108,6 +108,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         request.user.updateOnsite(request)
         context['request'] = request
 
+        print context['navbar_list']
         return our_renderer(template, context)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'

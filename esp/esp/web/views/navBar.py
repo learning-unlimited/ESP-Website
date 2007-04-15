@@ -46,7 +46,8 @@ def makeNavBar(user, node, section = ''):
 	qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=rangestart,
 					     path__rangeend__gte=rangeend,
 					     section=section).order_by('sort_rank')
-	
+
+	print qsdTree, node
 	if user is None or type(user) == AnonymousUser or user.id is None:
 		
 		context = { 'node': node,

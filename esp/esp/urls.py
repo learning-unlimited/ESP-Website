@@ -69,7 +69,6 @@ esppatterns_list = [
     # (r'^esp/', include('esp.apps.foo.urls.foo')),
 
     # Possibly overspecific, possibly too general.
-
     (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
         { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'section_prefix_keys': section_prefix_keys }),
     
@@ -87,7 +86,8 @@ esppatterns_list = [
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
-    (r'^contact/contact.html$', 'contact'),
+    (r'^contact/contact/?$', 'contact'),
+    (r'^contact/contact/(?P<section>[^/]+)/?$', 'contact'),
     (r'^contact/submit.html$', 'contact_submit'),
 
 

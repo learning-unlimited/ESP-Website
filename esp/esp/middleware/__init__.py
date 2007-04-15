@@ -30,4 +30,4 @@ Email: web@esp.mit.edu
 """
 from esp.middleware.statsmiddleware import *
 from esp.middleware.esperrormiddleware import *
-from esp.middleware.fixiemiddleware import *
+from esp.middleware.whitespacemiddleware import *

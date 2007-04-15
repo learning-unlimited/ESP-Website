@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.views import qsd
-
+from django.core.exceptions import PermissionDenied
 from esp.datatree.models import GetNode, DataTree
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits, ESPUser
 from esp.miniblog.models import Entry
@@ -54,13 +54,12 @@ from esp.middleware import ESPError
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 
-@vary_on_headers('User-Agent')
+@vary_on_headers('Cookie')
 def index(request):
 	""" Displays a generic "index" page """
 	# Catherine: This does nothing
 	# aseering: Yay.
 	# axiak:    hmm...
-
 	announcements = preview_miniblog(request)
 
 	backgrounds = ["/media/images/home/pagebkg1.jpg",
@@ -73,7 +72,7 @@ def index(request):
 								'backgrounds':      backgrounds})
 
 
-@vary_on_headers('User-Agent')
+@vary_on_headers('Cookie')
 @cache_control(private=True)
 def myesp(request, module):
 	""" Return page handled by myESP (generally, a user-specific page) """
@@ -89,6 +88,10 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
+
+
+
+
 	if filename != "":
 		url = url + "/" + filename
 
@@ -124,6 +127,8 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 		branch = GetNodeOrNoBits(branch_name, user=request.user)
 	except DataTree.NoSuchNodeException:
 		raise ESPError(False), "The requested directory does not exist."
+	except PermissionDenied:
+		raise Http404
 		
 	if url_parts:
 		root_url = "/" + "/".join(url_parts) + "/" + qsd_name
@@ -140,10 +145,10 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 		if section_prefix_keys.has_key(subsection):
 			section = section_prefix_keys[subsection]
 			qsd_name = section + ':' + qsd_name
-
+	
 	return renderer(request, branch, section, qsd_name, qsd_verb, root_url)
 	
-@vary_on_headers('User-Agent')
+@vary_on_headers('Cookie')
 @cache_control(private=True)
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
@@ -208,7 +213,7 @@ def archives(request, selection, category = None, options = None):
 		return archive_handlers[selection](request, category, options, sortparams)
 	
 	return render_to_response('users/construction', request, GetNode('Q/Web'), {})
-def contact(request):
+def contact(request, section='main'):
 	return render_to_response('contact.html', request, GetNode('Q/Web'),{'programs': UserBit.bits_get_qsc(AnonymousUser(),
 								    GetNode('V/Publish'),
 								    qsc_root=GetNode('Q/Programs')) })

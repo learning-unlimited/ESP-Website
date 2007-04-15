@@ -224,7 +224,7 @@ class Program(models.Model):
 	director_email = models.CharField(maxlength=64)
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
-	program_modules = models.ManyToManyField(ProgramModule, blank=True,null=True)
+	program_modules = models.ManyToManyField(ProgramModule)
 
 
 	def url(self):
@@ -577,13 +577,14 @@ class Class(models.Model):
 		cache.set(cache_id, retVal, self.cache_time())
 		return retVal['title']
 	
-	def teachers(self):
+	def teachers(self, use_cache = True):
 
 		cache_id = 'Class__' + str(self.id)
 
 		retVal   = cache.get(cache_id)
 
-		if retVal is not None and type(retVal) == dict and retVal.has_key('teachers'):
+		if use_cache and (retVal is not None) and \
+		  (type(retVal) == dict) and retVal.has_key('teachers'):
 			return retVal['teachers']
 		
 		if type(retVal) != dict:
@@ -848,6 +849,7 @@ class Class(models.Model):
 		cache.delete('ClassStudents__'+str(self.id))
 
 	def update_cache(self):
+		foo = self.teachers(use_cache = False)
 		cache.delete('Class__'+str(self.id))
 
 	def preregister_student(self, user, overridefull=False):
