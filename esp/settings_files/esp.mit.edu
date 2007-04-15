@@ -85,7 +85,7 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.load_template_source',
 )
 
-CACHE_MIDDLEWARE_SECONDS = 595
+CACHE_MIDDLEWARE_SECONDS = 700
 CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 
 MIDDLEWARE_CLASSES = (
@@ -94,7 +94,7 @@ MIDDLEWARE_CLASSES = (
     'esp.datatree.middleware.DataTreeLockMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.middleware.cache.CacheMiddleware',
+    'esp.middleware.CacheMiddleware',
     'esp.middleware.ESPErrorMiddleware',
     'django.middleware.common.CommonMiddleware',
     #'django.contrib.csrf.middleware.CsrfMiddleware',
