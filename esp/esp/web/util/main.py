@@ -108,7 +108,6 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         request.user.updateOnsite(request)
         context['request'] = request
 
-        #print context['navbar_list']
         return our_renderer(template, context)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
