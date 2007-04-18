@@ -161,7 +161,7 @@ class AdminClass(ProgramModuleObj):
             if not errors:
                 verb_start = 'V/Flags/Class/'
                 manipulator.do_html2python(new_data)
-                progress = new_data.getlist('manage_progress')
+                progress = request.POST.getlist('manage_progress')
                 for step in ['Finished','Scheduled','RoomAssigned']:
                     
                     if step in progress:
@@ -180,10 +180,10 @@ class AdminClass(ProgramModuleObj):
                 cls.meeting_times.clear()
                 cls.directors_notes = new_data['directors_notes']
                 cls.message_for_directors = new_data['message_for_directors']                
-                for meeting_time in new_data.getlist('meeting_times'):
+                for meeting_time in request.POST.getlist('meeting_times'):
                     cls.meeting_times.add(DataTree.objects.get(id = str(meeting_time)))
                 cls.save()
-                rooms = new_data.getlist('room')
+                rooms = request.POST.getlist('room')
                 cls.clearRooms()
                 for room in rooms:
                     if len(room.strip()) > 0:
@@ -458,13 +458,13 @@ class AdminClass(ProgramModuleObj):
 
                 # ensure multiselect fields are set
                 newclass.viable_times.clear()
-                for block in new_data.getlist('viable_times'):
+                for block in request.POST.getlist('viable_times'):
                     tmpQsc = DataTree.objects.get(id = int(block))
                     newclass.viable_times.add(tmpQsc)
 
 
                 newclass.resources.clear()
-                for resource in new_data.getlist('resources'):
+                for resource in request.POST.getlist('resources'):
                     tmpQsc = DataTree.objects.get(id = int(resource))
                     newclass.resources.add(tmpQsc)
 

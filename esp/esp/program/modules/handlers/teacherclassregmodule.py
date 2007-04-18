@@ -464,13 +464,14 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 # ensure multiselect fields are set
                 newclass.viable_times.clear()
-                for block in new_data.getlist('viable_times'):
+                
+                for block in request.POST.getlist('viable_times'):
                     tmpQsc = DataTree.objects.get(id = int(block))
                     newclass.viable_times.add(tmpQsc)
 
 
                 newclass.resources.clear()
-                for resource in new_data.getlist('resources'):
+                for resource in request.POST.getlist('resources'):
                     tmpQsc = DataTree.objects.get(id = int(resource))
                     newclass.resources.add(tmpQsc)
 
