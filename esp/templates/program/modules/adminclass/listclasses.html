@@ -112,8 +112,9 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
     </a>
     </td>
     <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
-       {% if cls.manage_roomassigned %}
      <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step=RoomAssigned" title="Change Room Assignment Status">
+
+       {% if cls.manage_roomassigned %}
      <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
             title="Class' Room Assigned" />
        {% else %}
