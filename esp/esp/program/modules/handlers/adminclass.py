@@ -47,7 +47,8 @@ class AdminClass(ProgramModuleObj):
         Options for this are available on the main manage page.
         """
     def getManageSteps(self):
-        return [('Scheduled', 'Schedule Completed'),
+        return [('Interviewed','Teacher Interviewed'),
+                ('Scheduled', 'Schedule Completed'),
                 ('RoomAssigned','Room Assignment Completed'),
                 ('Finished', 'Finished All')]
     
@@ -140,6 +141,23 @@ class AdminClass(ProgramModuleObj):
 
                 
         return (render_to_response(self.baseDir()+'cannotfindclass.html', request, (prog, tl), {}), False)
+
+    @needs_admin
+    def changeoption(self, request,tl, one, two, module, extra, prog):
+        from esp.datatree.models import GetNode
+        cls, found = self.getClass(request,extra)
+        if not found:
+            return cls
+        verb_start = 'V/Flags/Class/'
+        
+        if request.GET.has_key('step'):
+            verb = GetNode(verb_start+request.GET['step'])
+            if UserBit.UserHasPerms(user = None, verb = verb, qsc = cls.anchor):
+                UserBit.objects.filter(user__isnull = True, qsc = cls.anchor, verb = verb).delete()
+            else:
+                UserBit.objects.get_or_create(user = None, qsc = cls.anchor, verb = verb, recursive = False)
+
+        return self.goToCore(tl)
         
                 
     @needs_admin
@@ -162,7 +180,7 @@ class AdminClass(ProgramModuleObj):
                 verb_start = 'V/Flags/Class/'
                 manipulator.do_html2python(new_data)
                 progress = request.POST.getlist('manage_progress')
-                for step in ['Finished','Scheduled','RoomAssigned']:
+                for step in ['Interviewed','Finished','Scheduled','RoomAssigned']:
                     
                     if step in progress:
 
@@ -205,6 +223,9 @@ class AdminClass(ProgramModuleObj):
                 steps += ['Scheduled']
             if cls.manage_roomassigned():
                 steps += ['RoomAssigned']
+            if cls.teacher_interviewed():
+                steps.append('Interviewed')
+                
             new_data['manage_progress'] = steps
 
             

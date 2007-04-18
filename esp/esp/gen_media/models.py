@@ -107,7 +107,7 @@ class LatexImage(models.Model):
         
 
     def __str__(self):
-        return '<img src="%s/%s.%s" alt="%s" title="%s" border="0" class="LaTeX" align="absmiddle" />' % \
+        return '<img src="%s/%s.%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' % \
                (TEXIMAGE_URL, self.filename, self.filetype, self.content, self.content)
         
 

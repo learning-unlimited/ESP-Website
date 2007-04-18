@@ -530,6 +530,8 @@ class UserBit(models.Model):
         else:
             userbit_cache = {}
 
+        print 'notcached'
+
         # Filter by user
         if user != None and user.is_authenticated():
             Q_user_correct = Q(user__isnull = True) | Q(user = user)

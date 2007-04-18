@@ -612,6 +612,12 @@ class Class(models.Model):
 					    qsc  = self.anchor,
 					    verb = verb)
 	
+	def teacher_interviewed(self):
+		verb = GetNode('V/Flags/Class/Interviewed')
+		print verb
+		return UserBit.UserHasPerms(user = None,
+					    qsc  = self.anchor,
+					    verb = verb)
 
 	def manage_scheduled(self):
 		verb = GetNode('V/Flags/Class/Scheduled')
