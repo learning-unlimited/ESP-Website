@@ -351,57 +351,65 @@ Student schedule for %s:
     
     @needs_admin
     def satpreplabels(self, request, tl, one, two, module, extra, prog):
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        students = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+
+        students.sort()
+                                    
         finished_verb = GetNode('V/Finished')
         finished_qsc  = self.program.anchor.tree_create(['SATPrepLabel'])
         
-        if request.GET.has_key('print'):
+        #if request.GET.has_key('print'):
             
-            if request.GET['print'] == 'all':
-                students = self.program.students_union()
-            elif request.GET['print'] == 'remaining':
-                printed_students = UserBit.bits_get_users(verb = finished_verb,
-                                                          qsc  = finished_qsc)
-                printed_students_ids = [user.id for user in printed_students ]
-                if len(printed_students_ids) == 0:
-                    students = self.program.students_union()
-                else:
-                    students = self.program.students_union().exclude(id__in = printed_students_ids)
-            else:
-                students = ESPUser.objects.filter(id = request.GET['print'])
+        #    if request.GET['print'] == 'all':
+        #        students = self.program.students_union()
+        #    elif request.GET['print'] == 'remaining':
+        #        printed_students = UserBit.bits_get_users(verb = finished_verb,
+        #qsc  = finished_qsc)
+        #        printed_students_ids = [user.id for user in printed_students ]
+        #        if len(printed_students_ids) == 0:
+        #            students = self.program.students_union()
+        #        else:
+        #            students = self.program.students_union().exclude(id__in = printed_students_ids)
+        #    else:
+        #        students = ESPUser.objects.filter(id = request.GET['print'])
 
-            for student in students:
-                ub, created = UserBit.objects.get_or_create(user      = student,
-                                                            verb      = finished_verb,
-                                                            qsc       = finished_qsc,
-                                                            recursive = False)
+        #    for student in students:
+        #        ub, created = UserBit.objects.get_or_create(user      = student,
+        #                                                    verb      = finished_verb,
+        #                                                    qsc       = finished_qsc,
+        #                                                    recursive = False)
 
-                if created:
-                    ub.save()
+        #        if created:
+        #            ub.save()
                     
-            students = [ESPUser(student) for student in students]
-            students.sort()
+        #    students = [ESPUser(student) for student in students]
+        #    students.sort()
 
-            numperpage = 10
+        numperpage = 10
             
-            expanded = [[] for i in range(numperpage)]
+        expanded = [[] for i in range(numperpage)]
 
-            users = students
+        users = students
             
-            for i in range(len(users)):
-                expanded[(i*numperpage)/len(users)].append(users[i])
+        for i in range(len(users)):
+            expanded[(i*numperpage)/len(users)].append(users[i])
 
-            users = []
+        users = []
                 
-            for i in range(len(expanded[0])):
-                for j in range(len(expanded)):
-                    if len(expanded[j]) <= i:
-                        users.append(None)
-                    else:
-                        users.append(expanded[j][i])
-            students = users
-            return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
-        else:
-            return render_to_response(self.baseDir()+'SATPrepLabels_options.html', request, (prog, tl), {})
+        for i in range(len(expanded[0])):
+            for j in range(len(expanded)):
+                if len(expanded[j]) <= i:
+                    users.append(None)
+                else:
+                    users.append(expanded[j][i])
+        students = users
+        return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
+    #return render_to_response(self.baseDir()+'SATPrepLabels_options.html', request, (prog, tl), {})
             
         
     @needs_admin

@@ -207,6 +207,11 @@ form {
 /* outdent 'bullet' in secondary nav */
 .divsecondarynavlink .bullet {
   margin-left: 1px;
+  text-decoration: none;
+}
+
+.divsecondarynavlink .bullet:hover {
+  text-decoration: none;
 }
 
 
