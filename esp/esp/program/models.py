@@ -905,7 +905,9 @@ class Class(models.Model):
 		self.review()
 		if self.isAccepted():
 			return False # already accepted
-			
+
+
+		
 		u = UserBit()
 		u.user = None
 		u.qsc = self.anchor
@@ -928,13 +930,9 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
 	def review(self):
 		"""Mark this class as no-longer just `proposed' """
-		userbitList = UserBit.objects.filter(user = None,
-						     qsc = self.anchor,
-						     verb = GetNode('V/Flags/Class/Proposed'))
-
-		for userbit in userbitList:
-			userbit.delete()
-
+		UserBit.objects.filter(verb = GetNode('V/Flags/Class/Proposed'),
+				       qsc = self.anchor,
+				       user__isnull = True).delete()
 		return True
 	
 		
