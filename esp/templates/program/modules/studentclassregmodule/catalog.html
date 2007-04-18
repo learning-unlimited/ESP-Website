@@ -91,8 +91,6 @@ p.category {
 Viewing classes for: {{ timeslot.friendly_name }}
 </h2>
 {% endif %}
-
-      </p>
 {% if request.user.onsite_local %}
 
 {% if not request.GET.filter %}
@@ -106,9 +104,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% endif %}
 {% endif %}
 
-<p style="text-align: center;">
-
-<table style="text-align: center; margin: auto;" width="60%" border="0">
+<table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
   <td align="center" colspan="2" style="font-family: arial; font-size:110%">
    <a name="top"></a>Categories<hr />
@@ -212,12 +208,14 @@ Viewing classes for: {{ timeslot.friendly_name }}
 	  <input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
   	  <input type="submit" name="action" value="Add this class"
                  id="submitbutton{{ aclass.class.id }}" />
-	</form>{% endif %}{% endif %}
+	</form>{% endif %}
       </td>
-     </tr>
+     </tr>{% endif %}
 </table>
 
-<br />
 {% endif %}
+
+</div>
+<br />
 {% endfor %}
 {% endblock %}

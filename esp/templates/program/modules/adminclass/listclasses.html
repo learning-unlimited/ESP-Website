@@ -90,6 +90,18 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
       </a>
     </td>
     <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
+     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step=Interviewed" title="Change Interview Status">
+       {% if cls.teacher_interviewed %}
+     <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
+            title="Teacher Interviewed" />
+       {% else %}
+     <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
+            title="Teacher Not Interviewed" />
+       {% endif %}
+     </a>
+    </td>
+    <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
+     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step=Scheduled" title="Change class Schedule Status">
        {% if cls.manage_scheduled %}
      <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
             title="Class Scheduled" />
@@ -97,17 +109,21 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
      <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
             title="Class Not Scheduled" />
        {% endif %}
+    </a>
     </td>
     <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
        {% if cls.manage_roomassigned %}
+     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step=RoomAssigned" title="Change Room Assignment Status">
      <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
             title="Class' Room Assigned" />
        {% else %}
      <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
             title="Class' Room NOT Assigned" />
        {% endif %}
+    </a>
     </td>
     <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
+     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step=Finished" title="Change class Finished Status">
        {% if cls.manage_finished %}
      <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
             title="Class Management Completed" />
@@ -115,6 +131,7 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
      <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
             title="Class Management NOT Completed" />
        {% endif %}
+    </a>
     </td>
    </tr>
 

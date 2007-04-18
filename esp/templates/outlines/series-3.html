@@ -83,11 +83,11 @@ function move_seq(new_seq) {
 
 {% block stylesheets %}
 
-<link rel="stylesheet" href="/media/styles/level3.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/level3.css" type="text/css" media="screen"/>
 {% if page_setup.stylesheet %}
-<link rel="stylesheet" href="/media/styles/{{page_setup.stylesheet }}.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/{{page_setup.stylesheet }}.css" type="text/css" media="screen" />
 {% else %}
-<link rel="stylesheet" href="/media/styles/myesp2.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/myesp2.css" type="text/css" media="screen" />
 {% endif %}
 {% endblock %}
 
@@ -96,12 +96,13 @@ function move_seq(new_seq) {
 <!-- skip link -->
 <div class="offscreen">
 {% block skiplinks %}
-<a href="#startcontent" accesskey="x"><img src="/media/images/spacer.gif" width="1" height="1" border="0" alt="Skip to content" /></a>
+<a href="#startcontent" accesskey="x"><img src="/media/images/spacer.gif" width="1" height="1" alt="Skip to content" /></a>
 {% endblock %}
 </div>
 
 <!-- backgrounds  at top of page -->
 {% block banner_backgrounds %}
+<div id="top_banner">
 <div id="divbkg1">
   <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
 </div>
@@ -114,6 +115,7 @@ function move_seq(new_seq) {
 <div id="divbkg4">
   <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
 </div>
+</div>
 {% endblock %}
 
 <!-- site title -->
@@ -123,11 +125,12 @@ function move_seq(new_seq) {
 
 <!-- image size may vary -->
 {% block banner_nav %}
+<div id="main_banner">
 <div id="divnavh">
   <a href="/" onmouseover="MM_swapImage('home','','/media/images/level3/nav/home_ro.gif',1)"
    onmouseout="MM_swapImgRestore()">
       <img src="/media/images/level3/nav/home.gif" border="0" alt="Home"
-           title="" name="home" id="home" />
+           title="" id="home" />
   </a>
 </div>
 
@@ -214,7 +217,7 @@ function move_seq(new_seq) {
 </div>
 {% endif %}
 {% endif %}
-
+</div>
 {% endblock %}
 
 <!-- section name -->
@@ -285,7 +288,7 @@ Create a new entry:
 {% block search %}
 <!-- search -->
 <div id="divsearch">
-  <form name="searchform" id="searchform" method="get" action="http://search.mit.edu/search">
+  <form id="searchform" method="get" action="http://search.mit.edu/search">
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
       <tr>
 	<td width="100%"><div class="divformcol1">&nbsp;</div></td>
@@ -312,11 +315,11 @@ Create a new entry:
   {% if not logged_in %}
 <tr>
   <td width="100%"><div class="divformcol1">&nbsp;</div></td>
-  <td class="rightalign"><div class="divformcol1"><label for="user">Username:</label></div></td>
+  <td class="rightalign"><div class="divformcol1"><label for="id__top_username">Username:</label></div></td>
   <td><div class="divformcol2">
-   <input style="border: 2px solid black;" type="text" id="id_username" class="vTextField required inputbox" name="username" size="15" value="" maxlength="30" /></div></td>
-  <td class="rightalign"><div class="divformcol3">&nbsp;&nbsp;<label for="pass">Password:</label></div></td>
-  <td><div class="divformcol4"><input style="border: 2px solid black;" type="password" id="id_password" class="vPasswordField required inputbox" name="password" size="15" value="" maxlength="30" /></div></td>
+   <input style="border: 2px solid black;" type="text" id="id__top_username" class="vTextField required inputbox" name="username" size="15" value="" maxlength="30" /></div></td>
+  <td class="rightalign"><div class="divformcol3">&nbsp;&nbsp;<label for="id__top_password">Password:</label></div></td>
+  <td><div class="divformcol4"><input style="border: 2px solid black;" type="password" id="id__top_password" class="vPasswordField required inputbox" name="password" size="15" value="" maxlength="30" /></div></td>
   <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="/media/images/go2.gif" class="gobutton" alt="Go" title="" /><input type="hidden" name="next" value="/myesp/logfin/" /></div></td>
 </tr>
 {% endif %}
@@ -363,7 +366,7 @@ style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-ind
   <a name="startcontent" id="startcontent"></a>
   <table border="0" cellpadding="0" cellspacing="0" summary=" " id="maintable">
     <!-- skip row 1 - no longer needed -->
-    <tr><!-- alignment and space -->
+    <tr id="tableheader"><!-- alignment and space -->
       <td><div class="row2 col1"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
       <td class="paper"><div class="row2 col2"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
       <td class="paper"><div class="row2 col3"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
@@ -371,14 +374,14 @@ style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-ind
       <td class="paper"><div class="row2 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr> 
     <tr><!-- content -->
-      <td align="right" valign="bottom"><img src="/media/images/bandaid1.gif" width="28" height="46" alt="" /></td>
-      <td align="left" valign="bottom" class="paper"><img src="/media/images/bandaid2.gif" width="43" height="35" alt="" /></td>
+      <td align="right" class="notmaintd" valign="bottom"><img src="/media/images/bandaid1.gif" width="28" height="46" alt="" /></td>
+      <td align="left" valign="bottom" class="paper notmaintd"><img src="/media/images/bandaid2.gif" width="43" height="35" alt="" /></td>
       <td align="left" valign="top" class="paper">
         <div id="divmaintext">
 {% block content %}{% endblock %}
         </div>
       </td>
-      <td align="left" valign="bottom" class="paper">
+      <td align="left" valign="bottom" class="paper notmaintd">
         <div id="divquote{% if randquote %}large{% else %}none{% endif %}"><!-- table required for bottom vertical alignment of text -->
           <table border="0" cellpadding="0" cellspacing="0" summary=" "><tr><td>
           <div id="divquotetext"> 

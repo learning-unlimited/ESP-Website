@@ -5,15 +5,17 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
-<link rel="stylesheet" href="/media/styles/archives.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="/media/styles/archives.css" type="text/css" media="screen" />
+
+<link rel="stylesheet" href="/media/styles/archives_print.css" type="text/css" media="print" />
 {% endblock %}
 
 {% block subsection_name %}Archives/Resources{% endblock %}
 
 {% block content %}
+<div id="header">
 <h1>ESP Archives: Past Classes</h1>
-</div>
 
 <div id="battlescreen">
 Found {{ num_results }} results.
@@ -153,7 +155,7 @@ disabled
 
 <br />
 <br />
-
+</div>
 <div id="archives">
 <center>
 <table width="610" cellspacing="4" cellpadding="2">

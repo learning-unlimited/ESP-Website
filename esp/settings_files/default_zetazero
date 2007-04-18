@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
-DISPLAYSQL = True
+DISPLAYSQL = False
 
 # Change this to whatever directory the trunk is in.
 ESP_ROOT = "/var/www/esp-devel/trunk/esp"
