@@ -202,7 +202,7 @@ class GraduationYearField(forms.SelectField):
         str_data = str(data)
         str_choices = [str(ESPUser.YOGFromGrade(item[0])) for item in self.choices ]
         if str_data not in str_choices:
-            raise validators.ValidationError, gettext("Select a valid choice; '%(data)s' is not in %(choices)s.") % {'data': str_data, 'choices': str_choices}
+            raise validators.ValidationError, "Select a valid choice; '%(data)s' is not in %(choices)s." % {'data': str_data, 'choices': str_choices}
     
     def prepare(self, data):
         from esp.users.models import ESPUser
@@ -345,11 +345,10 @@ class ESPPhoneNumberField(forms.TextField):
         self.__class__.areacode = local_areacode
 
     def isESPPhone(self, data, form):
-        from django.utils.translation import gettext
         if not self.phone_re.search(data):
             # Try local as well if the area code was supplied
             if self.__class__.areacode is None or not self.localphone_re.search(data):
-                raise validators.ValidationError, gettext('Phone numbers must be a valid US number. "%s" is invalid.') % data
+                raise validators.ValidationError, 'Phone numbers must be a valid US number. "%s" is invalid.' % data
 #    isESPPhone = staticmethod(isESPPhone)
     
     def html2python(data):
