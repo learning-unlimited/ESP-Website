@@ -200,7 +200,7 @@ class GraduationYearField(forms.SelectField):
     def isValidChoice(self, data, form):
         from esp.users.models import ESPUser
         str_data = str(data)
-        str_choices = [str(ESPUser.YOGFromGrade(item[0])) for item in self.choices ]
+        str_choices = self.choices #[str(ESPUser.YOGFromGrade(item[0])) for item in self.choices ]
         if str_data not in str_choices:
             raise validators.ValidationError, "Select a valid choice; '%(data)s' is not in %(choices)s." % {'data': str_data, 'choices': str_choices}
     
