@@ -44,7 +44,7 @@ from django              import newforms as forms
 class FinancialAidAppModule(ProgramModuleObj):
 
     def students(self, QObject = False):
-        Q_students = Q(financialaidapp__program = self.program)
+        Q_students = Q(financialaidrequest__program = self.program)
 
         Q_students_complete = Q(financialaidrequest__done = True)
 
