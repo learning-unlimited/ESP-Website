@@ -641,7 +641,7 @@ class Class(models.Model):
 
 
 
-	def cannotAdd(self, user):
+	def cannotAdd(self, user, checkFull=True):
 		""" Go through and give an error message if this user cannot add this class to their schedule. """
 		if not user.isStudent():
 			return 'You are not a student!'
@@ -649,7 +649,7 @@ class Class(models.Model):
 		if not self.isAccepted():
 			return 'This class is not accepted.'
 
-		if self.isFull():
+		if checkFull and self.isFull():
 			return 'Class is full!'
 
 
@@ -1226,3 +1226,51 @@ class TeacherBio(models.Model):
 			lastBio = bios[0]
 		return lastBio
 
+class FinancialAidRequest(models.Model):
+	"""
+	Student financial Aid Request
+	"""
+
+	program = models.ForeignKey(Program, editable = False)
+	user    = models.ForeignKey(User, editable = False)
+
+	approved = models.DateTimeField(blank=True, null=True, editable = False)
+
+	reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', null=True, blank=True)
+
+	household_income = models.CharField(verbose_name = 'Approximately what is your household income (round do the nearest $10000)?', null=True, blank=True,
+					    maxlength=12)
+
+	extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this summer.', null=True, blank=True)
+
+	student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True,null=True)
+
+	done = models.BooleanField(default = False, editable = False)
+
+class JunctionStudentApp(models.Model):
+	"""
+	Student applications for Junction.
+	"""
+
+	program = models.ForeignKey(Program, editable = False)
+	user    = models.ForeignKey(User, editable = False)
+	class_prep = models.TextField(verbose_name = 'Your School Preperation',
+				      help_text = "Please describe your high school preperation. List the classes you've taken thus far.",
+				      blank=True,
+				      null=True)
+	
+	ideal_summer = models.TextField(verbose_name = 'My Ideal Summer...',
+					help_text = 'Please write a short essay describing what your ideal summer would be.')
+
+	difficulty = models.TextField(verbose_name='A difficult triumph',
+				      help_text = 'Describe an experience where you had great difficulty in accomplishing something, whether or not it was a success.',
+				      blank=True,
+				      null=True)
+
+	classes = models.TextField(verbose_name='Please describe your understanding of the classes you chose and why you want to take them.',
+				      blank=True,
+				      null=True)
+
+	done = models.BooleanField(default=False,editable = False)
+	
+	

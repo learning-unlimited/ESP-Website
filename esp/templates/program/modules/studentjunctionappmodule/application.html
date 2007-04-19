@@ -1,0 +1,89 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{ program.niceName }} Student Application{% endblock %}
+
+{% block subsection_name %}Student Applications{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style type="text/css" media="screen">
+#appform, #appform td, #appform th {
+    border: 0;
+}
+
+#appform td, #appform th {
+    vertical-align: top;
+    padding-top: 50px;
+}
+
+#appform td {
+    font-style: italic;
+    font-size: 90%;
+}
+
+#appform input, #appform textarea {
+    font-style: normal;
+    font-size:  111%;
+}
+
+#appform th {
+    font-size: 80%;
+    width:     1in;
+}
+
+#appform textarea {
+    width: 100%;
+    height: 4in;
+}
+
+</style>
+{% endblock %}
+
+{% block xtrajs %}
+{% endblock %}
+
+{% block content %}
+<h1>{{ program.niceName }} Student Applications</h1>
+
+<h2>Introduction</h2>
+<p>
+  To complete your application for {{ program.niceName }}, please fill out the following form. While you are working on it, you can <strong>Save Progress</strong> to keep your work while going to other things. Once you're completed, please let us know by clicking <strong>Complete</strong>.<br />
+Please note, all information is completely optional. However, the program may become selective (we have no good historical data on selectivity for you)&mdash;<em>thus please be thorough in describing best who you are</em>.
+
+<br />
+<br />
+
+That being said, <strong>please ensure all responses contain fewer than 300 words</strong>.
+</p>
+
+<h2>Application Form</h2>
+
+<form action="{{ request.path }}" method="post" name="application_form">
+<table id="appform">
+<tr>
+ <th colspan="2" style="text-align: center;">
+    <input type="submit" name="submitform" value="Save Progress" />
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    {% if app.done %}
+    <input type="submit" name="submitform" value="Mark as Unfinished" />
+    {% else %}
+    <input type="submit" name="submitform" value="Complete" />
+    {% endif %}
+ </th>
+</tr>
+ {{form}}
+<tr>
+ <th colspan="2" style="text-align: center;">
+    <input type="submit" name="submitform" value="Save Progress" />
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    {% if app.done %}
+    <input type="submit" name="submitform" value="Mark as Unfinished" />
+    {% else %}
+    <input type="submit" name="submitform" value="Complete" />
+    {% endif %}
+ </th>
+</tr>
+</table>
+</form>
+
+{% endblock %}

@@ -41,6 +41,11 @@ from django.template.loader import get_template
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
 
+    def extensions(self):
+        """ This function gives all the extensions...that is, models that act on the join of a program and module."""
+        return [('classRegInfo', module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+
+
     def students(self, QObject = False):
         from esp.program.models import Class
         Conf = Q(userbit__qsc__parent = self.program.classes_node()) & \
@@ -100,7 +105,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL."
             
         cobj = Class.objects.filter(id=classid)[0]
-        error = cobj.cannotAdd(self.user)
+        error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max)
         if error and not self.user.onsite_local:
             raise ESPError(False), error
         if cobj.preregister_student(self.user, self.user.onsite_local):

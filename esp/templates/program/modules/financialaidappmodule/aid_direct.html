@@ -1,0 +1,24 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Financial Aid Request{% endblock %}
+
+{% block subsection_name %}Financial Aid Request{% endblock %}
+
+{% block content %}
+<h1>Financial Aid Request For {{ program.niceName }} </h1>
+
+<p>
+In order to proceed to the Financial Aid Request form, please follow the below link.<br />
+<br />
+<strong>Note: You may be warned that the page's certificate is not signed by a trusted authority. This untrusted authority is MIT. <br />
+To convince your computer to trust MIT, <a href="http://ca.mit.edu/mitca.crt" title="Download MIT Certificate Authority">Get the MIT CA (Certificate Authority)</a>.</strong>
+</p>
+<br />
+
+<p style="font-size: 130%;">
+<a href="https://esp.mit.edu/learn/{{ program.getUrlBase }}/finaid_app/" title="Proceed to financial aid request form">Proceed to Financial Aid Form</a>.
+
+</p>
+
+{% endblock %}
+

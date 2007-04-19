@@ -39,6 +39,16 @@ class SATPrepAdminModuleInfo(models.Model):
     class Admin:
         pass
 
+class StudentClassRegModuleInfo(models.Model):
+    module               = models.ForeignKey(ProgramModuleObj)
+    enforce_max          = models.BooleanField(default=True)
+    def __str__(self):
+        return 'Student Class Reg Ext. for %s' % str(self.module)
+    
+    class Admin:
+        pass
+    
+
 class ClassRegModuleInfo(models.Model):
     module       = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, null=True)
@@ -47,6 +57,7 @@ class ClassRegModuleInfo(models.Model):
     times_selectmultiple = models.BooleanField(blank=True, null=True)
     class_min_size       = models.IntegerField(blank=True, null=True)
     class_max_size       = models.IntegerField(blank=True, null=True)
+    
     class_size_step      = models.IntegerField(blank=True, null=True)
     director_email       = models.CharField(maxlength=64, blank=True, null=True)
     class_durations       = models.CharField(maxlength=128, blank=True, null=True)
