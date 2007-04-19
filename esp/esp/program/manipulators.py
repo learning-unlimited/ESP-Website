@@ -97,7 +97,7 @@ class GuardContactManipulator(forms.Manipulator):
 class StudentInfoManipulator(forms.Manipulator):
     """ Manipulator for student info """
     def __init__(self, user=None):
-
+        from esp.users.models import ESPUser
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
             makeRequired = True
         else:
@@ -107,7 +107,7 @@ class StudentInfoManipulator(forms.Manipulator):
         cur_year = datetime.date.today().year
         
         self.fields = (
-            GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=zip(range(6,13),range(6,13))),
+            GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(6,13)]),
             
 #            forms.SelectField(field_name="graduation_year", choices=zip(range(cur_year,cur_year+20),range(cur_year,cur_year+20)), is_required=makeRequired),
             forms.TextField(field_name="school", length=24, maxlength=128),
@@ -200,23 +200,22 @@ class GraduationYearField(forms.SelectField):
     def isValidChoice(self, data, form):
         from esp.users.models import ESPUser
         str_data = str(data)
-        str_choices = [str(item[0]) for item in self.choices] #[str(ESPUser.YOGFromGrade(item[0])) for item in self.choices ]
+        str_choices = [str(item[0]) for item in self.choices ]
         if str_data not in str_choices:
             raise validators.ValidationError, "Select a valid choice; '%(data)s' is not in %(choices)s." % {'data': str_data, 'choices': str_choices}
     
-    def prepare(self, data):
-        from esp.users.models import ESPUser
+    #def prepare(self, data):
+    #    from esp.users.models import ESPUser
 
-        try:
-            data[self.field_name] = ESPUser.YOGFromGrade(int(data[self.field_name]))
-        except:
-            data[self.field_name] = 'ERROR'
+    #    try:
+    #        data[self.field_name] = int(data[self.field_name])
+    #    except:
+    #        data[self.field_name] = 'ERROR'
         
 
     def render(self, data):
         from esp.users.models import ESPUser
             
-        data = ESPUser.gradeFromYOG(data)
         return super(GraduationYearField, self).render(data)
         
 
