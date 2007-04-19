@@ -42,6 +42,7 @@ class SATPrepAdminModuleInfo(models.Model):
 class ClassRegModuleInfo(models.Model):
     module       = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, null=True)
+    set_prereqs          = models.BooleanField(blank=True, null=True)
     display_times        = models.BooleanField(blank=True, null=True)
     times_selectmultiple = models.BooleanField(blank=True, null=True)
     class_min_size       = models.IntegerField(blank=True, null=True)

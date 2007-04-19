@@ -150,6 +150,10 @@ class TeacherClassRegManipulator(forms.Manipulator):
 
             )
 
+        if module.classRegInfo.set_prereqs:
+            self.fields += (forms.LargeTextField(field_name='prereqs'),)
+                                 
+
         if module.classRegInfo.display_times:
             if module.classRegInfo.times_selectmultiple:
                 self.fields = self.fields + (CheckboxSelectMultipleField(field_name="viable_times", \

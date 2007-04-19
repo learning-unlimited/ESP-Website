@@ -435,7 +435,9 @@ class ClassCategories(models.Model):
 	Categories include 'Mathematics', 'Science', 'Zocial Zciences', etc.
 	"""
 	category = models.TextField()
-
+	class Meta:
+		verbose_name_plural = 'Class Categories'
+		
 	def __str__(self):
 		return str(self.category)
 		
@@ -472,6 +474,7 @@ class Class(models.Model):
 	class_size_min = models.IntegerField()
 	class_size_max = models.IntegerField()
 	schedule = models.TextField(blank=True)
+	prereqs  = models.TextField(blank=True, null=True)
 	directors_notes = models.TextField(blank=True, null=True)
 	duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
 	event_template = models.ForeignKey(DataTree, related_name='class_event_template_set', null=True)
@@ -480,6 +483,9 @@ class Class(models.Model):
 	resources = models.ManyToManyField(DataTree, related_name='class_resources', blank=True)
 	#	We think this is useless because the sign-up is completely based on userbits.
 	enrollment = models.IntegerField()
+
+	class Meta:
+		verbose_name_plural = 'Classes'
 
 	def classroomassignments(self):
 		return ClassRoomAssignment.objects.filter(cls = self)
