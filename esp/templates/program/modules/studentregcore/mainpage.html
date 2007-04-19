@@ -24,6 +24,7 @@
    {% else %}
     {{ module.makeLink }}
    {% endif %}
+   {% if not module.module.required %} <em>(not required)</em> {% endif %}
   </td>
   <td>{% if not module.useTemplate %}
    <a href="{{ module.get_full_path }}">
