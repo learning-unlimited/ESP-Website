@@ -172,6 +172,13 @@ Viewing classes for: {{ timeslot.friendly_name }}
      <tr>
        <td colspan="2" class="info">
          {{ aclass.class.class_info|escape|teximages:120|linebreaksbr }}<br />
+       {% if aclass.class.prereqs %}
+       <br /><br />
+       <em>*Prerequisites*</em>
+       <p style="padding-left: 10px; font-style:italic;">
+         {{ aclass.class.prereqs }}
+       </p>
+       {% endif %}
        </td>
      </tr>
     <tr>

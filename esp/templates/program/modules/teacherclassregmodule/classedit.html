@@ -65,6 +65,20 @@ Course Description *:
 <br />
 <p>Tip: Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &quot;pi&quot;)</p>
 <br />
+<br />
+{% if form.prereqs %}
+<label for="id_prereqs" class="header">
+Course Prerequisites:
+</label>
+<br />
+{% if form.prereqs.errors %}
+   <br /><span class="form_error">{{ form.prereqs.errors|join:", " }}</span>
+   <br />
+{% endif %}
+{{ form.prereqs }}
+<br />
+{% endif %}
+<br />
 <table border="0" cellpadding="0" width="400px">
 
   <tr>
