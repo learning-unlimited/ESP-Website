@@ -530,7 +530,6 @@ class UserBit(models.Model):
         else:
             userbit_cache = {}
 
-        print 'notcached'
 
         # Filter by user
         if user != None and user.is_authenticated():
