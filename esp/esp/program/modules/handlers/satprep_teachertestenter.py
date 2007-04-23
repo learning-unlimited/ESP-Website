@@ -79,41 +79,6 @@ class SATPrepTeacherInput(ProgramModuleObj):
 
         
 
-    @needs_teacher
-    def satprepuserdiagnostic(self, request, tl, one, two, module, extra, prog):
-        context = {}
-        response, userfound = search_for_user(request, self.program.students_union())
-        if not userfound:
-            return response
-        user = response
-        
-        manipulator = SATPrepDiagManipulator()
-        new_data = {}
-        if request.method == 'POST':
-                new_data = request.POST.copy()
-
-                errors = manipulator.get_validation_errors(new_data)
-
-                if not errors:
-                        manipulator.do_html2python(new_data)
-                        new_reginfo = SATPrepRegInfo.getLastForProgram(user, prog)
-                        new_reginfo.addOrUpdate(new_data, user, prog)
-
-                        return self.goToCore(tl)
-        else:
-                satPrep = SATPrepRegInfo.getLastForProgram(user, prog)
-
-                new_data = satPrep.updateForm(new_data)
-                errors = {}
-
-        form = forms.FormWrapper(manipulator, new_data, errors)
-        return render_to_response(self.baseDir()+'satprep_diag.html', request, (prog, tl), {'form':form,
-                                                                                            'user':user})
-
-
-        
-
-
     def isStep(self):
         return False
     
