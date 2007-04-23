@@ -18,9 +18,9 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 </style>
 <br /><br />
-<h1>SAT Prep - Diagnostic Score </h1>
+<h1>SAT Prep - Score Information </h1>
 <br />
-<p>Please enter the diagnostic score for &quot;{{user.name}}&quot; below:</p>
+<p>Please enter the diagnostic/practice scores for &quot;{{user.name}}&quot; below:</p>
 {% if form.has_errors %}
 <h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
 {% endif %}
@@ -28,6 +28,10 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 <form action="{{request.path}}?userid={{user.id}}" method="post">
 <table cellpadding="2" align="center" border="0">
+
+<tr>
+  <th colspan="2">Diagnostic Exam Score</th>
+</tr>
 
 <tr>
  <td><label for="id_diag_math_score">Diagnostic SAT Math Score:<br />
@@ -52,6 +56,37 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
        <small>(if available)</small></label></td>
  <td>{{ form.diag_writ_score }} {% if form.diag_writ_score.errors %}
    <br /><span class="form_error">{{ form.diag_writ_score.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+  <th colspan="2">Practice Exam Score</th>
+</tr>
+
+<tr>
+ <td><label for="id_prac_math_score">Practice SAT Math Score:<br />
+       <small>(if available)</small></label></td>
+ <td>{{ form.prac_math_score }} {% if form.prac_math_score.errors %}
+   <br /><span class="form_error">{{ form.prac_math_score.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_prac_verb_score">Practice SAT Verbal Score:<br />
+       <small>(if available)</small></label></td>
+ <td>{{ form.prac_verb_score }} {% if form.prac_verb_score.errors %}
+   <br /><span class="form_error">{{ form.prac_verb_score.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_prac_writ_score">Practice SAT Writing Score:<br />
+       <small>(if available)</small></label></td>
+ <td>{{ form.prac_writ_score }} {% if form.prac_writ_score.errors %}
+   <br /><span class="form_error">{{ form.prac_writ_score.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

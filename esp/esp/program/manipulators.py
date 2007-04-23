@@ -391,7 +391,11 @@ class SATPrepDiagManipulator(forms.Manipulator):
             forms.PositiveIntegerField(field_name="diag_math_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
             forms.PositiveIntegerField(field_name="diag_verb_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
             forms.PositiveIntegerField(field_name="diag_writ_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="prac_math_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="prac_verb_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="prac_writ_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
             )
+        
 class SATPrepTeacherInfoManipulator(forms.Manipulator):
     def __init__(self, subjects):
         self.fields = (
