@@ -48,8 +48,14 @@ class MailingLabels(ProgramModuleObj):
     def mailinglabel(self, request, tl, one, two, module, extra, prog):
         """ This function will allow someone to morph into a user for testing purposes. """
         from esp.users.views     import get_user_list
+
+        combine = True
+        
         if extra is None or extra.strip() == '':
             return render_to_response(self.baseDir()+'mailinglabel_index.html',request, (prog, tl), {})
+
+        if 'nocombine' in extra.strip().lower():
+            combine = False
 
         if 'schools' in extra.strip():                  
             if request.method == 'POST':
@@ -59,6 +65,7 @@ class MailingLabels(ProgramModuleObj):
                     A filter was passed.
                     """
                     f = PersistentQueryFilter.objects.get(id = request.POST['filter_id'])
+                    combine = (request.POST['combine'].upper() in ('TRUE','1','T'))
                     infos = f.getList(ContactInfo).distinct()
                 else:
 
@@ -71,6 +78,8 @@ class MailingLabels(ProgramModuleObj):
 
                         zipcodes = zipc.close_zipcodes(form.clean_data['proximity'])
 
+                        combine = form.clean_data['combine_addresses']
+                        
                         Q_infos = Q(k12school__id__isnull = False,
                                     address_zip__in = zipcodes)
 
@@ -84,13 +93,14 @@ class MailingLabels(ProgramModuleObj):
 
                         num_schools = ContactInfo.objects.filter(Q_infos).distinct().count()
 
-                        return render_to_response(self.baseDir()+'schools_confirm.html', request, (prog, tl), {'filter':f,'num': num_schools})
+                        return render_to_response(self.baseDir()+'schools_confirm.html', request, (prog, tl), {'filter':f,'num': num_schools, 'combine': combine})
 
                     else:
                         return render_to_response(self.baseDir()+'selectschools.html', request, (prog, tl), {'form': form})
 
             else:
-                form = SchoolSelectForm(initial = {'zip_code': '02139'})
+                form = SchoolSelectForm(initial = {'zip_code': '02139',
+                                                   'combine_addresses': True})
 
                 return render_to_response(self.baseDir()+'selectschools.html', request, (prog, tl), {'form': form})
 
@@ -102,7 +112,7 @@ class MailingLabels(ProgramModuleObj):
 
             infos = [ESPUser(user).getLastProfile().contact_user for user in ESPUser.objects.filter(filterObj.get_Q()).distinct() ]
 
-        output = MailingLabels.gen_addresses(infos)
+        output = MailingLabels.gen_addresses(infos, combine)
 
         if 'csv' in extra.strip():
             response = HttpResponse('\n'.join(output), mimetype = 'text/plain')
@@ -110,7 +120,7 @@ class MailingLabels(ProgramModuleObj):
 
         
     @staticmethod
-    def gen_addresses(infos):
+    def gen_addresses(infos, combine = True):
         """ Takes a iterable list of infos and returns a lits of addresses. """
 
         import pycurl
@@ -215,7 +225,6 @@ class MailingLabels(ProgramModuleObj):
                     addresses[key] = [name]
             
 
-
                 #time.sleep(1)
         if use_title:
             output = ["'Num','Name','Title','Street','City','State','Zip'"]
@@ -225,11 +234,19 @@ class MailingLabels(ProgramModuleObj):
         i = 1
         for key, value in addresses.iteritems():
             if key != False:
-                if use_title:
-                    output.append("'%s',%s,%s" % (i, ' and '.join(value), key))
+                if combine:
+                    if use_title:
+                        output.append("'%s',%s,%s" % (i, ' and '.join(value), key))
+                    else:
+                        output.append("'%s','%s',%s" % (i,' and '.join(value), key))
+                    i += 1
                 else:
-                    output.append("'%s','%s',%s" % (i,' and '.join(value), key))
-                i+= 1
+                    for name in value:
+                        if use_title:
+                            output.append("'%s',%s,%s" % (i, name, key))
+                        else:
+                            output.append("'%s','%s',%s" % (i, name, key))
+                        i += 1
             
         return output
 

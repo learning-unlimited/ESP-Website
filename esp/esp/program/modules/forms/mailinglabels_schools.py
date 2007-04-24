@@ -49,3 +49,6 @@ class SchoolSelectForm(forms.Form):
     grades = forms.CharField(max_length=100,
                              help_text = 'List of grades separated by commas. E.g. &quot;4,8,10&quot;',
                              label = "Grades")
+
+    combine_addresses = forms.BooleanField(label = 'Combine Like Addresses', required = False,
+                                            help_text = 'Take similar addresses and combine them.')
