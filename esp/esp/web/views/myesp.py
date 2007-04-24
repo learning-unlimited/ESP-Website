@@ -53,6 +53,7 @@ from esp.web.util.main import navbar_data, preload_images, render_to_response
 from django import forms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
 
+
 def myesp_register(request, module):
 	""" Return a user-registration page """
 	new_data = request.POST.copy()
@@ -152,7 +153,8 @@ def myesp_emailfin(request, module):
 		email_user.is_superuser = False
 		email_user.save()
 
-	return render_to_response('index.html', request, GetNode('Q/Web/myesp'), {})
+	return HttpResponseRedirect('/')
+        #render_to_response('index.html', request, GetNode('Q/Web/myesp'), {})
 
 def myesp_signout(request, module):
 	""" Deauthenticate a user """
@@ -538,13 +540,18 @@ def edit_profile(request, module):
 		return profile_editor(request, None, True, '')
 
 @login_required
-def profile_editor(request, prog=None, responseuponCompletion = True, role=''):
+def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
 	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
-	if prog is None:
+	STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
+	STUDREP_QSC  = GetNode('Q')
+
+	
+	if prog_input is None:
 		prog = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
 		navnode = GetNode('Q/Web/myesp')
 	else:
+		prog = prog_input
 		navnode = prog
 		
 	curUser = request.user
@@ -571,6 +578,18 @@ def profile_editor(request, prog=None, responseuponCompletion = True, role=''):
 
 			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 
+			if regProf.id is None:
+				old_regProf = RegistrationProfile.getLastProfile(curUser)
+			else:
+				old_regProf = regProf
+
+			for field_name in ['address_zip','address_city','address_street','address_state']:
+				if new_data[field_name] != getattr(old_regProf.contact_user,field_name,False):
+					new_data['address_postal'] = ''
+
+			if new_data['address_postal'] == '':
+				new_data['address_postal'] = False
+
 			regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
 			regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
 			if role == 'student':
@@ -596,10 +615,17 @@ def profile_editor(request, prog=None, responseuponCompletion = True, role=''):
 
 	else:
 		errors = {}
-		regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+		if prog_input is None:
+			regProf = RegistrationProfile.getLastProfile(curUser)
+		else:
+			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 		if regProf.id is None:
 			regProf = RegistrationProfile.getLastProfile(curUser)
 		new_data = {}
+		if curUser.isStudent():
+			new_data['studentrep'] = (UserBit.objects.filter(user = curUser,
+									 verb = STUDREP_VERB,
+									 qsc  = STUDREP_QSC).count() > 0)
 		new_data['first_name'] = curUser.first_name
 		new_data['last_name']  = curUser.last_name
 		new_data['e_mail']     = curUser.email

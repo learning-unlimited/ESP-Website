@@ -1,0 +1,65 @@
+{% extends "elements/receipt.html" %}
+
+{% block title %}{{program.niceName}} Application Confirmation{% endblock %}
+
+{% block subsection_name %} {% endblock %}
+
+{% block body %}
+<br>
+<p>
+  Your application has been submitted. Please note, each teacher is going to review the applications for his/her class. Now that you confirmed your registration, we can read over your application. <br />
+<strong>You will not be penalized for confirming an application closer to the deadline, May 25<sup>th</sup>.</strong>
+<br />
+However, you will be evaluated on your application. If you have time between now and the deadline, please consider revising your application.
+</p>
+
+<p>
+  If the teachers for the class that you selected opted for a diagnostic test,
+  you will be informed via email that you must take it to proceed with the 
+  application process.
+</p>
+<p>
+  Whether or not we contact you regarding a diagnostic test, we will email 
+  you about a week after the application deadline with final application
+  decisions.
+</p>
+
+<!-- In addition, the <strong>medical and liability forms</strong> must be filled out and signed by a guardian. They are available at <a href="/media/uploaded/07_02/hssp_forms.pdf">http://esp.mit.edu/media/uploaded/07_02/hssp_forms.pdf</a>. -->
+
+<p>
+User Information: <br />
+<ul>
+<li>Username: {{ request.user.username }}</li>
+<li>Full Name: {{ request.user.first_name }} {{ request.user.last_name }}</li>
+<li>User ID: {{ request.user.id }}</li>
+</ul>
+</p>
+<br />
+<table cellpadding="3" style="width: 5.5in; margin: auto; border: 1px solid black; border-collapse: collapse;" border=1>
+<tr>
+  <th colspan="2">Class Schedule for {{ request.user.first_name }} {{ request.user.last_name }}</th>
+</tr>
+{% for timeslot in timeslots %}
+<tr>
+  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.friendly_name }} </td>
+  <td>
+	{% if timeslot.1 %}
+	{{timeslot.1.title}}{% else %} <em>Nothing Selected</em> {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+<br />
+<br />
+
+(Please print this out for your own records.)
+
+<br />
+<br />
+<pre>
+Please Note: Class selections are subject to change up
+until and on the day of the event. MIT Educational Studies
+Program cannot guarantee the successful fruition of a
+proposed class.
+</pre>
+{% endblock %}

@@ -1,7 +1,8 @@
 <!-- User ContactInfo -->
 <tr>
  <td><label for="id_first_name">First Name:</label></td>
- <td>{{ form.first_name }} {% if form.first_name.errors %}
+ <td>{{ form.address_postal }}
+ {{ form.first_name }} {% if form.first_name.errors %}
    <br /><span class="form_error">{{ form.first_name.errors|join:", " }}</span>
    {% endif %}
  </td>

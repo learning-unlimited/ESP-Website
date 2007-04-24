@@ -129,16 +129,23 @@ def qsd(request, branch, section, url_name, url_verb, base_url):
 			cache.set(urlencode('quasistaticdata:' + cache_id), qsd_rec)
 
 	except QuasiStaticData.DoesNotExist:
-		if have_edit and (url_verb == 'edit' or url_verb == 'create'):
-			qsd_rec = QuasiStaticData()
-			qsd_rec.path = branch
-			qsd_rec.name = url_name
-			qsd_rec.title = 'New Page'
-			qsd_rec.content = 'Please insert your text here'
-			qsd_rec.create_date = datetime.now()
+		if have_edit:
+			if (url_verb == 'edit' or url_verb == 'create'):
+				qsd_rec = QuasiStaticData()
+				qsd_rec.path = branch
+				qsd_rec.name = url_name
+				qsd_rec.title = 'New Page'
+				qsd_rec.content = 'Please insert your text here'
+				qsd_rec.create_date = datetime.now()
 
-			url_verb = 'edit'
+				url_verb = 'edit'
+			if (url_verb == 'read'):
+
+				edit_link = request.path[:-5]+'.edit.html'
+				
+				return render_to_response('qsd_nopage_edit.html', request, (branch, section), {'edit_link': edit_link})
 		else:
+		
 			raise Http404
 
 	if url_verb == 'create':

@@ -51,7 +51,8 @@ class UserContactManipulator(forms.Manipulator):
             forms.TextField(field_name="address_street", length=20, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="address_city", length=20, maxlength=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             USStateSelectField(field_name="address_state", is_required=makeRequired),
-            forms.TextField(field_name="address_zip", length=5, maxlength=5, is_required=makeRequired, validator_list=[validators.isNotEmpty])
+            forms.TextField(field_name="address_zip", length=5, maxlength=5, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.HiddenField(field_name="address_postal",is_required=False),
         )
         
 class EmergContactManipulator(forms.Manipulator):
@@ -111,7 +112,9 @@ class StudentInfoManipulator(forms.Manipulator):
             
 #            forms.SelectField(field_name="graduation_year", choices=zip(range(cur_year,cur_year+20),range(cur_year,cur_year+20)), is_required=makeRequired),
             forms.TextField(field_name="school", length=24, maxlength=128),
-            HTMLDateField(field_name="dob", is_required=makeRequired)
+            HTMLDateField(field_name="dob", is_required=makeRequired),
+            forms.CheckboxField(field_name='studentrep', is_required=False),
+
             )
 
 

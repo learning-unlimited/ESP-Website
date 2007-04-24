@@ -6,37 +6,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<style type="text/css" media="screen">
-#appform, #appform td, #appform th {
-    border: 0;
-}
-
-#appform td, #appform th {
-    vertical-align: top;
-    padding-top: 50px;
-}
-
-#appform td {
-    font-style: italic;
-    font-size: 90%;
-}
-
-#appform input, #appform textarea {
-    font-style: normal;
-    font-size:  111%;
-}
-
-#appform th {
-    font-size: 80%;
-    width:     1in;
-}
-
-#appform textarea {
-    width: 100%;
-    height: 4in;
-}
-
-</style>
+<link href="/media/styles/newforms.css" rel="stylesheet" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
@@ -59,7 +29,7 @@ That being said, <strong>please ensure all responses contain fewer than 300 word
 <h2>Application Form</h2>
 
 <form action="{{ request.path }}" method="post" name="application_form">
-<table id="appform">
+<table class="newform" id="appform">
 <tr>
  <th colspan="2" style="text-align: center;">
     <input type="submit" name="submitform" value="Save Progress" />

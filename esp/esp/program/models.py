@@ -39,6 +39,7 @@ from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 from datetime import datetime
 from django.core.cache import cache
 from esp.miniblog.models import Entry
+from django.db.models import Q
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -318,10 +319,16 @@ class Program(models.Model):
 		from esp.users.models import ESPUser
 		usertypes = ['Student', 'Teacher', 'Guardian', 'Educator']
 
+		
+
 		for usertype in usertypes:
 			lists['all_'+usertype.lower()+'s'] = {'description':
 							       usertype+'s in all of ESP',
 							       'list' : ESPUser.getAllOfType(usertype)}
+
+		lists['emaillist'] = {'description':
+				      """All users in our mailing list without an account.""",
+				      'list': Q(password = 'emailuser')}
 			
 		return lists
 
@@ -956,7 +963,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 		
 		proposeVerb = GetNode('V/Flags/Class/Proposed')
 		
-		userbitList = UserBit.objects.filter(user = None,
+		userbitList = UserBit.objects.filter(user__isnull = True,
 						     qsc = self.anchor,
 						     verb = proposeVerb)
 		if len(userbitList) > 0:
@@ -972,7 +979,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 		""" Mark this class as rejected """
 		
 		self.review()
-		userbitlst = UserBit.objects.filter(user = None,
+		
+		userbitlst = UserBit.objects.filter(user__isnull = True,
 						    qsc  = self.anchor,
 						    verb = GetNode('V/Flags/Class/Approved'))
 		if len(userbitlst) > 0:

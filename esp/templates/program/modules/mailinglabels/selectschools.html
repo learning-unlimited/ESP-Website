@@ -1,0 +1,36 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{ program.niceName }} Schools for Mailing Labels{% endblock %}
+
+{% block subsection_name %}Mailing Labels{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link href="/media/styles/newforms.css" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+{% endblock %}
+
+{% block content %}
+<h1>{{ program.niceName }} School Mailing Labels</h1>
+
+<p>
+   Please use this form to select which schools to use for generating
+   mailing labels.
+</p>
+
+<br />
+<br />
+<form name="selectschool" action="{{ request.path }}" method="post">
+<table class="newform" id="appform">
+ {{form}}
+<tr>
+ <th colspan="2" style="text-align: center;">
+    <input type="submit" name="submitform" value="Get Mailing Labels" />
+ </th>
+</tr>
+</table>
+</form>
+
+{% endblock %}

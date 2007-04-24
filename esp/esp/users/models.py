@@ -781,14 +781,23 @@ class StudentInfo(models.Model):
     studentrep = models.BooleanField(blank=True, null=True, default = False)
     
     def updateForm(self, form_dict):
+        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
+        STUDREP_QSC  = GetNode('Q')
+        
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
+        form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
+                                                            qsc  = STUDREP_QSC,
+                                                            verb = STUDREP_VERB)
         return form_dict        
 
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
+        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
+        STUDREP_QSC  = GetNode('Q')
+        
         if regProfile.student_info is None:
             studentInfo = StudentInfo()
             studentInfo.user = curUser
@@ -799,10 +808,20 @@ class StudentInfo(models.Model):
         studentInfo.school          = new_data['school']
         studentInfo.dob             = new_data['dob']
         studentInfo.save()
+        if new_data['studentrep']:
+            UserBit.objects.get_or_create(user = curUser,
+                                          verb = STUDREP_VERB,
+                                          qsc  = STUDREP_QSC,
+                                          recursive = False)
+        else:
+            UserBit.objects.filter(user = curUser,
+                                   verb = STUDREP_VERB,
+                                   qsc  = STUDREP_QSC).delete()
+            
         return studentInfo
     
     def __str__(self):
-        username = ""
+        username = "N/A"
         if self.user != None:
             username = self.user.username
         return 'ESP Student Info (%s)' % username
@@ -993,6 +1012,8 @@ class ZipCode(models.Model):
                                 self.longitude,
                                 self.latitude)
 
+
+
 class ZipCodeSearches(models.Model):
     zip_code = models.ForeignKey(ZipCode)
     distance = models.FloatField(max_digits = 15, decimal_places = 3)
@@ -1015,7 +1036,8 @@ class ContactInfo(models.Model):
 	address_city = models.CharField(maxlength=50,blank=True, null=True)
 	address_state = models.USStateField(blank=True, null=True)
 	address_zip = models.CharField(maxlength=5,blank=True, null=True)
-
+        address_postal = models.TextField(blank=True,null=True)
+        
         def address(self):
             return '%s, %s, %s %s' % \
                    (self.address_street,
@@ -1045,7 +1067,6 @@ class ContactInfo(models.Model):
             for key, val in newkey.items():
                 if val and key != 'id':
                     form_data[prepend+key] = str(val)
-
             return form_data
         
 	def __str__(self):
@@ -1058,11 +1079,31 @@ class ContactInfo(models.Model):
             if self.last_name is not None:
                 last_name = self.last_name
             return first_name + ' ' + last_name + ' (' + username + ')'
-	
+
 	class Admin:
 		pass
 
 
+class K12School(models.Model):
+    """
+    All the schools that we know about.
+    """
+    contact = models.ForeignKey(ContactInfo, null=True,blank=True)
+    school_type = models.TextField(blank=True,null=True)
+    grades      = models.TextField(blank=True,null=True)
+    school_id   = models.CharField(maxlength=128,blank=True,null=True)
+    contact_title = models.TextField(blank=True,null=True)
+    name          = models.TextField(blank=True,null=True)
+
+    def __str__(self):
+        if self.contact_id:
+            return '"%s" in %s, %s' % (self.name, self.contact.address_city,
+                                       self.contact.address_state)
+        else:
+            return '"%s"' % self.name
+    
+    class Admin:
+        pass
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
@@ -1111,14 +1152,17 @@ class PersistentQueryFilter(models.Model):
         import pickle
         import sha
 
-        foo = PersistentQueryFilter()
+        dumped_filter = pickle.dumps(q_filter)
         
-        foo.item_model   = str(item_model)
-        foo.q_filter     = pickle.dumps(q_filter) # we pickle the q_filter
-        foo.sha1_hash    = sha.new(foo.q_filter).hexdigest()
-
+        foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
+                                                                   q_filter = dumped_filter,
+                                                                   sha1_hash = sha.new(dumped_filter).hexdigest())
+        
         
         foo.useful_name = description
+
+        foo.save()
+        
         return foo
         
         

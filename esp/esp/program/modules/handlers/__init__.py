@@ -59,4 +59,5 @@ from esp.program.modules.handlers.remoteteacherprofile import *
 from esp.program.modules.handlers.emailverifymodule    import *
 
 from esp.program.modules.handlers.studentjunctionapp import *
-from esp.program.modules.handlers.financialaidapp import *
+from esp.program.modules.handlers.financialaidapp    import *
+from esp.program.modules.handlers.mailinglabels      import *
