@@ -123,16 +123,37 @@ class MailingLabels(ProgramModuleObj):
 
 
         addresses = {}
+        ids_zipped = []
 
+        if infos[0].k12school_set.all().count() > 0:
+            use_title = True
+        else:
+            use_title = False
+        
         for info in infos:
             if info == None:
                 continue
-            name = '%s %s' % (info.first_name.strip(), info.last_name.strip())
+
+            schools = info.k12school_set.all()
+
+            if len(schools) > 0:
+                if schools[0].contact_title == 'SCHOOL':
+                    title = None
+                else:
+                    title = schools[0].contact_title
+            else:
+                title = None
+
+            if use_title:
+                name = "'%s %s','%s'" % (info.first_name.strip(), info.last_name.strip(), title)
+            else:
+                name = '%s %s' % (info.first_name.strip(), info.last_name.strip())
             
-            if info.address_postal != False and info.address_postal != None and isinstance(info.address_postal, basestring):
+            if info.address_postal != None:
                 key = info.address_postal
             else:
 
+                ids_zipped.append(info.id)
 
                 #print info.__dict__
 
@@ -178,29 +199,37 @@ class MailingLabels(ProgramModuleObj):
                                                    ma.group(2),
                                                    ma.group(3),
                                                    ma.group(4))
+                    info.address_postal = key
                 except:
                     key = False
+                    info.address_postal = 'FAILED'
 
-            if key:
-                info.address_postal = key
                 info.save()
 
-            if addresses.has_key(key):
-                if name.upper() not in [n.upper() for n in addresses[key]]:
-                    addresses[key].append(name)
-            else:
-                addresses[key] = [name]
+            if key != 'FAILED':
+
+                if addresses.has_key(key):
+                    if name.upper() not in [n.upper() for n in addresses[key]]:
+                        addresses[key].append(name)
+                else:
+                    addresses[key] = [name]
             
 
 
                 #time.sleep(1)
-    
-        output = ["'Num','Name','Street','City','State','Zip'"]
+        if use_title:
+            output = ["'Num','Name','Title','Street','City','State','Zip'"]
+        else:
+            output = ["'Num','Name','Street','City','State','Zip'"]
+        #output.append(','.join(ids_zipped))
         i = 1
         for key, value in addresses.iteritems():
-            
-            output.append("'%s','%s',%s" % (i,' and '.join(value), key))
-            i+= 1
+            if key != False:
+                if use_title:
+                    output.append("'%s',%s,%s" % (i, ' and '.join(value), key))
+                else:
+                    output.append("'%s','%s',%s" % (i,' and '.join(value), key))
+                i+= 1
             
         return output
 

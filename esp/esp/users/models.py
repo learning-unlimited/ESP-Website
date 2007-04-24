@@ -1068,7 +1068,28 @@ class ContactInfo(models.Model):
                 if val and key != 'id':
                     form_data[prepend+key] = str(val)
             return form_data
-        
+
+        def save(self):
+
+            
+
+            if self.id != None:
+                try:
+                    old_self = ContactInfo.objects.get(id = self.id)
+                    if old_self.address_zip != self.address_zip or \
+                       old_self.address_street != self.address_street or \
+                       old_self.address_city != self.address_city or \
+                       old_self.address_state != self.address_state:
+                        self.address_postal = None
+                except:
+                    pass
+            
+            if self.address_postal != None:
+                self.address_postal = str(self.address_postal)
+
+            
+            models.Model.save(self)
+                
 	def __str__(self):
             username = ""
             last_name, first_name = '', ''
