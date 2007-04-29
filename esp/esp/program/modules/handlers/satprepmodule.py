@@ -43,12 +43,15 @@ class SATPrepModule(ProgramModuleObj):
 
     def get_msg_vars(self, user, key):
         user = ESPUser(user)
-        if key == 'diag_sat_scores' or key == 'old_sat_scores':
+        if key == 'diag_sat_scores' or key == 'old_sat_scores' or key == 'prac_sat_scores':
             test_type = key.split('_')[0]
             
             if user.isStudent():
                 foo = SATPrepRegInfo.getLastForProgram(user, self.program)
-                scores = 'Your diagnostic SAT scores:\n'
+                
+                scores = 'Your %s SAT scores:\n' % {'prac': 'practice',
+                                                    'diag': 'diagnostic',
+                                                    'old':  'original'}[test_type]
                 for test in ['Math','Verbal','Writing']:
                     curscore = foo.__dict__['%s_%s_score' % (test_type, test[0:4].lower())]
                     if curscore is None or curscore < 200 or curscore > 800:
@@ -63,11 +66,15 @@ class SATPrepModule(ProgramModuleObj):
         if QObject:
             return {'satprepinfo': self.getQForUser(Q(satprepreginfo__program = self.program)),
                     'satprep_mathdiag': self.getQForUser(Q(satprepreginfo__diag_math_score__isnull = False)),
+                    'satprep_mathprac': self.getQForUser(Q(satprepreginfo__prac_math_score__isnull = False)),
                     'satprep_mathold' : self.getQForUser(Q(satprepreginfo__old_math_score__isnull = False)),
                     'satprep_writdiag': self.getQForUser(Q(satprepreginfo__diag_writ_score__isnull = False)),
                     'satprep_writold': self.getQForUser(Q(satprepreginfo__old_writ_score__isnull = False)),
                     'satprep_verbdiag': self.getQForUser(Q(satprepreginfo__diag_verb_score__isnull = False)),
-                    'satprep_verbold': self.getQForUser(Q(satprepreginfo__old_verb_score__isnull = False))}
+                    'satprep_verbold': self.getQForUser(Q(satprepreginfo__old_verb_score__isnull = False)),
+                    'satprep_writprac': self.getQForUser(Q(satprepreginfo__prac_writ_score__isnull = False)),
+                    'satprep_verbprac': self.getQForUser(Q(satprepreginfo__prac_verb_score__isnull = False)),
+                    }
         
         studentswritold = ESPUser.objects.filter(Q(satprepreginfo__old_writ_score__isnull = False)).distinct()
         studentsmathold = ESPUser.objects.filter(Q(satprepreginfo__old_math_score__isnull = False)).distinct()
@@ -77,6 +84,10 @@ class SATPrepModule(ProgramModuleObj):
         studentsmathdiag = ESPUser.objects.filter(Q(satprepreginfo__diag_math_score__isnull = False)).distinct()
         studentsverbdiag = ESPUser.objects.filter(Q(satprepreginfo__diag_verb_score__isnull = False)).distinct()
 
+        studentswritprac = ESPUser.objects.filter(Q(satprepreginfo__prac_writ_score__isnull = False)).distinct()
+        studentsmathprac = ESPUser.objects.filter(Q(satprepreginfo__prac_math_score__isnull = False)).distinct()
+        studentsverbprac = ESPUser.objects.filter(Q(satprepreginfo__prac_verb_score__isnull = False)).distinct()
+
         students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
 
         return {'satprepinfo': students,
@@ -85,7 +96,11 @@ class SATPrepModule(ProgramModuleObj):
                 'satprep_writold': studentswritold,
                 'satprep_mathdiag': studentsmathdiag,
                 'satprep_verbdiag': studentsverbdiag,
-                'satprep_writdiag': studentswritdiag}
+                'satprep_writdiag': studentswritdiag,
+                'satprep_mathprac': studentsmathprac,
+                'satprep_verbprac': studentsverbprac,
+                'satprep_writprac': studentswritprac,
+                }
     
 
     def studentDesc(self):
@@ -95,7 +110,11 @@ class SATPrepModule(ProgramModuleObj):
                 'satprep_verbdiag': """Students who have an SAT verbal diagnostic score.""",
                 'satprep_mathold': """Students who have an old SAT math score.""",
                 'satprep_writold': """Students who have an old SAT writing score.""",
-                'satprep_verbold': """Students who have an old SAT verbal score."""}
+                'satprep_verbold': """Students who have an old SAT verbal score.""",
+                'satprep_mathprac': """Students who have a practice SAT math score.""",
+                'satprep_verbprac': """Students who have a practice SAT verbal score.""",
+                'satprep_writprac': """Students who have a practice SAT writing score.""",
+                }
     
     def isCompleted(self):
         

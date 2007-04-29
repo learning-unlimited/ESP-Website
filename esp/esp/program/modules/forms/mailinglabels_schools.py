@@ -50,7 +50,7 @@ class SchoolSelectForm(forms.Form):
                              help_text = 'List of grades separated by commas. E.g. &quot;4,8,10&quot;',
                              label = "Grades")
 
-    grades_exclude = forms.CharField(max_length=100,
+    grades_exclude = forms.CharField(max_length=100, required=False,
                              help_text = 'List of grades separated by commas. E.g. &quot;4,8,10&quot;',
                              label = "Grades to exclude")
 
