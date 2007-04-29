@@ -267,9 +267,9 @@ class QAnd(QOperator, DjangoQAnd):
         return QOr(self, other)
 
     def __and__(self, other):
-        if isinstance(other, QAnd):
+        if isinstance(other, DjangoQAnd):
             return QAnd(*(self.args+other.args))
-        elif isinstance(other, (Q, QOr)):
+        elif isinstance(other, (DjangoQ, DjangoQOr)):
             return QAnd(*(self.args+(other,)))
         else:
             raise TypeError, other
@@ -281,9 +281,9 @@ class QOr(QOperator, DjangoQOr):
         return QAnd(self, other)
 
     def __or__(self, other):
-        if isinstance(other, QOr):
+        if isinstance(other, DjangoQOr):
             return QOr(*(self.args+other.args))
-        elif isinstance(other, (Q, QAnd)):
+        elif isinstance(other, (DjangoQ, DjangoQAnd)):
             return QOr(*(self.args+(other,)))
         else:
             raise TypeError, other
