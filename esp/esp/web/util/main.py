@@ -64,7 +64,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
 
     # if there are only two arguments
     if context is None and prog is None:
-        return django.shortcuts.render_to_response(template, requestOrContext)
+        return django.shortcuts.render_to_response(template, requestOrContext, {'navbar_list': default_navbar_data})
     
     if context is not None:
         request = requestOrContext
@@ -77,18 +77,18 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
             prog = prog[0]
 
         if not context.has_key('program'):  
-
             if type(prog) == Program:
                 context['program'] = prog
             # create nav bar list
         if not context.has_key('navbar_list'):
             if prog is None:
-                context['navbar_list'] = navbar_data
+                context['navbar_list'] = default_navbar_data
             elif type(prog) == Program:
                 context['navbar_list'] = makeNavBar(request.user, prog.anchor, section)
             else:
                 context['navbar_list'] = makeNavBar(request.user, prog, section)
-        if context.has_key('qsd') and context['qsd'] == True:
+
+        if 'qsd.html' in template.lower():
             context['randquote'] = ESPQuotations.getQuotation()
         else:
             context['randquote'] = False
@@ -107,6 +107,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         return render_response(request, template, context)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
+
 
 navbar_data = [
 	{ 'link': '/teach/what-to-teach.html',
@@ -159,7 +160,11 @@ navbar_data = [
 	  'indent': False }
 ]
 
+class DefaultNavBarData(object):
+    value = navbar_data
 
+
+default_navbar_data = DefaultNavBarData()
 
 preload_images = [
 	settings.MEDIA_URL+'images/level3/nav/home_ro.gif',

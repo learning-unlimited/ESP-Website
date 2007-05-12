@@ -44,28 +44,45 @@ EDIT_VERB_STRING = 'V/Administer/Edit/QSD'
 
 def makeNavBar(user, node, section = ''):
 	""" Query the navbar-entry table for all navbar entries associated with this tree node """
-	edit_verb = GetNode(EDIT_VERB_STRING)
 
-	rangestart = node.rangestart
-	rangeend   = node.rangeend
-	qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=rangestart,
-					     path__rangeend__gte=rangeend,
-					     section=section).order_by('sort_rank')
+	class LazyNavBar(object):
+		def __init__(self, user, node, section):
+			self.user = user
+			self.node = node
+			self.section = section
 
-	if user is None or type(user) == AnonymousUser or user.id is None:
 		
-		context = { 'node': node,
-			    'has_edit_bits': False,
-			    'qsdTree': [ {'entry': x, 'has_bits': False} for x in qsdTree ],
-			    'section': section }
+		
+		def _value(self):
+			user = self.user
+			node = self.node
+			section = self.section
+			
+			edit_verb = GetNode(EDIT_VERB_STRING)
 
-	else:
-		context = { 'node': node,
-			    'has_edit_bits': UserBit.UserHasPerms(user, node, edit_verb),
-			    'qsdTree': [ {'entry': x, 'has_bits': UserBit.UserHasPerms(user, x.path, edit_verb) } for x in qsdTree ],
-			    'section': section }
-	return context
+			rangestart = node.rangestart
+			rangeend   = node.rangeend
+			qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=rangestart,
+							     path__rangeend__gte=rangeend,
+							     section=section).order_by('sort_rank')
 
+			if user is None or type(user) == AnonymousUser or user.id is None:
+		
+				context = { 'node': node,
+					    'has_edit_bits': False,
+					    'qsdTree': [ {'entry': x, 'has_bits': False} for x in qsdTree ],
+					    'section': section }
+
+			else:
+				context = { 'node': node,
+					    'has_edit_bits': UserBit.UserHasPerms(user, node, edit_verb),
+					    'qsdTree': [ {'entry': x, 'has_bits': UserBit.UserHasPerms(user, x.path, edit_verb) } for x in qsdTree ],
+					    'section': section }
+			return context
+
+		value = property(_value)
+
+	return LazyNavBar(user, node, section)
 
 @login_required
 def updateNavBar(request, section = ''): 
