@@ -1,0 +1,47 @@
+<!-- secondary nav -->
+<ul id="secondarynav">
+
+{% for nav_entry in navbar_list.qsdTree %}
+  <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}{% if nav_entry.has_bits %} movable{% endif %} " id="nav_entry__{{nav_entry.entry.id}}"> 
+      <a href="{{ nav_entry.entry.makeUrl }}"
+        title="Click for `{{ nav_entry.entry.makeTitle }}'">
+       <span class="bullet">- </span>
+        {{ nav_entry.entry.makeTitle }}
+      </a>
+{% if nav_entry.has_bits %}
+<tt>
+<span id="nav_entry__control__{{nav_entry.entry.id}}">
+<a href="/navbar/edit.scm?new_url={{ request.path }}&amp;navbar_id={{ nav_entry.entry.id }}&amp;node_id={{ navbar_list.entry.node.id }}&amp;action=up">[+]</a>
+<a href="/navbar/edit.scm?new_url={{ request.path }}&amp;navbar_id={{ nav_entry.entry.id }}&amp;node_id={{ navbar_list.entry.node.id }}&amp;action=down">[-]</a>
+</span>
+
+<a href="/navbar/edit.scm?new_url={{ request.path }}&amp;navbar_id={{ nav_entry.entry.id }}&amp;node_id={{ navbar_list.entry.node.id }}&amp;action=delete" onclick="delete_navbar({{nav_entry.entry.id}}); return false;">[X]</a>
+</tt>
+{% endif %}
+ </li>
+{% endfor %}
+
+{% if navbar_list.has_edit_bits %}
+
+<li class="divsecondarynavlink">
+
+<form name="shiftform" method="post" action="/navbar/edit.scm">
+Create a new entry:
+<input type="hidden" name="new_url" value="{{ request.path }}" />
+<input type="hidden" name="section" value="{{ navbar_list.section }}" />
+<input type="hidden" name="node_id" value="{{ navbar_list.node.id }}" />
+<input type="hidden" name="navbar_id" value="" />
+<input type="hidden" name="action" value="new" />
+<input name="text" value="Page Name" size="20" />
+<input name="url" value="PageURL.html" size="20" />
+<select name="indent">
+<option value="False">Standard</option>
+<option value="True">Indented</option>
+</select>
+<input name="submit" value="Create!" type="Submit" />
+</form>
+</li>
+
+{% endif %}
+<li class="divsecondarynavlink">&nbsp;</li>
+</ul>
