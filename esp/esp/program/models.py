@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -602,6 +601,7 @@ class Class(models.Model):
 		
 		if type(retVal) != dict:
 			retVal = {}
+		#retVal = {}
 			
 		from esp.users.models import ESPUser
 		v = GetNode( 'V/Flags/Registration/Teacher' )

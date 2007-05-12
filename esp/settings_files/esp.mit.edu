@@ -92,6 +92,7 @@ CACHE_MIDDLEWARE_SECONDS = 700
 CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 
 MIDDLEWARE_CLASSES = (
+    'esp.middleware.psycomiddleware.PsycoMiddlware',
     'django.middleware.http.SetRemoteAddrFromForwardedFor',
     'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
@@ -99,6 +100,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'esp.middleware.CacheMiddleware',
     'esp.middleware.ESPErrorMiddleware',
+    'esp.middleware.StatsMiddleware',
     'django.middleware.common.CommonMiddleware',
     #'django.contrib.csrf.middleware.CsrfMiddleware',
     'django.middleware.doc.XViewMiddleware',
@@ -149,3 +151,10 @@ CACHE_BACKEND="memcached://127.0.0.1:11211/"
 
 LOG_FILE="/var/log/django/esp_errlog"
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
+
+TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
+                               'esp.context_processors.esp_user',
+                               'django.core.context_processors.i18n',
+                               'django.core.context_processors.request',
+                               'django.core.context_processors.auth',
+                               )  

@@ -58,7 +58,8 @@ class ESPErrorMiddleware(object):
        False in the settings.py. Otherwise, it doesn't do any of that.
     """
     
-    def process_view(self, request, view_func, view_args, view_kwargs):       
+
+    def process_exception(self, request, exception):
         from django.shortcuts import render_to_response
         from django.conf import settings
         from django.core.mail import mail_admins
@@ -66,77 +67,71 @@ class ESPErrorMiddleware(object):
         import sys
 
         debug = settings.DEBUG  # get the debug value
-
-        if debug:
-            return StatsMiddleware.process_view(request, view_func, view_args, view_kwargs)
+        
+        if False:
+            return None
         else:
-            try:
-                return StatsMiddleware.process_view(request, view_func, view_args, view_kwargs)
-            except:
-                # most of this is from django.core.handlers.base
-                exc_info = sys.exc_info()
-
-                if exc_info[0] == ESPError_Log: # are we going to log this?
-                    # Subject of the email
-                    subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in \
-                                                    settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), \
-                                                    getattr(request, 'path', ''))
+            exc_info = sys.exc_info()
+            
+            if isinstance(exception, ESPError_Log) or exception == ESPError_Log: # are we going to log this?
+                # Subject of the email
+                subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in \
+                                                  settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), \
+                                                 getattr(request, 'path', ''))
                 
-                    try:
-                        request_repr = repr(request)
-                    except:
-                        request_repr = "Request repr() unavailable"
-
-
-                    # get a friendly traceback
-                    traceback = self._get_traceback(exc_info)
-
-                    # Message itself
-                    message = "%s\n\n%s" % (traceback, request_repr)
-
-                    # Now we send the email
-                    mail_admins(subject, message, fail_silently=True)
-
-                    # Now we store the error into the database:
-                    try:
-                        # We're going to 'try' everything in case the db is fvck'd
-                        from esp.dblog.models import Log
-
-                        new_log = Log(text        = str(exc_info[1]),
-                                      extra       = str(request_repr),
-                                      stack_trace = str(traceback))
-                        new_log.save()
-
-                    except:
-                        # we just won't do anything if we can't log it...
-                        exc_info2 = sys.exc_info()
+                try:
+                    request_repr = repr(request)
+                except:
+                    request_repr = "Request repr() unavailable"
                         
-                        raise exc_info2[0], exc_info2[1], exc_info2[2]
-                        pass
 
-                    context = {'error': exc_info[1]}
-                    try:
-                        context['request'] = request
-                    except:
-                        pass
-                
-                    return render_to_response('error.html', context)  # Will use a pretty ESP error page...
+                # get a friendly traceback
+                traceback = self._get_traceback(exc_info)
 
-                elif exc_info[0] == ESPError_NoLog: # No logging, just output
+                # Message itself
+                message = "%s\n\n%s" % (traceback, request_repr)
+
+                # Now we send the email
+                mail_admins(subject, message, fail_silently=True)
+
+                # Now we store the error into the database:
+                try:
+                    # We're going to 'try' everything in case the db is fvck'd
+                    from esp.dblog.models import Log
                     
-                    context = {'error': exc_info[1]}
-                    try:
-                        context['request'] = request
-                    except:
-                        pass
-                
-                    return render_to_response('error.html', context)  # Will use a pretty ESP error page...
+                    new_log = Log(text        = str(exc_info[1]),
+                                  extra       = str(request_repr),
+                                  stack_trace = str(traceback))
+                    new_log.save()
 
-                else:
-                    
-                    raise exc_info[0], exc_info[1], exc_info[2]
+                except:
+                    # we just won't do anything if we can't log it...
+                    pass
+
+                context = {'error': exc_info[1]}
+                try:
+                    context['request'] = request
+                except:
+                    pass
                 
-            return StatsMiddleware.process_view(request, view_func, view_args, view_kwargs)
+                # Will use a pretty ESP error page...
+                return render_to_response('error.html', context)
+
+            elif isinstance(exception, ESPError_NoLog) or exception == ESPError_NoLog: # No logging, just output
+                    
+                context = {'error': exc_info[1]}
+                try:
+                    context['request'] = request
+                except:
+                    pass
+                
+                return render_to_response('error.html', context)  # Will use a pretty ESP error page...
+
+            else:
+                assert False, str(type(exception))
+                return None
+                
+            return None
 
             
     def _get_traceback(self, exc_info=None):

@@ -45,7 +45,7 @@ import datetime
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
-from esp.web.util.main import navbar_data, preload_images, render_to_response
+from esp.web.util.main import render_to_response
 from esp.web.views.myesp import myesp_handlers
 from esp.web.views.program import program_handlers
 from esp.web.views.archives import archive_handlers

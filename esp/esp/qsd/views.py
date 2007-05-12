@@ -34,7 +34,7 @@ from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
 from esp.datatree.models import GetNode, DataTree
 from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry
-from esp.web.util.main import navbar_data, preload_images, render_to_response
+from esp.web.util.main import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
 from esp.lib.markdownaddons import ESPMarkdown

@@ -45,7 +45,7 @@ from django import forms
 
 from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
-from esp.web.util.main import navbar_data, preload_images, render_to_response
+from esp.web.util.main import render_to_response
 from django.contrib.auth.decorators import login_required
 
 def program_catalog(request, tl, one, two, module, extra, prog, timeslot=None):

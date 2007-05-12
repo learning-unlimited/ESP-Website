@@ -36,7 +36,7 @@ DISPLAYSQL = False
 # Change this to whatever directory the trunk is in.
 ESP_ROOT = "/var/www/esp-devel/trunk/esp"
 ADMINS = (
-    ('Webmasters', 'esp-webmasters@mit.edu'),
+    ('Webmasters', 'axiak@mit.edu'),
 )
 
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
@@ -83,14 +83,14 @@ CACHE_MIDDLEWARE_SECONDS = 595
 CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 
 MIDDLEWARE_CLASSES = (
+    #'esp.middleware.PsycoMiddlware',
     'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.middleware.cache.CacheMiddleware',
     'esp.middleware.ESPErrorMiddleware',
+    'esp.middleware.StatsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'django.contrib.csrf.middleware.CsrfMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'esp.middleware.StripWhitespaceMiddleware',
@@ -138,3 +138,10 @@ CACHE_BACKEND="memcached://127.0.0.1:11211"
 
 LOG_FILE="/var/log/django/esp_errlog"
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
+
+TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
+                               'esp.context_processors.esp_user',
+                               'django.core.context_processors.i18n',
+                               'django.core.context_processors.request',
+                               'django.core.context_processors.auth',
+                               )  

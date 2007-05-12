@@ -84,11 +84,7 @@ function move_seq(new_seq) {
 {% block stylesheets %}
 
 <link rel="stylesheet" href="/media/styles/level3.css" type="text/css" media="screen"/>
-{% if page_setup.stylesheet %}
-<link rel="stylesheet" href="/media/styles/{{page_setup.stylesheet }}.css" type="text/css" media="screen" />
-{% else %}
-<link rel="stylesheet" href="/media/styles/myesp2.css" type="text/css" media="screen" />
-{% endif %}
+
 {% endblock %}
 
 {% block body %}
@@ -134,90 +130,9 @@ function move_seq(new_seq) {
   </a>
 </div>
 
-{% if page_setup.navlinks %}
-{% for navlink in page_setup.navlinks %}
-<div id="divnav{{forloop.counter0}}">
-{% if not navlink.highlight %} 
-  <a href="{{navlink.href}}" 
-    onmouseover="MM_swapImage('{{navlink.id}}','','/media/images/{% if page_setup.buttonlocation %}{{page_setup.buttonlocation}}{% else %}{{navlink.buttonloc }}{% endif %}/nav/{{navlink.id}}_ro.gif',1)"
-                                                                                onmouseout="MM_swapImgRestore()">
-    <img src="/media/images/{% if page_setup.buttonlocation %}{{page_setup.buttonlocation}}{% else %}{{navlink.buttonloc }}{% endif %}/nav/{{navlink.id}}.gif" border="0" 
-            alt="{{navlink.alt}}" title="" name="{{navlink.id}}" id="{{navlink.id}}" />
-  </a>
-{% else %}
-  <a href="{{navlink.href}}">
-    <img src="/media/images/{% if page_setup.buttonlocation %}{{page_setup.buttonlocation}}{% else %}{{navlink.buttonloc }}{% endif %}/nav/{{navlink.id}}_hi.gif" border="0"
-              alt="{{navlink.alt}}" title="" name="{{navlink.id}}" id="{{navlink.id}}" />
-  </a>
-{% endif %}
-</div>
-{% endfor %}
-{% if request.user.onsite_local %}
-<div id="divnav7">
-<a href="/myesp/switchback/" onmouseover="MM_swapImage('onsite','','/media/images/lev2/nav/onsite_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/media/images/lev2/nav/onsite.gif" border="0" alt="Go Back to Onsite" title="" name="onsite" id="onsite" />
-</a>
-</div>
-{% endif %}
-{% else %}
-<div id="divnav0">
-<a href="/about/index.html" onmouseover="MM_swapImage('discoveresp','','/media/images/lev2/nav/discoveresp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/media/images/lev2/nav/discoveresp.gif" border="0" alt="Take a Class" title="" name="discoveresp" id="discoveresp" />
-</a>
-</div>
+{% load topbar %}
+{% get_primary_nav user request.path %}
 
-<div id="divnav1">
-<a href="/learn/index.html" onmouseover="MM_swapImage('takeaclass','','/media/images/lev2/nav/takeaclass_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/media/images/lev2/nav/takeaclass.gif" border="0" alt="Take a Class" title="" name="takeaclass" id="takeaclass" />
-</a>
-</div>
-
-<div id="divnav2">
-<a href="/teach/index.html" onmouseover="MM_swapImage('volunteertoteach','','/media/images/lev2/nav/volunteertoteach_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/media/images/lev2/nav/volunteertoteach.gif" border="0" alt="Volunteer To Teach" title="" name="volunteertoteach" id="volunteertoteach" />
-</a>
-</div>
-
-
-<div id="divnav3">
-<a href="/getinvolved/index.html" onmouseover="MM_swapImage('getinvolved','','/media/images/lev2/nav/getinvolved_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/media/images/lev2/nav/getinvolved.gif" border="0" alt="Get Involved" title="" name="getinvolved" id="getinvolved" />
-</a>
-</div>
-
-<div id="divnav4">
-<a href="/archives/index.html" onmouseover="MM_swapImage('archivesresources','','/media/images/lev2/nav/archivesresources_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/media/images/lev2/nav/archivesresources.gif" border="0" alt="Archives / Resources" title="" name="archivesresources" id="archivesresources" />
-</a>
-</div>
-
-
-<div id="divnav5">
-<a href="/myesp/home/" onmouseover="MM_swapImage('myesp','','/media/images/lev2/nav/myesp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/media/images/lev2/nav/myesp.gif" border="0" alt="myESP" title="" name="myesp" id="myesp" />
-</a>
-</div>
-
-
-
-<div id="divnav6">
-
-
-<a href="/about/contact.html" onmouseover="MM_swapImage('contactinfo','','/media/images/lev2/nav/contactinfo_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-<img src="/media/images/lev2/nav/contactinfo.gif" border="0" alt="Contact Info" title="" name="contactinfo" id="contactinfo" />
-</a>
-
-</div>
-
-{% if request.user.isAdministrator %}
-<div id="divnav7">
-   <a href="/myesp/admin" onmouseover="MM_swapImage('admin','','/media/images/lev2/nav/admin_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-   <img src="/media/images/lev2/nav/admin.gif" border="0" alt="Admin" title="" name="admin" id="admin" />
-   </a>
-</div>
-{% endif %}
-{% endif %}
-</div>
 {% endblock %}
 
 <!-- section name -->
