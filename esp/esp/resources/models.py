@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 """ Models for Resources application """
 from django.db import models
-
+import pickle
 
 class ResourceType(models.Model):
     """ A type of resource
@@ -38,6 +38,34 @@ class ResourceType(models.Model):
 
     description = models.TextField() # What is this resource?
     consumable  = models.BooleanField(default = False) # is this consummable?
+    attributes_pickled  = models.TextField()
+
+    def _get_attributes(self):
+        if hasattr(self, '_attributes_cached'):
+            return self._attributes_cached
+        
+        if self.attributes_pickled:
+            try:
+                self._attributes_cached = pickle.loads(self.attributes_pickled)
+            except:
+                self._attributes_cached = None
+        else:
+            self._attributes_cached = None
+
+        return self._attributes_cached
+
+    def _set_attributes(self, val):
+        self._attributes_cached = val
+
+    attributes = property(_get_attributes, _set_attributes)
+
+    def save(self, *args, **kwargs):
+        if hasattr(self, '_attributes_cached'):
+            self.attributes_pickled = pickle.dumps(self._attributes_cached)
+        super(ResourceType, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return 'Resource Type "%s"' % self.description
     
 
 class ResourceRequest(models.Model):

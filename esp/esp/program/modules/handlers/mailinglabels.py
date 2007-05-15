@@ -34,11 +34,13 @@ from esp.users.models import ESPUser
 from esp.users.models import PersistentQueryFilter, K12School, ContactInfo, ESPUser, User, ESPError, ZipCode
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade
 from esp.program.modules import module_ext
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from django.db.models.query import QNot
 from esp.program.modules.forms.mailinglabels_schools import SchoolSelectForm
+from esp.program.modules.forms.mailinglabels_banzips import BanZipsForm
 import operator
+
 
 
 class MailingLabels(ProgramModuleObj):
@@ -46,8 +48,29 @@ class MailingLabels(ProgramModuleObj):
     """
 
     @needs_admin
+    def badzips(self, request, tl, one, two, module, extra, prog):
+        """ This function will allow someone to enter zip codes to mark as undeliverable. """
+        if request.method=="POST":
+            form = BanZipsForm(request.POST)
+            if form.is_valid():
+                zips = form.clean_data['zips'].strip().splitlines()
+                for zipc in zips:
+                    if len(zipc.strip()) < 10:
+                        continue
+                    for c in ContactInfo.objects.filter(address_postal__contains = "'%s'" % zipc.strip()):
+                        c.undeliverable = True
+                        c.save()
+                return HttpResponseRedirect("/%s/%s/%s/mailinglabel/" % (tl, one, two))
+
+        else:
+            form = BanZipsForm()
+
+        return render_to_response(self.baseDir()+"mailinglabel_badzips.html", request, (prog, tl), {'form': form})
+                
+
+    @needs_admin
     def mailinglabel(self, request, tl, one, two, module, extra, prog):
-        """ This function will allow someone to morph into a user for testing purposes. """
+        """ This function will allow someone to generate mailing labels. """
         from esp.users.views     import get_user_list
 
         combine = True
@@ -119,7 +142,9 @@ class MailingLabels(ProgramModuleObj):
             if not found:
                 return filterObj
 
-            infos = [ESPUser(user).getLastProfile().contact_user for user in ESPUser.objects.filter(filterObj.get_Q()).distinct() ]
+            infos = [ESPUser(user).getLastProfile().contact_user for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+
+            infos_filtered = [ info for info in infos if info.undeliverable != True ]
 
         output = MailingLabels.gen_addresses(infos, combine)
 

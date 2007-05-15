@@ -1037,6 +1037,7 @@ class ContactInfo(models.Model):
 	address_state = models.USStateField(blank=True, null=True)
 	address_zip = models.CharField(maxlength=5,blank=True, null=True)
         address_postal = models.TextField(blank=True,null=True)
+        undeliverable = models.BooleanField(default=False)
         
         def address(self):
             return '%s, %s, %s %s' % \
@@ -1081,6 +1082,7 @@ class ContactInfo(models.Model):
                        old_self.address_city != self.address_city or \
                        old_self.address_state != self.address_state:
                         self.address_postal = None
+                        self.undeliverable = False
                 except:
                     pass
             
