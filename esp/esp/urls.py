@@ -1,4 +1,4 @@
-
+7
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -49,6 +49,7 @@ urlpatterns_list =  [(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'do
                      (r'^admin/media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/admin/media/'}),
                      # Uncomment this for admin:
                      (r'^admin/', include('django.contrib.admin.urls')),
+                     (r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
                      # Uncomment this for @login_required:
                      (r'^accounts/login/$', 'django.contrib.auth.views.login'),
 

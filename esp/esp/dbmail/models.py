@@ -196,8 +196,8 @@ class TextOfEmail(models.Model):
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
 
         # this might be the source of trouble
-        if self.sent != None:
-            return False
+        #if self.sent != None:
+        #    return False
         
         now = datetime.now()
         

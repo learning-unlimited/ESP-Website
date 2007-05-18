@@ -8,6 +8,7 @@ NameVirtualHost *:81
 	<Location "/">
 	    SetHandler python-program
 	    PythonHandler django.core.handlers.modpython
+#	    PythonHandler django.core.handlers.profiler-hotshot
 	    PythonPath "['/esp/esp/'] + sys.path"
 	    SetEnv DJANGO_SETTINGS_MODULE esp.settings
 	    #PythonDebug On
@@ -22,4 +23,5 @@ NameVirtualHost *:81
         Include /etc/request-tracker3.6/apache2-esp.conf
         Include /esp/esp/webserver_settings/trac-apache.conf
         Include /esp/esp/webserver_settings/esp-svn.conf.inc	
+        Include /esp/esp/webserver_settings/awstats.conf
 </VirtualHost>

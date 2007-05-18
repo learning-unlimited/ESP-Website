@@ -35,7 +35,7 @@ from esp.settings import MEDIA_ROOT
 # Create your models here.
 
 # The folder that Media files are saved to
-root_file_path = "%y_%m/"
+root_file_path = "uploaded_/%y_%m"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
