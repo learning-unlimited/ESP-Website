@@ -51,7 +51,7 @@ The teachers of your classes have provided the following materials, which you ca
 			<tr>
 				<td class="class_stuff"><a href="/media/{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
 				<td class="clsmiddle">
-					<form method="post" action="./{{ cls.id }}">
+					<form method="post" action="/manage/{{ program.url }}/get_materials/{{ cls.id }}">
 						<input type="hidden" name="docid" value="{{ doc.id }}">
 						<input type="hidden" name="command" value="delete">
 						<input class="button" type="submit" value="Delete">
