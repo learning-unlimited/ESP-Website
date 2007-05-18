@@ -105,7 +105,7 @@ class Picture(models.Model):
     This object should be a subclass of Media, except that subclassing is broken in Django.
     Contains basic metadata for a static picture.
     """
-    media = models.OneToOneField(Media) # the Media "superclass" instance; should be one-to-one
+    media = models.ForeignKey(Media, unique=True) # the Media "superclass" instance; should be one-to-one
 
     is_arbitrarily_resizable_format = models.BooleanField() # is the image a bitmap-based or vector-based format?
 
@@ -138,7 +138,7 @@ class Paper(models.Model):
     is_mutable_text = models.BooleanField() # Is the text alterable?, or is it in a locked format like a PDF or a locked MS Office document
     type = models.ForeignKey(PaperType) # Type of the paper, from a list of officially-acknowledged "types"
 
-    media = models.OneToOneField(Media)
+    media = models.ForeignKey(Media, unique=True)
 
     def __str__(self):
         return str(self.media)
