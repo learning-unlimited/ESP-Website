@@ -892,9 +892,15 @@ class Class(models.Model):
 			
 
 	def update_cache_students(self):
+		from esp.program.templatetags.class_render import cache_key_func
+		cache.delete(cache_key_func(self))
 		cache.delete('ClassStudents__'+str(self.id))
 
+
 	def update_cache(self):
+		from esp.program.templatetags.class_render import cache_key_func
+		cache.delete(cache_key_func(self))
+		
 		foo = self.teachers(use_cache = False)
 		cache.delete('Class__'+str(self.id))
 
