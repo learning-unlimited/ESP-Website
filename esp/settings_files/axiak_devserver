@@ -129,3 +129,11 @@ CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
 LOG_FILE="/var/log/django/esp_errlog"
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
+
+TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
+                               'esp.context_processors.esp_user',
+                               'esp.context_processors.test_cookie',
+                               'django.core.context_processors.i18n',
+                               'django.core.context_processors.request',
+                               'django.core.context_processors.auth',
+                               )  

@@ -4,6 +4,18 @@
 
 {% block subsection_name %}Welcome Back{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<style type="text/css">
+.possible_errors {
+  font-size: .8em;
+  color: #666;
+  font-family: garamond;
+}
+
+</style>
+{% endblock %}
+
 {% block content %}
 <h2 style='text-align: center'>Welcome back to ESP!</h2>
 
@@ -14,15 +26,23 @@
 </p>
 <hr/>
 {% if form.has_errors %}
-<h2 class="error">Sorry!  Check your username and password and try again.</h2>
+<h2 class="error">Sorry!  There were errors with the login.</h2>
 {% endif %}
 <form action='.' method="post">
 <table width='65%' cellpadding='2' align='center' border='0'>
 
 <tr>
+ <td class="possible_errors" colspan="2" style="padding-top: 15px;">{{ form.username.errors|join:"<br />" }}</td>
+</tr>
+
+<tr>
  <td style="vertical-align: top"><b><label for="id_username">Username:</label></b></td>
  <td>{{ form.username }}<br/>
  </td>
+</tr>
+
+<tr>
+ <td class="possible_errors" colspan="2" style="padding-top: 15px;">{{ form.password.errors|join:"<br />" }}</td>
 </tr>
 
 <tr>

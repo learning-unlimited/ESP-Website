@@ -98,3 +98,11 @@ APPEND_SLASH=False
 CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=60"
 
 LOG_FILE="/esp/logs/django_errlog"
+
+TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
+                               'esp.context_processors.esp_user',
+                               'esp.context_processors.test_cookie',
+                               'django.core.context_processors.i18n',
+                               'django.core.context_processors.request',
+                               'django.core.context_processors.auth',
+                               )  

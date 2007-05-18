@@ -190,7 +190,7 @@ function move_seq(new_seq) {
    <input style="border: 2px solid black;" type="text" id="id__top_username" class="vTextField required inputbox" name="username" size="15" value="" maxlength="30" /></div></td>
   <td class="rightalign"><div class="divformcol3">&nbsp;&nbsp;<label for="id__top_password">Password:</label></div></td>
   <td><div class="divformcol4"><input style="border: 2px solid black;" type="password" id="id__top_password" class="vPasswordField required inputbox" name="password" size="15" value="" maxlength="30" /></div></td>
-  <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="/media/images/go2.gif" class="gobutton" alt="Go" title="" /><input type="hidden" name="next" value="/myesp/logfin/" /></div></td>
+  <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="/media/images/go2.gif" class="gobutton" alt="Go" title="" /><input type="hidden" name="next" value="{{ request.path }}" /></div></td>
 </tr>
 {% endif %}
 <tr>

@@ -60,14 +60,13 @@ urlpatterns_list =  [(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'do
                      (r'^blog/(?P<url>.*)/post/$', 'esp.miniblog.views.post_miniblog'),
                      (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog_entry'),
                      (r'^blog/$', 'esp.miniblog.views.show_miniblog', {'url': '', 'section_redirect_keys': section_redirect_keys}),
-
+                     (r'^myesp/login/?', 'django.contrib.auth.views.login',),
+                     (r'^myesp/signout/?', 'django.contrib.auth.views.logout',),
 
                     ]
 
 # All of these *must* reside in esp.web.views
 esppatterns_list = [
-    # Example:
-    # (r'^esp/', include('esp.apps.foo.urls.foo')),
 
     # Possibly overspecific, possibly too general.
     (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',

@@ -156,56 +156,6 @@ def myesp_emailfin(request, module):
 	return HttpResponseRedirect('/')
         #render_to_response('index.html', request, GetNode('Q/Web/myesp'), {})
 
-def myesp_signout(request, module):
-	""" Deauthenticate a user """
-	logout(request)
-	if request.GET.has_key('redirect'):
-		return HttpResponseRedirect(request.GET['redirect']+'?role='+request.GET['role'])
-	
-	return render_to_response('users/logout', request, GetNode('Q/Web/myesp'), {})
-
-def myesp_login(request, module):
-	""" Force a login
-	Note that the decorator does this, we're just a redirect function """
-
-	if request.POST.has_key('formURL'):
-		formURL = request.POST['formURL']
-	else:
-		if request.META.has_key('HTTP_REFERER'):
-			formURL = request.META['HTTP_REFERER']
-		else:
-			formURL = '/?next=/'
-
-		urlTest = formURL.split('?next=')
-
-		if len(urlTest) > 1:
-			formURL = urlTest[1].split('&')[0]
-		try:
-			if formURL[-15:] == '/myesp/signout/':
-				formURL = '/'
-		except Exception:
-			pass
-		
-	if request.POST.has_key('username') and request.POST.has_key('password'):
-		user = authenticate(username=request.POST['username'].lower(), password=request.POST['password'])
-		# user entered incorrect credentials
-					
-		if not user:
-			return render_to_response('users/login', request, None, {'formURL':formURL,'Problem':True})
-		
-	else:
-		user = None
-		return render_to_response('users/login', request, None, {'formURL':formURL,'Problem':True})
-	
-	if user is not None:
-		user.set_password(request.POST['password'])
-		user.save()
-		login(request, user)
-		
-	
-
-	return HttpResponseRedirect(formURL)
-	#return myesp_logfin(request, module)
 
 def search_for_user(request, user_type='Any'):
 	""" Interface to search for a user. If you need a user, just use this.
@@ -664,8 +614,6 @@ myesp_handlers = { 'register': myesp_register,
 		   'finish': myesp_finish,
 		   'emaillist': myesp_emaillist,
 		   'emailfin': myesp_emailfin,
-		   'signout': myesp_signout,
-		   'login': myesp_login,
 		   'logfin': myesp_logfin,
 		   'home': myesp_home,
 		   'switchback': myesp_switchback,

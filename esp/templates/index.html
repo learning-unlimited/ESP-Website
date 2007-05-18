@@ -178,7 +178,7 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 {% if not logged_in %}
 <div id="divlogin">
   <form name="loginform" id="loginform" method="post" action="/myesp/login/">
-    <input type="hidden" name="next" value="/myesp/logfin" />
+    <input type="hidden" name="next" value="/" />
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
       <tr>
         <td><div class="divformcol1"><label for="user">Login:</label></div></td>
