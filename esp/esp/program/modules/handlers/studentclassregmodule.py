@@ -198,7 +198,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.qsdmedia.models import Media
-	assert False, "in the right place"    
+
         clsid = 0
         if request.POST.has_key('clsid'):
             clsid = request.POST['clsid']
