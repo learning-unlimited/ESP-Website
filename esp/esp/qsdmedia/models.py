@@ -35,21 +35,20 @@ from esp.settings import MEDIA_ROOT
 # Create your models here.
 
 # The folder that Media files are saved to
-root_file_path = "uploaded_/%y_%m"
+root_file_path = "uploaded/%y_%m"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
     anchor = models.ForeignKey(DataTree) # Relevant node in the tree
-
     friendly_name = models.TextField() # Human-readable description of the media
     target_file = models.FileField(upload_to=root_file_path) # Target media file
-    size = models.IntegerField(blank=True, null=True) # Size of the file, in bytes
+    size = models.IntegerField(blank=True, null=True, editable=False) # Size of the file, in bytes
     format = models.TextField(blank=True, null=True)  # Format string; should be human-readable (string format is currently unspecified)
-    mime_type = models.CharField(blank=True, null=True, maxlength=256)
-    file_extension = models.TextField(blank=True, null=True, maxlength=16) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
+    mime_type = models.CharField(blank=True, null=True, maxlength=256, editable=False)
+    file_extension = models.TextField(blank=True, null=True, maxlength=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
 
-    def get_target_file_relative_url(self):
-        return str(self.target_file)[ len(root_file_path): ]
+    #def get_target_file_relative_url(self):a
+    #    return str(self.target_file)[ len(root_file_path): ]
 
     def __str__(self):
         return str(self.friendly_name)
@@ -84,7 +83,7 @@ class Video(models.Model):
     This object should be a subclass of Media, except that subclassing is broken in Django.
     Contains basic metadata for a Video.
     """
-    media = models.OneToOneField(Media) # the Media "superclass" instance; should be one-to-one
+    media = models.ForeignKey(Media, unique=True) # the Media "superclass" instance; should be one-to-one
 
     container_format = models.TextField(blank=True, null=True) # This may become a ForeignKey to a list of known types; in the meantime, just enter the standard abbreviation for the type
     audio_codec = models.TextField(blank=True, null=True) # This may become a ForeignKey to a list of known types; in the meantime, just enter the standard abbreviation for the type
