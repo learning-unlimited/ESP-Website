@@ -45,12 +45,16 @@ def render_to_latex(filepath, context_dict={}, filetype='pdf'):
         interpreter and generate the necessary file type
         (either pdf, tex, ps, dvi, or a log file)   """
     from django.template import Context, Template, loader
+    from django.conf import settings
 
     src = loader.find_template_source(filepath)[0]
 
     src = '{% load latex %}\n' + src
 
     context = Context(context_dict)
+
+    context['MEDIA_ROOT'] = settings.MEDIA_ROOT
+    context['file_type'] = filetype
 
     t = Template(src)
 
@@ -114,7 +118,7 @@ def gen_latex(texcode, type='pdf'):
             os.remove(file_base+'.tex')
         
         except:
-            raise ESPError(), 'Could not read contents of %s. (Hint: try looking at the log file)' % file_base+'.'+type
+            raise ESPError(), 'Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type)
 
     if type=='log':
         new_contents = tex_log

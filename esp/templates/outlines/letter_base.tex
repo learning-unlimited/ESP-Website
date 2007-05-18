@@ -1,0 +1,38 @@
+\documentclass[10pt]{article}  % standard LaTeX, 12 point type
+\usepackage{amsfonts,latexsym}
+\usepackage{amsthm, amssymb, amsmath}
+\usepackage[left=0in,right=0in,top=.5cm, bottom=.5in,nohead,nofoot]{geometry}
+\usepackage{lastpage}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{enumerate}
+\usepackage{subfigure}
+\usepackage{boxedminipage}
+
+{% block headers %}
+{% endblock %}
+
+\begin{document}
+
+\begin{center}
+ {% ifequal file_type "pdf" %}
+  \includegraphics{% templatetag openbrace %}{{ MEDIA_ROOT }}latex/letterhead.pdf}
+ {% else %}
+  \includegraphics{% templatetag openbrace %}{{ MEDIA_ROOT}}latex/letterhead.eps}
+ {% endifequal %}
+\end{center}
+
+\vspace{.1in}
+\begin{center}
+\begin{minipage}{7in}
+
+
+{% block maincontent %}
+\thispagestyle{empty}
+
+{% endblock %}
+
+
+\end{minipage}
+\end{center}
+\end{document}

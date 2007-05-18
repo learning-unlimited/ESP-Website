@@ -1,16 +1,28 @@
 from django.conf import settings
 from django import template
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, AnonymousUser
 from django.http import urlencode
 
 register = template.Library()
 
-@register.inclusion_tag('inclusion/web/navbar.html')
-def get_primary_nav(user, path):
+@register.inclusion_tag('inclusion/web/navbar.html', takes_context = True)
+def get_primary_nav(context):
+    try:
+        user = context['user']
+    except KeyError:
+        user = AnonymousUser()
+
+    try:
+        request = context['request']
+    except KeyError:
+        return {}
+
+    path = request.path
+    
     path_list = path.strip('/').split('/')
     
     if path_list[0] not in known_navlinks:
-        return False
+        return {}
 
     page_setup = {}
     curuser = ESPUser(user)

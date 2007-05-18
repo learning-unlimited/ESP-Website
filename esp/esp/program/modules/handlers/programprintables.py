@@ -36,7 +36,7 @@ from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
 from esp.money.models    import Transaction
 from esp.program.models  import Class
-from esp.users.views     import get_user_list
+from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
 
 class ProgramPrintables(ProgramModuleObj):
@@ -193,6 +193,53 @@ class ProgramPrintables(ProgramModuleObj):
             return ProgramPrintables.getSchedule(self.program, user)
 
         return ''
+
+    @needs_admin
+    def refund_receipt(self, request, tl, one, two, module, extra, prog):
+        from esp.money.models import Transaction
+        from esp.web.util.latex import render_to_latex
+        from esp.program.modules.forms.printables_refund import RefundInfoForm
+        
+        user, found = search_for_user(request, self.program.students_union())
+        if not found:
+            return user
+
+        initial = {'userid': user.id }
+
+        if request.GET.has_key('payer_post'):
+            form = RefundInfoForm(request.GET, initial=initial)
+            if form.is_valid():
+                transactions = Transaction.objects.filter(fbo = user, anchor = self.program.anchor)
+                if transactions.count() == 0:
+                    transaction = Transaction()
+                else:
+                    transaction = transactions[0]
+
+                context = {'user': user, 'transaction': transaction}
+                context['program'] = prog
+
+                context['payer_name'] = form.clean_data['payer_name']
+                context['payer_address'] = form.clean_data['payer_address']                
+
+                context['amount'] = '%.02f' % (transaction.amount)
+
+                if extra:
+                    file_type = extra.strip()
+                else:
+                    file_type = 'pdf'
+
+                return render_to_latex(self.baseDir()+'refund_receipt.tex', context, file_type)
+        else:
+            form = RefundInfoForm(initial = initial)
+
+        transactions = Transaction.objects.filter(fbo = user, anchor = self.program.anchor)
+        if transactions.count() == 0:
+            transaction = Transaction()
+        else:
+            transaction = transactions[0]
+
+        return render_to_response(self.baseDir()+'refund_receipt_form.html', request, (prog, tl), {'form': form,'student':user,
+                                                                                                   'transaction': transaction})
 
     @staticmethod
     def getSchedule(program, student):

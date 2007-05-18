@@ -1,0 +1,55 @@
+{% extends "outlines/letter_base.tex" %}
+
+
+{% block maincontent %}
+{{ block.super }}
+
+{\huge Refund Receipt for {\bf {{ program.niceName|texescape }} }} \\
+
+{\large Please sign below and send this via mail or fax to:} \\
+
+\begin{boxedminipage}{2.75in}
+\begin{center}
+\texttt{Student Activities Finance Office \\
+ATTN: Laurie Ward \\
+77 Massachusetts Ave \\
+W20-549 \\
+Cambridge, MA 02139 \\
+FAX: 617-253-8391 }
+\end{center}
+\end{boxedminipage}
+
+\vspace{.4in}
+
+{\Large Transaction Information } 
+\vspace{.1in}
+
+\begin{tabular}{ll}
+
+Student Name: &\texttt{ {{user.name|texescape }}} \\
+Student Address: &\texttt{ {{user.getLastProfile.contact_user.address_street|texescape }}, 
+{{ user.getLastProfile.contact_user.address_city|texescape }}, {{ user.getLastProfile.contact_user.address_state|texescape }} {{ user.getLastProfile.contact_user.address_zip|texescape }}
+} \\
+Transaction Type: &\texttt{ {{transaction.payment_type|texescape }} } \\
+Transaction Amount: &\texttt{ \${{ amount }} } \\
+Transaction ID: &\texttt{ {{ transaction.id|texescape }} } \\
+Transaction Date: &\texttt{ {{ transaction.update_ts|date:"F nS, Y" }} }\\
+Payer's Name: &\texttt{ {{ payer_name|texescape }} } \\
+Payer's Address: &{\large \texttt{ {\bf {{ payer_address|texescape }}}} } \\
+
+\end{tabular}
+\vspace{.5in}
+\\
+
+By printing and/or sending this document, MIT Educational Studies Program
+voids the transaction above. \\
+\\
+By signing below, I, \underline{ {{ payer_name|texescape }} }, assert that I have paid ESP \${{ amount }} on {{ transaction.update_ts|date:"F nS, Y" }} and that the credit card I used is under the address (bolded) above.
+
+\vspace{1in}
+\rule{4.5in}{0.25pt} \\
+{{ payer_name|texescape }}\\
+\vspace{1.75in}\\
+{\small If there are any questions, please contact \texttt{esp-treasurer@mit.edu}.}
+
+{% endblock %}
