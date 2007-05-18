@@ -232,8 +232,16 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                 if len(zipcodes) > 0:
                     Q_include &= Q(registrationprofile__contact_user__address_zip__in = zipcodes)
                     update = True
-                
 
+            if request.GET.has_key('grade_min'):
+                yog = ESPUser.YOGFromGrade(request.GET['grade_min'])
+                if yog != 0:
+                    Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog)
+
+            if request.GET.has_key('grade_max'):
+                yog = ESPUser.YOGFromGrade(request.GET['grade_max'])
+                if yog != 0:
+                    Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog)
         
         if not update:
             users = None

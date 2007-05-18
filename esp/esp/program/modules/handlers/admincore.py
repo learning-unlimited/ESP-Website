@@ -28,13 +28,13 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, CoreModule
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 
 
-class AdminCore(ProgramModuleObj):
+class AdminCore(ProgramModuleObj, CoreModule):
 
     @needs_admin
     def main(self, request, tl, one, two, module, extra, prog):

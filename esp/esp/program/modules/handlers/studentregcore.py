@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser
@@ -38,7 +38,7 @@ from esp.middleware   import ESPError
 
 import operator
 
-class StudentRegCore(ProgramModuleObj):
+class StudentRegCore(ProgramModuleObj, CoreModule):
 
     def students(self, QObject = False):
         verb = GetNode('V/Flags/Public')

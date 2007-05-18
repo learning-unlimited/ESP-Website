@@ -43,6 +43,12 @@ from urllib import quote
 from esp.db.models import Q
 
 
+class CoreModule(object):
+    """
+    All core modules should derive from this.
+    """
+    pass
+
 class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program)
     module   = models.ForeignKey(ProgramModule)
@@ -73,10 +79,7 @@ class ProgramModuleObj(models.Model):
         import esp.program.modules.models
         modules = self.program.getModules(self.user, tl)
         for module in modules:
-            if type(module) == esp.program.modules.models.StudentRegCore or \
-               type(module) == esp.program.modules.models.TeacherRegCore or \
-               type(module) == esp.program.modules.models.AdminCore or \
-               type(module) == esp.program.modules.models.OnsiteCore:
+            if isinstance(module, CoreModule):
                 return getattr(module, module.module.main_call)
         assert False, 'No core module to return to!'
 
@@ -84,10 +87,7 @@ class ProgramModuleObj(models.Model):
         import esp.program.modules.models
         modules = self.program.getModules(self.user, tl)
         for module in modules:
-             if type(module) == esp.program.modules.models.StudentRegCore or \
-               type(module) == esp.program.modules.models.TeacherRegCore or \
-               type(module) == esp.program.modules.models.AdminCore or \
-               type(module) == esp.program.modules.models.OnsiteCore:
+            if isinstance(module, CoreModule):
                  return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.module.main_call
 
 
