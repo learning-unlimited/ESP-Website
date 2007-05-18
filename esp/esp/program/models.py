@@ -624,7 +624,8 @@ class Class(models.Model):
 
 		if use_cache and (retVal is not None) and \
 		  (type(retVal) == dict) and retVal.has_key('teachers'):
-			return retVal['teachers']
+			if retVal['teachers'] != []:
+				return retVal['teachers']
 		
 		if type(retVal) != dict:
 			retVal = {}
@@ -632,7 +633,7 @@ class Class(models.Model):
 			
 		from esp.users.models import ESPUser
 		v = GetNode( 'V/Flags/Registration/Teacher' )
-		userbits = [ x.user.id for x in UserBit.bits_get_users( self.anchor, v) ]
+		userbits = [ x.user_id for x in UserBit.bits_get_users( self.anchor, v) ]
 				
 		if len(userbits) > 0:
 			teachers = list(User.objects.filter(id__in=userbits).distinct())
