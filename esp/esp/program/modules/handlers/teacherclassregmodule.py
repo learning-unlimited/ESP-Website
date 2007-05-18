@@ -284,31 +284,31 @@ class TeacherClassRegModule(ProgramModuleObj):
 	
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
-            	docid = request.POST['docid']
-            	media = Media.objects.get(id = docid)
-            	media.delete()
+                docid = request.POST['docid']
+                media = Media.objects.get(id = docid)
+                media.delete()
             	
             elif request.POST['command'] == 'add':
-            	data = request.POST.copy()
-            	data.update(request.FILES)
-            	form = FileUploadForm(data)
+                data = request.POST.copy()
+                data.update(request.FILES)
+                form = FileUploadForm(data)
 		
                 
                 if form.is_valid():
                     media = Media(friendly_name = form.clean_data['title'], anchor = target_class.anchor)
-		    #	Append the class code on the filename
-		    new_target_filename = target_class.emailcode() + '_' + form.clean_data['uploadedfile']['filename']
+	            #	Append the class code on the filename
+	            new_target_filename = target_class.emailcode() + '_' + form.clean_data['uploadedfile']['filename']
                     media.save_target_file_file(new_target_filename, form.clean_data['uploadedfile']['content'])
                     media.mime_type = form.clean_data['uploadedfile']['content-type']
-		    media.size = len(form.clean_data['uploadedfile']['content'])
-		    extension_list = form.clean_data['uploadedfile']['filename'].split('.')
-		    extension_list.reverse()
-		    media.file_extension = extension_list[0]
-		    media.format = ''
+	            media.size = len(form.clean_data['uploadedfile']['content'])
+	            extension_list = form.clean_data['uploadedfile']['filename'].split('.')
+	            extension_list.reverse()
+	            media.file_extension = extension_list[0]
+	            media.format = ''
 		    
                     media.save()
-		else:
-		    context_form = form
+	        else:
+	            context_form = form
 	
         context = {'cls': target_class, 'uploadform': context_form, 'module': self}
 	
