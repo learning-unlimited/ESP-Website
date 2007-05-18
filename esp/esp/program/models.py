@@ -114,18 +114,20 @@ class ProgramModule(models.Model):
 		Raises a PrograModule.CannotGetClassException() if the class can't be imported.
 		"""
 		try:
-			mod = __import__("esp.program.module.handlers.%s" % self.handler,
-					 globals(), locals(),
-					 [self.handler])
-
+			path = "esp.program.modules.handlers.%s" % (self.handler.lower())
+			mod = __import__(path, (), (), [self.handler])
 			return getattr(mod, self.handler)
 		except ImportError:
-			raise ProgramModule.CannotGetClassException
+			raise ProgramModule.CannotGetClassException('Could not import: '+path)
 		except AttributeError:
-			raise ProgramModule.CannotGetClassException
+			raise ProgramModule.CannotGetClassException('Could not get class: '+path)
 
 	class CannotGetClassException(Exception):
-		pass
+		def __init__(self, msg):
+			self.msg = msg
+
+		def __str__(self):
+			return self.msg
 	
 	def __str__(self):
 		return 'Program Module "%s"' % self.admin_title
@@ -423,13 +425,12 @@ class Program(models.Model):
 		def cmpModules(mod1, mod2):
 			""" comparator function for two modules """
 			try:
-				return mod1.seq - mod2.seq
-			except:
+				return cmp(mod2.seq, mod1.seq)
+			except AttributeError:
 				return 0
 		if tl:
 			modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
-				     for module in self.program_modules.all()
-				     if module.module_type == tl]
+				     for module in self.program_modules.filter(module_type = tl) ]
 		else:
 			modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
 				     for module in self.program_modules.all()]

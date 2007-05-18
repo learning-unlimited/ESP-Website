@@ -133,6 +133,4 @@ def classTemplateEditor(request, program, session):
                                                             'have_create': have_create })
 
 
-def programBattlescreen(request):
-    """ Generate a display of an assortment of useful information for a specified program """
 

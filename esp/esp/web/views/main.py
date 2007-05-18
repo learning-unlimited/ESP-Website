@@ -155,32 +155,12 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
 
-	#rom esp.dbmail.models import MessageRequest
-
-	#oo = MessageRequest.objects.filter(processed = False)
-	# = str(foo[0])
-	
-	#from django.http import HttpResponse
-	
-	#foo = 'Q/Programs/HSSP/2007_Test/Templates/Classrooms/26-332'
-	#foo = GetNode(foo)
-	#foo.save()
-	#from esp.program.models import Program
-	#hssp = Program.objects.filter(id=7)[0]
-	#newhssp_anchor = hssp.anchor.parent.tree_create(['2007_Test'])
-	#hssp.anchor.tree_create(['Classes']).rcopy(newhssp_anchor)
-	
-	#newhssp_anchor.tree_create(['foobar'])
-	
-	#return HttpResponse('Foo')
-	#raise ESPError(), 'done'
-	
 	treeItem = "Q/Programs/" + one + "/" + two
+
 	try:
-		prog_tree = GetNode("Q/Programs")
-		prog = prog_tree[one][two]
-	except:
-		raise ESPError(False), "Program not found."
+		prog = DataTree.get_by_uri(treeItem)
+	except DataTree.NoSuchNodeException:
+		raise Http404("Program not found.")
 
 	prog = prog.program_set.all()
 	if len(prog) < 1:

@@ -37,7 +37,7 @@ from django.db import models
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser
 from esp.web.util import render_to_response
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import LOGIN_URL, REDIRECT_FIELD_NAME
 from urllib import quote
 from esp.db.models import Q
@@ -152,37 +152,55 @@ class ProgramModuleObj(models.Model):
         
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        module_list = prog.getModules(ESPUser(request.user), tl)
-        # first look for a mainview
-        for moduleObj in module_list:
-            moduleObj.request = request
-    
-        for moduleObj in module_list:
-            if moduleObj.module and call_txt == moduleObj.module.main_call \
-               and hasattr(moduleObj, moduleObj.module.main_call):
-                return getattr(moduleObj, moduleObj.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+        modules = ProgramModule.objects.filter(main_call = call_txt,
+                                               module_type = tl)
 
-        # now look for auxillary views
-        for moduleObj in module_list:
-            for aux_call in moduleObj.all_views():
-                if call_txt == aux_call and hasattr(moduleObj, aux_call):
-                    return getattr(moduleObj, aux_call)(request, tl, one, two, call_txt, extra, prog)
-            
-        return False
+        module = None
+
+        if modules.count() == 0:
+            modules = ProgramModule.objects.filter(aux_calls__contains = call_txt,
+                                                   module_type = tl)
+            for module in modules:
+                if call_txt in module.aux_calls.strip().split(','):
+                    break
+            if not module:
+                raise Http404
+        else:
+            module = modules[0]
+
+
+        if module:
+            moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog)
+            moduleobj = module.getPythonClass()()
+            if len(moduleobjs) == 0:
+                moduleobj = moduleClass()
+                moduleobj.module = module
+                moduleobj.program = prog
+                moduleobj.seq = module.seq
+                moduleobj.required = module.required
+                moduleobj.save()
+            else:
+                moduleobj.__dict__.update(moduleobjs[0].__dict__)
+
+        else:
+            raise Http404
+
+        moduleobj.request = request
+        moduleobj.user    = ESPUser(request.user)
+        moduleobj.fixExtensions()
+
+        if hasattr(moduleobj, call_txt):
+            return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
+
+        raise Http404
+
 
     @staticmethod
     def getFromProgModule(prog, mod):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
-        modulesList = esp.program.modules.models.__dict__
-
-        if not mod.handler or not modulesList.has_key(mod.handler):
-            return None
-            assert False, 'Module name "%s" not in global scope.' % mod.handler
-
-        ModuleClass = modulesList[mod.handler]
-        ModuleObj   = ModuleClass()
+        ModuleObj   = mod.getPythonClass()()
         BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod)
         if len(BaseModuleList) < 1:
             ModuleObj.program = prog
