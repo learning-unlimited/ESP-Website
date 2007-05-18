@@ -1,7 +1,7 @@
 from django.conf import settings
 from django import template
 from esp.users.models import ESPUser, AnonymousUser
-from django.http import urlencode
+from urllib import quote as urlencode
 from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
 
@@ -17,9 +17,9 @@ def cache_key(context):
         return 'DEFAULT_TOPBAR'
 
     if not user.is_authenticated():
-        return 'TOPBAR__%s' % request.path
+        return 'TOPBAR__%s' % urlencode(str(request.path))
 
-    return 'TOPBAR__%s__%s' % (request.path, user.id)
+    return 'TOPBAR__%s__%s' % (urlencode(str(request.path)), user.id)
         
 
 @cache_inclusion_tag(register,'inclusion/web/navbar.html', takes_context = True, cache_key_func=cache_key)

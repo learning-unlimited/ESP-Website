@@ -1,7 +1,7 @@
 from django.conf import settings
 from django import template
 from esp.users.models import ESPUser
-from django.http import urlencode
+from urllib import quote as urlencode
 from django.core.cache import cache
 from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
@@ -13,10 +13,10 @@ def cache_key(context):
         return None
 
     if not request.user.is_authenticated():
-        return "LEFTBAR__%s" % request.path
+        return "LEFTBAR__%s" % urlencode(str(request.path))
 
-    return 'LEFTBAR__%s__%s' % (request.path,
-                                urlencode(request.user.id))
+    return 'LEFTBAR__%s__%s' % (urlencode(str(request.path)),
+                                request.user.id)
 
 
 @cache_inclusion_tag(register,'inclusion/web/navbar_left.html', takes_context = True, cache_key_func=cache_key)
