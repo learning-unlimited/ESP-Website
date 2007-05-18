@@ -73,7 +73,13 @@ def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=999
                 self.vars_to_resolve = vars_to_resolve
 
             def render(self, context):
-                resolved_vars = [resolve_variable(var, context) for var in self.vars_to_resolve]
+                resolved_vars = []
+                for var in self.vars_to_resolve:
+                    try:
+                        resolved_vars.append(template.resolve_variable(var, context))
+                    except:
+                        resolved_vars.append(None)
+
                 if takes_context:
                     args = [context] + resolved_vars
                 else:

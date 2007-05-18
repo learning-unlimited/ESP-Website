@@ -119,11 +119,12 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_deadline('/Classes')    
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
+
+
         try:
             extra = int(extra)
         except:
-            id = None
-            return self.catalog(request, tl, one, two, module, extra, prog)
+            raise ESPError(False), 'Please use the link at the main registration page.'
         
         ts = DataTree.objects.filter(id=extra)
         if len(ts) < 1:
@@ -131,7 +132,21 @@ class StudentClassRegModule(ProgramModuleObj):
 
         ts = ts[0]
 
-        return self.catalog(request, tl, one, two, module, extra, prog, timeslot=ts)
+        prereg_url = self.program.get_learn_url + 'addclass/'
+
+        classes = Class.objects.approved().filter(parent_program = self.program, meeting_times = ts).order_by('category')
+
+        categories = classes.values('category').distinct()
+        categories = ClassCategories.objects.filter(id__in = [ x['category'] for x in categories ])
+
+
+        return render_to_response(self.baseDir()+'fillslot.html', request, (prog, tl), {'classes':    classes,
+                                                                                        'one':        one,
+                                                                                        'two':        two,
+                                                                                        'categories': categories,
+                                                                                        'timeslot':   ts,
+                                                                                        'prereg_url': prereg_url})
+       
 
     # we can also ``changeslot''
     changeslot = fillslot
@@ -140,60 +155,17 @@ class StudentClassRegModule(ProgramModuleObj):
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         
-        context = {}
-        dt_approved = GetNode( 'V/Flags/Class/Approved' )
 
-        #	You'll notice these are the same; we make no distinction yet.
-        #	Only show the approve and edit buttons if you're looking at the whole
-        #	catalog as opposed to a particular timeslot.  Only show the buttons
-        #	for pre-registering if you're looking at a particular timeslot.
-        if timeslot is None:
-                prereg_url = None
-        else:
-                prereg_url = '/' + tl + '/' + prog.url() + '/addclass'
+        classes = Class.objects.approved().filter(parent_program = self.program).order_by('category')
 
-        if timeslot is not None:
-            classes = Class.objects.filter(parent_program = self.program, meeting_times = timeslot).order_by('category')
-            prereg_url = '/'+tl+'/'+self.program.getUrlBase()+'/addclass'
-        else:
-            prereg_url = False
-            classes = Class.objects.filter(parent_program = self.program).order_by('category')
-            
-            
-        catDict = {}
-        clsList = []
-        if timeslot is not None:
-            for cls in classes:
-                if cls.isAccepted():
-                    clsList.append({'class':cls,
-                                    'errormsg':cls.cannotAdd(self.user)})
-                    
-                    if not catDict.has_key(cls.category_id):
-                        catDict[cls.category_id] = {'category': cls.category.category,
-                                                    'id'      : cls.category_id
-                                                    }
-        else:
-            for cls in classes:
-                if cls.isAccepted():
-                    clsList.append({'class':cls,
-                                    'errormsg':None})
-                    if not catDict.has_key(cls.category_id):
-                        catDict[cls.category_id] = {'category': cls.category.category,
-                                                    'id'      : cls.category_id
-                                                    }
-        catList = []
-        for k in catDict.keys():
-            catList.append(catDict[k])
+        categories = classes.values('category').distinct()
+        categories = ClassCategories.objects.filter(id__in = [ x['category'] for x in categories ])
 
 
-        return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), {'courses':    clsList,
+        return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), {'classes': classes,
                                                                                        'one':        one,
                                                                                        'two':        two,
-                                                                                       'timeslot':   timeslot,
-                                                                                       'categories': catList,
-                                                                                       'prereg_url':  prereg_url
-                                                                             })
-
+                                                                                       'categories': categories})
 
     @needs_student
     def class_docs(self, request, tl, one, two, module, extra, prog):

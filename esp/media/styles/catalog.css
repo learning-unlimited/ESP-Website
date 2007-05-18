@@ -1,8 +1,9 @@
 #catalog table {
-   background-color: #FFF;
    border: 1px solid #CCC;
    border-width: 1px;
+   border-collapse: collapse;
 }
+
 
 #catalog th {
    font-family: Arial, sans-serif;
@@ -79,3 +80,12 @@ p.category {
   font-family: arial;
   text-align: center;
   width: 100%;
+}
+
+.classtitle {
+  color: black;
+}
+
+a.classtitle:hover {
+  text-decoration: none;
+}

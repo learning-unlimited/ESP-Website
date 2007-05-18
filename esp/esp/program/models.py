@@ -231,6 +231,18 @@ class Program(models.Model):
 	program_modules = models.ManyToManyField(ProgramModule)
 
 
+	def _get_type_url(self, type):
+		return '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[2:]))
+
+	def __init__(self, *args, **kwargs):
+		retVal = super(Program, self).__init__(*args, **kwargs)
+
+		for type in ['teach','learn','manage','onsite']:
+			setattr(self, 'get_%s_url' % type, self._get_type_url(type))
+
+		return retVal
+
+
 	def url(self):
 		str_array = self.anchor.tree_encode()
 		return '/'.join(str_array[2:])
@@ -466,6 +478,14 @@ class ClassCategories(models.Model):
 		pass
 
 
+class ClassManager(models.Manager):
+
+	def approved(self):
+		verb = GetNode('V/Flags/Class/Approved')
+
+		return self.filter(anchor__userbit_qsc__verb = verb, anchor__userbit_qsc__user__isnull = True)
+				   
+
 # FIXME: The Class object should use the permissions system to control
 # which grades (Q/Community/6_12/*) are permitted to join the class, though
 # the UI should make it as clean as two numbers, at least initially.
@@ -494,6 +514,8 @@ class Class(models.Model):
 
 	#	We think this is useless because the sign-up is completely based on userbits.
 	enrollment = models.IntegerField()
+
+	objects = ClassManager()
 
 	class Meta:
 		verbose_name_plural = 'Classes'

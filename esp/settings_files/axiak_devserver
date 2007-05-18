@@ -30,7 +30,8 @@ Email: web@esp.mit.edu
 """
 
 DEBUG = True
-DISPLAYSQL = False
+DISPLAYSQL = True
+
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
