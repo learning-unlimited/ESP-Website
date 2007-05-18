@@ -1,0 +1,99 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Class Related Documents for {{cls.title }}{% endblock %}
+
+{% block subsection_name %}Documents for Class{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+<style type="text/css">
+#uploadform table {
+   border-width: 0;
+}
+#uploadform th {
+	font-family: Arial, sans-serif;
+	font-size: 12px;
+}
+td.instructions {
+	font-family: Arial, sans-serif;
+	font-size: 12px;
+}
+</style>
+<h1>Document management for {{ cls.title }}</h1>
+
+<div id="battlescreen">
+
+<p>
+We would like you, as a teacher, to upload all documents and other materials relating to your class.  This includes a syllabus, lesson plans, presentations, and anything else you want others to see.  The documents will be viewable by your students and anyone else interested in your subject.
+</p>
+
+<table cellpadding="4" cellspacing="0" align="center" width="550">
+	<tr>
+		<th colspan="2" style="text-align: center;">
+		Documents for {{ cls.emailcode }}&mdash;{{ cls.title }}
+		</th>
+	</tr>
+	{% if cls.anchor.media_set.count %}
+	<tr>
+		<td class="clsmiddle"><b>Document</b></td>
+		<td class="clsmiddle"><b>Options</b></td>
+	</tr>
+	{% else %}
+	<tr>
+		<td colspan="2">There are no documents associated with this class.  Please add some below!</td>
+	</tr>
+	{% endif %}
+	{% for doc in cls.anchor.media_set.all %}
+	<tr>
+		<td class="clsmiddle"><a href="/media/{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
+		<td class="clsmiddle">
+			<form method="post" action="./{{ cls.id }}">
+				<input type="hidden" name="docid" value="{{ doc.id }}">
+				<input type="hidden" name="command" value="delete">
+				<input class="button" type="submit" value="Delete">
+			</form>
+		</td>
+	</tr>
+	{% endfor %}
+</table>
+
+<br />
+<br />
+
+<form method="post" action="./{{ cls.id }}" enctype="multipart/form-data">
+<input type="hidden" name="command" value="add">
+<table cellpadding="12" cellspacing="0" align="center" width="450">
+	<tr>
+		<th colspan="2" style="text-align: center;">
+		Add a document for {{ cls.title }}
+		</th>
+	</tr>
+	<tr>
+		<td class="instructions">
+			<b>Instructions:</b>
+			<br />
+			In the form below, please enter a title for the document (e.g. "Syllabus" or "Lecture Notes for Week 2") and select a file from your computer to upload.  Then click "Submit Document" below.
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<div id="uploadform">
+			<table align="center">
+				{{ uploadform.as_table }}
+			</table>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td class="instructions" align="center">
+			<input class="button" type="submit" value="Submit Document">
+		</td>
+	</tr>
+</table>
+</form>
+
+</div>
+
+
+{% endblock %}

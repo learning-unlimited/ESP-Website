@@ -40,9 +40,6 @@ import operator
 
 class StudentRegCore(ProgramModuleObj):
 
-
-
-
     def students(self, QObject = False):
         verb = GetNode('V/Flags/Public')
         verb2 = GetNode('V/Flags/Registration/Attended')

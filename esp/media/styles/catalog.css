@@ -1,0 +1,81 @@
+#catalog table {
+   background-color: #FFF;
+   border: 1px solid #CCC;
+   border-width: 1px;
+}
+
+#catalog th {
+   font-family: Arial, sans-serif;
+   padding: 5px;
+   font-size: 15px;
+   background-color: #c6def7;
+   color: #000;
+}
+
+#catalog th.materials {
+   font-family: Arial, sans-serif;
+   padding: 5px;
+   font-size: 12px;
+   font-weight: normal;
+   background-color: #c6def7;
+   color: #000;
+}
+
+#catalog td {
+   font-family: serif;
+   padding: 5px;
+   font-size: 14px;
+   background-color: #ffffff;
+   color: #000;
+}
+
+.doclist {
+   font-family: sans-serif;
+   text-indent: 20px;
+   font-size: 12px;
+   color: #000;
+}
+
+p.category {
+   font-family: arial;
+   font-size: 2em;
+   text-align: center;
+   margin-bottom: 0;
+   font-weight: bold;
+}
+
+.linktop {
+   font-family: serif;
+   font-size: 12px;
+   text-align: center;
+}
+.show_class table {
+   text-align: center;
+   margin: auto;
+   width: 620px;
+}
+.show_class th {
+   background-color: #a6cedf;
+   text-align: left;
+}
+.teachers {
+   font-size: 13px;
+   font-family: serif;
+   font-style: italic;
+   font-weight: normal;
+   text-align: right;
+}
+.show_class td {
+   text-align: center;
+   vertical-align: top;
+}
+.show_class td.info {
+   text-align: left;
+}
+
+#divmaintext h1 {
+  font-size: 22pt;
+  color: black;
+  font-family: arial;
+  text-align: center;
+  width: 100%;

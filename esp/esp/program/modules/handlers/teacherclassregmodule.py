@@ -263,6 +263,48 @@ class TeacherClassRegModule(ProgramModuleObj):
 
 
         return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
+	
+    @needs_teacher
+    def class_docs(self, request, tl, one, two, module, extra, prog):
+        from esp.web.forms.fileupload_form import FileUploadForm    
+        from esp.qsdmedia.models import Media
+	    
+        clsid = 0
+        if request.POST.has_key('clsid'):
+            clsid = request.POST['clsid']
+        else:
+            clsid = extra
+            
+        classes = Class.objects.filter(id = clsid)
+        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+                return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+	
+        target_class = classes[0]
+        context_form = FileUploadForm()
+	
+        if request.method == 'POST':
+            if request.POST['command'] == 'delete':
+            	docid = request.POST['docid']
+            	media = Media.objects.get(id = docid)
+            	media.delete()
+            	
+            elif request.POST['command'] == 'add':
+            	data = request.POST.copy()
+            	data.update(request.FILES)
+            	form = FileUploadForm(data)
+		
+                
+                if form.is_valid():
+                    media = Media(friendly_name = form.clean_data['title'], anchor = target_class.anchor)
+                    media.save_target_file_file(form.clean_data['uploadedfile']['filename'], form.clean_data['uploadedfile']['content'])
+                    media.mime_type = request.FILES['uploadedfile']['content-type']
+                    media.save()
+		else:
+		    context_form = form
+	
+        context = {'cls': target_class, 'uploadform': context_form, 'module': self}
+	
+        return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
     @needs_teacher
     @meets_deadline('/Classes')

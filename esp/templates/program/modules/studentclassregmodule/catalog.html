@@ -29,53 +29,11 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<style type="text/css">
-p.category {
-   font-family: arial;
-   font-size: 2em;
-   text-align: center;
-   margin-bottom: 0;
-   font-weight: bold;
-}
-.linktop {
-   font-family: arial;
-   font-size: 40%;
-   font-style: italic;
-   text-align: center;
-}
-.show_class table {
-   text-align: center;
-   margin: auto;
-   width: 620px;
-}
-.show_class th {
-   background-color: #a6cedf;
-   text-align: left;
-}
-.teachers {
-   font-size: 80%;
-   font-style: italic;
-   font-weight: normal;
-}
-.show_class td {
-   text-align: center;
-   vertical-align: top;
-}
-.show_class td.info {
-   text-align: left;
-}
-#divmaintext h1 {
-  font-size: 28pt;
-  color: black;
-  font-family: arial;
-  text-align: center;
-  width: 100%;
-}
-</style>
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
 {% endblock %}
 
 {% block content %}
-
+{% load latex %}
 <br />
 
 <h1>
@@ -83,9 +41,6 @@ p.category {
         Course Catalog
 </h1>
 
-<br />
-
-<br />
 {% if timeslot %}
 <h2 style="text-align: center;">
 Viewing classes for: {{ timeslot.friendly_name }}
@@ -104,11 +59,13 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% endif %}
 {% endif %}
 
+<div id="catalog">
+
 <table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
-  <td align="center" colspan="2" style="font-family: arial; font-size:110%">
-   <a name="top"></a>Categories<hr />
-  </td>
+  <th colspan="2">
+   <a name="top"></a>Jump to Categories
+  </th>
  </tr>
 
 {% for category in categories %}
@@ -128,11 +85,14 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% endif %}
 
 </table>
+</div>
 
 {% for aclass in courses %}
 
+<div id="catalog">
+
 {% if not aclass.errormsg or not request.GET.filter %}
-{% ifchanged %}<hr />
+{% ifchanged %}<hr size="1"/>
 
     <a name="cat{{aclass.class.category.id}}"></a>
       <p style="font-size: 1.2em;" class="category">
@@ -155,11 +115,12 @@ Viewing classes for: {{ timeslot.friendly_name }}
       </p> {% endifchanged %}
 
 <div class="show_class">
-  <table cellpadding="5px">
+  <table cellpadding="5px" cellspacing="0">
     <tr>
-      <th colspan="2">
+      <th colspan="2" style="width: 70%;">
        {{ aclass.class.title|escape|teximages:150 }}
-       <br />
+      </th>
+	<th style="width: 30%;">
        <span class="teachers">
        {% for teacher in aclass.class.teachers %}
        <a href="/teach/teachers/{{ teacher.last_name|urlencode }}/{{ teacher.first_name|urlencode }}{{ teacher.getUserNum }}/bio.html" 
@@ -170,7 +131,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
        </th>
      </tr>
      <tr>
-       <td colspan="2" class="info">
+       <td colspan="3" class="info">
          {{ aclass.class.class_info|escape|teximages:120|linebreaksbr }}<br />
        {% if aclass.class.prereqs %}
        <br /><br />
@@ -182,20 +143,33 @@ Viewing classes for: {{ timeslot.friendly_name }}
        </td>
      </tr>
     <tr>
-      <td valign="top">
+      <td style="width: 50%;" valign="top">
         <strong>Meeting Time{{ aclass.class.friendly_times|pluralize }}</strong>
         <br />
 	  {{ aclass.class.friendly_times|join:"<br />" }}
         <br />
       </td>
  
-      <td style="width: 40%;">
+      <td style="width: 50%;" colspan="2">
          <strong>Grades:</strong>
            {{ aclass.class.grade_min }}--{{ aclass.class.grade_max }} <br />
          <strong>Enrollment:</strong>
            {{ aclass.class.num_students }} (max {{ aclass.class.class_size_max }})
       </td>
     </tr>
+    {% if aclass.class.anchor.media_set.count %}
+    <tr>
+      <th colspan="3" class="materials">
+       <b>Materials for this class include:</b> 
+	<span class="doclist">
+	{% for doc in aclass.class.docs_summary %}
+	<a href="/media/{{ doc.target_file}}">{{ doc.friendly_name }}</a>{% if forloop.last %}{% else %},{% endif %} 
+	{% endfor %}
+	</span>
+	<br /><b><a href="../class_docs/{{ aclass.class.id}}">Click here to view all {{ aclass.class.anchor.media_set.count }} documents for {{ aclass.class.title }}</a></b>
+      </th>
+     </tr>
+    {% endif %}
 {% if prereg_url %}
     <tr>
       <td colspan="2" style="text-align: center;" align="center">
@@ -223,6 +197,9 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% endif %}
 
 </div>
+
 <br />
 {% endfor %}
+</div>
+
 {% endblock %}

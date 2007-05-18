@@ -196,6 +196,24 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     @needs_student
+    def class_docs(self, request, tl, one, two, module, extra, prog):
+        from esp.qsdmedia.models import Media
+	assert False, "in the right place"    
+        clsid = 0
+        if request.POST.has_key('clsid'):
+            clsid = request.POST['clsid']
+        else:
+            clsid = extra
+            
+        classes = Class.objects.filter(id = clsid)
+        
+        target_class = classes[0]
+
+        context = {'cls': target_class, 'module': self}
+	
+        return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
+
+    @needs_student
     @meets_deadline('/Classes')    
     def clearslot(self, request, tl, one, two, module, extra, prog):
 	""" Clear the specified timeslot from a student registration and go back to the same page """

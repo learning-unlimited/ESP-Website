@@ -33,7 +33,6 @@ from django.http import HttpResponseRedirect, Http404
 from esp.users.models import UserBit
 from esp.datatree.models import GetNode
 
-
 def qsdmedia(request, branch, section, url_name, url_verb, base_url):
     """ Return a redirect to a media file """
     filename = url_name + '.' + url_verb

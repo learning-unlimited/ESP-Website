@@ -39,6 +39,7 @@ from esp.program.modules.handlers.studentregcore import *
 from esp.program.modules.handlers.admincore import *
 from esp.program.modules.handlers.adminclass import *
 from esp.program.modules.handlers.adminvitals import *
+from esp.program.modules.handlers.adminmaterials import *
 from esp.program.modules.handlers.nametagmodule import *
 from esp.program.modules.handlers.classroommodule import *
 from esp.program.modules.handlers.programprintables import *

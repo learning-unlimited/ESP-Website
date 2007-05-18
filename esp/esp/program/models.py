@@ -144,6 +144,7 @@ class ArchiveClass(models.Model):
 	description = models.TextField()
 	teacher_ids = models.CharField(maxlength=256, blank=True, null=True)
 	student_ids = models.TextField()
+	num_old_students = models.IntegerField(default=0)
 
 	#def __str__(self):
 	#	return '"%s" taught by "%s"' % (self.title, self.teacher)
@@ -175,7 +176,10 @@ class ArchiveClass(models.Model):
 		return t.render({'class': self})
 		
 	def num_students(self):
-		return len(self.student_ids.strip('|').split('|'))
+		if self.student_ids is not None:
+			return len(self.student_ids.strip('|').split('|')) + self.num_old_students
+		else:
+			return self.num_old_students
 	
 	def add_students(self, users):
 		if self.student_ids is not None:
@@ -487,6 +491,7 @@ class Class(models.Model):
 	meeting_times = models.ManyToManyField(DataTree, related_name='meeting_times', null=True)
 	viable_times = models.ManyToManyField(DataTree, related_name='class_viable_set', blank=True)
 	resources = models.ManyToManyField(DataTree, related_name='class_resources', blank=True)
+
 	#	We think this is useless because the sign-up is completely based on userbits.
 	enrollment = models.IntegerField()
 
@@ -989,6 +994,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 			return True
 		return False
 
+			
+	def docs_summary(self):
+		""" Return the first three documents associated with a class, for previewing """
+		return self.anchor.media_set.all()[:3]		
 			
 	def getUrlBase(self):
 		""" gets the base url of this class """

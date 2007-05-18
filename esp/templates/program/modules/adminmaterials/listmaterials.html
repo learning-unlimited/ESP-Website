@@ -1,0 +1,68 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Class Materials for {{ prog.niceName }}{% endblock %}
+
+{% block subsection_name %}Documents for {{ prog.niceName }} Classes{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+<style type="text/css">
+#uploadform table {
+   border-width: 0;
+}
+
+td.clshead {
+	text-align: center;
+	font-family: serif;
+	font-size: 14px;
+	font-weight: bold;
+	background-color: #FFE;
+}
+
+td.instructions {
+	font-family: Arial, sans-serif;
+	font-size: 12px;
+}
+</style>
+<h1>View Materials Submitted for {{ prog.niceName }}</h1>
+
+<div id="battlescreen">
+
+<p>
+The teachers of your classes have provided the following materials, which you can review and delete if necessary.
+</p>
+
+<table cellpadding="2" cellspacing="0" align="center" width="550">
+	<tr>
+		<th colspan="2" style="text-align: center;">
+		Documents for classes in {{ prog.niceName }}
+		</th>
+	</tr>
+	{% for cls in prog.classes %}
+
+		{% if cls.anchor.media_set.count %}
+		<tr>
+			<td colspan="2" class="clshead">
+			{{ cls.emailcode }}&mdash;{{ cls.title }}
+			</td>
+		</tr>
+			{% for doc in cls.anchor.media_set.all %}
+			<tr>
+				<td class="class_stuff"><a href="/media/{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
+				<td class="clsmiddle">
+					<form method="post" action="./{{ cls.id }}">
+						<input type="hidden" name="docid" value="{{ doc.id }}">
+						<input type="hidden" name="command" value="delete">
+						<input class="button" type="submit" value="Delete">
+					</form>
+				</td>
+			</tr>
+			{% endfor %}
+		{% endif %}
+	{% endfor %}
+</table>
+
+</div>
+
+{% endblock %}
