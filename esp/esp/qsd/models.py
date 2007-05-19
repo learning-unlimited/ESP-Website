@@ -33,67 +33,71 @@ from esp.datatree.models import DataTree, GetNode
 from esp.lib.markdown import markdown
 from django.contrib.auth.models import User
 from datetime import datetime
+from esp.db.fields import AjaxForeignKey
 
 # Create your models here.
 
 class QuasiStaticData(models.Model):
-	""" A Markdown-encoded web page """
-	path = models.ForeignKey(DataTree)
-	name = models.SlugField()
-	title = models.CharField(maxlength=256)
-	content = models.TextField()
+    """ A Markdown-encoded web page """
+    path = AjaxForeignKey(DataTree)
+    name = models.SlugField()
+    title = models.CharField(maxlength=256)
+    content = models.TextField()
 
-	create_date = models.DateTimeField(default=datetime.now())
-	author = models.ForeignKey(User)
-	disabled = models.BooleanField(default=False)
-	
-	def __str__(self):
-		return ( self.path.full_name() + ':' + self.name + '.html' )
+    create_date = models.DateTimeField(default=datetime.now())
+    author = AjaxForeignKey(User)
+    disabled = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return ( self.path.full_name() + ':' + self.name + '.html' )
 
-	class Admin:
-		pass
+    class Admin:
+        pass
 
-	def html(self):
-		return markdown(self.content)
+    def html(self):
+        return markdown(self.content)
 
-	@staticmethod
-	def find_by_url_parts(base, parts):
-		""" Fetch a QSD record by its url parts """
-		# Extract the last part
-		filename = parts.pop()
+    @staticmethod
+    def find_by_url_parts(base, parts):
+        """ Fetch a QSD record by its url parts """
+        # Extract the last part
+        filename = parts.pop()
 
-		# Find the branch
-		try:
-			branch = base.tree_decode( parts )
-		except DataTree.NoSuchNodeException:
-			raise QuasiStaticData.DoesNotExist
+        # Find the branch
+        try:
+            branch = base.tree_decode( parts )
+        except DataTree.NoSuchNodeException:
+            raise QuasiStaticData.DoesNotExist
 
-		# Find the record
-		qsd = QuasiStaticData.objects.filter( path = branch, name = filename )
-		if len(qsd) < 1:
-			raise QuasiStaticData.DoesNotExist
+        # Find the record
+        qsd = QuasiStaticData.objects.filter( path = branch, name = filename )
+        if len(qsd) < 1:
+            raise QuasiStaticData.DoesNotExist
 
-		# Operation Complete!
-		return qsd[0]
+        # Operation Complete!
+        return qsd[0]
 
 
 class ESPQuotations(models.Model):
-	""" Quotation about ESP """
+    """ Quotation about ESP """
 
-	content = models.TextField()
-	display = models.BooleanField()
-	author  = models.CharField(maxlength=64)
-	create_date = models.DateTimeField(default=datetime.now())
+    content = models.TextField()
+    display = models.BooleanField()
+    author  = models.CharField(maxlength=64)
+    create_date = models.DateTimeField(default=datetime.now())
 
-	@staticmethod
-	def getQuotation():
-		import random
-		cutoff = .9
-		if random.random() > cutoff:
-			return None
-		return ESPQuotations.objects.filter(display=True).order_by('?')[0]
-		
+    @staticmethod
+    def getQuotation():
+        import random
+        cutoff = .9
+        if random.random() > cutoff:
+            return None
+        return ESPQuotations.objects.filter(display=True).order_by('?')[0]
+        
+    class Meta:
+        verbose_name_plural = 'ESP Quotations'
 
-	class Admin:
-		pass
+
+    class Admin:
+        pass
 

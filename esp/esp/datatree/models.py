@@ -286,6 +286,34 @@ class DataTree(models.Model):
     # ACCESSORS          #
     ######################
 
+    @classmethod
+    def ajax_autocomplete(cls, data):
+
+        data_pieces = data.strip().split(cls.DELIMITER)
+        if len(data_pieces) == 1:
+            parent = DataTree.root()
+        else:
+            try:
+                parent = cls.get_by_uri(cls.DELIMITER.join(data_pieces[:-1]))
+            except:
+                return []
+
+        tail = data_pieces[-1]
+        
+        query_set = parent.children()
+
+        if tail.strip() != '':
+            query_set = query_set.filter(name__istartswith = tail)
+
+        values = query_set.order_by('rangestart').values('uri', 'id')
+
+        for value in values:
+            value['ajax_str'] = value['uri']
+        return values
+
+    def ajax_str(self):
+        return self.uri
+
     def is_root(self):
         """ If this node is the root node, returns True, otherwise False."""
         return self.parent_id == None and self.name == DataTree.ROOT_NAME

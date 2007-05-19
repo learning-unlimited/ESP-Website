@@ -32,12 +32,13 @@ from django.db import models
 from esp.datatree.models import DataTree, GetNode
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
+from esp.db.fields import AjaxForeignKey
 
 # Create your models here.
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
-    path = models.ForeignKey(DataTree, related_name = 'navbar')
+    path = AjaxForeignKey(DataTree, related_name = 'navbar')
     sort_rank = models.IntegerField()
     link = models.CharField(maxlength=256)
     text = models.CharField(maxlength=64)
@@ -58,6 +59,9 @@ class NavBarEntry(models.Model):
     
     class Admin:
         pass
+
+    class Meta:
+        verbose_name_plural = 'Nav Bar Entries'
     
     @staticmethod
     def find_by_url_parts(parts):

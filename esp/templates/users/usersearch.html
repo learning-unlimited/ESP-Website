@@ -53,7 +53,7 @@ Please search for a user: <br />
 <br />
 <label for="email"><strong>Email:</strong></label>
 <input type="text" size="30" name="email" id="email" /> &nbsp; 
-  (<label for="email_not">Not?</label> <input type="checkbox" value="true" name="email__not" id="first_name_not" />)
+  (<label for="email_not">Not?</label> <input type="checkbox" value="true" name="email__not" id="email_not" />)
 <br />
 <br />
 
@@ -62,6 +62,22 @@ Zipcode is less than <input type="text" size="4" name="zipdistance" value="" />
 miles from <input type="text" size="5" name="zipcode" value="02139" />.
 <br />
 <br />
+
+<label><strong>States:</strong></label>
+  <input type="text" size="10" name="states" value="" />
+  (<label for="states_not">Not?</label> <input type="checkbox" value="true" name="states__not" id="states_not" />) <br />
+<small>Enter a list of state codes (e.g. 'MA,CT,NY')</small>
+<br />
+<br />
+
+<label><strong>Grade Min:</strong></label>
+<input type="text" size="3" name="grade_min" value="" /> &nbsp;&nbsp;&nbsp;
+<label><strong>Grade Max:</strong></label>
+<input type="text" size="3" name="grade_max" value="" />
+
+<br />
+<br />
+
 <input type="submit" value="Search for user" name="submitform" />
 {% if list %}
 &nbsp;&nbsp;<input type="submit" value="Use Filtered List" name="submitform" />

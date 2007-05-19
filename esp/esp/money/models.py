@@ -32,6 +32,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from esp.datatree.models import DataTree
 from datetime import datetime
+from esp.db.fields import AjaxForeignKey
 
 class LineItem(models.Model):
 	value = models.FloatField(max_digits = 10, decimal_places = 2)
@@ -56,9 +57,9 @@ class PaymentType(models.Model):
     
 class Transaction(models.Model):
     """ A monetary transaction """
-    anchor = models.ForeignKey(DataTree) # Region of ESP that receives the transaction
-    payer = models.ForeignKey(User, related_name="payer") # Source of the money
-    fbo = models.ForeignKey(User, related_name="fbo") # Payment is for the benefit of this user
+    anchor = AjaxForeignKey(DataTree) # Region of ESP that receives the transaction
+    payer = AjaxForeignKey(User, related_name="payer") # Source of the money
+    fbo = AjaxForeignKey(User, related_name="fbo") # Payment is for the benefit of this user
     amount = models.FloatField(max_digits=9, decimal_places=2) # Amount to be payed
     line_item = models.TextField() # Description of the reason for this payment
     payment_type = models.ForeignKey(PaymentType) # Type of payment; ie. credit card, check, cash, etc.

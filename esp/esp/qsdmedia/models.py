@@ -31,6 +31,8 @@ Email: web@esp.mit.edu
 from django.db import models
 from esp.datatree.models import DataTree, GetNode
 from esp.settings import MEDIA_ROOT
+from esp.db.fields import AjaxForeignKey
+
 
 # Create your models here.
 
@@ -39,7 +41,7 @@ root_file_path = "uploaded/%y_%m"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
-    anchor = models.ForeignKey(DataTree) # Relevant node in the tree
+    anchor = AjaxForeignKey(DataTree) # Relevant node in the tree
     friendly_name = models.TextField() # Human-readable description of the media
     target_file = models.FileField(upload_to=root_file_path) # Target media file
     size = models.IntegerField(blank=True, null=True, editable=False) # Size of the file, in bytes

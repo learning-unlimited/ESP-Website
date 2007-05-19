@@ -30,12 +30,11 @@ Email: web@esp.mit.edu
 """
 
 DEBUG = True
-DISPLAYSQL = True
+DISPLAYSQL = False
 
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-    ('Adam Seering', 'aseering@mit.edu'),
     ('Mike Axiak', 'axiak@mit.edu')
 )
 MANAGERS = ADMINS
@@ -60,7 +59,7 @@ MEDIA_ROOT = PROJECT_ROOT + 'media/'
 
 MEDIA_URL = '/media/'
 
-ADMIN_MEDIA_PREFIX = '/admin/media/'
+ADMIN_MEDIA_PREFIX = '/media/admin/'
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'm)^ea+0^rg5w73-h9d$t)#1@jsf+0km97_rbnpy2884b^%t&wo'

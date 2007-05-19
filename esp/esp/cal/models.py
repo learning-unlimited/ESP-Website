@@ -33,6 +33,8 @@ from esp.datatree.models import DataTree
 from esp.dbmail.models import MessageRequest
 from esp.workflow.models import Controller, ControllerDB
 from datetime import datetime, timedelta
+from esp.db.fields import AjaxForeignKey
+
 
 # Create your models here.
 
@@ -49,7 +51,7 @@ class EventType(models.Model):
 class Series(models.Model):
     """ A container object for grouping Events.  Can be nested. """
     description = models.TextField()
-    target = models.ForeignKey(DataTree) # location for this Series in the datatree
+    target = AjaxForeignKey(DataTree) # location for this Series in the datatree
 
     class Admin:
         pass
@@ -69,11 +71,14 @@ class Series(models.Model):
 
         return False;
 
+    class Meta:
+        verbose_name_plural = 'Series'
+
 class Event(models.Model):
     """ A unit calendar entry.
 
     All calendar entries are events; all data for the event that doesn't fit into the event field is keyed in from a remote class. """
-    anchor = models.ForeignKey(DataTree)
+    anchor = AjaxForeignKey(DataTree)
 
     start = models.DateTimeField() # Event start time
     end = models.DateTimeField() # Event end time

@@ -48,6 +48,7 @@ section_prefix_keys = {'teach': 'teach', 'learn': 'learn'}
 urlpatterns_list =  [(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/media/'}),
                      (r'^admin/media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/admin/media/'}),
                      # Uncomment this for admin:
+                     (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/', include('django.contrib.admin.urls')),
                      (r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
                      # Uncomment this for @login_required:
@@ -61,7 +62,9 @@ urlpatterns_list =  [(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'do
                      (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog_entry'),
                      (r'^blog/$', 'esp.miniblog.views.show_miniblog', {'url': '', 'section_redirect_keys': section_redirect_keys}),
                      (r'^myesp/login/?', 'django.contrib.auth.views.login',),
-                     (r'^myesp/signout/?', 'django.contrib.auth.views.logout',),
+                     (r'^myesp/signout/?', 'django.contrib.auth.views.logout',
+                      {'next_page': '/myesp/signedout/'}),
+                     (r'^myesp/signedout/?', 'django.views.generic.simple.direct_to_template',{'template': 'registration/logged_out.html'}),
 
                     ]
 

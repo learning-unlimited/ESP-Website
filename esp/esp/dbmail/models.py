@@ -33,7 +33,7 @@ from django.contrib.auth.models import User
 from esp.middleware import ESPError
 from datetime import datetime
 from esp.lib.markdown import markdown
-
+from esp.db.fields import AjaxForeignKey
 
 import django.core.mail
 
@@ -85,7 +85,7 @@ class MessageRequest(models.Model):
     special_headers = models.TextField(blank=True, null=True) 
     recipients = models.ForeignKey(PersistentQueryFilter) # We will get the user from a query filter
     sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string 
-    creator = models.ForeignKey(User) # the person who sent this message
+    creator = AjaxForeignKey(User) # the person who sent this message
     processed = models.BooleanField(default=False) # Have we made EmailRequest objects from this MessageRequest yet?
     email_all = models.BooleanField(default=True) # do we just want to create an emailrequest for each user?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
@@ -231,6 +231,8 @@ class TextOfEmail(models.Model):
     class Admin:
         pass
 
+    class Meta:
+        verbose_name_plural = 'Email Texts'
 
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
@@ -332,12 +334,15 @@ class MessageVars(models.Model):
     class Admin:
         pass
 
+    class Meta:
+        verbose_name_plural = 'Message Variables'
+
 
 
 
 class EmailRequest(models.Model):
     """ Each e-mail is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
-    target = models.ForeignKey(User)
+    target = AjaxForeignKey(User)
     msgreq = models.ForeignKey(MessageRequest)
     textofemail = models.ForeignKey(TextOfEmail, blank=True, null=True)
 

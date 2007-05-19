@@ -31,6 +31,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from esp.datatree.models import DataTree
 from esp.program.modules.base import ProgramModuleObj
+from esp.db.fields import AjaxForeignKey
 
 class SATPrepAdminModuleInfo(models.Model):
     module        = models.ForeignKey(ProgramModuleObj)
@@ -86,7 +87,7 @@ class RemoteTeacherParticipationProfile(models.Model):
     from esp.users.models import User
     from esp.program.models import Program
 
-    user      = models.ForeignKey(User,blank=True, null=True)
+    user      = AjaxForeignKey(User,blank=True, null=True)
     program   = models.ForeignKey(Program,blank=True, null=True)
     volunteer = models.BooleanField(default = False)
     need_bus  = models.BooleanField(default = False)
@@ -124,7 +125,7 @@ class SATPrepTeacherModuleInfo(models.Model):
 
     subject  = models.CharField(maxlength=32, choices = SAT_SUBJECTS)
 
-    user     = models.ForeignKey(User,blank=True, null=True)
+    user     = AjaxForeignKey(User,blank=True, null=True)
     program  = models.ForeignKey(Program,blank=True, null=True)
     section  = models.CharField(maxlength=5)
    

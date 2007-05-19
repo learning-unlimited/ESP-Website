@@ -233,15 +233,25 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                     Q_include &= Q(registrationprofile__contact_user__address_zip__in = zipcodes)
                     update = True
 
+            if request.GET.has_key('states') and len(request.GET['states'].strip()) > 0:
+                state_codes = request.GET['states'].strip().upper().split(',')
+                if request.GET.has_key('states__not'):
+                    Q_exclude &= Q(registrationprofile__contact_user__address_state__in = state_codes)
+                else:
+                    Q_include &= Q(registrationprofile__contact_user__address_state__in = state_codes)
+                update = True
+
             if request.GET.has_key('grade_min'):
                 yog = ESPUser.YOGFromGrade(request.GET['grade_min'])
                 if yog != 0:
-                    Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog)
+                    update = True
+                    Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog)
 
             if request.GET.has_key('grade_max'):
                 yog = ESPUser.YOGFromGrade(request.GET['grade_max'])
                 if yog != 0:
-                    Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog)
+                    update = True                    
+                    Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog)
         
         if not update:
             users = None

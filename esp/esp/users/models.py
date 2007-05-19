@@ -44,7 +44,7 @@ from datetime import datetime
 from esp.middleware import ESPError
 from django.template.defaultfilters import urlencode
 from django.contrib.auth import logout, login, authenticate
-
+from esp.db.fields import AjaxForeignKey
 
 
 def user_get_key(user):
@@ -73,6 +73,27 @@ class ESPUser(User, AnonymousUser):
         else:
             self.__dict__ = userObj.__dict__
             self.__olduser = userObj            
+
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        names = data.strip().split(',')
+        last = names[0]
+
+        query_set = cls.objects.filter(last_name__istartswith = last.strip())
+
+        if len(names) > 1:
+            first  = ','.join(names[1:])
+            if len(first.strip()) > 0:
+                query_set = query_set.filter(first_name__istartswith = first.strip())
+
+        values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
+
+        for value in values:
+            value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['username'])
+        return values
+
+    def ajax_str(self):
+        return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
     def getOld(self):
         if not self.__olduser:
@@ -411,9 +432,9 @@ class ESPUser(User, AnonymousUser):
 
 class UserBit(models.Model):
     """ Grant a user a bit on a Q """
-    user = models.ForeignKey(User, blank=True, null=True) # User to give this permission
-    qsc = models.ForeignKey(DataTree, related_name='userbit_qsc') # Controller to grant access to
-    verb = models.ForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
+    user = AjaxForeignKey(User, blank=True, null=True) # User to give this permission
+    qsc = AjaxForeignKey(DataTree, related_name='userbit_qsc') # Controller to grant access to
+    verb = AjaxForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
 
     startdate = models.DateTimeField(blank=True, null=True)
     enddate = models.DateTimeField(blank=True, null=True)
@@ -769,16 +790,20 @@ class UserBit(models.Model):
 	return res
 
     class Admin:
-        pass
+        search_fields = ['user__last_name','user__first_name',
+                         'qsc__uri','verb__uri']
+
 
     
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
-    user = models.ForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     school = models.CharField(maxlength=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, null=True, default = False)
+
+
     
     def updateForm(self, form_dict):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
@@ -827,11 +852,12 @@ class StudentInfo(models.Model):
         return 'ESP Student Info (%s)' % username
             
     class Admin:
-        pass
+        search_fields = ['user__first_name','user__last_name','user__username']
+
 
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
-    user = models.ForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     college = models.CharField(maxlength=128,blank=True, null=True)
     major = models.CharField(maxlength=32,blank=True, null=True)
@@ -869,11 +895,11 @@ class TeacherInfo(models.Model):
         return 'ESP Teacher Info (%s)' % username
 
     class Admin:
-        pass
+        search_fields = ['user__first_name','user__last_name','user__username']
     
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
-    user = models.ForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(User, blank=True, null=True)
     year_finished = models.PositiveIntegerField(blank=True, null=True)
     num_kids = models.PositiveIntegerField(blank=True, null=True)
 
@@ -903,11 +929,12 @@ class GuardianInfo(models.Model):
         return 'ESP Guardian Info (%s)' % username
     
     class Admin:
-        pass
+        search_fields = ['user__first_name','user__last_name','user__username']
+
 
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
-    user = models.ForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(User, blank=True, null=True)
     subject_taught = models.CharField(maxlength=64,blank=True, null=True)
     grades_taught = models.CharField(maxlength=16,blank=True, null=True)
     school = models.CharField(maxlength=128,blank=True, null=True)
@@ -944,7 +971,7 @@ class EducatorInfo(models.Model):
 
     
     class Admin:
-        pass
+        search_fields = ['user__first_name','user__last_name','user__username']
 
 class ZipCode(models.Model):
     """ Zip Code information """
@@ -1025,19 +1052,19 @@ class ZipCodeSearches(models.Model):
 
 class ContactInfo(models.Model):
 	""" ESP-specific contact information for (possibly) a specific user """
-	user = models.ForeignKey(User, blank=True, null=True)
+	user = AjaxForeignKey(User, blank=True, null=True, edit_inline = models.STACKED)
 	first_name = models.CharField(maxlength=64)
 	last_name = models.CharField(maxlength=64)        
 	e_mail = models.EmailField(blank=True, null=True)
 	phone_day = models.PhoneNumberField(blank=True, null=True)
-	phone_cell = models.PhoneNumberField(blank=True, null=True)
+	phone_cell = models.PhoneNumberField(blank=True, null=True, core=True)
 	phone_even = models.PhoneNumberField(blank=True, null=True)
-	address_street = models.CharField(maxlength=100,blank=True, null=True)
-	address_city = models.CharField(maxlength=50,blank=True, null=True)
-	address_state = models.USStateField(blank=True, null=True)
-	address_zip = models.CharField(maxlength=5,blank=True, null=True)
+	address_street = models.CharField(maxlength=100,blank=True, null=True, core=True)
+	address_city = models.CharField(maxlength=50,blank=True, null=True, core=True)
+	address_state = models.USStateField(blank=True, null=True, core=True)
+	address_zip = models.CharField(maxlength=5,blank=True, null=True, core=True)
         address_postal = models.TextField(blank=True,null=True)
-        undeliverable = models.BooleanField(default=False)
+        undeliverable = models.BooleanField(default=False, core=True)
         
         def address(self):
             return '%s, %s, %s %s' % \
@@ -1317,10 +1344,10 @@ class UserBitImplication(models.Model):
     """ This model will create implications for userbits...
       that is, if a user has A permission, they will get B """
     
-    qsc_original  = models.ForeignKey(DataTree, related_name = 'qsc_original',  blank=True, null=True)
-    verb_original = models.ForeignKey(DataTree, related_name = 'verb_original', blank=True, null=True)
-    qsc_implied   = models.ForeignKey(DataTree, related_name = 'qsc_implied',   blank=True, null=True)
-    verb_implied  = models.ForeignKey(DataTree, related_name = 'verb_implied',  blank=True, null=True)
+    qsc_original  = AjaxForeignKey(DataTree, related_name = 'qsc_original',  blank=True, null=True)
+    verb_original = AjaxForeignKey(DataTree, related_name = 'verb_original', blank=True, null=True)
+    qsc_implied   = AjaxForeignKey(DataTree, related_name = 'qsc_implied',   blank=True, null=True)
+    verb_implied  = AjaxForeignKey(DataTree, related_name = 'verb_implied',  blank=True, null=True)
     recursive     = models.BooleanField(default = True)
     created_bits  = models.ManyToManyField(UserBit, blank=True, null=True)
 

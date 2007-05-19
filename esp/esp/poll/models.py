@@ -32,15 +32,16 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.template import Context, loader
 from esp.datatree.models import DataTree
+from esp.db.fields import AjaxForeignKey
 
 # Create your models here.
 
 class Survey(models.Model):
-    path = models.ForeignKey(DataTree)
+    path = AjaxForeignKey(DataTree)
     name = models.SlugField()
     title = models.TextField()
     create_date = models.DateTimeField(auto_now_add=True)
-    author = models.ForeignKey(User, blank=True, null=True)
+    author = AjaxForeignKey(User, blank=True, null=True)
 
     def __str__(self):
         return "Survey: " + self.title
@@ -52,7 +53,7 @@ class Survey(models.Model):
         pass
 
 class SurveyResponse(models.Model):
-    author = models.ForeignKey(User)
+    author = AjaxForeignKey(User)
     create_date = models.DateTimeField(auto_now_add=True)
     source_survey = models.ForeignKey(Survey)
 
