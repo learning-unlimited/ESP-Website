@@ -1,6 +1,16 @@
 {% extends "admin/base.html" %}
 {% load i18n %}
 
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script>
+<script type="text/javascript" src="/media/scripts/json.js"></script>
+{% endblock %}
+
 {% block title %}{{ title|escape }} | {% trans 'ESP site admin' %}{% endblock %}
 
 {% block branding %}

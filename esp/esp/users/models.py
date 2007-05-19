@@ -1131,7 +1131,7 @@ class ContactInfo(models.Model):
             return first_name + ' ' + last_name + ' (' + username + ')'
 
 	class Admin:
-		pass
+            search_fields = ['first_name','last_name','user__username']
 
 
 class K12School(models.Model):

@@ -78,7 +78,7 @@ var %s_data = new YAHOO.widget.DS_XHR("/admin/ajax_autocomplete/",
 var autocomp__%s = new YAHOO.widget.AutoComplete("id_%s","id_%s__container",%s_data);
 
 autocomp__%s.allowBrowserAutocomplete = false;
-autocomp__%s.typeAhead = true;
+//autocomp__%s.typeAhead = true;
 autocomp__%s.animVert = true;
 autocomp__%s.queryDelay = .2;
 autocomp__%s.maxCacheEntries = 60; 
@@ -95,7 +95,9 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
   var elements = YAHOO.util.Dom.getElementsByClassName('form-row', 'div');
   for (var i=0; i< elements.length; i++) {
     elements[i].style.overflow = 'visible';
-    elements[i].style.paddingBottom = '12.5em';
+    if (YAHOO.util.Dom.getElementsByClassName('yui_autocomplete','div', elements[i]).length > 0) {
+        elements[i].style.paddingBottom = '12.5em';
+    }
   }
 });
 
@@ -113,7 +115,7 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
     #id_%s__yui_autocomplete input {_position:absolute;width:100%%;height:1.4em;z-index:0;} /* abs for ie quirks */
     #id_%s__container {position:relative; width:100%%;}
     #id_%s__container .yui-ac-content {position:absolute;width:100%%;border:1px solid #ccc;background:#fff;overflow:hidden;z-index:9050;}
-    #id_%s__container .yui-ac-shadow {position:absolute;margin:.3em;width:100%%;background:#a0a0a0;z-index:8000;}
+    #id_%s__container .yui-ac-shadow {position:absolute;margin:.3em;width:100%%;background:#eee;z-index:8000;}
     #id_%s__container ul {padding:5px 0;width:100%%; list-item-type: none;margin-left: 0; padding-left: 0;z-index:9000;}
     #id_%s__container li {padding:0 5px;cursor:default;white-space:nowrap;padding-left: 0; margin-left: 0;}
     #id_%s__container li.yui-ac-highlight {background:#9cf;z-index:9000;}

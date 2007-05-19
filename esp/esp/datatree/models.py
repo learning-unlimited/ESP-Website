@@ -35,6 +35,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.db.models import Q
 from django.db import transaction
+from esp.db.fields import AjaxForeignKey
 import exceptions
 
 
@@ -65,7 +66,7 @@ class DataTree(models.Model):
     # some fields
     name          = models.CharField(maxlength=64)
     friendly_name = models.TextField()
-    parent        = models.ForeignKey('self',blank=True,null=True)
+    parent        = AjaxForeignKey('self',blank=True,null=True)
     rangestart    = models.IntegerField(editable = False)
     rangeend      = models.IntegerField(editable = False)
     uri           = models.CharField(editable = False, maxlength=1024)
@@ -82,6 +83,7 @@ class DataTree(models.Model):
         ordering = ['rangestart','-rangeend']
 
     class Admin:
+        search_fields = ['uri']
         pass
 
     ########################
