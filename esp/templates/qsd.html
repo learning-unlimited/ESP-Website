@@ -5,7 +5,8 @@
 {% block subsection_name %}{% endblock %}
 
 {% block content %}
-{{ content }}
+{% load smartypants %}
+{{ content|smartypants }}
 <br /><br />
 <div id="divmainqsddatetimestamp">
   <p>Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date }}</p>

@@ -1,12 +1,13 @@
 {% if show_class %}
 {% load latex %}
+{% load smartypants %}
 <div class="show_class">
   <table cellpadding="5" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
     <tr>
       <th colspan="2" style="width: 70%;">
       {% if not prereg_url %}
         <a class="classtitle" href="{{ class.parent_program.get_learn_url }}studentreg/" title="Join this class!">
-      {% endif %} {{ class.title|escape|teximages:150 }}
+      {% endif %} {{ class.title|escape|teximages:150|smartypants }}
       {% if not prereg_url %} </a> {% endif %}
       </th>
       <th style="width: 30%;">
@@ -21,7 +22,7 @@
      </tr>
      <tr>
        <td colspan="3" class="info" {% if errormsg %}style="background: #eee;"{% endif %}>
-         {{ class.class_info|escape|teximages:120|linebreaksbr }}<br />
+         {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
        {% if class.prereqs %}
        <br /><br />
        <em>*Prerequisites*</em>

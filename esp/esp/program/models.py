@@ -522,6 +522,8 @@ class Class(models.Model):
     event_template = AjaxForeignKey(DataTree, related_name='class_event_template_set', null=True)
     meeting_times = models.ManyToManyField(DataTree, related_name='meeting_times', null=True)
     viable_times = models.ManyToManyField(DataTree, related_name='class_viable_set', blank=True)
+    meeting_timeslots = models.ManyToManyField('ClassTimeSlot', related_name='meeting_timeslots', null=True, blank=True)
+    viable_timeslots  = models.ManyToManyField('ClassTimeSlot', related_name='viable_timeslots', null=True, blank=True)    
     resources = models.ManyToManyField(DataTree, related_name='class_resources', blank=True)
 
     #    We think this is useless because the sign-up is completely based on userbits.
@@ -1333,3 +1335,17 @@ class JunctionStudentApp(models.Model):
     done = models.BooleanField(default=False,editable = False)
     
     
+
+class ClassTimeSlot(models.Model):
+    """
+    A time slot for a particular class and program.
+    """
+    program = models.ForeignKey(Program, editable=False)
+    event   = models.ForeignKey(Event)
+    description = models.CharField(maxlength=256, blank=True, null=True)
+    
+    def __str__(self):
+        if self.description:
+            return self.description
+        else:
+            return str(self.event)

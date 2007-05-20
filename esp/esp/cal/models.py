@@ -36,6 +36,7 @@ from datetime import datetime, timedelta
 from esp.db.fields import AjaxForeignKey
 
 
+
 # Create your models here.
 
 class EventType(models.Model):
@@ -125,7 +126,7 @@ class Event(models.Model):
 
     class Admin:
         pass
-    
+
 class Program(models.Model):
     """ An ESP program, ie. HSSP, Splash, etc. """
     event = models.OneToOneField(Event)
