@@ -32,7 +32,8 @@ Email: web@esp.mit.edu
 from django import newforms as forms
 from django.utils.translation import gettext_lazy as _
 email_choices = (
-    ('esp','Educational Studies Program'),
+    ('esp','Unknown'),
+    ('general','General ESP'),
     ('esp-web','Web Site Problems'),
     ('satprep','SATPrep'),
     ('splash','Splash!'),
@@ -50,6 +51,7 @@ email_choices = (
 # corresponding email addresses
 email_addresses = {
     'esp'     : 'esp@mit.edu',
+    'general'     : 'esp@mit.edu',    
     'esp-web' : 'web@esp.mit.edu',
     'satprep' : 'satprep-director@mit.edu',
     'splash'  : 'splash-director@mit.edu',
@@ -96,7 +98,8 @@ class ContactForm(forms.Form):
     person_type  = forms.ChoiceField(choices = person_type, label=_("I am a(n)"))
 
     hear_about   = forms.ChoiceField(choices = hear_about, label="How did you hear about us?")
-    topic   = forms.ChoiceField(choices = email_choices, label=_("Topic"))
+    topic   = forms.ChoiceField(choices = email_choices, label=_("Topic"),
+                                help_text = "(This determines who gets the message.)")
     
 
     

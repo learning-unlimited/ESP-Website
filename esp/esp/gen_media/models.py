@@ -33,6 +33,10 @@ from django.conf import settings
 from esp.users.models import User
 from esp.middleware   import ESPError
 import os
+import datetime
+import cStringIO as StringIO
+import md5
+from PIL import Image, ImageFont, ImageDraw
 
 TEXIMAGE_BASE = settings.MEDIA_ROOT+'/latex'
 TEXIMAGE_URL  = '/media/uploaded/latex'
@@ -130,8 +134,68 @@ def get_rand_file_base():
    
     return rand
 
+IMAGE_TYPE = 'png'
+
+class SubSectionImage(models.Model):
+
+    create_ts = models.DateTimeField(default = datetime.datetime.now,
+                                     editable = False)
+    text  = models.TextField(unique=True)
+    image = models.ImageField(upload_to = 'subsection_images')
+    font_size = models.IntegerField(default = 24)
+    height = models.PositiveIntegerField(blank=True,null=True)
+    width = models.PositiveIntegerField(blank=True, null=True)
 
 
+    class Admin:
+        pass
 
-    
+    def create_image(self):
+        """
+        Takes a string and creates a pretty image.
+        """
 
+        FONT = settings.MEDIA_ROOT + 'BOOKOS.TTF'
+
+        font = ImageFont.truetype(FONT, self.font_size)
+
+        font_string = self.text
+
+        dim = font.getsize(font_string)
+
+        dim = (350, dim[1],)
+
+        im = Image.new('RGB',dim, 'white')
+        draw = ImageDraw.Draw(im)
+
+        draw.text((0,0),font_string, font=font, fill="#333333") #, fill=self.color)
+
+        del draw
+
+        im = im.rotate(270)
+
+        file_name = md5.new(font_string).hexdigest()
+
+        file_name = '%s/%s.%s' %\
+                      (self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)
+
+        c = StringIO.StringIO()
+        im.save(c, IMAGE_TYPE)
+
+        self.image = file_name
+
+        self.save_image_file(file_name, c.getvalue(), save=False)
+
+        del c
+
+        self.width, self.height = dim
+
+    def save(self, *args, **kwargs):
+        self.create_image()
+        models.Model.save(self, *args, **kwargs)
+
+    def __str__(self):
+        if not os.path.exists(self.get_image_filename()):
+            self.create_image()
+        return '<img src="%s" alt="%s" border="0" title="%s" class="subsection" />' % (self.get_image_url(), self.text, self.text)
+        

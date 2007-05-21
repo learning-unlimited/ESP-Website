@@ -200,7 +200,8 @@ form {
 /*  padding: 0;*/
   font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
-  color: #3366cc;
+/*  color: #3366cc;*/
+  color: black;
   line-height: 133%;
   margin: 0px;
 }
@@ -220,7 +221,8 @@ form {
 #secondarynav a:link {
   font-weight: bold;
   display: block;
-  color: #3366cc;
+/*  color: #3366cc; */
+  color: black;
   width: 100%;
   text-decoration: none;
 }
@@ -250,14 +252,16 @@ form {
 
 #secondarynav a:visited {
   font-weight: bold;
-  color: #993399;
+/*  color: #993399; */
+  color: #333;
   text-decoration: none;
 }
 #secondarynav a:active,
 #secondarynav a:hover,
 #secondarynav a:focus {
   font-weight: bold;
-  color: #3366cc;
+/*  color: #3366cc; */
+  color: #999;
   text-decoration: underline;
 }
 
@@ -360,7 +364,7 @@ form {
 #divsubsectionname {
   position: absolute;
   left: 210px;
-  top: 227px;
+  top: 230px;
   z-index: 6;
 }
 

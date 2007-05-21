@@ -48,7 +48,15 @@ class StatsMiddleware(object):
 
         # time the view
         start = time()
-        response = view_func(request, *view_args, **view_kwargs)
+        try:
+            response = view_func(request, *view_args, **view_kwargs)
+        except Exception, e:
+            from esp.middleware import ESPErrorMiddleware
+            response = ESPErrorMiddleware().process_exception(request, e)
+            if response:
+                return response
+            raise e
+            
         totTime = time() - start
 
         stats = {

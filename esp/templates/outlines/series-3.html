@@ -3,89 +3,26 @@
 
 {% block xtrajs %}
 {{ block.super }}
-{% if navbar_list.has_edit_bits %}
-<script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
+{% if request.user.is_authenticated %}
+<script type="text/javascript" src="{{ media_url }}scripts/yui/yahoo/yahoo-min.js"></script>
 
-<script type="text/javascript" src="/media/scripts/yui/event/event-min.js"></script>
-<script type="text/javascript" src="/media/scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/dom/dom-min.js"></script>
 
-<script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/connection/connection-min.js"></script>
 
-<script type="text/javascript" src="/media/scripts/yui/logger/logger-min.js"></script>
-<script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-debug.js"></script>
-<script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script>
-<script type="text/javascript" src="/media/scripts/ddlist.js"></script><script type="text/javascript">
-<!--
-YAHOO.example.DDApp = function() {
-    var Dom = YAHOO.util.Dom;
-    var DDM = YAHOO.util.DragDropMgr;
-    return {
-        init: function() {
-{% for nav_entry in navbar_list.qsdTree %}{% if nav_entry.has_bits %}
-new YAHOO.example.DDList("nav_entry__{{ nav_entry.entry.id }}");
-document.getElementById('nav_entry__control__{{nav_entry.entry.id}}').innerHTML = '';{% endif %}{% endfor %}
-
-       
-            DDM.mode = 0;
-        }
-    };
-} ();
-
-YAHOO.util.Event.addListener(window, "load", YAHOO.example.DDApp.init);
-
-
-
-function delete_navbar(navbar_id) {
-   if (!confirm("Are you SURE you want to delete this navbar?")) {
-      return;
-   }
-
-   var callback = {
-    success:function(o) {
-       document.getElementById('nav_entry__'+o.argument.nav_entry_id).innerHTML = '';
-       document.getElementById('nav_entry__'+o.argument.nav_entry_id).style.display = 'none';
-    },
-    failure:function(o) {},
-    argument: {nav_entry_id: navbar_id}};
-
-   sUrl = '/navbar/edit.scm?new_url={{request.path}}&navbar_id='+navbar_id+'&node_id=&action=delete'
-
-   var request = YAHOO.util.Connect.asyncRequest('GET',sUrl,callback);
-
-}
-
-var handleSuccess = function(o){
-   if (o.responseText !== undefined && o.responseText.length > 0) {
-      alert(o.responseText);
-
-   }
-};
-
-var callback =
-{
-  success:function(o) {},
-  failure:function(o) {},
-  argument: {}
-};
-
-function move_seq(new_seq) {
-
-   sUrl = '?ajax_movepage&seq='+new_seq;
-   //   alert(sUrl);
-   var request = YAHOO.util.Connect.asyncRequest('GET',sUrl,callback);
-}
-
-
-//-->
-</script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/logger/logger-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/dragdrop/dragdrop-debug.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/animation/animation-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/ddlist.js"></script>
 {% endif %}
 {% endblock %}
 
 {% block stylesheets %}
 
 
-<link rel="stylesheet" href="/media/styles/print_basic.css" type="text/css" media="print" />
-<link rel="stylesheet" href="/media/styles/level3.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="{{ media_url }}styles/print_basic.css" type="text/css" media="print" />
+<link rel="stylesheet" href="{{ media_url }}styles/level3.css" type="text/css" media="screen" />
 
 {% endblock %}
 
@@ -94,7 +31,7 @@ function move_seq(new_seq) {
 <!-- skip link -->
 <div class="offscreen">
 {% block skiplinks %}
-<a href="#startcontent" accesskey="x"><img src="/media/images/spacer.gif" width="1" height="1" alt="Skip to content" /></a>
+<a href="#startcontent" accesskey="x"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="Skip to content" /></a>
 {% endblock %}
 </div>
 
@@ -102,32 +39,32 @@ function move_seq(new_seq) {
 {% block banner_backgrounds %}
 <div id="top_banner">
 <div id="divbkg1">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
+  <img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" />
 </div>
 <div id="divbkg2">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
+  <img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" />
 </div>
 <div id="divbkg3">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
+  <img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" />
 </div>
 <div id="divbkg4">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
+  <img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" />
 </div>
 </div>
 {% endblock %}
 
 <!-- site title -->
 <div id="divtitle">
-{% block section_title %}<img src="/media/images/series-3/sitetitle.gif" border="0" alt="Educational Studies Program" title="" />{% endblock %}
+{% block section_title %}<img src="{{ media_url }}images/series-3/sitetitle.gif" border="0" alt="Educational Studies Program" title="" />{% endblock %}
 </div>
 
 <!-- image size may vary -->
 {% block banner_nav %}
 
 <div id="divnavh">
-  <a href="/" onmouseover="MM_swapImage('home','','/media/images/level3/nav/home_ro.gif',1)"
+  <a href="/" onmouseover="MM_swapImage('home','','{{ media_url }}images/level3/nav/home_ro.gif',1)"
    onmouseout="MM_swapImgRestore()">
-      <img src="/media/images/level3/nav/home.gif" border="0" alt="Home"
+      <img src="{{ media_url }}images/level3/nav/home.gif" border="0" alt="Home"
            title="" id="home" />
   </a>
 </div>
@@ -136,17 +73,6 @@ function move_seq(new_seq) {
 {% get_primary_nav %}
 {% endblock %}
 
-<!-- section name -->
-<div id="divsectionname">
-{% if page_setup.section %}
-<img src="/media/images/{{page_setup.section.id}}/sectionname.gif" border="0" alt="{{page_setup.section.alt}}" title="" />
-<!--
-{% endif %}
-{% block section_name %}{% endblock %}
-{% if page_setup.section %}
--->
-{% endif %}
-</div>
  
 <!-- image sizes may vary -->
 
@@ -172,7 +98,7 @@ function move_seq(new_seq) {
          <div class="divformcol3"><label for="q">Search:</label></div>
         </td>
 				<td><div class="divformcol4"><input style="border: 2px solid black;" type="text" name="q" id="q" size="8" value="" maxlength="255" class="inputbox" accesskey="s" /></div></td>
-				<td><div class="divformcol5"><input type="image" name="gosearch" id="gosearch" src="/media/images/go1.gif" class="gobutton" alt="Go" title="" /></div></td>
+				<td><div class="divformcol5"><input type="image" name="gosearch" id="gosearch" src="{{ media_url }}images/go1.gif" class="gobutton" alt="Go" title="" /></div></td>
 	          </tr>
     </table>
   </form></div>	
@@ -190,7 +116,7 @@ function move_seq(new_seq) {
    <input style="border: 2px solid black;" type="text" id="id__top_username" class="vTextField required inputbox" name="username" size="15" value="" maxlength="30" /></div></td>
   <td class="rightalign"><div class="divformcol3">&nbsp;&nbsp;<label for="id__top_password">Password:</label></div></td>
   <td><div class="divformcol4"><input style="border: 2px solid black;" type="password" id="id__top_password" class="vPasswordField required inputbox" name="password" size="15" value="" maxlength="30" /></div></td>
-  <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="/media/images/go2.gif" class="gobutton" alt="Go" title="" /><input type="hidden" name="next" value="{{ request.path }}" /></div></td>
+  <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="{{ media_url }}images/go2.gif" class="gobutton" alt="Go" title="" /><input type="hidden" name="next" value="{{ request.path }}" /></div></td>
 </tr>
 {% endif %}
 <tr>
@@ -225,9 +151,9 @@ function move_seq(new_seq) {
 {% endblock %}
 
 <!-- subsection name -->
-<div id="divsubsectionname"
-style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-index: 100;">
-{% block subsection_name %}{% endblock %}
+<div id="divsubsectionname">
+{% block subsection %}
+{% endblock %}
 </div>
 <!-- image sizes may vary -->
 
@@ -237,15 +163,15 @@ style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-ind
   <table border="0" cellpadding="0" cellspacing="0" summary=" " id="maintable">
     <!-- skip row 1 - no longer needed -->
     <tr id="tableheader"><!-- alignment and space -->
-      <td><div class="row2 col1"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col2"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col3"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col4"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td><div class="row2 col1"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row2 col2"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row2 col3"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row2 col4"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row2 col5"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr> 
     <tr><!-- content -->
-      <td align="right" class="notmaintd" valign="bottom"><img src="/media/images/bandaid1.gif" width="28" height="46" alt="" /></td>
-      <td align="left" valign="bottom" class="paper notmaintd"><img src="/media/images/bandaid2.gif" width="43" height="35" alt="" /></td>
+      <td align="right" class="notmaintd" valign="bottom"><img src="{{ media_url }}images/bandaid1.gif" width="28" height="46" alt="" /></td>
+      <td align="left" valign="bottom" class="paper notmaintd"><img src="{{ media_url }}images/bandaid2.gif" width="43" height="35" alt="" /></td>
       <td align="left" valign="top" class="paper">
         <div id="divmaintext">
 {% block content %}{% endblock %}
@@ -263,7 +189,7 @@ style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-ind
           </td></tr></table>
         </div>
       </td> 
-      <td class="paper"><div class="row3 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td class="paper"><div class="row3 col5"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr>
     <tr><!-- footer -->
       <td colspan="3" align="left" valign="top">
@@ -274,7 +200,7 @@ style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-ind
     <tr>
       <td><!-- mit logo -->
         <div id="divfootercol1">
-          <a href="http://web.mit.edu/" accesskey="m"><img src="/media/images/mit.gif" width="42" height="24" border="0" alt="MIT home" title="MIT home" /></a></div>
+          <a href="http://web.mit.edu/" accesskey="m"><img src="{{ media_url }}images/mit.gif" width="42" height="24" border="0" alt="MIT home" title="MIT home" /></a></div>
       </td>
       <td><!-- mit -->
         <div id="divfootercol2">
@@ -292,13 +218,13 @@ style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-ind
       </td>
       <td><!-- email bubble -->
         <div id="divfootercol5">
-          <img src="/media/images/emailbubble.gif" width="25" height="21" border="0" alt="" /></div>
+          <img src="{{ media_url }}images/emailbubble.gif" width="25" height="21" border="0" alt="" /></div>
       </td>
     </tr>
   </table>
 </div>      </td>
-      <td><div id="divquote{% if randquote %}large{% else %}none{% endif %}bot"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td><div class="row4 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td><div id="divquote{% if randquote %}large{% else %}none{% endif %}bot"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
+      <td><div class="row4 col5"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr>
     <tr>
       <td colspan="3">

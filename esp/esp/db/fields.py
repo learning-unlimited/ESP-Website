@@ -6,7 +6,7 @@ from esp.db.forms import AjaxForeignKeyFormField
 class AjaxForeignKey(ForeignKey):
 
     def __init__(self, *args, **kwargs):
-        #kwargs['raw_id_admin'] = True
+        kwargs['raw_id_admin'] = False
         ForeignKey.__init__(self, *args, **kwargs)
 
 

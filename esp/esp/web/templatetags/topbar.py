@@ -75,6 +75,7 @@ def get_primary_nav(context):
                                            'href'     : sections[section][2]})
             if path.lower() == sections[section][2]:
                 page_setup['section'] = {'id': section+'/lev2', 'alt': sections[section][1]}
+                context['page_section'] = page_setup['section']
         if is_admin:
             section = 'admin'
             page_setup['navlinks'].append({'id'       : section,
@@ -100,9 +101,11 @@ def get_primary_nav(context):
 
         for section in basic_navlinks:
             if path_list[0] == sections[section][0] and sections[section][4]:
+                
                 page_setup['section'] = {'id': section+'/lev3',
                                          'alt': sections[section][1],
                                          'cursection': section}
+                context['page_section'] = page_setup['section']
                 current_section = section
                 
         for section in basic_navlinks:

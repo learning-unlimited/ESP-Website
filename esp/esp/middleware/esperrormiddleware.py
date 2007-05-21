@@ -28,8 +28,6 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.middleware.statsmiddleware import *
-from esp.middleware.esperrormiddleware import *
 
 class ESPError_Log(Exception):
     pass
@@ -128,8 +126,8 @@ class ESPErrorMiddleware(object):
                 return render_to_response('error.html', context)  # Will use a pretty ESP error page...
 
             else:
-                assert False, str(type(exception))
-                return None
+                #exc_info = sys.exc_info()
+                raise exc_info[0], exc_info[1], exc_info[2]
                 
             return None
 

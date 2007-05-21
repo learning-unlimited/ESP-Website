@@ -1,8 +1,10 @@
 {% extends "outlines/series-3.html" %}
+{% load subsection %}
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block subsection_name %}{% endblock %}
+
+{% block subsection %}{{ title|subsection }}{% endblock %}
 
 {% block content %}
 {% load smartypants %}

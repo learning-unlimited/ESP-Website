@@ -38,7 +38,7 @@ class AjaxForeignKeyFormField(oldforms.FormField):
         Renders the actual ajax widget.
         """
 
-        init_val = data
+        old_init_val = init_val = data
 
         if data:
             objects = self.field.rel.to.objects.filter(pk = data)
@@ -46,8 +46,9 @@ class AjaxForeignKeyFormField(oldforms.FormField):
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
                     init_val = obj.ajax_str() + " (%s)" % data
+                    old_init_val = str(obj)
                 else:
-                    init_val = obj.__str__() + " (%s)" % data
+                    old_init_val = init_val = obj.__str__() + " (%s)" % data
         else:
             data = init_val = ''
 
@@ -92,6 +93,12 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
   for (var i=0; i<elements.length; i++) {
     elements[i].style.display = 'none';
   }
+  var elements = YAHOO.util.Dom.getElementsByClassName('raw_id_admin', 'div');
+  for (var i=0; i< elements.length; i++) {
+     elements[i].style.display = 'none';
+     elements[i].style.visibility = 'hidden';
+  }
+
   var elements = YAHOO.util.Dom.getElementsByClassName('form-row', 'div');
   for (var i=0; i< elements.length; i++) {
     elements[i].style.overflow = 'visible';
@@ -113,7 +120,7 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
     #id_%s__yui_autocomplete {position:relative;width:%s;margin-bottom:1em;}/* set width of widget here*/
     #id_%s__yui_autocomplete {z-index:0} /* for IE z-index of absolute divs inside relative divs issue */
     #id_%s__yui_autocomplete input {_position:absolute;width:100%%;height:1.4em;z-index:0;} /* abs for ie quirks */
-    #id_%s__container {position:relative; width:100%%;}
+    #id_%s__container {position:relative; width:100%%;top:-.1em;}
     #id_%s__container .yui-ac-content {position:absolute;width:100%%;border:1px solid #ccc;background:#fff;overflow:hidden;z-index:9050;}
     #id_%s__container .yui-ac-shadow {position:absolute;margin:.3em;width:100%%;background:#eee;z-index:8000;}
     #id_%s__container ul {padding:5px 0;width:100%%; list-item-type: none;margin-left: 0; padding-left: 0;z-index:9000;}
@@ -122,17 +129,28 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
     #id_%s__container li.yui-ac-prehighlight {background:#CCFFFF;z-index:9000;}
     .yui-ac-bd { padding:0; margin: 0; z-index:9000;}
 </style>
+<!--[if lte IE 6]>
+<style type="text/css">
+    #id_%s__container { position: relative;top:2.3em; }
+</style>
+<![endif]-->
 """ % \
-        (fn,self.width,fn,fn,fn,fn,fn,fn,fn,fn,fn)
+        (fn,self.width,fn,fn,fn,fn,fn,fn,fn,fn,fn,fn)
 
         html = """
 <div class="container" style="position: relative;">
 <div class="yui_autocomplete" id="id_%s__yui_autocomplete">
-  <input type="text" id="id_%s" name="%s" class="vCharField" value="%s" />
+  <input type="text" id="id_%s" name="%s" class="vCharField%s" value="%s" />
   <div id="id_%s__container" class="yui_container"></div>
 </div>
 </div>
-""" % (fn,fn,fn,addslashes(init_val),fn)
+<div class="raw_id_admin">
+  <a href="../../../datatree/datatree/" class="related-lookup" id="lookup_%s" onclick="return showRelatedObjectLookupPopup(this);">
+  <img src="/media/admin/img/admin/selector-search.gif" width="16" height="16" alt="Lookup" /></a>   
+   &nbsp;<strong>%s</strong>
+</div>
+""" % (fn,fn,fn,self.field.blank and ' required' or '',addslashes(data or ''),fn,
+       fn,old_init_val)
 
         return css + html + javascript
 

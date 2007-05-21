@@ -428,7 +428,7 @@ class ESPUser(User, AnonymousUser):
 
         return schoolyear + 12 - grade      
         
-   
+    
 
 class UserBit(models.Model):
     """ Grant a user a bit on a Q """

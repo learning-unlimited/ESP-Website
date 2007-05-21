@@ -1,49 +1,65 @@
 # Django settings for esp project.
+__author__    = "MIT ESP"
+__date__      = "$DATE$"
+__rev__       = "$REV$"
+__license__   = "GPL v.2"
+__copyright__ = """
+This file is part of the ESP Web Site
+Copyright (c) 2007 MIT ESP
 
+The ESP Web Site is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+Contact Us:
+ESP Web Group
+MIT Educational Studies Program,
+84 Massachusetts Ave W20-467, Cambridge, MA 02139
+Phone: 617-253-4882
+Email: web@esp.mit.edu
+"""
 
 DEBUG = True
+DISPLAYSQL = False
+
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-    ('Webmasters', 'esp-webmasters@mit.edu'),
+    ('Mike Axiak', 'axiak@mit.edu')
 )
-
-EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
-SERVER_EMAIL         = 'server@esp.mit.edu'
+MANAGERS = ADMINS
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = '25'
-
-MANAGERS = ADMINS
 
 DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
 DATABASE_NAME = 'django'             # Or path to database file if using sqlite3.
 from database_settings import *
 DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
+DATABASE_PORT = '5432'             # Set to empty string for default. Not used with sqlite3.
 
-# Local time zone for this installation. All choices can be found here:
-# http://www.postgresql.org/docs/current/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
+PROJECT_ROOT = '/var/www/espdevel2/esp/trunk/esp/'
+
 TIME_ZONE = 'America/New_York'
 
-# Language code for this installation. All choices can be found here:
-# http://www.w3.org/TR/REC-html40/struct/dirlang.html#langcodes
-# http://blogs.law.harvard.edu/tech/stories/storyReader$15
 LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
 
-# Absolute path to the directory that holds media.
-# Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = '/var/www/espdevel2/esp/trunk/esp/media/'
+MEDIA_ROOT = PROJECT_ROOT + 'media/'
 
-# URL that handles the media served from MEDIA_ROOT.
-# Example: "http://media.lawrence.com"
 MEDIA_URL = '/media/'
 
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/admin/media/'
+ADMIN_MEDIA_PREFIX = '/media/admin/'
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'm)^ea+0^rg5w73-h9d$t)#1@jsf+0km97_rbnpy2884b^%t&wo'
@@ -56,10 +72,16 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'esp.datatree.middleware.DataTreeLockMiddleware',
+    'esp.middleware.ESPErrorMiddleware',
+    'esp.middleware.StatsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    #'django.contrib.csrf.middleware.CsrfMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
+
 )
 
 ROOT_URLCONF = 'esp.urls'
@@ -67,8 +89,10 @@ ROOT_URLCONF = 'esp.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
-    '/var/www/espdevel2/esp/trunk/esp/templates'
+    PROJECT_ROOT+'templates'
 )
+
+APPEND_SLASH=False
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -86,22 +110,30 @@ INSTALLED_APPS = (
     'esp.cal',
     'esp.lib',
     'esp.setup',
-    'esp.unittest',
     'esp.web',
     'esp.qsd',
     'esp.qsdmedia',
-    'esp.satprep',
     'esp.money',
     'esp.resources',
     'esp.poll',
     'esp.dblog',
+    'esp.gen_media',
+
 )
 
-EMAIL_HOST = 'outgoing.mit.edu'
-APPEND_SLASH=False
 
 #aseering 12-15-2006: Make memcached happen
-#CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=60"
+CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
 
 
 LOG_FILE="/var/log/django/esp_errlog"
+
+SESSION_EXPIRE_AT_BROWSER_CLOSE=True
+
+TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
+                               'esp.context_processors.esp_user',
+                               'esp.context_processors.test_cookie',
+                               'django.core.context_processors.i18n',
+                               'django.core.context_processors.request',
+                               'django.core.context_processors.auth',
+                               )  

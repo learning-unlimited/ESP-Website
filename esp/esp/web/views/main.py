@@ -59,9 +59,7 @@ from django.views.decorators.cache import cache_control
 @vary_on_headers('Cookie')
 def index(request):
 	""" Displays a generic "index" page """
-	# Catherine: This does nothing
-	# aseering: Yay.
-	# axiak:    hmm...
+
 	announcements = preview_miniblog(request)
 
 	backgrounds = ["/media/images/home/pagebkg1.jpg",
@@ -90,10 +88,6 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
-
-
-
-
 	if filename != "":
 		url = url + "/" + filename
 
@@ -169,7 +163,6 @@ def program(request, tl, one, two, module, extra = None):
 	prog = prog[0]
 
 	if program_handlers.has_key(module):
-		# aseering: Welcome to the deep, dark, magical world of lambda expressions!
 		return program_handlers[module](request, tl, one, two, module, extra, prog)
 
 	from esp.program.modules.base import ProgramModuleObj
@@ -177,8 +170,9 @@ def program(request, tl, one, two, module, extra = None):
 
 	if newResponse:
 		return newResponse
-	
-	return render_to_response('errors/404.html', request, GetNode('Q/Web'), {})
+
+	raise Http404
+
 
 def archives(request, selection, category = None, options = None):
 	""" Return a page with class archives """
