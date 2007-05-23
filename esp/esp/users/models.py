@@ -1175,7 +1175,7 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
             # we can now create it
             return GetNode(nodename)
         else:
-            raise DataTree.NoSuchNodeException
+            raise DataTree.NoSuchNodeException(lowest_parent, nodename)
     else:
         # person not allowed to
         raise PermissionDenied
