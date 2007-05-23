@@ -15,3 +15,10 @@ def test_cookie(request):
     if not request.user.is_authenticated():
         request.session.set_test_cookie()
     return {}
+
+def index_backgrounds(request):
+    #if request.path.strip() == '':
+    return {'backgrounds': ["/media/images/home/pagebkg1.jpg",
+                            "/media/images/home/pagebkg2.jpg",
+                            "/media/images/home/pagebkg3.jpg"]}
+    return {}

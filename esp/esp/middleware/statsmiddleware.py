@@ -32,6 +32,7 @@ import re
 from operator import add
 from time import time
 from django.db import connection
+from django.views.decorators.vary import vary_on_headers
 
 class StatsMiddleware(object):
     """ Inspiration from http://davidavraamides.net/blog/2006/07/03/page-stats-middleware/"""
@@ -49,6 +50,7 @@ class StatsMiddleware(object):
         # time the view
         start = time()
         try:
+            view_func = vary_on_headers('Cookie')(view_func)
             response = view_func(request, *view_args, **view_kwargs)
         except Exception, e:
             from esp.middleware import ESPErrorMiddleware
@@ -101,10 +103,11 @@ class StatsMiddleware(object):
                               (q['time'], q['sql'])
             sqlcontent += "\n\n</div>"
 
-            pos = response.content.find('</body>')
-            response.content = response.content[:pos] + \
-                               sqlcontent + \
-                               response.content[pos:]
+            if '</body>' in response.content.lower():
+                pos = response.content.find('</body>')
+                response.content = response.content[:pos] + \
+                                   sqlcontent + \
+                                   response.content[pos:]
 
         return response
 

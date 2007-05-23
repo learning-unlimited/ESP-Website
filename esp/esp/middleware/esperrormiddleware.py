@@ -29,6 +29,9 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+class Http403(Exception):
+    pass
+
 class ESPError_Log(Exception):
     pass
 
@@ -114,6 +117,14 @@ class ESPErrorMiddleware(object):
                 
                 # Will use a pretty ESP error page...
                 return render_to_response('error.html', context)
+
+            elif isinstance(exception, Http403):
+                context = {'error': exc_info[1]}
+                try:
+                    context['request'] = request
+                except:
+                    pass
+                return render_to_response('403.html', context)
 
             elif isinstance(exception, ESPError_NoLog) or exception == ESPError_NoLog: # No logging, just output
                     

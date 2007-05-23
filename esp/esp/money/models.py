@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.db import models
 from django.contrib.auth.models import User
-from esp.datatree.models import DataTree
+from esp.datatree.models import DataTree, TreeManager
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
 
@@ -70,6 +70,8 @@ class Transaction(models.Model):
     
     last_ts = models.DateTimeField(default=datetime.now())
     update_ts = models.DateTimeField(default=datetime.now())
+
+    objects = TreeManager()
 
     def pretty_amount(self):
 	if self.amount is None:

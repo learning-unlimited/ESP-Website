@@ -31,14 +31,13 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
-from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
+from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent, TreeManager
 #from peak.api import security, binding
 from esp.workflow.models import Controller
 from datetime import datetime
 from esp.db.models import Q, qlist
 from esp.dblog.models import error
 from django.db.models.query import QuerySet
-from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 from django.core.cache import cache
 from datetime import datetime
 from esp.middleware import ESPError
@@ -441,6 +440,8 @@ class UserBit(models.Model):
 
     recursive = models.BooleanField(default=True)
 
+    objects = TreeManager()
+
     def __str__(self):
         curr_user = '?'
         curr_qsc = '?'
@@ -564,10 +565,8 @@ class UserBit(models.Model):
                          (Q(enddate__isnull=True) | Q(enddate__gt=now))
 
         Q_recursive      = Q(recursive = True)
-        Q_verb_recursive = Q(verb__rangestart__lte = verb.rangestart) & \
-                           Q(verb__rangeend__gte = verb.rangeend)
-        Q_qsc_recursive  = Q(qsc__rangestart__lte  = qsc.rangestart)  & \
-                           Q(qsc__rangeend__gte  = qsc.rangeend )
+        Q_verb_recursive = Q(verb__above = verb)
+        Q_qsc_recursive  = Q(qsc__above  = qsc)
 
         Q_exact_match    = Q(verb = verb.id) & Q(qsc = qsc.id) # & Q(recursive = False), not needed
 
@@ -612,10 +611,8 @@ class UserBit(models.Model):
         if end_of_now == None: end_of_now = now
             
         Q_recursive      = Q(recursive = True)
-        Q_verb_recursive = Q(verb__rangestart__lte = verb.rangestart) & \
-                           Q(verb__rangeend__gte = verb.rangeend)
-        Q_qsc_recursive  = Q(qsc__rangestart__lte  = qsc.rangestart)  & \
-                           Q(qsc__rangeend__gte  = qsc.rangeend )
+        Q_verb_recursive = Q(verb__above = verb)
+        Q_qsc_recursive  = Q(qsc__above  = qsc)
 
         Q_exact_match    = Q(verb = verb.id) & Q(qsc = qsc.id) # & Q(recursive = False), not needed
 
@@ -659,8 +656,7 @@ class UserBit(models.Model):
 
             #first we make sure the verbs are correct
             Q_verb_recursive = Q(recursive = True) & \
-                               Q(verb__rangestart__lte = verb.rangestart) & \
-                               Q(verb__rangeend__gte = verb.rangeend)
+                               Q(verb__above = verb)
             
             Q_exact_match    = Q(verb = verb)
 
@@ -679,8 +675,8 @@ class UserBit(models.Model):
             if qsc_root is None:
                 userbits = qlist(qscs)
             else:
-                Q_under_root = Q(qsc__rangestart__gte = qsc_root.rangestart) & \
-                               Q(qsc__rangeend__lte   = qsc_root.rangeend)
+                Q_under_root = Q(qsc__below = qsc_root)
+                
 
                 
                 userbits = qlist(qscs.filter(Q_under_root).distinct())
@@ -722,8 +718,7 @@ class UserBit(models.Model):
 
             #first we make sure the verbs are correct
             Q_qsc_recursive = Q(recursive = True) & \
-                              Q(qsc__rangestart__lte = qsc.rangestart) & \
-                              Q(qsc__rangeend__gte = qsc.rangeend)
+                              Q(qsc__above = qsc)
             
             Q_exact_match    = Q(qsc = qsc)
 
@@ -773,7 +768,7 @@ class UserBit(models.Model):
                 query = module.objects.filter(anchor=q)
                 
             if qsc is not None:
-                query = query.filter(anchor__rangestart__gte=qsc.rangestart, anchor__rangeend__lte=qsc.rangeend)
+                query = query.filter(Q(anchor__below = qsc))
 
             if res == None:
                 res = query
@@ -1155,7 +1150,7 @@ class K12School(models.Model):
     class Admin:
         pass
 
-def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
+def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
 
     DEFAULT_VERB = 'V/Administer/Edit'
@@ -1176,8 +1171,11 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None):
     lowest_parent = get_lowest_parent(nodename)
 
     if UserBit.UserHasPerms(user, lowest_parent, verb, recursive_required = True):
-        # we can now create it
-        return GetNode(nodename)
+        if create:
+            # we can now create it
+            return GetNode(nodename)
+        else:
+            raise DataTree.NoSuchNodeException
     else:
         # person not allowed to
         raise PermissionDenied
@@ -1351,6 +1349,8 @@ class UserBitImplication(models.Model):
     recursive     = models.BooleanField(default = True)
     created_bits  = models.ManyToManyField(UserBit, blank=True, null=True)
 
+    objects = TreeManager()
+
     def __str__(self):
         var = {}
         for k in ['verb_original_id', 'qsc_original_id',
@@ -1381,10 +1381,9 @@ class UserBitImplication(models.Model):
             Q_qsc  = Q(qsc_original  = userbit.qsc)
             Q_verb = Q(verb_original = userbit.verb)
         else:
-            Q_qsc  = Q(qsc_original__rangestart__gte = userbit.qsc.rangestart,
-                       qsc_original__rangeend__lte   = userbit.qsc.rangeend)
-            Q_verb = Q(verb_original__rangestart__gte = userbit.verb.rangestart,
-                       verb_original__rangeend__lte   = userbit.verb.rangeend)
+            Q_qsc  = Q(qsc_original__below = userbit.qsc)
+
+            Q_verb = Q(verb_original__below = userbit.verb)
 
         # if one of the two are null, the other one can match and it'd be fine.
         Q_match = (Q_qsc & Q_verb) | (Q_qsc_null & Q_verb) | (Q_qsc & Q_verb_null)
@@ -1460,15 +1459,13 @@ class UserBitImplication(models.Model):
         if self.qsc_original_id is None and self.verb_original_id is None:
             return
         if self.qsc_original_id is not None:
-            Q_qsc = (Q(qsc__rangestart__lte = self.qsc_original.rangestart) &\
-                     Q(qsc__rangeend__gte   = self.qsc_original.rangeend)   &\
+            Q_qsc = (Q(qsc__above = self.qsc_original) &\
                      Q(recursive       = True)) \
                      | \
                      Q(qsc = self.qsc_original_id)
             
         if self.verb_original_id is not None:
-            Q_verb = (Q(verb__rangestart__lte = self.verb_original.rangestart)&\
-                      Q(verb__rangeend__gte   = self.verb_original.rangeend)  &\
+            Q_verb = (Q(verb__above = self.verb_original) &\
                       Q(recursive       = True)) \
                       | \
                       Q(verb = self.verb_original_id)

@@ -57,22 +57,6 @@ from django.views.decorators.cache import cache_control
 
 
 @vary_on_headers('Cookie')
-def index(request):
-	""" Displays a generic "index" page """
-
-	announcements = preview_miniblog(request)
-
-	backgrounds = ["/media/images/home/pagebkg1.jpg",
-		       "/media/images/home/pagebkg2.jpg",
-		       "/media/images/home/pagebkg3.jpg"]
-
-	return render_to_response('index.html', request, None, {'announcements':    {'announcementList': announcements[:4],
-										     'overflowed':       len(announcements) > 4,
-										     'total':            len(announcements)},
-								'backgrounds':      backgrounds})
-
-
-@vary_on_headers('Cookie')
 @cache_control(private=True)
 def myesp(request, module):
 	""" Return page handled by myESP (generally, a user-specific page) """
@@ -88,6 +72,7 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
+	
 	if filename != "":
 		url = url + "/" + filename
 
@@ -104,7 +89,6 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 
 	if len(url_address_parts) == 1: # We know the name; use the default verb
 		qsd_name = url_address_parts[0]
-
 		qsd_verb = 'read'
 	elif len(url_address_parts) == 2: # We're given both pieces; hopefully that's all we're given (we're ignoring extra data here)
 		qsd_name = url_address_parts[0]
@@ -122,7 +106,9 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 			branch_name = branch_name + '/' + "/".join(target_node)
 		branch = GetNodeOrNoBits(branch_name, user=request.user)
 	except DataTree.NoSuchNodeException:
-		raise ESPError(False), "The requested directory does not exist."
+		raise ESPError(False), "Directory does not exist."
+		#edit_link = request.path[:-5]+'.edit.html'
+		#return render_to_response('qsd/qsd_nopage_edit.html', request, (branch, section), {'edit_link': edit_link})
 	except PermissionDenied:
 		raise Http404
 		
@@ -252,42 +238,4 @@ def contact(request, section='esp'):
 			
 	return render_to_response('contact.html', request, GetNode('Q/Web/about'),
 						 {'contact_form': form})
-
-
-#def contact(request, section='main'):
-#	return render_to_response('contact.html', request, GetNode('Q/Web'),{'programs': UserBit.bits_get_qsc(AnonymousUser(),
-#								    GetNode('V/Publish'),
-#								    qsc_root=GetNode('Q/Programs')) })
-#
-#def contact_submit(request):
-#	# I think we want to accept comments as long as they're submitted, regardless of what they contain. - aseering 7-20-2006
-#	for key in ['name', 'email', 'relation', 'publicity', 'program', 'comment']:
-#		if not request.POST.has_key(key):
-#			request.POST[key] = '(none)'
-#
-#	t = loader.get_template('email/comment')
-#
-#	m = MessageRequest()
-#	m.subject = 'User Comment: ' + request.POST['name']
-#	
-#	m.msgtext = t.render({
-#		'name': request.POST['name'],
-#		'email': request.POST['email'],
-#		'relation': request.POST['relation'],
-#		'publicity': request.POST['publicity'],
-#		'program': request.POST['program'],
-#		'comment': request.POST['comment'] })
-#	m.sender = request.POST['email']
-#	if not request.POST['program'] in GetNode('Q/Programs').children():
-#		m.category = GetNode('Q/ESP/Committees/Executive')
-#	else:
-#	        m.category = GetNode('Q/Programs/' + request.POST['program'])
-#		
-#	m.save()
-#
-#	return HttpResponseRedirect("/contact/thanks.html")
-
-
-
-
 

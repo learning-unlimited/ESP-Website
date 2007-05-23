@@ -29,13 +29,13 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import DataTree, GetNode, TreeManager
 from esp.lib.markdown import markdown
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
 
-# Create your models here.
 
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
@@ -44,15 +44,25 @@ class QuasiStaticData(models.Model):
     title = models.CharField(maxlength=256)
     content = models.TextField()
 
-    create_date = models.DateTimeField(default=datetime.now())
+    create_date = models.DateTimeField(default=datetime.now, editable=False)
     author = AjaxForeignKey(User)
     disabled = models.BooleanField(default=False)
+    keywords = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    objects = TreeManager()
+
+    def save(self, *args, **kwargs):
+        from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func
+        
+        cache.delete(cache_key_func(self))
+        return super(QuasiStaticData, self).save(*args, **kwargs)
     
     def __str__(self):
         return ( self.path.full_name() + ':' + self.name + '.html' )
 
     class Admin:
-        pass
+        search_fields = ['title','name','keywords','description']
 
     def html(self):
         return markdown(self.content)

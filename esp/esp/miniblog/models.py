@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import DataTree, GetNode, TreeManager
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
 from esp.dbmail.models import MessageRequest
@@ -50,6 +50,8 @@ class Entry(models.Model):
     fromemail = models.CharField(maxlength=80, blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
 
+    objects = TreeManager()
+
     def __str__(self):
         return ( self.anchor.full_name() + ' (' + str(self.timestamp) + ')' )
 
@@ -69,6 +71,7 @@ class Entry(models.Model):
             return UserBit.find_by_anchor_perms(Entry,user,verb)
         else:
             return UserBit.find_by_anchor_perms(Entry,user,verb,qsc=qsc)
+
     class Admin:
         pass
 

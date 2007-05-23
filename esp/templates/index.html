@@ -1,6 +1,6 @@
 {% extends "elements/html" %}
 
-{% block tite %}Home{% endblock %}
+{% block title %}Home{% endblock %}
 
 {% block stylesheets %}
 <link rel="stylesheet" href="/media/styles/home.css" type="text/css" />
@@ -159,10 +159,10 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
             <option value="#">Quick Links</option>
             <option value="/learn/HSSP/index.html">HSSP</option>
             <option value="/learn/Splash/index.html">Splash</option>
-            <option value="/learn/SATprep/index.html">SATPrep</option>
+            <option value="/learn/SATPrep/index.html">SATPrep</option>
             <option value="/learn/ProveIt/index.html">ProveIt</option>
             <option value="/learn/Delve/index.html">Delve</option>
-            <option value="/learn/Delve/index.html">Delve</option>
+            <option value="/learn/Junction/index.html">Junction</option>
             <option value="/learn/SplashOnWheels/index.html">Splash On Wheels</option>
           </select>
         </div></td>
@@ -220,6 +220,8 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 <!-- announcements -->
 <div id="divannouncements">
 <ul>
+{% load preview %}
+{% miniblog_for_user request.user as announcements 4 %}
 {% for announce in announcements.announcementList %}
        <li> <a href="{{ announce.makeUrl }}" title="{{ announce.makeTitle }}">
                 {{ announce.makeTitle|truncatewords:6 }}

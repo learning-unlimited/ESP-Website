@@ -30,11 +30,10 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import DataTree, GetNode, TreeManager
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo
 from esp.lib.markdown import markdown
 from esp.qsd.models import QuasiStaticData
-from esp.lib.EmptyQuerySet import EMPTY_QUERYSET
 from datetime import datetime
 from django.core.cache import cache
 from esp.miniblog.models import Entry
@@ -232,6 +231,8 @@ class Program(models.Model):
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
     program_modules = models.ManyToManyField(ProgramModule)
+
+    objects = TreeManager()
 
 
     def _get_type_url(self, type):
@@ -490,7 +491,7 @@ class ClassCategories(models.Model):
         pass
 
 
-class ClassManager(models.Manager):
+class ClassManager(TreeManager):
 
     def approved(self):
         verb = GetNode('V/Flags/Class/Approved')
@@ -1078,7 +1079,7 @@ class ClassRoomAssignment(models.Model):
     
     cls      = models.ForeignKey(Class)
     
-
+    objects = TreeManager()
 
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """
@@ -1321,7 +1322,8 @@ class JunctionStudentApp(models.Model):
                       null=True)
     
     ideal_summer = models.TextField(verbose_name = 'My Ideal Summer...',
-                    help_text = 'Please write a short essay describing what your ideal summer would be.')
+                    help_text = 'Please write a short essay describing what your ideal summer would be.',
+                                    blank=True,null=True)
 
     difficulty = models.TextField(verbose_name='A difficult triumph',
                       help_text = 'Describe an experience where you had great difficulty in accomplishing something, whether or not it was a success.',

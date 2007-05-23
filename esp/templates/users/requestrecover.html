@@ -2,7 +2,8 @@
 
 {% block title %}Change Account Password{% endblock %}
 
-{% block subsection_name %}Welcome{% endblock %}
+{% load subsection %}
+{% block subsection %}{{ "Password recovery"|subsection }}{% endblock %}
 
 {% block content %}
 <h1>Account Management &ndash; Password Recovery </h1>

@@ -156,7 +156,7 @@ class StudentClassRegModule(ProgramModuleObj):
         """ Return the program class catalog """
         
 
-        classes = Class.objects.approved().filter(parent_program = self.program).order_by('category')
+        classes = Class.objects.approved().filter(parent_program = self.program).order_by('category').distinct()
 
         categories = classes.values('category').distinct()
         categories = ClassCategories.objects.filter(id__in = [ x['category'] for x in categories ])

@@ -44,32 +44,63 @@ section_redirect_keys = {'teach': 'Programs',
 
 section_prefix_keys = {'teach': 'teach', 'learn': 'learn'}
 
-# Patterns outside of esp.web.views...
-urlpatterns_list =  [(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/media/'}),
-                     (r'^admin/media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/esp/esp/admin/media/'}),
-                     # Uncomment this for admin:
+# Static media
+urlpatterns = patterns('django.views.static',
+                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': '/esp/esp/media/'}),
+                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': '/esp/esp/admin/media/'}),
+                       )
+
+# admin stuff
+urlpatterns += patterns('',
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/', include('django.contrib.admin.urls')),
+                     (r'^accounts/login/$', 'django.contrib.auth.views.login'),                        
                      (r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
-                     # Uncomment this for @login_required:
-                     (r'^accounts/login/$', 'django.contrib.auth.views.login'),
+                        )
 
-                     
-                     # Mini-Blog pages
-                     # These are broken...must fix (axiak)
-                     #(r'^(?P<subsection>teach|learn|help)/(?P<url>.*)/blog/$', 'esp.miniblog.views.show_miniblog', {'section_redirect_keys': section_redirect_keys}),
-                     (r'^blog/(?P<url>.*)/post/$', 'esp.miniblog.views.post_miniblog'),
-                     (r'^blog/(?P<url>.*)/$', 'esp.miniblog.views.show_miniblog_entry'),
-                     (r'^blog/$', 'esp.miniblog.views.show_miniblog', {'url': '', 'section_redirect_keys': section_redirect_keys}),
-                     (r'^myesp/login/?', 'django.contrib.auth.views.login',),
-                     (r'^myesp/signout/?', 'django.contrib.auth.views.logout',
-                      {'next_page': '/myesp/signedout/'}),
-                     (r'^myesp/signedout/?', 'django.views.generic.simple.direct_to_template',{'template': 'registration/logged_out.html'}),
+# generic stuff
+urlpatterns += patterns('django.views.generic',
+                        (r'^$', 'simple.direct_to_template',{'template':'index.html'}), # index
+                        (r'^web/?', 'simple.direct_to_template',{'template':'index.html'}), # index
+                        (r'^web$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
+                        (r'^esp_web', 'simple.direct_to_template',{'template':'index.html'}), # index
+                        (r'.php$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
+                        (r'^myesp/signedout/?', 'simple.direct_to_template',{'template': 'registration/logged_out.html'}), # logged out page
+                        )
 
-                    ]
+urlpatterns += patterns('esp.web.views.everything',
 
-# All of these *must* reside in esp.web.views
-esppatterns_list = [
+                        # bios
+                        (r'^(teach|learn)/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z_ ]+)([0-9]*)/bio.html$', 'bio'),
+                        (r'^(teach|learn)/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z_ ]+)([0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
+
+
+                   
+                        # DB-generated QSD pages: HTML or plaintext
+#                        (r'^(?P<url>.*)\.html$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': qsd} ),
+                        (r'^(?P<url>.*)\.poll$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': poll} ),
+)
+
+urlpatterns += patterns('esp.qsd.views',
+                        (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/(?P<url>.*).html$', 'qsd'),
+                        (r'^(?P<url>.*)\.html$', 'qsd'),
+
+                        )
+
+# logging in and out
+urlpatterns += patterns('django.contrib.auth.views',
+                     (r'^myesp/login/?$',   'login',),
+                     (r'^myesp/signout/?$', 'logout',{'next_page': '/myesp/signedout/'}),
+                        )
+
+# other apps
+urlpatterns += patterns('',
+                        (r'^blog/',  include('esp.miniblog.urls')),
+                        )
+
+# things that need to move
+urlpatterns += patterns('esp.web.views.everything',
+
 
     # Possibly overspecific, possibly too general.
     (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
@@ -78,13 +109,7 @@ esppatterns_list = [
     (r'^(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
         { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia }),
 
-    # Main page
-    (r'^$', 'index'),
-    
-    # backwards compatibility...
-    (r'^web/index\.html$', 'index'),
-
-    # JSON
+     # JSON
     (r'json/teachers/$', 'teacher_lookup'),
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
@@ -94,14 +119,9 @@ esppatterns_list = [
     (r'^contact/submit.html$', 'contact_submit'),
 
 
-    # bios
-    (r'^(teach|learn)/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z_ ]+)([0-9]*)/bio.html$', 'bio'),
-    (r'^(teach|learn)/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z_ ]+)([0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
-
     # Program stuff
     (r'^(onsite|manage|teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
     (r'^(onsite|manage|teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
-    (r'^onsite/home/?', 'program'),
 
     #??? (axiak)
     #(r'^program/Template/$', 'esp.program.views.programTemplateEditor'),
@@ -113,9 +133,6 @@ esppatterns_list = [
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
 
     
-    (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*).html$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'section_prefix_keys': section_prefix_keys } ),
-	
     # myESP Page
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
 
@@ -125,9 +142,6 @@ esppatterns_list = [
     #(r'^events/edit/$', 'esp.cal.views.updateevent'),
     #(r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
 
-    # DB-generated QSD pages: HTML or plaintext
-    (r'^(?P<url>.*)\.html$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': qsd} ),
-    (r'^(?P<url>.*)\.poll$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': poll} ),
 
     # Update navbar
     (r'^navbar/edit.scm', 'updateNavBar'),
@@ -135,29 +149,6 @@ esppatterns_list = [
     # Reimbursement requests
     # Needs to be better
     #(r'^money/reimbursement/$', 'esp.money.views.create_reimbursement'),
-
-    # Redirect
-    (r'^(?P<temp>.*).php$', 'simple_redirect', {'target': 'http://esp.mit/edu/missing_page.html'}),
-    (r'^esp_web(?P<temp>.*)$', 'simple_redirect', {'target': 'http://esp.mit.edu/missing_page.html'}),
-    ]
-
-
-
-# Now we turn what was above into a neat little urlpatterns for Django
-root = 'esp.web.views.everything.'
-for i in range(len(esppatterns_list)):
-    # Since tuples are immutable...
-    if len(esppatterns_list[i]) == 2:
-        esppatterns_list[i] = (esppatterns_list[i][0],
-                               root + esppatterns_list[i][1],)
-    elif len(esppatterns_list[i]) == 3:
-        esppatterns_list[i] = (esppatterns_list[i][0],
-                               root + esppatterns_list[i][1],
-                               esppatterns_list[i][2],)
-                            
-
-urlpatterns_list = urlpatterns_list + esppatterns_list
-
-urlpatterns = patterns('', *urlpatterns_list)
+    )
 
 

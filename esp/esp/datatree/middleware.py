@@ -37,7 +37,7 @@ class DataTreeLockMiddleware(object):
        happening to the web site.
     """
     
-    def process_view(self, request, view_func, view_args, view_kwargs):       
+    def process_request(self, request):
         from esp.datatree.models import DataTree
         from django.shortcuts    import render_to_response
 
@@ -54,5 +54,23 @@ class DataTreeLockMiddleware(object):
             response['Refresh'] = '20'
 
             return response
+
+        def _get_node(request, uri):
+            """
+            Gets a request and a uri, if the uri is cached in the
+            request, returns the node.
+            Else gets and returns the node.
+            """
+            if not hasattr(request, '_datatree_nodes'):
+                request._datatree_nodes = {}
+
+            if uri in request._datatree_nodes:
+                return request._datatree_nodes[uri]
+
+            node = DataTree.get_by_uri(uri)
+            request._datatree_nodes[uri] = node
+            return node
+
+        request.__class__.get_node = _get_node
 
         return None

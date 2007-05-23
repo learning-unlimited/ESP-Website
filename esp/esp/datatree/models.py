@@ -39,6 +39,59 @@ from esp.db.fields import AjaxForeignKey
 import exceptions
 
 
+def tree_filter(*args, **kwargs):
+    """
+    Takes any input to filter and changes the
+    kwargs to work with __above and __below for a tree.
+    """
+    new_kwargs = {}
+
+    for key, node in kwargs.iteritems():
+        action = key.strip()[-7:]
+        if action != '__below' and action != '__above':
+            new_kwargs[key] = node
+            continue
+
+        if not isinstance(node, DataTree):
+            raise ValueError('__above or __below requires a datatree node')
+        
+        if action == '__below':
+            new_kwargs[key[:-5]+'rangestart__gte'] = node.rangestart
+            new_kwargs[key[:-5]+'rangeend__lte']   = node.rangeend
+        else:
+            new_kwargs[key[:-5]+'rangestart__lte'] = node.rangestart
+            new_kwargs[key[:-5]+'rangeend__gte']   = node.rangeend
+
+    return args, new_kwargs
+
+
+def tree_filter_wrapper(func):
+    def _dec_func(*args, **kwargs):
+        args, kwargs = tree_filter(*args, **kwargs)
+        return func(*args, **kwargs)
+
+    _dec_func.__doc__ = func.__doc__
+    return _dec_func
+
+def man_tree_filter(self, *args, **kwargs):
+    if not isinstance(self, models.Manager):
+        self = self.model.objects
+    new_filter = tree_filter_wrapper(models.Manager.filter)(self, *args, **kwargs)
+    new_filter.__class__.filter = tree_filter_wrapper(new_filter.__class__.filter)
+    return new_filter
+
+
+class TreeManager(models.Manager):
+    """
+    Should be used for any object that wants
+    tree searching in their filter options.
+    """
+
+    def filter(self, *args, **kwargs):
+        return man_tree_filter(self, *args, **kwargs)
+
+
+
 
 class DataTree(models.Model):
     " This model organizes the site into a tight heirarchy. "
@@ -75,6 +128,8 @@ class DataTree(models.Model):
     lock_table    = models.IntegerField(editable = False, default = 0,
                                         choices  = lock_choices)
     range_correct = models.BooleanField(editable = False, default = True )
+
+    objects = TreeManager()
 
     class Meta:
         # parent and name should be unique
@@ -1078,3 +1133,6 @@ def PermToString(perm):
 
 #root = DataTree.root()
 #root.save()
+
+
+

@@ -36,7 +36,7 @@ import os
 import datetime
 import cStringIO as StringIO
 import md5
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageFilter
 
 TEXIMAGE_BASE = settings.MEDIA_ROOT+'/latex'
 TEXIMAGE_URL  = '/media/uploaded/latex'
@@ -173,6 +173,8 @@ class SubSectionImage(models.Model):
         del draw
 
         im = im.rotate(270)
+        im = im.filter(ImageFilter.SMOOTH)
+        im = im.filter(ImageFilter.SHARPEN)        
 
         file_name = md5.new(font_string).hexdigest()
 

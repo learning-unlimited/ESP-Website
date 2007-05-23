@@ -28,7 +28,11 @@ class ESPLinkPattern (LinkPattern):
 
         # Links can point to non- web media content;
         # only get ones that do point to media that we're managing
+
+        print src
+        print src[:6]
         if src[:6] == 'media/':
+            print self.media_src.media
             if self.media_src.media.has_key(src):
                 self.media_src.media[src] = True
             else:
@@ -84,5 +88,6 @@ class ESPMarkdown(Markdown):
                    self.LINK_PATTERN,
                    self.LINK_ANGLED_PATTERN ]:
             i.media_src = self
+
 
         super(ESPMarkdown, self).__init__(source)

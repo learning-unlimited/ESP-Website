@@ -2,7 +2,10 @@
 
 {% block title %}Profile Editor{% endblock %}
 
-{% block subsection_name %}Student Profile Editor{% endblock %}
+{% load subsection %}
+{% block subsection %}
+{{ "Profile Editor"|subsection }}
+{% endblock %}
 
 {% block xtrajs %}
 <script type="text/javascript" src="/media/scripts/dojo/dojo.js"></script>

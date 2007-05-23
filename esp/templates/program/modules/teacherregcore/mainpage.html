@@ -2,7 +2,9 @@
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+{% load subsection %}
+{% block subsection %}{{ "Teacher Registration"|subsection }}
+{% endblock %}
 
 {% block stylesheets %}
 {{block.super }}

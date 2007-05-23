@@ -1,0 +1,64 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{ title }} - EDIT{% endblock %}
+
+{% block subsection_name %}QSD Editor{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style type="text/css">
+.wikitoolbar {
+   width: 204px;
+   border: 1px solid #333;
+   height: 29px;
+}
+
+.wikitoolbar a {
+   padding: 0;
+   margin: 0;
+}
+
+.wikitoolbar a img {
+   border: 2px solid #ccc;
+}
+
+.wikitoolbar a:hover img {
+   border: 2px solid #cc9;
+}
+</style>
+{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="{{ media_url }}scripts/jquery.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/markdown.js"></script>
+{% endblock %}
+
+
+{% block content %}
+<form method="post" action="{{ request.path }}" enctype="multipart/form-data">
+  <h1>Title</h1>
+  <input type="text" name="title" value="{{ title|escape }}" size="64" />
+  <br /><br />
+
+  <h1>Metadata</h1>
+  <p>
+    <strong>Keywords</strong><input type="text" name="keywords" value="{{ keywords|default_if_none:""|escape }}" size="128" /> <br />
+    <strong>Description</strong><br />
+    <textarea name="description" rows="5" cols="85">{{ description|default_if_none:""|escape }}</textarea>
+  </p>
+
+  <h1>Content</h1>
+  <p>Please use <a href="http://daringfireball.net/projects/markdown/syntax">
+     Markdown</a> whenever possible. (Although HTML will work.)
+  </p>
+  <p><textarea name="content" class="markdown" rows="50" cols="85">{{ content|escape }}</textarea></p>
+  {% for file in missing_files %}
+  <p><label target="{{ file }}">File: {{ file }}</label> &nbsp; <input type="file" name="{{ file }}" /></p>
+  {% endfor %}
+  <p><input type="submit" name="post_edit" value="Save Changes!" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
+</form>
+<div id="divmainqsddatetimestamp">
+  <p>Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date }}</p>
+</div>
+{% endblock %}

@@ -31,8 +31,9 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.contrib.auth.models import User
 from django.template import Context, loader
-from esp.datatree.models import DataTree
+from esp.datatree.models import DataTree, TreeManager
 from esp.db.fields import AjaxForeignKey
+import datetime
 
 # Create your models here.
 
@@ -40,8 +41,11 @@ class Survey(models.Model):
     path = AjaxForeignKey(DataTree)
     name = models.SlugField()
     title = models.TextField()
-    create_date = models.DateTimeField(auto_now_add=True)
+    create_date = models.DateTimeField(default=datetime.datetime.now,
+                                       editable=False)
     author = AjaxForeignKey(User, blank=True, null=True)
+
+    objects = TreeManager()
 
     def __str__(self):
         return "Survey: " + self.title

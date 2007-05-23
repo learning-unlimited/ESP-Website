@@ -56,14 +56,11 @@ def makeNavBar(user, node, section = ''):
 		def _value(self):
 			user = self.user
 			node = self.node
-			section = self.section
+			section = self.section or ''
 			
 			edit_verb = GetNode(EDIT_VERB_STRING)
 
-			rangestart = node.rangestart
-			rangeend   = node.rangeend
-			qsdTree = NavBarEntry.objects.filter(path__rangestart__lte=rangestart,
-							     path__rangeend__gte=rangeend,
+			qsdTree = NavBarEntry.objects.filter(path__above = node,
 							     section=section).order_by('sort_rank')
 
 			if user is None or type(user) == AnonymousUser or user.id is None:

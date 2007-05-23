@@ -25,7 +25,11 @@
 </script>
 {% endblock %}
 
-{% block subsection_name %}Course Catalogue{% endblock %}
+{% load subsection %}
+
+{% block subsection %}
+{{ "Course Catalog"|subsection }}
+{% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}

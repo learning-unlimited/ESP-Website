@@ -1,0 +1,31 @@
+{% extends "outlines/series-3-safe.html" %}
+
+{% block title %}Error{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Forbidden"|subsection }}
+{% endblock %}
+
+{% block content %}
+
+<h1>Access Denied</h1>
+
+<p>
+{{ error }}
+
+<br />
+<br />
+<br />
+Please feel free to <a href="javascript:history.go(-1);" title="Go back!">go back</a> where you came from</a>.
+<br />
+<br />
+<br /><br />
+<br />
+<br />
+
+
+Sorry for the inconvenience.  If you have any questions, feel free to contact us at <a href="mailto:web@esp.mit.edu">web@esp.mit.edu</a>.
+</p>
+
+{% endblock %}

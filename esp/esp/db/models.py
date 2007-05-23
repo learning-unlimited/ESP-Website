@@ -291,7 +291,12 @@ class QOr(QOperator, DjangoQOr):
 class Q(DjangoQ):
     "Encapsulates queries as objects that can be combined logically."
     underneath_an_or = False # Whether or not this Q is inside an or
-    checked_or   = False
+    checked_or = False
+
+    def __init__(self, *args, **kwargs):
+        from esp.datatree.models import tree_filter
+        args, kwargs = tree_filter(*args, **kwargs)
+        return super(Q, self).__init__(*args, **kwargs)
 
     def search_for_or(self):
         return False

@@ -74,63 +74,37 @@
 <link rel="stylesheet" href="/media/styles/myesp2.css" type="text/css" media="screen" />
 
 
-
-
 <div id="divnav0">
- 
-  <a href="/about/index.html" 
-    onmouseover="MM_swapImage('discoveresp','','/media/images/lev2/nav/discoveresp_ro.gif',1)"
-                                                                                onmouseout="MM_swapImgRestore()">
-
-    <img src="/media/images/lev2/nav/discoveresp.gif" border="0" 
-            alt="Discover ESP" title="" name="discoveresp" id="discoveresp" />
-  </a>
-
+<a href="/about/index.html" onmouseover="MM_swapImage('discoveresp','','/media/images/lev2/nav/discoveresp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/lev2/nav/discoveresp.gif" border="0" alt="Take a Class" title="" name="discoveresp" id="discoveresp" />
+</a>
 </div>
 
 <div id="divnav1">
- 
-  <a href="/learn/index.html" 
-    onmouseover="MM_swapImage('takeaclass','','/media/images/myesp/lev3/nav/takeaclass_ro.gif',1)"
-                                                                                onmouseout="MM_swapImgRestore()">
-    <img src="/media/images/myesp/lev3/nav/takeaclass.gif" border="0" 
-            alt="Take a Class!" title="" name="takeaclass" id="takeaclass" />
-  </a>
-
+<a href="/learn/index.html" onmouseover="MM_swapImage('takeaclass','','/media/images/lev2/nav/takeaclass_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/lev2/nav/takeaclass.gif" border="0" alt="Take a Class" title="" name="takeaclass" id="takeaclass" />
+</a>
 </div>
 
 <div id="divnav2">
- 
-  <a href="/teach/index.html" 
-    onmouseover="MM_swapImage('volunteertoteach','','/media/images/myesp/lev3/nav/volunteertoteach_ro.gif',1)"
-                                                                                onmouseout="MM_swapImgRestore()">
-    <img src="/media/images/myesp/lev3/nav/volunteertoteach.gif" border="0" 
-            alt="Volunteer to Teach!" title="" name="volunteertoteach" id="volunteertoteach" />
-  </a>
-
+<a href="/teach/index.html" onmouseover="MM_swapImage('volunteertoteach','','/media/images/lev2/nav/volunteertoteach_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/lev2/nav/volunteertoteach.gif" border="0" alt="Volunteer To Teach" title="" name="volunteertoteach" id="volunteertoteach" />
+</a>
 </div>
 
-<div id="divnav3">
- 
-  <a href="/getinvolved/index.html" 
-    onmouseover="MM_swapImage('getinvolved','','/media/images/myesp/lev3/nav/getinvolved_ro.gif',1)"
-                                                                                onmouseout="MM_swapImgRestore()">
-    <img src="/media/images/myesp/lev3/nav/getinvolved.gif" border="0" 
-            alt="Get Involved" title="" name="getinvolved" id="getinvolved" />
-  </a>
 
+<div id="divnav3">
+<a href="/getinvolved/index.html" onmouseover="MM_swapImage('getinvolved','','/media/images/lev2/nav/getinvolved_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/lev2/nav/getinvolved.gif" border="0" alt="Get Involved" title="" name="getinvolved" id="getinvolved" />
+</a>
 </div>
 
 <div id="divnav4">
- 
-  <a href="/archives/index.html" 
-    onmouseover="MM_swapImage('archivesresources','','/media/images/lev2/nav/archivesresources_ro.gif',1)"
-                                                                                onmouseout="MM_swapImgRestore()">
-    <img src="/media/images/lev2/nav/archivesresources.gif" border="0" 
-            alt="ESP Archives" title="" name="archivesresources" id="archivesresources" />
-  </a>
-
+<a href="/archives/index.html" onmouseover="MM_swapImage('archivesresources','','/media/images/lev2/nav/archivesresources_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/lev2/nav/archivesresources.gif" border="0" alt="Archives / Resources" title="" name="archivesresources" id="archivesresources" />
+</a>
 </div>
+
 
 <div id="divnav5">
 <a href="/myesp/home/" onmouseover="MM_swapImage('myesp','','/media/images/lev2/nav/myesp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
@@ -139,17 +113,15 @@
 </div>
 
 
+
 <div id="divnav6">
- 
-  <a href="/about/contact.html" 
-    onmouseover="MM_swapImage('contactinfo','','/media/images/lev2/nav/contactinfo_ro.gif',1)"
-                                                                                onmouseout="MM_swapImgRestore()">
-    <img src="/media/images/lev2/nav/contactinfo.gif" border="0" 
-            alt="Contact Us!" title="" name="contactinfo" id="contactinfo" />
-  </a>
+
+
+<a href="/about/contact.html" onmouseover="MM_swapImage('contactinfo','','/media/images/lev2/nav/contactinfo_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<img src="/media/images/lev2/nav/contactinfo.gif" border="0" alt="Contact Info" title="" name="contactinfo" id="contactinfo" />
+</a>
 
 </div>
-
 
 
 
@@ -240,10 +212,11 @@
 
 
 <!-- subsection name -->
-<div id="divsubsectionname"
-style="position: relative; top: -10px; font-weight: bold; font-size: .6em; z-index: 100;">
-Come back soon.
+<div id="divsubsectionname">
+{% block subsection %}
+{% endblock %}
 </div>
+<!-- image sizes may vary -->
 
 <!-- image sizes may vary -->
 

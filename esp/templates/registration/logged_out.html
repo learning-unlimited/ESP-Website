@@ -2,7 +2,10 @@
 
 {% block title %}Goodbye{% endblock %}
 
-{% block subsection_name %}Come back soon.{% endblock %}
+{% load subsection %}
+{% block subsection %}
+{{ "Come back soon"|subsection }}
+{% endblock %}
 
 {% block content %}
 <h1 style="text-align: center">Thank you for visiting the Educational Studies Program.</h1>
