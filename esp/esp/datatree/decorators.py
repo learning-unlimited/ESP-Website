@@ -108,9 +108,9 @@ def branch_find(view_func):
         except PermissionDenied:
             raise Http404, "No such site, no bits to create it: '%s'" % \
                          tree_node_uri
-        except DataTree.NoSuchNodeException:
+        except DataTree.NoSuchNodeException, e:
             edit_link = request.path[:-5]+'.edit.html'
-            branch = DataTree.get_lowest_parent(tree_node_uri)
+            branch = e.anchor
             return render_to_response('qsd/nopage_create.html',
                                       request,
                                       (branch, section),
