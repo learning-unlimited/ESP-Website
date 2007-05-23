@@ -759,7 +759,11 @@ class UserBit(models.Model):
         res = None
 
         for bit in q_list:
-            q = bit.qsc
+            try:
+                q = bit.qsc
+            except DataTree.DoesNotExist, e:
+                bit.delete()
+                continue
 
             if bit.recursive:
                 qsc_children_ids = [q.id] + [x['id'] for x in q.descendants(False).values('id')]
