@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-DEBUG = False
+DEBUG = True
 DISPLAYSQL = True
 
 TEMPLATE_DEBUG = DEBUG
