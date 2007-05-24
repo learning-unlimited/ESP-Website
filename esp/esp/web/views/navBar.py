@@ -37,7 +37,7 @@ from esp.dblog.models import error
 from esp.dblog.views import ESPError
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
-
+from esp.db.models import Q
 
 EDIT_VERB_STRING = 'V/Administer/Edit/QSD'
 
@@ -60,8 +60,8 @@ def makeNavBar(user, node, section = ''):
 			
 			edit_verb = GetNode(EDIT_VERB_STRING)
 
-			qsdTree = NavBarEntry.objects.filter(path__above = node,
-							     section=section).order_by('sort_rank')
+			qsdTree = NavBarEntry.objects.filter(Q(path__above = node,
+							     section=section)).order_by('sort_rank')
 
 			if user is None or type(user) == AnonymousUser or user.id is None:
 		

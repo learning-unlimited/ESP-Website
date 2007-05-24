@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
-from esp.datatree.models import DataTree, GetNode, TreeManager
+from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo
 from esp.lib.markdown import markdown
 from esp.qsd.models import QuasiStaticData
@@ -231,8 +231,6 @@ class Program(models.Model):
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
     program_modules = models.ManyToManyField(ProgramModule)
-
-    objects = TreeManager()
 
 
     def _get_type_url(self, type):
@@ -491,7 +489,7 @@ class ClassCategories(models.Model):
         pass
 
 
-class ClassManager(TreeManager):
+class ClassManager(models.Manager):
 
     def approved(self):
         verb = GetNode('V/Flags/Class/Approved')
@@ -1079,8 +1077,6 @@ class ClassRoomAssignment(models.Model):
     
     cls      = models.ForeignKey(Class)
     
-    objects = TreeManager()
-
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """
     program = models.ForeignKey(Program)

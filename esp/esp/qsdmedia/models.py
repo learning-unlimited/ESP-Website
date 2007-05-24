@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree, GetNode, TreeManager
+from esp.datatree.models import DataTree, GetNode
 from esp.settings import MEDIA_ROOT
 from esp.db.fields import AjaxForeignKey
 
@@ -48,8 +48,6 @@ class Media(models.Model):
     format = models.TextField(blank=True, null=True)  # Format string; should be human-readable (string format is currently unspecified)
     mime_type = models.CharField(blank=True, null=True, maxlength=256, editable=False)
     file_extension = models.TextField(blank=True, null=True, maxlength=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
-
-    objects = TreeManager()
 
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]

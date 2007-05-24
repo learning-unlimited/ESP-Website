@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree, TreeManager
+from esp.datatree.models import DataTree
 from esp.dbmail.models import MessageRequest
 from esp.workflow.models import Controller, ControllerDB
 from datetime import datetime, timedelta
@@ -54,7 +54,6 @@ class Series(models.Model):
     description = models.TextField()
     target = AjaxForeignKey(DataTree) # location for this Series in the datatree
 
-    objects = TreeManager()
 
     class Admin:
         pass
@@ -90,8 +89,6 @@ class Event(models.Model):
     event_type = models.ForeignKey(EventType) # The tyoe of event.  This implies, though does not require, the types of data that are keyed to this event.
     #    container_series = models.ForeignKey(Series, blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
-
-    objects = TreeManager()
 
     def duration(self):
         return self.end - self.start

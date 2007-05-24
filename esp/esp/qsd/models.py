@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree, GetNode, TreeManager
+from esp.datatree.models import DataTree, GetNode
 from esp.lib.markdown import markdown
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -49,8 +49,6 @@ class QuasiStaticData(models.Model):
     disabled = models.BooleanField(default=False)
     keywords = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-
-    objects = TreeManager()
 
     def save(self, *args, **kwargs):
         from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func

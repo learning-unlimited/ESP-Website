@@ -32,6 +32,7 @@ Email: web@esp.mit.edu
 
 from django.db.models.query import Q as DjangoQ, QAnd as DjangoQAnd, QOr as DjangoQOr, QOperator as DjangoQOperator, QNot as DjangoQNot, parse_lookup
 from django.utils.datastructures import SortedDict
+from esp.datatree.util import tree_filter
 
 class qlist(list):
     def count(self):
@@ -293,11 +294,6 @@ class Q(DjangoQ):
     underneath_an_or = False # Whether or not this Q is inside an or
     checked_or = False
 
-    def __init__(self, *args, **kwargs):
-        from esp.datatree.models import tree_filter
-        args, kwargs = tree_filter(*args, **kwargs)
-        return super(Q, self).__init__(*args, **kwargs)
-
     def search_for_or(self):
         return False
 
@@ -318,8 +314,10 @@ class Q(DjangoQ):
             join_text = 'LEFT OUTER JOIN'
         else:
             join_text = 'INNER JOIN'
+
+        kwargs = tree_filter(self.kwargs)
         
-        joins, where, params = parse_lookup(self.kwargs.items(), opts)
+        joins, where, params = parse_lookup(kwargs.items(), opts)
 
         joins2 = joins
         where2 = where

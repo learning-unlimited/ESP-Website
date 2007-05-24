@@ -29,10 +29,11 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree, GetNode, TreeManager
+from esp.datatree.models import DataTree, GetNode
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
 from esp.db.fields import AjaxForeignKey
+from esp.db.models import Q
 
 # Create your models here.
 
@@ -44,8 +45,6 @@ class NavBarEntry(models.Model):
     text = models.CharField(maxlength=64)
     indent = models.BooleanField()
     section = models.CharField(maxlength=64,blank=True)
-
-    objects = TreeManager()
 
     def can_edit(self, user):
         return UserBit.UserHasPerms(user, self.path, GetNode('V/Administer/Edit/QSD'))
@@ -83,6 +82,4 @@ class NavBarEntry(models.Model):
                 raise NavBarEntry.DoesNotExist
             
         # Find the valid entries
-        return NavBarEntry.objects.filter(path__rangestart__lte=branch.rangestart,path__rangeend__gte=branch.rangeend).order_by('sort_rank')
-                                                                                                                                                                                                                                                                                                            
-
+        return NavBarEntry.objects.filter(Q(path__above = branch)).order_by('sort_rank')

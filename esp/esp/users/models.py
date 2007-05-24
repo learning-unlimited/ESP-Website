@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
-from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent, TreeManager
+from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
 #from peak.api import security, binding
 from esp.workflow.models import Controller
 from datetime import datetime
@@ -440,7 +440,6 @@ class UserBit(models.Model):
 
     recursive = models.BooleanField(default=True)
 
-    objects = TreeManager()
 
     def __str__(self):
         curr_user = '?'
@@ -1353,7 +1352,6 @@ class UserBitImplication(models.Model):
     recursive     = models.BooleanField(default = True)
     created_bits  = models.ManyToManyField(UserBit, blank=True, null=True)
 
-    objects = TreeManager()
 
     def __str__(self):
         var = {}
