@@ -433,7 +433,7 @@ class Program(models.Model):
             def cmpModules(mod1, mod2):
                 """ comparator function for two modules """
                 try:
-                    return cmp(mod2.seq, mod1.seq)
+                    return cmp(mod1.seq, mod2.seq)
                 except AttributeError:
                     return 0
             if tl:

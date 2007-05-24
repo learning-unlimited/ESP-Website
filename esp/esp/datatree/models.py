@@ -74,10 +74,21 @@ def tree_filter_wrapper(func):
     return _dec_func
 
 def man_tree_filter(self, *args, **kwargs):
+    if hasattr(self, '_in_special_filter') and \
+       self._in_special_filter:
+        return models.Model(self, *args, **kwargs)
+
     if not isinstance(self, models.Manager):
         self = self.model.objects
+
+
+    
+    self._in_special_filter = True
+
     new_filter = tree_filter_wrapper(models.Manager.filter)(self, *args, **kwargs)
     new_filter.__class__.filter = tree_filter_wrapper(new_filter.__class__.filter)
+    new_filter._in_special_filter = True
+    
     return new_filter
 
 
