@@ -387,12 +387,16 @@ class EmailList(models.Model):
     def save(self, *args, **kwargs):
         if self.seq is None:
             try:
-                self.seq = EmailLists.objects.order_by('-seq')[0].seq + 5
-            except EmailLists.DoesNotExist:
+                self.seq = EmailList.objects.order_by('-seq')[0].seq + 5
+            except EmailList.DoesNotExist:
+                self.seq = 0
+            except IndexError:
                 self.seq = 0
 
-        super(EmailLists, self).save(*args, **kwargs)
+        super(EmailList, self).save(*args, **kwargs)
 
+    def __str__(self):
+        return '%s (%s)' % (self.description, self.regex)
     
     
 class PlainRedirect(models.Model):
