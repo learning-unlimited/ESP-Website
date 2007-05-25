@@ -1,9 +1,10 @@
+from django.core import validators
 from django import oldforms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
 import re
 
-get_id_re = re.compile('\D*(\d+)\D$')
+get_id_re = re.compile('.*\D(\d+)\D')
 
 class AjaxForeignKeyFormField(oldforms.FormField):
     def __init__(self, field_name, field,
@@ -27,10 +28,16 @@ class AjaxForeignKeyFormField(oldforms.FormField):
         if validator_list is None:
             validator_list = []
 
-        self.validator_list = validator_list
+        self.validator_list = [self.isProperPost] + validator_list
 
     def extract_data(self, data):
-        return data.get(self.field.attname, '')
+        try:
+            return data[self.field_name]
+        except KeyError:
+            return data.get(self.field.attname, '')
+
+    def prepare(self, data):
+        return
 
 
     def render(self, data):
@@ -154,12 +161,14 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 
         return css + html + javascript
 
-    def prepare(self, new_data):
-        id = new_data.get(self.field_name, None)
-        if id:
-            try:
-                id = int(id)
-            except ValueError:
-                match = get_id_re.match(id)
-                id = match.groups()[0]
-        new_data[self.field_name] = id
+    def isProperPost(self, data, form):
+        try:
+            data = int(data)
+        except ValueError:
+            match = get_id_re.match(data)
+            if match:
+                data = match.groups()[0]
+            else:
+                raise validators.ValidationError, "Invalid text sent for key."
+        form[self.field_name] = data
+        return data

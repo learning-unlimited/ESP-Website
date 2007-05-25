@@ -12,4 +12,5 @@ class AjaxForeignKey(ForeignKey):
 
     def get_manipulator_fields(self, *args, **kwargs):
         return [AjaxForeignKeyFormField(field_name = self.name,
+                                        is_required = (not self.blank),
                                         field      = self)]
