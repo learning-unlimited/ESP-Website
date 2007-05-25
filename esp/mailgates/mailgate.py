@@ -32,7 +32,7 @@ try:
         if not match: continue
 
 
-        Class = getattr(__import__(import_location + handler.lower(), (), (), ['']), handler)
+        Class = getattr(__import__(import_location + handler.handler.lower(), (), (), ['']), handler.handler)
 
         instance = Class(handler, message)
 
