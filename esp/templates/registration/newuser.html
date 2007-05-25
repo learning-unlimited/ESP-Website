@@ -1,0 +1,62 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Create a new user account{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Create an account"|subsection }}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Create a new account</h1>
+
+<p>
+  Welcome to ESP! To do almost anything with ESP, you first need to register
+an account with us. After you register account, you will be allowed to register
+for programs, sign up for classes, among other things.
+</p>
+
+<form action="{{ request.path }}" method="post" name="newuser_form">
+<table>
+<thead>
+<tr>
+  <th colspan="2">
+    User Account Creation Form
+  </th>
+</tr>
+</thead>
+<tbody>
+{% if form.errors %}
+<tr>
+<td colspan="2">
+<div class="errors">
+There 
+{% if form.errors|length_is:1 %}is an error{% else %}
+are errors{% endif %} in the below form. Please fix and resubmit.
+</div>
+</td>
+</tr>
+{% endif %}
+
+{{ form }}
+<tr>
+  <th colspan="2" class="submit">
+    <input type="submit" value="Create account, proceed to profile creation" name="submit" />
+  </th>
+</tr>
+</tbody>
+</table>
+</form>
+
+<script type="text/javascript">
+<!--
+  document.getElementById('id_first_name').focus();
+//-->
+</script>
+
+{% endblock %}

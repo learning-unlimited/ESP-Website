@@ -1,0 +1,17 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Error, Logged In{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Create an account -- Error"|subsection }}
+{% endblock %}
+
+{% block content %}
+<h1>Create a new account</h1>
+
+<p>
+  Sorry, it seems you are already logged in! Thanks for trying to get even more involved with ESP.<br />
+  <a href="/" title="ESP Home Page">Return to the homepage</a>
+</p>
+{% endblock %}

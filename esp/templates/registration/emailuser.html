@@ -1,0 +1,67 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Join our mail list{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Join our mail list"|subsection }}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Join our Email List</h1>
+
+<p>
+  Interested in ESP? By entering your email address below, we will send
+you an email a few times over the course of a year to tell you about 
+ESP events. (Note: This does not register you for any programs.)
+</p>
+
+<div class="note">
+Note: By creating an account, you will automatically
+be in our mailing list.
+</div>
+
+<form action="{{ request.path }}" method="post" name="emaillist_form">
+<table>
+<thead>
+<tr>
+  <th colspan="2">
+    Join our Email List
+  </th>
+</tr>
+</thead>
+<tbody>
+{% if form.errors %}
+<tr>
+<td colspan="2">
+<div class="errors">
+There 
+{% if form.errors|length_is:1 %}is an error{% else %}
+are errors{% endif %} in the below form. Please fix and resubmit.
+</div>
+</td>
+</tr>
+{% endif %}
+
+{{ form }}
+<tr>
+  <th colspan="2" class="submit">
+    <input type="submit" value="Join our email list" name="submit" />
+  </th>
+</tr>
+</tbody>
+</table>
+</form>
+
+<script type="text/javascript">
+<!--
+  document.getElementById('id_email').focus();
+//-->
+</script>
+
+{% endblock %}
