@@ -352,3 +352,60 @@ class EmailRequest(models.Model):
     class Admin:
         pass
 
+
+
+
+class EmailList(models.Model):
+    """
+    A list that gets handled when an email comes in to @esp.mit.edu.
+    """
+
+    regex = models.CharField(verbose_name='Regular Expression',
+            maxlength=512, help_text="(e.g. '^(.*)$' matches everything)")
+
+    seq   = models.PositiveIntegerField(blank=True, verbose_name = 'Sequence',
+                                        help_text="Smaller is earlier.")
+
+    handler = models.CharField(maxlength=128)
+
+    subject_prefix = models.CharField(maxlength=64,blank=True,null=True)
+
+    admin_hold = models.BooleanField(default=False)
+
+    cc_all     = models.BooleanField(help_text="If true, the CC field will list everyone. Otherwise each email will be sent individually.", default=False)
+
+    from_email = models.CharField(help_text="If specified, the FROM header will be overwritten with this email.", blank=True, null=True, maxlength=512)
+
+    description = models.TextField(blank=True,null=True)
+
+    class Admin:
+        pass
+
+    class Meta:
+        ordering=('seq',)
+
+    def save(self, *args, **kwargs):
+        if self.seq is None:
+            try:
+                self.seq = EmailLists.objects.order_by('-seq')[0].seq + 5
+            except EmailLists.DoesNotExist:
+                self.seq = 0
+
+        super(EmailLists, self).save(*args, **kwargs)
+
+    
+    
+class PlainRedirect(models.Model):
+    """
+    A simple catch-all for mail redirection.
+    """
+
+    original = models.CharField(maxlength=512,unique=True)
+
+    destination = models.CharField(maxlength=512)
+
+    class Admin:
+        pass
+
+    class Meta:
+        ordering=('original',)
