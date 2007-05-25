@@ -3,13 +3,14 @@
 # Main mailgate for ESP.
 # Handles incoming messages etc.
 
-import sys, os, operator, email, re, smtplib
+import sys, os, operator, email, re, smtplib, socket, sha, random
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 from esp.dbmail.models import EmailList
 
+host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
 MAIL_PATH = '/usr/sbin/sendmail'
 server = smtplib.SMTP('localhost')
@@ -32,7 +33,8 @@ try:
 
     for handler in handlers:
         re_obj = re.compile(handler.regex)
-        match = re_obj.search(user, re.I)
+        match = re_obj.search(user)
+
 
         if not match: continue
 
@@ -59,7 +61,13 @@ try:
         if handler.from_email:
             del(message['from'])
             message['From'] = handler.from_email
-        
+
+        del message['Message-ID']
+
+        # get a new message id
+        message['Message-ID'] = '<%s@%s>' % (sha.new(str(random.random())).hexdigest(),
+                                             host)
+
         if handler.cc_all:
             # send one mass-email
             message['To'] = ', '.join(instance.recipients)
@@ -73,6 +81,7 @@ try:
 
         sys.exit(0)
 
+    assert False, "User Not Found"
 
 except Exception,e:
     a = sys.exc_info()

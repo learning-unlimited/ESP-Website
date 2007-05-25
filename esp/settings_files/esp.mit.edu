@@ -99,7 +99,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'esp.middleware.StatsMiddleware',
     'esp.middleware.ESPErrorMiddleware',
-#    'esp.middleware.psycomiddleware.PsycoMiddlware',
+    #'esp.middleware.psycomiddleware.PsycoMiddleware',
     'django.middleware.common.CommonMiddleware',
     #'django.contrib.csrf.middleware.CsrfMiddleware',
     'django.middleware.doc.XViewMiddleware',
@@ -159,3 +159,4 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
                                'django.core.context_processors.request',
                                'django.core.context_processors.auth',
                                )  
+USE_ETAGS=True
