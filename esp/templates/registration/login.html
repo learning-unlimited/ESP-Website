@@ -9,64 +9,88 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<style type="text/css">
-.possible_errors {
-  font-size: .8em;
-  color: #666;
-  font-family: garamond;
-}
-
-</style>
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}
 
 {% block content %}
-<h2 style='text-align: center'>Welcome back to ESP!</h2>
+<h1>Log back in to ESP</h1>
 
-<p style="text-align: center; color: #FF0000; margin-bottom: 0px;">
- <b>NOTE: You must have <a href="http://www.google.com/cookies.html"
- title="How to enable cookies">cookies enabled</a> to login to this website.<br/>
- </b>
+{% if next %}
+
+<p>
+You need to log in before you can access <tt>{{ next }}</tt>.<br />
+Please log in below.
 </p>
-<hr/>
-{% if form.has_errors %}
-<h2 class="error">Sorry!  There were errors with the login.</h2>
 {% endif %}
-<form action='.' method="post">
-<table width='65%' cellpadding='2' align='center' border='0'>
 
+
+<div id="login_form">
+<form action="{{ request.action }}" method="post">
+<table cellpadding="2" align="center">
+<thead>
 <tr>
- <td class="possible_errors" colspan="2" style="padding-top: 15px;">{{ form.username.errors|join:"<br />" }}</td>
+ <th colspan="2">Login</th>
 </tr>
-
 <tr>
- <td style="vertical-align: top"><b><label for="id_username">Username:</label></b></td>
- <td>{{ form.username }}<br/>
+ <td colspan="2">
+{% if form.username.errors %}
+   <div class="errors">
+     {{ form.username.errors|last }}
+   </div>
+{% endif %}
+</thead>
+<tbody>
+<tr>
+ <th><label class="required" for="id_username">Username:</label></th>
+ <td>
+   {{ form.username }}
  </td>
 </tr>
 
 <tr>
- <td class="possible_errors" colspan="2" style="padding-top: 15px;">{{ form.password.errors|join:"<br />" }}</td>
+ <th><label class="required" for="id_password">Password:</label></th>
+ <td>
+   {% if form.password.errors %}
+   <ul class="errorlist">
+     {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+   </ul>
+   {% endif %}
+   {{ form.password }}
+ </td>
 </tr>
 
 <tr>
- <td></td>
- <td></td>
+  <th colspan="2" class="submit">
+    <input type="submit" value="- Login -" />
+  </th>
 </tr>
 
+{% if form.has_errors %}
 <tr>
- <td><b><label for="id_password">Password:</label></b></td>
- <td>{{ form.password }}</td>
+  <td colspan="2">
+    <p>
+      Forgot your password? Head on over to the <a href="/myesp/passwdrecover"
+       title="Click for password recovery">Password Recovery Page</a>.
+    </p>
+  </td>
 </tr>
+{% endif %}
 
-<tr>
- <td></td>
- <td></td>
-</tr>
+</tbody>
 </table>
 
-<p style="text-align: center"><input type='submit' value='-  Login  -' /></p>
 <input type="hidden" name="next" value="{{ next }}" />
 </form>
+</div>
+
+<script type="text/javascript">
+<!--
+document.getElementById('id_username').focus();
+//-->
+</script>
 <br />
-<p align="center"><h2>Don't already have an account?  <a href="/myesp/register/">Click here</a> to create one!</h2></p>
+
+<h2>
+  Don't already have an account?  <a href="/myesp/register/">Click here</a> to create one!
+</h2>
 {% endblock %}
