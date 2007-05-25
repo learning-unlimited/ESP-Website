@@ -81,6 +81,10 @@ urlpatterns += patterns('esp.web.views.everything',
                         (r'^(?P<url>.*)\.poll$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': poll} ),
 )
 
+urlpatterns += patterns('',
+                        (r'^myesp/', include('esp.users.urls'),)
+                        )
+
 urlpatterns += patterns('esp.qsd.views',
                         (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/(?P<url>.*).html$', 'qsd'),
                         (r'^(?P<url>.*)\.html$', 'qsd'),
@@ -133,9 +137,6 @@ urlpatterns += patterns('esp.web.views.everything',
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
 
     
-    # myESP Page
-    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
-
     # Event-generation
     # Needs to get fixed (axiak)
     #(r'^events/create/$', 'esp.cal.views.createevent'),
@@ -145,7 +146,7 @@ urlpatterns += patterns('esp.web.views.everything',
 
     # Update navbar
     (r'^navbar/edit.scm', 'updateNavBar'),
-
+    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
     # Reimbursement requests
     # Needs to be better
     #(r'^money/reimbursement/$', 'esp.money.views.create_reimbursement'),

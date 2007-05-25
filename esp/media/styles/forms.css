@@ -1,0 +1,89 @@
+#divmaintext form table {
+    vertical-align: top;
+    border-collapse: collapse;
+    border: 2px solid black;
+}
+#divmaintext form table tbody td, #divmaintext form table tbody th {
+    vertical-align: top;
+/*    padding-top: 0 !important;*/
+    padding: 2px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+/*   border: 1px solid #ccc;*/
+    border-bottom: 1px dashed #369;
+}
+
+#divmaintext form table thead th {
+    background-color: #e8f0f7;
+    text-align: center;
+    border: 2px solid black;
+    padding: 2px !important;
+}
+
+
+#divmaintext form table thead {
+    padding: 0;
+}
+
+#divmaintext form table td {
+    font-size: 0.8em;
+    color: #999;
+    font-style: italic;
+}
+
+#divmaintext form table td input, #divmaintext form table textarea {
+    font-size: 1.2em;
+     color: black;
+    font-style: normal;
+}
+
+#divmaintext form table li, #divmaintext form table ul {
+    list-style-type: none;
+    padding: 0; margin: 0;
+    font-style: italic;
+    color: #c00;
+}
+#divmaintext form table label {
+    cursor: pointer;
+}
+
+#divmaintext form th.submit {
+    text-align: center;
+}
+
+#divmaintext form .errors { 
+     font-size:12px !important; 
+     font-style: normal;
+     display:block; padding:4px 5px 4px 25px; 
+     margin:0 10px 3px 10px; border:1px solid red; 
+     
+    color:red;background:#ffd url(/media/images/icon_error.gif) 5px .3em no-repeat; 
+}
+
+/* prettier forms */
+#divmaintext select, input[type=text], input[type=file], input[type=password], textarea { border: 1px solid #b7b7b7; }
+#divmaintext select.required, input[type=text].required, input[type=password].required, input[type=file].required, textarea.required { border: 1px solid #FFb7b7; }
+#divmaintext select:focus, input[type=text]:focus, input[type=password]:focus, textarea:focus { border: 1px solid black; }
+#divmaintext select:focus.required, input[type=text]:focus.required, input[type=password]:focus.required, textarea:focus.required { border: 1px solid #F00; }
+
+
+#login_form table {
+   width: 300px;
+   border: 2px solid black !important;
+   border-collapse: collapse;
+}
+
+#login_form table td, #login_form table th {
+   border: 0 !important;
+}
+
+#login_form tbody th, #login_form tbody th {
+  padding: 2px !important;
+}
+
+#login_form thead th {
+  background-color: #e8f0f7;
+  text-align: center;
+  border: 2px solid black !important;
+}
+

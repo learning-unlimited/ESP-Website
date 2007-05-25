@@ -54,164 +54,6 @@ from django import forms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
 
 
-def myesp_register(request, module):
-	""" Return a user-registration page """
-	new_data = request.POST.copy()
-	if request.GET.has_key('role'):
-		new_data['role'] = request.GET['role']
-		
-	if request.user.is_authenticated():
-		return render_to_response('users/duh', request, GetNode('Q/Web/myesp'), {})
-	manipulator = UserRegManipulator()
-	return render_to_response('users/newuser.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
-						    'form':           forms.FormWrapper(manipulator, new_data, {})})
-
-
-
-def myesp_finish(request, module):
-	""" Complete a user registration """
-	admin_program = Program.objects.filter(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))[0]
-	if request.POST.has_key('profile_page'):
-		
-		profile_page =  profile_editor(request, admin_program, False, request.POST['current_role'])
-		if profile_page == True:
-			return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {'finish': True})
-		else:
-			return profile_page
-	
-	manipulator = UserRegManipulator()
-	new_data = request.POST.copy()
-	errors = manipulator.get_validation_errors(new_data)
-
-	if errors:
-		return render_to_response('users/newuser.html', request, GetNode('Q/Web/myesp'), {'Problem':        True,
-								'form':           forms.FormWrapper(manipulator, new_data, errors)})
-
-
-	# Does there already exist an account with this e-mail address, used for subscribing to mailing lists?
-	if User.objects.filter(email=request.POST['email'], password="emailuser").count() > 0:
-		# If so, re-use it
-		email_user = User.objects.filter(email=request.POST['email'])[0]
-		email_user.username = request.POST['username'].lower()
-		email_user.last_name = request.POST['last_name']
-		email_user.first_name = request.POST['first_name']
-		email_user.set_password(request.POST['password'])
-		email_user.save()
-		email_user = authenticate(username = request.POST['username'].lower(), password = request.POST['password'])
-		login(request, email_user)
-		return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {})
-
-
-	# We can't steal an already-existing account, so make a new one
-	django_user = User()
-	django_user.username = request.POST['username'].lower()
-	django_user.last_name = request.POST['last_name']
-	django_user.first_name = request.POST['first_name']
-	django_user.set_password(request.POST['password'])
-	django_user.email = request.POST['email']
-	django_user.is_staff = False
-	django_user.is_superuser = False
-	django_user.save()
-	django_user = authenticate(username=request.POST['username'].lower(), password=request.POST['password'])
-	login(request, django_user)
-	if request.POST.has_key('role'):
-		# is a teacher of this class
-		v = GetNode( 'V/Flags/UserRole/'+request.POST['role'])
-		ub = UserBit()
-		ub.user = request.user
-		ub.recursive = False
-		ub.qsc = GetNode('Q')
-		ub.verb = v
-		ub.save()
-	
-	profile_page =  profile_editor(request, admin_program, False, request.POST['role'])
-	if profile_page == True:
-		return render_to_response('users/regdone', request, GetNode('Q/Web/myesp'), {})
-	else:
-		return profile_page
-
-       
-
-def myesp_emaillist(request, module):
-	""" Present the subscribe-to-emaillist page """
-	return render_to_response('users/email', request, GetNode('Q/Web/myesp'), {})
-
-def myesp_emailfin(request, module):
-	""" Subscribe a user to an e-mail list """
-	if not request.POST.has_key('email'):
-		return render_to_response('users/newuser.html', request, GetNode('Q/Web/myesp'), {'Problem': True})
-	
-	if User.objects.filter(email=request.POST['email']).count() == 0:
-		if User.objects.filter(email=request.POST['email']).count() > 0:
-			return render_to_response('index.html', request, GetNode('Q/Web/myesp'), {})
-			
-		email_user = User()
-		email_user.email = request.POST['email']
-		email_user.username = request.POST['email']
-		email_user.password = "emailuser"
-		email_user.is_staff = False
-		email_user.is_superuser = False
-		email_user.save()
-
-	return HttpResponseRedirect('/')
-        #render_to_response('index.html', request, GetNode('Q/Web/myesp'), {})
-
-
-def search_for_user(request, user_type='Any'):
-	""" Interface to search for a user. If you need a user, just use this.
-	  Returns (user or response, user returned?) """
-
-	users = None
-	error = False
-	QSUsers = None
-
-
-	# Get the "base list" consisting of all the users of a specific type, or all the users.
-	if type(user_type) != str:
-		All_Users = user_type
-	elif user_type == 'All':
-		All_Users = ESPUser.objects.all()
-	else:
-		if user_type not in ESPUser.getTypes():
-			assert False, 'user_type must be one of '+str(ESPUser.getTypes())
-
-		All_Users = ESPUser.getAllOfType(user_type, False)
-
-	if request.GET.has_key('userid'):
-		userid = -1
-		try:
-			userid = int(request.GET['userid'])
-		except:
-			pass
-
-		QSUsers = All_Users.filter(id = userid)
-		
-	elif request.GET.has_key('username'):
-		QSUsers = All_Users.filter(username__icontains = request.GET['username'])
-	elif request.GET.has_key('lastname'):
-		QSUsers = All_Users.filter(last_name__icontains = request.GET['lastname'])
-	elif request.GET.has_key('firstname'):
-		QSUsers = All_Users.filter(first_name__icontains = request.GET['firstname'])
-
-
-	if QSUsers is None:
-		users = None
-	else:
-		users = [ ESPUser(user) for user in QSUsers ]
-		
-
-	if users is not None and len(users) == 0:
-		error = True
-                users = None
-        
-        if users is None:
-		return (render_to_response('users/usersearch.html', request, None, {'error': error}), False)
-        if len(users) == 1:
-		return (users[0], True)
-        else:
-		users.sort()
-		return (render_to_response('users/userpick.html', request, None, {'users': users}), False)
-
 
 @login_required
 def myesp_passwd(request, module):
@@ -305,12 +147,6 @@ def myesp_passemailrecover(request, module):
 				   'Success': success})
 	
 
-@login_required
-def myesp_logfin(request, module):
-	""" Display the "You have successfully logged in" page """
-
-	return render_to_response('index.html', request, GetNode('Q/Web/myesp'), {})
-	
 def myesp_home(request, module):
 	""" Draw the ESP home page """
 	curUser = request.user
@@ -610,11 +446,7 @@ def myesp_battlescreen_teacher(request, module):
 		raise Http404	
 
 
-myesp_handlers = { 'register': myesp_register,
-		   'finish': myesp_finish,
-		   'emaillist': myesp_emaillist,
-		   'emailfin': myesp_emailfin,
-		   'logfin': myesp_logfin,
+myesp_handlers = {
 		   'home': myesp_home,
 		   'switchback': myesp_switchback,
 		   'onsite': myesp_onsite,
