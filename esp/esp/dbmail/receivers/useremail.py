@@ -1,14 +1,14 @@
 
 
-from esp.dbmail.models.base import BaseHandler
+from esp.dbmail.base import BaseHandler
 from esp.users.models import ESPUser
 
 
 class UserEmail(BaseHandler):
 
-    def process(self, user):
+    def process(self, user, user_match):
         try:
-            user = ESPUser.object.get(username = user)
+            user = ESPUser.objects.get(username = user)
         except ESPUser.DoesNotExist:
             return
 

@@ -10,11 +10,12 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 from esp.dbmail.models import EmailList
 
-import_location = 'esp.dbmail.models.receivers.'
+import_location = 'esp.dbmail.receivers.'
 server = smtplib.SMTP('localhost')
 ARCHIVE = 'esparchive@gmail.com'
 
 DEBUG=True
+os.environ['LOCAL_PART'] = 'axiak'
 
 user = "UNKNOWN USER"
 
@@ -30,7 +31,6 @@ try:
         match = re_obj.search(user)
 
         if not match: continue
-
 
         Class = getattr(__import__(import_location + handler.handler.lower(), (), (), ['']), handler.handler)
 
