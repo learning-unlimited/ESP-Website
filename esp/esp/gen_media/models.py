@@ -38,7 +38,7 @@ import cStringIO as StringIO
 import md5
 from PIL import Image, ImageFont, ImageDraw, ImageFilter
 
-TEXIMAGE_BASE = settings.MEDIA_ROOT+'/latex'
+TEXIMAGE_BASE = settings.MEDIA_ROOT+'latex'
 TEXIMAGE_URL  = '/media/uploaded/latex'
 IMAGE_TYPE    = 'png'
 LATEX_DPI     = 150
