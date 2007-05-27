@@ -12,10 +12,6 @@ __all__ = ['single_blog_entry']
 @miniblog_find
 def single_blog_entry(request, entry, action):
 
-    if 'success' in request.GET:
-        return render_to_response('miniblog/comment_success.html',
-                                  request, entry.anchor,
-                                  {'entry':entry})
 
     if request.method == 'POST':
         form = BlogCommentForm(request.POST)
@@ -27,7 +23,7 @@ def single_blog_entry(request, entry, action):
                                        content = form.clean_data['content'])
             c.save()
 
-            return HttpResponseRedirect(request.path +'?success')
+            return HttpResponseRedirect(request.path +'#comment_%s' % c.id)
     else:
         form = BlogCommentForm()
 
