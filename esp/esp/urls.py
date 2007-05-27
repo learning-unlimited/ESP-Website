@@ -65,7 +65,6 @@ urlpatterns += patterns('django.views.generic',
                         (r'^web$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
                         (r'^esp_web', 'simple.direct_to_template',{'template':'index.html'}), # index
                         (r'.php$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
-                        (r'^myesp/signedout/?', 'simple.direct_to_template',{'template': 'registration/logged_out.html'}), # logged out page
                         )
 
 urlpatterns += patterns('esp.web.views.everything',

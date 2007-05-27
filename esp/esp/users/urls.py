@@ -7,5 +7,6 @@ urlpatterns = patterns('esp.users.views',
                        (r'^passwdrecover/(success)?/?$', 'initial_passwd_request',),
                        (r'^recoveremail/(success)?/?$', 'email_passwd_followup',),
                        (r'^passwdrecover/?$', 'initial_passwd_request',),
-                       (r'^recoveremail/?$', 'email_passwd_followup',),                       
+                       (r'^recoveremail/?$', 'email_passwd_followup',),
+                       (r'^signedout/?$', 'signed_out_message',),
                        )
