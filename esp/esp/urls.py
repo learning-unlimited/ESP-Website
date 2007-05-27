@@ -99,7 +99,7 @@ urlpatterns += patterns('django.contrib.auth.views',
 
 # other apps
 urlpatterns += patterns('',
-                        (r'^blog/',  include('esp.miniblog.urls')),
+                        (r'^',  include('esp.miniblog.urls')),
                         )
 
 # things that need to move

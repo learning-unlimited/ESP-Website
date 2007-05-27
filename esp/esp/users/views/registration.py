@@ -1,6 +1,6 @@
 
 
-from esp.users.models import ESPUser, User, UserBit
+from esp.users.models import ESPUser, User, UserBit, ESPUser_Profile
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm
 from esp.web.util.main import render_to_response
 from django.contrib.auth import login, authenticate
@@ -63,6 +63,7 @@ def user_registration(request):
             user.set_password(form.clean_data['password'])
 
             user.save()
+            ESPUser_Profile.get_or_create(user = user)
 
             role_verb = request.get_node('V/Flags/UserRole/%s' % form.clean_data['initial_role'])
 

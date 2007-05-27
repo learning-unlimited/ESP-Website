@@ -28,6 +28,9 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+
+from esp.miniblog.views.blogs import *
+
 from esp.web.util import render_to_response
 from esp.miniblog.models import Entry
 from django.contrib.auth.models import User, AnonymousUser

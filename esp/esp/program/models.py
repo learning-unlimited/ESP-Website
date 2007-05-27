@@ -872,8 +872,16 @@ class Class(models.Model):
             return False
     
     def getTeacherNames(self):
-        return [ usr.first_name + ' ' + usr.last_name
-            for usr in self.teachers() ]
+        teachers = []
+        for teacher in self.teachers():
+            contact = teacher.getLastProfile().contact_user
+
+            name = '%s %s' % (contact.first_name,
+                              contact.last_name)
+            if name.strip() == '':
+                name = teacher.username
+            teachers.append(name)
+        return teachers
 
     def friendly_times(self):
         """ will return friendly times for the class """

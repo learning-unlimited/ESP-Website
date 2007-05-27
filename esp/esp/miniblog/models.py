@@ -36,6 +36,8 @@ from esp.users.models import UserBit
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User
 from esp.db.fields import AjaxForeignKey
+from django.core.cache import cache
+import datetime
 
 # Create your models here.
 
@@ -43,16 +45,25 @@ class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     anchor = AjaxForeignKey(DataTree)
     title = models.CharField(maxlength=256) # Plaintext; shouldn't contain HTML, for security reasons, though HTML will probably be passed through intact
-    timestamp = models.DateTimeField(auto_now=True)
-    content = models.TextField() # Markdown-encoded
-    sent    = models.BooleanField()
-    email   = models.BooleanField()
-    fromuser = AjaxForeignKey(User, blank=True, null=True)
-    fromemail = models.CharField(maxlength=80, blank=True, null=True)
+    slug    = models.SlugField(prepopulate_from=('title',),
+                               help_text="(will determine the URL)")
+
+    timestamp = models.DateTimeField(default = datetime.datetime.now, editable=False)
+    highlight_expire = models.DateTimeField(blank=True,null=True,
+                                            help_text="When this should stop being showcased.")
+    content = models.TextField(help_text='Yes, you can use markdown.') # Markdown-encoded
+    sent    = models.BooleanField(editable=False)
+    email   = models.BooleanField(editable=False)
+    fromuser = AjaxForeignKey(User, blank=True, null=True,editable=False)
+    fromemail = models.CharField(maxlength=80, blank=True, null=True, editable=False)
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
+    section = models.CharField(maxlength=32,blank=True,null=True,help_text="e.g. 'teach' or 'learn' or blank")
 
     def __str__(self):
-        return ( self.anchor.full_name() + ' (' + str(self.timestamp) + ')' )
+        if self.slug:
+            return "%s (%s)" % (self.slug, self.anchor.uri)
+        else:
+            return "%s (%s)" % (self.title, self.anchor.uri)
 
     def html(self):
         return markdown(self.content)
@@ -72,43 +83,49 @@ class Entry(models.Model):
             return UserBit.find_by_anchor_perms(Entry,user,verb,qsc=qsc)
 
     class Admin:
-        pass
+        search_fields = ['content','title','anchor__uri']
+        js = (
+            '/media/scripts/admin_miniblog.js',
+            )
+
+
+    def get_absolute_url(self):
+
+        directory = ('/'+'/'.join(self.anchor.get_uri().split('/')[2:])).strip('/')
+
+        return '%s/%s.blog' % (directory, self.slug)
+
+
+    def save(self, *args, **kwargs):
+        cache.delete('BLOG_DISPLAY__%s' % self.id)
+        super(Entry, self).save(*args, **kwargs)
+    
+    class Meta:
+        unique_together = ('slug','anchor',)
+        verbose_name_plural = 'Entries'
+        ordering = ['-timestamp']
+    
+
+class Comment(models.Model):
+
+    author = AjaxForeignKey(User)
+    entry  = models.ForeignKey(Entry)
+    
+    post_ts = models.DateTimeField(default=datetime.datetime.now,
+                                   editable=False)
+
+    subject = models.CharField(maxlength=256)
+
+    content = models.TextField(help_text="HTML not allowed.")
+
+    def __str__(self):
+        return 'Comment for %s by %s' % (self.entry, self.author)
+    
+    class Admin:
+        search_fields = ['author__first_name','author__last_name',
+                         'subject','entry__title']
 
     class Meta:
-        verbose_name_plural = 'Entries'
-    
-    @staticmethod
-    def post( user_from, anchor, subject, content, email=False, user_email = ''):
-        newentry = Entry()
-        newentry.content = content
-        newentry.title = subject
-        newentry.anchor = anchor
-        newentry.email  = email
-        newentry.sent  = False
-        newentry.fromuser = user_from
-        newentry.fromemail = user_email
-        newentry.save()
-
-        return newentry
-
-    def subscribe_user(self, user):
-        verb = GetNode('V/Subscribe')
-        from esp.users.models import ESPUser, User
-        if type(user) != User and type(user) != ESPUser:
-            assert False, 'EXPECTED USER, received %s' \
-                     % str(type(user))
-        ub = UserBit.objects.filter(verb = verb,
-                        qsc  = self.anchor,
-                        user = user)
-
-        if ub.count() > 0:
-            return False
-
-        ub = UserBit(verb = verb,
-                 qsc  = self.anchor,
-                 user = user
-                 )
-        ub.save()
-        return True
-
+        ordering = ['-post_ts']
+        
 

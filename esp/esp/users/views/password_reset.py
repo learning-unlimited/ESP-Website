@@ -30,10 +30,16 @@ def initial_passwd_request(request, success=None):
         form = PasswordResetForm(request.POST)
 
         if form.is_valid():
+            
             username = form.clean_data['username']
-            user = User.objects.get(username = username)
-            user = ESPUser(user)
-            user.recoverPassword()
+            if username != '':
+                users = User.objects.filter(username = username)
+            else:
+                users = User.objects.filter(email__iexact = form.clean_data['email'])
+
+            for user in users:
+                ESPUser(user).recoverPassword()
+
             return HttpResponseRedirect('%ssuccess/' % request.path)
 
 

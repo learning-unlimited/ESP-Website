@@ -1,0 +1,27 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{ entry|title }}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="{{ media_url }}styles/forms.css" type="text/css" />
+<link rel="stylesheet" href="{{ media_url }}styles/blog.css" type="text/css" />
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Blog"|subsection }}
+{% endblock %}
+
+
+{% block content %}
+
+{% load render_blog %}
+
+{% render_blog entry %}
+
+<div id="comment_spacing">&nbsp;</div>
+
+{% render_comments entry request form %}
+
+{% endblock %}

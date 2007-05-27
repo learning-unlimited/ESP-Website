@@ -83,12 +83,9 @@ try:
                 message['To'] = recipient
                 send_mail(str(message))
 
-        print 'hmm'
         sys.exit(0)
 
-    print handler
 
-    assert False, "User Not Found"
 
 except Exception,e:
     a = sys.exc_info()

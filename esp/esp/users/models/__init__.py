@@ -202,7 +202,8 @@ class ESPUser(User, AnonymousUser):
         elif key == 'recover_url':
             return 'http://esp.mit.edu/myesp/recoveremail/?code=%s' % \
                          otheruser.password
-            
+        elif key == 'username':
+            return otheruser.username
         return ''
     
     def getTaughtClasses(self, program = None):
@@ -926,6 +927,12 @@ class PersistentQueryFilter(models.Model):
     def __str__(self):
         return str(self.useful_name)
         
+
+class ESPUser_Profile(models.Model):
+    user = models.ForeignKey(User, unique=True)
+
+    def prof(self):
+        return ESPUser(self.user)
 
 
 class DBList(object):

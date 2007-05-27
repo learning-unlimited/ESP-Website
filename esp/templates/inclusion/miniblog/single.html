@@ -1,0 +1,10 @@
+
+{% load markdown %}
+{% load smartypants %}
+<div class="blog_entry">
+<h1>{{ entry.title }}</h1>
+
+{{ entry.content|markdown|smartypants }}
+
+
+</div>

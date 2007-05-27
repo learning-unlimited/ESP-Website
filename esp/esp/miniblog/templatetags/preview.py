@@ -2,9 +2,10 @@ from django import template
 from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import DataTree
 from esp.users.models import UserBit
+from esp.db.models import Q
 from esp.miniblog.models import Entry
 import re
-
+import datetime
 arg_re_num = re.compile('\s*(\S+)\s+as\s+(\S+)\s+(\d+)\s*')
 arg_re     = re.compile('\s*(\S+)\s+as\s+(\S+)\s*')
 
@@ -37,7 +38,7 @@ def miniblog_for_user(parser, token):
             except template.VariableDoesNotExist:
                  raise template.TemplateSyntaxError, "%s tag requires first argument, %s, to be a User" % (tag, self.user)
 
-            result = UserBit.find_by_anchor_perms(Entry, self.user, verb).order_by('-timestamp')
+            result = UserBit.find_by_anchor_perms(Entry, self.user, verb).order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.datetime.now()) | Q(highlight_expire__isnull = True))
 
             total = result.count()
 

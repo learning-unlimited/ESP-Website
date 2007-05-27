@@ -7,11 +7,18 @@ __all__ = ['PasswordResetForm','NewPasswordSetForm']
 
 class PasswordResetForm(forms.Form):
 
-    username  = forms.CharField(max_length=64,
+    email     = forms.EmailField(max_length=64, required=False)
+
+    username  = forms.CharField(max_length=64, required=False,
                                 help_text = '(Case sensitive)')
-    last_name = forms.CharField(max_length=64, label="Last Name")
 
     def clean_username(self):
+
+        if self.clean_data['username'].strip() == '' and \
+           self.clean_data['email'].strip() == '':
+            raise forms.ValidationError("You need to specify something.")
+
+        if self.clean_data['username'].strip() == '': return ''
 
         try:
             user = User.objects.get(username=self.clean_data['username'])
@@ -20,15 +27,15 @@ class PasswordResetForm(forms.Form):
 
         return self.clean_data['username'].strip()
 
-    def clean_last_name(self):
+    def clean_email(self):
+        if self.clean_data['email'].strip() == '':
+            return ''
 
-        try:
-            user = User.objects.get(username=self.clean_data['username'],
-                                    last_name__iexact=self.clean_data['last_name'].strip())
-        except User.DoesNotExist:
-            raise forms.ValidationError, "Last name, '%s', does not match user." % self.clean_data['last_name']
-        
-        return self.clean_data['last_name'].strip()
+        if len(User.objects.filter(email__iexact=self.clean_data['email']).values('id')[:1])>0:
+            return self.clean_data['email'].strip()
+
+        raise forms.ValidationError('No user has email %s' % self.clean_data['email'])
+
 
 class NewPasswordSetForm(forms.Form):
 

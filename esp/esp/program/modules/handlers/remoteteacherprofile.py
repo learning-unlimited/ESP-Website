@@ -51,12 +51,13 @@ class RemoteTeacherProfile(ProgramModuleObj):
         return [(str(x.id),x.friendly_name) for x in times]
 
     def teachers(self, QObject = False):
-        Q_teachers = Q(remoteteacherparticipationprofile__program = self.program)
-        if QObject:
-            return {'teacher_remoteprofile': Q_teachers}
+        return {}
+        #Q_teachers = Q(remoteteacherparticipationprofile__program = self.program)
+        #if QObject:
+        #    return {'teacher_remoteprofile': Q_teachers}
 
-        teachers = ESPUser.objects.filter(Q_teachers).distinct()
-        return {'teacher_remoteprofile': teachers }
+        #teachers = ESPUser.objects.filter(Q_teachers).distinct()
+        #return {'teacher_remoteprofile': teachers }
 
     def teacherDesc(self):
         return {'teacher_remoteprofile': """Teachers who have completed the remote volunteer profile."""}

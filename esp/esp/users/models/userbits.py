@@ -45,23 +45,22 @@ class UserBitManager(models.Manager):
             """
             user = self.user
             key_start = 'UserBit__%s'
-            if user is None or isinstance(user, AnonymousUser) or \
-               not isinstance(user, User) or user.id is None:
-                return key_start % 'none'
+            if hasattr(user,'id') and user.id is not None:
+                key = key_start % user.id
             else:
-                return key_start % user.id
+                key = key_start % 'none'
+            return key
 
         def __init__(self, user=None):
             self.user = user
 
         def update(self):
             """ Purges all userbit-related cache. """
-            if self.user is None or (not hasattr(self.user,'id')) or \
-               self.user.id is None:
+            if hasattr(self.user, 'id') and user.id is not None:
+                user_ids = [user_id]
+            else:
                 user_ids = [ userid['id'] for userid in User.objects.values('id') ]
                 user_ids.append('None')
-            else:
-                user_ids = [user_id]
 
             for userid in user_ids:
                 # delete the cache
