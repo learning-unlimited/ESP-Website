@@ -18,6 +18,8 @@ ARCHIVE = 'esparchive@gmail.com'
 
 DEBUG=False
 
+os.environ['LOCAL_PART'] = 'axiak'
+
 user = "UNKNOWN USER"
 
 def send_mail(message):
@@ -32,6 +34,7 @@ try:
     handlers = EmailList.objects.all()
 
     for handler in handlers:
+        print handler.regex
         re_obj = re.compile(handler.regex)
         match = re_obj.search(user)
 
@@ -47,6 +50,7 @@ try:
         if not instance.send:
             continue
 
+        
         del(message['to'])
         del(message['cc'])
         message['X-ESP-SENDER'] = 'version 2'
@@ -79,7 +83,10 @@ try:
                 message['To'] = recipient
                 send_mail(str(message))
 
+        print 'hmm'
         sys.exit(0)
+
+    print handler
 
     assert False, "User Not Found"
 

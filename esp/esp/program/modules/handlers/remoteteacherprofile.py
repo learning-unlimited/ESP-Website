@@ -62,7 +62,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
         return {'teacher_remoteprofile': """Teachers who have completed the remote volunteer profile."""}
 
     def isCompleted(self):
-        regProf, created = module_ext.RemoteTeacherParticipationProfile.objects.get_or_create(user = self.user,
+        regProf, created = module_ext.RemoteProfile.objects.get_or_create(user = self.user,
                                                                                               program = self.program)
         
         return not created
@@ -78,7 +78,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
         
         manipulator = manipulators.RemoteTeacherManipulator(self)
 
-        profile, created  = module_ext.RemoteTeacherParticipationProfile.objects.get_or_create(user = self.user, program = self.program)
+        profile, created  = module_ext.RemoteProfile.objects.get_or_create(user = self.user, program = self.program)
         profile.save()
         
 

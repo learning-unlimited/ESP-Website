@@ -1,0 +1,19 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Password reset successful{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Success"|subsection }}
+{% endblock %}
+
+{% block content %}
+<h1>Password Recovery</h1>
+
+
+<p>
+  Congratulations {{request.user.first_name }} {{request.user.last_name}}! You are now signed on. <br />
+  You can now use our web site to join programs, learn about events, among other things.
+</p>
+
+{% endblock %}

@@ -39,8 +39,10 @@ class AdminVitals(ProgramModuleObj):
     """ This allows you to view the major numbers for your program on the main page.
         This will present itself below the options in a neat little table. """
         
-    def prepare(self, context={}):
+    def prepare(self, context=None):
         import operator
+
+        if context is None: context = {}
         
         classes = self.program.classes()
         vitals = {'classtotal': classes.count()}

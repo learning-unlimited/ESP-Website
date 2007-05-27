@@ -6,6 +6,8 @@ from esp.web.util.main import render_to_response
 from django.contrib.auth import login, authenticate
 from django.http import HttpResponseRedirect
 
+__all__ = ['join_emaillist','user_registration']
+
 def join_emaillist(request):
     """
     View to join our email list.

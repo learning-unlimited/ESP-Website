@@ -1,0 +1,63 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Recover your password{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Reset your password"|subsection }}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Recover your password</h1>
+
+<p>
+  Welcome back! Now that we've ensured you are who you say you are, you're almost ready to sign into ESP! <br />
+  Just enter in the username you started to reset your password with, and enter in the password you want to have.
+</p>
+
+<form action="{{ request.path }}" method="post" name="passreset_form_complete">
+<table>
+<thead>
+<tr>
+  <th colspan="2">
+    New Password Form
+  </th>
+</tr>
+</thead>
+<tbody>
+{% if form.errors %}
+<tr>
+<td colspan="2">
+<div class="errors">
+There 
+{% if form.errors|length_is:1 %}is an error{% else %}
+are errors{% endif %} in the below form. Please fix and resubmit.<br />
+Note: If you are experiencing difficulties, please <a href="/contact/contact/esp-web/"
+title="Contact Form">contact us</a>.
+</div>
+</td>
+</tr>
+{% endif %}
+
+{{ form }}
+<tr>
+  <th colspan="2" class="submit">
+    <input type="submit" value="Set password and login!" name="submit" />
+  </th>
+</tr>
+</tbody>
+</table>
+</form>
+
+<script type="text/javascript">
+<!--
+  document.getElementById('id_username').focus();
+//-->
+</script>
+
+{% endblock %}

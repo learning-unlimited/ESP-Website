@@ -69,9 +69,11 @@ class ESPMarkdown(Markdown):
         return used_links
         
 
-    def __init__(self, source=None, media={}):
+    def __init__(self, source=None, media=None):
         """ Handle objects that have been overloaded to deal with the media dictionary """
+        if media is None: media = {}
         self.media = media
+        
 
         self.LINK_PATTERN = ESPLinkPattern(LINK_RE)
         self.LINK_ANGLED_PATTERN = ESPLinkPattern(LINK_ANGLED_RE)

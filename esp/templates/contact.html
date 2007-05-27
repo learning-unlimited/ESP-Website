@@ -11,56 +11,48 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<style type="text/css">
-table.contact {
-    vertical-align: top;
-}
-table.contact td, table.contact th {
-    vertical-align: top;
-    padding-top: 20px;
-}
-table.contact td {
-    padding-top: 10px;
-}
-
-table.contact td {
-    font-size: 80%;
-    color: #999;
-    font-style: italic;
-}
-
-table.contact input, table.contact textarea {
-    font-size: 100%;
-    color: black;
-    font-style: normal;
-}
-#id_message {
-    font-size: 120%;
-}
-table.contact li {
-    list-style-type: none;
-    /*padding: 0; margin: 0;*/
-    color: #c00;
-}
-table.contact label {
-    cursor: pointer;
-}
-</style>
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
 {% block content %}
 <h1>Contact ESP</h1><br />
 
-<p>Fill out this form to send a quick e-mail to the ESP office. We will get back to you as soon as possible (usually within a day). Submitting this form does not add you to our mailing list.</p>
+<p>
+ Fill out this form to send a quick e-mail to the ESP office. We will get back to 
+ you as soon as possible (usually within a day). 
+ Submitting this form does not add you to our mailing list. <br /> <br />
+
+ <small>(Unless of course, you, uh, ASK to be added to our mailing list.)</small>
+</p>
 
 <form action="{{ request.path }}" method="post">
 <table class="contact">
+<thead>
+<tr>
+  <th colspan="2">
+    Contact Form
+  </th>
+</tr>
+</thead>
+<tbody>
+{% if contact_form.errors %}
+<tr>
+<td colspan="2">
+<div class="errors">
+There 
+{% if contact_form.errors|length_is:1 %}is an error{% else %}
+are errors{% endif %} in the below form. Please fix and resubmit.<br />
+</div>
+</td>
+</tr>
+{% endif %}
 {{ contact_form }}
 <tr> 
-<td colspan="2">
+<td colspan="2" class="submit">
 <input type="submit" name="sendemail" value="Send!" />
 </td>
 </tr>
+</tbody>
 </table>
 </form>
 {% endblock %}

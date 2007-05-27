@@ -1,0 +1,24 @@
+{% extends "outlines/series-3.html" %}
+
+
+
+{% block title %}Password reset{% endblock %}
+
+
+{% load subsection %}
+{% block subsection %}
+{{ "Reset your password"|subsection }}
+{% endblock %}
+
+
+{% block content %}
+<h1>Reseting your password</h1>
+
+<p>
+  Your password has been reset.<br />
+
+To set a new one, you need to check your email&mdash;we have sent you a link to set your password to a new one.<br />
+We will send you an email within the next five minutes.
+</p>
+{% endblock %}
+

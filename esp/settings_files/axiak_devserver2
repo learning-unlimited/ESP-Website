@@ -29,25 +29,57 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+######################
+# File Locations     #
+######################
+
+# root directory
+PROJECT_ROOT = '/var/www/espdevel2/esp/trunk/esp/'
+
+# log directory
+LOG_FILE="/var/log/django/esp_errlog"
+
+
+
+###################
+# Debug settings  #
+###################
 DEBUG = True
 DISPLAYSQL = True
-
 TEMPLATE_DEBUG = DEBUG
 
+##################
+# Admins         #
+##################
 ADMINS = (
-    ('Mike Axiak', 'axiak@mit.edu')
+    ('Mike Axiak','axiak@mit.edu'),
 )
+
 MANAGERS = ADMINS
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = '25'
 
-DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
-DATABASE_NAME = 'django'             # Or path to database file if using sqlite3.
+# problem mail
+EMAIL_HOST   = 'localhost'
+EMAIL_PORT   = '25'
+SERVER_EMAIL = 'server@esp.mit.edu'
+EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
+
+################
+# Database     #
+################
+
+# ENGINE one of:
+#  'postgresql_psycopg2', 'postgresql', 'mysql',
+#  'mysql_old', 'sqlite3' or 'ado_mssql'
+
+DATABASE_ENGINE = 'postgresql'
+DATABASE_NAME = 'django'
+#DATABASE_NAME = 'test_django'
+DATABASE_HOST = 'localhost'
+DATABASE_PORT = '5432'
+# passwords etc
 from database_settings import *
-DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = '5432'             # Set to empty string for default. Not used with sqlite3.
 
-PROJECT_ROOT = '/var/www/espdevel2/esp/trunk/esp/'
+
 
 TIME_ZONE = 'America/New_York'
 
@@ -55,41 +87,37 @@ LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
 
-MEDIA_ROOT = PROJECT_ROOT + 'media/'
+MEDIA_ROOT = PROJECT_ROOT + 'public/media/'
 
 MEDIA_URL = '/media/'
 
 ADMIN_MEDIA_PREFIX = '/media/admin/'
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'm)^ea+0^rg5w73-h9d$t)#1@jsf+0km97_rbnpy2884b^%t&wo'
 
-# List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.load_template_source',
     'django.template.loaders.app_directories.load_template_source',
-#     'django.template.loaders.eggs.load_template_source',
 )
 
 MIDDLEWARE_CLASSES = (
+    'django.middleware.http.SetRemoteAddrFromForwardedFor',
+    'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
     'esp.middleware.ESPErrorMiddleware',
     'esp.middleware.StatsMiddleware',
+#   'esp.middleware.psycomiddleware.PsycoMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'django.contrib.csrf.middleware.CsrfMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',
-
+    'esp.middleware.StripWhitespaceMiddleware',
 )
 
 ROOT_URLCONF = 'esp.urls'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates".
-    # Always use forward slashes, even on Windows.
-    PROJECT_ROOT+'templates'
+    PROJECT_ROOT+'templates',
 )
 
 APPEND_SLASH=False
@@ -100,33 +128,30 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
-    'esp.datatree',
-    'esp.miniblog',
     'esp.users',
-    'esp.workflow',
-    'esp.dbmail',
+    'esp.miniblog',
+    'esp.web',
     'esp.program',
     'esp.program.modules',
+    'esp.datatree',
+    'esp.workflow',
+    'esp.dbmail',
     'esp.cal',
     'esp.lib',
     'esp.setup',
-    'esp.web',
     'esp.qsd',
     'esp.qsdmedia',
     'esp.money',
     'esp.resources',
+    'esp.gen_media',
     'esp.poll',
     'esp.dblog',
-    'esp.gen_media',
-
 )
 
 
-#aseering 12-15-2006: Make memcached happen
 CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
 
 
-LOG_FILE="/var/log/django/esp_errlog"
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
@@ -138,3 +163,6 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
                                'django.core.context_processors.request',
                                'django.core.context_processors.auth',
                                )  
+
+# no i18n
+USE_I18N = False

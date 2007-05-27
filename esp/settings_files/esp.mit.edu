@@ -29,79 +29,85 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+######################
+# File Locations     #
+######################
+
+# root directory
+PROJECT_ROOT = '/esp/esp/'
+
+# log directory
+LOG_FILE="/var/log/django/esp_errlog"
+
+
+
+###################
+# Debug settings  #
+###################
 DEBUG = False
-TEMPLATE_DEBUG = DEBUG
 DISPLAYSQL = False
+TEMPLATE_DEBUG = DEBUG
 
-
+##################
+# Admins         #
+##################
 ADMINS = (
-    ('Webmasters', 'esp-webmasters@mit.edu'),
+    ('ESP Webmasters','esp-webmasters@mit.edu'),
 )
-
-EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
-SERVER_EMAIL         = 'server@esp.mit.edu'
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = '25'
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
-DATABASE_NAME = 'django'             # Or path to database file if using sqlite3.
-from database_settings import *
-DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = '5432'             # Set to empty string for default. Not used with sqlite3.
+# problem mail
+EMAIL_HOST   = 'localhost'
+EMAIL_PORT   = '25'
+SERVER_EMAIL = 'server@esp.mit.edu'
+EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 
-# Local time zone for this installation. All choices can be found here:
-# http://www.postgresql.org/docs/current/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
+################
+# Database     #
+################
+
+# ENGINE one of:
+#  'postgresql_psycopg2', 'postgresql', 'mysql',
+#  'mysql_old', 'sqlite3' or 'ado_mssql'
+
+DATABASE_ENGINE = 'postgresql'
+DATABASE_NAME = 'django'
+DATABASE_HOST = 'localhost'
+DATABASE_PORT = '5432'
+# passwords etc
+from database_settings import *
+
+
+
 TIME_ZONE = 'America/New_York'
 
-# Language code for this installation. All choices can be found here:
-# http://www.w3.org/TR/REC-html40/struct/dirlang.html#langcodes
-# http://blogs.law.harvard.edu/tech/stories/storyReader$15
 LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
 
-# An optimization since we don't do i18n
-USE_I18N = False
+MEDIA_ROOT = PROJECT_ROOT + 'public/media/'
 
-# Absolute path to the directory that holds media.
-# Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = '/esp/esp/media/'
-
-# URL that handles the media served from MEDIA_ROOT.
-# Example: "http://media.lawrence.com"
 MEDIA_URL = '/media/'
 
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
 ADMIN_MEDIA_PREFIX = '/media/admin/'
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'm)^ea+0^rg5w73-h9d$t)#1@jsf+0km97_rbnpy2884b^%t&wo'
 
-# List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.load_template_source',
     'django.template.loaders.app_directories.load_template_source',
-#     'django.template.loaders.eggs.load_template_source',
 )
-
-CACHE_MIDDLEWARE_SECONDS = 700
-CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.http.SetRemoteAddrFromForwardedFor',
     'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
+    'esp.middleware.ESPErrorMiddleware',
+    'esp.middleware.StatsMiddleware',
+#   'esp.middleware.psycomiddleware.PsycoMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'esp.middleware.StatsMiddleware',
-    'esp.middleware.ESPErrorMiddleware',
-    #'esp.middleware.psycomiddleware.PsycoMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    #'django.contrib.csrf.middleware.CsrfMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'esp.middleware.StripWhitespaceMiddleware',
@@ -110,10 +116,10 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'esp.urls'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates".
-    # Always use forward slashes, even on Windows.
-    '/esp/esp/templates'
+    PROJECT_ROOT+'templates',
 )
+
+APPEND_SLASH=False
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -121,34 +127,31 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
-    'esp.datatree',
-    'esp.miniblog',
     'esp.users',
-    'esp.workflow',
-    'esp.dbmail',
+    'esp.miniblog',
+    'esp.web',
     'esp.program',
     'esp.program.modules',
+    'esp.datatree',
+    'esp.workflow',
+    'esp.dbmail',
     'esp.cal',
     'esp.lib',
     'esp.setup',
-#    'esp.unittest',
-    'esp.web',
     'esp.qsd',
     'esp.qsdmedia',
     'esp.money',
     'esp.resources',
+    'esp.gen_media',
     'esp.poll',
     'esp.dblog',
-    'esp.gen_media',
 )
 
-APPEND_SLASH=False
 
-#aseering 12-15-2006: Make memcached happen
-CACHE_BACKEND="memcached://127.0.0.1:11211/"
+CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
 
 
-LOG_FILE="/var/log/django/esp_errlog"
+
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
@@ -159,4 +162,6 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
                                'django.core.context_processors.request',
                                'django.core.context_processors.auth',
                                )  
-USE_ETAGS=True
+
+# no i18n
+USE_I18N = False

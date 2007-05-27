@@ -100,7 +100,8 @@ class AdminClass(ProgramModuleObj):
     def getClasses(self):
         return self.user.getEditable(Class).filter(parent_program = self.program)
         
-    def prepare(self, context={}):
+    def prepare(self, context=None):
+        if context is None: context = {}
         classes = self.getClasses()
         context['noclasses'] = (len(classes) == 0)
         context['classes']   = classes

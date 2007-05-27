@@ -447,7 +447,8 @@ def class_check(user, prog):
 	return len(regProf.preregistered_classes()) > 0
 
 
-def class_prepare(user, prog, context={}):
+def class_prepare(user, prog, context=None):
+	if context is None: context = {}
 	regProf = RegistrationProfile.getLastForProgram(user, prog)
 	ts = list(GetNode(prog.anchor.full_name()+'/Templates/TimeSlots').children().order_by('id'))
 	pre = regProf.preregistered_classes()

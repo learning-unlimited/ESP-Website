@@ -31,6 +31,22 @@ Email: web@esp.mit.edu
 from esp.users.models import UserBit
 from esp.middleware   import ESPError
 from django.contrib.auth.decorators import login_required
+from esp.web.util.main import render_to_response
+
+def anonymous_only(message="Sorry, you don't need this page -- you're logged in."):
+    def _decorator(method):
+        def _inner_function(request, *args, **kwargs):
+            if request.user.is_authenticated():
+                return render_to_response('errors/anonymous_only.html',
+                                          request,
+                                          request.get_node('Q/Web/about'),
+                                          {})
+
+            return method(request, *args, **kwargs)
+        _inner_function.__doc__ = method.__doc__
+        return _inner_function
+
+    return _decorator
 
 def UserHasPerms(branch, verb, error_msg = 'You do not have permission to view this page.', log = False):
     """ This should be used as a decorator. It checks to see if a user has the verb

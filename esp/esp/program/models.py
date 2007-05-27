@@ -525,6 +525,8 @@ class Class(models.Model):
     viable_timeslots  = models.ManyToManyField('ClassTimeSlot', related_name='viable_timeslots', null=True, blank=True)    
     resources = models.ManyToManyField(DataTree, related_name='class_resources', blank=True)
 
+    checklist_progress = models.ManyToManyField('ProgramCheckItem')
+
     #    We think this is useless because the sign-up is completely based on userbits.
     enrollment = models.IntegerField()
 
@@ -1347,3 +1349,29 @@ class ClassTimeSlot(models.Model):
             return self.description
         else:
             return str(self.event)
+
+
+class ProgramCheckItem(models.Model):
+
+    program = models.ForeignKey(Program)
+    title   = models.CharField(maxlength=512)
+    seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
+                                          help_text = 'Lower is earlier')
+
+    def save(self, *args, **kwargs):
+        if self.seq is None:
+            try:
+                item = ProgramCheckItem.objects.filter(program = self.program).order_by('-seq')[0]
+                self.seq = item.seq + 5
+            except IndexError:
+                self.seq = 0
+        super(ProgramCheckItem, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return '%s for "%s"' % (self.title, str(self.program).strip())
+
+    class Admin:
+        pass
+
+    class Meta:
+        ordering = ('seq',)

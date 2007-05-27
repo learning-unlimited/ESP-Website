@@ -96,10 +96,6 @@ autocomp__%s.useIFrame = true;
 
 
 YAHOO.util.Event.addListener(window, "load", function (e) {
-  var elements = YAHOO.util.Dom.getElementsByClassName('add-another', 'a');
-  for (var i=0; i<elements.length; i++) {
-    elements[i].style.display = 'none';
-  }
   var elements = YAHOO.util.Dom.getElementsByClassName('raw_id_admin', 'div');
   for (var i=0; i< elements.length; i++) {
      elements[i].style.display = 'none';
@@ -111,6 +107,10 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
     elements[i].style.overflow = 'visible';
     if (YAHOO.util.Dom.getElementsByClassName('yui_autocomplete','div', elements[i]).length > 0) {
         elements[i].style.paddingBottom = '12.5em';
+        var sub_elements = YAHOO.util.Dom.getElementsByClassName('add-another', 'a', elements[i]);
+        for (var j=0; j< sub_elements.length; i++) {
+            sub_elements[i].style.display = 'none';
+        }
     }
   }
 });

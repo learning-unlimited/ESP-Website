@@ -40,12 +40,14 @@ from django.http import HttpResponse
 TEX_TEMP = '/tmp/'
 TEX_EXT  = '.tex'
 
-def render_to_latex(filepath, context_dict={}, filetype='pdf'):
+def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     """ Render some tex source to latex. This will run the latex
         interpreter and generate the necessary file type
         (either pdf, tex, ps, dvi, or a log file)   """
     from django.template import Context, Template, loader
     from django.conf import settings
+
+    if context_dict is None: context_dict = {}
 
     src = loader.find_template_source(filepath)[0]
 
