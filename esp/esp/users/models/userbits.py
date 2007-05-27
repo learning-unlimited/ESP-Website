@@ -245,7 +245,7 @@ class UserBitManager(models.Manager):
             retVal = res.distinct()
 
         if res == None:
-            retVal = Model.objects.none()
+            retVal = Model.objects.none().distinct()
 
         self.cache(user)[user_cache_key] = retVal
 
