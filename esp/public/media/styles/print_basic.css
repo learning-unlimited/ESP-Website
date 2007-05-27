@@ -1,0 +1,72 @@
+#divnav0, #divnav1, #divnav2, #divnav3, #divnav4, #divnav5, #divnav6, #divnav7, #divnav8, #divnavh {
+    display: none;
+}
+#header {
+    display: none;
+}
+
+#main_banner {
+    display: none;
+}
+
+#top_banner {
+    display: none;
+}
+
+#divtitle {
+    display: none;
+}
+
+#secondarynav {
+    display: none;
+}
+
+#divsectionname {
+    display: none;
+}
+
+#divsubsectionname {
+    display: none;
+}
+
+#divlogin {
+    display: none;
+}
+
+#divsearch {
+    display: none;
+}
+
+#divmain {
+    top: 0;
+    left: 0;
+}
+
+#tableheader {
+    display: none;
+}
+
+.notmaintd {
+    display: none;
+}
+
+#divmain {
+    text-align: center;
+}
+
+body {
+    text-align: center;
+}
+
+#maintable {
+    display: inline;
+}
+
+#divmain {
+    display: inline;
+}
+
+.sql {
+    display: none;
+
+}

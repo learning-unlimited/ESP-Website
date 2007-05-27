@@ -1,0 +1,6 @@
+body { font-family: Georgia }
+.title { font-size: 1.7em; font-weight: bold; }
+h2 { font-size: 1em }
+.timeslot { white-space: nowrap; }
+hr { border: 1px solid black; }
+#divmaintext { width: 7in; }

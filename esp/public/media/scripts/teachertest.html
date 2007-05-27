@@ -1,0 +1,22 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<script type='text/javascript'>
+			djConfig = { isDebug: true };
+		</script>
+		<script type='text/javascript' src='/media/scripts/dojo/dojo.js'></script>
+		<script type='text/javascript'>
+			dojo.require("dojo.widget.ComboBox");
+		</script>
+	</head>
+	<body>
+		<select dojoType='ComboBox'
+			id='teacher_id'
+			name='teacher'
+			dataUrl='/json/teachers/?q=%{searchString}'
+			mode='remote'
+			style='width: 200px'
+			maxListLength='10'></select>
+	</body>
+</html>
+
