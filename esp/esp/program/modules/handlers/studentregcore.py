@@ -136,3 +136,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         return False
 
 
+    def getNavBars(self):
+        if super(StudentRegCore, self).deadline_met():
+            return [{ 'link': '/learn/%s/studentreg/' % ( self.program.getUrlBase() ),
+                      'text': '%s Student Registration' % ( self.program.niceName() ) }]
+
+        else:
+            return []

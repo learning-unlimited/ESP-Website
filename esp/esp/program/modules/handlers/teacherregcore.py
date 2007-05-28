@@ -83,4 +83,11 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 	return render_to_response('program/selectclass', request, (prog, tl), context)
 
 
+    def getNavBars(self):
+        if super(TeacherRegCore, self).deadline_met():
+            return [{ 'link': '/teach/%s/teacherreg/' % ( self.program.getUrlBase() ),
+                      'text': '%s Teacher Registration' % ( self.program.niceName() ) }]
+
+        else:
+            return []
 
