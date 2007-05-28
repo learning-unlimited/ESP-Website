@@ -63,7 +63,7 @@ def user_registration(request):
             user.set_password(form.clean_data['password'])
 
             user.save()
-            ESPUser_Profile.get_or_create(user = user)
+            ESPUser_Profile.objects.get_or_create(user = user)
 
             role_verb = request.get_node('V/Flags/UserRole/%s' % form.clean_data['initial_role'])
 
