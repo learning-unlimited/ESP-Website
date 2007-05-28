@@ -61,7 +61,7 @@ def makeNavBar(user, node, section = ''):
 			
 			edit_verb = GetNode(EDIT_VERB_STRING)
 
-			navBarSectionHeaders = NavBarEntry.objects.filter(path__children__children__program__isnull = False)
+			navBarSectionHeaders = NavBarEntry.objects.filter(path__child_set__child_set__program__isnull = False)
 
 			navBarAssociatedPrograms = {}
 			for i in navBarSectionHeaders:
