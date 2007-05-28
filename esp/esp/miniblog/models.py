@@ -88,6 +88,39 @@ class Entry(models.Model):
             '/media/scripts/admin_miniblog.js',
             )
 
+    @staticmethod
+    def post( user_from, anchor, subject, content, email=False, user_email = ''):
+        newentry = Entry()
+        newentry.content = content
+        newentry.title = subject
+        newentry.anchor = anchor
+        newentry.email  = email
+        newentry.sent  = False
+        newentry.fromuser = user_from
+        newentry.fromemail = user_email
+        newentry.save()
+
+        return newentry
+
+    def subscribe_user(self, user):
+        verb = GetNode('V/Subscribe')
+        from esp.users.models import ESPUser, User
+        if type(user) != User and type(user) != ESPUser:
+            assert False, 'EXPECTED USER, received %s' \
+                     % str(type(user))
+        ub = UserBit.objects.filter(verb = verb,
+                        qsc  = self.anchor,
+                        user = user)
+
+        if ub.count() > 0:
+            return False
+
+        ub = UserBit(verb = verb,
+                 qsc  = self.anchor,
+                 user = user
+                 )
+        ub.save()
+        return True
 
     def get_absolute_url(self):
 

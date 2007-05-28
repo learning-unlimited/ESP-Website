@@ -96,14 +96,18 @@ autocomp__%s.useIFrame = true;
 
 
 YAHOO.util.Event.addListener(window, "load", function (e) {
-  var elements = YAHOO.util.Dom.getElementsByClassName('raw_id_admin', 'div');
-  for (var i=0; i< elements.length; i++) {
-     elements[i].style.display = 'none';
-     elements[i].style.visibility = 'hidden';
-  }
-
   var elements = YAHOO.util.Dom.getElementsByClassName('form-row', 'div');
   for (var i=0; i< elements.length; i++) {
+     var sub_elements = YAHOO.util.Dom.getElementsByClassName('raw_id_admin',
+                                                              'div',
+                                                              elements[i]);
+     for (var j=0; j< elements.length; j++) {
+        sub_elements[j].style.display = 'none';
+        sub_elements[j].style.visibility = 'hidden';
+     }
+
+
+
     elements[i].style.overflow = 'visible';
     if (YAHOO.util.Dom.getElementsByClassName('yui_autocomplete','div', elements[i]).length > 0) {
         elements[i].style.paddingBottom = '12.5em';
@@ -152,7 +156,7 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 </div>
 </div>
 <div class="raw_id_admin">
-  <a href="../../../datatree/datatree/" class="related-lookup" id="lookup_%s" onclick="return showRelatedObjectLookupPopup(this);">
+  <a href="../" class="related-lookup" id="lookup_%s" onclick="return showRelatedObjectLookupPopup(this);">
   <img src="/media/admin/img/admin/selector-search.gif" width="16" height="16" alt="Lookup" /></a>   
    &nbsp;<strong>%s</strong>
 </div>
