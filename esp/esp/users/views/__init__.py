@@ -4,6 +4,13 @@ from esp.users.views.password_reset import *
 
 from django.http import HttpResponseRedirect
 from esp.web.util.main import render_to_response
+from django.contrib.auth.views import login
+
+def login_checked(request, *args, **kwargs):
+    if request.user.is_authenticated():
+        return HttpResponseRedirect('/')
+
+    return login(request, *args, **kwargs)
 
 
 def signed_out_message(request):

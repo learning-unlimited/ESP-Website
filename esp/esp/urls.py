@@ -32,6 +32,7 @@ from django.conf.urls.defaults import *
 from esp.program.models import Class
 from esp.qsd.views import qsd
 from esp.poll.views import poll
+from esp.users.views import login_checked
 from esp.qsdmedia.views import qsdmedia
 
 
@@ -54,7 +55,8 @@ urlpatterns = patterns('django.views.static',
 urlpatterns += patterns('',
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/', include('django.contrib.admin.urls')),
-                     (r'^accounts/login/$', 'django.contrib.auth.views.login'),                        
+                     (r'^accounts/login/$', login_checked,),
+
                      (r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
                         )
 
@@ -92,7 +94,6 @@ urlpatterns += patterns('esp.qsd.views',
 
 # logging in and out
 urlpatterns += patterns('django.contrib.auth.views',
-                     (r'^myesp/login/?$',   'login',),
                      (r'^myesp/signout/?$', 'logout',{'next_page': '/myesp/signedout/'}),
                         )
 
