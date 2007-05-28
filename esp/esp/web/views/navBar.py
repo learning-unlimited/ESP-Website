@@ -35,6 +35,7 @@ from django.http import HttpResponseRedirect, Http404, HttpResponse
 from esp.datatree.models import DataTree
 from esp.dblog.models import error
 from esp.dblog.views import ESPError
+from esp.program.models import Program
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from esp.db.models import Q
@@ -60,21 +61,63 @@ def makeNavBar(user, node, section = ''):
 			
 			edit_verb = GetNode(EDIT_VERB_STRING)
 
-			qsdTree = NavBarEntry.objects.filter(Q(path__above = node,
-							     section=section)).order_by('sort_rank')
+			navBarSectionHeaders = NavBarEntry.objects.filter(path__children__children__program__isnull = False)
+
+			navBarAssociatedPrograms = {}
+			for i in navBarSectionHeaders:
+				navBarAssociatedPrograms[i.id] = Program.objects.filter(anchor__parent__parent__navbar=i, anchor__parent__name__icontains=i.text)
+
+			from esp.db.models import QSplit
+			qsdTree = NavBarEntry.objects.filter(QSplit(Q(path__above = self.node)) | QSplit(Q(path__parent = self.node))).filter(
+				section=section).order_by('sort_rank')
 
 			if user is None or type(user) == AnonymousUser or user.id is None:
-		
-				context = { 'node': node,
-					    'has_edit_bits': False,
-					    'qsdTree': [ {'entry': x, 'has_bits': False} for x in qsdTree ],
-					    'section': section }
-
+				has_edit_bits = False
+				qsdTreeList = [ {'entry': x, 'has_bits': False} for x in qsdTree ]
 			else:
-				context = { 'node': node,
-					    'has_edit_bits': UserBit.UserHasPerms(user, node, edit_verb),
-					    'qsdTree': [ {'entry': x, 'has_bits': UserBit.UserHasPerms(user, x.path, edit_verb) } for x in qsdTree ],
-					    'section': section }
+				has_edit_bits = UserBit.UserHasPerms(user, node, edit_verb)
+				qsdTreeList = [ {'entry': x, 'has_bits': UserBit.UserHasPerms(user, x.path, edit_verb) } for x in qsdTree ]
+
+			qsdTreeListCopy = []
+			add_offset = 0
+
+			for i in qsdTreeList:
+				qsdTreeListCopy.append(i)
+				if (navBarAssociatedPrograms.has_key(i['entry'].id)):
+					program_set = navBarAssociatedPrograms[i['entry'].id]
+					for p in program_set:
+						mods = p.getModules(user, section)
+
+						for m in mods:
+							navBars = m.getNavBars()
+							for i in navBars:
+								if not i.has_key('path'):
+									i['path'] = node
+								if not i.has_key('sort_rank'):
+									i['sort_rank'] = -1
+								if not i.has_key('id'):
+									i['id'] = -1
+								if not i.has_key('indent'):
+									i['indent'] = True
+								if not i.has_key('section'):
+									i['section'] = ''
+								if i.has_key('text'):
+									i['makeTitle'] = i['text']
+								if i.has_key('link'):
+									i['makeUrl'] = i['link']
+									
+							qsdTreeListCopy += [{'entry': x, 'has_bits': False} for x in navBars]
+
+			qsdTreeList = qsdTreeListCopy
+
+			context = { 'node': node,
+				    'has_edit_bits': has_edit_bits,
+				    'qsdTree': qsdTreeList,
+				    'section': section }
+
+			
+			
+
 			return context
 
 		value = property(_value)

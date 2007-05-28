@@ -13,6 +13,9 @@
 <br /><br />
 <h1>Student registration for {{program.niceName}} </h1>
 
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentreg" %}
+
 <p style="text-align: center">Please complete the following steps so that you are fully pre-registered for {{program.niceName}}.</p>
 
 <center>

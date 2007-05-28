@@ -65,7 +65,7 @@ class DataTree(models.Model):
     # some fields
     name          = models.CharField(maxlength=64)
     friendly_name = models.TextField()
-    parent        = AjaxForeignKey('self',blank=True,null=True)
+    parent        = AjaxForeignKey('self',blank=True,null=True, related_name='children')
     rangestart    = models.IntegerField(editable = False)
     rangeend      = models.IntegerField(editable = False)
     uri           = models.CharField(editable = False, maxlength=1024)

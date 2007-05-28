@@ -1,5 +1,8 @@
 from django import template
+from esp.datatree.models import DataTree
 from esp.web.util.template import cache_inclusion_tag
+from esp.qsd.models import QuasiStaticData
+from urllib import quote
 
 register = template.Library()
 
@@ -10,3 +13,28 @@ def cache_key(qsd):
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key)
 def render_qsd(qsd):
     return {'qsdrec': qsd}
+
+    
+def cache_inline_key(input_anchor, qsd):
+    return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s' % (input_anchor, qsd))
+
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=cache_inline_key)
+def render_inline_qsd(input_anchor, qsd):
+    
+    if isinstance(input_anchor, basestring):
+        try:
+            anchor = DataTree.get_by_uri(input_anchor)
+        except DatTree.NoSuchNodeException:
+            return {}
+                
+    elif isinstance(input_anchor, DataTree):
+        anchor = input_anchor
+    else:
+        return {}
+
+    try:
+        qsd_obj = anchor.quasistaticdata_set.get(name=qsd)
+    except QuasiStaticData.DoesNotExist:
+        return {}
+    
+    return {'qsdrec': qsd_obj}
