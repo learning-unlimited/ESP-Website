@@ -294,7 +294,7 @@ class Program(models.Model):
         return ''
     
     def teachers(self, QObjects = False):
-        modules = self.getModules(None, 'teach')
+        modules = self.getModules(None)
         teachers = {}
         for module in modules:
             tmpteachers = module.teachers(QObjects)
@@ -303,7 +303,7 @@ class Program(models.Model):
         return teachers
 
     def students(self, QObjects=False):
-        modules = self.getModules(None, 'learn')
+        modules = self.getModules(None)
         students = {}
         for module in modules:
             tmpstudents = module.students(QObjects)
@@ -314,12 +314,13 @@ class Program(models.Model):
     def getLists(self, QObjects=False):
         lists = self.students(QObjects)
         lists.update(self.teachers(QObjects))
-        learnmodules = self.getModules(None, 'learn')
-        teachmodules = self.getModules(None, 'teach')
+        learnmodules = self.getModules(None)
+        teachmodules = self.getModules(None)
 
         
         for k, v in lists.items():
-            lists[k] = {'list': v}
+            lists[k] = {'list': v,
+                        'description':''}
 
         desc  = {}
         for module in learnmodules:
@@ -328,6 +329,7 @@ class Program(models.Model):
                 desc.update(tmpdict)
         for module in teachmodules:
             tmpdict = module.teacherDesc()
+            print tmpdict
             if tmpdict is not None:
                 desc.update(tmpdict)
 
@@ -1361,7 +1363,7 @@ class ClassTimeSlot(models.Model):
 
 class ProgramCheckItem(models.Model):
 
-    program = models.ForeignKey(Program)
+    program = models.ForeignKey(Program, related_name='checkitems')
     title   = models.CharField(maxlength=512)
     seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
                                           help_text = 'Lower is earlier')

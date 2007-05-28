@@ -34,37 +34,47 @@ from esp.program.models  import Class, Program, ProgramCheckItem
 from esp.web.util        import render_to_response
 from esp.datatree.models import DataTree
 from django.contrib.auth.decorators import login_required
+from esp.db.models import Q
+from esp.datatree.models import GetNode
+from esp.users.models import ESPUser
 
 
-class CheckList(ProgramModuleObj):
+class CheckListModule(ProgramModuleObj):
     """
     If you want to manage those checklists that your program sees, come here.
     """
     
     @needs_admin
-    def managerooms(self, request, tl, one, two, module, extra, prog):
-
-        return render_to_response(self.baseDir()+'managerooms.html', request, (prog, tl), {})
-    
+    def managecheckitems(self, request, tl, one, two, module, extra, prog):
+        return HttpResponseRedirect('/admin/program/programcheckitem/')
 
 
-    @needs_admin
-    def addroom(self, request, tl, one, two, module, extra, prog):
-        shortname = request.POST['shortname']
-        name      = request.POST['name']
-        self.program.addClassRoom(name, shortname)
-
-        return self.goToCore(tl)
-    
-    @needs_admin
-    def assignroom(self, request, tl, one, two, module, extra, prog):
-        classes = Class.objects.filter(id = extra)
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
-            return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
-        cls = classes[0]
-        trees = DataTree.objects.filter(id = request.POST['roomid'])
+    def teachers(self, QObject = False):
+        Q_ojects = []
         
-        cls.assignClassRoom(trees[0])
-        
-        return self.goToCore(tl)
+        teaching = GetNode('V/Flags/Registration/Teacher')
 
+        finish_dict = {}
+
+        for check_item in self.program.checkitems.all():
+            finish_dict['checkitem_%s' % check_item.id] = \
+                     Q(userbit__qsc__class__checklist_progress = check_item) &\
+                     Q(userbit__verb = teaching) & \
+                     Q(userbit__qsc__class__parent_program = self.program)
+
+        if QObject:
+            return finish_dict
+
+        for k,v in finish_dict.items():
+            finish_dict[k] = ESPUser.objects.filter(v)
+
+        return finish_dict
+
+    def teacherDesc(self):
+        finish_dict = {}
+
+        for check_item in self.program.checkitems.all():
+            finish_dict['checkitem_%s' % check_item.id] = \
+                     "Teachers teaching a class flagged with '%s'" % check_item.title
+
+        return finish_dict
