@@ -37,7 +37,7 @@ from django.contrib.auth.decorators import login_required
 from esp.db.models import Q
 from esp.datatree.models import GetNode
 from esp.users.models import ESPUser
-
+from django.http import HttpResponseRedirect
 
 class CheckListModule(ProgramModuleObj):
     """

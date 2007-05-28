@@ -876,10 +876,14 @@ class Class(models.Model):
     def getTeacherNames(self):
         teachers = []
         for teacher in self.teachers():
-            contact = teacher.getLastProfile().contact_user
+            try:
+                contact = teacher.getLastProfile().contact_user
+                name = '%s %s' % (contact.first_name,
+                                  contact.last_name)
+            except:
+                name = '%s %s' % (teacher.first_name,
+                                  teacher.last_name)
 
-            name = '%s %s' % (contact.first_name,
-                              contact.last_name)
             if name.strip() == '':
                 name = teacher.username
             teachers.append(name)
@@ -1384,4 +1388,4 @@ class ProgramCheckItem(models.Model):
         pass
 
     class Meta:
-        ordering = ('seq',)
+        ordering = ('-program_id','seq',)

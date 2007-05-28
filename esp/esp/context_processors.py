@@ -22,3 +22,12 @@ def index_backgrounds(request):
                             "/media/images/home/pagebkg2.jpg",
                             "/media/images/home/pagebkg3.jpg"]}
     return {}
+
+
+def current_site(request):
+
+    from django.contrib.sites.models import Site
+
+    return {'current_site': Site.objects.get_current()}
+
+    

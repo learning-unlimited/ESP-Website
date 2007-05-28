@@ -1,7 +1,7 @@
 
 {% block xtrajs %}
 <script type="text/javascript">
-<!--
+/* <![CDATA[ */
 
 function deleteClass() {
     if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students.')) {
@@ -13,20 +13,62 @@ function assignRoom(clsid){
     form = document.getElementById('assignroom-'+clsid)
     form.submit();
 }
-//-->
+
+var checks = {
+{% for check in program.checkitems.all %}
+     "{{ check.id|addslashes }}": "{{check.title|addslashes}}",
+{% endfor %}
+};
+
+function clickCheckMark(class,check,id) {
+
+  var callback = {
+      failure:function(o){},
+      success:function(o){
+        if (o.responseText == 'On') {
+          off = ''; offTitle = '';
+        } else {
+          off = 'no'; offTitle = 'Not ';
+        }
+
+        document.getElementById(id).innerHTML = '<img src="{{media_url}}images/'+off+'checkmark.gif" title="'+offTitle+checks[check]+'" />';
+      }
+  };
+
+  var url='/manage/{{program.getUrlBase}}/alter_checkmark/';
+  var post='class_id='+class+'&check_id='+check;
+
+  /* make the ajax call */
+  YAHOO.util.Connect.asyncRequest('POST', url, callback, post);
+
+}
+
+/* ]]> */
 </script>
 
 {% endblock %}
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 <style type="text/css">
-<!--
   .unapproved { 
       text-decoration: underline;
       text-style: italic;
       color: #009;
    }
-//-->
+.class_checkitem { 
+   padding:0 !important;
+   margin: 0 !important;
+}
+
+.checkmark img {
+   border: 1px solid #999;
+   margin: 2px !important;
+}
+
+.class_checkitem a:hover img {
+   border: 1px solid black !important;
+}
+
 </style>
 <hr />
 
@@ -52,9 +94,7 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
     <td class="clsleft classname">
       <em>(None available)</em>
     </td>
-    <td> &nbsp; </td>
-    <td> &nbsp; </td>
-    <td> &nbsp; </td>
+{% for check in program.checkitems.all %}<td>&nbsp;</td>{% endfor %}
    </tr>
   {% endif %}
 
@@ -89,51 +129,22 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
         Manage Class
       </a>
     </td>
-    <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
-     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step=Interviewed" title="Change Interview Status">
-       {% if cls.teacher_interviewed %}
-     <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
-            title="Teacher Interviewed" />
-       {% else %}
-     <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
-            title="Teacher Not Interviewed" />
-       {% endif %}
-     </a>
-    </td>
-    <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
-     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step=Scheduled" title="Change class Schedule Status">
-       {% if cls.manage_scheduled %}
-     <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
-            title="Class Scheduled" />
-       {% else %}
-     <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
-            title="Class Not Scheduled" />
-       {% endif %}
-    </a>
-    </td>
-    <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
-     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step=RoomAssigned" title="Change Room Assignment Status">
 
-       {% if cls.manage_roomassigned %}
-     <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
-            title="Class' Room Assigned" />
-       {% else %}
-     <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
-            title="Class' Room NOT Assigned" />
-       {% endif %}
-    </a>
-    </td>
-    <td style="border: 1px solid black; border-width: 0 1px 0 1px;">
-     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step=Finished" title="Change class Finished Status">
-       {% if cls.manage_finished %}
-     <img src="/media/images/checkmark.gif" style="border: 1px solid black;"
-            title="Class Management Completed" />
-       {% else %}
-     <img src="/media/images/nocheckmark.gif" style="border: 1px solid black;"
-            title="Class Management NOT Completed" />
-       {% endif %}
-    </a>
-    </td>
+{% load class_checkmarks %}
+{# checklist ... #}
+{% for check in program.checkitems.all %}
+    <td class="class_checkitem">
+     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step={{check.id}}"
+        title="Change Status of '{{check|addslashes}}'"
+        onclick="clickCheckMark({{cls.id}},{{check.id}},'{{cls.id}}-{{check.id}}'); return false;" >
+    <span class="checkmark" id="{{cls.id}}-{{check.id}}">
+    {% if cls|is_checked:check %}
+    <img src="{{media_url}}images/checkmark.gif" title="{{ check.title|escape }}" />
+    {% else %}
+    <img src="{{media_url}}images/nocheckmark.gif" title="Not {{ check.title|escape }}" />
+    {% endif %}
+    </span>
+{% endfor %}
    </tr>
 
 

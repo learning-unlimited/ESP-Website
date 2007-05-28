@@ -32,14 +32,14 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.program.models import Class, Program
+from esp.program.models import Class, Program, ProgramCheckItem
 from esp.users.models import UserBit, ESPUser
 from esp.datatree.models import DataTree
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
 from esp.program.modules.manipulators import ClassManageManipulator
 from django import forms
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 
 class AdminClass(ProgramModuleObj):
     """ This module is extremely useful for managing classes if you have them them in your program.
@@ -143,23 +143,6 @@ class AdminClass(ProgramModuleObj):
                 
         return (render_to_response(self.baseDir()+'cannotfindclass.html', request, (prog, tl), {}), False)
 
-    @needs_admin
-    def changeoption(self, request,tl, one, two, module, extra, prog):
-        from esp.datatree.models import GetNode
-        cls, found = self.getClass(request,extra)
-        if not found:
-            return cls
-        verb_start = 'V/Flags/Class/'
-        
-        if request.GET.has_key('step'):
-            verb = GetNode(verb_start+request.GET['step'])
-            if UserBit.UserHasPerms(user = None, verb = verb, qsc = cls.anchor):
-                UserBit.objects.filter(user__isnull = True, qsc = cls.anchor, verb = verb).delete()
-            else:
-                UserBit.objects.get_or_create(user = None, qsc = cls.anchor, verb = verb, recursive = False)
-
-        return self.goToCore(tl)
-        
                 
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
@@ -278,7 +261,45 @@ class AdminClass(ProgramModuleObj):
         if request.GET.has_key('redirect'):
             return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)
+
+    def change_checkmark(self, class_id, check_id):
+        cls = Class.objects.get(id = class_id)
+        check = ProgramCheckItem.objects.get(id = check_id)
     
+        if len(cls.checklist_progress.filter(id = check_id).values('id')[:1]) > 0:
+            cls.checklist_progress.remove(check)
+            return False
+        else:
+            cls.checklist_progress.add(check)
+            return True
+
+    @needs_admin
+    def alter_checkmark(self, request, *args, **kwargs):
+        """
+        Change the status of a check mark for a given class.
+        """
+        class_id = request.POST.get('class_id','')
+        check_id = request.POST['check_id']
+
+        result = self.change_checkmark(class_id, check_id)
+
+        if result:
+            return HttpResponse('On');
+        else:
+            return HttpResponse('Off');
+
+    @needs_admin
+    def changeoption(self, request,tl,one,two,module,extra,prog):
+        check_id = request.GET['step']
+        class_id = extra
+
+        self.change_checkmark(class_id, check_id)
+
+        return self.goToCore(tl)
+
+        
+
+
     @needs_admin
     def main(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """

@@ -101,7 +101,7 @@ class Entry(models.Model):
         super(Entry, self).save(*args, **kwargs)
     
     class Meta:
-        unique_together = ('slug','anchor',)
+        unique_together = (('slug','anchor',),)
         verbose_name_plural = 'Entries'
         ordering = ['-timestamp']
     

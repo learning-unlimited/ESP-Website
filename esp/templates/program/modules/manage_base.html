@@ -1,0 +1,16 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Program Administration{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Program Management"|subsection }}
+{% endblock %}
+
+
+{% block breadcrumbs %}
+<div id="breadcrumbs">
+<a href="/manage/{{ program.getUrlBase }}/main" 
+   title="Back to program management.">Back to management.</a>
+</div>
+{% endblock %}
