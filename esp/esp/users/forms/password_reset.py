@@ -7,15 +7,16 @@ __all__ = ['PasswordResetForm','NewPasswordSetForm']
 
 class PasswordResetForm(forms.Form):
 
-    email     = forms.EmailField(max_length=64, required=False)
+    email     = forms.EmailField(max_length=64, required=False,
+                                 help_text="(e.g. johndoe@example.org)")
 
     username  = forms.CharField(max_length=64, required=False,
                                 help_text = '(Case sensitive)')
 
     def clean_username(self):
 
-        if self.clean_data['username'].strip() == '' and \
-           self.clean_data['email'].strip() == '':
+        if self.clean_data.get('username','').strip() == '' and \
+           self.clean_data.get('email','').strip() == '':
             raise forms.ValidationError("You need to specify something.")
 
         if self.clean_data['username'].strip() == '': return ''
