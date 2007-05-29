@@ -496,7 +496,6 @@ class ClassManager(models.Manager):
 
     def approved(self):
         return self.filter(status = 10)
-                   
 
 # FIXME: The Class object should use the permissions system to control
 # which grades (Q/Community/6_12/*) are permitted to join the class, though

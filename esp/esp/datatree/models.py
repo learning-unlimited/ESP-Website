@@ -146,7 +146,7 @@ class DataTree(models.Model):
 
         new_node = False
 
-        assert self.name == '', "Name must be specified!"
+        assert self.name != '', "Name must be specified!"
 
         
         if self.name.find(DataTree.DELIMITER) != -1:
