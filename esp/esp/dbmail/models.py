@@ -404,9 +404,12 @@ class PlainRedirect(models.Model):
     A simple catch-all for mail redirection.
     """
 
-    original = models.CharField(maxlength=512,unique=True)
+    original = models.CharField(maxlength=512)
 
     destination = models.CharField(maxlength=512)
+
+    def __str__(self):
+        return '%s --> %s'  % (self.original, self.destination)
 
     class Admin:
         pass
