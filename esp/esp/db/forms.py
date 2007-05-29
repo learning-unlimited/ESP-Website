@@ -7,10 +7,10 @@ import re
 get_id_re = re.compile('.*\D(\d+)\D')
 
 class AjaxForeignKeyFormField(oldforms.FormField):
-    def __init__(self, field_name, field,
+    def __init__(self, field_name, field,queryset=None
                  is_required=False, validator_list=None,
                  member_name=None, ajax_func = None, width=None):
-
+        self.queryset    = queryset
         self.field_name  = field_name
         self.field       = field
         self.is_required = is_required
