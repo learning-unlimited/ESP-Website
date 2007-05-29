@@ -47,6 +47,14 @@
     cursor: pointer;
 }
 
+#divmaintext form .or {
+    text-align: center;
+    font-size: 1.2em;
+    display: block;
+    color: black;
+    font-weight: bold;
+}
+
 #divmaintext form th.submit {
     text-align: center;
 }
