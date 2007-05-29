@@ -34,7 +34,6 @@ try:
     handlers = EmailList.objects.all()
 
     for handler in handlers:
-        print handler.regex
         re_obj = re.compile(handler.regex)
         match = re_obj.search(user)
 

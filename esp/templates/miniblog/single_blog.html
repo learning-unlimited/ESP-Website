@@ -1,6 +1,6 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}{{ entry|title }}{% endblock %}
+{% block title %}{{ entry.title|escape }}{% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}

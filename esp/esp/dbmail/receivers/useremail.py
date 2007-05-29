@@ -8,7 +8,7 @@ class UserEmail(BaseHandler):
 
     def process(self, user, user_match):
         try:
-            user = ESPUser.objects.get(username = user)
+            user = ESPUser.objects.get(username__iexact = user)
         except ESPUser.DoesNotExist:
             return
 
