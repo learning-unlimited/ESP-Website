@@ -146,6 +146,7 @@ class ArchiveClass(models.Model):
     description = models.TextField()
     teacher_ids = models.CharField(maxlength=256, blank=True, null=True)
     student_ids = models.TextField()
+    
     num_old_students = models.IntegerField(default=0)
 
     #def __str__(self):
@@ -494,9 +495,7 @@ class ClassCategories(models.Model):
 class ClassManager(models.Manager):
 
     def approved(self):
-        verb = GetNode('V/Flags/Class/Approved')
-
-        return self.filter(anchor__userbit_qsc__verb = verb, anchor__userbit_qsc__user__isnull = True)
+        return self.filter(status = 10)
                    
 
 # FIXME: The Class object should use the permissions system to control
@@ -519,6 +518,7 @@ class Class(models.Model):
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
     directors_notes = models.TextField(blank=True, null=True)
+    status   = models.IntegerField(default=0)
     duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
     event_template = AjaxForeignKey(DataTree, related_name='class_event_template_set', null=True)
     meeting_times = models.ManyToManyField(DataTree, related_name='meeting_times', null=True)
@@ -967,13 +967,6 @@ class Class(models.Model):
         from esp.qsd.models import QuasiStaticData
         return self.anchor.quasistaticdata_set.filter(name='learn:index').count() > 0
 
-    def isAccepted(self):
-        return UserBit.UserHasPerms(None, self.anchor, GetNode('V/Flags/Class/Approved'))
-
-    def isReviewed(self):
-        return not UserBit.UserHasPerms(None, self.anchor, GetNode('V/Flags/Class/Proposed'))
-
-    
     def prettyDuration(self):
         if self.duration is None:
             return 'N/A'
@@ -982,19 +975,26 @@ class Class(models.Model):
                (int(self.duration),
             int((self.duration - int(self.duration)) * 60))
 
-    def accept(self, user=None):
+
+    def isAccepted(self):
+        return self.status == 10
+
+    def isReviewed(self):
+        return self.status != 0
+
+    def isRejected(self):
+        return self.status == -10
+
+    def accept(self, user=None, show_message=False):
         """ mark this class as accepted """
-        self.review()
         if self.isAccepted():
             return False # already accepted
 
+        self.status = 10
+        self.save()
 
-        
-        u = UserBit()
-        u.user = None
-        u.qsc = self.anchor
-        u.verb = GetNode('V/Flags/Class/Approved')
-        u.save()
+        if not show_message:
+            return True
 
         subject = 'Your %s class was approved!' % (self.parent_program.niceName())
         
@@ -1006,51 +1006,19 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
                   (self.title(), self.parent_program.getUrlBase(), self.id)
         if user is None:
             user = AnonymousUser()
-        Entry.post(user, self.anchor.tree_create(['TeacherEmail']), subject, content, True)
-        
+        Entry.post(user, self.anchor.tree_create(['TeacherEmail']), subject, content, True)       
         return True
 
-    def review(self):
-        """Mark this class as no-longer just `proposed' """
-        UserBit.objects.filter(verb = GetNode('V/Flags/Class/Proposed'),
-                       qsc = self.anchor,
-                       user__isnull = True).delete()
-        return True
-    
-        
 
     def propose(self):
         """ Mark this class as just `proposed' """
-
-        self.reject()
-        
-        proposeVerb = GetNode('V/Flags/Class/Proposed')
-        
-        userbitList = UserBit.objects.filter(user__isnull = True,
-                             qsc = self.anchor,
-                             verb = proposeVerb)
-        if len(userbitList) > 0:
-            return False
-
-        u = UserBit()
-        u.user = None
-        u.qsc = self.anchor
-        u.verb = proposeVerb
-        u.save()
+        self.status = 0
+        self.save()
 
     def reject(self):
         """ Mark this class as rejected """
-        
-        self.review()
-        
-        userbitlst = UserBit.objects.filter(user__isnull = True,
-                            qsc  = self.anchor,
-                            verb = GetNode('V/Flags/Class/Approved'))
-        if len(userbitlst) > 0:
-            for userbit in userbitlst:
-                userbit.delete()
-            return True
-        return False
+        self.status = -10
+        self.save()
 
             
     def docs_summary(self):

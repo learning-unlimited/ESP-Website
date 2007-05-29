@@ -1,0 +1,45 @@
+{# expects program and class #}
+    <td class="clsleft classname">
+      <span title="{{cls}}">
+      <strong>{{cls.emailcode }}.</strong>
+      <span       {% if cls.isAccepted %}
+      class="approved"
+      {% else %}
+      class="unapproved"
+      {% endif %}> {{ cls|truncatewords:6 }}</span>
+      </span>
+    </td>
+    <td class="clsleft classname" style="font-size: 60%; font-style: italic;">
+      <span title="Teacher Names">
+         ({{ cls.getTeacherNames|join:", " }})
+      </span>
+    </td>
+
+
+    <td class="clsmiddle">
+       <form method="post" action="/teach/{{ program.url }}/editclass/{{cls.id }}">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}">
+         <input class="button" type="submit" value="Edit">
+       </form>
+    </td>
+    <td class="clsmiddle">
+      <a href="/manage/{{program.getUrlBase}}/manageclass/{{cls.id}}" title="Manage {{cls.title}}"
+       class="abutton" style="white-space: nowrap;"><!--onclick="manage_class('{{ cls.id}}'); return false;">-->
+        Manage Class
+      </a>
+    </td>
+
+{% load class_checkmarks %}
+{# checklist ... #}
+{% for check in program.checkitems.all %}
+    <td class="class_checkitem">
+     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step={{check.id}}"
+        onclick="clickCheckMark({{cls.id}},{{check.id}},'{{cls.id}}-{{check.id}}'); return false;" >
+    <span class="checkmark" id="{{cls.id}}-{{check.id}}">
+    {% if cls|is_checked:check %}
+    <img src="/media/images/checkmark.gif" title="{{ check.title|escape }}" />
+    {% else %}
+    <img src="/media/images/nocheckmark.gif" title="Not {{ check.title|escape }}" />
+    {% endif %}
+    </span>
+{% endfor %}

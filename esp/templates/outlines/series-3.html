@@ -4,16 +4,16 @@
 {% block xtrajs %}
 {{ block.super }}
 {% if request.user.is_authenticated %}
-<script type="text/javascript" src="{{ media_url }}scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/yahoo/yahoo-min.js"></script>
 
-<script type="text/javascript" src="{{ media_url }}scripts/yui/event/event-min.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/event/event-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/dom/dom-min.js"></script>
 
-<script type="text/javascript" src="{{ media_url }}scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/connection/connection-min.js"></script>
 
-<script type="text/javascript" src="{{ media_url }}scripts/yui/logger/logger-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/logger/logger-min.js"></script>
 <script type="text/javascript" src="{{ media_url }}scripts/yui/dragdrop/dragdrop-debug.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/yui/animation/animation-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/animation/animation-min.js"></script>
 <script type="text/javascript" src="{{ media_url }}scripts/ddlist.js"></script>
 {% endif %}
 {% endblock %}
@@ -128,21 +128,33 @@
          <a href="/myesp/switchback/">Go back to {{ request.session.user_morph.retTitle }}</a>
          </div>
      {% else %}
-		<div class="divformcol1" style="text-align:left">Welcome, {{ request.user.first_name }}! &nbsp; <!-- <a href="/myesp/manage/">Manage Subscriptions</a> --></div>
+<div class="divformcol1" style="text-align:left">
+Welcome, {{ request.user.first_name }}! 
+<!-- <a href="/myesp/manage/">Manage Subscriptions</a> -->
+
+</div>
      {% endif %}
   {% else %}
-		<div class="divformcol1" style="text-align:left"><a href="/myesp/register/">Join ESP!</a></div>
+<div class="divformcol1" style="text-align:left">
+  <a href="/myesp/loginhelp.html">Login Help</a>
+</div>
   {% endif %}
 	</td>
-	<td style="text-align:right">
+	<td colspan="2">
   {% if request.user.is_authenticated %}
 	    <div class="divformcol2" style="text-align:right"><a href="/myesp/signout/">Sign Out</a></div>	
   {% else %}
-		<div class="divformcol1" style="text-align:left"><a href="/myesp/emaillist/">Join our mailing list</a></div>
-
+<div class="divformcol1" style="text-align:center">
+  <a href="/myesp/register/" title="Join ESP!">Create Account</a>
+</div>
     {% endif %}					  
 	</td>
-	<td colspan="3"> </td>
+    <td colspan="2">
+{% if not request.user.is_authenticated %}
+<div class="divformcol1" style="text-align:right;">
+  <a href="/myesp/emaillist/">Join our mailing list</a>
+</div>
+{% endif %}
 </tr>
 
 </table>

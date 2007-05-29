@@ -101,7 +101,7 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
      var sub_elements = YAHOO.util.Dom.getElementsByClassName('raw_id_admin',
                                                               'div',
                                                               elements[i]);
-     for (var j=0; j< elements.length; j++) {
+     for (var j=0; j< sub_elements.length; j++) {
         sub_elements[j].style.display = 'none';
         sub_elements[j].style.visibility = 'hidden';
      }
@@ -112,8 +112,8 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
     if (YAHOO.util.Dom.getElementsByClassName('yui_autocomplete','div', elements[i]).length > 0) {
         elements[i].style.paddingBottom = '12.5em';
         var sub_elements = YAHOO.util.Dom.getElementsByClassName('add-another', 'a', elements[i]);
-        for (var j=0; j< sub_elements.length; i++) {
-            sub_elements[i].style.display = 'none';
+        for (var j=0; j< sub_elements.length; j++) {
+            sub_elements[j].style.display = 'none';
         }
     }
   }

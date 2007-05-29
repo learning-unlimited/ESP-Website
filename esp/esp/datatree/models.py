@@ -146,6 +146,8 @@ class DataTree(models.Model):
 
         new_node = False
 
+        assert self.name == '', "Name must be specified!"
+
         
         if self.name.find(DataTree.DELIMITER) != -1:
             raise DataTree.InvalidName, "You cannot use '%s' in the name field." % DataTree.DELIMITER

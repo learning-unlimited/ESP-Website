@@ -1,0 +1,115 @@
+<form name="classmanage" action="/manage/{{program.getUrlBase}}/manageclass_ajaxpost/" method="POST">
+<input type="hidden" name="manage_post" value="" />
+<input type="hidden" name="clsid" value="{{class.id}}" />
+<input type="hidden" name="ajax" value="true" />
+
+<table class="mainstats">
+<thead>
+ <th colspan="2">
+   <div class="hd">
+   Class Management for &quot;{{class.emailcode}}&mdash;{{ class.title }}&quot;
+   </div>
+ </th>
+</thead>
+<tbody>
+<tr>
+ <th><label>Change Times:</label></th>
+ <td>
+   {{ form.meeting_times }} {% if form.meeting_times.errors %}
+   <br />
+   <span class="form_error">{{ form.meeting_times.errors|join:", " }}</span>
+   {% endif %}
+   <br />
+   Preferred Duration: {{class.prettyDuration }}
+ </td>
+</tr>
+<tr>
+  <th><label>Change Room(s):</label></th>
+  <td>
+{{ form.room}} {% if form.room.errors %}
+   <br /><span class="form_error">{{ form.room.errors|join:", " }}</span>
+   {% endif %}
+  (Assigned: {{class.prettyrooms|join:", "}})
+  </td>
+</tr>
+<tr>
+ <th><label>Teachers:</label></th>
+ <td>{{class.getTeacherNames|join:", "}}</td>
+</tr>
+<tr>
+ <th><label>Reviewing Status:</label><br />
+  <small>(Not reviewed, Accepted, or Rejected)</small>
+</th>
+ <td>{% if class.isReviewed %}{% if class.isAccepted %}
+   <span class"status accepted">Accepted!</span>
+   {% else %}
+   <span class="status rejected">Rejected</span>
+   {% endif %}
+   {% else %}
+   <span style="class notreviewed">Not Reviewed</span>
+   {% endif %}
+<br />
+   [<a href="/manage/{{program.getUrlBase}}/approveclass/{{class.id}}?redirect={{request.path}}" title="Accept Class">Accept Class</a> |
+   <a href="/manage/{{program.getUrlBase}}/rejectclass/{{class.id}}?redirect={{request.path}}" title="Reject Class">Reject Class</a> |
+   <a href="/manage/{{program.getUrlBase}}/proposeclass/{{class.id}}?redirect={{request.path}}" title="Unreview Class">Mark as Unreviewed</a> ]
+
+</td>
+</tr>
+<tr>
+  <th><label>Resources Requested:</label></th>
+  <td>
+{{ form.resources }} {% if form.resources.errors %}
+  <br /><span class="form_error">{{form.resources.errors|join:", " }}</span>
+{% endif %}
+  </td>
+</tr>
+<tr>
+  <th><label>Comments for Directors:</label></th>
+  <td>
+{{ form.message_for_directors }} {% if form.message_for_directors.errors %}
+  <br /><span class="form_error">{{form.message_for_directors.errors|join:", " }}</span>
+{% endif %}
+  </td>
+</tr>
+<tr>
+  <th><label>Number of Students:</label></th>
+  <td>{{class.students|length }} (<a href="/teach/{{program.getUrlBase}}/class_students/{{class.id}}">
+View them</a>)</td>
+</tr>
+<tr>
+  <th><label>Email Addresses:</label></th>
+  <td>Whole Class: {{class.emailcode}}-class@esp.mit.edu<br />
+Teachers: {{class.emailcode}}-teachers@esp.mit.edu<br />
+Students: {{class.emailcode}}-students@esp.mit.edu
+  </td>
+</tr>
+<tr>
+  <th colspan="2">
+   <h2>Directors' Annotations</h2>
+  </th>
+</tr>
+<tr>
+  <th>Progress:</th>
+  <td>
+{{ form.manage_progress }} {% if form.manage_progress.errors %}
+  <br /><span class="form_error">{{form.manage_progress.errors|join:", " }}</span>
+{% endif %}
+  </td>
+</tr>
+<tr>
+  <th>Directors' Notes<br />
+     <em>Notes for you to keep with each other; teachers don't see this.</em>
+  </th>
+  <td>
+{{ form.directors_notes }} {% if form.directors_notes.errors %}
+   <br /><span class="form_error">{{ form.directors_notes.errors|join:", " }}</span>
+   {% endif %}
+  </td>
+</tr>
+<tr>
+ <th colspan="2">
+  <input type="submit" value="-Save-" />
+ </th>
+</table>
+
+</form>

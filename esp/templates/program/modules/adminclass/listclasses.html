@@ -1,5 +1,8 @@
 
 {% block xtrajs %}
+<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/container/container-min.js">
+</script>
+
 <script type="text/javascript">
 /* <![CDATA[ */
 
@@ -43,6 +46,61 @@ function clickCheckMark(class,check,id) {
 
 }
 
+
+   var handleSubmit = function () { this.submit(); }
+   var handleCancel = function () { this.cancel(); }
+
+var manage_container;
+
+function dialog_init() {
+   YAHOO.namespace("example.container");
+
+  var handleSuccess = function(o) {
+       var response = o.responseText;
+       alert(response);
+  }
+  var handleFailure = function(o) {}
+     var buttons_list = [
+          { text:"Submit", handler:handleSubmit, isDefault:true },
+          { text:"Cancel", handler:handleCancel }
+     ];
+    
+     manage_container = new YAHOO.widget.Dialog("classmanager",
+	{ width : "600px",
+/*          fixedcenter : true,*/
+          visible : false,
+          modal:    true,
+/*          constraintoviewport : true,*/
+          buttons : buttons_list });
+
+     manage_container.callback  = { success: handleSuccess,
+	                   failure: handleFailure };
+
+     /*      YAHOO.util.Event.addListener("hide", "click", YAHOO.example.container.dialog1.hide, YAHOO.example.container.dialog1, true);*/
+}
+
+YAHOO.util.Event.addListener(window, "load", dialog_init);
+
+
+function manage_class(clsid) {
+  var callback = {
+      failure:function(o){},
+      success:function(o){
+         document.getElementById('classmanager').innerHTML = o.responseText;
+         manage_container.render();
+         manage_container.show();
+         document.getElementById('classmanager_c').style.top = '0px';
+      }
+  };
+
+  var url='/manage/{{program.getUrlBase}}/manageclass/?ajax=true';
+  var post='clsid='+clsid+'&ajax=true';
+
+  /* make the ajax call */
+  YAHOO.util.Connect.asyncRequest('POST', url, callback, post);
+
+}
+
 /* ]]> */
 </script>
 
@@ -69,7 +127,134 @@ function clickCheckMark(class,check,id) {
    border: 1px solid black !important;
 }
 
+#classmanager {
+   z-index: 10000;
+   position: absolute;
+   display: block;
+}
+
+.yui-panel-container {
+	position:absolute;
+	background-color:transparent;
+	z-index:6;
+	visibility:hidden;
+	overflow:visible;
+	width:auto;
+}
+
+.yui-panel-container.focused {
+}
+
+
+.yui-panel-container.matte {
+	padding:3px;
+	background-color:#FFF;
+}
+
+.yui-panel-container.matte .underlay {
+	display:none;
+}
+
+.yui-panel-container.shadow {
+	padding:0px;
+	background-color:transparent;
+}
+
+.yui-panel-container.shadow .underlay {
+	visibility:inherit;
+	position:absolute;
+	background-color:#000;
+	top:3px;left:3px;
+	z-index:0;
+	width:100%;
+	height:100%;
+    -moz-opacity: 0.12;
+    opacity:.12;
+    filter:alpha(opacity=12);
+	zoom:1;
+}
+
+.yui-panel {
+	visibility:hidden;
+	border-collapse:separate;
+	position:relative;
+	left:0px;top:0px;
+	font:1em Arial;
+	background-color:#FFF;
+	border:1px solid #000;
+	z-index:1;
+	overflow:hidden;
+}
+
+.yui-panel .hd {
+
+	font-size:100%;
+	line-height:100%;
+	border:1px solid #FFF;
+	font-weight:bold;
+	overflow:hidden;
+	padding:4px;
+}
+
+.yui-panel .bd {
+	overflow:hidden;
+	padding:4px;
+}
+
+.yui-panel .bd p {
+	margin:0 0 1em;
+}
+
+.yui-panel .container-close {
+	position:absolute;
+	top:5px;
+	right:4px;
+	z-index:6;
+	height:12px;
+	width:12px;
+	margin:0px;
+	padding:0px;
+	background:url(close12_1.gif) no-repeat;
+	cursor:pointer;
+	visibility:inherit;
+}
+
+.yui-panel .ft {
+	padding:4px;
+	overflow:hidden;
+}
+
+.yui-simple-dialog .bd .yui-icon {
+	background-repeat:no-repeat;
+	width:16px;
+	height:16px;
+	margin-right:10px;
+	float:left;
+}
+
+.yui-dialog .ft, 
+.yui-simple-dialog .ft {
+	padding-bottom:5px;
+	padding-right:5px;
+	text-align:right;
+}
+
+.yui-dialog form, 
+.yui-simple-dialog form {
+	margin:0;
+}
+
+.viable {
+  color: black;
+  background: #9f9;
+}
+
+.notviable {
+  color: #ccc;
+}
 </style>
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+
 <hr />
 
 <br />
@@ -97,58 +282,21 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
 {% for check in program.checkitems.all %}<td>&nbsp;</td>{% endfor %}
    </tr>
   {% endif %}
-
+{% load class_manage_row %}
   {% for cls in classes %}
-  <tr>
-    <td class="clsleft classname">
-      <span title="{{cls}}">
-      <strong>{{cls.emailcode }}.</strong>
-      <span       {% if cls.isAccepted %}
-      class="approved"
-      {% else %}
-      class="unapproved"
-      {% endif %}> {{ cls|truncatewords:6 }}</span>
-      </span>
-    </td>
-    <td class="clsleft classname" style="font-size: 60%; font-style: italic;">
-      <span title="Teacher Names">
-         ({{ cls.getTeacherNames|join:", " }})
-      </span>
-    </td>
+  <tr id="{{cls.id}}-row">
+   {% render_class_row cls program %}
 
-
-    <td class="clsmiddle">
-       <form method="post" action="/teach/{{ program.url }}/editclass/{{cls.id }}">
-         <input type="hidden" name="command" value="edit_class_{{cls.id}}">
-         <input class="button" type="submit" value="Edit">
-       </form>
-    </td>
-    <td class="clsmiddle">
-      <a href="/manage/{{program.getUrlBase}}/manageclass/{{cls.id}}" title="Manage {{cls.title}}"
-        class="abutton" style="white-space: nowrap;" >
-        Manage Class
-      </a>
-    </td>
-
-{% load class_checkmarks %}
-{# checklist ... #}
-{% for check in program.checkitems.all %}
-    <td class="class_checkitem">
-     <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step={{check.id}}"
-        title="Change Status of '{{check|addslashes}}'"
-        onclick="clickCheckMark({{cls.id}},{{check.id}},'{{cls.id}}-{{check.id}}'); return false;" >
-    <span class="checkmark" id="{{cls.id}}-{{check.id}}">
-    {% if cls|is_checked:check %}
-    <img src="{{media_url}}images/checkmark.gif" title="{{ check.title|escape }}" />
-    {% else %}
-    <img src="{{media_url}}images/nocheckmark.gif" title="Not {{ check.title|escape }}" />
-    {% endif %}
-    </span>
-{% endfor %}
    </tr>
-
-
    {% endfor %}
 
 </table>
+</div>
+
+<div id="classmanager">
+<div class="hd">Please enter your information</div>
+  <div class="bd">
+    <form method="POST" action="../assets/post.php">
+    </form>
+  </div>
 </div>

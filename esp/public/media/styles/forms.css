@@ -37,11 +37,11 @@
     font-style: normal;
 }
 
-#divmaintext form table li, #divmaintext form table ul {
+#divmaintext form table ul.errorlist {
     list-style-type: none;
     padding: 0; margin: 0;
-    font-style: italic;
-    color: #c00;
+    font-style: italic !important;
+    color: #c00 !important;
 }
 #divmaintext form table label {
     cursor: pointer;

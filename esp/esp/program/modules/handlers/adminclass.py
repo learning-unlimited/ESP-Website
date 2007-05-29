@@ -47,10 +47,7 @@ class AdminClass(ProgramModuleObj):
         Options for this are available on the main manage page.
         """
     def getManageSteps(self):
-        return [('Interviewed','Teacher Interviewed'),
-                ('Scheduled', 'Schedule Completed'),
-                ('RoomAssigned','Room Assignment Completed'),
-                ('Finished', 'Finished All')]
+        return [(str(x.id),x.title) for x in self.program.checkitems.all()]
     
     def getResources(self):
         resources = self.program.getResources()
@@ -113,7 +110,7 @@ class AdminClass(ProgramModuleObj):
             try:
                 clsid = int(extra)
             finally:
-                cls, found = self.getClassFromId(extra)
+                cls, found = self.getClassFromId(clsid)
                 if found:
                     return (cls, True)
                 elif cls is not False:
@@ -124,7 +121,7 @@ class AdminClass(ProgramModuleObj):
             try:
                 clsid = int(request.POST['clsid'])
             finally:
-                cls, found = self.getClassFromId(extra)
+                cls, found = self.getClassFromId(clsid)
                 if found:
                     return (cls, True)
                 elif cls is not False:
@@ -134,14 +131,14 @@ class AdminClass(ProgramModuleObj):
             try:
                 clsid = int(request.GET['clsid'])
             finally:
-                cls, found = self.getClassFromId(extra)
+                cls, found = self.getClassFromId(clsid)
                 if found:
                     return (cls, True)
                 elif cls is not False:
                     return (cls, False)
 
                 
-        return (render_to_response(self.baseDir()+'cannotfindclass.html', request, (prog, tl), {}), False)
+        return (render_to_response(self.baseDir()+'cannotfindclass.html', {}), False)
 
                 
     @needs_admin
@@ -155,7 +152,7 @@ class AdminClass(ProgramModuleObj):
 
         manipulator = ClassManageManipulator(cls, self)
         new_data = {}
-        if request.method == 'POST':
+        if request.method == 'POST' and request.POST.has_key('manage_post'):
             new_data = request.POST.copy()
 
             errors = manipulator.get_validation_errors(new_data)
@@ -164,20 +161,11 @@ class AdminClass(ProgramModuleObj):
                 verb_start = 'V/Flags/Class/'
                 manipulator.do_html2python(new_data)
                 progress = request.POST.getlist('manage_progress')
-                for step in ['Interviewed','Finished','Scheduled','RoomAssigned']:
-                    
-                    if step in progress:
-
-                        UserBit.objects.get_or_create(user      = None,
-                                                      qsc       = cls.anchor,
-                                                      verb      = GetNode(verb_start+step),
-                                                      recursive = False)
+                for step in self.program.checkitems.all():
+                    if str(step.id) in progress:
+                        cls.checklist_progress.add(step)
                     else:
-                        [ x.delete() for x in
-                          UserBit.objects.filter(user__isnull = True,
-                                                 qsc          = cls.anchor,
-                                                 verb         = GetNode(verb_start+step),
-                                                 recursive    = False) ]
+                        cls.checklist_progress.remove(step)
 
                 cls.meeting_times.clear()
                 cls.directors_notes = new_data['directors_notes']
@@ -192,25 +180,18 @@ class AdminClass(ProgramModuleObj):
                         cls.assignClassRoom(DataTree.objects.get(id = room))
 
                 cls.update_cache()
-                
-                return self.goToCore(tl)
+                if request.POST.has_key('ajax'):
+                    return HttpResponse('')
+                else:
+                    return self.goToCore(tl)
         else:
             new_data['meeting_times']   = [x.id for x in cls.meeting_times.all()]
             new_data['directors_notes'] = cls.directors_notes
             new_data['message_for_directors'] = cls.message_for_directors            
             new_data['resources'] = [ resource.id for resource in cls.resources.all() ]
 
-            steps = []
-            if cls.manage_finished():
-                steps += ['Finished']
-            if cls.manage_scheduled():
-                steps += ['Scheduled']
-            if cls.manage_roomassigned():
-                steps += ['RoomAssigned']
-            if cls.teacher_interviewed():
-                steps.append('Interviewed')
-                
-            new_data['manage_progress'] = steps
+            new_data['manage_progress'] = [str(x.id) for x in
+                                           cls.checklist_progress.all()]
 
             
             classrooms = cls.classrooms()
@@ -221,15 +202,16 @@ class AdminClass(ProgramModuleObj):
         form = forms.FormWrapper(manipulator, new_data, errors)
         context['form'] = form
 
-        return render_to_response(self.baseDir()+'manageclass.html',
-                                  request,
-                                  (prog, tl),
-                                  context)
-
-                                  
-        
-        
-
+        if request.POST.has_key('ajax') or request.GET.has_key('ajax'):
+            from django.shortcuts import render_to_response as django_response
+            context['program'] = prog
+            return django_response(self.baseDir()+'manageclass_ajax.html',
+                                      context)
+        else:
+            return render_to_response(self.baseDir()+'manageclass.html',
+                                      request,
+                                      (prog, tl),
+                                      context)
 
 
     @needs_admin
@@ -546,6 +528,7 @@ class AdminClass(ProgramModuleObj):
             context['durations'] = True
             
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
+
 
 
     @needs_admin
