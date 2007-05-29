@@ -18,7 +18,7 @@ ARCHIVE = 'esparchive@gmail.com'
 
 DEBUG=False
 
-os.environ['LOCAL_PART'] = 'axiak'
+#os.environ['LOCAL_PART'] = 'axiak'
 
 user = "UNKNOWN USER"
 
@@ -64,7 +64,7 @@ try:
         if handler.from_email:
             del(message['from'])
             message['From'] = handler.from_email
-
+            
         del message['Message-ID']
 
         # get a new message id
@@ -85,9 +85,13 @@ try:
         sys.exit(0)
 
 
-
 except Exception,e:
     a = sys.exc_info()
+
+    # we dont' want to care if it's an exit
+    if isinstance(e,SystemExit):
+        raise a[0],a[1],a[2]
+        
 
     if DEBUG:
         raise a[0],a[1],a[2]
