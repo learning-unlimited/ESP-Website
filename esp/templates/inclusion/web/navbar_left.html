@@ -38,6 +38,12 @@ Create a new entry:
 <option value="False">Standard</option>
 <option value="True">Indented</option>
 </select>
+<select name="child_node">
+<option value="">Node</option>
+{% for child_node in navbar_list.node.children %}
+<option value="{{ child_node.id }}">{{child_node.name }}</option>
+{% endfor %}
+</select>
 <input name="submit" value="Create!" type="Submit" />
 </form>
 </li>

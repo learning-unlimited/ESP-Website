@@ -32,12 +32,21 @@ class AjaxForeignKeyFormField(oldforms.FormField):
 
     def extract_data(self, data):
         try:
-            return data[self.field_name]
+            value = data[self.field_name]
         except KeyError:
-            return data.get(self.field.attname, '')
+            value = data.get(self.field.attname, '')
+
+        try:
+            return int(str(value))
+        except ValueError:
+            return ''
 
     def prepare(self, data):
-        return
+        try:
+            new_data =  self.isProperPost(self, data)
+            data[self.field_name] = new_data
+        except validators.ValidationError:
+            return
 
 
     def render(self, data):
@@ -165,7 +174,13 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 
         return css + html + javascript
 
-    def isProperPost(self, data, form):
+
+    def isProperPost(self, field, data):
+        try:
+            data = data[self.field_name]
+        except:
+            pass
+            
         try:
             data = int(data)
         except ValueError:
@@ -174,5 +189,5 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
                 data = match.groups()[0]
             else:
                 raise validators.ValidationError, "Invalid text sent for key."
-        form[self.field_name] = data
+#        form[self.field_name] = data
         return data

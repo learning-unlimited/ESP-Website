@@ -1288,10 +1288,13 @@ class FinancialAidRequest(models.Model):
 
     done = models.BooleanField(default = False, editable = False)
 
+
 class JunctionStudentApp(models.Model):
     """
     Student applications for Junction.
     """
+
+    
 
     program = models.ForeignKey(Program, editable = False)
     user    = AjaxForeignKey(User, editable = False)
@@ -1314,8 +1317,24 @@ class JunctionStudentApp(models.Model):
                       null=True)
 
     done = models.BooleanField(default=False,editable = False)
+    teacher_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
+    director_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
+    rejected       = models.BooleanField(default=False,editable=False)
     
-    
+
+class JunctionAppReview(models.Model):
+    cls = models.ForeignKey(Class)
+    junctionapp = models.ForeignKey(JunctionStudentApp)
+    student     = models.ForeignKey(User)
+    score = models.IntegerField(blank=True,null=True)
+    create_ts = models.DateTimeField(default = datetime.now,
+                                     editable = False)
+
+    def __str__(self):
+        return "Review for %s in class %s" % (self.cls, self.student)
+
+    class Admin:
+        pass
 
 class ClassTimeSlot(models.Model):
     """
@@ -1355,4 +1374,4 @@ class ProgramCheckItem(models.Model):
         pass
 
     class Meta:
-        ordering = ('-program_id','seq',)
+        ordering = ('-program','seq',)

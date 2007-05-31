@@ -1,0 +1,84 @@
+{% extends "outlines/series-3.html" %}
+
+
+{% block title %}Student application review for {{ cls }}{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Junction applications"|subsection }}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style type="text/css">
+
+.roster td, .roster th {
+  border: 1px solid #ccc;
+  border-collapse: collapse;
+  padding: 3px;
+}
+table.roster { 
+  border: 2px solid black;
+  border-collapse: collapse;
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<h1>Junction application reviews</h1>
+<br />
+<p>
+<a href="/teach/{{ program.getUrlBase }}/teacherreg">
+Back to teacher reg
+</a>
+</p>
+<br /><br />
+<h2>Class roster for &quot;{{class}}&quot;</h2>
+<br />
+<table class="roster">
+<thead>
+<tr>
+  <th>Name</th>
+  <th>Grade</th>
+  <th>Time Signed up for your class</th>
+  <th>Review Date/Time</th>
+  <th>Review</th>
+</tr>
+</thead>
+<tbody>
+{% for student in students %}
+  <tr>
+    <td>
+   {{ student.name }}
+    </td>
+    <td>
+   {{ student.getGrade }}
+    </td>
+    <td>
+    {{student.added_class|date:"M/d/Y @ h:i:s" }}
+    </td>
+    <td>
+  {% if student.app_reviewed %}
+    {{ student.app_reviewed.create_ts|date:"M/d/Y @ h:i:s" }}
+    (Score:{{student.app_reviewed.score}})
+  {% else %}
+    <strong>Not Reviewed</strong>
+  {% endif %}
+    <td>
+    {% if not student.app %}
+    <span style="color: #c00;">No Application</span>
+    {% else %}
+    <a href="/teach/{{program.getUrlBase}}/review_student/{{class.id}}/?student={{ student.id }}">Review Student</a>
+    {% endif %}
+    </td>
+  </tr>
+
+
+{% endfor %}
+</tbody>
+</table>
+
+
+{% endblock %}
