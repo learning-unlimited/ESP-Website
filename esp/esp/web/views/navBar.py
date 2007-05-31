@@ -43,6 +43,51 @@ from esp.db.models import Q
 
 EDIT_VERB_STRING = 'V/Administer/Edit/QSD'
 
+def qsd_tree_program(qsdTree, node, section, user):
+    """
+    This function will go through the tree and add
+    appropriate Program-related entries.
+
+    Generators are FUN! (and efficient)
+    """
+    # useful for copying objects
+    import copy
+
+    # all programs that have been displayed
+    displayed_programs = {}
+
+    # default settings
+    default_navbar = NavBarEntry(path=node,sort_rank=-1,id=-1,indent=True,section='',
+                                 link='',text='')
+
+    for item in qsdTree:
+        entry = item['entry']
+        # this entry should obviously be listed
+        yield item
+
+        if not entry.indent:
+            program_set = Program.objects.filter(anchor__parent = entry.path_id)
+
+            if len(program_set) > 0: # use len instead to save on the extra query...
+                for program in program_set:
+
+                    # check to see if we've displayed this program yet.
+                    if program.id in displayed_programs: continue
+                    displayed_programs[program.id] = True
+
+                    modules = program.getModules(user, section)
+                    for module in modules:
+                        navBars = module.getNavBars()
+                        for navbar_dict in navBars:
+                            # make a copy of the default navbar
+                            navbar = copy.copy(default_navbar)
+
+                            # update the variables in this with that which was given
+                            navbar.__dict__.update(navbar_dict)
+
+                            # send this one along next
+                            yield {'entry': navbar,'has_bits':False}
+
 
 def makeNavBar(user, node, section = ''):
     """ Query the navbar-entry table for all navbar entries associated with this tree node """
@@ -62,12 +107,14 @@ def makeNavBar(user, node, section = ''):
 
             edit_verb = GetNode(EDIT_VERB_STRING)
 
-            navBarSectionHeaders = NavBarEntry.objects.filter(path__child_set__child_set__program__isnull = False)
+            navBarSectionHeaders = NavBarEntry.objects.filter(path__child_set__program__isnull = False)
+
+            #assert False, navBarSectionHeaders
             
             navBarAssociatedPrograms = { }
             for i in navBarSectionHeaders:
-                navBarAssociatedPrograms[i.id] = Program.objects.filter(anchor__parent__parent__navbar=i,
-                                                                        anchor__parent__name__icontains=i.text)
+                navBarAssociatedPrograms[i.id] = Program.objects.filter(anchor__parent__navbar=i,
+                                                                        anchor__name__icontains=i.text)
 
             from esp.db.models import QSplit
             qsdTree = NavBarEntry.objects.filter(path__parent = self.node, section=section).order_by('sort_rank')
@@ -79,37 +126,9 @@ def makeNavBar(user, node, section = ''):
                 has_edit_bits = UserBit.UserHasPerms(user, node, edit_verb)
                 qsdTreeList = [ {'entry': x, 'has_bits': UserBit.UserHasPerms(user, x.path, edit_verb) } for x in qsdTree ]
 
-            qsdTreeListCopy = []
-            add_offset = 0
 
-            for i in qsdTreeList:
-                qsdTreeListCopy.append(i)
-                if (navBarAssociatedPrograms.has_key(i['entry'].id)):
-                    program_set = navBarAssociatedPrograms[i['entry'].id]
-                    for p in program_set:
-                        mods = p.getModules(user, section)
-
-                        for m in mods:
-                            navBars = m.getNavBars()
-                            for i in navBars:
-                                if not i.has_key('path'):
-                                    i['path'] = node
-                                if not i.has_key('sort_rank'):
-                                    i['sort_rank'] = -1
-                                if not i.has_key('id'):
-                                    i['id'] = -1
-                                if not i.has_key('indent'):
-                                    i['indent'] = True
-                                if not i.has_key('section'):
-                                    i['section'] = ''
-                                if i.has_key('text'):
-                                    i['makeTitle'] = i['text']
-                                if i.has_key('link'):
-                                    i['makeUrl'] = i['link']
-                                    
-                            qsdTreeListCopy += [{'entry': x, 'has_bits': False} for x in navBars]
-
-            qsdTreeList = qsdTreeListCopy
+            # add program entries
+            qsdTreeList = qsd_tree_program(qsdTreeList, node, section, user)
 
             context = { 'node': node,
                     'has_edit_bits': has_edit_bits,

@@ -45,7 +45,7 @@ LOG_FILE="/var/log/django/esp_errlog"
 # Debug settings  #
 ###################
 DEBUG = True
-DISPLAYSQL = False
+DISPLAYSQL = True
 TEMPLATE_DEBUG = DEBUG
 
 ##################

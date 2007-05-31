@@ -259,6 +259,9 @@ class Program(models.Model):
     def niceName(self):
         return str(self).replace("_", " ")
 
+    def niceSubName(self):
+        return self.anchor.name.replace('_', ' ')
+
     def getUrlBase(self):
         """ gets the base url of this class """
         tmpnode = self.anchor
