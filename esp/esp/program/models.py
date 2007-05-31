@@ -1377,4 +1377,4 @@ class ProgramCheckItem(models.Model):
         pass
 
     class Meta:
-        ordering = ('-program','seq',)
+        ordering = ('-program_id','seq',)
