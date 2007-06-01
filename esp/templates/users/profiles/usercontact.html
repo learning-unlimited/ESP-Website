@@ -17,6 +17,15 @@
 </tr>
 
 <tr>
+<td colspan="2"> 
+<div class="info">
+<b>Please enter your primary e-mail address.</b>  It is important that you check your e-mail at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  <br /><br />
+<b>Students</b>: this should be your e-mail address, not your parents'.  Please enter your parents' e-mail address in the parent/guardian section below.
+</div>
+</td>
+</tr>
+
+<tr>
  <td><label for="id_e_mail">Email:</label></td>
  <td>{{ form.e_mail }} {% if form.e_mail.errors %}
    <br /><span class="form_error">{{ form.e_mail.errors|join:", " }}</span>

@@ -27,10 +27,8 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 {% endblock %}
 
 {% block content %}
-<br /><br />
-<h2>Hi {{user.username}}!</h2>
-<h2>Please tell us a bit about yourself!</h2>
-(Boxed fields are required.)
+<h1>Your Profile Information</h1>
+<p>Please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
 
 {% if form.has_errors %}
 <h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
@@ -40,7 +38,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 <form action="{{request.path}}" method="post">
 <input type="hidden" name="profile_page" value="true" />
 <input type="hidden" name="current_role" value="{{ profiletype }}" />
-<table cellpadding="2" align="center" border="0">
+<table cellpadding="3" align="center" border="0">
 
 {% include "users/profiles/usercontact.html" %}
 

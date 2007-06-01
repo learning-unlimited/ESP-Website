@@ -30,10 +30,40 @@ td.instructions {
 <div id="battlescreen">
 
 <p>
-The teachers of your classes have provided the following materials, which you can review and delete if necessary.
+From this page, you can view documents related to the program (in the first section of the table below).  Teachers of your classes have also provided materials, which you can review and delete if necessary (in the second section of the table below).  Finally, you may upload new documents using the form at the bottom of the page.
 </p>
-
+<p>
+<a href="/manage/{{ prog.url }}/main">Click here</a> to return to the main program management page.
+</p>
 <table cellpadding="2" cellspacing="0" align="center" width="550">
+<tr>
+		<th colspan="2" style="text-align: center;">
+		Program documents for {{ prog.niceName }}
+		</th>
+	</tr>
+	{% if prog.anchor.media_set.count %}
+	<tr>
+		<td class="clsmiddle" style="text-indent: 20px"><b>Document</b></td>
+		<td class="clsmiddle"><b>Options</b></td>
+	</tr>
+	{% else %}
+	<tr>
+		<td colspan="2">There are no documents associated with this program.  You may add some below!</td>
+	</tr>
+	{% endif %}
+	{% for doc in prog.anchor.media_set.all %}
+	<tr>
+		<td class="class_stuff"><a href="/media/{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
+		<td class="clsmiddle">
+			<form method="post" action="/manage/{{ prog.url }}/get_materials">
+				<input type="hidden" name="docid" value="{{ doc.id }}">
+				<input type="hidden" name="command" value="delete">
+				<input class="button" type="submit" value="Delete">
+			</form>
+		</td>
+	</tr>
+	{% endfor %}
+	<tr>	<td colspan="2" height="10"> &nbsp; </td> </tr>	
 	<tr>
 		<th colspan="2" style="text-align: center;">
 		Documents for classes in {{ prog.niceName }}
@@ -51,7 +81,7 @@ The teachers of your classes have provided the following materials, which you ca
 			<tr>
 				<td class="class_stuff"><a href="/media/{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
 				<td class="clsmiddle">
-					<form method="post" action="/manage/{{ program.url }}/get_materials/{{ cls.id }}">
+					<form method="post" action="/manage/{{ program.url }}/get_materials">
 						<input type="hidden" name="docid" value="{{ doc.id }}">
 						<input type="hidden" name="command" value="delete">
 						<input class="button" type="submit" value="Delete">
@@ -62,6 +92,42 @@ The teachers of your classes have provided the following materials, which you ca
 		{% endif %}
 	{% endfor %}
 </table>
+
+<br />
+<br />
+
+<form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">
+<input type="hidden" name="command" value="add">
+<table cellpadding="12" cellspacing="0" align="center" width="450">
+	<tr>
+		<th colspan="2" style="text-align: center;">
+		Add a document for {{ prog.niceName }}
+		</th>
+	</tr>
+	<tr>
+		<td class="instructions">
+			<b>Instructions:</b>
+			<br />
+			In the form below, please enter a title for the document (e.g. "Liability Forms" or "Syllabus") and select a file from your computer to upload.  Choose whether the document should be associated with the program in general or a specific class.  Then click "Submit Document" below.
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<div id="uploadform">
+			<table align="center">
+				{{ uploadform.as_table }}
+			</table>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td class="instructions" align="center">
+			<input class="button" type="submit" value="Submit Document">
+		</td>
+	</tr>
+</table>
+</form>
+
 
 </div>
 

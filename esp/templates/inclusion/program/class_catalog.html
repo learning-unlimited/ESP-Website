@@ -5,10 +5,7 @@
   <table cellpadding="5" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
     <tr>
       <th colspan="2" style="width: 70%;">
-      {% if not prereg_url %}
-        <a class="classtitle" href="{{ class.parent_program.get_learn_url }}studentreg/" title="Join this class!">
-      {% endif %} {{ class.title|escape|teximages:150|smartypants }}
-      {% if not prereg_url %} </a> {% endif %}
+	{{ class.title|escape|teximages:150|smartypants }}
       </th>
       <th style="width: 30%;">
        <span class="teachers">

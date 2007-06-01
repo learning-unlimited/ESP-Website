@@ -36,19 +36,56 @@ from esp.program.models import Class, Program
 from esp.users.models import UserBit, ESPUser
 
 class AdminMaterials(ProgramModuleObj):
-    """ This allows you to view the submitted documents for all classes on one page. """
+    """ This allows you to view the submitted documents for all classes on one page. You can also upload documents particular to the program, such as liability waivers and information sheets."""
         
     def get_materials(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm    
+        from esp.web.forms.fileupload_form import FileUploadForm_Admin    
         from esp.qsdmedia.models import Media
+	from esp.datatree.models import DataTree
 	    
+	context_form = FileUploadForm_Admin()
+	new_choices = [(a.anchor.id, a.emailcode() + ': ' + str(a)) for a in prog.classes()]
+	new_choices.append((prog.anchor.id,'Document pertains to program'))
+	new_choices.reverse()
+	context_form.set_choices(new_choices)
+	
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
-            	docid = request.POST['docid']
-            	media = Media.objects.get(id = docid)
-            	media.delete()
+                docid = request.POST['docid']
+                media = Media.objects.get(id = docid)
+                media.delete()
+            	
+            elif request.POST['command'] == 'add':
+                data = request.POST.copy()
+                data.update(request.FILES)
+                form = FileUploadForm_Admin(data)
+                form.set_choices(new_choices)
+                
+                if form.is_valid():
+                    media = Media(friendly_name = form.clean_data['title'], anchor = DataTree.objects.get(id = form.clean_data['target_obj']))
+	            
+		    #	Append the class code on the filename if necessary
+		    target_id = int(form.clean_data['target_obj'])
+	            if target_id != prog.anchor.id:
+                        new_target_filename = Class.objects.get(anchor__id = target_id).emailcode() + '_' + form.clean_data['uploadedfile']['filename']
+                    else:
+                        new_target_filename =  form.clean_data['uploadedfile']['filename']
 
-        context = {'prog': self.program, 'module': self}
+                    media.save_target_file_file(new_target_filename, form.clean_data['uploadedfile']['content'])
+                    media.mime_type = form.clean_data['uploadedfile']['content-type']
+	            media.size = len(form.clean_data['uploadedfile']['content'])
+	            extension_list = form.clean_data['uploadedfile']['filename'].split('.')
+	            extension_list.reverse()
+	            media.file_extension = extension_list[0]
+	            media.format = ''
+		    
+                    media.save()
+	        else:
+	            context_form = form
+
+        context = {'prog': self.program, 'module': self, 'uploadform': context_form}
+	
+	classes = Class.objects.filter(parent_program = prog)
 	
         return render_to_response(self.baseDir()+'listmaterials.html', request, (prog, tl), context)
     

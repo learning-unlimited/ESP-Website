@@ -2,6 +2,11 @@
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+{% endblock %}
+
 {% load subsection %}
 {% block subsection %}
 {{ "Student Registration"|subsection }}{% endblock %}
@@ -15,12 +20,11 @@
 
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentreg" %}
+<div id="catalog">
+<p>Please complete the following steps to pre-register for {{program.niceName}}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."  After finishing all the steps, click the "save" button at the bottom of the page.</p>
 
-<p style="text-align: center">Please complete the following steps so that you are fully pre-registered for {{program.niceName}}.</p>
-
-<center>
-<table style="text-align: center" align="center">
-<tr><th>What to do?</th><th>Done?</th></tr>
+<table style="text-align: center" align="center" width="400">
+<tr><th>Steps for Registration</th><th>Done?</th></tr>
 {% for module in modules %}
 {% if module.isStep %}
  <tr>
@@ -53,7 +57,6 @@
  </tr>   
 </table>
 
-</center>
 <br />
 {% for module in modules %}
 {% if module.useTemplate %}
@@ -62,6 +65,7 @@
 
 {% endif %}
 {% endfor %}
+</div>
 <br />
 
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
@@ -72,30 +76,27 @@
 {% if not completedAll %}
 Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Save</em> button below (it will be active at this point).
 {% else %}
-Please click <em>Save</em> below to confirm your registration into {{program.niceName}}.<br />
-Upon clicking this you will be given a receipt with further instructions!
+Please click <em>Save</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
 {% endif %}
-
 </div>
+
 </center>
 {% endif %}
 <center>
-<p style="text-align: center">
+
 <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
 <input type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %}/><br />
-</form>{% if not completedAll %}<em>(Please complete the above steps first!)</em>{% endif %}
+</form>
 {% if isConfirmed %}
 <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
 <input type="submit" value="Cancel Registration" />
 {% endif %}
-</p>
+
 </center>
 
 <br />
-<p style="text-align: center;">
-<em>
-  Please note that you can come back and change your preregistration up until 2 days before {{program.niceName}} begins!
-</em>
+<p>
+  Thanks for pre-registering!  You can come back and change any of the above information until 2 days before {{program.niceName}} begins.  If you have any questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
 </p>
 
 {% endblock %}

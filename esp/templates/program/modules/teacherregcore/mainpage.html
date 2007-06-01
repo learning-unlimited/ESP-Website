@@ -7,7 +7,8 @@
 {% endblock %}
 
 {% block stylesheets %}
-{{block.super }}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/catalog.css" type="text/css">
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 #divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
@@ -22,21 +23,20 @@
 {% endblock %}
 
 {% block content %}
+
+<h2>Teacher registration for {{program.niceName}} </h2>
 <br />
-<br />
 
-{{ program.mainteacherreg }}
+<div id="catalog">
+<p>
+Please complete the following steps to teach for {{ program.niceName }}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."
+<p>
 
-<br /><br />
-<h1>Teacher registration for {{program.niceName}} </h1>
-
-<p style="text-align: center">
-Thank you for wanting to teach for us! <br />
-Please fill out the following form to manage your involvement in {{program.niceName }}.
+<p>
+We appreciate your interest!  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
 </p>
 
-<center>
-<table style="text-align: center" align="center">
+<table style="text-align: center" align="center" width="400">
 <tr><th>What to do?</th><th>Done?</th></tr>
 {% for module in modules %}
 {% if module.isStep %}
@@ -55,14 +55,11 @@ Please fill out the following form to manage your involvement in {{program.niceN
 {% endfor %}
 </table>
 
-</center>
-<br />
-<br />
 <br />
 
-<h2>Announcements &ndash; General for {{program.niceName}}</h2>
+<h2>Announcements</h2>
 {% if progposts|length_is:0 %}
-<em>There are currently no posts.</em>
+<em>There are currently no announcements.  Please proceed to registering your classes below!</em>
 <br />
 <br />
 <br />
@@ -77,13 +74,12 @@ Please fill out the following form to manage your involvement in {{program.niceN
     {{ blogentry.html }}
   </p>
 </div>
-<br />
-<br />
+
 {% endfor %}
 {% endif %}
 
+</div>
 
-<br />
 {% for module in modules %}
 {% if module.useTemplate %}
 <br />
@@ -91,13 +87,5 @@ Please fill out the following form to manage your involvement in {{program.niceN
 
 {% endif %}
 {% endfor %}
-
-<br />
-<p>Tip: You can get a screen to manage your teaching in all programs at:
-<br />
-<a href="/myesp/teacher" title="Teacher Battlescreen">The Teacher Battlescreen</a>
-</p>
-<br />
-
 
 {% endblock %}

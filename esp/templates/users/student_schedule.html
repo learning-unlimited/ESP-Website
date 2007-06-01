@@ -1,19 +1,12 @@
 
-<p style='font-family: arial; margin-left:10px; text-align: center'>
- <b style="text-align: center">Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}</b>
-
-</p>
-
-<p style="text-align: center">
+<p>
+Below is your class schedule for {{ program.niceName }}.  Please use the links in the right-hand column to select classes to fill each time slot.  You may also
 <a target="_blank" href='/learn/{{one}}/{{two}}/catalog/'>
-Open Full Catalog in a Separate Window
-</a>
+open a full catalog in a separate window
+</a>.
 </p>
-<br />  	
-<br />
+
 {% if not module.deadline_met %}
-
-
 <center><div class="note">
 Note: Student registration is no longer open. Please use this page to view your schedule. {% if completedAll %}You can still click `Save' to view your receipt. {% endif %}
 </div></center>
@@ -21,6 +14,11 @@ Note: Student registration is no longer open. Please use this page to view your 
 {% endif %}
 
  <table cellpadding="3" style="width: 600px; margin: auto" border=1>
+<tr>
+<th colspan="3">
+Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
+</th>
+</tr>
 {% for timeslot in timeslots %}
 
 <tr><td width="25%" valign="top" align="center"> {{ timeslot.0.friendly_name }} </td>
