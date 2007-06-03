@@ -75,6 +75,9 @@ class LatexImage(models.Model):
         if not self.image:
             self.image = get_rand_file_base()
             self.filetype = IMAGE_TYPE
+        else:
+            self.image = os.path.basename(self.image)
+            self.image = self.image[:self.image.rindex('.')]
 
         if self.style == 'INLINE':
             style = '$'
