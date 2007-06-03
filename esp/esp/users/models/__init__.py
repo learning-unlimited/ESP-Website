@@ -345,11 +345,16 @@ class ESPUser(User, AnonymousUser):
 
 
 
-    def isAdministrator(self, program = None):
-        if program is None:
+    def isAdministrator(self, anchor_object = None):
+        if anchor_object is None:
             return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
         else:
-            return UserBit.UserHasPerms(self, program.anchor, GetNode('V/Administer'))
+            if hasattr(anchor_object, 'anchor'):
+                anchor = anchor_object.anchor
+            else:
+                anchor = anchor_object
+
+            return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
 
     isAdmin = isAdministrator
 
