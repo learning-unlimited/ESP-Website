@@ -32,9 +32,9 @@ def render_inline_qsd(input_anchor, qsd):
     else:
         return {}
 
-    try:
-        qsd_obj = anchor.quasistaticdata_set.get(name=qsd)
-    except QuasiStaticData.DoesNotExist:
+    qsd_obj = anchor.quasistaticdata_set.filter(name=qsd).order_by('-id')
+    if len(qsd_obj) == 0:
         return {}
+    qsd_obj = qsd_obj[0]
     
     return {'qsdrec': qsd_obj}

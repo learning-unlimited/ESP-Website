@@ -21,7 +21,12 @@
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentreg" %}
 <div id="catalog">
-<p>Please complete the following steps to pre-register for {{program.niceName}}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."  After finishing all the steps, click the "save" button at the bottom of the page.</p>
+<p>
+  Please complete the following steps to pre-register for {{program.niceName}}.
+  When each step is completed, the corresponding box in the right-hand column will
+  be &#8220;checked off&#8221;. After finishing all the steps, click the &#8220;save&#8221;
+  button at the bottom of the page.
+</p>
 
 <table style="text-align: center" align="center" width="400">
 <tr><th>Steps for Registration</th><th>Done?</th></tr>
@@ -29,7 +34,9 @@
 {% if module.isStep %}
  <tr>
   <td>{% if module.useTemplate %}
-    {{ module.module.link_title }} <em>(below)</em>
+   <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
+    {{ module.module.link_title }} 
+    </a> <em>(below)</em>
    {% else %}
     {{ module.makeLink }}
    {% endif %}
@@ -37,22 +44,25 @@
   </td>
   <td>{% if not module.useTemplate %}
    <a href="{{ module.get_full_path }}">
+   {% else %}
+   <a href="#module-{{ module.id }}">
    {% endif %}
    <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" 
      {% if module.isCompleted %}title="Done!" alt="Done!"{% else %}
        title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
-   {% if not module.useTemplate %}
    </a>
-   {% endif %}
   </td>
 </tr>
 {% endif %}
 {% endfor %}
  <tr>
-  <td>Confirm Pre-Registration <em>(below)</em>
+  <td><a href="#confirmreg" title="Confirm Pre-Registration">
+        Confirm Pre-Registration</a> <em>(below)</em>
   </td>
   <td>
-   <img src="/media/images/{% if not isConfirmed %}no{% endif %}checkmark.gif" class="nocheckmark" />
+   <a href="#confirmreg">
+      <img src="/media/images/{% if not isConfirmed %}no{% endif %}checkmark.gif" class="nocheckmark" />
+   </a>
   </td>
  </tr>   
 </table>
@@ -60,6 +70,7 @@
 <br />
 {% for module in modules %}
 {% if module.useTemplate %}
+<a name="module-{{module.id}}"></a>
 <br />
  {% include module.getTemplate %}
 
@@ -83,6 +94,8 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 </center>
 {% endif %}
 <center>
+
+<a name="confirmreg"></a>
 
 <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
 <input type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %}/><br />
