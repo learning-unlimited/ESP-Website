@@ -52,8 +52,8 @@ class Entry(models.Model):
     highlight_expire = models.DateTimeField(blank=True,null=True,
                                             help_text="When this should stop being showcased.")
     content = models.TextField(help_text='Yes, you can use markdown.') # Markdown-encoded
-    sent    = models.BooleanField(editable=False)
-    email   = models.BooleanField(editable=False)
+    sent    = models.BooleanField(editable=False, default=False)
+    email   = models.BooleanField(editable=False, default=False)
     fromuser = AjaxForeignKey(User, blank=True, null=True,editable=False)
     fromemail = models.CharField(maxlength=80, blank=True, null=True, editable=False)
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)

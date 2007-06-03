@@ -60,33 +60,41 @@ def qsd_tree_program(qsdTree, node, section, user):
     default_navbar = NavBarEntry(path=node,sort_rank=-1,id=-1,indent=True,section='',
                                  link='',text='')
 
+    if node.depth() > 2:
+        parent_navbars = NavBarEntry.objects.filter(path = node.parent, section=section)
+
+        if len(parent_navbars[:1]) > 0:
+            parent_navbar = parent_navbars[0]
+            parent_navbar.text   = 'Up one level'
+            parent_navbar.indent = False
+            yield {'entry': parent_navbar,'has_bits': False}
+
     for item in qsdTree:
         entry = item['entry']
         # this entry should obviously be listed
         yield item
 
-        if not entry.indent:
-            program_set = Program.objects.filter(anchor__parent = entry.path_id)
+        if entry.indent: continue
+        program_set = Program.objects.filter(anchor__parent = entry.path_id)
 
-            if len(program_set) > 0: # use len instead to save on the extra query...
-                for program in program_set:
+        for program in program_set:
 
-                    # check to see if we've displayed this program yet.
-                    if program.id in displayed_programs: continue
-                    displayed_programs[program.id] = True
+                # check to see if we've displayed this program yet.
+                if program.id in displayed_programs: continue
+                displayed_programs[program.id] = True
 
-                    modules = program.getModules(user, section)
-                    for module in modules:
-                        navBars = module.getNavBars()
-                        for navbar_dict in navBars:
-                            # make a copy of the default navbar
-                            navbar = copy.copy(default_navbar)
+                modules = program.getModules(user, section)
+                for module in modules:
+                    navBars = module.getNavBars()
+                    for navbar_dict in navBars:
+                        # make a copy of the default navbar
+                        navbar = copy.copy(default_navbar)
 
-                            # update the variables in this with that which was given
-                            navbar.__dict__.update(navbar_dict)
+                        # update the variables in this with that which was given
+                        navbar.__dict__.update(navbar_dict)
 
-                            # send this one along next
-                            yield {'entry': navbar,'has_bits':False}
+                        # send this one along next
+                        yield {'entry': navbar,'has_bits':False}
 
 
 def makeNavBar(user, node, section = ''):

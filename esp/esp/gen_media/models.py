@@ -57,7 +57,7 @@ TMP      = '/tmp'
 class LatexImage(models.Model):
 
     content  = models.TextField()
-    filename = models.TextField()
+    image    = models.FileField(upload_to = 'latex')
     dpi      = models.IntegerField(blank=True, null=True)
     style    = models.CharField(maxlength=16, choices = (('INLINE','INLINE'),('DISPLAY','DISPLAY')))
     filetype = models.CharField(maxlength=10)
@@ -65,14 +65,16 @@ class LatexImage(models.Model):
     def getImage(self):
         if not self.file_exists():
             self.genImage()
-            self.save()
         return str(self)
 
     def genImage(self):
-        if not self.filename:
-            self.filename = get_rand_file_base()
-            self.filetype = IMAGE_TYPE
 
+        if self.file_exists():
+            return False
+        
+        if not self.image:
+            self.image = get_rand_file_base()
+            self.filetype = IMAGE_TYPE
 
         if self.style == 'INLINE':
             style = '$'
@@ -81,13 +83,12 @@ class LatexImage(models.Model):
         else:
             raise ESPError(False), 'Unknown display style'
 
-            
         tex = r"""\documentclass[fleqn]{article} \usepackage{amssymb,amsmath} """ +\
               r"""\usepackage[latin1]{inputenc} \begin{document} \\""" + \
               r""" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}""" % \
               (style, self.content, style)
 
-        fullpath = TMP+'/'+self.filename
+        fullpath = TMP+'/'+self.image
 
         tex_file = open(fullpath + '.tex', 'w')
         tex_file.write(tex)
@@ -99,28 +100,46 @@ class LatexImage(models.Model):
             cur_dpi = self.dpi
 
         os.system('cd %s; %s -interaction=nonstopmode %s &>/dev/null' % \
-                  (TMP, commands['latex'], self.filename))
+                  (TMP, commands['latex'], self.image))
 
-        os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi &&  %s %s.png %s/%s.%s &> /dev/null' % \
-                  (commands['dvipng'], LATEX_BG, cur_dpi, fullpath, fullpath, commands['convert'], fullpath,
-                   TEXIMAGE_BASE, self.filename, self.filetype))
+        os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi &> /dev/null' % \
+                  (commands['dvipng'], LATEX_BG, cur_dpi, fullpath, fullpath))
 
-        os.system('rm -f %s/%s*' % (TMP, self.filename))
+        if self.filetype.lower() != 'png':
+            os.system( '%s %s.png %s.%s %> /dev/null' % \
+                       (commands['convert'], fullpath, fullpath, self.filetype))
+
+        old_filename = self.image
+
+        f = open('%s.%s' % (fullpath, self.filetype))
+
+        self.save_image_file('%s.%s' % (self.image, self.filetype), f.read(), save=False)
+
+        f.close()
+        
+        os.system('rm -f %s/%s*' % (TMP, old_filename))
+
+        self.save(super=True)
         
         return True
+
+    def save(self, *args, **kwargs):
+        if 'super' not in kwargs:
+            self.genImage()
+        else:
+            del kwargs['super']
+        super(LatexImage,self).save(*args, **kwargs)
         
 
     def __str__(self):
-        return '<img src="%s/%s.%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' % \
-               (TEXIMAGE_URL, self.filename, self.filetype, self.content, self.content)
+        return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' % \
+               (self.get_image_url(), self.content, self.content)
         
 
     def file_exists(self):
-        
-        if not self.filename:
+        if not self.image:
             return False
-
-        return os.path.exists('%s/%s.%s' % (TEXIMAGE_BASE, self.filename, self.filetype))
+        return os.path.exists(self.get_image_filename())
     
 def get_rand_file_base():
     import sha
@@ -130,8 +149,6 @@ def get_rand_file_base():
 
     while os.path.exists('%s/%s.%s' % (TEXIMAGE_BASE, rand, IMAGE_TYPE)):
         rand = sha.new(str(random())).hexdigest()
-
-   
     return rand
 
 IMAGE_TYPE = 'png'
