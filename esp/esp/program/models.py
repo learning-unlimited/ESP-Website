@@ -1019,6 +1019,9 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def reject(self):
         """ Mark this class as rejected """
+        verb = GetNode('V/Flags/Registration/Preliminary')
+
+        self.anchor.userbit_qsc.filter(verb = verb).delete()
         self.status = -10
         self.save()
 
