@@ -29,9 +29,8 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.membership.models import *
+from esp.membership.forms import ContactInfoForm, AlumniContactForm
 from esp.web.util.main import render_to_response
-from esp.datatree.models import DataTree, GetNode
 from django.core.mail import send_mail
 from django.template import loader
 from django.http import HttpResponseRedirect
@@ -80,6 +79,10 @@ def alumniform(request):
     """
     This view should take the form, send an e-mail to the right people and save the data in our database.
     """
+
+    #  If it's a success, return success page
+    if 'success' in request.GET:
+        render_to_response('membership/alumniform_success.html', request, request.get_node('Q/Web/about'), {'message': msgtext})
     
     #   If the form has been submitted, process it.
     if request.method == 'POST':
@@ -106,20 +109,13 @@ def alumniform(request):
             send_mail(SUBJECT_PREPEND + ' '+ form1.clean_data['first_name'] + ' ' + form1.clean_data['last_name'],
                     msgtext, from_email, to_email, fail_silently = True)
     
-            return render_to_response('membership/alumniform_success.html', request, GetNode('Q/Web/about'), {'message': msgtext})
+            return HttpResponseRedirect(request.path + '?success')
 
-    #   Otherwise, the default view is a blank form.
-    form1 = ContactInfoForm()
-    form2 = AlumniContactForm()
+    else:
+        #   Otherwise, the default view is a blank form.
+        form1 = ContactInfoForm()
+        form2 = AlumniContactForm()
     
-    #   Set additional formatting attributes for the fields in those forms.
-    form1.fields['address_city'].line_group = 0
-    form1.fields['address_state'].line_group = 0
-    form1.fields['address_zip'].line_group = 0
-    form1.fields['phone_day'].line_group = 1
-    form1.fields['phone_even'].line_group = 1
-    form1.fields['phone_cell'].line_group = 1
-    form2.fields['comments'].is_long = True
     
-    return render_to_response('membership/alumniform.html', request, GetNode('Q/Web/about'), {'contact_form': form1, 'main_form': form2})
+    return render_to_response('membership/alumniform.html', request, request.get_node('Q/Web/about'), {'contact_form': form1, 'main_form': form2})
 

@@ -129,6 +129,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
     'esp.users',
+    'esp.membership',
     'esp.miniblog',
     'esp.web',
     'esp.program',

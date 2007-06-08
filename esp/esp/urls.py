@@ -97,8 +97,9 @@ urlpatterns += patterns('django.contrib.auth.views',
 
 # other apps
 urlpatterns += patterns('',
+                        (r'^alumni/', include('esp.membership.alumni_urls')),
+                        (r'^membership/', include('esp.membership.urls')),
                         (r'^',  include('esp.miniblog.urls')),
-                        (r'^contact/alumni/?$', 'esp.membership.views.alumniform'),
                         )
 
 # things that need to move

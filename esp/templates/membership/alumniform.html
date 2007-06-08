@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Let us know"|subsection }}
+{{ "Stay in touch"|subsection }}
 {% endblock %}
 
 {% block subsection_name %}Welcome{% endblock %}
@@ -21,61 +21,53 @@
  The ESP 50th anniversary event will be on September 14-15, 2007.  Fill out this form to inform ESP of your status as an alumni.  What do you remember about ESP, and how would you like to be involved in the future? <br /> <br />
 </p>
 
-<form action="{{ request.path }}" method="post">
-<table class="contact" align="center" width="500">
-<thead>
-<tr>
-  <th colspan="2">
-    Contact Information
-  </th>
-</tr>
-</thead>
-<tbody>
-{% if contact_form.errors %}
-<tr>
-<td colspan="2">
-<div class="errors">
-There 
-{% if contact_form.errors|length_is:1 %}is an error{% else %}
-are errors{% endif %} in the below form. Please fix and resubmit.<br />
-</div>
-</td>
-</tr>
-{% endif %}
+<div id="alumni_form">
+  <form action="{{ request.path }}" method="post">
+  <table class="contact" align="center" width="500">
+  <thead>
+    <tr>
+      <th colspan="2">
+        Contact Information
+      </th>
+    </tr>
+  </thead>
+  <tbody>
 
-{{ contact_form }}
+  {% if contact_form.errors or main_form.errors %}
+    <tr>
+      <td colspan="2">
+        <div class="errors">
+        There 
+        {% if contact_form.errors|length_is:1 %}is an error{% else %}
+        are errors{% endif %} in the below form. Please fix and resubmit.<br />
+        </div>
+      </td>
+    </tr>
+  {% endif %}
 
-</tbody>
+  {{ contact_form }}
 
-<thead>
-<tr>
-  <th colspan="2">
-    Information for ESP 50th Anniversary
-  </th>
-</tr>
-</thead>
-<tbody>
-{% if main_form.errors %}
-<tr>
-<td colspan="2">
-<div class="errors">
-There 
-{% if main_form.errors|length_is:1 %}is an error{% else %}
-are errors{% endif %} in the below form. Please fix and resubmit.<br />
-</div>
-</td>
-</tr>
-{% endif %}
+  </tbody>
 
-{{ main_form }}
+  <thead>
+    <tr>
+      <th colspan="2">
+        Information for ESP 50th Anniversary
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+  {{ main_form }}
 
-<tr> 
-<td colspan="2" class="submit">
-<center>When finished, click here: <input class="button" type="submit" name="sendemail" value="Send!" /></center>
-</td>
-</tr>
-</tbody>
-</table>
+    <tr> 
+      <td colspan="2" class="submit">
+        When finished, click here: 
+        <input class="fancybutton" type="submit"
+               name="sendemail" value="Send!" />
+      </td>
+    </tr>
+  </tbody>
+  </table>
 </form>
-
+</div>
 {% endblock %}
