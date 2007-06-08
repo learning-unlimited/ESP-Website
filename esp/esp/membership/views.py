@@ -35,6 +35,11 @@ from django.core.mail import send_mail
 from django.template import loader
 from django.http import HttpResponseRedirect
 
+# model dependencies
+from esp.membership.models import AlumniContact
+from esp.users.models import ContactInfo
+
+
 def save_instance(form, instance, additional_fields={}, commit=True):
     """
     Saves bound Form ``form``'s clean_data into model instance ``instance``.
@@ -82,8 +87,8 @@ def alumniform(request):
 
     #  If it's a success, return success page
     if 'success' in request.GET:
-        render_to_response('membership/alumniform_success.html', request, request.get_node('Q/Web/about'), {'message': msgtext})
-    
+        return render_to_response('membership/alumniform_success.html', request, request.get_node('Q/Web/about'), {})
+
     #   If the form has been submitted, process it.
     if request.method == 'POST':
         data = request.POST.copy()
@@ -109,7 +114,7 @@ def alumniform(request):
             send_mail(SUBJECT_PREPEND + ' '+ form1.clean_data['first_name'] + ' ' + form1.clean_data['last_name'],
                     msgtext, from_email, to_email, fail_silently = True)
     
-            return HttpResponseRedirect(request.path + '?success')
+            return HttpResponseRedirect(request.path + '?success=1')
 
     else:
         #   Otherwise, the default view is a blank form.
