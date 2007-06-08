@@ -208,7 +208,7 @@ def contact(request, section='esp'):
 			try:
 				to_email.append(email_addresses[form.clean_data['topic'].lower()])
 			except KeyError:
-				to_email.append(fallback_email)
+				to_email.append(fallback_address)
 
 			if len(form.clean_data['name'].strip()) > 0:
 				email = '%s <%s>' % (form.clean_data['name'], email)

@@ -1,0 +1,81 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Alumni: Get in touch with ESP{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Let us know"|subsection }}
+{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Staying in touch!</h1><br />
+
+<p>
+ The ESP 50th anniversary event will be on September 14-15, 2007.  Fill out this form to inform ESP of your status as an alumni.  What do you remember about ESP, and how would you like to be involved in the future? <br /> <br />
+</p>
+
+<form action="{{ request.path }}" method="post">
+<table class="contact" align="center" width="500">
+<thead>
+<tr>
+  <th colspan="2">
+    Contact Information
+  </th>
+</tr>
+</thead>
+<tbody>
+{% if contact_form.errors %}
+<tr>
+<td colspan="2">
+<div class="errors">
+There 
+{% if contact_form.errors|length_is:1 %}is an error{% else %}
+are errors{% endif %} in the below form. Please fix and resubmit.<br />
+</div>
+</td>
+</tr>
+{% endif %}
+
+{{ contact_form }}
+
+</tbody>
+
+<thead>
+<tr>
+  <th colspan="2">
+    Information for ESP 50th Anniversary
+  </th>
+</tr>
+</thead>
+<tbody>
+{% if main_form.errors %}
+<tr>
+<td colspan="2">
+<div class="errors">
+There 
+{% if main_form.errors|length_is:1 %}is an error{% else %}
+are errors{% endif %} in the below form. Please fix and resubmit.<br />
+</div>
+</td>
+</tr>
+{% endif %}
+
+{{ main_form }}
+
+<tr> 
+<td colspan="2" class="submit">
+<center>When finished, click here: <input class="button" type="submit" name="sendemail" value="Send!" /></center>
+</td>
+</tr>
+</tbody>
+</table>
+</form>
+
+{% endblock %}

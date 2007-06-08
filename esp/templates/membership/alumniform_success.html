@@ -1,0 +1,26 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Alumni: Thanks{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Let us know"|subsection }}
+{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block content %}
+<h1>Submission Successful</h1><br />
+
+<p>
+    Thank you for contacting us.  Please feel free to explore the rest of our web site.  We look forward to hearing from you more in the future!  
+</p>
+
+<h2>Technical Details</h2>
+
+<p>Our form processor sent the following e-mail:</p>
+<pre style="margin-left: 20px">
+{{ message }}
+</pre>
+
+{% endblock %}

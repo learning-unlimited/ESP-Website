@@ -74,6 +74,47 @@
 #divmaintext select:focus, input[type=text]:focus, input[type=password]:focus, textarea:focus { border: 1px solid black; }
 #divmaintext select:focus.required, input[type=text]:focus.required, input[type=password]:focus.required, textarea:focus.required { border: 1px solid #F00; }
 
+#divmaintext table.plain
+{
+    border: none;
+    padding: none;
+    margin: none;
+}
+
+#divmaintext td label 
+{
+    font-size: 14px;
+    color: #999999;
+    font-weight: normal;
+}
+
+#divmaintext th label 
+{
+    font-size: 14px;
+    color: black;
+    font-weight: normal;
+}
+
+#divmaintext input.button
+{
+   color:#000000;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   font-weight:bold;
+   border: #cccccc 1px solid;
+   background-color: #cccccc;
+}
+
+#divmaintext input.button:hover
+{
+   color:#0000cc;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   font-weight:bold;
+   border: #000000 1px solid;
+   background-color: #ccffcc;
+}
+
 
 #login_form table {
    width: 300px;
