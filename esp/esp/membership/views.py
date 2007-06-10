@@ -104,7 +104,7 @@ def alumniform(request):
             
             #   Send an e-mail to esp-membership with details.
             SUBJECT_PREPEND = '[ESP Alumni] Contact From:'
-            to_email = ['esp-membership@mit.edu']
+            to_email = ['esp-50th-contact@esp.mit.edu']
             from_email = 'alumniform@esp.mit.edu'
             
             t = loader.get_template('email/alumniform')
