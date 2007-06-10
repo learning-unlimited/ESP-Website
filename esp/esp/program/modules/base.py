@@ -280,7 +280,7 @@ class ProgramModuleObj(models.Model):
 
         if not canView:
             canView = UserBit.UserHasPerms(self.user,
-                                           self.program.anchor,
+                                           self.program.anchor_id,
                                            GetNode('V/Deadline/Registration/'+{'learn':'Student',
                                                                                'teach':'Teacher'}[self.module.module_type]+extension))
 
@@ -477,7 +477,7 @@ def meets_grade(method):
 
         # if there's grade override we can just skip everything
         if UserBit.UserHasPerms(user = moduleObj.user,
-                                  qsc  = moduleObj.program.anchor,
+                                  qsc  = moduleObj.program.anchor_id,
                                   verb = verb_override):
             return method(moduleObj, request, tl, *args, **kwargs)
         
@@ -506,7 +506,7 @@ def meets_deadline(extension=''):
             canView = moduleObj.user.updateOnsite(request)
             if not canView:
                 canView = UserBit.UserHasPerms(moduleObj.user,
-                                               moduleObj.program.anchor,
+                                               moduleObj.program.anchor_id,
                                                GetNode('V/Deadline/Registration/'+{'learn':'Student',
                                                                                'teach':'Teacher'}[tl]+extension))
 

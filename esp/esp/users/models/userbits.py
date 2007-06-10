@@ -6,6 +6,7 @@ import datetime
 
 # esp dependencies
 from esp.db.models import Q
+from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 
 # model dependencies
@@ -14,7 +15,7 @@ from esp.datatree.models import DataTree
 
 __all__ = ['UserBit','UserBitImplication']
 
-class UserBitManager(models.Manager):
+class UserBitManager(ProcedureManager):
 
     """
     UserBit manager...implements all of the non row-level
@@ -119,73 +120,59 @@ class UserBitManager(models.Manager):
     user_has_verb = lambda self,user,verb: self.user_has_TYPE(user, verb, node_type='verb')
     user_has_qsc  = lambda self,user,qsc : self.user_has_TYPE(user, qsc, node_type='qsc')
 
-    def bits_get_users(self, qsc, verb, now = None, end_of_now = None):
-        """ Return all users who have been granted 'verb' on 'qsc'
-           Note that this requires the Q objects to work correctly. """
-        if now is None: now = datetime.datetime.now()
-        if end_of_now == None: end_of_now = now
+    def bits_get_users(self, qsc, verb, now=None, end_of_now=None, user_objs=False):
+        """ Return all userbits for users who have been granted 'verb' on 'qsc'. """
+
+        if now is None:
+            now = datetime.datetime.now()
+        if end_of_now is None:
+            end_of_now = now
             
-        Q_recursive      = Q(recursive = True)
-        Q_verb_recursive = Q(verb__above = verb)
-        Q_qsc_recursive  = Q(qsc__above  = qsc)
+        if user_objs:
+            #assert False, qsc
+            from esp.users.models import ESPUser
+            users = ESPUser.objects.filter_by_procedure('userbit__bits_get_user_real',
+                                                qsc, verb, now, end_of_now)
+            return users
 
-        Q_exact_match    = Q(verb = verb.id) & Q(qsc = qsc.id) # & Q(recursive = False), not needed
-
-        Q_recursive_search = Q_verb_recursive & Q_qsc_recursive & Q_recursive
-
-        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
-        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
-		
-        userbits = self.filter(Q_after_start & Q_before_end).filter(Q_recursive_search | Q_exact_match)
-
-        return userbits.distinct()
+        else:
+            userbits = self.filter_by_procedure('userbit__bits_get_user', qsc, verb, now, end_of_now)
+            return userbits
 
 
     @staticmethod
     def bits_get_TYPE(self, user, node, now = None, end_of_now = None, node_root=None, node_type='qsc'):
+        """ Return all qsc structures to which 'user' has been granted 'verb'.
+        If 'qsc_root' is specified, only return qsc structures at or below the specified node.
         """
-        Return all qsc structures to which 'user' has been granted 'verb'
 
-        If 'qsc_root' is specified, only return qsc structures at or below the specified node
-        """
         user_cache_id = 'bit_get_%s__%s,%s,%s,%s' % (type, node.id, now, end_of_now,
                                                      node_root)
 
-        # gets whatever is given and searched against
-        alt_type = {'qsc':'verb','verb':'qsc'}[node_type]
-
-
-        if now == True:
-            now = datetime.datetime.now()
-
         retVal = self.cache(user)[user_cache_id]
-        if retVal is not None: return retVal
+        if retVal is not None:
+            return retVal
 
-        if now is None: now = datetime.datetime.now()
-        if end_of_now is None: end_of_now = now
+        if now is None:
+            now = datetime.datetime.now()
+        if end_of_now is None:
+            end_of_now = now
 
-        col_name = '%s__above'  % alt_type
-        node_root_below = '%s__below' % node_type
+        procedure_name = 'userbit__bits_get_%s' % node_type
 
-        #first we make sure the nodes are correct
-        Q_node_recursive = Q(recursive=True) & Q(**{col_name: node})
-        Q_exact_match    = Q(**{alt_type: node})
+        if node_root:
+            procedure_name += '_root'
 
-        # now we make sure the dates are correct
-        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = end_of_now)
-        Q_before_end  = Q(enddate__isnull = True)   | Q(enddate__gte = now)
+        if user is None:
+            user = -10
 
-        # and now we make sure the user is correct
-        Q_correct_user = Q(user__isnull = True)
-        if user is not None and user.is_authenticated():
-            Q_correct_user |= Q(user = user.id)
+        if hasattr(user, 'id') and user.id is None:
+            user = -10
 
-        # now we put it all together
-        userbits = self.filter(Q_correct_user & Q_after_start & Q_before_end & (Q_node_recursive | Q_exact_match))
-        # now we have to filter for the root
-        if node_root is not None:
-            Q_under_root = Q(**{node_root_below: node_root})
-            userbits = userbits.filter(Q_under_root)
+        if node_root:
+            userbits = self.filter_by_procedure(procedure_name, user, node, now, end_of_now, node_root)
+        else:
+            userbits = self.filter_by_procedure(procedure_name, user, node, now, end_of_now)
 
         list(userbits)
 
@@ -259,7 +246,7 @@ class UserBitManager(models.Manager):
         # aseering: This reeks of code redundancy; is there a way to combine the above and below loops into a single loop?
         # aseering 1-11-2007: Even better; single query!
         # axiak 5/26/07: This is very different now.
-
+        # axiak 6/9/07:  It even uses plpgsql functions.
 
         ##########################
         # Set caching parameters #
@@ -270,17 +257,15 @@ class UserBitManager(models.Manager):
         else:
             now_id = "-".join(str(i) for i in datetime.datetime.now().timetuple())
 
-        if isinstance(qsc, DataTree):
+        if hasattr(qsc, 'id'):
             qsc_id = qsc.id
         else:
             qsc_id = qsc
-            qsc    = DataTree.objects.get(id = qsc)
 
-        if isinstance(verb, DataTree):
+        if hasattr(verb, 'id'):
             verb_id = verb.id
         else:
             verb_id = verb
-            verb    = DataTree.objects.get(id = verb)
 
         ###########
         # Caching #
@@ -295,36 +280,16 @@ class UserBitManager(models.Manager):
         ###########
         # Query   #
         ###########
+        if user is None:
+            user = -10
 
-        if user != None and user.is_authenticated():
-            Q_user_correct = Q(user__isnull = True) | Q(user = user)
-        else:
-            Q_user_correct = Q(user__isnull=True)
-
-        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
-        # Filter by date/time range
-        Q_date_correct = (Q(startdate__isnull=True) | Q(startdate__lte=now)) & \
-                         (Q(enddate__isnull=True) | Q(enddate__gt=now))
-
-        Q_recursive      = Q(recursive = True)
-        Q_verb_recursive = Q(verb__above = verb)
-        Q_qsc_recursive  = Q(qsc__above  = qsc)
-
-        Q_exact_match    = Q(verb = verb.id) & Q(qsc = qsc.id) # & Q(recursive = False), not needed
-
-        Q_recursive_search = Q_verb_recursive & Q_qsc_recursive & Q_recursive
+        if hasattr(user, 'id') and user.id is None:
+            user = -10
 
 
-        # the final query:
-        
-        query_set = self.filter(Q_user_correct & Q_date_correct).filter(Q_recursive_search | Q_exact_match)
+        retVal = self.values_from_procedure('userbit__user_has_perms', user, qsc_id, verb_id, now, recursive_required)
 
-        if recursive_required:
-            query_set = query_set.filter(Q_recursive)
-
-        # If we have at least one UserBit meeting these criteria, we have perms.
-
-        retVal = len(query_set.values('id')[:1]) > 0
+        retVal = retVal[0].values()[0]
 
         self.cache(user)[user_cache_id] = retVal
 

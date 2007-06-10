@@ -44,8 +44,10 @@ from esp.middleware import ESPError
 from django.template.defaultfilters import urlencode
 from django.contrib.auth import logout, login, authenticate
 from esp.db.fields import AjaxForeignKey
-
+from esp.db.models.prepared import ProcedureManager
+from esp.db.cache import GenericCacheHelper
 from esp.users.models.userbits import UserBit
+from django.http import HttpRequest
 
 try:
     import cPickle as pickle
@@ -68,20 +70,35 @@ def user_get_key(user):
 def userBitCacheTime():
     return 300
 
+class CacheHelper(GenericCacheHelper):
+    @staticmethod
+    def get_key(user):
+        return 'ESPUserCache__%s' % user._get_pk_val()
+
+class ESPUserManager(ProcedureManager):
+
+    cache = CacheHelper
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
     This user extends the auth.User of django"""
 
+    objects = ESPUserManager()
+
+
     # this will allow a casting from User to ESPUser:
     #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
-    def __init__(self, userObj):
-        if type(userObj) == ESPUser:
+    def __init__(self, userObj, *args, **kwargs):
+        if isinstance(userObj, ESPUser):
             self.__dict__ = userObj.__dict__
             self.__olduser = userObj.__olduser
-        else:
+        elif isinstance(userObj, (User, AnonymousUser)):
             self.__dict__ = userObj.__dict__
-            self.__olduser = userObj            
+            self.__olduser = userObj
+        else:
+            models.Model.__init__(self, userObj, *args, **kwargs)
+
+        self.cache = ESPUser.objects.cache(self)
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -126,8 +143,13 @@ class ESPUser(User, AnonymousUser):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
 
     def getLastProfile(self):
+        if hasattr(self, '_reg_profile'):
+            return self._reg_profile
+        
         from esp.program.models import RegistrationProfile
-        return RegistrationProfile.getLastProfile(self)
+        self._reg_profile = RegistrationProfile.getLastProfile(self)
+
+        return self._reg_profile
         
     def getEditable(self, objType):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
@@ -225,6 +247,10 @@ class ESPUser(User, AnonymousUser):
     def getUserNum(self):
         """ Returns the "number" of a user, which is distinct from id.
             It's like the index if you search by lsat and first name."""
+
+        retVal = self.cache['getUserNum']
+
+        if retVal is not None: return retVal
         
         users = User.objects.filter(last_name__iexact = self.last_name,
                                     first_name__iexact = self.first_name).order_by('id')
@@ -233,8 +259,11 @@ class ESPUser(User, AnonymousUser):
             if user.id == self.id:
                 break
             i += 1
-            
-        return (i and i or '')
+
+        retVal = (i and i or '')
+        self.cache['getUserNum'] = retVal
+    
+        return retVal
 
     @staticmethod
     def getUserFromNum(first, last, num):
@@ -282,16 +311,71 @@ class ESPUser(User, AnonymousUser):
             return User.objects.filter(Q_useroftype)
 
 
-    def getEnrolledClasses(self):
+    def getEnrolledClasses(self, program=None, request=None):
+
+        if not hasattr(program, 'id'):
+            program_id = program
+        else:
+            program_id = program.id
+
+        request_key = '%s%s' % (self.id, program_id)
+
+
+
+        if hasattr(request, '_enrolled_classes'):
+            if request_key in request._enrolled_classes:
+                return request._enrolled_classes[request_key]
+        else:
+            if isinstance(request, HttpRequest):
+                request._enrolled_classes = {}
+
+                
+        
         from esp.program.models import Class
-        Conf = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Confirmed'))
-        Prel = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Preliminary'))
 
-        return (Conf | Prel).distinct()
+        if hasattr(program,'id'):
+            program_id = program.id
+        else:
+            program_id = program
 
-    def isEnrolledInClass(self, clsObj):
-        return UserBit.UserHasPerms(self, clsObj.anchor, GetNode('V/Flags/Registration/Confirmed')) or \
-               UserBit.UserHasPerms(self, clsObj.anchor, GetNode('V/Flags/Registration/Preliminary'))
+        cache = UserBit.objects.cache(self)
+        
+        retVal = cache['EnrolledClasses__%s' % program_id]
+
+        if retVal is not None:
+            if isinstance(request, HttpRequest):
+                request._enrolled_classes[request_key] = retVal
+            return retVal
+
+        if not program:
+            Conf = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Confirmed'))
+            Prel = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Preliminary'))
+            
+            retVal = (Conf | Prel).distinct()
+        else:
+            retVal = Class.objects.filter_by_procedure('class__get_enrolled', self, program)
+
+        list(retVal)
+
+        cache['EnrolledClasses__%s' % program_id] = retVal
+
+        if isinstance(request, HttpRequest):
+            request._enrolled_classes[request_key] = retVal
+
+        return retVal
+
+    def isEnrolledInClass(self, clsObj, request=None):
+
+        if request:
+            verb_confirm = request.get_node('V/Flags/Registration/Confirmed')
+            verb_prelim  = request.get_node('V/Flags/Registration/Preliminary')
+        else:
+            GetNode('V/Flags/Registration/Confirmed')
+            GetNode('V/Flags/Registration/Preliminary')
+
+
+        return UserBit.UserHasPerms(self, clsObj.anchor, verb_prelim) or \
+               UserBit.UserHasPerms(self, clsObj.anchor, verb_confirm)
         
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
@@ -379,7 +463,11 @@ class ESPUser(User, AnonymousUser):
 
     def isStudent(self):
         """Returns true if this user is a teacher"""
-        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Student'))
+        if hasattr(self, 'is_student'): return self.is_student
+
+        self.is_student = UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Student'))
+
+        return self.is_student
 
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
@@ -408,18 +496,25 @@ class ESPUser(User, AnonymousUser):
         return schoolyear
 
     def getGrade(self, program = None):
-        if not self.isStudent():
-            return 0
-        if program is None:
-            regProf = self.getLastProfile()
-        else:
-            from esp.program.models import RegistrationProfile
-            regProf = RegistrationProfile.getLastForProgram(self,program)
-        if regProf and regProf.student_info:
-            if regProf.student_info.graduation_year:
-                return ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
 
-        return 0
+        if hasattr(self, '_grade'):
+            return self._grade
+
+        grade = 0
+        
+        if self.isStudent():
+            if program is None:
+                regProf = self.getLastProfile()
+            else:
+                from esp.program.models import RegistrationProfile
+                regProf = RegistrationProfile.getLastForProgram(self,program)
+            if regProf and regProf.student_info:
+                if regProf.student_info.graduation_year:
+                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
+
+        self._grade = grade
+
+        return grade
 
     def currentSchoolYear(self):
         return ESPUser.current_schoolyear()-1
@@ -433,6 +528,9 @@ class ESPUser(User, AnonymousUser):
             return 0
         
         return schoolyear + 12 - yog
+
+    class Meta:
+        db_table = 'auth_user'
     
     @staticmethod
     def YOGFromGrade(grade):

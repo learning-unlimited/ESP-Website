@@ -136,7 +136,7 @@ def makeNavBar(user, node, section = ''):
 
 
             # add program entries
-            qsdTreeList = qsd_tree_program(qsdTreeList, node, section, user)
+            qsdTreeList = list(qsd_tree_program(qsdTreeList, node, section, user))
 
             context = { 'node': node,
                     'has_edit_bits': has_edit_bits,

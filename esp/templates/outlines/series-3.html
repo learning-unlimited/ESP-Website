@@ -1,7 +1,7 @@
 {% extends "elements/html" %}
 
 
-{% block xtrajs %}
+{% block javascript %}
 {{ block.super }}
 {% if request.user.is_authenticated %}
 <script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/yahoo/yahoo-min.js"></script>
@@ -17,6 +17,7 @@
 <script type="text/javascript" src="{{ media_url }}scripts/ddlist.js"></script>
 {% endif %}
 {% endblock %}
+
 
 {% block stylesheets %}
 

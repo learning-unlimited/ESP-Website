@@ -134,16 +134,18 @@ class StudentClassRegModule(ProgramModuleObj):
 
         prereg_url = self.program.get_learn_url + 'addclass/'
 
-        classes = Class.objects.approved().filter(parent_program = self.program, meeting_times = ts).order_by('category')
+         # using .extra() to select all the category text simultaneously
+        classes = Class.objects.catalog(self.program, ts)
 
-        categories = classes.values('category').distinct()
-        categories = ClassCategories.objects.filter(id__in = [ x['category'] for x in categories ])
+        categories = {}
+        for cls in classes:
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
 
 
         return render_to_response(self.baseDir()+'fillslot.html', request, (prog, tl), {'classes':    classes,
                                                                                         'one':        one,
                                                                                         'two':        two,
-                                                                                        'categories': categories,
+                                                                                        'categories': categories.values(),
                                                                                         'timeslot':   ts,
                                                                                         'prereg_url': prereg_url})
        
@@ -156,16 +158,17 @@ class StudentClassRegModule(ProgramModuleObj):
         """ Return the program class catalog """
         
 
-        classes = Class.objects.approved().filter(parent_program = self.program).order_by('category').distinct()
+        # using .extra() to select all the category text simultaneously
+        classes = Class.objects.catalog(self.program)
 
-        categories = classes.values('category').distinct()
-        categories = ClassCategories.objects.filter(id__in = [ x['category'] for x in categories ])
-
-
+        categories = {}
+        for cls in classes:
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
+        
         return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), {'classes': classes,
                                                                                        'one':        one,
                                                                                        'two':        two,
-                                                                                       'categories': categories})
+                                                                                       'categories': categories.values()})
 
     @needs_student
     def class_docs(self, request, tl, one, two, module, extra, prog):
@@ -191,21 +194,15 @@ class StudentClassRegModule(ProgramModuleObj):
 	""" Clear the specified timeslot from a student registration and go back to the same page """
         from esp.users.models import UserBit
 	ts = DataTree.objects.filter(id=extra)[0]
-	v_registered = GetNode('V/Flags/Registration/Preliminary')
+	v_registered = request.get_node('V/Flags/Registration/Preliminary')
 	
-	#	Get list of all pre-registration userbits
-	prereg_ubs = UserBit.objects.filter(user=request.user, verb=v_registered)
-	
-	#	Find the userbits for classes in that timeslot and delete them.
-	for ub in prereg_ubs:
-            if Class.objects.filter(meeting_times=extra, anchor=ub.qsc).count() > 0:
-                cobj = Class.objects.filter(anchor = ub.qsc)
-                if len(cobj) > 0:
-                    for cls in cobj:
-                        cls.update_cache_students()
-		ub.delete()
+        classes = Class.objects.filter(meeting_times=extra,
+                             parent_program = self.program,
+                             anchor__userbit_qsc__verb = v_registered,
+                             anchor__userbit_qsc__user = self.user).distinct()
 
-
+        for cls in classes:
+            cls.unpreregister_student(self.user)
 
 	return self.goToCore(tl)
 

@@ -34,5 +34,3 @@ def navbar_gen(context):
     
     return {'navbar_list': navbar.value,
             'request':     request}
-    
-        

@@ -235,7 +235,16 @@ class Program(models.Model):
 
 
     def _get_type_url(self, type):
-        return '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[2:]))
+        return 'moo'
+        if hasattr(self, '_type_url'):
+            if type in self._type_url:
+                return self._type_url[type]
+        else:
+            self._type_url = {}
+
+        self._type_url[type] = '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[2:]))
+
+        return self._type_url[type]
 
     def __init__(self, *args, **kwargs):
         retVal = super(Program, self).__init__(*args, **kwargs)
@@ -466,47 +475,6 @@ class Program(models.Model):
         """ Fetch a list of relevant programs for a given user and verb """
         return UserBit.find_by_anchor_perms(Program,user,verb)
 
-
-
-class ClassCategories(models.Model):
-    """ A list of all possible categories for an ESP class
-
-    Categories include 'Mathematics', 'Science', 'Zocial Zciences', etc.
-    """
-    category = models.TextField()
-    class Meta:
-        verbose_name_plural = 'Class Categories'
-        
-    def __str__(self):
-        return str(self.category)
-        
-        
-    @staticmethod
-    def category_string(letter):
-        
-        results = ClassCategories.objects.filter(category__startswith = letter)
-        
-        if results.count() == 1:
-            return results[0].category
-        else:
-            return None
-
-    class Admin:
-        pass
-
-   
-class ResourceRequest(models.Model):
-    """ An indication of resources requested for a particular class """
-    requestor = models.OneToOneField(Class)
-    wants_projector = models.BooleanField()
-    wants_computer_lab = models.BooleanField()
-    wants_open_space = models.BooleanField()
-
-    def __str__(self):
-        return 'Resource request for ' + str(self.requestor)
-
-    class Admin:
-        pass
 
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """
@@ -769,5 +737,6 @@ class JunctionStudentApp(models.Model):
     director_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
     rejected       = models.BooleanField(default=False,editable=False)
     
+
 
 from esp.program.models.class_ import *

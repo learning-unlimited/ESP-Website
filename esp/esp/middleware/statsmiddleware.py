@@ -34,6 +34,13 @@ from time import time
 from django.db import connection
 from django.views.decorators.vary import vary_on_headers
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
+import base64
+
 class StatsMiddleware(object):
     """ Inspiration from http://davidavraamides.net/blog/2006/07/03/page-stats-middleware/"""
     @staticmethod
@@ -97,7 +104,9 @@ class StatsMiddleware(object):
                 response.content = s
 
         if settings.DISPLAYSQL and settings.DEBUG:
-            sqlcontent = "\n\n"+'<div class="sql">'
+            sqlcontent = "\n\n"+'<div class="sql">\n'
+            #sqlcontent += base64.encodestring(pickle.dumps(connection.queries))
+            
             for q in connection.queries:
                 sqlcontent += "\n"+'%s:&nbsp;&nbsp;%s<br />' % \
                               (q['time'], q['sql'])

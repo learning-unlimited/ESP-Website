@@ -551,6 +551,8 @@ class DataTree(models.Model):
     def get_by_uri(uri, create = False):
         " Get the node by the URI, A/B/.../asdf "
         # first we strip
+
+        #assert uri != 'V/Flags/Registration/Preliminary', 'Hmm'
         
         uri = uri.strip(DataTree.DELIMITER)
         

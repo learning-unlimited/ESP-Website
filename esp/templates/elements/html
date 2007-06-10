@@ -12,7 +12,9 @@
 {% endblock %}
 {% block stylesheets %}
 {% endblock %}
+
 {% block xtrajs %}{% endblock %}
+
 </head>
 <body onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
 

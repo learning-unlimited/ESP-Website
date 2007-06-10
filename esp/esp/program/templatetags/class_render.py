@@ -3,18 +3,18 @@ from esp.web.util.template import cache_inclusion_tag
     
 register = template.Library()
 
-def cache_key_func(cls, user=None, prereg_url=None, filter=False):
-    if not user:
+def cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
+    if not user or not prereg_url:
         return 'CLASS_DISPLAY__%s' % cls.id
 
     return None
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func)
-def render_class(cls, user=None, prereg_url=None, filter=False):
+def render_class(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
 
     if user and prereg_url:
-        errormsg = cls.cannotAdd(user)
+        errormsg = cls.cannotAdd(user, True, request=request)
 
     show_class =  (not filter) or (not errormsg)
     
