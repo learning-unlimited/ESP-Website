@@ -52,7 +52,7 @@ class CommModule(ProgramModuleObj):
     def students(self,QObject = False):
         if QObject:
             return {'satprepinfo': Q(satprepreginfo__program = self.program)}
-        students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
+        students = User.objects.filter(satprepreginfo__program = self.program).distinct()
         return {'satprepinfo': students }
 
     def isCompleted(self):
@@ -125,7 +125,7 @@ class CommModule(ProgramModuleObj):
         if not found:
             return filterObj
 
-        listcount = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+        listcount = User.objects.filter(filterObj.get_Q()).distinct().count()
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                   (prog, tl), {'listcount': listcount,
