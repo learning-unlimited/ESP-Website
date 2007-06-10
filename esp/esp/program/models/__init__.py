@@ -235,7 +235,6 @@ class Program(models.Model):
 
 
     def _get_type_url(self, type):
-        return 'moo'
         if hasattr(self, '_type_url'):
             if type in self._type_url:
                 return self._type_url[type]
