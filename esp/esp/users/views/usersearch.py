@@ -114,7 +114,7 @@ def get_user_list(request, listDict2, extra=''):
 
 
         if request.POST['submitform'] == 'I want to search within this list':
-            getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
+            getUser, found = search_for_user(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
                 if type(getUser) == User or type(getUser) == ESPUser:
                     newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
@@ -130,7 +130,7 @@ def get_user_list(request, listDict2, extra=''):
     # if we found a single user:
     if request.method == 'GET' and request.GET.has_key('op') and request.GET['op'] == 'usersearch':
         filterObj = PersistentQueryFilter.getFilterFromID(request.GET['extra'], User)
-        getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
+        getUser, found = search_for_user(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
         if found:
             if type(getUser) == User or type(getUser) == ESPUser:
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
