@@ -370,8 +370,8 @@ class ESPUser(User, AnonymousUser):
             verb_confirm = request.get_node('V/Flags/Registration/Confirmed')
             verb_prelim  = request.get_node('V/Flags/Registration/Preliminary')
         else:
-            GetNode('V/Flags/Registration/Confirmed')
-            GetNode('V/Flags/Registration/Preliminary')
+            verb_confirm = GetNode('V/Flags/Registration/Confirmed')
+            verb_prelim  = GetNode('V/Flags/Registration/Preliminary')
 
 
         return UserBit.UserHasPerms(self, clsObj.anchor, verb_prelim) or \
@@ -488,7 +488,7 @@ class ESPUser(User, AnonymousUser):
     def current_schoolyear():
         now = datetime.now()
         curyear = now.year
-        if datetime(curyear, 7, 1) > now:
+        if datetime(curyear, 6, 1) > now:
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
