@@ -40,7 +40,7 @@ from django.core.mail            import send_mail
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
 from esp.db.models               import Q
-from esp.users.models            import ESPUser
+from esp.users.models            import ESPUser, User
 
 class RemoteTeacherProfile(ProgramModuleObj):
     """ This program module allows teachers to select how they are going to do things with respect to having a program far away. (i.e. do they need transportation, when do they need transportation, etc.)"""
@@ -56,7 +56,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
         #if QObject:
         #    return {'teacher_remoteprofile': Q_teachers}
 
-        #teachers = ESPUser.objects.filter(Q_teachers).distinct()
+        #teachers = User.objects.filter(Q_teachers).distinct()
         #return {'teacher_remoteprofile': teachers }
 
     def teacherDesc(self):

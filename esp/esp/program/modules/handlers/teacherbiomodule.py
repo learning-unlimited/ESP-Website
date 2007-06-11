@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
 from esp.web.views.myesp import profile_editor
 from esp.program.models import TeacherBio
-from esp.users.models   import ESPUser
+from esp.users.models   import ESPUser, User
 from esp.db.models      import Q
 
 # reg profile module
@@ -42,7 +42,7 @@ class TeacherBioModule(ProgramModuleObj):
         if QObject:
             return {'teacher_biographies': self.getQForUser(Q(teacherbio__program = self.program))}
                     
-        teachers = ESPUser.objects.filter(teacherbio__program = self.program).distinct()
+        teachers = User.objects.filter(teacherbio__program = self.program).distinct()
         return {'teacher_biographies': teachers }
 
     def teacherDesc(self):

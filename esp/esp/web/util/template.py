@@ -87,12 +87,23 @@ def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=999
 
                 if cache_key_func:
                     cache_key = cache_key_func(*args)
+                    if isinstance(cache_key, (tuple, list)):
+                        cache_dict_key, cache_key = cache_key
+                    else:
+                        cache_dict_key = None
                 else:
                     cache_key = None
 
-                if cache_key != None:
-                    retVal = cache.get(cache_key)
-                    if retVal:
+                if cache_dict_key is not None:
+                    cache_dict = cache.get(cache_dict_key)
+                    if cache_dict is None: cache_dict = {}
+
+                if cache_key is not None:
+                    if cache_dict_key is not None:
+                        retVal = cache_dict.get(cache_key, None)
+                    else:
+                        retVal = cache.get(cache_key)
+                    if retVal is not None:
                         return retVal
 
                 dict = func(*args)
@@ -105,8 +116,12 @@ def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=999
                         t = get_template(file_name)
                     self.nodelist = t.nodelist
                 retVal = self.nodelist.render(context_class(dict))
-                if cache_key != None:
-                    cache.set(cache_key, retVal, cache_time)
+                if cache_key is not None:
+                    if cache_dict_key is None:
+                        cache.set(cache_key, retVal, cache_time)
+                    else:
+                        cache_dict[cache_key] = retVal
+                        cache.set(cache_dict_key, cache_dict, cache_time)
                 return retVal
 
         compile_func = curry(template.generic_tag_compiler, params, defaults, func.__name__, InclusionNode)

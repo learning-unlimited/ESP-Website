@@ -12,7 +12,7 @@
 {{ comment.content|escape }}
 <a name="comment_{{ comment.id }}"></a>
 <p class="blog_attribution">
-Comment by {{ comment.author.first_name }} {{ comment.author.last_name }} &mdash; {{ comment.post_ts|date:"n/d/Y\, h: a" }}
+Comment by {{ comment.author.first_name }} {{ comment.author.last_name }} &mdash; {{ comment.post_ts|date:"n/d/Y\, h:i a" }}
 </p>
 </div>
 {% endfor %}

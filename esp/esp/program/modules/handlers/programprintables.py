@@ -285,7 +285,7 @@ Student schedule for %s:
             return filterObj
 
         context = {'module': self     }
-        students = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
 
         students.sort()
         
@@ -313,7 +313,7 @@ Student schedule for %s:
             return filterObj
 
         context = {'module': self     }
-        students = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
 
         students.sort()
         
@@ -378,7 +378,7 @@ Student schedule for %s:
             return filterObj
 
         context = {'module': self     }
-        students = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
 
         students.sort()
 
@@ -403,7 +403,7 @@ Student schedule for %s:
             return filterObj
 
         context = {'module': self     }
-        students = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
 
         students.sort()
                                     
@@ -471,7 +471,7 @@ Student schedule for %s:
 
 
         context = {'module': self     }
-        teachers = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+        teachers = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
         teachers.sort()
 
         scheditems = []
@@ -506,7 +506,7 @@ Student schedule for %s:
             return filterObj
 
 
-        students= [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct() ]
+        students= [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct() ]
         students.sort()
 
         studentList = []

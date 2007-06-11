@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import Class, Program, ProgramCheckItem
-from esp.users.models import UserBit, ESPUser
+from esp.users.models import UserBit, ESPUser, User
 from esp.datatree.models import DataTree
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
@@ -338,7 +338,7 @@ class AdminClass(ProgramModuleObj):
             txtTeachers = request.POST['coteachers']
             coteachers = txtTeachers.split(',')
             coteachers = [ x for x in coteachers if x != '' ]
-            coteachers = [ ESPUser(ESPUser.objects.get(id=userid))
+            coteachers = [ ESPUser(User.objects.get(id=userid))
                            for userid in coteachers                ]
 
         op = ''
@@ -366,7 +366,7 @@ class AdminClass(ProgramModuleObj):
                                                                                                  'error': error})
             
             # add schedule conflict checking here...
-            teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
+            teacher = User.objects.get(id = request.POST['teacher_selected'])
 
             if cls.conflicts(teacher):
                 conflictingusers.append(teacher.first_name+' '+teacher.last_name)

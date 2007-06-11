@@ -439,11 +439,12 @@ class Class(models.Model):
 
         retVal = self.cache['friendly_times']
 
-        if retVal and use_cache: return retVal
+        if retVal is not None and use_cache:
+            return retVal
             
         txtTimes = []
         eventList = []
-        events = Event.objects.filter(anchor__meeting_times = self)
+        events = list(Event.objects.filter(anchor__meeting_times = self))
 
         txtTimes = [ event.pretty_time() for event
                      in Event.collapse(events) ]

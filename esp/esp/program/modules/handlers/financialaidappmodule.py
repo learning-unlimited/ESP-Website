@@ -33,7 +33,7 @@ from esp.datatree.models import GetNode, DataTree
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, UserBit
+from esp.users.models    import ESPUser, UserBit, User
 from esp.db.models       import Q
 from django.template.loader import get_template
 from esp.program.models  import FinancialAidRequest
@@ -52,8 +52,8 @@ class FinancialAidAppModule(ProgramModuleObj):
             return {'studentfinaid_complete': Q_students & Q_students_complete,
                     'studentfinaid':          Q_students}
         else:
-            return {'studentfinaid_complete': ESPUser.objects.filter(Q_students & Q_students_complete),
-                    'studentfinaid':          ESPUser.objects.filter(Q_students)}
+            return {'studentfinaid_complete': User.objects.filter(Q_students & Q_students_complete),
+                    'studentfinaid':          User.objects.filter(Q_students)}
         
 
 

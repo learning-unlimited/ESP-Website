@@ -30,7 +30,6 @@ Email: web@esp.mit.edu
 """
 
 from esp.web.util.main import render_to_response
-from esp.users.models import ESPUser
 from esp.users.models import PersistentQueryFilter, K12School, ContactInfo, ESPUser, User, ESPError, ZipCode
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade
 from esp.program.modules import module_ext
@@ -142,7 +141,7 @@ class MailingLabels(ProgramModuleObj):
             if not found:
                 return filterObj
 
-            infos = [ESPUser(user).getLastProfile().contact_user for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+            infos = [ESPUser(user).getLastProfile().contact_user for user in User.objects.filter(filterObj.get_Q()).distinct()]
 
             infos_filtered = [ info for info in infos if info.undeliverable != True ]
 

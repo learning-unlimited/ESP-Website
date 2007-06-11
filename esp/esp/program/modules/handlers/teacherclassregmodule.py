@@ -40,6 +40,7 @@ from django.core.mail            import send_mail
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
 from esp.db.models               import Q
+from esp.users.models            import User
 
 class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -128,9 +129,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                     'class_rejected': self.getQForUser(Q_rejected_teacher)}
 
         else:
-            return {'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
-                    'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
-                    'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct()}
+            return {'class_approved': User.objects.filter(Q_approved_teacher).distinct(),
+                    'class_proposed': User.objects.filter(Q_proposed_teacher).distinct(),
+                    'class_rejected': User.objects.filter(Q_rejected_teacher).distinct()}
 
 
     def teacherDesc(self):
@@ -344,7 +345,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             txtTeachers = request.POST['coteachers']
             coteachers = txtTeachers.split(',')
             coteachers = [ x for x in coteachers if x != '' ]
-            coteachers = [ ESPUser(ESPUser.objects.get(id=userid))
+            coteachers = [ ESPUser(User.objects.get(id=userid))
                            for userid in coteachers                ]
 
         op = ''
@@ -373,7 +374,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                                                  'error': error})
             
             # add schedule conflict checking here...
-            teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
+            teacher = User.objects.get(id = request.POST['teacher_selected'])
 
             if cls.conflicts(teacher):
                 conflictingusers.append(teacher.first_name+' '+teacher.last_name)
@@ -588,7 +589,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         if not request.GET.has_key('q'):
             return self.goToCore()
 
-        queryset = ESPUser.objects.filter(Q_teacher)
+        queryset = User.objects.filter(Q_teacher)
         
         startswith = request.GET['q']
         parts = [x.strip() for x in startswith.split(',')]

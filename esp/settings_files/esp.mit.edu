@@ -52,8 +52,7 @@ TEMPLATE_DEBUG = DEBUG
 # Admins         #
 ##################
 ADMINS = (
-    ('ESP Webmasters','axiak@mit.edu'),
-#    ('ESP Webmasters','esp-webmasters@mit.edu'),
+    ('ESP Webmasters','esp-webmasters@mit.edu'),
 )
 
 MANAGERS = ADMINS

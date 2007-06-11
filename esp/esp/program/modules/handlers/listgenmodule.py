@@ -35,7 +35,7 @@ from esp.program.manipulators import SATPrepInfoManipulator
 from django import forms
 from django.core.cache import cache
 from esp.program.models import SATPrepRegInfo
-from esp.users.models   import ESPUser
+from esp.users.models   import ESPUser, User
 from esp.db.models      import Q, QNot
 from django.template.defaultfilters import urlencode
 from django.template import Context, Template
@@ -66,7 +66,7 @@ class ListGenModule(ProgramModuleObj):
 
         strtype = request.GET['type']
 
-        users = [ ESPUser(user) for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
+        users = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
 
         users.sort()
         

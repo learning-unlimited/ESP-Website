@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
 from esp.web.views.myesp import profile_editor
 from esp.program.models import RegistrationProfile
-from esp.users.models   import ESPUser
+from esp.users.models   import ESPUser, User
 from esp.db.models import Q
 
 
@@ -45,7 +45,7 @@ class EmailVerifyModule(ProgramModuleObj):
             return {'student_emailverified': Q_students}
                                  
 
-        students = ESPUser.objects.filter(Q_students).distinct()
+        students = User.objects.filter(Q_students).distinct()
         return {'student_emailverified': students }
 
     def studentDesc(self):
@@ -60,7 +60,7 @@ class EmailVerifyModule(ProgramModuleObj):
             return {'teacher_emailverified': Q_teachers}
                                  
 
-        teachers = ESPUser.objects.filter(Q_teachers).distinct()
+        teachers = User.objects.filter(Q_teachers).distinct()
         return {'teacher_emailverified': teachers }
 
 

@@ -32,7 +32,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser, UserBit, User
 from esp.web.util        import render_to_response
 from esp.program.models import Class, JunctionStudentApp, JunctionAppReview
 from django.contrib.auth.decorators import login_required
@@ -99,7 +99,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
             student = request.POST.get('student','')
 
         try:
-            student = ESPUser(ESPUser.objects.get(id = student))
+            student = ESPUser(User.objects.get(id = student))
         except ESPUser.DoesNotExist:
             raise ESPError(False), 'Cannot find student, %s' % student
 

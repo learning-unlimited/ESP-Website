@@ -144,6 +144,8 @@ class DataTree(models.Model):
         " This will save the tree, using the rules of a tree. "
         if start_size is None: start_size = DataTree.START_SIZE
 
+        self.get_uri()
+
         new_node = False
 
         assert self.name != '', "Name must be specified!"
@@ -365,7 +367,7 @@ class DataTree(models.Model):
         " Returns a list of nodes leading from root to this node. "
         return self.get_uri().split(DataTree.DELIMITER)
 
-    def get_uri(self):
+    def get_uri(self, save=True):
         " Returns the uniform resource identifier "
         if self.uri_correct:
             return self.uri
@@ -373,7 +375,8 @@ class DataTree(models.Model):
         if self.is_root():
             self.uri_correct = True
             self.uri = ''
-            self.save(uri_fix = True)
+            if save:
+                self.save(uri_fix = True)
             return ''
         
         parent_uri = self.parent.get_uri()
@@ -384,7 +387,7 @@ class DataTree(models.Model):
             
         self.uri_correct = True
 
-        if self.id is not None:
+        if self.id is not None and save:
             self.save(uri_fix = True)
 
         return self.uri
@@ -467,14 +470,15 @@ class DataTree(models.Model):
 
 
     def __setitem__(self, key, value):
-        if type(value) != DataTree:
-            assert False, "Expected a DataTree"
+        assert isinstance(value, DataTree), "Expected a DataTree"
+
         try:
             if self.id is None:
                 self.save()
                 
             other_child = DataTree.objects.get(parent = self,
-                                           name   = key)
+                                               name   = key)
+
             other_child.friendly_name = value.friendly_name
             other_child.save()
             return other_child

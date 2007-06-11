@@ -49,7 +49,7 @@ class ClassRoomModule(ProgramModuleObj):
     @needs_admin
     def addroom(self, request, tl, one, two, module, extra, prog):
         shortname = request.POST['shortname']
-        name      = request.POST['name']
+        name      = request.POST.get('name', '')
         self.program.addClassRoom(name, shortname)
 
         return self.goToCore(tl)

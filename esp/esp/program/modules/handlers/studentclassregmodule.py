@@ -34,7 +34,7 @@ from esp.program.models  import Class, ClassCategories, RegistrationProfile
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, UserBit
+from esp.users.models    import ESPUser, UserBit, User
 from esp.db.models       import Q
 from django.template.loader import get_template
 
@@ -57,7 +57,7 @@ class StudentClassRegModule(ProgramModuleObj):
         if QObject:
             return {'classreg': self.getQForUser(Conf | Prel)}
         else:
-            return {'classreg': ESPUser.objects.filter((Conf | Prel)).distinct()}
+            return {'classreg': User.objects.filter((Conf | Prel)).distinct()}
 
 
     def studentDesc(self):

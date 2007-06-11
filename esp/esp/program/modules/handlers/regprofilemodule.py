@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
 from esp.web.views.myesp import profile_editor
 from esp.program.models import RegistrationProfile
-from esp.users.models   import ESPUser
+from esp.users.models   import ESPUser, User
 from esp.db.models import Q
 
 # reg profile module
@@ -42,7 +42,7 @@ class RegProfileModule(ProgramModuleObj):
             return {'student_profile': self.getQForUser(Q(registrationprofile__program = self.program) & \
                                Q(registrationprofile__student_info__isnull = False))
                     }
-        students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
+        students = User.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
         return {'student_profile': students }
 
     def studentDesc(self):
@@ -53,7 +53,7 @@ class RegProfileModule(ProgramModuleObj):
         if QObject:
             return {'teacher_profile': self.getQForUser(Q(registrationprofile__program = self.program) & \
                                Q(registrationprofile__teacher_info__isnull = False))}
-        teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
+        teachers = User.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
         return {'teacher_profile': teachers }
 
     def teacherDesc(self):

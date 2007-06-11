@@ -36,7 +36,7 @@ from esp.datatree.models import DataTree
 from django.contrib.auth.decorators import login_required
 from esp.db.models import Q
 from esp.datatree.models import GetNode
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, User
 from django.http import HttpResponseRedirect
 
 class CheckListModule(ProgramModuleObj):
@@ -66,7 +66,7 @@ class CheckListModule(ProgramModuleObj):
             return finish_dict
 
         for k,v in finish_dict.items():
-            finish_dict[k] = ESPUser.objects.filter(v)
+            finish_dict[k] = User.objects.filter(v)
 
         return finish_dict
 

@@ -200,14 +200,14 @@ class ArchiveClass(models.Model):
         from esp.users.models import ESPUser
         userlist = []
         for uid in self.student_ids.strip('|').split('|'):
-            userlist += ESPUser.objects.filter(id = uid)
+            userlist += User.objects.filter(id = uid)
         return userlist
     
     def teachers(self):
         from esp.users.models import ESPUser
         userlist = []
         for uid in self.teacher_ids.strip('|').split('|'):
-            userlist += ESPUser.objects.filter(id = uid)
+            userlist += User.objects.filter(id = uid)
         return userlist
     
     @staticmethod
@@ -347,7 +347,7 @@ class Program(models.Model):
 
         for k, v in desc.items():
             lists[k]['description'] = v
-        from esp.users.models import ESPUser
+        from esp.users.models import User
         usertypes = ['Student', 'Teacher', 'Guardian', 'Educator']
 
         
@@ -355,7 +355,7 @@ class Program(models.Model):
         for usertype in usertypes:
             lists['all_'+usertype.lower()+'s'] = {'description':
                                    usertype+'s in all of ESP',
-                                   'list' : ESPUser.getAllOfType(usertype)}
+                                   'list' : User.getAllOfType(usertype)}
 
         lists['emaillist'] = {'description':
                       """All users in our mailing list without an account.""",
@@ -420,11 +420,12 @@ class Program(models.Model):
         return list(self.anchor.tree_create(['Templates','Classrooms']).children().order_by('name'))
 
     def addClassRoom(self, roomname, shortname):
-        room = DataTree()
-        room.parent = self.anchor.tree_create(['Templates','Classrooms'])
-        room.name = shortname
-        room.friendly_name = roomname
-        room.save()
+        parent = self.anchor.tree_create(['Templates','Classrooms'])
+
+        if not roomname:
+            roomname = shortname
+
+        parent[shortname] = DataTree(friendly_name=roomname)
 
     def classes(self):
         return Class.objects.filter(parent_program = self)        

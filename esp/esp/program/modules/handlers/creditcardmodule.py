@@ -34,6 +34,7 @@ from esp.web.util        import render_to_response
 from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
 from esp.db.models       import Q
+from esp.users.models    import User
 
 class CreditCardModule(ProgramModuleObj):
     def extensions(self):
@@ -57,7 +58,7 @@ class CreditCardModule(ProgramModuleObj):
         else:
             from esp.users.models import ESPUser
             
-            return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
+            return {'creditcard':User.objects.filter(QObj).distinct()}
 
 
 

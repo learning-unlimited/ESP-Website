@@ -76,19 +76,19 @@ class SATPrepModule(ProgramModuleObj):
                     'satprep_verbprac': self.getQForUser(Q(satprepreginfo__prac_verb_score__isnull = False)),
                     }
         
-        studentswritold = ESPUser.objects.filter(Q(satprepreginfo__old_writ_score__isnull = False)).distinct()
-        studentsmathold = ESPUser.objects.filter(Q(satprepreginfo__old_math_score__isnull = False)).distinct()
-        studentsverbold = ESPUser.objects.filter(Q(satprepreginfo__old_verb_score__isnull = False)).distinct()
+        studentswritold = User.objects.filter(Q(satprepreginfo__old_writ_score__isnull = False)).distinct()
+        studentsmathold = User.objects.filter(Q(satprepreginfo__old_math_score__isnull = False)).distinct()
+        studentsverbold = User.objects.filter(Q(satprepreginfo__old_verb_score__isnull = False)).distinct()
         
-        studentswritdiag = ESPUser.objects.filter(Q(satprepreginfo__diag_writ_score__isnull = False)).distinct()
-        studentsmathdiag = ESPUser.objects.filter(Q(satprepreginfo__diag_math_score__isnull = False)).distinct()
-        studentsverbdiag = ESPUser.objects.filter(Q(satprepreginfo__diag_verb_score__isnull = False)).distinct()
+        studentswritdiag = User.objects.filter(Q(satprepreginfo__diag_writ_score__isnull = False)).distinct()
+        studentsmathdiag = User.objects.filter(Q(satprepreginfo__diag_math_score__isnull = False)).distinct()
+        studentsverbdiag = User.objects.filter(Q(satprepreginfo__diag_verb_score__isnull = False)).distinct()
 
-        studentswritprac = ESPUser.objects.filter(Q(satprepreginfo__prac_writ_score__isnull = False)).distinct()
-        studentsmathprac = ESPUser.objects.filter(Q(satprepreginfo__prac_math_score__isnull = False)).distinct()
-        studentsverbprac = ESPUser.objects.filter(Q(satprepreginfo__prac_verb_score__isnull = False)).distinct()
+        studentswritprac = User.objects.filter(Q(satprepreginfo__prac_writ_score__isnull = False)).distinct()
+        studentsmathprac = User.objects.filter(Q(satprepreginfo__prac_math_score__isnull = False)).distinct()
+        studentsverbprac = User.objects.filter(Q(satprepreginfo__prac_verb_score__isnull = False)).distinct()
 
-        students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
+        students = User.objects.filter(satprepreginfo__program = self.program).distinct()
 
         return {'satprepinfo': students,
                 'satprep_mathold': studentsmathold,

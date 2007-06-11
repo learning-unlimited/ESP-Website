@@ -46,6 +46,8 @@ class NavBarEntry(models.Model):
     indent = models.BooleanField()
     section = models.CharField(maxlength=64,blank=True)
 
+        
+
     def can_edit(self, user):
         return UserBit.UserHasPerms(user, self.path, GetNode('V/Administer/Edit/QSD'))
     
@@ -63,6 +65,14 @@ class NavBarEntry(models.Model):
 
     class Meta:
         verbose_name_plural = 'Nav Bar Entries'
+
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+
+        super(NavBarEntry, self).save(*args, **kwargs)
+        
+        cache.delete('LEFTBAR')
+
     
     @staticmethod
     def find_by_url_parts(parts):

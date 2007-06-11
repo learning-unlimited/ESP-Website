@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
-from esp.users.models    import UserBit, ESPUser
+from esp.users.models    import UserBit, ESPUser, User
 from esp.datatree.models import GetNode
 from esp.db.models import Q
 from esp.middleware   import ESPError
@@ -57,10 +57,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                     'studentrep': self.getQForUser(Q_studentrep)}
         
         
-        return {'confirmed': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct(),
-                'attended' : ESPUser.objects.filter(userbit__qsc = self.program.anchor, \
+        return {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct(),
+                'attended' : User.objects.filter(userbit__qsc = self.program.anchor, \
                                                     userbit__verb = verb2).distinct(),
-                'studentrep': ESPUser.objects.filter(Q_studentrep).distinct()}
+                'studentrep': User.objects.filter(Q_studentrep).distinct()}
 
     def studentDesc(self):
         return {'confirmed': """Students who have clicked on the `Confirm Pre-Registraiton' button.""",
