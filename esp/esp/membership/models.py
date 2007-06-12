@@ -40,6 +40,11 @@ attend_status_choices = (
     ('No','No'),
     )
 
+partofesp_choices = (
+    ('Yes', 'Yes'),
+    ('No', 'No'),
+    )
+
 class AlumniContact(models.Model):
     """ This model answers the following questions: 
     1. If you were not part of ESP, please let us know (check box)
@@ -58,16 +63,20 @@ class AlumniContact(models.Model):
     blurb written specifically for them]
     9. Any more information they'd like to provide. (blank box) 
     """
-    partofesp = models.BooleanField('Were you a part of ESP?  If so, continue below')
+    partofesp = models.CharField('Were you a part of the Educational Studies Program?',choices=partofesp_choices, maxlength=10)
     start_year = models.IntegerField('From year',blank=True,null=True)
     end_year = models.IntegerField('To year',blank=True,null=True)
-    involvement = models.TextField('What ESP programs/activities were you involved with?',blank=True,null=True)
+    involvement = models.TextField('What ESP programs/activities (HSSP, Splash, SAT Prep, etc.) were you involved with?',blank=True,null=True)
     contactinfo = models.ForeignKey(ContactInfo, blank=True, related_name='alumni_user', verbose_name='Contact Information')
-    attend_interest = models.CharField('I am able to attend ESP\'s 50th anniversary event', choices=attend_status_choices, maxlength=50)
-    news_interest = models.BooleanField('Send me a biannual e-mail newsletter')
-    advising_interest = models.BooleanField('Join our alumni advising e-mail list')
-    volunteer_interest = models.BooleanField('I would like to volunteer at current ESP programs')
-    comments = models.TextField('What else do you have to tell us?  What questions do you have?', blank=True,null=True)
+    
+    news_interest = models.BooleanField('Would you like to receive our e-mail newsletter twice yearly?')
+    reconnect_interest = models.BooleanField('Would you like reconnect with other ESP alumni?')
+    advising_interest = models.BooleanField('Would you like to join an e-mail list of alumni that advise ESP?')
+    volunteer_interest = models.BooleanField('Would you like to volunteer at current ESP programs?')
+    
+    attend_interest = models.CharField('Are you able to attend ESP\'s 50th anniversary event on September 14-15, 2007?', choices=attend_status_choices, maxlength=50)
+    
+    comments = models.TextField('Is there anything else you would like to tell us?  Do you have any questions?', blank=True,null=True)
 
     create_ts = models.DateTimeField(default=datetime.datetime.now,
                                      editable=False)

@@ -21,6 +21,7 @@ I am able to attend ESP's 50th anniversary event:	        {{ main_form.clean_dat
 Send me a biannual e-mail newsletter:	                        {{ main_form.clean_data.news_interest }}
 Join our alumni advising e-mail list:	                        {{ main_form.clean_data.advising_interest }}
 I would like to volunteer at current ESP programs:	        {{ main_form.clean_data.volunteer_interest }}
+I would like to reconnect with other alumni:	                {{ main_form.clean_data.reconnect_interest }}
 
 Involvement in ESP programs/activities:	
 

@@ -54,7 +54,7 @@ def grouped_as_table(self):
             if hasattr(field, 'line_group'):
                 return field.line_group
             else:
-                return -1
+                return 0
         
         def field_compare(field_a, field_b):
             return line_group_safe(field_a[1]) - line_group_safe(field_b[1])
@@ -79,11 +79,11 @@ def grouped_as_table(self):
             else:
                 
                 #   Only put in the row break if this field is on a different line group than the previous one
-                if line_group_safe(field) == -1:
+                if line_group_safe(field) == 0:
                     row_starter = '<tr>'
                     row_ender = '</tr>'
                 else:
-                    if (i > 0) and (line_group_safe(fieldlist[i-1][1]) == line_group_safe(field)):
+                    if (i != 0) and (line_group_safe(fieldlist[i-1][1]) == line_group_safe(field)):
                         output.append('<!-- Killing starter: prev=%d current=%d -->' % (line_group_safe(fieldlist[i-1][1]), line_group_safe(field)))
                         row_starter = ''
                     if (i < len(fieldlist) - 1) and (line_group_safe(fieldlist[i+1][1]) == line_group_safe(field)):

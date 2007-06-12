@@ -32,11 +32,11 @@ Email: web@esp.mit.edu
 from esp.membership.models import AlumniContact
 from esp.users.models import ContactInfo
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
-from esp.membership.models import attend_status_choices
+from esp.membership.models import attend_status_choices, partofesp_choices
 from django import newforms as forms
 
 #   Modify the CharField class to support our formatting features.
-add_fields_to_class(forms.CharField, {'is_long': False, 'line_group': -1})
+add_fields_to_class(forms.CharField, {'is_long': False, 'line_group': 0})
 
 
 class ContactInfoForm(forms.form_for_model(ContactInfo, formfield_callback=new_callback(exclude=['user', 'address_postal', 'undeliverable']))):
@@ -45,12 +45,12 @@ class ContactInfoForm(forms.form_for_model(ContactInfo, formfield_callback=new_c
     """
     
     def __init__(self, *args, **kwargs):
-        self.base_fields['address_city'].line_group = 0
-        self.base_fields['address_state'].line_group = 0
-        self.base_fields['address_zip'].line_group = 0
-        self.base_fields['phone_day'].line_group = 1
-        self.base_fields['phone_even'].line_group = 1
-        self.base_fields['phone_cell'].line_group = 1
+        self.base_fields['address_city'].line_group = 1
+        self.base_fields['address_state'].line_group = 1
+        self.base_fields['address_zip'].line_group = 1
+        self.base_fields['phone_day'].line_group = 2
+        self.base_fields['phone_even'].line_group = 2
+        self.base_fields['phone_cell'].line_group = 2
         super(ContactInfoForm, self).__init__(*args, **kwargs)
 
     # use field grouping
@@ -62,6 +62,13 @@ class AlumniContactForm(forms.form_for_model(AlumniContact, formfield_callback=n
     """
     def __init__(self, *args, **kwargs):
         self.base_fields['comments'].is_long = True
+        self.base_fields['involvement'].is_long = True
+        self.base_fields['start_year'].line_group = -1
+        self.base_fields['end_year'].line_group = -1
+        self.base_fields['partofesp'] = \
+                forms.ChoiceField(choices = partofesp_choices,
+                    label = AlumniContact._meta.get_field('partofesp').verbose_name)
+        self.base_fields['partofesp'].line_group = -2
         self.base_fields['attend_interest'] = \
                 forms.ChoiceField(choices = attend_status_choices,
                                   label = AlumniContact._meta.get_field('attend_interest').verbose_name)

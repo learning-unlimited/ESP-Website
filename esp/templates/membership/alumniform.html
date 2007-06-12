@@ -15,19 +15,40 @@
 {% endblock %}
 
 {% block content %}
-<h1>Staying in touch!</h1><br />
+<h1>Staying in touch!</h1>
 
 <p>
 Thank you for coming to our survey.  We hope to maintain contact with
 our alumni both through newsletters and through the ESP 50th anniversary
-event, which will be held on September 14-15, 2007.  Please tell us a bit about
-yourself, and if you can join us for our anniversary weekend!
+event, which will be held on September 14-15, 2007.  
+</p>
+<p>
+If you are interested in learning a bit more about ESP, please explore 
+this web site, or visit  <a href="/about/alumni_intro.html">this page</a>; 
+we hope it will help bring you up to speed if you've been away for a 
+few years!
+</p>
+<p>
+Please tell us a bit about yourself in the form below, and let us know 
+if you can join us for our anniversary weekend!
 <br />
 </p>
 
 <div id="alumni_form">
   <form action="{{ request.path }}" method="post">
   <table class="contact" align="center" width="500">
+  
+  <thead>
+    <tr>
+      <th colspan="2">
+        Information for ESP 50th Anniversary
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+  {{ main_form }}
+  </tbody>
+
   <thead>
     <tr>
       <th colspan="2">
@@ -35,6 +56,7 @@ yourself, and if you can join us for our anniversary weekend!
       </th>
     </tr>
   </thead>
+
   <tbody>
 
   {% if contact_form.errors or main_form.errors %}
@@ -50,18 +72,6 @@ yourself, and if you can join us for our anniversary weekend!
   {% endif %}
 
   {{ contact_form }}
-
-  </tbody>
-
-  <thead>
-    <tr>
-      <th colspan="2">
-        Information for ESP 50th Anniversary
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-  {{ main_form }}
 
     <tr> 
       <td colspan="2" class="submit">
