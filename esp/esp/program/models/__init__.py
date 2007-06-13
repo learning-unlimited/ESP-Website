@@ -324,6 +324,8 @@ class Program(models.Model):
         return students
 
     def getLists(self, QObjects=False):
+        from esp.users.models import ESPUser
+        
         lists = self.students(QObjects)
         lists.update(self.teachers(QObjects))
         learnmodules = self.getModules(None)
@@ -355,7 +357,7 @@ class Program(models.Model):
         for usertype in usertypes:
             lists['all_'+usertype.lower()+'s'] = {'description':
                                    usertype+'s in all of ESP',
-                                   'list' : User.getAllOfType(usertype)}
+                                   'list' : ESPUser.getAllOfType(usertype)}
 
         lists['emaillist'] = {'description':
                       """All users in our mailing list without an account.""",

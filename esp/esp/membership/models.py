@@ -63,7 +63,7 @@ class AlumniContact(models.Model):
     blurb written specifically for them]
     9. Any more information they'd like to provide. (blank box) 
     """
-    partofesp = models.CharField('Were you a part of the Educational Studies Program?',choices=partofesp_choices, maxlength=10)
+    partofesp = models.CharField('Were you a part of any ESP programs (such as Splash, HSSP, SAT Prep, Junction or Mesh) at MIT?',choices=partofesp_choices, maxlength=10)
     start_year = models.IntegerField('From year',blank=True,null=True)
     end_year = models.IntegerField('To year',blank=True,null=True)
     involvement = models.TextField('What ESP programs/activities (HSSP, Splash, SAT Prep, etc.) were you involved with?',blank=True,null=True)

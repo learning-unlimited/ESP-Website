@@ -39,7 +39,7 @@ from django import newforms as forms
 add_fields_to_class(forms.CharField, {'is_long': False, 'line_group': 0})
 
 
-class ContactInfoForm(forms.form_for_model(ContactInfo, formfield_callback=new_callback(exclude=['user', 'address_postal', 'undeliverable']))):
+class ContactInfoForm(forms.form_for_model(ContactInfo, formfield_callback=new_callback(exclude=['phone_cell', 'phone_even', 'phone_day', 'user', 'address_postal', 'undeliverable']))):
     """
     This represents a standard pretty contact info form that can be used in a multitude of places.
     """
@@ -48,21 +48,18 @@ class ContactInfoForm(forms.form_for_model(ContactInfo, formfield_callback=new_c
         self.base_fields['address_city'].line_group = 1
         self.base_fields['address_state'].line_group = 1
         self.base_fields['address_zip'].line_group = 1
-        self.base_fields['phone_day'].line_group = 2
-        self.base_fields['phone_even'].line_group = 2
-        self.base_fields['phone_cell'].line_group = 2
         super(ContactInfoForm, self).__init__(*args, **kwargs)
 
     # use field grouping
     as_table = grouped_as_table
 
-class AlumniContactForm(forms.form_for_model(AlumniContact, formfield_callback=new_callback(exclude=['contactinfo']))):
+class AlumniContactForm(forms.form_for_model(AlumniContact, formfield_callback=new_callback(exclude=['contactinfo', 'involvement', 'news_interest', 'volunteer_interest', 'reconnect_interest', 'advising_interest']))):
     """
     This is an alumni contact form which is used to get information from alumni of ESP.
     """
     def __init__(self, *args, **kwargs):
         self.base_fields['comments'].is_long = True
-        self.base_fields['involvement'].is_long = True
+        #   self.base_fields['involvement'].is_long = True
         self.base_fields['start_year'].line_group = -1
         self.base_fields['end_year'].line_group = -1
         self.base_fields['partofesp'] = \
