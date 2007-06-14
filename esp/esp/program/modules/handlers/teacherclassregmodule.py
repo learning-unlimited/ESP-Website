@@ -436,7 +436,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return self.makeaclass(request, tl, one, two, module, extra, prog, cls)
 
 
-    @meets_deadline()
+    @meets_deadline('/Classes')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         # this is ugly...but it won't recurse and falls

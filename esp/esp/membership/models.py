@@ -34,7 +34,7 @@ from esp.program.models import ContactInfo
 import datetime
 
 attend_status_choices = (
-    ('With certainty', 'With certainty'),
+    ('Definitely', 'Definitely'),
     ('Probably', 'Probably'),
     ('Possibly', 'Possibly'),
     ('No','No'),
