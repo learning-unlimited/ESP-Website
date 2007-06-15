@@ -69,10 +69,10 @@ class AlumniContact(models.Model):
     involvement = models.TextField('What ESP programs/activities (HSSP, Splash, SAT Prep, etc.) were you involved with?',blank=True,null=True)
     contactinfo = models.ForeignKey(ContactInfo, blank=True, related_name='alumni_user', verbose_name='Contact Information')
     
-    news_interest = models.BooleanField('Would you like to receive our e-mail newsletter twice yearly?')
-    reconnect_interest = models.BooleanField('Would you like reconnect with other ESP alumni?')
-    advising_interest = models.BooleanField('Would you like to join an e-mail list of alumni that advise ESP?')
-    volunteer_interest = models.BooleanField('Would you like to volunteer at current ESP programs?')
+    news_interest = models.BooleanField('Would you like to receive our e-mail newsletter twice yearly?', null=True)
+    reconnect_interest = models.BooleanField('Would you like reconnect with other ESP alumni?', null=True)
+    advising_interest = models.BooleanField('Would you like to join an e-mail list of alumni that advise ESP?', null=True)
+    volunteer_interest = models.BooleanField('Would you like to volunteer at current ESP programs?', null=True)
     
     attend_interest = models.CharField('Are you able to attend ESP\'s 50th anniversary event on September 14-15, 2007?', choices=attend_status_choices, maxlength=50)
     
