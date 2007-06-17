@@ -80,6 +80,13 @@ class AlumniContact(models.Model):
 
     create_ts = models.DateTimeField(default=datetime.datetime.now,
                                      editable=False)
+
+    def __str__(self):
+        comments = ''
+        if self.comments and self.comments != '':
+            comments = '(...)'
+        
+        return "%s %s-%s (Attending: %s) %s" % (self.contactinfo, self.start_year, self.end_year, self.attend_interest, comments)
     
     class Admin:
         pass
