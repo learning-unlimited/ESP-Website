@@ -91,7 +91,7 @@ class ESPUser(User, AnonymousUser):
     def __init__(self, userObj, *args, **kwargs):
         if isinstance(userObj, ESPUser):
             self.__dict__ = userObj.__dict__
-            self.__olduser = userObj.__olduser
+            self.__olduser = userObj.getOld()
         elif isinstance(userObj, (User, AnonymousUser)):
             self.__dict__ = userObj.__dict__
             self.__olduser = userObj
@@ -122,7 +122,7 @@ class ESPUser(User, AnonymousUser):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
     def getOld(self):
-        if not self.__olduser:
+        if not hasattr(self, "__olduser") or not self.__olduser:
             self.__olduser = User()
         self.__olduser.__dict__ = self.__dict__
         return self.__olduser
