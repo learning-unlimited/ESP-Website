@@ -810,7 +810,7 @@ class ContactInfo(models.Model):
 	phone_even = models.PhoneNumberField('Evening phone',blank=True, null=True)
 	address_street = models.CharField('Street address',maxlength=100,blank=True, null=True, core=True)
 	address_city = models.CharField('City',maxlength=50,blank=True, null=True, core=True)
-	address_state = models.USStateField('State',maxlength=5,blank=True, null=True, core=True)
+	address_state = models.USStateField('State',blank=True, null=True, core=True)
 	address_zip = models.CharField('Zip code',maxlength=5,blank=True, null=True, core=True)
         address_postal = models.TextField(blank=True,null=True)
         undeliverable = models.BooleanField(default=False, core=True)
