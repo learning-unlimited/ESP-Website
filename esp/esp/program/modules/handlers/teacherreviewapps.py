@@ -70,6 +70,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
             else:
                 student.app_reviewed = None
 
+        students = list(students)
         students.sort(lambda x,y: cmp(x.added_class,y.added_class))
 
         return render_to_response(self.baseDir()+'roster.html',
