@@ -191,6 +191,7 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
 
         return None
 
+    @staticmethod
     def getSchedule(program, student):
         accept_node = GetNode('V/Flags/Registration/Accepted')
         
