@@ -90,13 +90,16 @@ class ESPUser(User, AnonymousUser):
     #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
     def __init__(self, userObj, *args, **kwargs):
         if isinstance(userObj, ESPUser):
-            self.__dict__ = userObj.__dict__
             self.__olduser = userObj.getOld()
+            self.__dict__.update(self.__olduser.__dict__)
+
         elif isinstance(userObj, (User, AnonymousUser)):
             self.__dict__ = userObj.__dict__
             self.__olduser = userObj
+
         else:
             models.Model.__init__(self, userObj, *args, **kwargs)
+
 
         self.cache = ESPUser.objects.cache(self)
 
@@ -122,9 +125,9 @@ class ESPUser(User, AnonymousUser):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
     def getOld(self):
-        if not hasattr(self, "__olduser") or not self.__olduser:
+        if not hasattr(self, "_ESPUser__olduser"):
             self.__olduser = User()
-        self.__olduser.__dict__ = self.__dict__
+        self.__olduser.__dict__.update(self.__dict__)
         return self.__olduser
 
     def name(self):

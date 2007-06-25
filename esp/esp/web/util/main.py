@@ -62,12 +62,14 @@ def render_response(req, *args, **kwargs):
 def render_to_response(template, requestOrContext, prog = None, context = None):
     from esp.web.views.navBar import makeNavBar
 
+
     # if there are only two arguments
     if context is None and prog is None:
         return django.shortcuts.render_to_response(template, requestOrContext, {'navbar_list': default_navbar_data})
     
     if context is not None:
         request = requestOrContext
+
 
         section = ''
 
@@ -100,7 +102,8 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         if not context.has_key('logged_in'):
             context['logged_in'] = request.user.is_authenticated()
         # upgrade user
-        request.user = ESPUser(request.user)
+
+        request.user = ESPUser(request.user, error=True)
         request.user.updateOnsite(request)
         context['request'] = request
 
