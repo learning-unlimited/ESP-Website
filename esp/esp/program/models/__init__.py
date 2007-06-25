@@ -706,6 +706,11 @@ class FinancialAidRequest(models.Model):
 
     done = models.BooleanField(default = False, editable = False)
 
+    amount_received = models.IntegerField(blank=True,null=True)
+    amount_needed = models.IntegerField(blank=True,null=True)
+
+    class Admin:
+        pass
 
 class JunctionStudentApp(models.Model):
     """

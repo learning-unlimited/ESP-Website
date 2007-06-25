@@ -1,0 +1,13 @@
+<hr />
+<h2>Review your classes' students...</h2>
+<br />
+<ul>
+{% for cls in classes %}
+<li>
+  <a href="/teach/{{ program.getUrlBase }}/review_students/{{cls.id}}/">
+Review for {{ cls }}</a>
+</li>
+{% endfor %}
+</ul>
+
+<hr />
