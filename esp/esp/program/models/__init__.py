@@ -704,10 +704,23 @@ class FinancialAidRequest(models.Model):
 
     student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True,null=True)
 
-    done = models.BooleanField(default = False, editable = False)
+    done = models.BooleanField(default = False)
 
     amount_received = models.IntegerField(blank=True,null=True)
     amount_needed = models.IntegerField(blank=True,null=True)
+
+    def __str__(self):
+        """ Represent this as a string. """
+        accepted_verb = GetNode('V/Flags/Registration/Accepted')
+        num_classes = UserBit.find_by_anchor_perms(Class, self.user, accepted_verb).filter(parent_program = self.program).count()
+
+        string = "Financial Aid Application for %s (enrolled in %s classes)"%\
+                 (self.user.name(), num_classes)
+
+        if self.done:
+            string += " (reviewed)"
+
+        return string
 
     class Admin:
         pass
