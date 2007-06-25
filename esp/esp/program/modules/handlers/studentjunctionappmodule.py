@@ -38,6 +38,7 @@ from esp.db.models       import Q
 from django.template.loader import get_template
 from esp.program.models  import JunctionStudentApp
 from django              import newforms as forms
+from django.contrib.auth.models import User
 
 
 # student class picker module
@@ -52,8 +53,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
             return {'studentapps_complete': Q_students & Q_students_complete,
                     'studentapps':          Q_students}
         else:
-            return {'studentapps_complete': ESPUser.objects.filter(Q_students & Q_students_complete),
-                    'studentapps':          ESPUser.objects.filter(Q_students)}
+            return {'studentapps_complete': User.objects.filter(Q_students & Q_students_complete),
+                    'studentapps':          User.objects.filter(Q_students)}
         
 
 
