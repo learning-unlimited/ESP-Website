@@ -183,3 +183,39 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
 
     def isStep(self):
         return True
+
+    def get_msg_vars(self, user, key):
+        user = ESPUser(user)
+        if key == 'schedule_app':
+            return AdminReviewApps.getSchedule(self.program, user)
+
+        return None
+
+    def getSchedule(program, student):
+        accept_node = GetNode('V/Flags/Registration/Accepted')
+        
+        schedule = """
+Student schedule for %s:
+
+ Time               | Class                   | Room""" % student.name()
+
+
+        classes = list(UserBit.find_by_anchor_perms(Class, student, accept_node).filter(parent_program = program))
+
+        # now we sort them by time/title
+        classes.sort()
+        
+        for cls in classes:
+            rooms = cls.prettyrooms()
+            if len(rooms) == 0:
+                rooms = 'N/A'
+            else:
+                rooms = ", ".join(rooms)
+                
+            schedule += """
+%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
+               cls.title().ljust(25),
+               rooms)
+               
+        return schedule
+
