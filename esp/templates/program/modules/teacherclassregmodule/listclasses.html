@@ -74,7 +74,7 @@ If you have any questions regarding the program, <br /> please email the
     </td>
 {% if teacherclsmodule.classRegInfo.allow_coteach and module.deadline_met %}
    <td class="clsmiddle">
-       <form method="post" action="./coteachers">
+       <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
 	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
          <input class="button" type="submit" value="Coteaching">
@@ -82,7 +82,7 @@ If you have any questions regarding the program, <br /> please email the
     </td>
 {% endif %}
    <td class="clsmiddle">
-      <form method="get" action="./class_status/{{cls.id}}">
+      <form method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
          <input class="button" type="submit" value="View Status" />
       </form>
    </td>
