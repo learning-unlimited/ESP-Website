@@ -31,7 +31,7 @@ from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import DataTree, GetNode
-from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo
+from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser
 from esp.lib.markdown import markdown
 from esp.qsd.models import QuasiStaticData
 from datetime import datetime
@@ -704,7 +704,9 @@ class FinancialAidRequest(models.Model):
 
     student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True,null=True)
 
-    done = models.BooleanField(default = False)
+    done = models.BooleanField(default = False, editable=False)
+
+    reviewed = models.BooleanField(default=False)
 
     amount_received = models.IntegerField(blank=True,null=True)
     amount_needed = models.IntegerField(blank=True,null=True)
@@ -715,9 +717,12 @@ class FinancialAidRequest(models.Model):
         num_classes = UserBit.find_by_anchor_perms(Class, self.user, accepted_verb).filter(parent_program = self.program).count()
 
         string = "Financial Aid Application for %s (enrolled in %s classes)"%\
-                 (self.user.name(), num_classes)
+                 (ESPUser(self.user).name(), num_classes)
 
         if self.done:
+            string = "Finished " + string
+
+        if self.reviewed:
             string += " (reviewed)"
 
         return string
