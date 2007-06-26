@@ -32,12 +32,16 @@ class UserRegForm(forms.Form):
 
 
     def clean_username(self):
-        errors = []
-        bad_list = ':!@#$%^&*(){}[]<>?,./\|~`+=- '
+        """ Make sure that 'username' (as provided as input to this form)
+            only contains letters and numbers, and doesn't already exist """
 
         data = self.clean_data['username']
 
-        if len(set(bad_list) & set(data)) > 0:
+        import string
+        good_chars = set(string.letters + string.digits)
+
+        set_of_data = set(data)
+        if not(good_chars & set_of_data == set_of_data):
             raise forms.ValidationError('Username contains invalid characters.')
 
         if User.objects.filter(username__iexact = data).count() > 0:
