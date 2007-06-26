@@ -106,7 +106,7 @@ def handle_ajax_mover(method):
 def qsd(request, branch, name, section, action):
 
     READ_VERB = 'V/Flags/Public'
-    EDIT_VERB = 'V/Administer/Edit'
+    EDIT_VERB = 'V/Administer/Edit/QSD'
 
     # Pages are global per-user (not unique per-user)
     cache_id = '%s:%s' % (branch.id, name)

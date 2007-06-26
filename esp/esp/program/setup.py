@@ -122,6 +122,8 @@ VerbNodes = (
 		'V/Deadline/Registration/Teacher',
 		'V/Administer',
 		'V/Administer/Edit',
+		'V/Administer/Edit/QSD',
+		'V/Administer/Edit/Class',
 		'V/Flags/Registration/Preliminary',
 		'V/Flags/Registration/Confirmed'
 	    )
