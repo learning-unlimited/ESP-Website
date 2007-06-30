@@ -1,5 +1,6 @@
 # Simple Twill script, to see if esp.mit.edu's homepage can be loaded
 
+echo "RENDER_HOMEPAGE: Verify that we correctly render the ESP homepage"
 go /
 title "MIT ESP - Home"
 find "Room W20-467, Cambridge, MA 02139"

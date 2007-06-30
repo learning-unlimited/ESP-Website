@@ -1,72 +1,125 @@
 # Tests logging in via the login form on http://esp.mit.edu/
 
+echo "HOMEPAGE_LOGIN: Verify that the login form on the homepage does the right thing.  Also test the login form on subpages."
+
 # Note: This user should have no bits on anything!
-setlocal username testuser
-setlocal password password
+setglobal username testuser
+setglobal password password
 
 
+echo "Try valid login on homepage..."
+# Go to homepage
 go /
 
+# Sanity-check that the homepage loaded
 find "Login:"
 find "Password:"
 notfind "Hello, Test UserPerson!"
 notfind "Logout"
 
+# Do a login
 formvalue 3 username $username
 formvalue 3 password $password
 submit
 
+# Verify that the logged-in page loaded correctly
 find "Hello, Test UserPerson!"
 find "Logout"
 notfind "Login:"
 notfind "Password:"
 
-clear_cookies
+echo "Done.
 
+echo "Try logout..."
+
+# Logout just consists of visiting this URL
+go /myesp/signout/
+find "Thank you for visiting the Educational Studies Program"
+find "Username"
+
+# Make sure we're not still logged in
+notfind "Welcome,"
+
+echo "Done.
+
+echo "Try invalid login on homepage..."
+
+# Go to homepage
 go /
 
+# Make sure it really loaded again, and that we're not still logged in
 find "Login:"
 find "Password:"
 notfind "Hello, Test UserPerson!"
 notfind "Logout"
 
+# Submit an invalid login
 formvalue 3 username NotARealUser
 formvalue 3 password NotARealPassword
 submit
 
+# Make sure we failed to log in
 find "Please enter a correct username and password"
 
+echo "Done."
+echo "Try valid login on subpage (/about/index.html)..."
 
-
+# Go to an arbitrary subpage
 go /about/index.html
 
+# Make sure that page loaded correctly, and that it doesn't think that we're logged in
 find "Username:"
 find "Password:"
 notfind "Welcome, Test!"
 notfind "Sign Out"
 
+# Submit the login form
 formvalue 2 username $username
 formvalue 2 password $password
 submit
 
+# Verify that we're now logged in
 find "Welcome, Test!"
 find "Sign Out"
 notfind "Username:"
 notfind "Password:"
 
+echo "Testing for persistence of login across multiple pages..."
+
+# Go back to the home page
+go /
+
+# Verify that we're logged in even though we didn't log in on this page
+find "Hello, Test UserPerson!"
+find "Logout"
+notfind "Login:"
+notfind "Password:"
+
+echo "Done."
+
+# This forces a logout, to verify that forcing
+# a logout is equivalent to logging out normally
 clear_cookies
 
+echo "Try invalid login on subpage (/about/index.html)..."
+
+# Go to the same arbitrary subpage
 go /about/index.html
 
+# Make sure that page loaded correctly, and that it doesn't think that we're logged in
 find "Username:"
 find "Password:"
 notfind "Welcome, Test!"
 notfind "Sign Out"
 
+# Submit an invalid login
 formvalue 2 username NotARealUser
 formvalue 2 password NotARealPassword
 submit
 
+# Make sure that we failed to log in
 find "Please enter a correct username and password"
+find "Username"
+notfind "Welcome,"
 
-
+echo "Done."
