@@ -15,16 +15,24 @@
 # before running any tests.  If you write a new 
 #
 
+##########
 # SETTINGS:
-SERVER_HOSTNAME = 'esp.mit.edu'
-SERVER_PORT = '80'
-START_DEVSERVER = False # Warning: Tests will currently fail if this is True because the test database isn't prepopulated with enough data.  This is a bug.
+##########
 
-STRESS_TEST_THREADS = 20
-STRESS_TEST_TESTLOOPS_PER_THREAD = 20
+SERVER_HOSTNAME = 'esp.mit.edu' # Server to test against
+SERVER_PORT = '80' # Port for the webserver on SERVER_HOSTNAME
+
+# Warning: Tests will currently fail if this is True because the test database isn't prepopulated with enough data.  This is a bug.
+START_DEVSERVER = False # Start the Django development web server?
+DEVSERVER_START_TIME = 2 # Wait this many seconds after starting the dev server server process, before starting tests
+
+STRESS_TEST_THREADS = 20 # Number of simultaneous Twill threads executing tests in the Stress Test
+STRESS_TEST_TESTLOOPS_PER_THREAD = 20 # Number of times each Twill thread iterates through all available .twill files, in the Stress Test
 
 
+##########
 # NOT SETTINGS:
+##########
 if SERVER_HOSTNAME == None or SERVER_HOSTNAME == '':
     SERVER_HOSTNAME = '127.0.0.1'
 
@@ -32,8 +40,6 @@ if SERVER_PORT == None or SERVER_PORT == '':
     SERVER_PORT = ''
     
 import unittest
-
-
 
 class AllFilesTest(unittest.TestCase):
     """
@@ -58,6 +64,7 @@ class AllFilesTest(unittest.TestCase):
     server_hostname = SERVER_HOSTNAME
     server_port = SERVER_PORT
     start_devserver = START_DEVSERVER
+    devserver_start_time = DEVSERVER_START_TIME
 
     def setUp(self):
         """
@@ -117,6 +124,10 @@ class AllFilesTest(unittest.TestCase):
         Return a Twill TestInfo instance that will execute
         the specified test against the server specified by
         SERVER_HOSTNAME and SERVER_PORT
+
+        If no test is specified but self.start_devserver == True,
+        the returned object will still be able to start the
+        Django test server.
         """
 
         def startWebserver():
@@ -133,16 +144,20 @@ class AllFilesTest(unittest.TestCase):
                 runserver('127.0.0.1', self.server_port, False)
             else:
                 import time
-                while True: # Loop forever, using as little CPU power as possible
+                while True:
+                    # Loop forever, using as little CPU power as possible
+                    # (to meet our spec of "this function never ends")
                     time.sleep(999999)
 
         import twill.unit
 
+        # Only sleep before tests if we're starting the dev server
         if self.start_devserver:
-            sleepTime = 1 # Server Start Sleep Hack.  Feel free to tweak.
+            sleepTime = self.devserver_start_time # Server Start Sleep Hack
         else:
             sleepTime = 0
-            
+
+        # Finally make the test, using all accumulated parameters
         test_info = twill.unit.TestInfo(testFile, startWebserver, self.server_port, sleepTime)
         test_info.get_url = self.get_get_url() # Use our modified get_url
 
@@ -187,9 +202,11 @@ class AllFilesTest(unittest.TestCase):
         """
         import os
 
-        argv = ['-u%s' % self.get_url(), '-n%s' % str(self.stress_test_threads * self.stress_test_testloops_per_thread), '-p%s' % str(self.stress_test_threads)]
-        argv += self._files()
+        argv_for_twill = ['-u%s' % self.get_url(), '-n%s' % str(self.stress_test_threads * self.stress_test_testloops_per_thread), '-p%s' % str(self.stress_test_threads)]
+        argv_for_twill += self._files()
 
+        # The following few lines are basically straight from the Twill source code.
+        # Apparently, this is the Pythonic way to start and later kill a separate process/thread.
         pid = os.fork()
 
         if pid is 0:
@@ -197,6 +214,10 @@ class AllFilesTest(unittest.TestCase):
             twill.unit.run_child_process(self._test_info('')) # Never returns
         else:
             child_pid = pid
-            
-        os.system("twill-fork %s" % ' '.join(argv))
+
+        # Execute twill-fork from the command line.
+        # This turns out to be notably easier than invoking it
+        # with Python directly, because it uses builtins to parse
+        # command-line options.
+        os.system("twill-fork %s" % ' '.join(argv_for_twill))
         os.kill(child_pid, 9)
