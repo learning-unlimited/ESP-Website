@@ -1,0 +1,11 @@
+# Tests automatically-generated navbars
+# Makes sure the teach|learn split is maintained
+
+go /learn/index.html
+find "Catalog"
+find "Student Registration"
+notfind "Teacher Registration"
+
+go /teach/index.html
+find "Teacher Registration"
+notfind "Student Registration"

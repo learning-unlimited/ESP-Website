@@ -1,0 +1,6 @@
+# Simple Twill script, to see if esp.mit.edu's homepage can be loaded
+
+go /
+title "MIT ESP - Home"
+find "Room W20-467, Cambridge, MA 02139"
+

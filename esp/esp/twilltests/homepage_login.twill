@@ -1,0 +1,72 @@
+# Tests logging in via the login form on http://esp.mit.edu/
+
+# Note: This user should have no bits on anything!
+setlocal username testuser
+setlocal password password
+
+
+go /
+
+find "Login:"
+find "Password:"
+notfind "Hello, Test UserPerson!"
+notfind "Logout"
+
+formvalue 3 username $username
+formvalue 3 password $password
+submit
+
+find "Hello, Test UserPerson!"
+find "Logout"
+notfind "Login:"
+notfind "Password:"
+
+clear_cookies
+
+go /
+
+find "Login:"
+find "Password:"
+notfind "Hello, Test UserPerson!"
+notfind "Logout"
+
+formvalue 3 username NotARealUser
+formvalue 3 password NotARealPassword
+submit
+
+find "Please enter a correct username and password"
+
+
+
+go /about/index.html
+
+find "Username:"
+find "Password:"
+notfind "Welcome, Test!"
+notfind "Sign Out"
+
+formvalue 2 username $username
+formvalue 2 password $password
+submit
+
+find "Welcome, Test!"
+find "Sign Out"
+notfind "Username:"
+notfind "Password:"
+
+clear_cookies
+
+go /about/index.html
+
+find "Username:"
+find "Password:"
+notfind "Welcome, Test!"
+notfind "Sign Out"
+
+formvalue 2 username NotARealUser
+formvalue 2 password NotARealPassword
+submit
+
+find "Please enter a correct username and password"
+
+
