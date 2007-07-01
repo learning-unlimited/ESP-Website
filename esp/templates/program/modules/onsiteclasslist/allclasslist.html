@@ -1,0 +1,76 @@
+
+{% extends "outlines/series-3.html" %}
+
+{% block title %} {{program.niceName}} {% endblock %}
+
+{% load subsection %}
+
+{% block subsection %}
+    {{ "Open Classes"|subsection }}
+{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <style type="text/css">
+        #catalog table {
+        border: 1px solid #CCC;
+        border-width: 1px;
+        border-collapse: collapse;
+        }
+        
+        
+        #catalog th {
+        font-family: Arial, sans-serif;
+        padding: 5px;
+        font-size: 15px;
+        background-color: #c6def7;
+        color: #000;
+        }
+        
+        #catalog td {
+        font-family: serif;
+        padding: 2px;
+        font-size: 14px;
+        background-color: #ffffff;
+        color: #000;
+        }
+
+        #divmaintext h1 {
+        font-size: 22pt;
+        color: black;
+        font-family: arial;
+        text-align: center;
+        width: 100%;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<br />
+
+<h1>
+    {{ program.niceName }}: Classes
+</h1>
+
+{% load class_render %}
+
+<div id="catalog">
+  <table cellpadding="2" cellspacing="0" width="600">
+    <tr>
+        <th>Class</th>
+        <th>Meeting Time</th>
+        <th>Grades</th>
+        <th>Enrollment</th>
+	<th>Room</th>
+    </tr>
+    {% for class in classes %}
+        {% render_class_row class %}
+    {% endfor %}
+</table>
+</div>
+
+<p align="center">
+    <a href="/onsite/{{ program.getUrlBase }}/main">Return to on-site portal</a>
+</p>
+
+{% endblock %}
