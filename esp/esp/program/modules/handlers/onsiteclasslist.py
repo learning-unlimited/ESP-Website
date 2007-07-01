@@ -50,4 +50,21 @@ class OnSiteClassList(ProgramModuleObj):
         return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), 
             {'classes': classes, 'one': one, 'two': two, 'categories': categories.values()})
 
+    @needs_onsite
+    def allClassList(self, request, tl, one, two, module, extra, prog):
+        """ Display a list of all classes that still have space in them """
 
+        # using .extra() to select all the category text simultaneously
+        classes = [(i.num_students()/i.class_size_max, i) for i in Class.objects.catalog(self.program)]
+        classes.sort()
+        classes = [i[1] for i in classes]
+        
+        categories = {}
+        for cls in classes:
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
+        
+        return render_to_response(self.baseDir()+'allclasslist.html', request, (prog, tl), 
+            {'classes': classes, 'one': one, 'two': two, 'categories': categories.values()})
+
+
+        
