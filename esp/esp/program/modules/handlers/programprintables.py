@@ -513,13 +513,15 @@ Student schedule for %s:
         studentList = []
         for student in students:
             t = Transaction.objects.filter(fbo = student, anchor = self.program.anchor)
-            if t.count() == 0:
-                studentList.append({'user': student,
-                                    'paid': False})
-            else:
-                studentList.append({'user': student,
-                                    'paid': '?'})
+            
+            paid_symbol = ''
+            if t.count() > 0:
+                paid_symbol = '?'
+                for tr in t:
+                    if tr.executed is True:
+                        paid_symbol = 'X'
 
+            studentList.append({'user': student, 'paid': paid_symbol})
 
         context['students'] = students
         context['studentList'] = studentList

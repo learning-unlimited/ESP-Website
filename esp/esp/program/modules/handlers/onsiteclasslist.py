@@ -32,11 +32,12 @@ Email: web@esp.mit.edu
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite
 from esp.program.models import Class
+from esp.web.util import render_to_response
 
 class OnSiteClassList(ProgramModuleObj):
 
     @needs_onsite
-    def classList(self):
+    def classList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """
 
         # using .extra() to select all the category text simultaneously
@@ -46,9 +47,7 @@ class OnSiteClassList(ProgramModuleObj):
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
         
-        return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), {'classes': classes,
-                                                                                         'one':        one,
-                                                                                         'two':        two,
-                                                                                         'categories': categories.values()})
+        return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), 
+            {'classes': classes, 'one': one, 'two': two, 'categories': categories.values()})
 
-        
+
