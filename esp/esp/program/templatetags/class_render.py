@@ -9,6 +9,12 @@ def cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
 
     return None
 
+def minimal_cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
+    if not user or not prereg_url:
+        return 'CLASS_MINDISPLAY__%s' % cls.id
+
+    return None
+
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func)
 def render_class(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
@@ -25,7 +31,7 @@ def render_class(cls, user=None, prereg_url=None, filter=False, request=None):
             'errormsg':   errormsg,
             'show_class': show_class}
 
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_minimal.html', cache_key_func=cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_minimal.html', cache_key_func=minimal_cache_key_func)
 def render_class_minimal(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
 
