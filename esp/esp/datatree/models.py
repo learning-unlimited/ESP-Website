@@ -142,6 +142,9 @@ class DataTree(models.Model):
     @transaction.commit_on_success
     def save(self, create_root = False, uri_fix = False, old_save = False, start_size = None):
         " This will save the tree, using the rules of a tree. "
+        if old_save:
+            return super(DataTree, self).save()
+
         if start_size is None: start_size = DataTree.START_SIZE
 
         self.get_uri()
@@ -154,8 +157,7 @@ class DataTree(models.Model):
         if self.name.find(DataTree.DELIMITER) != -1:
             raise DataTree.InvalidName, "You cannot use '%s' in the name field." % DataTree.DELIMITER
 
-        if old_save:
-            return super(DataTree, self).save()
+
 
 
         DataTree.fix_tree_if_broken()
