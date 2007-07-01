@@ -41,6 +41,7 @@ body { font-family: georgia; }
    <th>Paid?</th>
    <th>Medical?</th>
    <th>Liability?</th>
+   <th>Agreement?</th>
    <th>Name</th>
    <th>Email</th>
    <th>DOB</th>
@@ -50,7 +51,8 @@ body { font-family: georgia; }
 <tr>
    <td>{{forloop.counter}}</td>
    <td><div class="box">&nbsp;</div></td>
-   <td><div class="box">{% if student.paid %}X{% endif %}</div></td>
+   <td><div class="box">{% if student.paid %}?{% endif %}</div></td>
+   <td><div class="box">&nbsp;</div></td>
    <td><div class="box">&nbsp;</div></td>
    <td><div class="box">&nbsp;</div></td>
    <td>{{ student.user.name }}</td>

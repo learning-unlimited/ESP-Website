@@ -281,6 +281,7 @@ Student schedule for %s:
         """ generate student schedules """
 
         filterObj, found = get_user_list(request, self.program.getLists(True))
+
         if not found:
             return filterObj
 
@@ -517,7 +518,7 @@ Student schedule for %s:
                                     'paid': False})
             else:
                 studentList.append({'user': student,
-                                    'paid': t[0].executed})
+                                    'paid': '?'})
 
 
         context['students'] = students

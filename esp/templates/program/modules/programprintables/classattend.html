@@ -2,23 +2,24 @@
   <div class="classtitle">Attendence for <br />
   {{ item.cls.title }}
   <br />
-  {% now "M j, Y" %}</div>
+    {% now "M j, Y" %}
+</div>
 
   <table align="center" cellspacing="0" cellpadding="0">
   <tr>
    <td>
-      <div class="blocks">{{ item.cls.friendly_times|join:"<br />" }}</div>
+      <b>Time:</b>  <div class="blocks">{{ item.cls.friendly_times|join:"<br />" }}</div>
    </td>
    <td>
-      <div class="classroom">{{ item.cls.prettyrooms|join:"<br />" }}</div>
+      <b>Room:</b> <div class="classroom">{{ item.cls.prettyrooms|join:"<br />" }}</div>
    </td>
   </tr>
   </table>
   <br />
-  <div class="teachername"><span>{{ item.teacher.name }}</span></div>
+  <div class="teachername"><span>Teacher:  {{ item.teacher.name }}</span></div>
   <br />
-  <div class="teachername">Class Email: <tt>{{item.cls.emailcode}}-class@esp.mit.edu</tt><br />
-Students Email: <tt>{{item.cls.emailcode}}-students@esp.mit.edu</tt>
+  <div class="teachername">Class E-mail: &nbsp; &nbsp; <tt>{{item.cls.emailcode}}-class@esp.mit.edu</tt><br />
+Students E-mail: &nbsp; &nbsp; <tt>{{item.cls.emailcode}}-students@esp.mit.edu</tt>
   </div>
   <br />
   <br />

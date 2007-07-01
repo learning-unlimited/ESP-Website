@@ -70,10 +70,16 @@ class NameTagModule(ProgramModuleObj):
                               'id'   : student.id})
                 
         elif idtype == 'teacher':
-            teachers = self.program.teachers_union()
-
-	    teachers = [ ESPUser(teacher) for teacher in
-                         teachers ]
+            teachers = []
+            teacherdict = self.program.teachers()
+            for key in teacherdict:
+                tlist = list(teacherdict[key])
+                for teacher in tlist:
+                    if teacher not in teachers:
+                        teachers.append(teacher)
+                
+	    teachers = [ ESPUser(teacher) for teacher in teachers ]
+            
             teachers.sort()
 
             for teacher in teachers:
