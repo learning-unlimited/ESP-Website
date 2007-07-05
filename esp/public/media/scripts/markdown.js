@@ -75,7 +75,10 @@ function addWikiFormattingToolbar(jq) {
   addButton("br", "Line break: <br />", function() {
     encloseSelection("<br />\n", "");
   });
-
+  addButton("latex_math", "LaTeX Math Symbols", function() {
+      encloseSelection("$$ ", " $$");
+  });
+  
 //  textarea.parentNode.insertBefore(toolbar, textarea);
 }
 
