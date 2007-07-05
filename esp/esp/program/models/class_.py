@@ -176,7 +176,7 @@ class Class(models.Model):
         return '/'.join(str_array[2:])
 
     def got_qsd(self):
-        return QuasiStaticData.objects.filter(path = self.anchor).values('id'.count() > 0)
+        return QuasiStaticData.objects.filter(path = self.anchor).values('id').count() > 0
 
     def PopulateEvents(self):
         """ Given this instance's event_template, generate a series of events that define this class's schedule """
