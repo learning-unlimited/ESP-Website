@@ -39,7 +39,7 @@ Create a new entry:
 <option value="True">Indented</option>
 </select>
 <select name="child_node">
-<option value="">Node</option>
+<option value="{{ navbar_list.node.id }}">Node</option>
 {% for child_node in navbar_list.node.children %}
 <option value="{{ child_node.id }}">{{child_node.name }}</option>
 {% endfor %}
