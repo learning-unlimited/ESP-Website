@@ -178,7 +178,14 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
                                    'form': form})
 
     def prepare(self, context):
-        context['classes'] = self.user.getTaughtClasses().filter(parent_program = self.program)
+        """ Sets the 'classes' template variable to contain the list of classes that the current user is teaching """
+        # aseering 7/6/2007: Added this because it overwrites the Junction
+        # class list on the main admin panel (they use the same variable name).
+        # The correct solution would be to use a different template variable
+        # name, but I don't know which templates use this file.
+        # Could whoever coded this, take a look at that?
+        if not context.has_key('classes'):
+            context['classes'] = self.user.getTaughtClasses().filter(parent_program = self.program)
         return context
 
     def isStep(self):
