@@ -120,7 +120,7 @@ class LatexImage(models.Model):
 
         f.close()
         
-        os.system('rm -f %s/%s*' % (TMP, old_filename))
+        #os.system('rm -f %s/%s*' % (TMP, old_filename))
 
         self.save(super=True)
         
@@ -143,6 +143,9 @@ class LatexImage(models.Model):
         if not self.image:
             return False
         return os.path.exists(self.get_image_filename())
+
+    class Admin:
+        pass
     
 def get_rand_file_base():
     import sha
