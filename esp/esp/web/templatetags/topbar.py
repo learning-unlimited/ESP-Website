@@ -1,5 +1,6 @@
 from django.conf import settings
 from django import template
+from django.core.cache import cache
 from esp.users.models import ESPUser, AnonymousUser
 from urllib import quote as urlencode
 from esp.web.util.template import cache_inclusion_tag

@@ -762,6 +762,10 @@ class JunctionStudentApp(models.Model):
     director_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
     rejected       = models.BooleanField(default=False,editable=False)
     
+    def __str__(self):
+        return str(self.user)
 
+    class Admin:
+        pass
 
 from esp.program.models.class_ import *
