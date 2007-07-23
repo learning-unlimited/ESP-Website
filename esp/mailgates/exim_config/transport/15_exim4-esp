@@ -1,0 +1,5 @@
+
+esp_transport:
+	debug_print = "T: esp_mailgate_pipe for $local_part@$domain"
+	driver = pipe
+	command = "/esp/esp/mailgates/mailgate.py"

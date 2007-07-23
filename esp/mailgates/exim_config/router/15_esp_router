@@ -1,0 +1,12 @@
+#VIRTUAL DOMAIN HANDLER
+virtual_alias:
+    driver = redirect
+    domains = +virtual_domains
+    local_part_suffix = +*
+    local_part_suffix_optional
+    data = ${lookup{$local_part}lsearch*{/virtual/${domain}/mail/aliases}}
+    qualify_preserve_domain
+    file_transport = address_file
+    pipe_transport = address_pipe
+    no_more
+
