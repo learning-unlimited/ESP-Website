@@ -28,6 +28,10 @@
   button at the bottom of the page.
 </p>
 
+<center><div class="note">
+<b>Parents:</b> You should not be at this page!  Please let your kids choose their classes and fill out the registration forms.
+</div></center>
+
 <table style="text-align: center" align="center" width="400">
 <tr><th>Steps for Registration</th><th>Done?</th></tr>
 {% for module in modules %}
@@ -83,10 +87,12 @@
 <center>
 
 
-<div class="errormsg">
+
 {% if not completedAll %}
+<div class="errormsg">
 Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Save</em> button below (it will be active at this point).
 {% else %}
+<div class="info">
 Please click <em>Save</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
 {% endif %}
 </div>
@@ -98,11 +104,11 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 <a name="confirmreg"></a>
 
 <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-<input type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %}/><br />
-</form>
+<input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %}/></form>
 {% if isConfirmed %}
+ | 
 <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
-<input type="submit" value="Cancel Registration" />
+<input class="button" type="submit" value="Cancel Registration" />
 {% endif %}
 
 </center>

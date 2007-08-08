@@ -7,12 +7,12 @@
 {% block content %}
 <h1>Credit Card Payment for {{ program.niceName }} </h1>
 
-<div style="font-size: 120%">
-<p><b>Instructions for paying by credit card:</b><br/>
+<h2>Instructions for paying by credit card:</h2>
+<p>
 <ol>
 <li>Fill out the form on the next page completely.</li>
 <li>When going to the next page, you may be warned that the page's certificate<br />
- is not signed by a trusted authority. This untrusted authority is MIT. <br />To convince your computer to trust MIT, <a href="http://ca.mit.edu/mitca.crt" title="Download MIT Certificate Authority">Get the MIT CA (Certificate Authority)</a>.
+ is not signed by a trusted authority. This untrusted authority is MIT. <br />To convince your computer to trust MIT, <a href="http://ca.mit.edu/mitca.crt" title="Download MIT Certificate Authority">get the MIT CA (Certificate Authority)</a>.
 <li>Check your answers for accuracy, and submit.</li>
 <li>If the charge fails for any reason, you will have to fill out the form again.</li>
 <li>When finished, you will receive an on-screen receipt.</li>
@@ -23,9 +23,7 @@
 
 <p>When you are ready, please move on to the <a href="https://{{ current_site.domain }}/{{ tl }}/{{ one }}/{{ two }}/paynow" title="Proceed to payment form.">payment form.</a>
 
-<p>If you would like to cancel at this time, please close this window.</p>
-</div>
-
+<p>If you would like to cancel at this time, please close this window or <a href="/learn/{{ program.getUrlBase }}/studentreg/" title="Return to main registration page">return to the main registration page</a>.</p>
 
 {% endblock %}
 

@@ -697,19 +697,19 @@ class FinancialAidRequest(models.Model):
 
     reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', null=True, blank=True)
 
-    household_income = models.CharField(verbose_name = 'Approximately what is your household income (round do the nearest $10000)?', null=True, blank=True,
+    household_income = models.CharField(verbose_name = 'Approximately what is your household income (round do the nearest $10,000)?', null=True, blank=True,
                         maxlength=12)
 
-    extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this summer.', null=True, blank=True)
+    extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this year.', null=True, blank=True)
 
     student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True,null=True)
 
     done = models.BooleanField(default = False, editable=False)
 
-    reviewed = models.BooleanField(default=False)
+    reviewed = models.BooleanField(default=False, editable=False, verbose_name='Reviewed by Directors')
 
-    amount_received = models.IntegerField(blank=True,null=True)
-    amount_needed = models.IntegerField(blank=True,null=True)
+    amount_received = models.IntegerField(blank=True,null=True, editable=False, verbose_name='Amount granted')
+    amount_needed = models.IntegerField(blank=True,null=True, editable=False, verbose_name='Amount due from student')
 
     def __str__(self):
         """ Represent this as a string. """

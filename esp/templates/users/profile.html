@@ -30,6 +30,8 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 <h1>Your Profile Information</h1>
 <p>Please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
 
+<p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
+
 {% if form.has_errors %}
 <h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
 {% endif %}

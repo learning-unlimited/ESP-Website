@@ -1,15 +1,41 @@
 <div class="title">Student Schedule for <br /><br />
     <span>{{ student.name }}</span>
 </div>
-<div class="description">Here is your schedule.
-<br />
-If you have any questions, please go to the ESP help desk.
+<div class="description">Here is your class schedule!<br />
+For help finding your classrooms, please consult the directions and maps in your guidebook.<br />
+If you have any questions, please go to the program office.
 </div>
 
-<div style="height: 2in;">&nbsp;</div>
+<div style="height: 1in;">&nbsp;</div>
 <br />
+{% if student.payment_info %}
+<table align="center" cellspacing="0" cellpadding="5px" border="0">
+<tr>
+    <td>
+        Payment due:
+    </td>
+    <td>
+        <div style="border: 1px solid black">
+            <table cellpadding="5px" border="0"><tr><td style="font-size: 1.2em; font-weight: bold;">${{ student.cost|floatformat:2 }}</td></tr></table>
+        </div>
+    </td>
+</tr>
+<tr>
+    <td>
+        Payment status:
+    </td>
+    <td>
+        <div style="border: 1px solid black">
+            <table cellpadding="5px" border="0"><tr><td width="100">&nbsp;</td></tr></table>
+        </div>
+    </td>
+</tr>
+<tr><td colspan="2" align="center"> (Payment should be made by check to "MIT ESP")  </td></tr>
+</table>
+{% endif %}
+<div style="height: 1in;">&nbsp;</div>
 <br />
-<table align="center" cellspacing="0" cellpadding="2px" class="schedule">
+<table align="center" cellspacing="0" cellpadding="4px" class="schedule">
    <tr>
      <th colspan="4">Schedule</th>
    </tr>

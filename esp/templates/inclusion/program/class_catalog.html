@@ -59,14 +59,14 @@
     {% endif %}
 {% if prereg_url %}
     <tr>
-      <td colspan="3" style="text-align: center; padding:0; padding-left: 125px; height: 30px;" align="center" class="add_class">
+      <td colspan="3" style="text-align: center; padding:0;" align="center" valign="center" class="add_class">
      {% if errormsg %}
 <span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
 {% if user.onsite_local %}
 <br />
 <form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
 	  <input type="hidden" name="class_id" value="{{ class.id }}" />
-  	  <input type="submit" name="action" value="Add this class anyway!"
+  	  <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
                  id="submitbutton{{ class.id }}" />
 </form>
 {% endif %}
@@ -74,7 +74,7 @@
 {% else %}
 	<form name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
 	  <input type="hidden" name="class_id" value="{{ class.id }}" />
-  	  <input type="submit" name="action" value="Add this class"
+  	  <input type="submit" class="addbutton" name="action" value="Add this class"
                  id="submitbutton{{ class.id }}" />
 	</form>{% endif %}
       </td>

@@ -64,6 +64,11 @@ class RegProfileModule(ProgramModuleObj):
 	from esp.web.views.myesp import profile_editor
         role = {'teach': 'teacher','learn': 'student'}[tl]
 
+        #   Reset e-mail address for program registrations.
+        u = request.user
+        u.email = ''
+        u.save()
+
 	response = profile_editor(request, prog, False, role)
 	if response == True:
             return self.goToCore(tl)

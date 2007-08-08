@@ -8,36 +8,49 @@
 {{ block.super }}
 <style type="text/css" media="screen">
 #appform {
+    border: 1px solid #CCC;
     width: 100%;
-}
-
-#appform, #appform td, #appform th {
-    border: 0;
 }
 
 #appform td, #appform th {
     vertical-align: top;
-    padding-top: 50px;
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
 #appform td {
     font-style: italic;
-    font-size: 90%;
+    font-size: 13px;
 }
 
 #appform input, #appform textarea {
     font-style: normal;
-    font-size:  111%;
+    font-size:  12px;
 }
 
 #appform th {
-    font-size: 80%;
+    font-size: 13px;
     width:     1in;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 #appform textarea {
     width: 100%;
     height: 4in;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#appform input.button {
+    background-color: #CCCCCC;
+    border: 1px solid black;
+    font-weight: bold;
+    font-size: 13px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#appform input.button:hover {
+    background-color: #333399;
+    color: #c6def7;
 }
 
 </style>
@@ -50,37 +63,37 @@
 <h1>{{ program.niceName }} Financial Aid Request Form</h1>
 
 <h2>Introduction</h2>
-<p>
-Please complete this form to request financial aid from ESP. While you are working on it, you can <strong>Save Progress</strong> to keep your work while going to other things. Once you're completed, please let us know by clicking <strong>Complete</strong>.<br />
-Please note, all information is completely optional. However, the better we can understand your current need the easier it is for us to grant financial aid when necessary and determine the right amount.
-
-
-</p>
-
-<h2>Financial Aid Request</h2>
+<p>Financial limitations should not prevent anyone from participating in ESP programs.  If this program is difficult for you and your family to afford, please apply for financial aid and we will do our best to accomodate you.  ESP offers both partial and complete scholarships, depending on need.  We will take a look at your situation and notify you of our decision before the start of the program.</p>
+<p>Please complete this form to request financial aid for {{ program.niceName }}.  You can always <strong>Save Progress</strong> to keep your work and return to this page at any time to continue filling it out.  Once you're finished, please let us know by clicking <strong>Complete</strong>.</p>
+<p>All information is completely optional.  However, the better we can understand your current need, the easier it is for us to grant financial aid when necessary (and determine an appropriate amount).</p>
 
 <form action="{{ request.path }}" method="post" name="application_form">
-<table id="appform">
-<tr>
+<table id="appform" cellspacing="0" cellpadding="4">
+<tr style="background-color: #c6def7">
+<th colspan="2" style="text-align: center;">
+<font size="3">Financial Aid Request: {{ request.user.get_full_name }}</font>
+</th>
+</tr>
+<tr style="border: 1px solid #CCCCCC">
  <th colspan="2" style="text-align: center;">
-    <input type="submit" name="submitform" value="Save Progress" />
+    <input type="submit" class="button" name="submitform" value="Save Progress" />
     &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
     {% if app.done %}
-    <input type="submit" name="submitform" value="Mark as Unfinished" />
+    <input type="submit" class="button" name="submitform" value="Mark as Unfinished" />
     {% else %}
-    <input type="submit" name="submitform" value="Complete" />
+    <input type="submit" class="button" name="submitform" value="Complete" />
     {% endif %}
  </th>
 </tr>
- {{form}}
-<tr>
+ {{ form }}
+<tr style="border: 1px solid #CCCCCC">
  <th colspan="2" style="text-align: center;">
-    <input type="submit" name="submitform" value="Save Progress" />
+    <input type="submit" class="button" name="submitform" value="Save Progress" />
     &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
     {% if app.done %}
-    <input type="submit" name="submitform" value="Mark as Unfinished" />
+    <input type="submit" class="button" name="submitform" value="Mark as Unfinished" />
     {% else %}
-    <input type="submit" name="submitform" value="Complete" />
+    <input type="submit" class="button" name="submitform" value="Complete" />
     {% endif %}
  </th>
 </tr>

@@ -1,0 +1,70 @@
+{% extends "elements/receipt.html" %}
+
+{% block title %}Pre-Registration Receipt for {{program.niceName}}{% endblock %}
+
+{% block subsection_name %} {% endblock %}
+
+{% block body %}
+<p>
+Your class selection for {{program.niceName}} has been saved. You can come back and change your class selection later, up until 2 days before {{one}} begins.
+</p>
+
+<p>
+Please note that this does not guarantee enrollment in any class.  A spot is being held for you, but you will need to come to registration and the first day of class.  Please e-mail the directors at <a href="mailto:delve-director@mit.edu">delve-director@mit.edu</a> if this is not possible for you.
+
+You must show up to Delve registration on Sunday, September 9 to complete your registration.  Registration will be held in the lobby of MIT building 13, between the hours of 1:00 - 5:00 PM.  Please arrive during the appropriate time window based on your last name:<br />
+<table border="1" cellspacing="0" cellpadding="5">
+<tr><th>Name Range</th><th>Registration Time</th>
+<tr><td>A - E</td><td>1:00 - 2:00 PM</td></tr>
+<tr><td>F - L</td><td>2:00 - 3:00 PM</td></tr>
+<tr><td>M - R</td><td>3:00 - 4:00 PM</td></tr>
+<tr><td>S - Z</td><td>4:00 - 5:00 PM</td></tr>
+</table>
+
+<br />
+To attend Delve AP classes, you'll need to fill out a few forms (medical and liability forms, as well as an ESP student agreement).  We're sorry that they aren't quite available yet!  Please check back soon; the forms will be posted by August 15th.
+<br />
+
+<p>
+<b>Summary:</b> Please bring the following to Delve registration in MIT Lobby 13 on Sunday, September 9th (at the time given above):
+<ul>
+<li>This receipt
+<li>Completed and signed liability and medical forms
+<li>Signed student agreement
+</ul>
+</p>
+
+<br />
+<hr size="1" color="#000000" />
+<p>
+User Information: <br />
+<ul>
+<li>Username: {{ request.user.username }}</li>
+<li>Full Name: {{ request.user.first_name }} {{ request.user.last_name }}</li>
+<li>User ID: {{ request.user.id }}</li>
+</ul>
+</p>
+<br />
+<table cellpadding="3" style="width: 5.5in; margin: auto; border: 1px solid black; border-collapse: collapse;" border=1>
+<tr>
+  <th colspan="2">Class Schedule for {{ request.user.first_name }} {{ request.user.last_name }}</th>
+</tr>
+{% for timeslot in timeslots %}
+<tr>
+  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.friendly_name }} </td>
+  <td>
+	{% if timeslot.1 %}
+	{{timeslot.1.title}}{% else %} <em>Nothing Selected</em> {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+<br />
+<br />
+<pre>
+Note: Class selections are subject to change until the first day of the program.
+The MIT Educational Studies Program cannot guarantee that all
+proposed classes will be taught.
+</pre>
+{% endblock %}

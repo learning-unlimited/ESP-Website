@@ -8,6 +8,23 @@
 <style type="text/css">
 #divmaintext a { text-decoration: underline; }
 #divmaintext a:hover { text-decoration: none; }
+table.payproc1 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+}
+
+input.button {
+    background-color: #c6def7;
+    border: 1px solid black;
+    font-weight: bold;
+    font-size: 13px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+input.button:hover {
+    background-color: #333399;
+    color: #c6def7;
+}
 </style>
 <script type="text/javascript" src="/media/scripts/creditcard.js"></script>
 <script type="text/javascript">
@@ -274,7 +291,7 @@ is sent over the internet using secure HTTPS.</strong>
 <li>DO NOT submit multiple times, or else you may be charged multiple times.</li>
 </ol>
 <p style="text-align: center">
-<input id="paybutton" onsubmit="return testForm();" type="submit" value="Submit Payment"><br/>
+<input id="paybutton" onsubmit="return testForm();" class="button" type="submit" value="Submit Payment"><br/>
 </p>
 
 </form>

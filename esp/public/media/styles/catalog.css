@@ -4,7 +4,6 @@
    border-collapse: collapse;
 }
 
-
 #catalog th {
    font-family: Arial, sans-serif;
    padding: 5px;
@@ -89,3 +88,15 @@ p.category {
 a.classtitle:hover {
   text-decoration: none;
 }
+
+input.button {
+    background-color: #c6def7;
+    border: 1px solid black;
+    font-weight: bold;
+    font-size: 13px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+input.button:hover {
+    background-color: #333399;
+    color: #c6def7;
