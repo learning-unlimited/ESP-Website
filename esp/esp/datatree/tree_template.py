@@ -109,5 +109,5 @@ def genTemplate():
 
     Returns a list of DataTree nodes corresponding exactly (in order, target, etc.) to the names in templates """
     from esp.datatree.models import GetNode
-    return [ GetNode(i) for i in templates ]
+    return [ GetNode(i) for i in tree_template ]
 
