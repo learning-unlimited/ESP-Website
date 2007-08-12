@@ -9,8 +9,7 @@ from django.contrib.auth.views import login
 def login_checked(request, *args, **kwargs):
     if request.user.is_authenticated():
         return HttpResponseRedirect('/')
-    
-    kwargs['template_name'] = 'users/login.html'
+
     return login(request, *args, **kwargs)
 
 
