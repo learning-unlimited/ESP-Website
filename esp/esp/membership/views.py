@@ -29,14 +29,14 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.membership.forms import ContactInfoForm, AlumniContactForm
+from esp.membership.forms import ContactInfoForm, AlumniContactForm, AlumniRSVPForm
 from esp.web.util.main import render_to_response
 from django.core.mail import send_mail
 from django.template import loader
 from django.http import HttpResponseRedirect
 
 # model dependencies
-from esp.membership.models import AlumniContact
+from esp.membership.models import AlumniContact, AlumniRSVP
 from esp.users.models import ContactInfo
 
 
@@ -123,4 +123,42 @@ def alumniform(request):
     
     
     return render_to_response('membership/alumniform.html', request, request.get_node('Q/Web/about'), {'contact_form': form1, 'main_form': form2})
+
+def alumnirsvp(request):
+    """
+    This view should take the form, send an e-mail to the right people and save the data in our database.
+    """
+
+    #  If it's a success, return success page
+    if 'success' in request.GET:
+        return render_to_response('membership/alumniform_success.html', request, request.get_node('Q/Web/about'), {})
+
+    #   If the form has been submitted, process it.
+    if request.method == 'POST':
+        data = request.POST.copy()
+        form = AlumniRSVPForm(data)
+
+        if form.is_valid():
+            #   Save the information in the database
+            new_rsvp = AlumniRSVP()
+            save_instance(form, new_rsvp)
+            
+            #   Send an e-mail to esp-membership with details.
+            SUBJECT_PREPEND = '[ESP Alumni] RSVP From:'
+            to_email = ['esp-50th-contact@esp.mit.edu']
+            from_email = 'alumnirsvp@esp.mit.edu'
+            
+            t = loader.get_template('email/alumnirsvp')
+    
+            msgtext = t.render({'form': form})
+                    
+            send_mail(SUBJECT_PREPEND + ' '+ form.clean_data['name'], msgtext, from_email, to_email, fail_silently = True)
+    
+            return HttpResponseRedirect(request.path + '?success=1')
+
+    else:
+        #   Otherwise, the default view is a blank form.
+        form = AlumniRSVPForm()
+    
+    return render_to_response('membership/alumnirsvp.html', request, request.get_node('Q/Web/about'), {'form': form})
 

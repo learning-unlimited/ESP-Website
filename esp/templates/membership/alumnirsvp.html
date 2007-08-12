@@ -1,0 +1,52 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Alumni: RSVP{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Stay in touch"|subsection }}
+{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>ESP 50th Anniversary RSVP</h1>
+
+<p>
+The ESP 50th anniversary event will be held on September 14-15, 2007 at MIT.  For more information, visit the <a href="/about/alumni_50th.html">50th anniversary page.</a>
+</p>
+<p>
+Please confirm whether or not you will be coming.  You are invited to bring your spouse and/or children; if so, please indicate that by select a number other than "0" in the box below.  The cost will be $100 per person.
+<br />
+</p>
+
+<div id="alumni_form">
+  <form action="{{ request.path }}" method="post">
+  <table class="contact" align="center" width="500">
+  <thead>
+    <tr>
+      <th colspan="2">
+        RSVP for ESP 50th Anniversary
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+  {{ form }}
+  </tbody>
+  <tbody>
+    <tr> 
+      <td colspan="2" class="submit">
+        When finished, click here: 
+        <input class="fancybutton" type="submit" name="sendemail" value="Send!" />
+      </td>
+    </tr>
+  </tbody>
+  </table>
+</form>
+</div>
+{% endblock %}

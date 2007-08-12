@@ -1,0 +1,15 @@
+An alumni filled a form out on the ESP web site:
+
+50th Anniversary information
+----------------------------
+Name:                           {{ form.clean_data.name }}
+Are you coming to the 50th:     {{ form.clean_data.attending }}
+Number of guests:               {{ form.clean_data.num_guests }}
+Comments/questions:
+
+{{ form.clean_data.comments }}
+
+-----------
+End of form
+
+

@@ -29,15 +29,38 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.membership.models import AlumniContact
+from esp.membership.models import AlumniContact, AlumniRSVP
 from esp.users.models import ContactInfo
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
-from esp.membership.models import attend_status_choices, partofesp_choices
+from esp.membership.models import attend_status_choices, partofesp_choices, rsvp_choices, guest_choices
 from django import newforms as forms
 
 #   Modify the CharField class to support our formatting features.
 add_fields_to_class(forms.CharField, {'is_long': False, 'line_group': 0})
 
+
+class AlumniRSVPForm(forms.form_for_model(AlumniRSVP, formfield_callback=new_callback())):
+    
+    def __init__(self, *args, **kwargs):
+        
+        self.base_fields['name'].line_group = 1
+        self.base_fields['num_guests'] = \
+                forms.ChoiceField(choices = guest_choices,
+                    label = AlumniRSVP._meta.get_field('num_guests').verbose_name)
+        
+        self.base_fields['num_guests'].line_group = 2
+        self.base_fields['comments'].line_group = 3
+        
+        self.base_fields['attending'] = \
+                forms.ChoiceField(choices = rsvp_choices,
+                    label = AlumniRSVP._meta.get_field('attending').verbose_name)
+                    
+        self.base_fields['attending'].line_group = 2
+        
+        super(AlumniRSVPForm, self).__init__(*args, **kwargs)
+
+    # use field grouping
+    as_table = grouped_as_table
 
 class ContactInfoForm(forms.form_for_model(ContactInfo, formfield_callback=new_callback(exclude=['phone_cell', 'phone_even', 'phone_day', 'user', 'address_postal', 'undeliverable']))):
     """

@@ -44,6 +44,34 @@ partofesp_choices = (
     ('Yes', 'Yes'),
     ('No', 'No'),
     )
+    
+rsvp_choices = (
+    ('Yes', 'Yes'),
+    ('No', 'No'),
+    )
+    
+guest_choices = (
+    ('0', '0'),
+    ('1', '1'),
+    ('2', '2'),
+    ('3', '3'),
+    )
+
+
+class AlumniRSVP(models.Model):
+    name = models.CharField('Your name', maxlength=30)
+    attending = models.CharField('Are you coming?', choices=rsvp_choices, maxlength=10)
+    num_guests = models.IntegerField('Number of guests', choices=guest_choices)
+    comments = models.TextField('Questions or comments', null=True)   
+     
+    def __str__(self):
+        if self.attending == 'Yes':
+            return 'RSVP for %s: Attending with %d guests' % (self.name, self.num_guests)
+        else:
+            return 'RSVP for %s: Not Attending' % self.name
+        
+    class Admin:
+        pass
 
 class AlumniContact(models.Model):
     """ This model answers the following questions: 
