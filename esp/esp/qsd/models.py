@@ -100,7 +100,11 @@ class ESPQuotations(models.Model):
         cutoff = .9
         if random.random() > cutoff:
             return None
-        return ESPQuotations.objects.filter(display=True).order_by('?')[0]
+
+        try:
+            return ESPQuotations.objects.filter(display=True).order_by('?')[0]
+        except IndexError:
+            return None
         
     class Meta:
         verbose_name_plural = 'ESP Quotations'

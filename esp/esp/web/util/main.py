@@ -92,6 +92,8 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
 
         if 'qsd.html' in template.lower():
             context['randquote'] = ESPQuotations.getQuotation()
+            if context['randquote'] == None:
+                context['randquote'] = False
         else:
             context['randquote'] = False
             
