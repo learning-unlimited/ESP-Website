@@ -3,9 +3,9 @@ from django import newforms as forms
 from django.contrib.auth.models import User
 
 role_choices = (
-    ('Student', 'ESP Student (in K-12th grade)'),
-    ('Teacher', 'ESP Teacher (MIT or non-MIT affilated)'),
-    ('Guardian', 'Guardian of ESP student'),
+    ('Student', 'Student (up through 12th grade)'),
+    ('Teacher', 'Volunteer Teacher'),
+    ('Guardian', 'Guardian of Student'),
     ('Educator', 'K-12 Educator'),
     )
 

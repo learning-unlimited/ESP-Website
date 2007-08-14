@@ -36,9 +36,9 @@ class UserRegManipulator(forms.Manipulator):
     """Manipulator for User Reg"""
     def __init__(self):
         confirm_validators = [validators.AlwaysMatchesOtherField('password','The password and confirmation password do not match.'),validators.isNotEmpty]
-        roles = [('Student','ESP Student (up through 12th grade)'),
-                 ('Teacher','ESP Teacher (MIT or non-MIT affiliated)'),
-                 ('Guardian','Guardian of ESP student or potential student'),
+        roles = [('Student','Student (up through 12th grade)'),
+                 ('Teacher','Volunteer Teacher'),
+                 ('Guardian','Guardian of Student'),
                  ('Educator','K-12 Educator')]
 
         self.fields = (
