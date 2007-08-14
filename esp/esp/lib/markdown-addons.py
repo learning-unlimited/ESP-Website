@@ -26,7 +26,7 @@ class ESPLinkPattern (LinkPattern):
 
         # Links can point to non- web media content;
         # only get ones that do point to media that we're managing
-        if src[:6] == 'media/':
+        if src[:9] == 'qsdmedia/':
             if media.has_key(src):
                 media[src] = True
             else:

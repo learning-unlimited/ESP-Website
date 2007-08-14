@@ -9,7 +9,7 @@ class ESPImagePattern (ImagePattern):
 
         src = el.getAttribute('src')
 
-        if src[:6] == 'media/':
+        if src[:9] == 'qsdmedia/':
             if self.media_src.media.has_key(src):
                 self.media_src.media[src] = True
             else:
@@ -30,8 +30,8 @@ class ESPLinkPattern (LinkPattern):
         # only get ones that do point to media that we're managing
 
         print src
-        print src[:6]
-        if src[:6] == 'media/':
+        print src[:9]
+        if src[:9] == 'qsdmedia/':
             print self.media_src.media
             if self.media_src.media.has_key(src):
                 self.media_src.media[src] = True

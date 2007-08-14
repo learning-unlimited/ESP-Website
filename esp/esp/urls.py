@@ -101,16 +101,24 @@ urlpatterns += patterns('',
                         (r'^',  include('esp.miniblog.urls')),
                         )
 
-# things that need to move
+# QSD Media
+# aseering 8/14/2007: This ought to be able to be written in a simpler way...
 urlpatterns += patterns('esp.web.views.everything',
 
-
     # Possibly overspecific, possibly too general.
-    (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
+    (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
         { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'section_prefix_keys': section_prefix_keys }),
-    
-    (r'^(?P<url>.*)/media/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
+    (r'^(?P<subsection>(learn|teach|program|help))/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
+        { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'section_prefix_keys': section_prefix_keys, 'url': ''}),
+    (r'^(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
         { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia }),
+    (r'^qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
+        { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'url': '' }),
+)
+
+# things that need to move
+
+urlpatterns += patterns('esp.web.views.everything',
 
      # JSON
     (r'json/teachers/$', 'teacher_lookup'),

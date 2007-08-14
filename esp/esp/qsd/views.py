@@ -61,11 +61,11 @@ def handle_ajax_mover(method):
 
     def ajax_mover(request, *args, **kwargs):
         START = 'nav_entry__'
-        
+
         if not request.GET.has_key('ajax_movepage') or \
            not request.GET.has_key('seq'):
             return method(request, *args, **kwargs)
-        
+
         entries = request.GET['seq'].strip(',').split(',')
         try:
             entries = [x[len(START):] for x in entries]
@@ -94,7 +94,7 @@ def handle_ajax_mover(method):
                 rank += DEFAULT_SPACING
             except:
                 pass
-            
+
         return HttpResponse('Success')
 
     return ajax_mover
@@ -208,7 +208,7 @@ def qsd(request, branch, name, section, action):
             m = Media()
 
             # Strip "media/" from FILE, and strip the file name; just return the path
-            path = dirname(FILE[6:])
+            path = dirname(FILE[9:])
             if path == '':
                 m.anchor = qsd_rec.path
             else:
@@ -228,8 +228,8 @@ def qsd(request, branch, name, section, action):
             m.format = ''
 
             local_filename = FILE
-            if FILE[:6] == 'media/':
-                local_filename = FILE[6:]
+            if FILE[:9] == 'qsdmedia/':
+                local_filename = FILE[9:]
                     
             m.save_target_file_file(local_filename, request.FILES[FILE]['content'])
             m.save()
