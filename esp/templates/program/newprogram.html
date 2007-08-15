@@ -1,0 +1,60 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Make Program Happen{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "ESP Management"|subsection }}
+{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Program Creation Form</h1>
+
+<p>
+Please fill in the information below and click the magic button.
+</p>
+
+<p>
+After creating the program template using this form, you will still need to set up the classrooms and timeslots.  Please do this using the classroom management page, which is linked to from the top of the main program management page.  (You will be taken there shortly.)
+</p>
+
+<p>
+Please enter the date ranges (bottom 3 rows) in one of the following formats:
+<ul>
+<li><tt>9/1/2007</tt> (September 1, 2007 at midnight)</li>
+<li><tt>9/1/2007 17:30</tt> (September 1, 2007 5:30 pm)</li>
+</ul>
+</p>
+
+<div id="program_form">
+  <form action="{{ request.path }}" method="post">
+  <table class="contact" align="center" width="550">
+  <thead>
+    <tr>
+      <th colspan="2">
+        Program Information
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+  {{ form }}
+  </tbody>
+  <tbody>
+    <tr> 
+      <td colspan="2" class="submit" align="center">
+        When finished, click here: <br /><br />
+        <input class="button" type="submit" value="Make Program Happen!" />
+      </td>
+    </tr>
+  </tbody>
+  </table>
+</form>
+</div>
+{% endblock %}
