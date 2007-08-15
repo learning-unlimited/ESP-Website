@@ -33,7 +33,6 @@ from esp.qsd.views import qsd
 from esp.poll.views import poll
 from esp.qsdmedia.views import qsdmedia
 
-
 #	This is some lookup for the redirector, to insert a certain string for the tree node 
 section_redirect_keys = {'teach': 'Programs',
                          'learn': 'Programs',
@@ -141,7 +140,6 @@ urlpatterns += patterns('esp.web.views.everything',
     (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-
     
     # Event-generation
     # Needs to get fixed (axiak)
@@ -158,4 +156,6 @@ urlpatterns += patterns('esp.web.views.everything',
     #(r'^money/reimbursement/$', 'esp.money.views.create_reimbursement'),
     )
 
-
+urlpatterns += patterns('esp.program.views',
+                    (r'^manage/([-A-Za-z0-9_ ]+)/?', 'managepage'),
+                    )                    

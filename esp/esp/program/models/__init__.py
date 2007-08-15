@@ -248,11 +248,16 @@ class Program(models.Model):
     def __init__(self, *args, **kwargs):
         retVal = super(Program, self).__init__(*args, **kwargs)
 
+        return retVal
+
+    def save(self):
+        
         for type in ['teach','learn','manage','onsite']:
             setattr(self, 'get_%s_url' % type, self._get_type_url(type))
 
+        retVal = super(Program, self).save()
+        
         return retVal
-
 
     def url(self):
         str_array = self.anchor.tree_encode()

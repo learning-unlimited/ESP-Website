@@ -38,47 +38,7 @@ from django.http import HttpResponseRedirect
 # model dependencies
 from esp.membership.models import AlumniContact, AlumniRSVP
 from esp.users.models import ContactInfo
-
-
-def save_instance(form, instance, additional_fields={}, commit=True):
-    """
-    Saves bound Form ``form``'s clean_data into model instance ``instance``.
-
-    Assumes ``form`` has a field for every non-AutoField database field in
-    ``instance``. If commit=True, then the changes to ``instance`` will be
-    saved to the database. Returns ``instance``.
-    
-    Modified to override missing form keys (fields removed by formfield_callback)
-    """
-    from django.db import models
-    opts = instance.__class__._meta
-    
-    if form.errors:
-        raise ValueError("The %s could not be changed because the data didn't validate." % opts.object_name)
-    clean_data = form.clean_data
-    
-    for f in opts.fields:
-        if not f.editable or isinstance(f, models.AutoField):
-            continue
-        if f.name in clean_data.keys():
-            setattr(instance, f.name, clean_data[f.name])
-        
-    #   If additional fields are supplied, write them into the instance.
-    #   I don't have a better way right now.
-    for fname in additional_fields.keys():
-            setattr(instance, fname, additional_fields[fname])
-            
-    if commit:
-        instance.save()
-        for f in opts.many_to_many:
-            if f.name in clean_data.keys():
-                setattr(instance, f.attname, clean_data[f.name])
-
-    # GOTCHA: If many-to-many data is given and commit=False, the many-to-many
-    # data will be lost. This happens because a many-to-many options cannot be
-    # set on an object until after it's saved. Maybe we should raise an
-    # exception in that case.
-    return instance
+from esp.utils.forms import save_instance
 
 def alumniform(request):
     """

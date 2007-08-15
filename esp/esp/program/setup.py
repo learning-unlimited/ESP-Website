@@ -29,77 +29,146 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.datatree.models import GetNode, DataTree
-from esp.users.models import UserBit
+from esp.users.models import ESPUser, UserBit
 from esp.program.Lists_ClassCategories import populate as populate_LCC
-from esp.program.models import Program
-#	from esp.program.Lists_EquipmentTypes import populate as populate_LET
+from esp.program.models import Program, ProgramModule
+#    from esp.program.Lists_EquipmentTypes import populate as populate_LET
 
+#   Note: this is an old function.  Please see prepare_program and commit_program below.
 def PopulateProgram(program_node,
-		program_term,
-		program_admins,
-		teacher_reg_range,
-		student_reg_range,
-		publish_range):
-	""" PopulateProgram initializes a program, establishing its Data Tree branch and
-	creating its registration deadline and administration permissions
-	"""
+                program_term,
+                program_admins,
+                teacher_reg_range,
+                student_reg_range,
+                publish_range):
+    """ PopulateProgram initializes a program, establishing its Data Tree branch and
+    creating its registration deadline and administration permissions
+    """
 
-	# Fetch/create the program node
-	anchor = GetNode( program_node )
+    # Fetch/create the program node
+    anchor = GetNode( program_node )
 
-	# Set the friendly name for the program's term (e.g. 'Summer 2006')
-	anchor.friendly_name = program_term
-	anchor.save()
+    # Set the friendly name for the program's term (e.g. 'Summer 2006')
+    anchor.friendly_name = program_term
+    anchor.save()
 
-	# Create a Program entry
-	program = Program()
-	program.anchor = anchor
-	program.grade_min = 6
-	program.grade_max = 12
-	program.class_size_min = 4
-	program.class_size_max = 200
+    # Create a Program entry
+    program = Program()
+    program.anchor = anchor
+    program.grade_min = 6
+    program.grade_max = 12
+    program.class_size_min = 4
+    program.class_size_max = 200
 
-	# Create the DataTree branches
-	for sub_node in ProgramTemplate:
-		GetNode(program_node + sub_node)
+    # Create the DataTree branches
+    for sub_node in ProgramTemplate:
+        GetNode(program_node + sub_node)
 
-	# Create the initial deadline authorizations
-	if student_reg_range is not None:
-		deadline_student = UserBit()
-		deadline_student.user = None
-		deadline_student.qsc = anchor
-		deadline_student.verb = GetNode( 'V/Deadline/Registration/Student' )
-		deadline_student.startdate = student_reg_range[0]
-		deadline_student.enddate = student_reg_range[1]
-		deadline_student.save()
-	if teacher_reg_range is not None:
-		deadline_teacher = UserBit()
-		deadline_teacher.user = None
-		deadline_teacher.qsc = anchor
-		deadline_teacher.verb = GetNode( 'V/Deadline/Registration/Teacher' )
-		deadline_teacher.startdate = teacher_reg_range[0]
-		deadline_teacher.enddate = teacher_reg_range[1]
-		deadline_teacher.save()
+    # Create the initial deadline authorizations
+    if student_reg_range is not None:
+        deadline_student = UserBit()
+        deadline_student.user = None
+        deadline_student.qsc = anchor
+        deadline_student.verb = GetNode( 'V/Deadline/Registration/Student' )
+        deadline_student.startdate = student_reg_range[0]
+        deadline_student.enddate = student_reg_range[1]
+        deadline_student.save()
+    if teacher_reg_range is not None:
+        deadline_teacher = UserBit()
+        deadline_teacher.user = None
+        deadline_teacher.qsc = anchor
+        deadline_teacher.verb = GetNode( 'V/Deadline/Registration/Teacher' )
+        deadline_teacher.startdate = teacher_reg_range[0]
+        deadline_teacher.enddate = teacher_reg_range[1]
+        deadline_teacher.save()
 
-	# Create the administration authorizations
-	admin_verb = GetNode( 'V/Administer' )
-	for director in program_admins:
-		admin_perm = UserBit()
-		admin_perm.user = director
-		admin_perm.qsc = anchor
-		admin_perm.verb = admin_verb
-		admin_perm.save()
-	
-	# Create the publishing authorizations
-	publish_verb = GetNode( 'V/Flags/Public' )
-	publish = UserBit()
-	publish.user = None
-	publish.qsc = anchor
-	publish.verb = publish_verb
-	publish.startdate = publish_range[0]
-	publish.enddate = publish_range[1]
-	publish.save()
-		
+    # Create the administration authorizations
+    admin_verb = GetNode( 'V/Administer' )
+    for director in program_admins:
+        admin_perm = UserBit()
+        admin_perm.user = director
+        admin_perm.qsc = anchor
+        admin_perm.verb = admin_verb
+        admin_perm.save()
+    
+    # Create the publishing authorizations
+    publish_verb = GetNode( 'V/Flags/Public' )
+    publish = UserBit()
+    publish.user = None
+    publish.qsc = anchor
+    publish.verb = publish_verb
+    publish.startdate = publish_range[0]
+    publish.enddate = publish_range[1]
+    publish.save()
+    
+
+def prepare_program(program, form):
+    """ This function adds custom stuff to save_instance to facilitate making programs happen.
+    """
+
+    #   Datatrees format: each item is a tuple of (node URI, friendly name)
+    datatrees = []
+    #   Userbits format: each item is a tuple of (QSC URI, user ID, startdate, enddate)
+    userbits = []
+    modules = []
+
+    # Fetch/create the program node
+    program_node_name = program.anchor.uri + '/' + form.clean_data['term']
+    datatrees += [(program_node_name, form.clean_data['term_friendly'])]
+
+    # Create the DataTree branches
+    for sub_node in ProgramTemplate:
+        datatrees += [(program_node_name + sub_node, '')]
+
+    userbits += [('V/Flags/Public', 0, form.clean_data['publish_start'], form.clean_data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Student', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    userbits += [('V/Deadline/Registration/Teacher', 0, form.clean_data['teacher_reg_start'], form.clean_data['teacher_reg_end'])]
+    for director in form.clean_data['admins']:
+        userbits += [('V/Administer', director, None, None)]
+        
+    modules += [(str(ProgramModule.objects.get(id=i)), i) for i in form.clean_data['program_modules']]
+       
+    return datatrees, userbits, modules
+
+def commit_program(prog, datatrees, userbits, modules):
+    #   This function implements the changes suggested by prepare_program, by actually
+    #   creating the necessary datatrees and userbits.
+    def gen_tree_node(tup):
+        new_node = DataTree.get_by_uri(tup[0], create=True)
+        new_node.friendly_name = tup[1]
+        new_node.save()
+        return new_node
+    
+    def gen_userbit(tup):
+        new_ub = UserBit()
+        new_ub.verb = DataTree.get_by_uri(tup[0])
+        new_ub.qsc = prog.anchor
+        new_ub.startdate = tup[2]
+        new_ub.enddate = tup[3]
+        if (tup[1] is None) or (tup[1] == 0):
+            new_ub.user = None
+        else:
+            new_ub.user = ESPUser.objects.get(id=tup[1])        
+        new_ub.save()
+        return new_ub
+        
+    for dt_tup in datatrees:
+        gen_tree_node(dt_tup)
+    
+    #   Hopefully, this is not needed because the form is saved in the session
+    #   variables and save_instance(commit=True) is called before this function
+    #   for m in modules:    
+    #       prog.program_modules.add(ProgramModule.objects.get(id=m[1]))
+        
+    prog.anchor = DataTree.get_by_uri(datatrees[0][0])
+    prog.save()
+    
+    for ub_tup in userbits:
+        gen_userbit(ub_tup)
+        
+    return prog
+
+
 def populate():
 	populate_LCC()
 	#	populate_LET()

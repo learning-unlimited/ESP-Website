@@ -463,6 +463,9 @@ class ESPUser(User, AnonymousUser):
         """Returns true if this user is a teacher"""
         return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Educator'))
 
+    def isOfficer(self):
+        """Returns true if this user is an ESP super-user"""
+        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Administrator'))
 
     def isStudent(self):
         """Returns true if this user is a teacher"""

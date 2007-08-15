@@ -42,6 +42,12 @@ from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.auth.decorators import login_required
 from esp.web.models import NavBarEntry
 
+from esp.utils.forms import save_instance
+from esp.program.models import Program
+from esp.program.modules.base import needs_admin
+from esp.program.forms import ProgramCreationForm
+from esp.program.setup import prepare_program, commit_program
+
 @login_required
 def updateClass(request, id):
     """ An update-class form """
@@ -132,5 +138,40 @@ def classTemplateEditor(request, program, session):
     return render_to_response('display/qsd_listing.html', request, program, {'qsd_pages': qsd_pages,
                                                             'have_create': have_create })
 
-
-
+@login_required
+def managepage(request, page):
+    if page == 'newprogram':
+    
+        if 'checked' in request.GET:
+            new_prog = Program()
+            new_prog = save_instance(request.session['prog_form'], new_prog)
+            
+            commit_program(new_prog, request.session['datatrees'], request.session['userbits'], request.session['modules'])
+            
+            manage_url = '/manage/' + new_prog.url() + '/main/'
+            return HttpResponseRedirect(manage_url)
+    
+        #   If the form has been submitted, process it.
+        if request.method == 'POST':
+            data = request.POST.copy()
+            form = ProgramCreationForm(data)
+    
+            if form.is_valid():
+                temp_prog = Program()
+                temp_prog = save_instance(form, temp_prog, commit=False)
+                datatrees, userbits, modules = prepare_program(temp_prog, form)
+                request.session['prog_form'] = form
+                request.session['datatrees'] = datatrees
+                request.session['userbits'] = userbits
+                request.session['modules'] = modules
+              
+                return render_to_response('program/newprogram_review.html', request, request.get_node('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
+            
+                
+        else:
+            #   Otherwise, the default view is a blank form.
+            form = ProgramCreationForm()
+        
+        return render_to_response('program/newprogram.html', request, request.get_node('Q/Programs/'), {'form': form})
+        
+    raise Http404
