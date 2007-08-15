@@ -122,12 +122,15 @@ class TeacherInfoManipulator(forms.Manipulator):
     """ Manipulator for Teacher info """
     def __init__(self, user = None):
         import datetime
+        from esp.users.models import shirt_sizes, shirt_types
         cur_year = datetime.date.today().year
         self.fields = (
             forms.PositiveIntegerField(field_name="graduation_year", length=4, maxlength=4),
             forms.TextField(field_name="school", length=24, maxlength=128),
             forms.TextField(field_name="major", length=10, maxlength=32),
             HTMLDateField(field_name="dob", is_required=False),
+            forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes),
+            forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types),
             )
 
 class EducatorInfoManipulator(forms.Manipulator):

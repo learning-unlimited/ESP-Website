@@ -609,6 +609,8 @@ class StudentInfo(models.Model):
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
 
+shirt_sizes = (('S', 'Small'), ('M', 'Medium'), ('L', 'Large'), ('XL', 'Extra-large'))
+shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
 
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
@@ -618,6 +620,8 @@ class TeacherInfo(models.Model):
     major = models.CharField(maxlength=32,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
+    shirt_size = models.CharField(maxlength=5, blank=True, choices=shirt_sizes, null=True)
+    shirt_type = models.CharField(maxlength=20, blank=True, choices=shirt_types, null=True)
     
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year

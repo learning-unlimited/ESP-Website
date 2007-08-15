@@ -1,5 +1,9 @@
 <!-- Begin Student Info Portion -->
 <tr>
+ <th colspan="2">Student Information</th>
+</tr>
+
+<tr>
  <td><label for="id_dob">D.O.B.:</label></td>
  <td>{{ form.dob }} {% if form.dob.errors %}
    <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>

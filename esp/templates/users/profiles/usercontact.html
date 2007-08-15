@@ -1,5 +1,9 @@
 <!-- User ContactInfo -->
 <tr>
+ <th colspan="2">Your Contact Information</th>
+</tr>
+
+<tr>
  <td><label for="id_first_name">First Name:</label></td>
  <td>{{ form.address_postal }}
  {{ form.first_name }} {% if form.first_name.errors %}
@@ -53,7 +57,7 @@
                         <small><i>city</i></small>
                    </label></td>
  <td>
- <table border="0" cellspacing="0" cellpadding="0" width="100%">
+ <table class="plain" border="0" cellspacing="0" cellpadding="0" width="100%">
  <tr>
  
  <td>

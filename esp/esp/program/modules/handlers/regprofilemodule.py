@@ -59,15 +59,21 @@ class RegProfileModule(ProgramModuleObj):
     def teacherDesc(self):
         return {'teacher_profile': """Teachers who have completed the profile."""}
 
+    @needs_teacher
     def profile(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
-	from esp.web.views.myesp import profile_editor
+        from esp.web.views.myesp import profile_editor
         role = {'teach': 'teacher','learn': 'student'}[tl]
 
         #   Reset e-mail address for program registrations.
-        u = request.user
-        u.email = ''
-        u.save()
+        if prog is None:
+            regProf = RegistrationProfile.getLastProfile(request.user)
+        else:
+            regProf = RegistrationProfile.getLastForProgram(request.user, prog)
+        if regProf.id is None:
+            regProf = RegistrationProfile.getLastProfile(request.user)
+        regProf.contact_user.e_mail = ''
+        regProf.contact_user.save()
 
 	response = profile_editor(request, prog, False, role)
 	if response == True:
