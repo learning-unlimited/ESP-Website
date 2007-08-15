@@ -44,7 +44,7 @@ section_prefix_keys = {'teach': 'teach', 'learn': 'learn'}
 
 # Static media
 urlpatterns = patterns('django.views.static',
-                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': '/esp/esp/media/'}),
+                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': '/esp/esp/public/media/'}),
                        (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': '/esp/esp/admin/media/'}),
                        )
 
