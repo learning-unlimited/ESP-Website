@@ -1,4 +1,4 @@
-body { font-family: Georgia }
+body { font-family: Georgia; font-size: 14px}
 .title { font-size: 1.7em; font-weight: bold; }
 h2 { font-size: 1em }
 .timeslot { white-space: nowrap; }
