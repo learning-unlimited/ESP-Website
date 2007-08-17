@@ -558,7 +558,30 @@ class StudentInfo(models.Model):
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, null=True, default = False)
 
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        names = data.strip().split(',')
+        last = names[0]
 
+        query_set = cls.objects.filter(user__last_name__istartswith = last.strip())
+
+        if len(names) > 1:
+            first  = ','.join(names[1:])
+            if len(first.strip()) > 0:
+                query_set = query_set.filter(user__first_name__istartswith = first.strip())
+
+        query_set = query_set[:10]
+
+        values = query_set.values('user', 'school', 'graduation_year', 'id')
+        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'school', 'graduation_year', 'id')
+
+        for value in values:
+            value['user'] = User.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['school'], value['graduation_year'])
+        return values
+
+    def ajax_str(self):
+        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
     
     def updateForm(self, form_dict):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
@@ -623,6 +646,30 @@ class TeacherInfo(models.Model):
     shirt_size = models.CharField(maxlength=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(maxlength=20, blank=True, choices=shirt_types, null=True)
     
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        names = data.strip().split(',')
+        last = names[0]
+
+        query_set = cls.objects.filter(user__last_name__istartswith = last.strip())
+
+        if len(names) > 1:
+            first  = ','.join(names[1:])
+            if len(first.strip()) > 0:
+                query_set = query_set.filter(user__first_name__istartswith = first.strip())
+
+        query_set = query_set[:10]
+        values = query_set.values('user', 'college', 'graduation_year', 'id')
+        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year', 'id')
+
+        for value in values:
+            value['user'] = User.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
+        return values
+
+    def ajax_str(self):
+        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
+    
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.college
@@ -662,6 +709,29 @@ class GuardianInfo(models.Model):
     year_finished = models.PositiveIntegerField(blank=True, null=True)
     num_kids = models.PositiveIntegerField(blank=True, null=True)
 
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        names = data.strip().split(',')
+        last = names[0]
+
+        query_set = cls.objects.filter(user__last_name__istartswith = last.strip())
+
+        if len(names) > 1:
+            first  = ','.join(names[1:])
+            if len(first.strip()) > 0:
+                query_set = query_set.filter(user__first_name__istartswith = first.strip())
+        query_set = query_set[:10]
+        values = query_set.values('user', 'year_finished', 'num_kids', 'id')
+        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'year_finished', 'num_kids', 'id')
+
+        for value in values:
+            value['user'] = User.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['year_finished'], value['num_kids'])
+        return values
+
+    def ajax_str(self):
+        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.year_finished, self.num_kids)
+
     def updateForm(self, form_dict):
         form_dict['year_finished'] = self.year_finished
         form_dict['num_kids']      = self.num_kids
@@ -698,6 +768,30 @@ class EducatorInfo(models.Model):
     grades_taught = models.CharField(maxlength=16,blank=True, null=True)
     school = models.CharField(maxlength=128,blank=True, null=True)
     position = models.CharField(maxlength=64,blank=True, null=True)
+    
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        names = data.strip().split(',')
+        last = names[0]
+
+        query_set = cls.objects.filter(user__last_name__istartswith = last.strip())
+
+        if len(names) > 1:
+            first  = ','.join(names[1:])
+            if len(first.strip()) > 0:
+                query_set = query_set.filter(user__first_name__istartswith = first.strip())
+                
+        query_set = query_set[:10]
+        values = query_set.values('user', 'position', 'school', 'id')
+        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'position', 'school', 'id')
+
+        for value in values:
+            value['user'] = User.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
+        return values
+
+    def ajax_str(self):
+        return "%s - %s at %s" % (ESPUser(self.user).ajax_str(), self.position, self.school)
     
     def updateForm(self, form_dict):
         form_dict['subject_taught'] = self.subject_taught
@@ -836,6 +930,27 @@ class ContactInfo(models.Model):
         def items(self):
             return self.__dict__.items()
 
+        @classmethod
+        def ajax_autocomplete(cls, data):
+            names = data.strip().split(',')
+            last = names[0]
+    
+            query_set = cls.objects.filter(last_name__istartswith = last.strip())
+    
+            if len(names) > 1:
+                first  = ','.join(names[1:])
+                if len(first.strip()) > 0:
+                    query_set = query_set.filter(first_name__istartswith = first.strip())
+    
+            values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'e_mail', 'id')
+    
+            for value in values:
+                value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['e_mail'])
+            return values
+    
+        def ajax_str(self):
+            return "%s, %s (%s)" % (self.last_name, self.first_name, self.e_mail)
+
         @staticmethod
         def addOrUpdate(regProfile, new_data, contactInfo, prefix='', curUser=None):
             """ adds or updates a ContactInfo record """
@@ -897,7 +1012,7 @@ class K12School(models.Model):
     """
     All the schools that we know about.
     """
-    contact = models.ForeignKey(ContactInfo, null=True,blank=True)
+    contact = AjaxForeignKey(ContactInfo, null=True,blank=True)
     school_type = models.TextField(blank=True,null=True)
     grades      = models.TextField(blank=True,null=True)
     school_id   = models.CharField(maxlength=128,blank=True,null=True)
@@ -1042,7 +1157,7 @@ class PersistentQueryFilter(models.Model):
         
 
 class ESPUser_Profile(models.Model):
-    user = models.ForeignKey(User, unique=True)
+    user = AjaxForeignKey(User, unique=True)
 
     def prof(self):
         return ESPUser(self.user)

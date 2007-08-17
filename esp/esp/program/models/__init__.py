@@ -247,14 +247,14 @@ class Program(models.Model):
 
     def __init__(self, *args, **kwargs):
         retVal = super(Program, self).__init__(*args, **kwargs)
+        
+        for type in ['teach','learn','manage','onsite']:
+            setattr(self, 'get_%s_url' % type, self._get_type_url(type))
 
         return retVal
 
     def save(self):
         
-        for type in ['teach','learn','manage','onsite']:
-            setattr(self, 'get_%s_url' % type, self._get_type_url(type))
-
         retVal = super(Program, self).save()
         
         return retVal
@@ -558,13 +558,13 @@ class RegistrationProfile(models.Model):
     """ A student registration form """
     user = AjaxForeignKey(User)
     program = models.ForeignKey(Program)
-    contact_user = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_user')
-    contact_guardian = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian')
-    contact_emergency = models.ForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency')
-    student_info = models.ForeignKey(StudentInfo, blank=True, null=True, related_name='as_student')
-    teacher_info = models.ForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
-    guardian_info = models.ForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
-    educator_info = models.ForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
+    contact_user = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_user')
+    contact_guardian = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian')
+    contact_emergency = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency')
+    student_info = AjaxForeignKey(StudentInfo, blank=True, null=True, related_name='as_student')
+    teacher_info = AjaxForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
+    guardian_info = AjaxForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
+    educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
     last_ts = models.DateTimeField(default=datetime.now())
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True, null = True)

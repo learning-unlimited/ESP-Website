@@ -3,236 +3,263 @@
 {% block title %}Teacher Registration{% endblock %}
 
 {% block subsection_name %}Teach for {{one}} <br>{% endblock %}
-{% block xtrajs %}
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
 {% block content %}
 
-<h1>{{ addoredit }} a class for {{ program.niceName }}!</h1>
+<h1>{{ addoredit }}ing a class for {{ program.niceName }}</h1>
 
 <p>
-Thank you for teaching for {{ one }}. Please fill out/update the form below.<br />
-<br />
-Note: Required fields are bordered in red and marked with an asterisk.
+Thank you for teaching for {{ one }}. Please fill out/update the form below.   The required fields are bordered in red and marked with an asterisk.
 </p>
 
-<br />
-
-{% if form.has_errors %}
-<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
-{% endif %}
+<p align="center">
+<div class="info">
+<b>Teachers:</b> Please ensure that you are available to teach your class at any of the times you select.  If there is any chance that your plans may change and you won't be able to teach, please hold off on this form and <a href="mailto:{{ program.director_email }}">contact the program directors</a>.  We're just trying to minimize the number of classes that have to be cancelled after registration begins. 
+</div>
+</p>
 
 <form action="{{request.path}}" name="clsform" method="post">
 
-<label for="id_title" class="header">
-Course Title *:
-</label>
-<br />
-{% if form.title.errors %}
-<br />
-<span class="form_error">{{ form.title.errors|join:", " }}</span>
-<br />
-{% endif %}
-{{ form.title }} 
-<br />
-<br />
-
-{% comment %}
-<label for="id_url" class="header">
-Course Slug:
-</label>
-<br />
-<small>(Used for the URL: http://esp.mit.edu/learn/{{program.getUrlBase}}/[SLUG]/index.html)</small>
-{% if form.url.errors %}
-<br />
-<span class="form_error">{{ form.url.errors|join:", " }}</span>
-{% endif %}
-{{ form.url }} 
-<br />
-<br />
-{% endcomment %}
-
-<label for="id_class_info" class="header">
-Course Description *:
-</label>
-<br />
-{% if form.class_info.errors %}
-   <br /><span class="form_error">{{ form.class_info.errors|join:", " }}</span>
-   <br />
-{% endif %}
-{{ form.class_info }}
-
-<br />
-<p>Tip: Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &quot;pi&quot;)</p>
-<br />
-<br />
-{% if form.prereqs %}
-<label for="id_prereqs" class="header">
-Course Prerequisites:
-</label>
-<br />
-{% if form.prereqs.errors %}
-   <br /><span class="form_error">{{ form.prereqs.errors|join:", " }}</span>
-   <br />
-{% endif %}
-{{ form.prereqs }}
-<br />
-{% endif %}
-<br />
-<table border="0" cellpadding="0" width="400px">
-
-  <tr>
-    <td>
-      <label for="id_category" class="header">
-      Course Category *:
-      </label>
-    </td>
-    <td>
-    {% if form.category.errors %}
-       <span class="form_error">{{ form.category.errors|join:", " }}</span><br />
-    {% endif %}
-    {{ form.category }}
-    </td>
-  </tr>
-
-  <tr>
-    <th colspan="2">Course Information:</th>
-  </tr>
-
-  <tr>
-    <td>
-      <label for="id_grade_min">
-      Minimum Grade Level *:
-      </label>
-    </td>
-    <td>
-    {% if form.grade_min.errors %}
-       <span class="form_error">{{ form.grade_min.errors|join:", " }}</span><br />
-    {% endif %}
-    {{ form.grade_min }}
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <label for="id_grade_max">
-      Maximum Grade Level *:
-      </label>
-    </td>
-    <td>
-    {% if form.grade_max.errors %}
-       <span class="form_error">{{ form.grade_max.errors|join:", " }}</span><br />
-    {% endif %}
-    {{ form.grade_max }}
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <label for="id_class_size_min">
-      Minimum Size *:
-      </label>
-    </td>
-    <td>
-    {% if form.class_size_min.errors %}
-       <span class="form_error">{{ form.class_size_min.errors|join:", " }}</span><br />
-    {% endif %}
-    {{ form.class_size_min }}
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <label for="id_class_size_max">
-      Maximum Size *:
-      </label>
-    </td>
-    <td>
-    {% if form.class_size_max.errors %}
-       <span class="form_error">{{ form.class_size_max.errors|join:", " }}</span><br />
-    {% endif %}
-    {{ form.class_size_max }}
-    </td>
-  </tr>
-</table>
-<small>Note: The above values are <strong>absolute</strong>, not the &#8220;optimum&#8221; nor &#8220;recommended&#8221; amounts.</small>
-<br />
-<br />
-{% if durations %}
-{% if form.duration %}
-<label for="id_duration" class="header">
-Preferred Duration (hours:minutes):
-</label>
-<br />
-{% if form.duration.errors %}
-   <br /><span class="form_error">{{ form.duration.errors|join:", " }}</span><br />
-{% endif %}
-{{ form.duration }}
-
-<br />
-<br />
-{% endif %}
-{% endif %}
-
-{% if form.viable_times %}
-<label class="header">
-Acceptable Course Times (check all that apply) *:
-</label>
-<br />
-{% if form.viable_times.errors %}
-   <br /><span class="form_error">{{ form.viable_times.errors|join:", " }}</span><br />
-{% endif %}
-{{ form.viable_times }}
-
-<br />
-<br />
-{% endif %}
-
-
-<label class="header">
-Resources Required (check all that apply):
-</label>
-<br />
-{% if form.resources.errors %}
-   <br /><span class="form_error">{{ form.resources.errors|join:", " }}</span><br />
-{% endif %}
-{{ form.resources }}
-
-<br />
-<br />
-
-<label for="id_message_for_directors" class="header">
-Message for Director
-</label>
-<br />
-{% if form.message_for_directors.errors %}
-   <br /><span class="form_error">{{ form.message_for_directors.errors|join:", " }}</span><br />
-{% endif %}
-{{ form.message_for_directors }}
-
-<br />
-<br />
-
+<div id="program_form">
 <center>
+<table width="500">
+    <tr><th colspan="2">Course Creation/Editing Form</th></tr>
+    {% if form.has_errors %}
+    <tr>
+        <td colspan="2">
+            <h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
+        </td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td>
+            <label for="id_title" class="header">Course Title:</label>
+            {% if form.title.errors %}
+                <br />
+                <span class="form_error">{{ form.title.errors|join:", " }}</span>
+                <br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.title }} 
+        </td>
+    </tr>
 
-{% if module.deadline_met %}
-<input class="button" type="submit"
-{% if class.id %}
- value="Save course!" />
-{% else %}
- value="Teach for {{one}}!" />
-{% endif %}
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-{% endif %}
-<input class="button" type="button"
-  onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
+    {% comment %}
+        <label for="id_url" class="header">
+        Course Slug:
+        </label>
+        <br />
+        <small>(Used for the URL: http://esp.mit.edu/learn/{{program.getUrlBase}}/[SLUG]/index.html)</small>
+        {% if form.url.errors %}
+        <br />
+        <span class="form_error">{{ form.url.errors|join:", " }}</span>
+        {% endif %}
+        {{ form.url }} 
+        <br />
+        <br />
+    {% endcomment %}
+    
+    <tr>
+        <td>
+            <label for="id_class_info" class="header">
+            Course Description:
+            </label>
+            {% if form.class_info.errors %}
+            <br /><span class="form_error">{{ form.class_info.errors|join:", " }}</span>
+            <br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.class_info }}
+        </td>
+    </tr>
+    <tr><th colspan="2" class="small"><p><b>Tip</b>: Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &quot;pi&quot;)</p></th></tr>
 
+    {% if form.prereqs %}
+    <tr>
+        <td>
+            <label for="id_prereqs" class="header">
+            Course Prerequisites:
+            </label>
+            {% if form.prereqs.errors %}
+            <br /><span class="form_error">{{ form.prereqs.errors|join:", " }}</span>
+            <br />
+            {% endif %}
+        </td>
+        <td>
+        {{ form.prereqs }}
+        </td>
+    </tr>
+    {% endif %}
+    
+    <tr>
+        <td>
+        <label for="id_category" class="header">
+        Course Category:
+        </label>
+        </td>
+        <td>
+        {% if form.category.errors %}
+        <span class="form_error">{{ form.category.errors|join:", " }}</span><br />
+        {% endif %}
+        {{ form.category }}
+        </td>
+    </tr>
+    
+    <tr>
+        <th colspan="2">Course Information</th>
+    </tr>
+    
+    <tr>
+        <td>
+        <label for="id_grade_min">
+        Minimum Grade Level:
+        </label>
+        </td>
+        <td>
+        {% if form.grade_min.errors %}
+        <span class="form_error">{{ form.grade_min.errors|join:", " }}</span><br />
+        {% endif %}
+        {{ form.grade_min }}
+        </td>
+    </tr>
+    
+    <tr>
+        <td>
+        <label for="id_grade_max">
+        Maximum Grade Level:
+        </label>
+        </td>
+        <td>
+        {% if form.grade_max.errors %}
+        <span class="form_error">{{ form.grade_max.errors|join:", " }}</span><br />
+        {% endif %}
+        {{ form.grade_max }}
+        </td>
+    </tr>
+    
+    <tr>
+        <td>
+        <label for="id_class_size_min">
+        Minimum Size:
+        </label>
+        </td>
+        <td>
+        {% if form.class_size_min.errors %}
+        <span class="form_error">{{ form.class_size_min.errors|join:", " }}</span><br />
+        {% endif %}
+        {{ form.class_size_min }}
+        </td>
+    </tr>
+    
+    <tr>
+        <td>
+        <label for="id_class_size_max">
+        Maximum Size *:
+        </label>
+        </td>
+        <td>
+        {% if form.class_size_max.errors %}
+        <span class="form_error">{{ form.class_size_max.errors|join:", " }}</span><br />
+        {% endif %}
+        {{ form.class_size_max }}
+        </td>
+    </tr>
+    
+    <tr><th class="small" colspan="2"><p><b>Note</b>: The above values are <strong>absolute</strong>, not the &#8220;optimum&#8221; nor &#8220;recommended&#8221; amounts.</p></th></tr>
+
+    {% if durations %}
+    {% if form.duration %}
+    <tr>
+        <td>
+            <label for="id_duration" class="header">
+            Preferred Duration (hours:minutes):
+            </label>
+
+            {% if form.duration.errors %}
+            <br /><span class="form_error">{{ form.duration.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.duration }}
+        </td>
+    </tr>
+    {% endif %}
+    {% endif %}
+    
+    {% if form.viable_times %}
+    <tr>
+        <td>
+            <label class="header">
+            Acceptable Course Times (check all that apply):
+            </label>
+
+            {% if form.viable_times.errors %}
+            <br /><span class="form_error">{{ form.viable_times.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.viable_times }}
+        </td>
+    </tr>
+    {% endif %}
+    
+    <tr>
+        <td>
+            <label class="header">
+            Resources Required (check all that apply):
+            </label>
+            {% if form.resources.errors %}
+            <br /><span class="form_error">{{ form.resources.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.resources }}
+        </td>
+    </tr>
+    
+    <tr>
+        <td>
+            <label for="id_message_for_directors" class="header">
+            Message for Director
+            </label>
+            {% if form.message_for_directors.errors %}
+            <br /><span class="form_error">{{ form.message_for_directors.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.message_for_directors }}
+        </td>
+    </tr>
+    
+    <tr>
+        <td align="center" colspan="2">
+    
+            {% if class.id %}
+                <input type="hidden" name="class_id" value="{{ class.id }}" />
+            {% endif %}
+            <input type="hidden" name="class_reg_page" value="" />
+    
+            {% if module.deadline_met %}
+                <input class="button" type="submit"
+                {% if class.id %}
+                    value="Save course!" />
+                {% else %}
+                    value="Teach for {{ one }}!" />
+                {% endif %}
+            {% endif %}
+            &nbsp; &nbsp; &nbsp; | &nbsp; &nbsp; &nbsp; 
+            <input class="button" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
+        </td>
+    </tr>    
+</table>
 </center>
-
-{% if class.id %}
-<input type="hidden" name="class_id" value="{{ class.id }}" />
-{% endif %}
-<input type="hidden" name="class_reg_page" value="" />
-</form></div>
+</form>
+</div>
 
 {% endblock %}

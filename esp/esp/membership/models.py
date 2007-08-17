@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from django.db import models
+from esp.db.fields import AjaxForeignKey
 from esp.program.models import ContactInfo
 import datetime
 
@@ -95,7 +96,7 @@ class AlumniContact(models.Model):
     start_year = models.IntegerField('From year',blank=True,null=True)
     end_year = models.IntegerField('To year',blank=True,null=True)
     involvement = models.TextField('What ESP programs/activities (HSSP, Splash, SAT Prep, etc.) were you involved with?',blank=True,null=True)
-    contactinfo = models.ForeignKey(ContactInfo, blank=True, related_name='alumni_user', verbose_name='Contact Information')
+    contactinfo = AjaxForeignKey(ContactInfo, blank=True, related_name='alumni_user', verbose_name='Contact Information')
     
     news_interest = models.BooleanField('Would you like to receive our e-mail newsletter twice yearly?', null=True)
     reconnect_interest = models.BooleanField('Would you like reconnect with other ESP alumni?', null=True)

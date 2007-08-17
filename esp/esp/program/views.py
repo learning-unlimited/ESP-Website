@@ -143,7 +143,7 @@ def managepage(request, page):
     if page == 'newprogram':
     
         if 'checked' in request.GET:
-            new_prog = Program()
+            new_prog = Program(anchor=request.session['prog_form'].clean_data['anchor'])
             new_prog = save_instance(request.session['prog_form'], new_prog)
             
             commit_program(new_prog, request.session['datatrees'], request.session['userbits'], request.session['modules'])
@@ -157,7 +157,7 @@ def managepage(request, page):
             form = ProgramCreationForm(data)
     
             if form.is_valid():
-                temp_prog = Program()
+                temp_prog = Program(anchor=form.clean_data['anchor'])
                 temp_prog = save_instance(form, temp_prog, commit=False)
                 datatrees, userbits, modules = prepare_program(temp_prog, form)
                 request.session['prog_form'] = form

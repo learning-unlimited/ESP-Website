@@ -600,7 +600,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 class JunctionAppReview(models.Model):
     cls = models.ForeignKey(Class)
     junctionapp = models.ForeignKey(JunctionStudentApp)
-    student     = models.ForeignKey(User)
+    student     = AjaxForeignKey(User)
     score = models.IntegerField(blank=True,null=True)
     create_ts = models.DateTimeField(default = datetime.datetime.now,
                                      editable = False)

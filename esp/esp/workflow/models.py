@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.db import models
 from esp.datatree.models import DataTree
+from esp.db.fields import AjaxForeignKey
 
 # Create your models here.
 
@@ -54,7 +55,7 @@ class WorkflowDescriptor(models.Model):
 
         Links each workflow to a node in the permissions tree. """
 
-        tree = models.ForeignKey(DataTree) # Tree node that this workflow belongs to
+        tree = AjaxForeignKey(DataTree) # Tree node that this workflow belongs to
         controller = models.SlugField()
 
         class Admin:
