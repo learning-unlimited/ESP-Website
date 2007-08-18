@@ -191,6 +191,12 @@ class ProgramPrintables(ProgramModuleObj):
         user = ESPUser(user)
         if key == 'schedule':
             return ProgramPrintables.getSchedule(self.program, user)
+        if key == 'transcript':
+            return ProgramPrintables.getTranscript(self.program, user, 'text')
+        if key == 'transcript_html':
+            return ProgramPrintables.getTranscript(self.program, user, 'html')
+        if key == 'transcript_latex':
+            return ProgramPrintables.getTranscript(self.program, user, 'latex')
 
         return ''
 
@@ -240,15 +246,8 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'refund_receipt_form.html', request, (prog, tl), {'form': form,'student':user,
                                                                                                    'transaction': transaction})
-
     @staticmethod
-    def getSchedule(program, student):
-        
-        schedule = """
-Student schedule for %s:
-
- Time               | Class                   | Room""" % student.name()
-
+    def get_student_classlist(program, student):
         
         # get list of valid classes
         classes = [ cls for cls in student.getEnrolledClasses()]
@@ -261,6 +260,41 @@ Student schedule for %s:
                     and cls.isAccepted()                       ]
         # now we sort them by time/title
         classes.sort()
+        
+        return classes
+
+    @staticmethod
+    def getTranscript(program, student, format='text'):
+        from django.template import Template, Context
+        from django.template.loader import get_template
+
+        template_keys = {   'text': 'program/modules/programprintables/transcript.txt',
+                            'latex': 'program/modules/programprintables/transcript.tex',
+                            'html': 'program/modules/programprintables/transcript.html',
+                            'latex_desc': 'program/modules/programprintables/courses_inline.tex'
+                        }
+                        
+        if format in template_keys:
+            template_filename = template_keys[format]
+        else:
+            return ESPError('Attempted to get transcript with nonexistent format: %s' % format)
+
+        t = get_template(template_filename)
+
+        context = {'classlist': ProgramPrintables.get_student_classlist(program, student)}
+
+        return t.render(Context(context))
+
+    @staticmethod
+    def getSchedule(program, student):
+        
+        schedule = """
+Student schedule for %s:
+
+ Time               | Class                   | Room""" % student.name()
+
+        
+        classes = ProgramPrintables.get_student_classlist(program, student)
         
         for cls in classes:
             rooms = cls.prettyrooms()
@@ -576,6 +610,7 @@ Student schedule for %s:
 
     @needs_admin
     def adminbinder(self, request, tl, one, two, module, extra, prog):
+        
         if extra not in ['teacher','classid','timeblock']:
             return self.goToCore()
         context = {'module': self}
@@ -633,4 +668,22 @@ Student schedule for %s:
             context['scheditems'] = scheditems
             return render_to_response(self.baseDir()+'adminclasstime.html', request, (prog, tl), context)        
 
+    @needs_admin
+    def certificate(self, request, tl, one, two, module, extra, prog):
+        from esp.web.util.latex import render_to_latex
+        
+        user, found = search_for_user(request, self.program.students_union())
+        if not found:
+            return user
 
+        if extra:
+            file_type = extra.strip()
+        else:
+            file_type = 'pdf'
+
+        context = {'user': user, 'prog': prog, 
+                    'schedule': ProgramPrintables.getTranscript(prog, user, 'latex'),
+                    'descriptions': ProgramPrintables.getTranscript(prog, user, 'latex_desc')}
+
+        return render_to_latex(self.baseDir()+'completion_certificate.tex', context, file_type)
+        
