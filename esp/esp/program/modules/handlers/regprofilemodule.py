@@ -71,8 +71,13 @@ class RegProfileModule(ProgramModuleObj):
             regProf = RegistrationProfile.getLastForProgram(request.user, prog)
         if regProf.id is None:
             regProf = RegistrationProfile.getLastProfile(request.user)
-        regProf.contact_user.e_mail = ''
-        regProf.contact_user.save()
+
+        # aseering 8/20/2007: It is possible for a user to not have a
+        # contact_user associated with their registration profile.
+        # Deal nicely with this.
+        if hasattr(regProf.contact_user, 'e_mail'):
+            regProf.contact_user.e_mail = ''
+            regProf.contact_user.save()
 
 	response = profile_editor(request, prog, False, role)
 	if response == True:
