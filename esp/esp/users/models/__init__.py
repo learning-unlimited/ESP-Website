@@ -1162,6 +1162,12 @@ class ESPUser_Profile(models.Model):
     def prof(self):
         return ESPUser(self.user)
 
+    class Admin:
+        pass
+
+    def __str__(self):
+        return "ESPUser_Profile for user: %s" % str(self.user)
+
 
 class DBList(object):
     """ Useful abstraction for the list of users.
