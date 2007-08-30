@@ -231,6 +231,7 @@ class Program(models.Model):
     director_email = models.CharField(maxlength=64)
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
+    program_size_max = models.IntegerField(null=True)
     program_modules = models.ManyToManyField(ProgramModule)
 
 
