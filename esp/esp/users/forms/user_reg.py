@@ -56,8 +56,41 @@ class UserRegForm(forms.Form):
         return self.clean_data['confirm_password']
 
 
+    def clean_email(self):
+        """ Make sure the e-mail address is sane """
+        email = self.clean_data['email']
+        email_parts = email.split("@")
+        if len(email_parts) != 2:
+            raise forms.ValidationError('E-mail addresses must be of the form "name@host"')
+
+        email_host = email_parts[1]
+        
+        import socket
+        try:
+            socket.gethostbyname(email_host)
+        except socket.gaierror:
+            raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
+
+        return email
 
 class EmailUserForm(forms.Form):
 
 
     email = forms.EmailField(help_text = '(e.g. johndoe@domain.xyz)')
+
+    def clean_email(self):
+        """ Make sure the e-mail address is sane """
+        email = self.clean_data['email']
+        email_parts = email.split("@")
+        if len(email_parts) != 2:
+            raise forms.ValidationError('E-mail addresses must be of the form "name@host"')
+
+        email_host = email_parts[1]
+        
+        import socket
+        try:
+            socket.gethostbyname(email_host)
+        except socket.gaierror:
+            raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
+
+        return email
