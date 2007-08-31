@@ -183,7 +183,7 @@ class ArchiveClass(models.Model):
             return len(self.student_ids.strip('|').split('|')) + self.num_old_students
         else:
             return self.num_old_students
-    
+
     def add_students(self, users):
         if self.student_ids is not None:
             self.student_ids += '%s|' % '|'.join([str(u.id) for u in users])
@@ -408,6 +408,15 @@ class Program(models.Model):
                     else:
                         students[k] = v.count()
         return students
+
+    def isFull(self):
+        """ Can this program accept any more students? """
+
+        # Some programs don't have caps; this is represented with program_size_max in [ 0, None ]
+        if self.program_size_max is None or self.program_size_max == 0:
+            return False
+
+        return ( self.num_students() <= self.program_size_max )
 
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
