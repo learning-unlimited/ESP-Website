@@ -254,7 +254,7 @@ class Class(models.Model):
             return 'This class is not accepted.'
 
         if checkFull and self.parent_program.isFull():
-            return 'This programm cannot accept any more students!  Please try again in its next session."
+            return 'This programm cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull():
             return 'Class is full!'
