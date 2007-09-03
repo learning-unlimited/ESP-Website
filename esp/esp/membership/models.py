@@ -67,7 +67,7 @@ class AlumniRSVP(models.Model):
      
     def __str__(self):
         if self.attending == 'Yes':
-            return 'RSVP for %s: Attending with %d guests' % (self.name, self.num_guests)
+            return 'RSVP for %s: Attending with %s guests' % (self.name, self.num_guests)
         else:
             return 'RSVP for %s: Not Attending' % self.name
         
