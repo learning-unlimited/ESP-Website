@@ -43,7 +43,7 @@ class UserContactManipulator(forms.Manipulator):
         phone_validators = [OneOfSetAreFilled(['phone_day','phone_even','phone_cell'])]
         self.fields = (
             forms.TextField(field_name="first_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="last_name", length=15, maxlength=64, is_required=False, validator_list=[validators.isNotEmpty]),            
+            forms.TextField(field_name="last_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
             forms.EmailField(field_name="e_mail", is_required=makeRequired, length=25, validator_list=[validators.isNotEmpty]),
             ESPPhoneNumberField(field_name="phone_day", local_areacode='617', is_required=makeRequired),
             ESPPhoneNumberField(field_name="phone_cell", local_areacode='617'),

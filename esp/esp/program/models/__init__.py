@@ -719,12 +719,12 @@ class FinancialAidRequest(models.Model):
 
     student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True,null=True)
 
-    done = models.BooleanField(default = False, editable=False)
+    done = models.BooleanField(default=False)
 
-    reviewed = models.BooleanField(default=False, editable=False, verbose_name='Reviewed by Directors')
+    reviewed = models.BooleanField(default=False, verbose_name='Reviewed by Directors')
 
-    amount_received = models.IntegerField(blank=True,null=True, editable=False, verbose_name='Amount granted')
-    amount_needed = models.IntegerField(blank=True,null=True, editable=False, verbose_name='Amount due from student')
+    amount_received = models.IntegerField(blank=True,null=True, verbose_name='Amount granted')
+    amount_needed = models.IntegerField(blank=True,null=True, verbose_name='Amount due from student')
 
     def __str__(self):
         """ Represent this as a string. """
