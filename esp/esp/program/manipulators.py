@@ -42,13 +42,13 @@ class UserContactManipulator(forms.Manipulator):
             
         phone_validators = [OneOfSetAreFilled(['phone_day','phone_even','phone_cell'])]
         self.fields = (
-            forms.TextField(field_name="first_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="last_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
+            forms.TextField(field_name="first_name", length=25, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="last_name", length=30, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
             forms.EmailField(field_name="e_mail", is_required=makeRequired, length=25, validator_list=[validators.isNotEmpty]),
             ESPPhoneNumberField(field_name="phone_day", local_areacode='617', is_required=makeRequired),
             ESPPhoneNumberField(field_name="phone_cell", local_areacode='617'),
             ESPPhoneNumberField(field_name="phone_even", local_areacode='617'),
-            forms.TextField(field_name="address_street", length=20, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="address_street", length=40, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="address_city", length=20, maxlength=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             USStateSelectField(field_name="address_state", is_required=makeRequired),
             forms.TextField(field_name="address_zip", length=5, maxlength=5, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
@@ -126,9 +126,8 @@ class TeacherInfoManipulator(forms.Manipulator):
         cur_year = datetime.date.today().year
         self.fields = (
             forms.PositiveIntegerField(field_name="graduation_year", length=4, maxlength=4),
-            forms.TextField(field_name="school", length=24, maxlength=128),
-            forms.TextField(field_name="major", length=10, maxlength=32),
-            HTMLDateField(field_name="dob", is_required=False),
+            forms.TextField(field_name="school", length=48, maxlength=128),
+            forms.TextField(field_name="major", length=30, maxlength=32),
             forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes),
             forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types),
             )
@@ -163,7 +162,6 @@ class TeacherProfileManipulator(forms.Manipulator):
     """ The teacher profile manipulator created from other manipulators """
     def __init__(self, user = None):
         self.fields = UserContactManipulator(user).fields + \
-                      EmergContactManipulator(user).fields + \
                       TeacherInfoManipulator(user).fields
 
 class GuardianProfileManipulator(forms.Manipulator):

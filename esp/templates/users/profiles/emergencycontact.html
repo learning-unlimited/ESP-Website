@@ -78,32 +78,23 @@
 </tr>
 
 <tr>
- <td><label>Phone:</label></td>
+ <td><label>Phone numbers:</label></td>
  <td>&nbsp;</td>
 </tr>
 
 <tr>
- <td align='right'><small><i><label for="id_emerg_phone_day">day</label></i></small></td>
- <td>{{ form.emerg_phone_day }} {% if form.emerg_phone_day.errors %}
-   <br /><span class="form_error">{{ form.emerg_phone_day.errors|join:", " }}</span>
+ <td align='right'><small><i><label for="id_phone_day">home</label></i></small></td>
+ <td>{{ form.phone_day }} {% if form.phone_day.errors %}
+   <br /><span class="form_error">{{ form.phone_day.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
- <td align='right'><small><i><label for="id_emerg_phone_even">evening</label></i></small></td>
- <td>{{ form.emerg_phone_even }} {% if form.emerg_phone_even.errors %}
-   <br /><span class="form_error">{{ form.emerg_phone_even.errors|join:", " }}</span>
+ <td align='right'><small><i><label for="id_phone_cell">cell</label></i></small></td>
+ <td>{{ form.phone_cell }} {% if form.phone_cell.errors %}
+   <br /><span class="form_error">{{ form.phone_cell.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
-
-<tr>
- <td align='right'><small><i><label for="id_emerg_phone_cell">cell</label></i></small></td>
- <td>{{ form.emerg_phone_cell }} {% if form.emerg_phone_cell.errors %}
-   <br /><span class="form_error">{{ form.emerg_phone_cell.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
 <!-- End Emergency Contact -->

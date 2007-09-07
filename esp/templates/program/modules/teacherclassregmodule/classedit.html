@@ -13,8 +13,10 @@
 <h1>{{ addoredit }}ing a class for {{ program.niceName }}</h1>
 
 <p>
-Thank you for teaching for {{ one }}. Please fill out/update the form below.   The required fields are bordered in red and marked with an asterisk.
+Thank you for teaching for {{ one }}. Please fill out/update the form below.   The required fields are bordered in red.
 </p>
+
+<p>If you would like to co-teach this class with others, please click the "Coteachers" button next to the appropriate class at the teacher registration page after you submit this form.  If you are looking for co-teachers or TAs, please indicate that in the "Message for Directors" box below.</p>
 
 <p align="center">
 <div class="info">
@@ -160,7 +162,7 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.   T
     <tr>
         <td>
         <label for="id_class_size_max">
-        Maximum Size *:
+        Maximum Size:
         </label>
         </td>
         <td>
@@ -234,6 +236,7 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.   T
         </td>
         <td>
             {{ form.message_for_directors }}
+            <br /><small><i>Please include any special equipment requests, as well as requests for co-teachers and TAs</i></small>
         </td>
     </tr>
     

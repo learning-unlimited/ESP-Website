@@ -641,7 +641,6 @@ class TeacherInfo(models.Model):
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     college = models.CharField(maxlength=128,blank=True, null=True)
     major = models.CharField(maxlength=32,blank=True, null=True)
-    dob = models.DateField(blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     shirt_size = models.CharField(maxlength=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(maxlength=20, blank=True, choices=shirt_types, null=True)
@@ -674,7 +673,6 @@ class TeacherInfo(models.Model):
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.college
         form_dict['major']           = self.major
-        form_dict['dob']             = self.dob
         return form_dict
     
     @staticmethod
@@ -689,7 +687,6 @@ class TeacherInfo(models.Model):
         teacherInfo.graduation_year = new_data['graduation_year']
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
-        teacherInfo.dob           = new_data['dob']
         
         teacherInfo.save()
         return teacherInfo
@@ -909,9 +906,9 @@ class ContactInfo(models.Model):
 	first_name = models.CharField(maxlength=64)
 	last_name = models.CharField(maxlength=64)        
 	e_mail = models.EmailField('E-mail address', blank=True, null=True)
-	phone_day = models.PhoneNumberField('Daytime phone',blank=True, null=True)
+	phone_day = models.PhoneNumberField('Home phone',blank=True, null=True)
 	phone_cell = models.PhoneNumberField('Cell phone',blank=True, null=True, core=True)
-	phone_even = models.PhoneNumberField('Evening phone',blank=True, null=True)
+	phone_even = models.PhoneNumberField('Alternate phone',blank=True, null=True)
 	address_street = models.CharField('Street address',maxlength=100,blank=True, null=True, core=True)
 	address_city = models.CharField('City',maxlength=50,blank=True, null=True, core=True)
 	address_state = models.USStateField('State',blank=True, null=True, core=True)

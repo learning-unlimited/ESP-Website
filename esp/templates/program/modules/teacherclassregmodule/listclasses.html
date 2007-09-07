@@ -58,12 +58,12 @@ If you have any questions regarding the program, <br /> please email the
       </span>
     </td>
     <td class="clsmiddle">
-       <form method="post" action="./deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
+       <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
          <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
        </form>
     </td>
     <td class="clsmiddle">
-       <form method="post" action="./editclass/{{cls.id }}">
+       <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
 {% if module.deadline_met %}
          <input class="button" type="submit" value="Edit">
