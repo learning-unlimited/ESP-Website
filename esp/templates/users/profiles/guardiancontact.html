@@ -35,16 +35,16 @@
 
 <tr>
  <td align='right'><small><i><label for="id_phone_day"> home </label></i></small></td>
-  <td>{{ form.phone_day }} {% if form.phone_day.errors %}
-   <br /><span class="form_error">{{ form.phone_day.errors|join:", " }}</span>
+  <td>{{ form.guard_phone_day }} {% if form.guard_phone_day.errors %}
+   <br /><span class="form_error">{{ form.guard_phone_day.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
  <td align='right'><small><i><label for="id_phone_cell">cell</label></i></small></td>
- <td>{{ form.phone_cell }} {% if form.phone_cell.errors %}
-   <br /><span class="form_error">{{ form.phone_cell.errors|join:", " }}</span>
+ <td>{{ form.guard_phone_cell }} {% if form.guard_phone_cell.errors %}
+   <br /><span class="form_error">{{ form.guard_phone_cell.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

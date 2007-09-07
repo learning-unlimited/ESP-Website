@@ -40,14 +40,13 @@ class UserContactManipulator(forms.Manipulator):
         else:
             makeRequired = False
             
-        phone_validators = [OneOfSetAreFilled(['phone_day','phone_even','phone_cell'])]
+        phone_validators = [OneOfSetAreFilled(['phone_day','phone_cell'])]
         self.fields = (
             forms.TextField(field_name="first_name", length=25, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="last_name", length=30, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
             forms.EmailField(field_name="e_mail", is_required=makeRequired, length=25, validator_list=[validators.isNotEmpty]),
             ESPPhoneNumberField(field_name="phone_day", local_areacode='617', is_required=makeRequired),
             ESPPhoneNumberField(field_name="phone_cell", local_areacode='617'),
-            ESPPhoneNumberField(field_name="phone_even", local_areacode='617'),
             forms.TextField(field_name="address_street", length=40, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="address_city", length=20, maxlength=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             USStateSelectField(field_name="address_state", is_required=makeRequired),
@@ -70,7 +69,6 @@ class EmergContactManipulator(forms.Manipulator):
             forms.EmailField(field_name="emerg_e_mail", is_required=makeRequired, length=25),
             ESPPhoneNumberField(field_name="emerg_phone_day", is_required=makeRequired, local_areacode='617'),
             ESPPhoneNumberField(field_name="emerg_phone_cell", local_areacode='617'),
-            ESPPhoneNumberField(field_name="emerg_phone_even", local_areacode='617'),    
             forms.TextField(field_name="emerg_address_street", length=20, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="emerg_address_city", length=20, maxlength=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             USStateSelectField(field_name="emerg_address_state", is_required=makeRequired),
@@ -92,7 +90,6 @@ class GuardContactManipulator(forms.Manipulator):
             forms.EmailField(field_name="guard_e_mail", is_required=makeRequired, length=25),
             ESPPhoneNumberField(field_name="guard_phone_day", is_required=makeRequired, local_areacode='617'),
             ESPPhoneNumberField(field_name="guard_phone_cell", local_areacode='617'),
-            ESPPhoneNumberField(field_name="guard_phone_even", local_areacode='617'),
             )
 
 class StudentInfoManipulator(forms.Manipulator):

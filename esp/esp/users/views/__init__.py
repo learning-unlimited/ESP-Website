@@ -5,6 +5,7 @@ from esp.users.views.password_reset import *
 from django.http import HttpResponseRedirect
 from esp.web.util.main import render_to_response
 from django.contrib.auth.views import login
+from django.contrib.auth.decorators import login_required
 
 def login_checked(request, *args, **kwargs):
     if request.user.is_authenticated():
@@ -20,7 +21,8 @@ def signed_out_message(request):
     return render_to_response('registration/logged_out.html',
                               request, request.get_node('Q/Web/myesp'),
                               {})
-
+                              
+@login_required
 def disable_account(request):
     
     curUser = request.user
