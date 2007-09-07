@@ -20,3 +20,18 @@ def signed_out_message(request):
     return render_to_response('registration/logged_out.html',
                               request, request.get_node('Q/Web/myesp'),
                               {})
+
+def disable_account(request):
+    
+    curUser = request.user
+    
+    if 'enable' in request.GET:
+        curUser.is_active = True
+        curUser.save()
+    elif 'disable' in request.GET:
+        curUser.is_active = False
+        curUser.save()
+        
+    context = {'user': curUser}
+        
+    return render_to_response('users/disable_account.html', request, request.get_node('Q/Web/myesp'), context)

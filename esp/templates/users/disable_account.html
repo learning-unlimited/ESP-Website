@@ -1,0 +1,40 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Disable/enable your account{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Account Management"|subsection }}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>ESP Accounts and E-mails</h1>
+
+<p>
+If you would not like to receive e-mail from ESP, you can disable your account.  If at any time you would like to start receiving e-mail notifications again, you may return to this page (you will still be able to log in) and re-enable it.
+</p>
+
+<h2>Your Account Status</h2>
+
+<p>
+<ul>
+<li><b>Account: </b>{{ user.username }} <br />
+<li><b>Current status: </b>{% if user.is_active %}<font color="#0000FF">Active</font>{% else %}<font color="#FF0000">Disabled</font>{% endif %} <br />
+<li><b>Options: </b>{% if user.is_active %}<a href="?disable">Disable Account</a>{% else %}<a href="?enable">Enable Account</a>{% endif %}
+</ul>
+</p>
+
+<p>Thank you for your interest in ESP!  If you have any questions, please <a href="/contact/contact/">contact us</a>.
+
+<script type="text/javascript">
+<!--
+  document.getElementById('id_username').focus();
+//-->
+</script>
+
+{% endblock %}

@@ -10,4 +10,5 @@ urlpatterns = patterns('esp.users.views',
                        (r'^recoveremail/?$', 'email_passwd_followup',),
                        (r'^signedout/?$', 'signed_out_message',),
                        (r'^login/?$',   'login_checked',),
+                       (r'^disableaccount/?$', 'disable_account'),
                        )
