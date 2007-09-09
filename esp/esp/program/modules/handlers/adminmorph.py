@@ -35,7 +35,7 @@ from esp.program.modules.handlers.programprintables import ProgramPrintables
 from django.contrib.auth.models import User
 
 class AdminMorph(ProgramModuleObj):
-    """ User morphing allows the program director to morph into a constituent of their program. """
+    doc = """ User morphing allows the program director to morph into a constituent of their program. """
 
     @needs_admin
     def admin_morph(self, request, tl, one, two, module, extra, prog):

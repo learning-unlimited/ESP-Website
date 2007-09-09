@@ -42,7 +42,7 @@ from django import forms
 from django.http import HttpResponseRedirect, HttpResponse
 
 class AdminClass(ProgramModuleObj):
-    """ This module is extremely useful for managing classes if you have them them in your program.
+    doc = """ This module is extremely useful for managing classes if you have them them in your program.
         Works best with student and teacher class modules, but they are not necessary.
         Options for this are available on the main manage page.
         """

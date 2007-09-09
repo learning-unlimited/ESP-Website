@@ -106,7 +106,7 @@ MIDDLEWARE_CLASSES = (
     'esp.middleware.StatsMiddleware',
 #   'esp.middleware.psycomiddleware.PsycoMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'esp.middleware.esp_sessions.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',

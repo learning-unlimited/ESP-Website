@@ -9,13 +9,13 @@
         TransferLog /var/log/apache2/ssl_access_log
   </IfModule>
 
-  <Location "/">
-      SetHandler python-program
-      PythonHandler django.core.handlers.modpython
-      PythonPath "['/esp/'] + sys.path"
-      SetEnv DJANGO_SETTINGS_MODULE esp.settings
+#  <Location "/">
+#      SetHandler python-program
+#      PythonHandler django.core.handlers.modpython
+#      PythonPath "['/esp/'] + sys.path"
+#      SetEnv DJANGO_SETTINGS_MODULE esp.settings
       #PythonDebug On
-  </Location>
+#  </Location>
 
   SSLEngine on
   SSLCipherSuite ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP:+eNULL
@@ -33,6 +33,10 @@
   </IfModule>
 
   #Include /etc/request-tracker3.6/apache2-modperl2.conf
+
+  Include /esp/esp/webserver_settings/trac-apache.conf
+  Include /esp/esp/webserver_settings/esp-svn.conf.inc
+
 
 </VirtualHost>
 

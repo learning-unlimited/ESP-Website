@@ -36,7 +36,10 @@ from esp.program.models import Class, Program
 from esp.users.models import UserBit, ESPUser
 
 class AdminMaterials(ProgramModuleObj):
-    """ This allows you to view the submitted documents for all classes on one page. You can also upload documents particular to the program, such as liability waivers and information sheets."""
+    doc = """ This allows you to view the submitted documents for all classes
+    on one page. You can also upload documents particular to the program,
+    such as liability waivers and information sheets.
+    """
         
     def get_materials(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm_Admin    

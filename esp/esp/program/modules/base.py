@@ -56,8 +56,8 @@ class ProgramModuleObj(models.Model):
     required = models.BooleanField()
 
     def docs(self):
-        if self.__doc__ is not None and str(self.__doc__).strip() != '':
-            return self.__doc__
+        if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
+            return self.doc
         return self.module.link_title
 
     def __str__(self):

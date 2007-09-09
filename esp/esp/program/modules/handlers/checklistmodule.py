@@ -40,7 +40,7 @@ from esp.users.models import ESPUser, User
 from django.http import HttpResponseRedirect
 
 class CheckListModule(ProgramModuleObj):
-    """
+    doc = """
     If you want to manage those checklists that your program sees, come here.
     """
     

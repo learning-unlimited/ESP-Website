@@ -36,7 +36,7 @@ from esp.program.models import Class, Program
 from esp.users.models import UserBit, ESPUser
 
 class AdminVitals(ProgramModuleObj):
-    """ This allows you to view the major numbers for your program on the main page.
+    doc = """ This allows you to view the major numbers for your program on the main page.
         This will present itself below the options in a neat little table. """
         
     def prepare(self, context=None):

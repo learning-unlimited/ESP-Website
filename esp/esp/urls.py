@@ -126,7 +126,7 @@ urlpatterns += patterns('esp.web.views.everything',
     # Contact Us! pages
     (r'^contact/contact/?$', 'contact'),
     (r'^contact/contact/(?P<section>[^/]+)/?$', 'contact'),
-    (r'^contact/submit.html$', 'contact_submit'),
+#    (r'^contact/submit.html$', 'contact_submit'),
 
     # Program stuff
     (r'^(onsite|manage|teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),

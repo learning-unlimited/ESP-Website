@@ -1,27 +1,38 @@
-NameVirtualHost *:81
+NameVirtualHost *
+
+# Import stuff ahead of time
+PythonInterpreter /usr/bin/python
+PythonImport /esp/esp/modpython.py /usr/bin/python
+PythonOptimize On
+PythonAutoReload Off
+PythonTranshandler filehandler
+
 # Default virtual host for ESP.MIT.EDU
 # Using mod_python
-<VirtualHost *:81>
+<VirtualHost *>
 	ServerAdmin esp@mit.edu
 	DocumentRoot /esp
 
 	<Location "/">
+
 	    SetHandler python-program
-	    PythonHandler django.core.handlers.modpython
-#	    PythonHandler django.core.handlers.profiler-hotshot
 	    PythonPath "['/esp/esp/'] + sys.path"
+	    PythonHandler modpython
+	    #PythonHandler django.core.handlers.modpython
+	    #PythonHandler django.core.handlers.profiler-hotshot
 	    SetEnv DJANGO_SETTINGS_MODULE esp.settings
 	    #PythonDebug On
 	</Location>
 
-        Alias /wiki /esp/wiki
+	Alias /wiki /esp/wiki
 	<Location "/wiki">
-            SetHandler none
-            
+            SetHandler none            
+            RewriteRule ^(/wiki/index.php.*)$ $1 [L]
+            RewriteRule ^/wiki/(.*?)$ /wiki/index.php/$1 [QSA]
         </Location>
 
-        Include /etc/request-tracker3.6/apache2-esp.conf
+#        Include /etc/request-tracker3.6/apache2-esp.conf
         Include /esp/esp/webserver_settings/trac-apache.conf
         Include /esp/esp/webserver_settings/esp-svn.conf.inc	
-        Include /esp/esp/webserver_settings/awstats.conf
+#        Include /esp/esp/webserver_settings/awstats.conf
 </VirtualHost>
