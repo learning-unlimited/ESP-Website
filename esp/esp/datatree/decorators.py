@@ -33,6 +33,7 @@ from esp.users.models    import GetNodeOrNoBits, PermissionDenied
 from esp.datatree.models import DataTree
 from django.http import Http404
 from esp.web.util.main import render_to_response
+from django.core.cache import cache
 
 # Where to start our tree search.
 
@@ -65,6 +66,15 @@ def branch_find(view_func):
     """
 
     def _new_func(request, url, subsection=None, filename=None, *args, **kwargs):
+
+
+        cache_key = 'qsdeditor_%s_%s_%s_%s' % (request.user.id,
+                                               url, subsection, filename)
+
+        retVal = cache.get(cache_key)
+
+        if retVal is not None:
+            return view_func(*((request,) + retVal + args), **kwargs)
 
         # function "constants"
         READ_VERB = request.get_node('V/Flags/Public')
@@ -119,8 +129,16 @@ def branch_find(view_func):
         if subsection:
             view_address = "%s:%s" % (subsection, view_address)
 
-        return view_func(request, branch, view_address,
-                         subsection, action, *args,**kwargs)
+        retVal = (branch, view_address, subsection, action)
+
+        if request.user.id is None:
+            cache.set(cache_key, retVal, 86400)
+        else:
+            cache.set(cache_key, retVal, 3600)
+
+        return view_func(*((request,) + retVal + args), **kwargs)
 
     _new_func.__doc__ = view_func.__doc__
     return _new_func
+
+

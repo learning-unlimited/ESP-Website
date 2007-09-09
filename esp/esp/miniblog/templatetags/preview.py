@@ -4,6 +4,7 @@ from esp.datatree.models import DataTree
 from esp.users.models import UserBit
 from esp.db.models import Q
 from esp.miniblog.models import Entry
+from django.core.cache import cache
 import re
 import datetime
 arg_re_num = re.compile('\s*(\S+)\s+as\s+(\S+)\s+(\d+)\s*')
@@ -29,14 +30,27 @@ def miniblog_for_user(parser, token):
             self.user = user
 
         def render(self, context):
-            verb = DataTree.get_by_uri('V/Subscribe')
 
+            # First we ensure we have a user
             try:
                 self.user = template.resolve_variable(self.user, context)
                 if not isinstance(self.user, (User, AnonymousUser)):
                     raise template.VariableDoesNotExist("Requires a user object, recieved '%s'" % self.user)
             except template.VariableDoesNotExist:
                  raise template.TemplateSyntaxError, "%s tag requires first argument, %s, to be a User" % (tag, self.user)
+
+
+            # Now we check the cache
+            self.cache_key = 'miniblog_%s_%s' % (self.user.id, limit)
+
+            retVal = cache.get(self.cache_key)
+
+            if retVal is not None:
+                context[self.var_name] = retVal
+                return ''
+
+            # And we get the result
+            verb = DataTree.get_by_uri('V/Subscribe')
 
             result = UserBit.find_by_anchor_perms(Entry, self.user, verb).order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.datetime.now()) | Q(highlight_expire__isnull = True))
 
@@ -50,9 +64,19 @@ def miniblog_for_user(parser, token):
                 overflowed = False
                 result = result
 
-            context[self.var_name] = {'announcementList': result,
-                                      'overflowed':       overflowed,
-                                      'total':            total}
+            map(str, result)
+
+            retVal = {'announcementList': result,
+                      'overflowed':       overflowed,
+                      'total':            total}
+
+            if self.user.id is not None:
+                # cache for only 1 hour if it's an actual user.
+                cache.set(self.cache_key, retVal, 3600)
+            else:
+                cache.set(self.cache_key, retVal, 86400)
+
+            context[self.var_name] = retVal
             
             return ''
 

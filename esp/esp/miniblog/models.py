@@ -123,10 +123,14 @@ class Entry(models.Model):
         return True
 
     def get_absolute_url(self):
-
+        if hasattr(self, '_url'):
+            return self._url
+        
         directory = ('/'+'/'.join(self.anchor.get_uri().split('/')[2:])).strip('/')
 
-        return '%s/%s.blog' % (directory, self.slug)
+        self._url = '%s/%s.blog' % (directory, self.slug)
+
+        return self._url
 
 
     def save(self, *args, **kwargs):
@@ -152,7 +156,8 @@ class Comment(models.Model):
     content = models.TextField(help_text="HTML not allowed.")
 
     def __str__(self):
-        return 'Comment for %s by %s' % (self.entry, self.author)
+        return 'Comment for %s by %s at %s' % (self.entry, self.author,
+                                               self.get_absolute_url())
     
     class Admin:
         search_fields = ['author__first_name','author__last_name',

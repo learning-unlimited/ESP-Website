@@ -36,8 +36,8 @@ class UserBitManager(ProcedureManager):
             UserBit.objects.cache(user)['key'] = 'new value'
         """
 
-        # 5 minute caching
-        cache_time = 300
+        # 1 hour minute caching
+        cache_time = 3600
 
         def get_key_for_user(self):
             """
@@ -257,29 +257,55 @@ class UserBitManager(ProcedureManager):
         else:
             now_id = "-".join(str(i) for i in datetime.datetime.now().timetuple())
 
-        if hasattr(qsc, 'id'):
+        if isinstance(qsc, basestring):
+            qsc_cache = 'S' + qsc
+            qsc_id = qsc
+        elif hasattr(qsc, 'id'):
             qsc_id = qsc.id
+            qsc_cache = 'ID' + str(qsc.id)
         else:
+            qsc_cache = 'ID' + str(qsc)
             qsc_id = qsc
 
-        if hasattr(verb, 'id'):
+        if isinstance(verb, basestring):
+            verb_cache = 'S' + verb
+            verb_id = verb
+        elif hasattr(verb, 'id'):
+            verb_cache = 'ID' + str(verb.id)
             verb_id = verb.id
         else:
+            verb_cache = 'ID' + str(verb)
             verb_id = verb
 
         ###########
         # Caching #
         ###########
-        user_cache_id = 'UserHasPerms:%s,%s,%s,%s' % (qsc_id,verb_id,now_id,recursive_required)
+        user_cache_id = 'UserHasPerms:%s,%s,%s,%s' % (qsc_cache,verb_cache,now_id,recursive_required)
 
         retVal = self.cache(user)[user_cache_id]
 
-        if retVal is not None: return retVal
-
+        if retVal is not None:
+            return retVal
 
         ###########
         # Query   #
         ###########
+        if isinstance(verb_id, basestring):
+            try:
+                verb_id = DataTree.get_by_uri(verb_id).id
+            except DataTree.NoSuchNodeException:
+                retVal = False
+
+        if isinstance(qsc_id, basestring):
+            try:
+                qsc_id = DataTree.get_by_uriL(qsc_id).id
+            except DataTree.NoSuchNodeException:
+                retVal = False
+
+        if retVal is not None:
+            self.cache(user)[user_cache_id] = retVal
+            return retVal
+        
         if user is None:
             user = -10
 
@@ -315,8 +341,7 @@ class UserBit(models.Model):
     # first some nouns
     >>> something = GetNode('Q/Albums/60s/Beatles/Abbey_Road/Something')
     >>> something
-    <DataTree: Q/Albums/60s/Beatles/Abbey_Road/Something (6--7)>
-    >>> darling = GetNode('Q/Albums/60s/Beatles/Abbey_Road/OhDarling')
+    <DataTree: Q/Albums/60s/Beatles/Abbey_Road/Something (6--7)    >>> darling = GetNode('Q/Albums/60s/Beatles/Abbey_Road/OhDarling')
     >>> for i in range(10):
     ...     song = GetNode('Q/Albums/Misc/Unknown%s/%s' % (i,i*5-1))
     ...

@@ -36,6 +36,8 @@ from django.db import models
 from django.db.models import Q
 from django.db import transaction
 from esp.db.fields import AjaxForeignKey
+from esp.utils.memdb import mem_db
+
 import exceptions
 
 
@@ -498,9 +500,11 @@ class DataTree(models.Model):
     def lock(hard_lock = False):
         " Lock the entire tree. "
         root = DataTree.root()
-        
+
         lock = 1
         if hard_lock: lock = 2
+
+        mem_db.set('datatree_lock', str(lock))
         
         root.lock_table = lock
         
@@ -511,6 +515,9 @@ class DataTree(models.Model):
         " Unlock the entire tree. "
         root = DataTree.root()
         root.lock_table = 0
+
+        mem_db.set('datatree_lock', '0')
+
         root.save(old_save = True)
 
     #############################
@@ -539,20 +546,26 @@ class DataTree(models.Model):
     @staticmethod
     def locked():
         " Get the lock status of this tree. "
-        return DataTree.root().lock_table
+        try:
+            lock_table = int(mem_db.get('datatree_lock'))
+        except (TypeError, ValueError):
+            lock_table = DataTree.root().lock_table
+            mem_db.set('datatree_lock', lock_table)
+
+        return lock_table
 
     @staticmethod
     def wait_if_locked():
         " Will wait if there is a lock on the root node. "
         import time, datetime
         old = datetime.datetime.now()
-        while DataTree.root().lock_table != 0:
+        while DataTree.locked() != 0:
             time.sleep(DataTree.LOCK_WAIT)
             if (datetime.datetime.now() - old).seconds > DataTree.MAX_WAIT:
                 raise DataTree.LockTimedOut, 'A lock was on the tree for more than %s seconds.' %\
                       DataTree.MAX_WAIT
         return
-    
+
     @staticmethod
     def get_by_uri(uri, create = False):
         " Get the node by the URI, A/B/.../asdf "

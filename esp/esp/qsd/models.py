@@ -101,10 +101,18 @@ class ESPQuotations(models.Model):
         if random.random() > cutoff:
             return None
 
-        try:
-            return ESPQuotations.objects.filter(display=True).order_by('?')[0]
-        except IndexError:
-            return None
+        current_pool = cache.get('esp_quotes')
+
+        if current_pool is None:
+            current_pool = list(ESPQuotations.objects.filter(display=True).order_by('?')[:5])
+            # Cache the current pool for a day
+            if len(current_pool) == 0:
+                return None
+
+            cache.set('esp_quotes', current_pool, 86400)
+
+        return random.choice(current_pool)
+
         
     class Meta:
         verbose_name_plural = 'ESP Quotations'

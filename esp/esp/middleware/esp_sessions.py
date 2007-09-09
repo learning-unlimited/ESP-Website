@@ -17,7 +17,7 @@ TEST_COOKIE_VALUE = 'worked'
 # In order for a session to be saved, one of these must
 # exist in the data.
 # You can add to this if you need.
-MIN_COOKIE_KEYS = set([TEST_COOKIE_NAME, '_auth_user_id'])
+MIN_COOKIE_KEYS = set(['_auth_user_id'])
 
 def mem_db_key(session_key):
     return 'SESS_' + session_key
@@ -55,7 +55,7 @@ class SessionWrapper(object):
         self[TEST_COOKIE_NAME] = TEST_COOKIE_VALUE
 
     def test_cookie_worked(self):
-        return self.get(TEST_COOKIE_NAME) == TEST_COOKIE_VALUE
+        return True
 
     def delete_test_cookie(self):
         del self[TEST_COOKIE_NAME]

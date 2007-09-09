@@ -117,12 +117,16 @@ def qsd(request, branch, name, section, action):
         base_url = request.path[:(-len(action)-6)]
 
     # Detect edit authorizations
-    have_edit = UserBit.UserHasPerms(request.user, branch, request.get_node(EDIT_VERB))
+    if action != 'read':
+        # Dont' ask for it if we're not going to use it.
+        have_edit = UserBit.UserHasPerms(request.user, branch, request.get_node(EDIT_VERB))
+    else:
+        have_edit = False
 
     if have_edit:
         have_read = True
     else:
-        have_read = UserBit.UserHasPerms(request.user, branch, request.get_node(READ_VERB))
+        have_read = UserBit.UserHasPerms(request.user, branch, READ_VERB)
 
     if not have_read and action == 'read':
         raise Http403, "You do not have permission to access this page."
