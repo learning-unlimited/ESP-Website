@@ -1,16 +1,21 @@
+import md5
 from django import template
 from esp.datatree.models import DataTree
 from esp.web.util.template import cache_inclusion_tag
 from esp.qsd.models import QuasiStaticData
 from urllib import quote
 
+from esp.utils.file_cache import FileCache
+
 register = template.Library()
 
+render_qsd_cache = FileCache(4, 'render_qsd')
+
 def cache_key(qsd):
-    return 'QUASISTATICDATA__BLOCK__%s' % qsd.id
+    return md5.new('%s_%s' % (qsd.path.uri, qsd.name)).hexdigest()
 
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=render_qsd_cache, cache_time=86400)
 def render_qsd(qsd):
     return {'qsdrec': qsd}
 

@@ -39,7 +39,10 @@ class SessionWrapper(object):
         self.modified = True
 
     def __delitem__(self, key):
-        del self._session[key]
+        try:
+            del self._session[key]
+        except KeyError:
+            return
         self.modified = True
 
     def keys(self):

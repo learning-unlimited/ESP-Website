@@ -34,11 +34,29 @@ from esp.lib.markdown import markdown
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from datetime import datetime
-from esp.db.fields import AjaxForeignKey
+import md5
 
+from esp.db.fields import AjaxForeignKey
+from esp.db.file_db import *
+
+class QSDManager(FileDBManager):
+    def get_by_path__name(self, path, name):
+        file_id = md5.new(path.uri + '-' + name).hexdigest()
+        retVal = self.get_by_id(file_id)
+        if retVal is not None:
+            return retVal
+        try:
+            obj = self.filter(path=path, name=name).order_by('-create_date')[:1][0]
+            self.obj_to_file(obj)
+            return obj
+        except IndexError:
+            raise QuasiStaticData.DoesNotExist("No QSD found.")
 
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
+
+    objects = QSDManager(8, 'QuasiStaticData')
+
     path = AjaxForeignKey(DataTree)
     name = models.SlugField()
     title = models.CharField(maxlength=256)
@@ -50,11 +68,16 @@ class QuasiStaticData(models.Model):
     keywords = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
+    def get_file_id(self):
+        return md5.new(self.path.uri + '-' + self.name).hexdigest()
+
     def save(self, *args, **kwargs):
-        from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func
-        
-        cache.delete(cache_key_func(self))
-        return super(QuasiStaticData, self).save(*args, **kwargs)
+        from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func, render_qsd_cache
+        render_qsd_cache.delete(cache_key_func(self))
+        retVal = super(QuasiStaticData, self).save(*args, **kwargs)
+        QuasiStaticData.objects.obj_to_file(self)
+        return retVal
+    
     
     def __str__(self):
         return ( self.path.full_name() + ':' + self.name + '.html' )

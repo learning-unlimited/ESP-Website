@@ -37,7 +37,7 @@ from inspect import getargspec
 
 __all__ = ['cache_inclusion_tag']
 
-def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=99999, context_class=template.Context,  takes_context=False):
+def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=99999, context_class=template.Context,  takes_context=False, cache_obj=cache):
     """
     This function will cache the rendering and output of a inclusion tag for cache_time seconds.
 
@@ -95,14 +95,14 @@ def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=999
                     cache_key = None
 
                 if cache_dict_key is not None:
-                    cache_dict = cache.get(cache_dict_key)
+                    cache_dict = cache_obj.get(cache_dict_key)
                     if cache_dict is None: cache_dict = {}
 
                 if cache_key is not None:
                     if cache_dict_key is not None:
                         retVal = cache_dict.get(cache_key, None)
                     else:
-                        retVal = cache.get(cache_key)
+                        retVal = cache_obj.get(cache_key)
                     if retVal is not None:
                         return retVal
 
@@ -118,10 +118,10 @@ def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=999
                 retVal = self.nodelist.render(context_class(dict))
                 if cache_key is not None:
                     if cache_dict_key is None:
-                        cache.set(cache_key, retVal, cache_time)
+                        cache_obj.set(cache_key, retVal, cache_time)
                     else:
                         cache_dict[cache_key] = retVal
-                        cache.set(cache_dict_key, cache_dict, cache_time)
+                        cache_obj.set(cache_dict_key, cache_dict, cache_time)
                 return retVal
 
         compile_func = curry(template.generic_tag_compiler, params, defaults, func.__name__, InclusionNode)

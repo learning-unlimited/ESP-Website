@@ -133,18 +133,7 @@ def qsd(request, branch, name, section, action):
 
     # Fetch the QSD object
     try:
-        cache_qsd = cache.get(urlencode('quasistaticdata:' + cache_id))
-        
-        if cache_qsd != None:
-            qsd_rec = cache_qsd
-        else:            
-            qsd_recs = QuasiStaticData.objects.filter( path = branch, name = name ).order_by('-create_date')
-            if qsd_recs.count() < 1:
-                raise QuasiStaticData.DoesNotExist
-
-            qsd_rec = qsd_recs[0]
-
-            cache.set(urlencode('quasistaticdata:' + cache_id), qsd_rec)
+        qsd_rec = QuasiStaticData.objects.get_by_path__name(branch, name)
 
     except QuasiStaticData.DoesNotExist:
         if have_edit:
