@@ -29,6 +29,9 @@ class MemDatabase(object):
         else:
             return val
 
+    def sync(self):
+        self._cache.flush_all()
+
     def set(self, key, value, timeout=None):
         if isinstance(value, unicode):
             value = value.encode('utf-8')
