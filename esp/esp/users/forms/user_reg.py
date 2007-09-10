@@ -65,10 +65,16 @@ class UserRegForm(forms.Form):
 
         email_host = email_parts[1]
         
-        import socket
-        try:
-            socket.gethostbyname(email_host)
-        except socket.gaierror:
+        #import socket
+        # aseering 9/10/2007 -- Oh, MX records; yeah...
+        #socket.gethostbyname(email_host)
+
+        import DNS
+        DNS.ParseResolvConf() # May or may not work on systems without a resolv.conf file
+        r = DNS.Request(qtype='mx')
+        res = r.req(email_host)
+
+        if len(res.answers) == 0:
             raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
 
         return email
