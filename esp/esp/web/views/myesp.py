@@ -378,6 +378,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
 			regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
 			regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
+
+			if new_data.has_key('dietary_restrictions') and new_data['dietary_restrictions']:
+				regProf.dietary_restrictions = new_data['dietary_restrictions']
+
 			if role == 'student':
 				regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
 				regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
