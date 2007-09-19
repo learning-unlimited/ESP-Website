@@ -36,7 +36,6 @@ from datetime import datetime, timedelta
 from esp.db.fields import AjaxForeignKey
 
 
-
 # Create your models here.
 
 class EventType(models.Model):
@@ -53,7 +52,6 @@ class Series(models.Model):
     """ A container object for grouping Events.  Can be nested. """
     description = models.TextField()
     target = AjaxForeignKey(DataTree) # location for this Series in the datatree
-
 
     class Admin:
         pass
@@ -117,6 +115,42 @@ class Event(models.Model):
         newList = [ x for x in sortedList if x != None ]
 
         return newList
+            
+    @staticmethod
+    def contiguous(event1, event2):
+        """ Returns true if the second argument is less than 15 minutes apart from the first one. """
+        tol = timedelta(minutes=15)
+        
+        if (event2.start - event1.end) < tol:
+            return True
+        else:
+            return False
+        
+    @staticmethod
+    def group_contiguous(event_list):
+        """ Takes a list of events and returns a list of lists where each sublist is a contiguous group. """
+        from copy import copy
+        sorted_list = copy(event_list)
+        sorted_list.sort()
+        
+        grouped_list = []
+        current_group = []
+        last_event = None
+        
+        for event in sorted_list:
+            
+            if last_event is None or Event.contiguous(last_event, event):
+                current_group.append(event)
+            else:
+                grouped_list.append(copy(current_group))
+                current_group = [event]
+                
+            last_event = event
+        
+        if len(current_group) > 0:
+            grouped_list.append(current_group)
+        
+        return grouped_list
 
     def pretty_time(self):
         return self.start.strftime('%I:%M%p').lower().strip('0') + '--' \

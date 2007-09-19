@@ -145,7 +145,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
             forms.TextField(field_name="prereqs", is_required=False),                  
 
             CheckboxSelectMultipleField(field_name="resources", \
-                                              choices=module.getResources()),
+                                              choices=module.getResourceTypes()),
 
             forms.LargeTextField(field_name="message_for_directors", \
                                  is_required=False)
@@ -316,7 +316,7 @@ class ClassSelectMeetingTimesField(CheckboxSelectMultipleField):
         if self.cls is None:
             viable_times = [str(choice[0]) for choice in self.choices]
         else:
-            viable_times = [str(x.id) for x in self.cls.viable_times.all()]
+            viable_times = [str(x.id) for x in self.cls.viable_times()]
         
         for value, choice in self.choices:
             checked_html = ''

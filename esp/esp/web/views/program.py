@@ -33,7 +33,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
-from esp.program.models import RegistrationProfile, Class, ClassCategories, ResourceRequest, TeacherParticipationProfile, SATPrepRegInfo
+from esp.program.models import RegistrationProfile, Class, ClassCategories, TeacherParticipationProfile, SATPrepRegInfo
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
@@ -224,13 +224,19 @@ def program_teacherreg2(request, tl, one, two, module, extra, prog, class_obj = 
 
 	context['course'] = cobj
 
-	res = ResourceRequest.objects.filter(requestor = cobj)
+    ##################################################################
+    #   Outdated code here!  We should delete it soon. -Michael P
+    ##################################################################
+    
+        """
+        res = ResourceRequest.objects.filter(requestor = cobj)
 	if res.count() == 0:
 		res = ResourceRequest(requestor = cobj)
 	else:
 		res = res[0]
 
 	context['res'] = res
+        """
 
 	# teacher will volunteer
 #	participation = TeacherParticipationProfile.objects.filter(program = prog, teacher = request.user)
@@ -380,7 +386,7 @@ def program_makeaclass(request, tl, one, two, module, extra, prog):
 
 # set resources:
 # Need to get this working RSN!
-	res = ResourceRequest(requestor = cobj)
+#	res = ResourceRequest(requestor = cobj)
 #	res.requester = cobj
 	
 	res.wants_projector = request.POST.has_key('wants_projector')

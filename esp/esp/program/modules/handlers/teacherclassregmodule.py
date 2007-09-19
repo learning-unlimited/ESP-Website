@@ -41,6 +41,7 @@ from esp.miniblog.models         import Entry
 from django.core.cache           import cache
 from esp.db.models               import Q
 from esp.users.models            import User
+from esp.resources.models        import ResourceType, ResourceRequest
 
 class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -177,47 +178,19 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def getTimes(self):
         times = self.program.getTimeSlots()
-        return [(str(x.id),x.friendly_name) for x in times]
+        return [(str(x.id),x.short_description) for x in times]
 
     def getDurations(self):
-        durations = None
-        if self.classRegInfo.class_durations:
-            try:
-                durations = [ float(duration) for duration
-                              in self.classRegInfo.class_durations.split(',') ]
-            except:
-                durations = None
-                
-            if durations is not None:
-                newList = []
-                for duration in durations:
-                    hours   = str(int(duration))
-                    minutes = str(int((duration - int(duration))*60)).rjust(2, '0')
-                    newList.append((duration, hours + ':' + minutes))
-                return newList
+        return self.program.getDurations()
 
-            
-        times = self.program.getTimeSlots()
-        events = [ Event.objects.get(anchor = time) for time in times ]
-        durationDict = {}
-        for event in events:
-            durationSeconds = event.duration().seconds
-            durationDict[durationSeconds / 3600.0] = \
-                                str(durationSeconds / 3600) + ':' + \
-                                str((durationSeconds / 60) % 60).rjust(2,'0')
-            
-        durationList = durationDict.items()
-        if self.classRegInfo.class_durations_any:
-            if len(durationList) == 2:
-                durationList = [('', 'Either')] + durationList
-            else:
-                durationList = [('', 'Any')] + durationList
-
-        return durationList
-    
     def getResources(self):
         resources = self.program.getResources()
-        return [(str(x.id), x.friendly_name) for x in resources]
+        return [(str(x.id), x.name) for x in resources]
+   
+    def getResourceTypes(self):
+        #   Get a list of all resource types, excluding the fundamental ones.
+        res_types = ResourceType.objects.filter(priority_default__gt=0)
+        return [(str(x.id), x.name) for x in res_types]
 
     @needs_teacher
     @meets_deadline()
@@ -512,21 +485,14 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 newclass.save()
 
+                #   Save resource requests
+                newclass.clearResourceRequests()
+                for res_type_id in request.POST.getlist('resources'):
+                    rr = ResourceRequest()
+                    rr.target = newclass
+                    rr.res_type = ResourceType.objects.get(id=res_type_id)
+                    rr.save()
 
-                # ensure multiselect fields are set
-                newclass.viable_times.clear()
-                
-                for block in request.POST.getlist('viable_times'):
-                    tmpQsc = DataTree.objects.get(id = int(block))
-                    newclass.viable_times.add(tmpQsc)
-
-
-                newclass.resources.clear()
-                for resource in request.POST.getlist('resources'):
-                    tmpQsc = DataTree.objects.get(id = int(resource))
-                    newclass.resources.add(tmpQsc)
-
-                
                 # add userbits
                 if newclass_isnew:
                     newclass.makeTeacher(self.user)
@@ -549,13 +515,11 @@ class TeacherClassRegModule(ProgramModuleObj):
             if newclass is not None:
                 new_data = newclass.__dict__
                 new_data['category'] = newclass.category.id
-                new_data['resources'] = [ resource.id for resource in newclass.resources.all() ]
-                new_data['viable_times'] = [ event.id for event in newclass.viable_times.all() ]
+                new_data['resources'] = [ res_type.id for res_type in ResourceType.objects.all() ]
                 new_data['title'] = newclass.anchor.friendly_name
                 new_data['url']   = newclass.anchor.name
                 context['class'] = newclass
 
-        #assert False, new_data
         context['one'] = one
         context['two'] = two
         if newclass is None:
@@ -563,11 +527,9 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             context['addoredit'] = 'Edit'
 
-        #        assert False, new_data
         context['form'] = forms.FormWrapper(manipulator, new_data, errors)
 
-
-        if len(self.getDurations()) < 2:
+        if len(self.getDurations()) < 1:
             context['durations'] = False
         else:
             context['durations'] = True

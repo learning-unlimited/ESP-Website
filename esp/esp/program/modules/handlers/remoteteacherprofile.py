@@ -48,7 +48,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
 
     def getTimes(self):
         times = self.program.getTimeSlots()
-        return [(str(x.id),x.friendly_name) for x in times]
+        return [(str(x.id),x.short_description) for x in times]
 
     def teachers(self, QObject = False):
         return {}

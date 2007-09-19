@@ -39,7 +39,7 @@ from django.core.cache import cache
 from esp.miniblog.models import Entry
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
-
+    
 # Create your models here.
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
@@ -225,6 +225,7 @@ class ArchiveClass(models.Model):
     
 class Program(models.Model):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
+
     anchor = AjaxForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
@@ -233,7 +234,6 @@ class Program(models.Model):
     class_size_max = models.IntegerField()
     program_size_max = models.IntegerField(null=True)
     program_modules = models.ManyToManyField(ProgramModule)
-
 
     def _get_type_url(self, type):
         if hasattr(self, '_type_url'):
@@ -421,9 +421,6 @@ class Program(models.Model):
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
-    def getTimeSlots(self):
-        return list(self.anchor.tree_create(['Templates','TimeSlots']).children().order_by('id'))
-
     def isConfirmed(self, espuser):
         v = GetNode('V/Flags/Public')
         userbits = UserBit.objects.filter(verb = v, user = espuser,
@@ -432,6 +429,8 @@ class Program(models.Model):
             return False
 
         return True
+    
+    #   Will rewrite these next 2 - Michael P
     
     def getClassRooms(self):
         return list(self.anchor.tree_create(['Templates','Classrooms']).children().order_by('name'))
@@ -447,8 +446,34 @@ class Program(models.Model):
     def classes(self):
         return Class.objects.filter(parent_program = self)        
 
+    def getTimeSlots(self):
+        return Event.objects.filter(anchor=self.anchor)
+
     def getResources(self):
-        return list(self.anchor.tree_create(['Templates','Resources']).children())
+        from esp.resources.models import Resource
+        
+        return Resource.objects.filter(event__anchor=self.anchor)
+
+    def getDurations(self):
+        """ Find all contiguous time blocks and provide a list of duration options. """
+        times = Event.group_contiguous(list(self.getTimeSlots()))
+
+        durationDict = {}
+        
+        #   I hope this isn't too terribly slow... not bothering with a faster way
+        for t_list in times:
+            n = len(t_list)
+            for i in range(0, n):
+                for j in range(i, n):
+                    time_option = t_list[j].end - t_list[i].start
+                    durationSeconds = time_option.seconds
+                    durationDict[durationSeconds / 3600.0] = \
+                                        str(durationSeconds / 3600) + ':' + \
+                                        str((durationSeconds / 60) % 60).rjust(2,'0')
+            
+        durationList = durationDict.items()
+
+        return durationList
 
     def getModules(self, user = None, tl = None):
         """ Gets a list of modules for this program. """
@@ -749,8 +774,6 @@ class JunctionStudentApp(models.Model):
     """
     Student applications for Junction.
     """
-
-    
 
     program = models.ForeignKey(Program, editable = False)
     user    = AjaxForeignKey(User, editable = False)

@@ -313,6 +313,31 @@ class ESPUser(User, AnonymousUser):
         else:
             return User.objects.filter(Q_useroftype)
 
+    def getAvailableTimes(self, program):
+        """ Return a list of the Event objects representing the times that a particular user
+            can teach for a particular program. """
+        from esp.resources.models import Resource
+            
+        res_list = Resource.objects.filter(user=self.getOld())
+        return [r.event for r in res_list]
+    
+    def clearAvailableTimes(self, program):
+        """ Clear all resources indicating this teacher's availability for a program """
+        from esp.resources.models import Resource
+        
+        res_list = Resource.objects.filter(user=self.getOld())
+        for r in res_list:
+            r.delete()
+
+    def addAvailableTime(self, program, timeslot):
+        from esp.resources.models import Resource, ResourceType
+        
+        r = Resource()
+        r.user = self
+        r.event = timeslot
+        r.name = 'Teacher Availability, %s at %s' % (self.name(), timeslot.short_description)
+        r.res_type = ResourceType.get_or_create('Teacher Availability')
+        r.save()
 
     def getEnrolledClasses(self, program=None, request=None):
 
@@ -547,7 +572,6 @@ class ESPUser(User, AnonymousUser):
             return 0
 
         return schoolyear + 12 - grade      
-        
 
     
 class StudentInfo(models.Model):

@@ -64,7 +64,7 @@ class AdminVitals(ProgramModuleObj):
         vitals['timeslots'] = []
         
         for timeslot in timeslots:
-            curTimeslot = {'slotname': timeslot.friendly_name}
+            curTimeslot = {'slotname': timeslot.short_description}
             
             curclasses = Class.objects.filter(parent_program = self.program,
                                               meeting_times  = timeslot)

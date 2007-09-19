@@ -49,12 +49,9 @@ from esp.datatree.models import DataTree, GetNode
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
+from esp.program.models import JunctionStudentApp
 
-from esp.program.models import Program, JunctionStudentApp
-
-__all__ = ['Class', 'JunctionAppReview', 'ClassRoomAssignment',
-           'ProgramCheckItem', 'ClassTimeSlot', 'ClassManager',
-           'ResourceRequest','ClassCategories']
+__all__ = ['Class', 'JunctionAppReview', 'ProgramCheckItem', 'ClassManager', 'ClassCategories']
 
 
 class ClassCacheHelper(GenericCacheHelper):
@@ -98,6 +95,7 @@ class ClassManager(ProcedureManager):
 class Class(models.Model):
 
     """ A Class, as taught as part of an ESP program """
+    from esp.program.models import Program
 
     anchor = AjaxForeignKey(DataTree)
     parent_program = models.ForeignKey(Program)
@@ -114,19 +112,14 @@ class Class(models.Model):
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
     directors_notes = models.TextField(blank=True, null=True)
-    status   = models.IntegerField(default=0)
+    status   = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted
     duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
-    event_template = AjaxForeignKey(DataTree, related_name='class_event_template_set', null=True)
-    meeting_times = models.ManyToManyField(DataTree, related_name='meeting_times', null=True)
-    viable_times = models.ManyToManyField(DataTree, related_name='class_viable_set', blank=True)
-    meeting_timeslots = models.ManyToManyField('ClassTimeSlot', related_name='meeting_timeslots', null=True, blank=True)
-    viable_timeslots  = models.ManyToManyField('ClassTimeSlot', related_name='viable_timeslots', null=True, blank=True)    
-    resources = models.ManyToManyField(DataTree, related_name='class_resources', blank=True)
+
+    #   Viable times replaced by availability of teacher (function viable_times below)
+    #   Resources replaced by resource assignment (functions getResources, getResourceAssignments below)
+    meeting_times = models.ManyToManyField(Event, related_name='meeting_times', null=True)
 
     checklist_progress = models.ManyToManyField('ProgramCheckItem')
-
-    #    We think this is useless because the sign-up is completely based on userbits.
-    enrollment = models.IntegerField()
 
     objects = ClassManager()
 
@@ -137,32 +130,73 @@ class Class(models.Model):
     class Meta:
         verbose_name_plural = 'Classes'
 
-    def classroomassignments(self):
-        return ClassRoomAssignment.objects.filter(cls = self)
+    def getResourceAssignments(self):
+        from esp.resources.models import ResourceAssignment
+        return ResourceAssignment.objects.filter(target=self)
 
+    def getResources(self):
+        assignment_list = self.getResourceAssignments()
+        return [a.resource for a in assignment_list]
+    
+    def getResourceRequests(self):
+        from esp.resources.models import ResourceRequest
+        return ResourceRequest.objects.filter(target=self)
+    
+    def clearResourceRequests(self):
+        for rr in self.getResourceRequests():
+            rr.delete()
+    
+    ########################################
+    #   These functions seem odd to me, but I rewrote them to preserve functionality
+    #   Michael P, 9/13/2007
+    ########################################
+    
+    def classroomassignments(self):
+        """ Much like getResourceAssignments; 
+            I think it should be removed, but our printables use it. 
+            -Michael P """
+        from esp.resources.models import ResourceType
+        cls_restype = ResourceType.get_or_create('Classroom')
+        return self.getResourceAssignments().filter(target=self, resource__res_type=cls_restype)
+    
     def classrooms(self):
-        """ Returns the class rooms tree nodes for this class."""
-        return DataTree.objects.filter(room__cls = self).distinct()
+        """ Returns the list of classroom resources assigned to this class."""
+        return [a.resource for a in self.classroomassignments()]
 
     def prettyrooms(self):
-        """ Return the pretty name of the rooms.
-
-        Could use generators here, but not worth it.
-        """
-        return [x.friendly_name for x in self.classrooms()]
-
+        """ Return the pretty name of the rooms. """
+        return [x.name for x in self.classrooms()]
+    
+    def viable_times(self):
+        """ Return a list of Events for which all of the teachers are available. """
+        teachers = self.teachers()
+        timeslots = self.parent_program.getTimeSlots()
+        viable_list = []
+        
+        for t in timeslots:
+            if teachers.filter(resource__event=t).count() == teachers.count():
+                viable_list.append(t)
+        
+        return viable_list
+    
     def clearRooms(self):
-        """ Delete all rooms for this class. """
-        ClassRoomAssignment.objects.filter(cls = self).delete()
+        for c in self.classroomassignments():
+            c.delete()
 
     def assignClassRoom(self, classroom):
         self.clearRooms()
 
         for time in self.meeting_times.all():
-            ClassRoomAssignment.objects.create(cls = self,
-                                               timeslot = time,
-                                               room = classroom)
+            new_assignment = ResourceAssignment()
+            new_assignment.resource = classroom
+            new_assignment.target = self
+            new_assignment.save()
+
         return True
+
+    ########################################
+    #   End of functions I think are meh
+    ########################################
 
     def emailcode(self):
         """ Return the emailcode for this class.
@@ -177,18 +211,6 @@ class Class(models.Model):
 
     def got_qsd(self):
         return QuasiStaticData.objects.filter(path = self.anchor).values('id').count() > 0
-
-    def PopulateEvents(self):
-        """ Given this instance's event_template, generate a series of events that define this class's schedule """
-        for e in self.event_template.event_set.all():
-            newevent = Event()
-            newevent.start = e.start
-            newevent.end = e.end
-            newevent.short_description = e.short_description
-            newevent.description = e.description.replace('[event]', e.anchor.friendly_name) # Allow for the insertion of event names, so that the templates are less generic/nonspecific
-            newevent.event_type = e.event_type
-            newevent.anchor = self.anchor
-            newevent.save()
         
     def __str__(self):
         if self.title() is not None:
@@ -205,11 +227,9 @@ class Class(models.Model):
             self.removeTeacher(teacher)
             self.removeAdmin(teacher)
 
-
         if self.anchor:
             self.anchor.delete(True)
-        
-        self.viable_times.clear()
+
         self.meeting_times.clear()
         super(Class, self).delete()
         
@@ -618,38 +638,10 @@ class JunctionAppReview(models.Model):
     class Admin:
         pass
 
-class ClassRoomAssignment(models.Model):
-    """ This associates a class, with a room, with a timeblock
-        This will prevent problems with classes that have to move """
-    room     = AjaxForeignKey(DataTree, related_name="room")
-    timeslot = AjaxForeignKey(DataTree, related_name="timeslot")
-    unique_together = (('room','timeslot'),)
-    cls      = models.ForeignKey(Class)
-    
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_classroomassignment'
-
-class ClassTimeSlot(models.Model):
-    """
-    A time slot for a particular class and program.
-    """
-    program = models.ForeignKey(Program, editable=False)
-    event   = models.ForeignKey(Event)
-    description = models.CharField(maxlength=256, blank=True, null=True)
-    
-    def __str__(self):
-        if self.description:
-            return self.description
-        else:
-            return str(self.event)
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_classtimeslot'
 
 class ProgramCheckItem(models.Model):
-
+    from esp.program.models import Program
+    
     program = models.ForeignKey(Program, related_name='checkitems')
     title   = models.CharField(maxlength=512)
     seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
@@ -674,23 +666,6 @@ class ProgramCheckItem(models.Model):
         ordering = ('seq',)
         app_label = 'program'
         db_table = 'program_programcheckitem'
-
-class ResourceRequest(models.Model):
-    """ An indication of resources requested for a particular class """
-    requestor = models.OneToOneField(Class)
-    wants_projector = models.BooleanField()
-    wants_computer_lab = models.BooleanField()
-    wants_open_space = models.BooleanField()
-
-    def __str__(self):
-        return 'Resource request for ' + str(self.requestor)
-
-    class Admin:
-        pass
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_resourcerequest'
 
 
 class ClassCategories(models.Model):

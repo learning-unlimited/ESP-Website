@@ -428,19 +428,16 @@ Student schedule for %s:
         scheditems = ['']
 
         for cls in classes:
-            roomassignments = cls.classroomassignments()
+            cls_rooms = cls.classroomassignments()
             for roomassignment in roomassignments:
-                if rooms.has_key(roomassignment.room.id):
-                    rooms[roomassignment.room.id].append({'room':
-                                                          roomassignment.room.name,
-                                                          'cls': cls,
-                                                          'timeblock':
-                                                          roomassignment.timeslot.friendly_name})
+                update_dict = {'room': roomassignment.resource.name,
+                               'cls': cls,
+                               'timeblock': roomassignment.resource.event.short_description}
+                if rooms.has_key(roomassignment.resource.id):
+                    rooms[roomassignment.resource.id].append(update_dict)
                 else:
-                    rooms[roomassignment.room.id] = [{'room':
-                                                      roomassignment.room.name,
-                                                      'cls': cls,
-                                                      'timeblock': roomassignment.timeslot.friendly_name}]
+                    rooms[roomassignment.resource.id] = [update_dict]
+            
         for scheditem in rooms.values():
             for dictobj in scheditem:
                 scheditems.append(dictobj)

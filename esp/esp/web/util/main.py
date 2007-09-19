@@ -70,9 +70,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
     if context is not None:
         request = requestOrContext
 
-
         section = ''
-
 
         if type(prog) == tuple:
             section = prog[1]

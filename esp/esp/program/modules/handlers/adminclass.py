@@ -51,7 +51,7 @@ class AdminClass(ProgramModuleObj):
     
     def getResources(self):
         resources = self.program.getResources()
-        return [(str(x.id), x.friendly_name) for x in resources]
+        return [(str(x.id), x.name) for x in resources]
 
     def getClassSizes(self):
         min_size, max_size, class_size_step = (0, 200, 10)
@@ -68,7 +68,7 @@ class AdminClass(ProgramModuleObj):
 
     def getTimes(self):
         times = self.program.getTimeSlots()
-        return [(str(x.id),x.friendly_name) for x in times]
+        return [(str(x.id),x.short_description) for x in times]
 
     def timeslotNumClasses(self):
         timeslots = self.program.getTimeSlots()
@@ -188,7 +188,7 @@ class AdminClass(ProgramModuleObj):
             new_data['meeting_times']   = [x.id for x in cls.meeting_times.all()]
             new_data['directors_notes'] = cls.directors_notes
             new_data['message_for_directors'] = cls.message_for_directors            
-            new_data['resources'] = [ resource.id for resource in cls.resources.all() ]
+            new_data['resources'] = [ resource.id for resource in cls.getResources() ]
 
             new_data['manage_progress'] = [str(x.id) for x in
                                            cls.checklist_progress.all()]

@@ -13,6 +13,7 @@
 /*   border: 1px solid #ccc;*/
     border-bottom: 1px dashed #369;
     font-weight: normal;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 #divmaintext form table thead th {
@@ -28,7 +29,6 @@
 }
 
 #divmaintext form table td {
-    font-size: 0.8em;
     color: #339;
     font-style: italic;
 }
@@ -50,7 +50,6 @@
 
 #divmaintext form .or {
     text-align: center;
-    font-size: 1.2em;
     display: block;
     color: black;
     font-weight: bold;
@@ -154,23 +153,26 @@
    border-collapse: collapse;
 }
 
-#program_form th {
-   font-family: Arial, Helvetica, sans-serif;
-   padding: 5px;
-   font-size: 14px;
-   font-weight: bold;
-   background-color: #c6def7;
-   color: #000;
-}
-
-#program_form form table tbody td, #program_form form table tbody th {
+#program_form form table tbody td {
     vertical-align: top;
     padding: 5px;
     border: none;
     font-weight: normal;
     font-style: normal;
     color: black;
-    font-size: 1.0em;
+    font-size: 12px;
+}
+
+#program_form label {
+    font-size: 12px;
+}
+
+#program_form th {
+   font-family: Arial, Helvetica, sans-serif;
+   padding: 5px;
+   font-weight: bold;
+   background-color: #c6def7;
+   color: #000;
 }
 
 #program_form input {
@@ -201,11 +203,6 @@
     color: #c6def7;
 }
 
-#catalog th.small {
-   font-family: Arial, sans-serif;
-   padding: 5px;
-   font-size: 12px;
-   font-weight: normal;
-   background-color: #c6def7;
-   color: #000;
+#program_form th.small {
+    font-size: 12px;
 }
