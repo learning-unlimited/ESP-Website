@@ -48,6 +48,11 @@ DEBUG = False
 DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 
+INTERNAL_IPS = (
+    '71.126.253.25',
+    '127.0.0.1',
+)
+
 ##################
 # Admins         #
 ##################
@@ -74,7 +79,7 @@ EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 DATABASE_ENGINE = 'postgresql'
 DATABASE_NAME = 'django'
 DATABASE_HOST = 'localhost'
-DATABASE_PORT = '5432'
+DATABASE_PORT = '5433'
 # passwords etc
 from database_settings import *
 
@@ -100,6 +105,7 @@ TEMPLATE_LOADERS = (
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.http.SetRemoteAddrFromForwardedFor',
+    'esp.queue.middleware.QueueMiddleware',
     'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
     'esp.middleware.ESPErrorMiddleware',
@@ -163,7 +169,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
                                'esp.context_processors.index_backgrounds',
                                'django.core.context_processors.i18n',
                                'django.core.context_processors.request',
-                               'esp.context_processors.auth',
+                               'django.core.context_processors.auth',
                                )  
 
 # no i18n

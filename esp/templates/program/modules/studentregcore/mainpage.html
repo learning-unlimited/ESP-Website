@@ -22,7 +22,10 @@
 {% render_inline_qsd program.anchor "learn:studentreg" %}
 <div id="catalog">
 {% if program.isFull %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+{% if not canRegToFullProgram %}
+<div class="errormsg">
+This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+{% endif %}
 {% endif %}
 <p>
   Please complete the following steps to pre-register for {{program.niceName}}.
@@ -90,9 +93,9 @@
 <center>
 
 
-{% if program.isFull %}
+{% if program.isFull %}{% if not canRegToFullProgram %}
 <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
-{% else %}
+{% endif %}{% else %}
 {% if not completedAll %}
 <div class="errormsg">
 Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Save</em> button below (it will be active at this point).
@@ -111,7 +114,7 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 
 
 <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-<input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}disabled{% endif %}/></form>
+<input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
 {% if isConfirmed %}
  | 
 <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">

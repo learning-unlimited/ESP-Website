@@ -26,7 +26,8 @@ PythonTranshandler filehandler
 
 	Alias /wiki /esp/wiki
 	<Location "/wiki">
-            SetHandler none            
+            SetHandler none
+	    DirectoryIndex index.php
             RewriteRule ^(/wiki/index.php.*)$ $1 [L]
             RewriteRule ^/wiki/(.*?)$ /wiki/index.php/$1 [QSA]
         </Location>
