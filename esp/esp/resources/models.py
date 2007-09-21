@@ -143,10 +143,10 @@ class Resource(models.Model):
         super(Resource, self).__init__(*args, **kwargs)
     
     def __str__(self):
-        if user is not None:
+        if self.user is not None:
             return 'Resource for %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
         else:
-            if num_students != -1:
+            if self.num_students != -1:
                 return 'Resource for %d students: %s (%s)' % (self.num_students, self.name, str(self.res_type))
             else:
                 return 'Resource: %s (%s)' % (self.name, str(self.res_type))

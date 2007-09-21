@@ -184,13 +184,12 @@ class Class(models.Model):
             c.delete()
 
     def assignClassRoom(self, classroom):
-        self.clearRooms()
-
-        for time in self.meeting_times.all():
-            new_assignment = ResourceAssignment()
-            new_assignment.resource = classroom
-            new_assignment.target = self
-            new_assignment.save()
+        from esp.resources.models import ResourceAssignment
+        
+        new_assignment = ResourceAssignment()
+        new_assignment.resource = classroom
+        new_assignment.target = self
+        new_assignment.save()
 
         return True
 
@@ -459,6 +458,7 @@ class Class(models.Model):
            ['11:00am--1:00pm']
         for instance.
         """
+        from esp.resources.models import ResourceAssignment, ResourceType, Resource
 
         retVal = self.cache['friendly_times']
 
@@ -467,7 +467,10 @@ class Class(models.Model):
             
         txtTimes = []
         eventList = []
-        events = list(Event.objects.filter(anchor__meeting_times = self))
+        
+        classroom_type = ResourceType.get_or_create('Classroom')
+        resources = Resource.objects.filter(resourceassignment__target=self).filter(res_type=classroom_type)
+        events = [r.event for r in resources] 
 
         txtTimes = [ event.pretty_time() for event
                      in Event.collapse(events) ]

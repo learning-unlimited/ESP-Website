@@ -604,6 +604,40 @@ Student schedule for %s:
         context['studentList'] = studentList
         return render_to_response(self.baseDir()+'studentchecklist.html', request, (prog, tl), context)
 
+    @needs_admin
+    def classchecklists(self, request, tl, one, two, module, extra, prog):
+        """ Gives you a checklist for each classroom with the students that are supposed to be in that
+            classroom.  The form has boxes for payment and forms.  This is useful for the first day 
+            of a program. """
+        context = {'module': self}
+
+        students= [ ESPUser(user) for user in self.program.students()['confirmed']]
+        students.sort()
+    
+        class_list = []
+
+        for c in self.program.classes():
+            class_dict = {'cls': c}
+            student_list = []
+            
+            for student in c.students():
+                t = Transaction.objects.filter(fbo = student, anchor = self.program.anchor)
+                
+                paid_symbol = ''
+                if t.count() > 0:
+                    paid_symbol = '?'
+                    for tr in t:
+                        if tr.executed is True:
+                            paid_symbol = 'X'
+    
+                student_list.append({'user': student, 'paid': paid_symbol})
+            
+            class_dict['students'] = student_list
+            class_list.append(class_dict)
+
+        context['class_list'] = class_list
+        
+        return render_to_response(self.baseDir()+'classchecklists.html', request, (prog, tl), context)
 
     @needs_admin
     def adminbinder(self, request, tl, one, two, module, extra, prog):
