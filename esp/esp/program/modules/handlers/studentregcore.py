@@ -77,6 +77,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 	context['one'] = one
 	context['two'] = two
 
+        if prog.isFull():
+            raise ESPError(), "This program has filled!  It can't accept any more students.  Please try again next session."
+
 	modules = prog.getModules(self.user, tl)
 	completedAll = True
 	for module in modules:

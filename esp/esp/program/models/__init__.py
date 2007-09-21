@@ -416,7 +416,7 @@ class Program(models.Model):
         if self.program_size_max is None or self.program_size_max == 0:
             return False
 
-        return ( self.num_students() <= self.program_size_max )
+        return ( self.num_students()['confirmed'] >= self.program_size_max )
 
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
