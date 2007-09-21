@@ -103,7 +103,8 @@ class StatsMiddleware(object):
                     s[match.end('cmt'):]
                 response.content = s
 
-        if settings.DISPLAYSQL and settings.DEBUG:
+        if settings.DISPLAYSQL and settings.DEBUG and \
+           request.META['REMOTE_ADDR'] in settings.INTERNAL_IPS:
             sqlcontent = "\n\n"+'<div class="sql">\n'
             #sqlcontent += base64.encodestring(pickle.dumps(connection.queries))
             

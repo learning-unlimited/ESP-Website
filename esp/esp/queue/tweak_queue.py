@@ -15,7 +15,10 @@ Options:
     --delay: Display the status DELAY seconds.
   -or-
     --clear-all: Purge all queue information.
-
+  -or-
+    --inside: Show people inside.
+  -or-
+    --queue: Show people waiting on the queue.
 """
 
 
@@ -96,7 +99,35 @@ if __name__ == '__main__':
         while True:
             tweak()
             time.sleep(delay)
-            
+
+    if '--inside' in args or '--queue' in args:
+        q = QueueItem()
+        info, bots = [], []
+        if '--inside' in args:
+            keys = q.inside_keys
+        else:
+            keys = q.queue_keys
+
+        for key in keys:
+            retVal = mem_db.get(key)
+            if retVal is not None:
+                cur_val = '\t\t'.join(mem_db.get(key).split(',',2)[1:])
+                cur_val_lower = cur_val.lower()
+                if 'bot' in cur_val_lower or 'crawl' in cur_val_lower or 'curl' in cur_val_lower or 'wget' in cur_val_lower or 'spider' in cur_val_lower:
+                    bots.append(cur_val)
+                else:
+                    info.append(cur_val)
+
+        info = bots + info
+
+        print """
+The %s people inside the site, at the moment:
+=============================================
+
+""" % (len(info))
+
+        print '\n'.join(info)
+        sys.exit(0)
 
     for i, arg in enumerate(args):
         if arg[2:].lower() in variables and (i + 1) < len(args):

@@ -408,6 +408,9 @@ class ESPUser(User, AnonymousUser):
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
+    def canRegToFullProgram(self, nodeObj):
+        return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
+
     def isOnsite(self, program = None):
         verb = GetNode('V/Registration/OnSite')
         if program is None:

@@ -61,7 +61,10 @@ class SessionWrapper(object):
         return True
 
     def delete_test_cookie(self):
-        del self[TEST_COOKIE_NAME]
+        try:
+            del self[TEST_COOKIE_NAME]
+        except KeyError:
+            pass
 
     def _get_session(self):
         # Lazily loads session from storage.
@@ -119,7 +122,10 @@ class SessionMiddleware(object):
                 else:
                     max_age = settings.SESSION_COOKIE_AGE
                     expires = datetime.datetime.strftime(datetime.datetime.utcnow() + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE), "%a, %d-%b-%Y %H:%M:%S GMT")
-                mem_db.set(mem_db_key(session_key), '1', settings.SESSION_COOKIE_AGE)
+                if 'signout' in request.path:
+                    mem_db.delete(mem_db_key(session_key))
+                else:
+                    mem_db.set(mem_db_key(session_key), '1', settings.SESSION_COOKIE_AGE)
                 new_session = Session.objects.save(session_key, request.session._session,
                     datetime.datetime.now() + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE))
                 response.set_cookie(settings.SESSION_COOKIE_NAME, session_key,
