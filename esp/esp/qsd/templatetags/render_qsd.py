@@ -1,7 +1,7 @@
 import md5
 from django import template
 from esp.datatree.models import DataTree
-from esp.web.util.template import cache_inclusion_tag
+from esp.web.util.template import cache_inclusion_tag, DISABLED
 from esp.qsd.models import QuasiStaticData
 from urllib import quote
 
@@ -23,7 +23,7 @@ def render_qsd(qsd):
 def cache_inline_key(input_anchor, qsd):
     return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s' % (input_anchor, qsd))
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=cache_inline_key)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=cache_inline_key, cache_obj=DISABLED)
 def render_inline_qsd(input_anchor, qsd):
     
     if isinstance(input_anchor, basestring):

@@ -35,7 +35,15 @@ from django.utils.functional import curry
 
 from inspect import getargspec
 
-__all__ = ['cache_inclusion_tag']
+__all__ = ['cache_inclusion_tag', 'DISABLED']
+
+class Disabled_Cache(object):
+    def noop(*args, **kwargs):
+        return None
+
+    get = set = delete = noop
+
+DISABLED = Disabled_Cache()
 
 def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=99999, context_class=template.Context,  takes_context=False, cache_obj=cache):
     """
