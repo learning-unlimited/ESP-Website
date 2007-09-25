@@ -20,7 +20,10 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.   T
 
 <p align="center">
 <div class="info">
-<b>Teachers:</b> Please ensure that you are available to teach your class at any of the times you select.  If there is any chance that your plans may change and you won't be able to teach, please hold off on this form and <a href="mailto:{{ program.director_email }}">contact the program directors</a>.  We're just trying to minimize the number of classes that have to be cancelled after registration begins. 
+<b>Teachers:</b> Please ensure that you are available to teach your class at any of the times you have specified that you are available.  If there is any chance that your plans may change and you won't be able to teach, please hold off on this form and <a href="mailto:{{ program.director_email }}">contact the program directors</a>.  We're just trying to minimize the number of classes that have to be cancelled after registration begins.
+<br />
+<br />
+To specify when you are available, go <a href="javascript:history.go(-1);">back to the main page</a> and click on "Indicate Your Availability".
 </div>
 </p>
 
@@ -173,7 +176,7 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.   T
         </td>
     </tr>
     
-    <tr><th class="small" colspan="2"><p><b>Note</b>: The above values are <strong>absolute</strong>, not the &#8220;optimum&#8221; nor &#8220;recommended&#8221; amounts.</p></th></tr>
+    <tr><th colspan="2"><p><b>Note</b>: The above class-size and grade-range values are <strong>absolute</strong>, not the &#8220;optimum&#8221; nor &#8220;recommended&#8221; amounts.  We will not allow any more students than you specify, nor allow any students in grades outside the range you specify.  So, be very careful to set your ranges correctly!</p></th></tr>
 
     {% if durations %}
     {% if form.duration %}
@@ -229,14 +232,20 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.   T
         <td>
             <label for="id_message_for_directors" class="header">
             Message for Director
+
+            <br />
+	    <br />
+
+	    <i>(Please include any special equipment requests, as well as requests for co-teachers and TAs)</i>
+
             </label>
+
             {% if form.message_for_directors.errors %}
             <br /><span class="form_error">{{ form.message_for_directors.errors|join:", " }}</span><br />
             {% endif %}
         </td>
         <td>
             {{ form.message_for_directors }}
-            <br /><i>Please include any special equipment requests, as well as requests for co-teachers and TAs</i>
         </td>
     </tr>
     
