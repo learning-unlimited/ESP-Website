@@ -4,6 +4,11 @@
 
 {% block subsection_name %}Register for {{program.niceName}}{% endblock %}
 
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
@@ -21,6 +26,8 @@ Please search for a user: <br />
 {% if error %}
 <p class="error">Error: No user found by that criteria.</p>
 {% endif %}
+
+<div id="program_form">
 <form action="{{ request.path }}" method="get">
 
 <br />
@@ -83,6 +90,6 @@ miles from <input type="text" size="5" name="zipcode" value="02139" />.
 &nbsp;&nbsp;<input type="submit" value="Use Filtered List" name="submitform" />
 {% endif %}
 </form>
-
+</div>
 
 {% endblock %}

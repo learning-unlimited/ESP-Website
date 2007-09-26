@@ -249,8 +249,8 @@ class HTMLDateField(forms.DateField):
             day   = '%02d' % day
 
         current_data = {'year': year,'month':month,'day':day}
-        year_choices = range(datetime.now().year - 80,
-                             datetime.now().year - 11)
+        year_choices = range(datetime.now().year - 70,
+                             datetime.now().year - 10)
         year_choices.reverse()
         month_choices = ['%02d' % x for x in range(1, 13)]
         day_choices   = ['%02d' % x for x in range(1, 32)]

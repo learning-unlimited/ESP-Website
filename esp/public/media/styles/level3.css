@@ -435,13 +435,22 @@ form {
 #divmainqsddatetimestamp {
   font-size: 0.90em;
 }
-#divmaintext p, #divmaintext li {
+#divmaintext p {
   font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.83em;
   line-height: 160%;
   color: #000000;
   margin-top: 0px;
 }
+
+#divmaintext li {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 1.0em;
+  line-height: 140%;
+  color: #000000;
+  margin-top: 0px;
+}
+
 #divmaintext pre {
   font-size: .9em;
 }

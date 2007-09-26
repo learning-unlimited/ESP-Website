@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,6 +32,7 @@ Email: web@esp.mit.edu
 
 from esp.cal.models import Event
 from esp.users.models import User
+from esp.db.fields import AjaxForeignKey
 
 from django.db import models
 import pickle
@@ -126,7 +126,7 @@ class Resource(models.Model):
     res_type = models.ForeignKey(ResourceType)
     num_students = models.IntegerField(blank=True, default=-1)
     group_id = models.IntegerField(default=-1)
-    user = models.ForeignKey(User, null=True, blank=True)
+    user = AjaxForeignKey(User, null=True, blank=True)
     event = models.ForeignKey(Event)
     
     def __init__(self, *args, **kwargs):

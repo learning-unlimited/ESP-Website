@@ -617,6 +617,7 @@ Student schedule for %s:
         class_list = []
 
         for c in self.program.classes():
+            c.update_cache_students()
             class_dict = {'cls': c}
             student_list = []
             
