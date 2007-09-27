@@ -264,7 +264,7 @@ class Class(models.Model):
         self.cache['teachers'] = retVal
         return retVal
 
-    def cannotAdd(self, user, checkFull=True, request=False):
+    def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent():
             return 'You are not a student!'
@@ -275,7 +275,7 @@ class Class(models.Model):
         if checkFull and self.parent_program.isFull() and not ESPUser(user).canRegToFullProgram(self.parent_program):
             return 'This programm cannot accept any more students!  Please try again in its next session.'
 
-        if checkFull and self.isFull():
+        if checkFull and self.isFull(use_cache=use_cache):
             return 'Class is full!'
 
         if request:
@@ -286,7 +286,6 @@ class Class(models.Model):
             verb_override = GetNode('V/Flags/Registration/GradeOverride')
             verb_conf = GetNode('V/Flags/Registration/Confirmed')
             verb_prelim = GetNode('V/Flags/Registration/Preliminary')            
-            
 
         if user.getGrade() < self.grade_min or \
                user.getGrade() > self.grade_max:
@@ -422,11 +421,11 @@ class Class(models.Model):
         eventList.sort()
         return eventList[0]
 
-    def num_students(self):
-        return len(self.students())
+    def num_students(self, use_cache=True):
+        return len(self.students(use_cache=use_cache))
 
-    def isFull(self):
-        if self.num_students() >= self.class_size_max:
+    def isFull(self, use_cache=True):
+        if self.num_students(use_cache=use_cache) >= self.class_size_max:
             return True
         else:
             return False

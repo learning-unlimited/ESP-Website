@@ -105,7 +105,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL."
             
         cobj = Class.objects.filter(id=classid)[0]
-        error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max)
+        error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
         if error and not self.user.onsite_local:
             raise ESPError(False), error
         if cobj.preregister_student(self.user, self.user.onsite_local):
