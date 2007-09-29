@@ -171,9 +171,9 @@ class AdminClass(ProgramModuleObj):
                 cls.directors_notes = new_data['directors_notes']
                 cls.message_for_directors = new_data['message_for_directors']
                                 
-                #   Fix this
                 for meeting_time in request.POST.getlist('meeting_times'):
-                    cls.meeting_times.add(DataTree.objects.get(id = str(meeting_time)))
+                    cls.meeting_times.add(Event.objects.get(id = meeting_time))
+                    
                 cls.save()
                 rooms = request.POST.getlist('room')
                 cls.clearRooms()

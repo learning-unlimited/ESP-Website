@@ -21,7 +21,7 @@ Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{reque
 </tr>
 {% for timeslot in timeslots %}
 
-<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.friendly_name }} </td>
+<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.short_description }} </td>
 	{% if timeslot.1 %}
 	<td>{{timeslot.1.title}} 
         {% if request.user.onsite_local %}

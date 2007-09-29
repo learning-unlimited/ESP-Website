@@ -457,6 +457,7 @@ class Class(models.Model):
            ['11:00am--1:00pm']
         for instance.
         """
+        from esp.cal.models import Event
         from esp.resources.models import ResourceAssignment, ResourceType, Resource
 
         retVal = self.cache['friendly_times']

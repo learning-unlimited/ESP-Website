@@ -78,7 +78,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     def prepare(self, context={}):
 	regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-	timeslots = list(GetNode(self.program.anchor.full_name()+'/Templates/TimeSlots').children().order_by('id'))
+	timeslots = list(self.program.getTimeSlots().order_by('id'))
 	classList = regProf.preregistered_classes()
 
         schedule = []
@@ -119,14 +119,14 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_deadline('/Classes')    
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
-
+        from esp.cal.models import Event
 
         try:
             extra = int(extra)
         except:
             raise ESPError(False), 'Please use the link at the main registration page.'
         
-        ts = DataTree.objects.filter(id=extra)
+        ts = Event.objects.filter(id=extra)
         if len(ts) < 1:
             raise Http404()
 
