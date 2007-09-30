@@ -446,7 +446,7 @@ class Class(models.Model):
             teachers.append(name)
         return teachers
 
-    def friendly_times(self, use_cache=True):
+    def friendly_times(self, use_cache=False):
         """ Return a friendlier, prettier format for the times.
 
         If the events of this class are next to each other (within 10-minute overlap,
@@ -468,9 +468,13 @@ class Class(models.Model):
         txtTimes = []
         eventList = []
         
+        # For now, use meeting times lookup instead of resource assignments.
+        """
         classroom_type = ResourceType.get_or_create('Classroom')
         resources = Resource.objects.filter(resourceassignment__target=self).filter(res_type=classroom_type)
         events = [r.event for r in resources] 
+        """
+        events = list(self.meeting_times.all())
 
         txtTimes = [ event.pretty_time() for event
                      in Event.collapse(events) ]

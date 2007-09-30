@@ -288,6 +288,7 @@ class ProgramPrintables(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
         
+        
         schedule = """
 Student schedule for %s:
 

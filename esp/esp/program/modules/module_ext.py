@@ -116,6 +116,9 @@ class SATPrepTeacherModuleInfo(models.Model):
         ('V', 'Verbal'),
         ('W', 'Writing')
         )
+        
+    SUBJECT_DICT = {'M': 'Math', 'V': 'Verbal', 'W': 'Writing'}
+    SECTION_DICT = {'A': 'Red', 'B': 'Orange', 'C': 'Yellow', 'D': 'Green', 'E': 'Blue', 'F': 'Violet'}
 
     sat_math = models.PositiveIntegerField(blank=True, null=True)
     sat_writ = models.PositiveIntegerField(blank=True, null=True)
@@ -135,7 +138,19 @@ class SATPrepTeacherModuleInfo(models.Model):
 
     class Admin:
         pass
-
+    
+    def get_subject_display(self):
+        if self.subject in SATPrepTeacherModuleInfo.SUBJECT_DICT:
+            return SATPrepTeacherModuleInfo.SUBJECT_DICT[self.subject]
+        else:
+            return 'Unknown'
+        
+    def get_section_display(self):
+        if self.section in SATPrepTeacherModuleInfo.SECTION_DICT:
+            return SATPrepTeacherModuleInfo.SECTION_DICT[self.section]
+        else:
+            return 'Unknown'
+        
     @staticmethod
     def subjects():
         return SATPrepTeacherModuleInfo.SAT_SUBJECTS

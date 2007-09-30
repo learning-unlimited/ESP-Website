@@ -117,6 +117,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                 else:
                     separated_list[test][cur_section] = [(cur_list[i]['user'],cur_list[i][test])]
                     
+        #   assert False, 'Separated list: %s' % separated_list
 
         class_list = {'verb': {}, 'writ': {}, 'math': {}}
 
@@ -131,13 +132,21 @@ class SATPrepAdminSchedule(ProgramModuleObj):
             else:
                 class_list[test[0:4].lower()][section] = [ {'cls': cls,'numstudents': 0} ] 
 
-
+        #   assert False, 'Class list: %s' % class_list
 
         schedule = {} # userids -> list of time ids
+
+        dry_run = True
+        scheduling_log = []
+        sched_nums = {}
+        log_file = '/home/price/work/esp/satprep_assignments.csv'
+        import csv
+        writer = csv.writer(open(log_file,'w'))
 
         test = 'writ'
         for test in ['writ','math','verb']:
         #if test == 'writ':
+            sched_nums[test] = 0
             new_list = separated_list[test]
             for section, userList in new_list.items():
                 if section != 'none':
@@ -148,10 +157,18 @@ class SATPrepAdminSchedule(ProgramModuleObj):
 
                         cls = SATPrepAdminSchedule.getSmallestClass(clsList, schedule[user.id])
                         cls['numstudents'] += 1
-                        cls['cls'].preregister_student(user)
-                        cls['cls'].update_cache_students()
+                        sched_nums[test] += 1
+                        scheduling_log.append('Added %s to %s at %s' % (user, cls['cls'], cls['cls'].meeting_times.all()[0]))
+                        writer.writerow([user.id, cls['cls'].id])
+                        if not dry_run:
+                            cls['cls'].preregister_student(user)
+                            cls['cls'].update_cache_students()
+                            
                         for ts in cls['cls'].meeting_times.all():
                             schedule[user.id].append(ts.id)
+                            
+        #   assert False, 'Done. Copy the schedule map: %s' % schedule
+        #   assert False, 'Done. Put %d in math, %d in verbal, and %d in writing classes. %d total students.' % (sched_nums['math'], sched_nums['verb'], sched_nums['writ'], len(users))
 
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
 
@@ -169,8 +186,6 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                        
         
         num_students = clsList[0]['numstudents']
-
-        
 
         for i in range(1, len(clsList)):
             if num_students > clsList[i]['numstudents']:
@@ -197,9 +212,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
 
         return None
            
-        
-        
-        
+
     @needs_admin
     def satprep_classgen(self, request, tl, one, two, module, extra, prog):
         """ This view will generate the classes for all the users. """
@@ -242,13 +255,12 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                 newclass.category = ClassCategories.objects.get(category = 'SATPrep')
                 newclass.anchor = dummy_anchor
 
-                newclass.enrollment = 0
                 newclass.save()
                                 
                 nodestring = 'SAT' + str(newclass.id)
                 newclass.anchor = self.program.classes_node().tree_create([nodestring])
                 newclass.anchor.friendly_name = 'SATPrep %s-%s' % (satprepmodule.get_subject_display(),
-                                                                   satprepmodule.section)
+                                                                   satprepmodule.get_section_display())
                 newclass.anchor.save()
 
                 newclass.anchor.save()
@@ -257,20 +269,10 @@ class SATPrepAdminSchedule(ProgramModuleObj):
 
                 #cache this result
                 newclass.update_cache()
-
-                # ensure multiselect fields are set
-                newclass.viable_times.clear()
-                newclass.resources.clear()
-
-
-                # add the appropriate timeslots
-                newclass.viable_times.add(timeslot)
                 newclass.meeting_times.add(timeslot)
 
-                    
                 # add userbits
                 newclass.makeTeacher(user)
-
                 newclass.accept()
 
         dummy_anchor.delete()
