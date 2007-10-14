@@ -91,8 +91,14 @@ class Event(models.Model):
     def duration(self):
         return self.end - self.start
     
+    def duration_str(self):
+        dur = self.end - self.start
+        hours = int(dur.seconds / 3600)
+        minutes = int(dur.seconds / 60) - hours * 60
+        return '%d hr %d min' % (hours, minutes)
+    
     def __str__(self):
-        return str(self.start)+'--'+str(self.end)
+        return self.start.strftime('%a %b %d: %I %p') + ' to ' + self.end.strftime('%I %p')
 
     def is_happening(self, time=datetime.now()):
         """ Return True if the specified time is between start and end """

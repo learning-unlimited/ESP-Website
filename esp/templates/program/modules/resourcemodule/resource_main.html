@@ -1,0 +1,52 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Manage Resources for {{ prog.niceName }}{% endblock %}
+
+{% block subsection_name %}Resource Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="/media/calendar/calendar-win2k-cold-2.css" />
+{% endblock %}
+
+{% block xtrajs %}
+    <!-- A couple of extra features here: rollouts and the calendar date/time selector. -->
+    <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+    <script type="text/javascript" src="/media/calendar/calendar.js"></script>
+    <script type="text/javascript" src="/media/calendar/lang/calendar-en.js"></script>
+    <script type="text/javascript" src="/media/calendar/calendar-setup.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Resources for {{ prog.niceName }}</h1>
+
+<p>
+"Resources" include classrooms, teachers, furniture, and equipment.  These things all need to be in the right place at the right time for classes to work smoothly.  Please use this page to set up the classrooms and their associated equipment for the program.  The final resource, teacher availability, will be created by the teachers as they sign up for their classes.
+</p>
+
+<p>
+Each step below is a form that you can expand or contract by clicking on the header.
+</p>
+
+<p>
+In addition to the forms on this page, you have the following options:
+<ul>
+<li><a href="/manage/{{ prog.url }}/resources/">Click here</a> to close all panes.
+<li>Open individual panes: <a href="/manage/{{ prog.url }}/resources/timeslot">timeslots</a>, <a href="/manage/{{ prog.url }}/resources/restype">resource types</a>, <a href="/manage/{{ prog.url }}/resources/classroom">classroom</a>, <a href="/manage/{{ prog.url }}/resources/equipment">floating resources</a>.
+<li><a href="/manage/{{ prog.url }}/main">Click here</a> to return to the main program management page.
+</ul>
+</p>
+
+<p>
+Enjoy!
+</p>
+
+{% include "program/modules/resourcemodule/timeslots.html" %}
+{% include "program/modules/resourcemodule/resource_types.html" %}
+{% include "program/modules/resourcemodule/classrooms.html" %}
+{% include "program/modules/resourcemodule/equipment.html" %}
+
+{% endblock %}

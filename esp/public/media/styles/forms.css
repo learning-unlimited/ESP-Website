@@ -154,7 +154,7 @@
 }
 
 #program_form form table tbody td {
-    vertical-align: top;
+    vertical-align: center;
     padding: 5px;
     border: none;
     font-weight: normal;
@@ -173,6 +173,7 @@
    font-weight: bold;
    background-color: #c6def7;
    color: #000;
+    text-align: center;
 }
 
 #program_form input {
@@ -205,4 +206,10 @@
 
 #program_form th.small {
     font-size: 12px;
+    text-align: left;
+    font-weight: bold;
+}
+
+#program_form td.underline {
+    border-bottom: 1px dashed #699;
 }

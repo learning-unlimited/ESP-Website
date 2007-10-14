@@ -520,7 +520,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             if newclass is not None:
                 new_data = newclass.__dict__
                 new_data['category'] = newclass.category.id
-                new_data['resources'] = [ res_type.id for res_type in ResourceType.objects.all() ]
+                new_data['resources'] = [ req.res_type.id for req in ResourceRequest.objects.filter(target=newclass) ]
                 new_data['title'] = newclass.anchor.friendly_name
                 new_data['url']   = newclass.anchor.name
                 context['class'] = newclass

@@ -55,12 +55,14 @@ Procedures:
 
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
-    
+    from esp.program.models import Program
+
     name = models.CharField(maxlength=40)                          #   Brief name
     description = models.TextField()                                #   What is this resource?
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(blank=True, default=-1)  #   How important is this compared to other types?
     attributes_pickled  = models.TextField(blank=True)                        
+    program = models.ForeignKey(Program, null=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
 
     def _get_attributes(self):
         if hasattr(self, '_attributes_cached'):
@@ -98,6 +100,10 @@ class ResourceType(models.Model):
             nt.description = ''
             nt.save()
             return nt
+        
+    @staticmethod
+    def global_types():
+        return ResourceType.objects.filter(program__isnull=True)
 
     def __str__(self):
         return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
@@ -129,27 +135,50 @@ class Resource(models.Model):
     user = AjaxForeignKey(User, null=True, blank=True)
     event = models.ForeignKey(Event)
     
-    def __init__(self, *args, **kwargs):
-        #   Find highest group id so far and make this one higher by default.
-        #   Often the group id will be manually set by other code immediately after instantiation.
-        
-        vals = Resource.objects.all().order_by('-group_id').values('group_id')
-        max_id = 0
-        if len(vals) > 0:
-            max_id = vals[0]['group_id']
-            
-        self.group_id = max_id + 1
-        
-        super(Resource, self).__init__(*args, **kwargs)
-    
     def __str__(self):
         if self.user is not None:
-            return 'Resource for %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
+            return 'For %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
         else:
             if self.num_students != -1:
-                return 'Resource for %d students: %s (%s)' % (self.num_students, self.name, str(self.res_type))
+                return 'For %d students: %s (%s)' % (self.num_students, self.name, str(self.res_type))
             else:
-                return 'Resource: %s (%s)' % (self.name, str(self.res_type))
+                return '%s (%s)' % (self.name, str(self.res_type))
+    
+    def save(self):
+        if self.group_id == -1:
+            vals = Resource.objects.all().order_by('-group_id').values('group_id')
+            max_id = 0
+            if len(vals) > 0:
+                max_id = vals[0]['group_id']
+                
+            self.group_id = max_id + 1
+            
+        super(Resource, self).save()
+    
+    def identical_resources(self):
+        res_list = Resource.objects.filter(name=self.name)
+        return res_list
+    
+    def grouped_resources(self):
+        return Resource.objects.filter(group_id=self.group_id)
+    
+    def associated_resources(self):
+        return self.grouped_resources().exclude(id=self.id)
+    
+    def assignments(self):
+        return ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
+    
+    def matching_times(self):
+        #   Find all times for which a resource of the same name is available.
+        res_list = self.identical_resources()
+        event_list = [r.event for r in res_list]
+        return event_list
+    
+    def is_independent(self):
+        if self.associated_resources().count() == 0:
+            return True
+        else:
+            return False
     
     class Admin:
         pass

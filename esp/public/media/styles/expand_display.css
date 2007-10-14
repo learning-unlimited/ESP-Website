@@ -1,0 +1,21 @@
+a.dsphead
+{
+    background-color: #ffffff;
+    color: #000066 !important;
+    text-decoration: none;
+    font-size: 14px;
+}
+a:hover
+{
+   text-decoration:underline;
+}
+a.dsphead span.dspchar
+{
+   font-family:monospace;
+   font-weight:normal;
+}
+
+.dspcont
+{
+   display:none;
+}

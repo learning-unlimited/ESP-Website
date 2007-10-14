@@ -430,29 +430,70 @@ class Program(models.Model):
 
         return True
     
-    #   Will rewrite these next 2 - Michael P
+    """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
+    "Classrooms."  So, if you try to call the old functions (which have no point anymore), then 
+    you'll get an error and you'll notice that you need to change the call and its associated
+    code.               -Michael P
     
-    def getClassRooms(self):
-        return list(self.anchor.tree_create(['Templates','Classrooms']).children().order_by('name'))
-
-    def addClassRoom(self, roomname, shortname):
-        parent = self.anchor.tree_create(['Templates','Classrooms'])
-
-        if not roomname:
-            roomname = shortname
-
-        parent[shortname] = DataTree(friendly_name=roomname)
-
+    """
+    def getClassrooms(self):
+        #   Returns the resources themselves.  See the function below for grouped-by-room.
+        from esp.resources.models import ResourceType
+        
+        return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom'))
+    
+    def collapsed_dict(self, resources):
+        result = {}
+        for c in resources:
+            if c.name not in result:
+                #   Make a dictionary with some helper variables for each resource.
+                result[c.name] = c
+                result[c.name].timeslots = [c.event]
+                result[c.name].furnishings = c.associated_resources()
+            else:
+                result[c.name].timeslots.append(c.event)
+                
+        for c in result:
+            result[c].timegroup = Event.collapse(result[c].timeslots)
+        
+        return result
+    
+    def groupedClassrooms(self):
+        from esp.resources.models import ResourceType
+        
+        classrooms = self.getResources().filter(res_type=ResourceType.get_or_create('Classroom'))
+        
+        result = self.collapsed_dict(classrooms)
+        #   Turn this into a list instead of a dictionary.
+        return [result[c] for c in result]
+        
+    def addClassroom(self, classroom_form):
+        from esp.program.modules.forms.resources import ClassroomForm
+        
+        #   Parse classroom form to create classroom and associated resources, group them,
+        #   and save them.
+        assert False, 'todo'
+        
     def classes(self):
         return Class.objects.filter(parent_program = self)        
 
     def getTimeSlots(self):
-        return Event.objects.filter(anchor=self.anchor)
+        return Event.objects.filter(anchor=self.anchor).order_by('start')
+
+    def getResourceTypes(self):
+        from esp.resources.models import ResourceType
+        
+        return ResourceType.objects.filter(Q(program=self) | Q(program__isnull=True))
 
     def getResources(self):
         from esp.resources.models import Resource
         
         return Resource.objects.filter(event__anchor=self.anchor)
+    
+    def getFloatingResources(self):
+        res_list = filter(lambda x: x.is_independent(), self.getResources())
+        result = self.collapsed_dict(res_list)
+        return [result[c] for c in result]
 
     def getDurations(self):
         """ Find all contiguous time blocks and provide a list of duration options. """
