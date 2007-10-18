@@ -47,6 +47,7 @@ class AvailabilityModule(ProgramModuleObj):
     def prepare(self, context={}):
         """ prepare returns the context for the main availability page. 
             Everything else can be gotten from hooks in this module. """
+        if context is None: context = {}
         
         context['availabilitymodule'] = self 
         return context
@@ -122,8 +123,11 @@ class AvailabilityModule(ProgramModuleObj):
                 
         else:
             #   Show new form
-            
             available_slots = teacher.getAvailableTimes(self.program)
+            if len(available_slots) == 0:
+                #   If they didn't enter anything, make everything checked by default.
+                available_slots = self.program.getTimeSlots()
+                
             context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
             context['prog'] = self.program
             

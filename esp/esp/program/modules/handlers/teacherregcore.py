@@ -43,7 +43,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         """ Display a teacher eg page """
         context = {}
         modules = self.program.getModules(self.user, 'teach')
-        
+
         context['completedAll'] = True
         for module in modules:
             if not module.isCompleted() and module.required:
@@ -51,14 +51,12 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
                 
             context = module.prepare(context)
 
-                    
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
 
         context['progposts'] = Entry.find_posts_by_perms(self.user,GetNode('V/Subscribe'),
                                                          self.program.anchor.tree_create(['Announcements', 'Teachers']))
-
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
     def isStep(self):

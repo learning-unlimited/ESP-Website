@@ -349,7 +349,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                                                  'ajax':ajax,
                                                                                                  'txtTeachers': txtTeachers,
                                                                                                  'coteachers':  coteachers,
-                                                                                                 'error': error})
+                                                                                                 'error': error,
+                                                                                                 'conflicts': []})
             
             # add schedule conflict checking here...
             teacher = User.objects.get(id = request.POST['teacher_selected'])
@@ -513,6 +514,8 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 #cache this result
                 newclass.update_cache()                
+                #   This line is for testing only. -Michael P
+                #   return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
                 return self.goToCore(tl)
                             
         else:

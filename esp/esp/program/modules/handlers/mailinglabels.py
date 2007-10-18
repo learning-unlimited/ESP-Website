@@ -143,7 +143,7 @@ class MailingLabels(ProgramModuleObj):
 
             infos = [ESPUser(user).getLastProfile().contact_user for user in User.objects.filter(filterObj.get_Q()).distinct()]
 
-            infos_filtered = [ info for info in infos if info.undeliverable != True ]
+            infos_filtered = [ info for info in infos if (info != None and info.undeliverable != True) ]
 
         output = MailingLabels.gen_addresses(infos, combine)
 
@@ -210,9 +210,9 @@ class MailingLabels(ProgramModuleObj):
                               'submit':    'Find ZIP Code'}
 
 
-                post_data.update({'address2': info.address_street,
+                post_data.update({'address2': info.address_street.title(),
                                   'state'   : info.address_state,
-                                  'city'    : info.address_city,
+                                  'city'    : info.address_city.title(),
                                   'zip5'    : info.address_zip,
                                   })
 

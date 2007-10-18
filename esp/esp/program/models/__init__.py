@@ -491,7 +491,10 @@ class Program(models.Model):
         return Resource.objects.filter(event__anchor=self.anchor)
     
     def getFloatingResources(self):
-        res_list = filter(lambda x: x.is_independent(), self.getResources())
+        from esp.resources.models import ResourceType
+        #   Don't include classrooms and teachers in the floating resources.
+        exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
+        res_list = filter(lambda x: x.is_independent(), self.getResources().exclude(res_type__in=exclude_types))
         result = self.collapsed_dict(res_list)
         return [result[c] for c in result]
 

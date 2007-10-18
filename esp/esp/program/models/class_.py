@@ -65,7 +65,7 @@ class ClassManager(ProcedureManager):
     def approved(self):
         return self.filter(status = 10)
 
-    def catalog(self, program, ts=None):
+    def catalog(self, program, ts=None, force_all=False):
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
@@ -81,8 +81,11 @@ class ClassManager(ProcedureManager):
 
         tables=['program_classcategories']
         
-        classes = self.approved().filter(parent_program = program)
-
+        if force_all:
+            classes = self.filter(parent_program = program)
+        else:
+            classes = self.approved().filter(parent_program = program)
+            
         if ts is not None:
             classes = classes.filter(meeting_times = ts)
 

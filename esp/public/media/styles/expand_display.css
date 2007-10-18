@@ -5,10 +5,17 @@ a.dsphead
     text-decoration: none;
     font-size: 14px;
 }
+
+a.dsphead_small
+{
+    font-size: 12px;
+}
+
 a:hover
 {
    text-decoration:underline;
 }
+
 a.dsphead span.dspchar
 {
    font-family:monospace;

@@ -24,13 +24,14 @@
 {% block content %}
 
 <h1>Setting Coteachers for &quot;<u>{{ class|escape }}</u>&quot;</h1>
-{% if conflicts|length %}
-<p style="color:red; font-weight: bold;">
-The following teachers have conflicting schedules:<br />
-{{ conflicts|join:"<br />" }}
 
-</p>
+{% if conflicts|length %}
+    <p style="color:red; font-weight: bold;">
+    The following teachers have conflicting schedules:<br />
+    {{ conflicts|join:"<br />" }}
+    </p>
 {% endif %}
+
 {% if error %}
 <p style="color:red; font-weight: bold;">
 {{ error }}

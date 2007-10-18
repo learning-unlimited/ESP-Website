@@ -28,6 +28,9 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+
+from esp.program.modules.module_ext import CreditCardModuleInfo
+from esp.program.modules.handlers.creditcardmodule import CreditCardModule
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
@@ -52,10 +55,19 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 trans.delete()
 
         if t.count() == 0 and paid:
+            payment_amount = 30.00
+            module_list = self.program.getModules()
+            module_class = CreditCardModule
+            for m in module_list:
+                if type(m) == module_class:
+                    info = CreditCardModuleInfo.objects.filter(module=m)
+                    if info.count() == 1:
+                        payment_amount = info[0].base_cost
+            
             trans = Transaction(anchor = self.program.anchor,
                                 fbo    = self.student,
                                 payer  = self.student,
-                                amount = 30.00,
+                                amount = payment_amount,
                                 line_item = 'Onsite payment for %s' % self.program.niceName(),
                                 executed = True,
                                 payment_type_id = 6

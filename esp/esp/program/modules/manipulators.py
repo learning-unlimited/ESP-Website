@@ -106,7 +106,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
         grade_order = IsLessThanOtherField('grade_max', 'Minimum grade must be less than the maximum grade.')
         
 
-        categories = ClassCategories.objects.all().order_by('category')
+        categories = ClassCategories.objects.all().order_by('category').exclude(category__contains='SAT')
         categories = [ (x.id, x.category) for x in categories ]
 
         self.fields = (
@@ -196,11 +196,13 @@ class ClassManageManipulator(forms.Manipulator):
             forms.SelectField(field_name="room", \
                               choices=[('','')] + \
                                        [(room.id, room.name) for room
-                                       in module.program.getClassRooms()], \
-                              validator_list=[ClassRoomAssignmentConflictValidator(cls, 'meeting_times','room')] \
+                                       in module.program.getClassrooms()], \
+                              # Room scheduling will not work until the scheduling module is completed.  But I'd rather let this page load.
+                              # - Michael P
+                              # validator_list=[ClassRoomAssignmentConflictValidator(cls, 'meeting_times','room')] \
                                               ),
             CheckboxSelectMultipleField(field_name="resources", \
-                                        choices=module.getResources()),
+                                        choices=module.getResourceTypes()),
 
             forms.LargeTextField(field_name="message_for_directors", \
                                  is_required=False),
