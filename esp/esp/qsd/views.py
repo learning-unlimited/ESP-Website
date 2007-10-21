@@ -117,11 +117,7 @@ def qsd(request, branch, name, section, action):
         base_url = request.path[:(-len(action)-6)]
 
     # Detect edit authorizations
-    if action != 'read':
-        # Dont' ask for it if we're not going to use it.
-        have_edit = UserBit.UserHasPerms(request.user, branch, request.get_node(EDIT_VERB))
-    else:
-        have_edit = False
+    have_edit = UserBit.UserHasPerms(request.user, branch, EDIT_VERB)
 
     if have_edit:
         have_read = True
