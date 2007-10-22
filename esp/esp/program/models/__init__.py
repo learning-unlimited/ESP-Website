@@ -39,6 +39,7 @@ from django.core.cache import cache
 from esp.miniblog.models import Entry
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
+from esp.middleware import ESPError
     
 # Create your models here.
 class ProgramModule(models.Model):

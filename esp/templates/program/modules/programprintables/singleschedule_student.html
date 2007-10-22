@@ -1,11 +1,11 @@
-<div class="title">Student Schedule for <br /><br />
+{% if onsiteregform %}{% else %}<div class="title">Student Schedule for <br /><br />
     <span>{{ student.name }}</span>
 </div>
 <div class="description">Here is your class schedule!<br />
 For help finding your classrooms, please consult the directions and maps in your guidebook.<br />
 If you have any questions, please go to the program office.
 </div>
-
+{% endif %}
 <div style="height: 1in;">&nbsp;</div>
 <br />
 {% if student.payment_info %}
@@ -35,6 +35,7 @@ If you have any questions, please go to the program office.
 {% endif %}
 <div style="height: 1in;">&nbsp;</div>
 <br />
+{% if onsiteregform %}<h2><center>Please write in your class choices here:</center></h2>{% endif %}
 <table align="center" cellspacing="0" cellpadding="4px" class="schedule">
    <tr>
      <th colspan="4">Schedule</th>
@@ -44,14 +45,14 @@ If you have any questions, please go to the program office.
      <th class="day">Day</th>
 {% endcomment %}
      <th>Time</th>
-     <th>Room</th>
+     <th>Room{% if onsiteregform %}<br /><small>(For Official Use Only)</small>{% endif %}</th>
      <th>Class</th>
-     <th>Teacher(s)</th>
+     {% if onsiteregform %}{% else %}<th>Teacher(s)</th>{% endif %}
    </tr>{% for cls in student.classes %}
    <tr>
      <td>{{ cls.friendly_times|join:"<br />" }}</td>
      <td>{% if cls.classrooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</td>
      <td>{{ cls.title }}</td>
-     <td>{{ cls.getTeacherNames|join:", " }}</td>
+     {% if onsiteregform %}{% else %}<td>{{ cls.getTeacherNames|join:", " }}</td>{% endif %}
    </tr>
 {% endfor %}

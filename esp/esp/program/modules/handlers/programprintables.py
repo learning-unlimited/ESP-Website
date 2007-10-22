@@ -137,16 +137,68 @@ class ProgramPrintables(ProgramModuleObj):
             for cls in classes:
                 cls_dict[str(cls.id)] = cls
             classes = [cls_dict[clsid] for clsid in clsids]
+            classes.sort(Class.catalog_sort)
             
         else:
             classes.sort(Class.catalog_sort)
+
         context = {'classes': classes, 'program': self.program}
 
         if extra is None or len(str(extra).strip()) == 0:
             extra = 'pdf'
 
         return render_to_latex(self.baseDir()+'catalog.tex', context, extra)
+
+    @needs_admin
+    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y)):
+        " This renders the course catalog in LaTeX. "
+
+        classes = Class.objects.filter(parent_program = self.program)
+
+        classes = [cls for cls in classes
+                   if cls.isAccepted()   ]
+
+        if request.GET.has_key('clsids'):
+            clsids = request.GET['clsids'].split(',')
+            cls_dict = {}
+            for cls in classes:
+                cls_dict[str(cls.id)] = cls
+            classes = [cls_dict[clsid] for clsid in clsids]
+            classes.sort(sort_exp)
+            
+        else:
+            classes.sort(sort_exp)
+
+        context = {'classes': classes, 'program': self.program}
+
+        return render_to_response(self.baseDir()+'classes_list.html', request, (prog, tl), context)
+
+    @needs_admin
+    def classesbytime(self, request, tl, one, two, module, extra, prog):
+        def cmp_time(one, other):
+            if (one.meeting_times.count() > 0 and other.meeting_times.count() > 0):
+                cmp0 = cmp(one.meeting_times.all()[0].id, other.meeting_times.all()[0].id)
+            else:
+                cmp0 = cmp(one.meeting_times.count(), other.meeting_times.count())
+
+            if cmp0 != 0:
+                return cmp0
+
+            return cmp(one, other)
         
+        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_time)
+
+    @needs_admin
+    def classesbytitle(self, request, tl, one, two, module, extra, prog):
+        def cmp_title(one, other):
+            cmp0 = cmp(one.anchor.friendly_name, other.anchor.friendly_name)
+
+            if cmp0 != 0:
+                return cmp0
+
+            return cmp(one, other)
+        
+        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_title)
 
 
     @needs_admin
@@ -179,16 +231,70 @@ class ProgramPrintables(ProgramModuleObj):
             # now we sort them by time/title
             classes.sort()            
             for cls in classes:
-            
                 scheditems.append({'name': teacher.name(),
                                    'cls' : cls})
 
         context['scheditems'] = scheditems
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
-        
+
+    @needs_admin
+    def teacherlist(self, request, tl, one, two, module, extra, prog):
+        """ generate list of teachers """
+
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+
+
+        context = {'module': self     }
+        teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct() ]
+        teachers.sort()
+
+
+        scheditems = []
+
+        for teacher in teachers:
+            # get list of valid classes
+            classes = [ cls for cls in teacher.getTaughtClasses()
+                    if cls.parent_program == self.program
+                    and cls.isAccepted()                       ]
+            # now we sort them by time/title
+            classes.sort()            
+
+            from esp.users.models import ContactInfo
+            for cls in classes:
+
+                # aseering 9-29-2007, 1:30am: There must be a better way to do this...
+                ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
+                if ci.count() > 0:
+                    phone_cell = ci[0].phone_cell
+                else:
+                    phone_cell = '-'
+
+                scheditems.append({'name': teacher.name(),
+                                   'phonenum': phone_cell,
+                                   'cls' : cls})
+
+        def cmpsort(one,other):
+            if (one['cls'].meeting_times.count() > 0 and other['cls'].meeting_times.count() > 0):
+                cmp0 = cmp(one['cls'].meeting_times.all()[0].id, other['cls'].meeting_times.all()[0].id)
+            else:
+                cmp0 = cmp(one['cls'].meeting_times.count(), other['cls'].meeting_times.count())
+                
+            if cmp0 != 0:
+                return cmp0
+
+            return cmp(one, other)
+
+        scheditems.sort(cmpsort)
+
+        context['scheditems'] = scheditems
+
+        return render_to_response(self.baseDir()+'teacherlist.html', request, (prog, tl), context)
+
     def get_msg_vars(self, user, key):
-        user = ESPUser(user)
+        User = ESPUser(user)
         if key == 'schedule':
             return ProgramPrintables.getSchedule(self.program, user)
         if key == 'transcript':
@@ -311,7 +417,7 @@ Student schedule for %s:
                
         return schedule
 
-
+    @needs_admin
     def studentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
 
@@ -340,6 +446,20 @@ Student schedule for %s:
         context['students'] = students
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
+    @needs_admin
+    def onsiteregform(self, request, tl, one, two, module, extra, prog):
+
+        # Hack together a pseudocontext:
+        context = { 'onsiteregform': True,
+                    'students': [{'classes': [{'friendly_times': [i.anchor.friendly_name],
+                                               'classrooms': [''],
+                                               'prettyrooms': ['______'],
+                                               'title': '________________________________________',
+                                               'getTeacherNames': [' ']} for i in prog.getTimeSlots()]}]
+                    }
+        return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+
+    @needs_admin
     def studentschedules_finaid(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
         from esp.program.models import FinancialAidRequest

@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Student Schedules{% if onsiteregform %}{% else %} for {{program.niceName}}{% endif %}</title>
+<title>Teachers</title>
 <style type="text/css" media="print,screen">
 body { font-family: georgia; margin: 0; font-size: 12px;}
 .title { text-align: center; font-size: 12pt; font-family: georgia; }
@@ -22,35 +22,36 @@ body { font-family: georgia; margin: 0; font-size: 12px;}
 td.newday { border-width: 2px 1px 0 1px;}
 #pagebreak {page-break-after: always; }
 .description { text-align: center; padding: .2in 0 .2in 0; }
+td, th {
+       border: 1px solid black;
+       border-collapse: collapse
+}
 </style>
 
 </head>
 <body>
-{% if onsiteregform %}
-<h1><center>{{ program.niceName }} On-Site Registration Form</center></h1>
-<p />
-<div align="center">
-<table>
-<tr><th>Name:</th><td>__________________________________________________</td></tr>
-<tr><th>E-Mail:</th><td>__________________________________________________</td></tr>
-<tr><th>Grade Level:</th><td>__________________________________________________</td></tr>
-<tr><th>High School:</th><td>__________________________________________________</td></tr>
-</table>
-</div>
-<br />
-<br />
 
-<h2><center>Please turn in this form, along with a <b>signed waiver</b>, to the New Registrations desk.</center></h2>
+<h1>Teachers</h1>
 
-<p />
-{% endif %}
-{% for student in students %}
-{% if not forloop.first %}
-  </table> 
-  <div id="pagebreak"> &nbsp; </div>
-{% endif %}
-{% include 'program/modules/programprintables/singleschedule_student.html' %}
+<table style="border: 1px solid black; border-collapse: collapse;">
+<tr>
+ <th />
+ <th>Name</th>
+ <th>Cellphone #</th>
+ <th>Time of First Class</th>
+</tr>
+
+{% for scheditem in scheditems %}
+{% ifchanged scheditem.name %}
+<tr>
+ <td>{{forloop.counter}}</td>
+ <td>{{ scheditem.name }}</td>
+ <td>{{ scheditem.phonenum }}</td>
+ <td>{{ scheditem.cls.friendly_times|join:" " }}</td>
+</tr>
+{% endifchanged %}
 {% endfor %}
+
 
 </body>
 </html>

@@ -649,6 +649,9 @@ class JunctionAppReview(models.Model):
         pass
 
 
+    class Admin:
+        pass
+
 class ProgramCheckItem(models.Model):
     from esp.program.models import Program
     

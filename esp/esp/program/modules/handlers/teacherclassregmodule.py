@@ -166,10 +166,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             class_size_step = self.classRegInfo.class_size_step
 
         ret_range = [i for i in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30] if i >= min_size and i <= max_size] + range(max(30+class_size_step, min_size), max(30+class_size_step, max_size+1), class_size_step)
-#        ret_range.sort()
-#        ret_range = list(set(ret_range))
 
-        #return range(min_size, max_size+1, class_size_step)
         return ret_range
 
     def getClassGrades(self):

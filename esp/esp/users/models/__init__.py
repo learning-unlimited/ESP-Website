@@ -654,7 +654,7 @@ class StudentInfo(models.Model):
         username = "N/A"
         if self.user != None:
             username = self.user.username
-        return 'ESP Student Info (%s)' % username
+        return 'ESP Student Info (%s) -- %s' % (username, str(self.school))
             
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']

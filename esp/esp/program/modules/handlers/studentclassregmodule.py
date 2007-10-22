@@ -210,7 +210,7 @@ class StudentClassRegModule(ProgramModuleObj):
     def getNavBars(self):
         """ Returns a list of the dictionary to render the class catalog, if it's open """
         if super(StudentClassRegModule, self).deadline_met('/Catalog'):
-            return [{ 'link': '/learn/%s/catalog/' % ( self.program.getUrlBase() ),
+            return [{ 'link': '/learn/%s/catalog' % ( self.program.getUrlBase() ),
                       'text': '%s Catalog' % ( self.program.niceSubName() ) }]
         
         else:
