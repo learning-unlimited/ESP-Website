@@ -717,7 +717,7 @@ class TeacherBio(models.Model):
     user    = AjaxForeignKey(User)
     bio     = models.TextField(blank=True, null=True)
     slugbio = models.CharField(maxlength=50, blank=True, null=True)
-    picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "bio_pictures/%y_%m/",blank=True, null=True)
+    picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/",blank=True, null=True)
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
     last_ts = models.DateTimeField(auto_now = True)    
