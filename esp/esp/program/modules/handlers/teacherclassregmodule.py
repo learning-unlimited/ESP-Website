@@ -455,8 +455,10 @@ class TeacherClassRegModule(ProgramModuleObj):
 
 
                 for k, v in new_data.items():
-                    if k != 'resources' and k != 'viable_times':
+                    if k not in ('category', 'resources', 'viable_times'):
                         newclass.__dict__[k] = v
+
+                newclass.category = ClassCategories.objects.get(id=new_data['category'])
 
                 if new_data['duration'] == '':
                     newclass.duration = 0.0
@@ -470,7 +472,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # datatree maintenance
                 if newclass_isnew:
                     newclass.parent_program = self.program
-                    newclass.category = ClassCategories.objects.get(id=new_data['category'])
                     newclass.anchor = self.program.anchor.tree_create(['DummyClass'])
 
                     newclass.anchor.save()
