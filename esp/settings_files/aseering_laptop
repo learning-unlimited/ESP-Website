@@ -34,7 +34,7 @@ Email: web@esp.mit.edu
 ######################
 
 # root directory
-PROJECT_ROOT = '/esp/esp/'
+PROJECT_ROOT = '/sw/local/esp/esp/'
 
 # log directory
 LOG_FILE="/var/log/django/esp_errlog"
@@ -44,12 +44,11 @@ LOG_FILE="/var/log/django/esp_errlog"
 ###################
 # Debug settings  #
 ###################
-DEBUG = False
-DISPLAYSQL = False
+DEBUG = True
+DISPLAYSQL = True
 TEMPLATE_DEBUG = DEBUG
 
 INTERNAL_IPS = (
-    '71.126.253.25',
     '127.0.0.1',
 )
 
@@ -79,7 +78,7 @@ EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 DATABASE_ENGINE = 'postgresql'
 DATABASE_NAME = 'django'
 DATABASE_HOST = 'localhost'
-DATABASE_PORT = '5433'
+DATABASE_PORT = '5432'
 # passwords etc
 from database_settings import *
 
@@ -112,7 +111,8 @@ MIDDLEWARE_CLASSES = (
     'esp.middleware.StatsMiddleware',
 #   'esp.middleware.psycomiddleware.PsycoMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'esp.middleware.esp_sessions.SessionMiddleware',
+#    'esp.middleware.esp_sessions.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',
@@ -156,7 +156,7 @@ INSTALLED_APPS = (
 )
 
 
-CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
+CACHE_BACKEND="memcached://127.0.0.1:11212/?timeout=120"
 
 
 
@@ -177,4 +177,4 @@ USE_I18N = False
 
 AUTH_PROFILE_MODULE='users.ESPUser_Profile'
 
-SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
+SITE_INFO = (1, 'fusion.selfip.net:8888', 'aseering dev site')
