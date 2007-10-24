@@ -35,7 +35,7 @@ class MemDatabase(object):
     def set(self, key, value, timeout=None):
         if isinstance(value, unicode):
             value = value.encode('utf-8')
-        self._cache.set(str(key), value, timeout or 86400)
+        self._cache.set(str(key), value, timeout or 0)
 
     def delete(self, key):
         self._cache.delete(key)

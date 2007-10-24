@@ -9,6 +9,7 @@ except ImportError:
     import pickle
 
 QUEUE_FILE = settings.TEMPLATE_DIRS[0] + '/errors/queue.html'
+WELCOME_SCREEN = settings.TEMPLATE_DIRS[0] + '/queue_welcome.html'
 
 __all__ = ['QUEUE_FILE','QueueItem','WaitInQueue']
 
@@ -29,6 +30,9 @@ class WaitInQueue(Exception):
         self.refresh_time = refresh_time
 
 class QueueProperty(object):
+    """ A global property for a queue object. These are written and
+    read to/from the mem_db.
+    """
     def __init__(self, name, default=None):
         self.name = name
         self.default = default
@@ -61,6 +65,7 @@ class QueueItem(object):
     inside_keys = QueueProperty('QUEUE_KEYS', [])#: Keys inside the web site
     queue_keys = QueueProperty('QUEUE_LIST', [])#: Keys waiting on the doorstep
     refresh_time = QueueProperty('QUEUE_REFRESH_TIME', REFRESH_TIME)#: How long to refresh
+    show_welcome = QueueProperty("QUEUE_SHOW_WELCOME", False)
 
     def __init__(self, request=None):
         if request is not None:
