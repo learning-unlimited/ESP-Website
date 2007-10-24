@@ -13,6 +13,14 @@
 </tr>
 
 <tr>
+ <td><label for="id_school">Graduation Year:</label></td>
+ <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
+   <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
  <td><label for="id_major">Major:</label></td>
  <td>{{ form.major }} {% if form.major.errors %}
    <br /><span class="form_error">{{ form.major.errors|join:", " }}</span>

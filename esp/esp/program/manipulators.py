@@ -65,8 +65,8 @@ class EmergContactManipulator(forms.Manipulator):
         
         self.fields = (
             forms.TextField(field_name="emerg_first_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="emerg_last_name", length=15, maxlength=64, is_required=False, validator_list=[validators.isNotEmpty]),            
-            forms.EmailField(field_name="emerg_e_mail", is_required=makeRequired, length=25),
+            forms.TextField(field_name="emerg_last_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
+            forms.EmailField(field_name="emerg_e_mail", is_required=False, length=25),
             ESPPhoneNumberField(field_name="emerg_phone_day", is_required=makeRequired, local_areacode='617'),
             ESPPhoneNumberField(field_name="emerg_phone_cell", local_areacode='617'),
             forms.TextField(field_name="emerg_address_street", length=20, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
@@ -86,8 +86,8 @@ class GuardContactManipulator(forms.Manipulator):
         
         self.fields = (
             forms.TextField(field_name="guard_first_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="guard_last_name", length=15, maxlength=64, is_required=False, validator_list=[validators.isNotEmpty]),
-            forms.EmailField(field_name="guard_e_mail", is_required=makeRequired, length=25),
+            forms.TextField(field_name="guard_last_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.EmailField(field_name="guard_e_mail", is_required=False, length=25),
             ESPPhoneNumberField(field_name="guard_phone_day", is_required=makeRequired, local_areacode='617'),
             ESPPhoneNumberField(field_name="guard_phone_cell", local_areacode='617'),
             )
@@ -105,7 +105,7 @@ class StudentInfoManipulator(forms.Manipulator):
         cur_year = datetime.date.today().year
         
         self.fields = (
-            GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(6,13)]),
+            GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)]),
             
 #            forms.SelectField(field_name="graduation_year", choices=zip(range(cur_year,cur_year+20),range(cur_year,cur_year+20)), is_required=makeRequired),
             forms.TextField(field_name="school", length=24, maxlength=128),

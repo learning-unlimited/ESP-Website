@@ -202,7 +202,7 @@ class ClassManageManipulator(forms.Manipulator):
                               # validator_list=[ClassRoomAssignmentConflictValidator(cls, 'meeting_times','room')] \
                                               ),
             CheckboxSelectMultipleField(field_name="resources", \
-                                        choices=module.getResourceTypes()),
+                                        choices=[(str(rt.id), rt.name) for rt in module.program.getResourceTypes()]),
 
             forms.LargeTextField(field_name="message_for_directors", \
                                  is_required=False),

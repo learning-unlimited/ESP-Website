@@ -56,8 +56,6 @@ except ImportError:
             
 
 
-
-
 def user_get_key(user):
     """ Returns the key of the user, regardless of anything about the user object. """
     if user is None or type(user) == AnonymousUser or \
@@ -659,7 +657,7 @@ class StudentInfo(models.Model):
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
 
-shirt_sizes = (('S', 'Small'), ('M', 'Medium'), ('L', 'Large'), ('XL', 'Extra-large'))
+shirt_sizes = (('S', 'Small'), ('M', 'Medium'), ('L', 'Large'), ('XL', 'Extra-large'), ('XXL', 'Dan Zaharopol'))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
 
 class TeacherInfo(models.Model):
@@ -700,6 +698,8 @@ class TeacherInfo(models.Model):
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.college
         form_dict['major']           = self.major
+        form_dict['shirt_size']      = self.shirt_size
+        form_dict['shirt_type']      = self.shirt_type
         return form_dict
     
     @staticmethod
@@ -714,6 +714,8 @@ class TeacherInfo(models.Model):
         teacherInfo.graduation_year = new_data['graduation_year']
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
+        teacherInfo.shirt_size      = new_data['shirt_size']
+        teacherInfo.shirt_type      = new_data['shirt_type']
         
         teacherInfo.save()
         return teacherInfo
