@@ -32,6 +32,8 @@ from esp.program.models import Class
 from esp.qsd.views import qsd
 from esp.poll.views import poll
 from esp.qsdmedia.views import qsdmedia
+from esp.settings import PROJECT_ROOT
+from esp.settings import MEDIA_ROOT
 
 #	This is some lookup for the redirector, to insert a certain string for the tree node 
 section_redirect_keys = {'teach': 'Programs',
@@ -44,8 +46,8 @@ section_prefix_keys = {'teach': 'teach', 'learn': 'learn'}
 
 # Static media
 urlpatterns = patterns('django.views.static',
-                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': '/esp/esp/public/media/'}),
-                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': '/esp/esp/admin/media/'}),
+                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),
+                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': PROJECT_ROOT + 'admin/media/'}),
                        )
 
 # admin stuff
