@@ -438,11 +438,19 @@ class Program(models.Model):
     code.               -Michael P
     
     """
-    def getClassrooms(self):
+    def getClassrooms(self, timeslot=None):
         #   Returns the resources themselves.  See the function below for grouped-by-room.
         from esp.resources.models import ResourceType
         
-        return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom'))
+        if timeslot is not None:
+            return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom'))
+        else:
+            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom'))
+    
+    def getAvailableClassrooms(self, timeslot):
+        from esp.resources.models import ResourceType
+        #   Filters down classrooms to those that are not taken.
+        return filter(lambda x: x.is_available(), self.getClassrooms(timeslot))
     
     def collapsed_dict(self, resources):
         result = {}
@@ -451,9 +459,10 @@ class Program(models.Model):
                 #   Make a dictionary with some helper variables for each resource.
                 result[c.name] = c
                 result[c.name].timeslots = [c.event]
-                result[c.name].furnishings = c.associated_resources()
             else:
                 result[c.name].timeslots.append(c.event)
+            result[c.name].furnishings = c.associated_resources()
+            result[c.name].sequence = c.schedule_sequence(self)
                 
         for c in result:
             result[c].timegroup = Event.collapse(result[c].timeslots)
@@ -462,12 +471,13 @@ class Program(models.Model):
     
     def groupedClassrooms(self):
         from esp.resources.models import ResourceType
+        classrooms = self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
         
-        classrooms = self.getResources().filter(res_type=ResourceType.get_or_create('Classroom'))
-        
-        result = self.collapsed_dict(classrooms)
+        result = self.collapsed_dict(list(classrooms))
+        key_list = result.keys()
+        key_list.sort()
         #   Turn this into a list instead of a dictionary.
-        return [result[c] for c in result]
+        return [result[key] for key in key_list]
         
     def addClassroom(self, classroom_form):
         from esp.program.modules.forms.resources import ClassroomForm
@@ -477,28 +487,40 @@ class Program(models.Model):
         assert False, 'todo'
         
     def classes(self):
-        return Class.objects.filter(parent_program = self)        
+        return Class.objects.filter(parent_program = self).order_by('id')        
 
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')
 
     def getResourceTypes(self):
+        #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
-        
-        return ResourceType.objects.filter(Q(program=self) | Q(program__isnull=True))
+        exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
+        return ResourceType.objects.filter(Q(program=self) | Q(program__isnull=True)).exclude(id__in=[t.id for t in exclude_types])
 
     def getResources(self):
         from esp.resources.models import Resource
-        
         return Resource.objects.filter(event__anchor=self.anchor)
     
-    def getFloatingResources(self):
+    def getFloatingResources(self, timeslot=None, queryset=False):
         from esp.resources.models import ResourceType
         #   Don't include classrooms and teachers in the floating resources.
         exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
-        res_list = filter(lambda x: x.is_independent(), self.getResources().exclude(res_type__in=exclude_types))
-        result = self.collapsed_dict(res_list)
-        return [result[c] for c in result]
+        
+        if timeslot is not None:
+            res_list = self.getResources().filter(event=timeslot, is_unique=True).exclude(res_type__in=exclude_types)
+        else:
+            res_list = self.getResources().filter(is_unique=True).exclude(res_type__in=exclude_types)
+            
+        if queryset:
+            return res_list
+        else:
+            result = self.collapsed_dict(res_list)
+            return [result[c] for c in result]
+
+    def getAvailableResources(self, timeslot):
+        #   Filters down the floating resources to those that are not taken.
+        return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot))
 
     def getDurations(self):
         """ Find all contiguous time blocks and provide a list of duration options. """

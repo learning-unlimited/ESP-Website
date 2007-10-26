@@ -1,0 +1,72 @@
+<!-- Class: {{ cls_title }} -->
+<tr>
+        
+        <td>
+            <a class="tooltip">{{ cls_code }}
+            <span><b>Title</b>: {{ cls_title }}<br />
+            <b>Duration</b>: {{ cls_duration }} hours<br />
+            <b>Requests:</b><br />
+            {% for r in cls_requests %}- {{ r }}<br />{% endfor %}</span>
+            </a>
+        </td>
+        <td>
+            {% for teacher in cls_teachers %}
+            {{ teacher.first_name }} {{teacher.last_name }}{% if not forloop.last %}<br />{% endif %}
+            {% endfor %}
+        </td>
+        <td>{{ cls_scheduling_status }}</td>
+        <td>{{ cls_duration }} hr</td>
+        <td>{% for ft in cls_friendly_times %}{{ ft }}<br />{% endfor %}</td>
+        <td>
+            {% if cls_friendly_times %}
+                <input type="hidden" name="starttime_{{ cls_id }}_old" value="{{ cls_start_time.id }}" />
+            {% endif %}
+            {% if cls_viable_times %}
+            <select name="starttime_{{ cls_id }}_new">
+            <option value="-1">[None]</option>
+            {% for ft in cls_viable_times %}
+                <option value="{{ ft.id }}" {% if ft.selected %}selected="selected"{% endif %}>{{ ft.pretty_start_time }}</option>
+            {% endfor %}
+            </select>
+            {% else %}
+            <span style="color: #999999">None feasible</span>
+            {% endif %}
+        </td>
+        <td>
+            {% for room in cls_initial_rooms %}
+            <a class="tooltip">{{ room.name }}
+            <span><b>Size:</b> {{ room.num_students }}<br />
+            <b>Resources:</b><br /> {% for ar in room.resources %}- {{ ar }}<br />{% endfor %}</span>
+            </a>{% if not forloop.last %},{% endif %}{% endfor %}
+        </td>
+        <td>
+            {% if cls_sufficient_length %}
+                {% if cls_viable_rooms %}
+                    {% if not cls_initial_rooms|length_is:0 %}
+                        <input type="hidden" name="room_{{ cls_id }}_old" value="{{ cls_initial_rooms.0.id }}" />
+                    {% endif %}
+                    <select name="room_{{ cls_id }}_new">
+                    <option value="-1">[None]</option>
+                    {% if not cls_initial_rooms|length_is:0 %}
+                        <option value="{{ cls_initial_rooms.0.id }}" selected="selected">{{ cls_initial_rooms.0.name }} ({{ cls_initial_rooms.0.num_students }})</option>
+                    {% endif %}
+                    {% for vr in cls_viable_rooms %}
+                        <option value="{{ vr.id }}">{{ vr.name }} ({{ vr.num_students }})</option>
+                    {% endfor %}
+                    </select>
+                {% else %}
+                    {% if not cls_initial_rooms|length_is:0 %}
+                        {{ cls_initial_rooms.0.name }} ({{ cls_initial_rooms.0.num_students }})
+                    {% else %}
+                        <span style="color: #999999">None feasible</span>
+                    {% endif %}
+                {% endif %}
+            {% else %}
+                <span style="color: #999999">Assign time</span>
+            {% endif %}
+        </td>
+        <td>
+            <input class="fancybutton" type="submit" value="Alter" />
+        </td>
+        
+    </tr>

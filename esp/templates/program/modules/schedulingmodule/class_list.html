@@ -1,0 +1,38 @@
+
+{% load events %}
+{% load resources %}
+{% load scheduling %}
+
+<h2>List of Classes</h2>
+
+<br />
+
+<p>The feasible times for a class depend heavily on the availability of the teachers.  You will not be able to schedule a class until all of its teachers are available in a timeblock that is at least the length of the class.  Please use the program's communications panel to contact teachers who have not indicated their availablity.</p>
+
+<p>There is a lot information contained within this table.  Hover your mouse over almost anything to find out more information about it.</p>
+
+<p>Also, you may make multiple updates and click any 'Alter' button to apply all of them.  However, you may not change both the time and room of a class in the same update.</p>
+
+<form method="post" action="{{ request.path }}">
+<table cellpadding="2" cellspacing="0" align="center">
+<tr>
+    <th colspan="9">Class Schedule List for {{ prog.niceName }}</th>
+</tr>
+<tr>
+    <th class="small">Class</th>
+    <th class="small">Teachers</th>
+    <th class="small">Status</th>
+    <th class="small">Length</th>
+    <th class="small" align="right">Start Time</th>
+    <th class="small">&nbsp; <!-- assign time --></th>
+    <th class="small" align="right">Room</th>
+    <th class="small">&nbsp; <!-- assign room --></th>
+    <th class="small">Options</th>
+</tr>
+{% for cls in prog.classes %}
+    {% class_options_row cls %}
+{% endfor %}
+</table>
+</form>
+
+<br />

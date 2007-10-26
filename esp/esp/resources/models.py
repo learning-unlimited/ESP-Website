@@ -132,6 +132,7 @@ class Resource(models.Model):
     res_type = models.ForeignKey(ResourceType)
     num_students = models.IntegerField(blank=True, default=-1)
     group_id = models.IntegerField(default=-1)
+    is_unique = models.BooleanField(default=False, null=True)
     user = AjaxForeignKey(User, null=True, blank=True)
     event = models.ForeignKey(Event)
     
@@ -146,12 +147,16 @@ class Resource(models.Model):
     
     def save(self):
         if self.group_id == -1:
+            #   Give this a new group id.
             vals = Resource.objects.all().order_by('-group_id').values('group_id')
             max_id = 0
             if len(vals) > 0:
                 max_id = vals[0]['group_id']
                 
             self.group_id = max_id + 1
+            self.is_unique = True
+        else:
+            self.is_unique = False
             
         super(Resource, self).save()
     
@@ -159,26 +164,115 @@ class Resource(models.Model):
         res_list = Resource.objects.filter(name=self.name)
         return res_list
     
+    def satisfies_requests(self, req_class):
+        #   Returns a list of 2 items.  The first element is boolean and the second element is a list of the unsatisfied requests.
+        #   If there are no unsatisfied requests but the room isn't big enough, the first element will be false.
+        result = [True, []]
+        request_list = req_class.getResourceRequests()
+        furnishings = self.associated_resources()
+        for req in request_list:
+            if furnishings.filter(res_type=req.res_type).count() < 0:
+                result[0] = False
+                result[1].append(req)
+                
+        if self.num_students < req_class.num_students():
+            result[0] = False
+            
+        return result
+    
     def grouped_resources(self):
         return Resource.objects.filter(group_id=self.group_id)
     
     def associated_resources(self):
         return self.grouped_resources().exclude(id=self.id)
     
+    def assign_to_class(self, new_class):
+        new_ra = ResourceAssignment()
+        new_ra.resource = self
+        new_ra.target = new_class
+        new_ra.save()
+        
+    def clear_assignments(self, program=None):
+        if program is not None:
+            self.clear_schedule_cache(program)
+            
+        self.assignments().delete()
+    
     def assignments(self):
         return ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
     
+    def cache_key(self, program):
+        #   Let's make this key acceptable to memcached...
+        chars_to_avoid = '~!@#$%^&*(){}_ :;,"\\?<>'
+        clean_name = ''.join(c for c in self.name if c not in chars_to_avoid)
+        return 'resource__schedule_sequence:%s,%d' % (clean_name, program.id)
+    
+    def clear_schedule_cache(self, program):
+        from django.core.cache import cache
+        from esp.program.templatetags.scheduling import schedule_key_func
+        cache.delete(self.cache_key(program))
+        other_key = schedule_key_func(self, program)
+        cache.delete(other_key)
+    
+    def schedule_sequence(self, program):
+        """ Returns a list of strings, which are the status of the room (and its identical
+        companions) at each time block belonging to the program. """
+        from django.core.cache import cache
+        
+        result = cache.get(self.cache_key(program))
+        if result is not None:
+            return result
+        
+        sequence = []
+        event_list = list(program.getTimeSlots())
+        room_list = self.identical_resources().filter(event__in=event_list).order_by('event')
+        for timeslot in event_list:
+            single_room = room_list.filter(event=timeslot)
+            if single_room.count() == 1:
+                room = single_room[0]
+                asl = list(room.assignments())
+            
+                if len(asl) == 0:
+                    sequence.append('Empty')
+                elif len(asl) == 1:
+                    sequence.append(asl[0].target.emailcode())
+                else:
+                    init_str = 'Conflict: '
+                    for ra in asl:
+                        init_str += ra.target.emailcode() + ' '
+                    sequence.append(init_str)
+            else:
+                sequence.append('N/A')
+            
+        cache.set(self.cache_key(program), sequence)
+        return sequence
+    
+    def is_conflicted(self):
+        return (self.assignments().count() > 1)
+    
     def matching_times(self):
         #   Find all times for which a resource of the same name is available.
-        res_list = self.identical_resources()
-        event_list = [r.event for r in res_list]
-        return event_list
+        event_list = [item['event'] for item in self.identical_resources().values('event')]
+        return Event.objects.filter(id__in=event_list)
     
     def is_independent(self):
-        if self.associated_resources().count() == 0:
+        if self.is_unique:
             return True
         else:
             return False
+        
+    def is_available(self, QObjects=False):
+        if QObjects:
+            return QNot(self.is_taken(True))
+        else:
+            return not (self.is_taken(False))
+        
+    def is_taken(self, QObjects=False):
+        if QObjects:
+            return Q(resource=self)
+        else:
+            collision = ResourceAssignment.objects.filter(resource=self)
+            return (collision.count() > 0)
     
     class Admin:
         pass

@@ -105,6 +105,14 @@ class Event(models.Model):
         return (time > self.start and time < self.end)
 
     @staticmethod
+    def total_length(event_list):
+        #   Returns the time from the start of the first event to the end of the last.
+        if len(event_list) > 0:
+            return event_list[-1].end - event_list[0].start
+        else:
+            return timedelta(seconds=0)
+
+    @staticmethod
     def collapse(eventList):
         """ this method will return a list of new collapsed events """
         from copy import copy
@@ -159,8 +167,11 @@ class Event(models.Model):
         return grouped_list
 
     def pretty_time(self):
-        return self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
+        return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
                + self.end.strftime('%I:%M%p').lower().strip('0')
+    
+    def pretty_start_time(self):
+        return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0')
     
     def __cmp__(self, other):
         return cmp(self.start, other.start)

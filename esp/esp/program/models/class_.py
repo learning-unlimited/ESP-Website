@@ -149,57 +149,253 @@ class Class(models.Model):
         for rr in self.getResourceRequests():
             rr.delete()
     
-    ########################################
-    #   These functions seem odd to me, but I rewrote them to preserve functionality
-    #   Michael P, 9/13/2007
-    ########################################
-    
     def classroomassignments(self):
-        """ Much like getResourceAssignments; 
-            I think it should be removed, but our printables use it. 
-            -Michael P """
         from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
         return self.getResourceAssignments().filter(target=self, resource__res_type=cls_restype)
     
+    def resourceassignments(self):
+        #   Get all assignments pertaining to floating resources like projectors.
+        return self.getResourceAssignments().filter(target=self, resource__is_unique=True)
+    
     def classrooms(self):
         """ Returns the list of classroom resources assigned to this class."""
-        return [a.resource for a in self.classroomassignments()]
+        from esp.resources.models import Resource
+
+        ra_list = [item['resource'] for item in self.classroomassignments().values('resource')]
+        return Resource.objects.filter(id__in=ra_list)
+
+    def initial_rooms(self):
+        if self.meeting_times.count() > 0:
+            return self.classrooms().filter(event=self.meeting_times.order_by('start')[0]).order_by('id')
+        else:
+            return None
 
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
-        return [x.name for x in self.classrooms()]
+        if self.meeting_times.count() > 0:
+            return [x.name for x in self.initial_rooms()]
+        else:
+            return []
+   
+    def start_time(self):
+        if self.meeting_times.count() > 0:
+            return self.meeting_times.order_by('start')[0]
+        else:
+            return None
+   
+    #   Scheduling helper functions
+    
+    def sufficient_length(self, event_list=None):
+        """   This function tells if the class' assigned times are sufficient to cover the duration.
+        If the duration is not set, 1 hour is assumed. """
+        if self.duration == 0.0:
+            duration = 1.0
+        else:
+            duration = self.duration
+        
+        if event_list is None:
+            event_list = list(self.meeting_times.all())
+        #   If you're 15 minutes short that's OK.
+        time_tolerance = 15 * 60
+        if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
+            return False
+        else:
+            return True
+    
+    def extend_timeblock(self, event, merged=True):
+        """ Return the Event list or (merged Event) for this class's duration if the class starts in the
+        provided timeslot and continues contiguously until its duration has ended. """
+        
+        event_list = [event]
+        all_events = list(self.parent_program.getTimeSlots())
+        event_index = all_events.index(event)
+
+        while not self.sufficient_length(event_list):
+            event_index += 1
+            event_list.append(all_events[event_index])
+            
+        if merged:
+            return Event.collapse(event_list)
+        else:
+            return event_list
+    
+    def scheduling_status(self):
+        #   Return a little string that tells you what's up with the resource assignments.
+        if not self.sufficient_length():
+            return 'Needs time'
+        elif self.classrooms().count() < 1:
+            return 'Needs room'
+        elif len(self.unsatisfied_requests()) > 0:
+            return 'Needs resources'
+        else:
+            return 'Happy'
+    
+    def clear_resource_cache(self):
+        from django.core.cache import cache
+        from esp.program.templatetags.scheduling import options_key_func
+        cache_key1 = 'class__viable_times:%d' % self.id
+        cache_key2 = 'class__viable_rooms:%d' % self.id
+        cache_key3 = options_key_func(self)
+        cache.delete(cache_key1)
+        cache.delete(cache_key2)
+        cache.delete(cache_key3)
+    
+    def unsatisfied_requests(self):
+        if self.classrooms().count() > 0:
+            primary_room = self.classrooms()[0]
+            result = primary_room.satisfies_requests(self)
+            return result[1]
+        else:
+            return self.getResourceRequests()
+    
+    def assign_meeting_times(self, event_list):
+        self.meeting_times.clear()
+        for event in event_list:
+            self.meeting_times.add(event)
+    
+    def assign_start_time(self, first_event):
+        """ Get enough events following the first one until you have the class duration covered.
+        Then add them. """
+        
+        #   This means we have to clear the classrooms.  Sorry.
+        self.clearRooms()
+        event_list = self.extend_timeblock(first_event, merged=False)
+        self.assign_meeting_times(event_list)
+    
+    def assign_room(self, base_room, compromise=True, clear_others=False):
+        """ Assign the classroom given, except at the times needed by this class. """
+        rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
+        
+        status = True
+        errors = []
+        
+        if clear_others:
+            self.clearRooms()
+        
+        if compromise is False:
+            #   Check that the room satisfies all needs of the class.
+            result = base_room.satisfies_requests(self)
+            if result[0] is False:
+                status = False
+                errors.append('This room does not have all resources that the class needs (or it is too small) and you have opted not to compromise.  Try a better room.')
+        
+        if rooms_to_assign.count() != self.meeting_times.count():
+            status = False
+            errors.append('This room is not available at the times requested by the class.  Bug the webmasters to find out why you were allowed to assign this room.')
+        
+        for r in rooms_to_assign:
+            r.clear_schedule_cache(self.parent_program)
+            result = self.assignClassRoom(r)
+            if not result:
+                status = False
+                errors.append('Error: This classroom is already taken.  Please assign a different one.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.')
+            
+        return (status, errors)
     
     def viable_times(self):
         """ Return a list of Events for which all of the teachers are available. """
+        from django.core.cache import cache
+        from esp.resources.models import ResourceType, Resource
+        
+        #   This will need to be cached.
+        cache_key = 'class__viable_times:%d' % self.id
+        result = cache.get(cache_key)
+        if result is not None:
+            return result
+
         teachers = self.teachers()
-        timeslots = self.parent_program.getTimeSlots()
+        num_teachers = teachers.count()
+        ta_type = ResourceType.get_or_create('Teacher Availability')
+        timeslots = Event.group_contiguous(list(self.parent_program.getTimeSlots()))
         viable_list = []
+
+        for timegroup in timeslots:
+            for i in range(0, len(timegroup)):
+                #   Check whether there is enough time remaining in the block.
+                if self.sufficient_length(timegroup[i:len(timegroup)]):
+                    #   Check whether all of the teachers will be available for all time slots the class would fill.
+                    teachers_available = True
+                    for timeslot in timegroup[i:len(timegroup)]:
+                        if Resource.objects.filter(user__in=teachers, res_type=ta_type, event=timeslot).count() < num_teachers:
+                            teachers_available = False
+                            break
+                
+                    if teachers_available:
+                        viable_list.append(timegroup[i])
         
-        for t in timeslots:
-            if teachers.filter(resource__event=t).count() == teachers.count():
-                viable_list.append(t)
+        cache.set(cache_key, viable_list)
+        return viable_list
+    
+    def viable_rooms(self):
+        """ Returns a list of Resources (classroom type) that satisfy all of this class's resource requests. 
+        Resources matching the first time block of the class will be returned. """
+        from django.core.cache import cache
+        from esp.resources.models import ResourceType, Resource
+        import operator
         
+        def room_satisfies_times(room, times):
+            room_times = room.matching_times()
+            satisfaction = True
+            for t in times:
+                if t not in room_times:
+                    satisfaction = False
+            return satisfaction
+        
+        #   This will need to be cached.
+        cache_key = 'class__viable_rooms:%d' % self.id
+        result = cache.get(cache_key)
+        if result is not None:
+            return result
+        
+        #   This function is only meaningful if the times have already been set.  So, back out if they haven't.
+        if not self.sufficient_length():
+            return None
+        
+        #   Start with all rooms the program has.  
+        #   Filter the ones that are available at all times needed by the class.
+        filter_qs = []
+        ordered_times = self.meeting_times.order_by('start')
+        first_time = ordered_times[0]
+        possible_rooms = self.parent_program.getAvailableClassrooms(first_time)
+        
+        viable_list = filter(lambda x: room_satisfies_times(x, ordered_times), possible_rooms)
+            
+        cache.set(cache_key, viable_list)
         return viable_list
     
     def clearRooms(self):
-        for c in self.classroomassignments():
-            c.delete()
+        for room in [ra.resource for ra in self.classroomassignments()]:
+            room.clear_schedule_cache(self.parent_program)
+        self.classroomassignments().delete()
+            
+    def clearFloatingResources(self):
+        self.resourceassignments().delete()
 
     def assignClassRoom(self, classroom):
+        #   Assign an individual resource to this class.
         from esp.resources.models import ResourceAssignment
         
-        new_assignment = ResourceAssignment()
-        new_assignment.resource = classroom
-        new_assignment.target = self
-        new_assignment.save()
+        if classroom.is_taken():
+            return False
+        else:
+            new_assignment = ResourceAssignment()
+            new_assignment.resource = classroom
+            new_assignment.target = self
+            new_assignment.save()
+            return True
 
-        return True
-
-    ########################################
-    #   End of functions I think are meh
-    ########################################
-
+    def time_created(self):
+        #   Return the datetime for when the class was first created.
+        #   Oh wait, this is definitely not meh.
+        v = GetNode('V/Flags/Registration/Teacher')
+        q = self.anchor
+        ubl = UserBit.objects.filter(verb=v, qsc=q).order_by('startdate')
+        if ubl.count() > 0:
+            return ubl[0].startdate
+        else:
+            return None
+        
     def emailcode(self):
         """ Return the emailcode for this class.
 

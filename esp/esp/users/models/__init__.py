@@ -315,20 +315,36 @@ class ESPUser(User, AnonymousUser):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.resources.models import Resource
-            
-        res_list = Resource.objects.filter(user=self.getOld())
-        return [r.event for r in res_list]
+        from esp.cal.models import Event
+        from django.core.cache import cache
+        
+        #   This is such a common operation that I think it should be cached.
+        cache_key = 'espuser__availabletimes:%d,%d' % (self.id, program.id)
+        result = cache.get(cache_key)
+        if result is not None:
+            return result
+        
+        res_list = [item['event'] for item in Resource.objects.filter(user=self).values('event')]
+        
+        cache.set(cache_key, list(Event.objects.filter(id__in=res_list)))
+        return Event.objects.filter(id__in=res_list)
     
     def clearAvailableTimes(self, program):
         """ Clear all resources indicating this teacher's availability for a program """
         from esp.resources.models import Resource
+        from django.core.cache import cache
+
+        cache_key = 'espuser__availabletimes:%d,%d' % (self.id, program.id)
+        cache.delete(cache_key)
         
-        res_list = Resource.objects.filter(user=self.getOld())
-        for r in res_list:
-            r.delete()
+        Resource.objects.filter(user=self, event__anchor=program.anchor).delete()
 
     def addAvailableTime(self, program, timeslot):
         from esp.resources.models import Resource, ResourceType
+        from django.core.cache import cache
+
+        cache_key = 'espuser__availabletimes:%d,%d' % (self.id, program.id)
+        cache.delete(cache_key)
         
         r = Resource()
         r.user = self

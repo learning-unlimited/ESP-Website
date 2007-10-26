@@ -1,0 +1,32 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{ prog.niceName }} Scheduling{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/tooltips.css" />
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block subsection_name %}Don't Panic!{% endblock %}
+
+{% block content %}
+
+<h1>Scheduling {{ prog.niceName }}</h1>
+
+<div id="program_form">
+
+<p>
+This is the page for assigning times and rooms to classes for {{ prog.niceName }}.  Please try <a href="/manage/{{ prog.getUrlBase }}/scheduling/refresh">refreshing everything</a> if the schedules are not updating correctly.  This can take a long time!
+</p>
+
+<p>There are a few scheduling rules obeyed by this interface; you can override them using the individual "Manage Class" pages if necessary.  You must assign a time block to a class before you can assign a classroom or resources.  If you change the time block for a class, its room and resource assignments will be deleted.  This is to ensure that you don't create a conflict by moving the class to an infeasible time.</p>
+
+<br />
+
+{% include "program/modules/schedulingmodule/schedule.html" %}
+{% include "program/modules/schedulingmodule/class_list.html" %}
+
+</div>
+
+{% endblock %}

@@ -8,8 +8,8 @@
     vertical-align: top;
 /*    padding-top: 0 !important;*/
     padding: 2px;
-    padding-top: 5px !important;
-    padding-bottom: 5px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
 /*   border: 1px solid #ccc;*/
     border-bottom: 1px dashed #369;
     font-weight: normal;
@@ -26,11 +26,6 @@
 
 #divmaintext form table thead {
     padding: 0;
-}
-
-#divmaintext form table td {
-    color: #339;
-    font-style: italic;
 }
 
 #divmaintext form table td input, #divmaintext form table textarea {
@@ -153,7 +148,8 @@
    border-collapse: collapse;
 }
 
-#program_form form table tbody td {
+#program_form td {
+    font-family: Arial, Helvetica, sans-serif;
     vertical-align: center;
     padding: 5px;
     border: none;

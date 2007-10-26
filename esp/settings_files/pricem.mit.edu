@@ -3,7 +3,7 @@
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 DISPLAYSQL = True
-INTERNAL_IPS = ['18.187.1.236','18.239.1.32', '18.239.6.62']
+INTERNAL_IPS = ['18.187.1.236','18.239.1.32', '18.239.6.62', '18.187.6.186','18.208.0.164']
 
 ADMINS = (
     ('Michael Price', 'pricem@mit.edu')
