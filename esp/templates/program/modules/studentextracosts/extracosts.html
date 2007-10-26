@@ -1,0 +1,33 @@
+4{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Student Registration"|subsection }}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br /><br />
+<h1>Additional Purchases</h1>
+
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentreg" %}
+
+{% if forms %}
+<h2>This program contains additional items that you can pay for online.</h2>
+To pay for any of the following items now, please check its corresponding checkbox.
+
+<form action="" method="post">
+{% for f in forms %}
+<ul> {% if f.IsPaidFor %}[PAID]{% else %}{{ f.form.cost }}{% endif %} - {{ f.LineItem.label }} <i>(${% if financial_aid %}{{ f.LineItem.financial_aid_value|floatformat:2}}{% else %}{{ f.LineItem.value|floatformat:2 }}{% endif %})</i> </ul>
+{% endfor %}
+<br />
+<input type="submit" value="Save"/>
+</form>
+
+{% endif %}
+
+{% endblock %}
