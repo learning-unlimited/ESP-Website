@@ -33,16 +33,41 @@ from django.contrib.auth.models import User
 from esp.datatree.models import DataTree
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
+from esp.program.models import FinancialAidRequest
 
-class LineItem(models.Model):
-	value = models.FloatField(max_digits = 10, decimal_places = 2)
-	label = models.TextField()
-	
-	def __str__(self):
-		return str(self.label) + str(self.value)
-		
-	class Admin:
-		pass
+def RegisterLineItem(espuser, lineitemtype):
+	"""  
+	Register (create) a Line Item for the given user/type/anchor triple.
+	Do nothing if this LineItem already exists once.
+	Fail badly if it already exists more than once (this should not be permitted).
+	Return the tuple (newLineItem, wasLineItemCreated?)
+	"""
+	return LineItem.objects.get_or_create(type=lineitemtype, user=espuser)
+
+
+def UnRegisterLineItem(espuser, lineitemtype):
+	"""
+	Remove all Line Items matching the user/type/anchor triple given.
+	DOES NOT REMOVE Line Items that have already been paid for.
+	"""
+	LineItem.objects.filter(type=lineitemtype, user=espuser, transaction__isnull=True).delete()
+
+
+def PayForLineItems(espuser, anchor, transaction):
+	"""
+	Register payment for all Line Items at a particular anchor point
+	Return True iff any Line Items are updated
+	"""
+
+	ExistsAlready = False
+
+	for l in LineItem.objects.filter(user=espuser, type__anchor=anchor):
+		l.transaction = transaction;
+		l.save()
+		ExistsAlready = True
+
+	return ExistsAlready
+
 
 class PaymentType(models.Model):
     """ A list of payment methods: Check, Credit Card, etc. """
@@ -83,4 +108,68 @@ class Transaction(models.Model):
     class Admin:
         pass
     
+
+class LineItemType(models.Model):
+	value = models.FloatField(max_digits = 10, decimal_places = 2)
+	financial_aid_value = models.FloatField(max_digits=10, decimal_places=2)
+	label = models.TextField()
+	anchor = AjaxForeignKey(DataTree)
+	optional = models.BooleanField(default=True)
+
+	@classmethod
+	def forAnchor(cls, anchor):
+		return cls.objects.filter(anchor=anchor)
+
+	def __str__(self):
+		return str(self.label) + " : " + str(self.value) + " (for %s)" % self.anchor
+
+	class Admin:
+		pass
+
+class LineItem(models.Model):
+	type = models.ForeignKey(LineItemType)
+	user = AjaxForeignKey(User)
+	transaction = models.ForeignKey(Transaction, null=True)	
+
+	def hasPaid(self):
+		return (self.transaction != None)
+
+	@staticmethod
+	def student_has_financial_aid(espuser, anchor):
+		""" Has the student in question applied for and received financial aid? """
+		return ( FinancialAidRequest.objects.filter(user=espuser, program__anchor=anchor, approved__isnull=False).count() > 0 )
+
+	@classmethod
+	def purchased(cls, anchor, espuser, filter_already_paid=True):
+		if filter_already_paid:
+			return cls.objects.filter(user=espuser, type__anchor=anchor).exclude(transaction__isnull=False)
+		else:
+			return cls.objects.filter(user=espuser, type__anchor=anchor)
+
+	@classmethod
+	def purchasedTypes(cls, anchor, espuser, filter_already_paid=True):
+		if filter_already_paid:
+			return LineItemType.objects.filter(lineitem__user=espuser, anchor=anchor).exclude(lineitem__transaction__isnull=False)
+		else:
+			return LineItemType.objects.filter(lineitem__user=espuser, anchor=anchor)
+
+	@classmethod
+	def purchasedTotalCost(cls, anchor, espuser, filter_already_paid=True):
+		my_costs = cls.purchased(anchor, espuser, filter_already_paid)
+		my_costs_sum=0
+		if cls.student_has_financial_aid(espuser, anchor):
+			for i in my_costs:
+				my_costs_sum += i.type.financial_aid_value
+		else:
+			for i in my_costs:
+				my_costs_sum += i.type.value
+
+		return my_costs_sum
+
+
+	def __str__(self):
+		return "%s : %s" % (str(self.user), str(self.type))
+	
+	class Admin:
+		pass
 

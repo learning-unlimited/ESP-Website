@@ -99,6 +99,21 @@ class FinancialAidAppModule(ProgramModuleObj):
                 if request.POST['submitform'].lower() == 'mark as unfinished':
                     app.done = False
                     
+                # Automatically accept apps for people with subsidized lunches
+                if app.reduced_lunch:
+                    from datetime import datetime
+                    from django.core.mail import send_mail
+                    app.approved = datetime.now()
+                    send_mail( '%s %s received Financial Aid for %s' % (request.user.first_name, 
+                                                                       request.user.last_name,
+                                                                       prog.niceName()), 
+                               '%s %s received Financial Aid for %s on %s, for stating that they receive a free or reduced-price lunch.' % (request.user.first_name, 
+                                                                       request.user.last_name,
+                                                                       prog.niceName(),
+                                                                       str(app.approved)), 
+                               'web@esp.mit.edu',
+                               [ prog.director_email ] )
+                              
                 app.save()
                 return self.goToCore(tl)
             

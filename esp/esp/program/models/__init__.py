@@ -786,7 +786,7 @@ class FinancialAidRequest(models.Model):
     household_income = models.CharField(verbose_name = 'Approximately what is your household income (round to the nearest $10,000)?', null=True, blank=True,
                         maxlength=12)
 
-    extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this year.', null=True, blank=True)
+    extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this year', null=True, blank=True)
 
     student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True,null=True)
 

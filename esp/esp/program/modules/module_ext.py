@@ -72,7 +72,6 @@ class ClassRegModuleInfo(models.Model):
         pass
     
 
-
 class CreditCardModuleInfo(models.Model):
     module = models.ForeignKey(ProgramModuleObj)
     base_cost        = models.IntegerField(blank=True, null=True)

@@ -21,6 +21,17 @@
 </ol>
 </p>
 
+<h3>What you're currently paying for:</h3>
+<p>
+<table>
+{% for payment in itemizedcosts %}
+<tr><td>{{ payment.type.label }}</td><td>{% if payment.transaction %}PAID{% else %}${% if financial_aid %}{{ payment.type.financial_aid_value|floatformat:2}}{% else %}{{ payment.type.value|floatformat:2 }}{% endif %}{% endif %}</td></tr>
+{% endfor %}
+<tr><td align="right"><b>Total:</b></td><td>${{ itemizedcosttotal|floatformat:2 }}</td></tr>
+
+</table>
+</p>
+
 <p>When you are ready, please move on to the <a href="https://{{ current_site.domain }}/{{ tl }}/{{ one }}/{{ two }}/paynow" title="Proceed to payment form.">payment form.</a>
 
 <p>If you would like to cancel at this time, please close this window or <a href="/learn/{{ program.getUrlBase }}/studentreg/" title="Return to main registration page">return to the main registration page</a>.</p>

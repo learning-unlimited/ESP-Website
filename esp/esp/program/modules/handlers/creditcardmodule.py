@@ -35,12 +35,13 @@ from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
 from esp.db.models       import Q
 from esp.users.models    import User
+from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
 
 class CreditCardModule(ProgramModuleObj):
     def extensions(self):
         return [('creditCardInfo', module_ext.CreditCardModuleInfo)]
 
-    def cost(self):
+    def cost(self, espuser, anchor):
         return '%s.00' % str(self.creditCardInfo.base_cost)
 
     def isCompleted(self):
@@ -68,15 +69,25 @@ class CreditCardModule(ProgramModuleObj):
     @meets_deadline('/Payment')
     @usercheck_usetl
     def startpay(self, request, tl, one, two, module, extra, prog):
+        # Force users to pay for non-optional stuffs
+        for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
+            RegisterLineItem(request.user, i)
+
         context = {}
         context['module'] = self
         context['one'] = one
         context['two'] = two
         context['tl']  = tl
+        context['itemizedcosts'] = LineItem.purchased(prog.anchor, request.user, filter_already_paid=False)
+        context['itemizedcosttotal'] = LineItem.purchasedTotalCost(prog.anchor, request.user)
+        context['financial_aid'] = LineItem.student_has_financial_aid(request.user, prog.anchor)
         return render_to_response(self.baseDir() + 'cardstart.html', request, (prog, tl), context)
 
     @usercheck_usetl
     def paynow(self, request, tl, one, two, module, extra, prog):
+        # Force users to pay for non-optional stuffs.  Once more, just in case.
+        for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
+            RegisterLineItem(request.user, i)
 
         context = {'module': self}
         paymenttype = PaymentType.objects.get(description__icontains = 'credit card')
@@ -87,7 +98,7 @@ class CreditCardModule(ProgramModuleObj):
         payment.payer = self.user
         payment.payment_type = paymenttype
         payment.line_item = 'Credit-card payment for "%s"' % self.program.niceName()
-        payment.amount = self.creditCardInfo.base_cost
+        payment.amount = LineItem.purchasedTotalCost(prog.anchor, request.user)
         payment.save()
         
         self.payment = payment
@@ -98,8 +109,10 @@ class CreditCardModule(ProgramModuleObj):
                                range(yearnow, yearnow+20))
         context['module'] = self
 
+        context['itemizedcosts'] = list(LineItem.purchased(prog.anchor, request.user)) # Force this to be evaluated now, not after we've marked things as paid
+        context['itemizedcosttotal'] = LineItem.purchasedTotalCost(prog.anchor, request.user)
+        context['financial_aid'] = LineItem.student_has_financial_aid(request.user, prog.anchor)
 
+        PayForLineItems(request.user, prog.anchor, payment)
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
-
-
