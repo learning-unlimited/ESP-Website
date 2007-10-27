@@ -193,7 +193,6 @@ class StudentClassRegModule(ProgramModuleObj):
     def clearslot(self, request, tl, one, two, module, extra, prog):
 	""" Clear the specified timeslot from a student registration and go back to the same page """
         from esp.users.models import UserBit
-	ts = DataTree.objects.filter(id=extra)[0]
 	v_registered = request.get_node('V/Flags/Registration/Preliminary')
 	
         classes = Class.objects.filter(meeting_times=extra,
