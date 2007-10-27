@@ -55,7 +55,9 @@ def scheduling_matrix_row(room, program):
 @cache_inclusion_tag(register, 'inclusion/program/class_options.html', cache_key_func=options_key_func)
 def class_options_row(cls):
     context = {}
-    
+
+    context['cls'] = cls
+    context['cls_high_school_only'] = (cls.grade_min >= 9)
     context['cls_id'] = cls.id
     context['cls_title'] = cls.anchor.friendly_name
     context['cls_code'] = cls.emailcode()
