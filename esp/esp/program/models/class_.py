@@ -216,7 +216,7 @@ class Class(models.Model):
             event_list.append(all_events[event_index])
             
         if merged:
-            return Event.collapse(event_list)
+            return Event.collapse(event_list, tol=datetime.timedelta(minutes=10))
         else:
             return event_list
     
@@ -684,7 +684,7 @@ class Class(models.Model):
         events = list(self.meeting_times.all())
 
         txtTimes = [ event.pretty_time() for event
-                     in Event.collapse(events) ]
+                     in Event.collapse(events, tol=datetime.timedelta(minutes=10)) ]
 
         self.cache['friendly_times'] = txtTimes
 

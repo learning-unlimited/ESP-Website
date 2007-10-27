@@ -113,16 +113,14 @@ class Event(models.Model):
             return timedelta(seconds=0)
 
     @staticmethod
-    def collapse(eventList):
+    def collapse(eventList, tol=timedelta(minutes=1)):
         """ this method will return a list of new collapsed events """
         from copy import copy
         sortedList = copy(eventList)
         sortedList.sort()
-        
-        oneMinute = timedelta(minutes=1)
 
         for i in range(1,len(sortedList)):
-            if (sortedList[i-1].end+oneMinute) >= sortedList[i].start:
+            if (sortedList[i-1].end+tol) >= sortedList[i].start:
                 sortedList[i]   = Event(start=sortedList[i-1].start, end=sortedList[i].end)
                 sortedList[i-1] = None
 
