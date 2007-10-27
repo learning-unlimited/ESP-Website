@@ -17,6 +17,7 @@
             {% endfor %}
         </td>
         <td>{{ cls_scheduling_status }}</td>
+	<td>{% if cls_high_school_only %}<font color="blue">{% endif %}{{ cls.grade_min }}-{{ cls.grade_max }}{% if cls_high_school_only %}</font>{% endif %}</td>
         <td>{{ cls_duration }}</td>
         <td>{% for ft in cls_friendly_times %}{{ ft }}<br />{% endfor %}</td>
         <td>
