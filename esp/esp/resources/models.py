@@ -170,13 +170,17 @@ class Resource(models.Model):
         result = [True, []]
         request_list = req_class.getResourceRequests()
         furnishings = self.associated_resources()
+        id_list = []
+
         for req in request_list:
-            if furnishings.filter(res_type=req.res_type).count() < 0:
+            if furnishings.filter(res_type=req.res_type).count() < 1:
                 result[0] = False
-                result[1].append(req)
-                
+                id_list.append(req.id)
+            
         if self.num_students < req_class.num_students():
             result[0] = False
+            
+        result[1] = ResourceRequest.objects.filter(id__in=id_list)
             
         return result
     

@@ -173,6 +173,17 @@ class Event(models.Model):
     def pretty_start_time(self):
         return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0')
     
+    def num_classes_assigned(self):
+        #   Return the number of classes assigned to classrooms in this time slot.
+        from esp.resources.models import ResourceAssignment, ResourceType
+        classroom = ResourceType.get_or_create('Classroom')
+        return ResourceAssignment.objects.filter(resource__event=self, resource__res_type=classroom).count()
+    
+    def num_classes(self):
+        #   Return the number of classes assigned to this time slot.
+        from esp.program.models import Class
+        return Class.objects.filter(meeting_times=self).count()
+    
     def __cmp__(self, other):
         return cmp(self.start, other.start)
 

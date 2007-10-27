@@ -226,7 +226,7 @@ class Class(models.Model):
             return 'Needs time'
         elif self.classrooms().count() < 1:
             return 'Needs room'
-        elif len(self.unsatisfied_requests()) > 0:
+        elif self.unsatisfied_requests().count() > 0:
             return 'Needs resources'
         else:
             return 'Happy'

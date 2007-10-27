@@ -117,6 +117,13 @@ class SchedulingModule(ProgramModuleObj):
                     if (cls.initial_rooms() is not None):
                         for room in cls.initial_rooms(): room.clear_schedule_cache(self.program)
 
+        #   Provide some helpful statistics.  This should be totally reliant on cache.
+        cls_list = list(self.program.classes())
+        for c in cls_list: c.temp_status = c.scheduling_status()
+        context['num_total_classes'] = len(cls_list)
+        context['num_scheduled_classes'] = len(filter(lambda x: x.temp_status == 'Needs room', cls_list))
+        context['num_finished_classes'] = len(filter(lambda x: x.temp_status == 'Happy', cls_list))
+
         #   So far, this page shows you the same stuff no matter what you do.
         return render_to_response(self.baseDir()+'main.html', request, (prog, tl), context)
     

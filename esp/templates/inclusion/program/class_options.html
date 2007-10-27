@@ -3,9 +3,12 @@
         <td>
             <a class="tooltip">{{ cls_code }}
             <span><b>Title</b>: {{ cls_title }}<br />
-            <b>Duration</b>: {{ cls_duration }} hours<br />
+            <b>Duration</b>: {{ cls_duration }}<br />
+            <b>Num. Students (actual/max)</b>: {{ cls_students_actual }} / {{ cls_students_max }}<br />
             <b>Requests:</b><br />
-            {% for r in cls_requests %}- {{ r }}<br />{% endfor %}</span>
+            {% for r in cls_requests %}- {{ r }}<br />{% endfor %}
+            <b>Prereqs:</b>{{ cls_prereqs }}<br />
+            <b>Comments:</b>{{ cls_message }}</span>
             </a>
         </td>
         <td>
@@ -14,7 +17,7 @@
             {% endfor %}
         </td>
         <td>{{ cls_scheduling_status }}</td>
-        <td>{{ cls_duration }} hr</td>
+        <td>{{ cls_duration }}</td>
         <td>{% for ft in cls_friendly_times %}{{ ft }}<br />{% endfor %}</td>
         <td>
             {% if cls_friendly_times %}

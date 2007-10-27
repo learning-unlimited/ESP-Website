@@ -311,6 +311,9 @@ class ESPUser(User, AnonymousUser):
         else:
             return User.objects.filter(Q_useroftype)
 
+    def availability_cache_key(self, program):
+        return 'espuser__availabletimes:%d,%d' % (self.id, program.id)
+
     def getAvailableTimes(self, program):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
@@ -319,7 +322,7 @@ class ESPUser(User, AnonymousUser):
         from django.core.cache import cache
         
         #   This is such a common operation that I think it should be cached.
-        cache_key = 'espuser__availabletimes:%d,%d' % (self.id, program.id)
+        cache_key = self.availability_cache_key(program)
         result = cache.get(cache_key)
         if result is not None:
             return result
@@ -334,7 +337,7 @@ class ESPUser(User, AnonymousUser):
         from esp.resources.models import Resource
         from django.core.cache import cache
 
-        cache_key = 'espuser__availabletimes:%d,%d' % (self.id, program.id)
+        cache_key = self.availability_cache_key(program)
         cache.delete(cache_key)
         
         Resource.objects.filter(user=self, event__anchor=program.anchor).delete()
@@ -343,7 +346,7 @@ class ESPUser(User, AnonymousUser):
         from esp.resources.models import Resource, ResourceType
         from django.core.cache import cache
 
-        cache_key = 'espuser__availabletimes:%d,%d' % (self.id, program.id)
+        cache_key = self.availability_cache_key(program)
         cache.delete(cache_key)
         
         r = Resource()

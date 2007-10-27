@@ -59,7 +59,10 @@ def class_options_row(cls):
     context['cls_id'] = cls.id
     context['cls_title'] = cls.anchor.friendly_name
     context['cls_code'] = cls.emailcode()
-    context['cls_duration'] = cls.duration
+    cls_total_minutes = cls.duration * 60
+    cls_hours = int(cls_total_minutes / 60)
+    cls_minutes = cls_total_minutes - cls_hours * 60
+    context['cls_duration'] = '%d hr %d min' % (cls_hours, cls_minutes)
     context['cls_requests'] = [r.res_type.name for r in cls.getResourceRequests()]
     context['cls_teachers'] = [{'first_name': t.first_name, 'last_name': t.last_name} for t in cls.teachers()]
     context['cls_scheduling_status'] = color_needs(cls.scheduling_status())
@@ -69,6 +72,10 @@ def class_options_row(cls):
     if cls.initial_rooms() is not None:
         context['cls_initial_rooms'] = [{'id': room.id, 'name': room.name, 'num_students': room.num_students, 'resources': [r.res_type.name for r in room.associated_resources()]} for room in cls.initial_rooms()]
     context['cls_sufficient_length'] = cls.sufficient_length()
+    context['cls_students_actual'] = cls.num_students()
+    context['cls_students_max'] = cls.class_size_max
+    context['cls_prereqs'] = cls.prereqs
+    context['cls_message'] = cls.message_for_directors
     context['cls_viable_rooms'] = cls.viable_rooms()
     
     return context

@@ -16,7 +16,10 @@
 <tr>
     <th class="small">Room</th>
     {% for slot in prog.getTimeSlots %}
-        <td style="background-color: #CCCCCC">{{ slot.pretty_start_time }}</td>
+        <td style="background-color: #CCCCCC">
+            {{ slot.pretty_start_time }} <br />
+            {{ slot.num_classes_assigned }} / {{ slot.num_classes }}
+        </td>
     {% endfor %}
 </tr>
 {% for room in prog.groupedClassrooms %}
