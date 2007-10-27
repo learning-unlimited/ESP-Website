@@ -102,19 +102,54 @@ class FinancialAidAppModule(ProgramModuleObj):
                 # Automatically accept apps for people with subsidized lunches
                 if app.reduced_lunch:
                     from datetime import datetime
-                    from django.core.mail import send_mail
                     app.approved = datetime.now()
+                    # This probably really wants a template.  Oh well.
+                    app.save()
+
+                    from django.core.mail import send_mail
+                    from esp.settings import SITE_INFO
                     send_mail( '%s %s received Financial Aid for %s' % (request.user.first_name, 
                                                                        request.user.last_name,
                                                                        prog.niceName()), 
-                               '%s %s received Financial Aid for %s on %s, for stating that they receive a free or reduced-price lunch.' % (request.user.first_name, 
-                                                                       request.user.last_name,
-                                                                       prog.niceName(),
-                                                                       str(app.approved)), 
+                               """
+%s %s received Financial Aid for %s on %s, for stating that they receive a free or reduced-price lunch.
+
+Here is their form data:
+
+========================================
+Program:  %s
+User:  %s %s <%s>
+Approved:  %s (Automated Approval)
+Has Reduced Lunch:  %s
+Household Income:  $%s
+Form Was Filled Out by Non-Student:  %s
+Extra Explanation:
+%s
+
+========================================
+
+This request can be (re)viewed at:
+<http://%s/admin/program/financialaidrequest/%s/>
+
+
+""" % (request.user.first_name, 
+       request.user.last_name,
+       prog.niceName(),
+       str(app.approved),
+       str(app.program),
+       request.user.first_name,
+       request.user.last_name,
+       str(app.user),
+       str(app.approved),
+       str(app.reduced_lunch),
+       str(app.household_income),
+       str(app.student_prepare),
+       str(app.extra_explaination),
+       SITE_INFO[1], # server hostname
+       str(app.id)), 
                                'web@esp.mit.edu',
                                [ prog.director_email ] )
                               
-                app.save()
                 return self.goToCore(tl)
             
         else:
