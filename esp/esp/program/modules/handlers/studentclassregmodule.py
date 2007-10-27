@@ -37,6 +37,7 @@ from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from esp.db.models       import Q
 from django.template.loader import get_template
+from esp.cal.models import Event
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
@@ -81,13 +82,22 @@ class StudentClassRegModule(ProgramModuleObj):
 	timeslots = list(self.program.getTimeSlots().order_by('id'))
 	classList = regProf.preregistered_classes()
 
+        prevTimeSlot = None
+        blockCount = 0
+
         schedule = []
         for timeslot in timeslots:
+            if prevTimeSlot != None:
+                if not Event.contiguous(prevTimeSlot, timeslot):
+                    blockCount += 1
+
             newClasses = classList.filter(meeting_times = timeslot)
             if len(newClasses) > 0:
-                schedule.append((timeslot, newClasses[0]))
+                schedule.append((timeslot, newClasses[0], blockCount))
             else:
-                schedule.append((timeslot, None))
+                schedule.append((timeslot, None, blockCount))
+
+            prevTimeSlot = timeslot
                 
         context['timeslots'] = schedule
         
