@@ -48,6 +48,9 @@ class CostItem(forms.Form):
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
 
+    def isCompleted(self):
+        return LineItem.purchased(self.program.anchor, self.user).count() > 0
+
     @needs_student
     def extracosts(self,request, tl, one, two, module, extra, prog):
         """
