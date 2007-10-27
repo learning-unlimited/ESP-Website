@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj
+from esp.program.modules.base    import ProgramModuleObj, needs_admin
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, Class, ClassCategories
 from esp.datatree.models         import DataTree, GetNode
@@ -53,6 +53,7 @@ class SchedulingModule(ProgramModuleObj):
         context['schedulingmodule'] = self 
         return context
 
+    @needs_admin
     def scheduling(self, request, tl, one, two, module, extra, prog):
         #   Renders the teacher availability page and handles submissions of said page.
         context = {}
@@ -70,21 +71,6 @@ class SchedulingModule(ProgramModuleObj):
         if request.method == 'POST':
             #   Build up expected post variables: starttime_[clsid], room_[clsid]
             new_dict = request.POST.copy()
-
-            """
-            for cls in prog.classes():
-                st = cls.start_time()
-                ir = cls.initial_rooms()
-                if st is not None:
-                    initial_dict['starttime_%d' % cls.id] = st.id
-                else:
-                    initial_dict['starttime_%d' % cls.id] = -1
-                if ir is not None and ir.count() > 0:
-                    #   The first room in the queryset is the one with lower ID: 'primary' room.
-                    initial_dict['room_%d' % cls.id] = ir[0].id
-                else:
-                    initial_dict['room_%d' % cls.id] = -1
-            """
                     
             for key in new_dict:
                 #   Find the variables that differ from existing data (something_new vs. something_old).

@@ -298,6 +298,15 @@ class Class(models.Model):
         from django.core.cache import cache
         from esp.resources.models import ResourceType, Resource
         
+        def intersect_lists(list_of_lists):
+            base_list = list_of_lists[0]
+            for other_list in list_of_lists[1:]:
+                i = 0
+                for elt in base_list:
+                    if elt not in other_list:
+                        base_list.remove(elt)
+            return base_list
+        
         #   This will need to be cached.
         cache_key = 'class__viable_times:%d' % self.id
         result = cache.get(cache_key)
@@ -307,22 +316,21 @@ class Class(models.Model):
         teachers = self.teachers()
         num_teachers = teachers.count()
         ta_type = ResourceType.get_or_create('Teacher Availability')
-        timeslots = Event.group_contiguous(list(self.parent_program.getTimeSlots()))
+
+        timeslot_list = []
+        for t in teachers:
+            timeslot_list.append(list(t.getAvailableTimes(self.parent_program)))
+            
+        available_times = intersect_lists(timeslot_list)
+        
+        timeslots = Event.group_contiguous(available_times)
         viable_list = []
 
         for timegroup in timeslots:
             for i in range(0, len(timegroup)):
                 #   Check whether there is enough time remaining in the block.
                 if self.sufficient_length(timegroup[i:len(timegroup)]):
-                    #   Check whether all of the teachers will be available for all time slots the class would fill.
-                    teachers_available = True
-                    for timeslot in timegroup[i:len(timegroup)]:
-                        if Resource.objects.filter(user__in=teachers, res_type=ta_type, event=timeslot).count() < num_teachers:
-                            teachers_available = False
-                            break
-                
-                    if teachers_available:
-                        viable_list.append(timegroup[i])
+                    viable_list.append(timegroup[i])
         
         cache.set(cache_key, viable_list)
         return viable_list
