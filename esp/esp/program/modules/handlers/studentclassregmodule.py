@@ -73,7 +73,7 @@ class StudentClassRegModule(ProgramModuleObj):
     def deadline_met(self):
         #tmpModule = ProgramModuleObj()
         #tmpModule.__dict__ = self.__dict__
-        return super(StudentClassRegModule, self).deadline_met('/Classes')
+        return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
 
     
     @needs_student
@@ -104,7 +104,7 @@ class StudentClassRegModule(ProgramModuleObj):
 	return context
 
     @needs_student
-    @meets_deadline('/Classes')
+    @meets_deadline('/Classes/OneClass')
     def addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
 
@@ -113,7 +113,10 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             from esp.dblog.models import error
             raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL."
-            
+
+        if ( not UserBit.objects.UserHasPerms(request.user, prog.anchor, GetNode("V/Deadline/Registration/Student/Classes") ) ) and len( ESPUser(request.user).getEnrolledClasses(prog, request) ) >= 1:
+            raise ESPError(False), "You are only allowed to register for one class at this time.  Please come back later!"
+
         cobj = Class.objects.filter(id=classid)[0]
         error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
         if error and not self.user.onsite_local:
@@ -126,7 +129,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     @needs_student
-    @meets_deadline('/Classes')    
+    @meets_deadline('/Classes/OneClass')    
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
         from esp.cal.models import Event
@@ -199,7 +202,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
     @needs_student
-    @meets_deadline('/Classes')    
+    @meets_deadline('/Classes/OneClass')    
     def clearslot(self, request, tl, one, two, module, extra, prog):
 	""" Clear the specified timeslot from a student registration and go back to the same page """
         from esp.users.models import UserBit
