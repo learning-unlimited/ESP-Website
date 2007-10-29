@@ -64,7 +64,7 @@
 
 <h2>Introduction</h2>
 <p>Financial limitations should not prevent anyone from participating in ESP programs.  If this program is difficult for you and your family to afford, please apply for financial aid and we will do our best to accomodate you.  ESP offers both partial and complete scholarships, depending on need.  We will take a look at your situation and notify you of our decision before the start of the program.</p>
-<p>Please complete this form to request financial aid for {{ program.niceName }}.  You can always <strong>Save Progress</strong> to keep your work and return to this page at any time to continue filling it out.  Once you're finished, please let us know by clicking <strong>Complete</strong>.</p>
+<p>Please complete this form to request financial aid for {{ program.niceName }}.  You can always <strong>Save Progress</strong> to keep your work and return to this page at any time to continue filling it out.  Once you're finished, please let us know by clicking <strong>Complete</strong>.  If you've finished filling out the form, but you discover that information on the form is inaccurate or you wish to cancel the application, click <strong>Mark as Incomplete</strong>.</p>
 <p>All information is completely optional.  However, the better we can understand your current need, the easier it is for us to grant financial aid when necessary (and determine an appropriate amount).</p>
 
 <form action="{{ request.path }}" method="post" name="application_form">
@@ -79,7 +79,7 @@
     <input type="submit" class="button" name="submitform" value="Save Progress" />
     &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
     {% if app.done %}
-    <input type="submit" class="button" name="submitform" value="Mark as Unfinished" />
+    <input type="submit" class="button" name="submitform" value="Mark as Incomplete" />
     {% else %}
     <input type="submit" class="button" name="submitform" value="Complete" />
     {% endif %}
@@ -91,7 +91,7 @@
     <input type="submit" class="button" name="submitform" value="Save Progress" />
     &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
     {% if app.done %}
-    <input type="submit" class="button" name="submitform" value="Mark as Unfinished" />
+    <input type="submit" class="button" name="submitform" value="Mark as Incomplete" />
     {% else %}
     <input type="submit" class="button" name="submitform" value="Complete" />
     {% endif %}
