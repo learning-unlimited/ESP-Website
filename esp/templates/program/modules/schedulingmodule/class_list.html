@@ -16,12 +16,13 @@
 <form method="post" action="{{ request.path }}">
 <table cellpadding="2" cellspacing="0" align="center">
 <tr>
-    <th colspan="9">Class Schedule List for {{ prog.niceName }}</th>
+    <th colspan="10">Class Schedule List for {{ prog.niceName }}</th>
 </tr>
 <tr>
-    <th colspan="3" class="small">Classes finished: {{ num_finished_classes }}</th>
-    <th colspan="3" class="small">Classes with timeslots: {{ num_scheduled_classes }}</th>
-    <th colspan="3" class="small">Total classes: {{ num_total_classes }}</th>
+    <th colspan="2" class="small">Classes finished: {{ num_finished_classes }}</th>
+    <th colspan="3" class="small">Classes needing rooms: {{ num_scheduled_classes }}</th>
+    <th colspan="3" class="small">Classes needing resources: {{ num_assigned_classes }}</th>
+    <th colspan="2" class="small">Total classes: {{ num_total_classes }}</th>
 </tr>
 <tr>
     <th class="small">Class</th>

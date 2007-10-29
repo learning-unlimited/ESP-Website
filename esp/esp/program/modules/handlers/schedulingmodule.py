@@ -64,6 +64,9 @@ class SchedulingModule(ProgramModuleObj):
             #   Clear out all of those inclusion tags.
             for cls in self.program.classes():
                 cls.clear_resource_cache()
+                for teacher in cls.teachers():
+                    cache_key = teacher.availability_cache_key(self.program)
+                    cache.delete(cache_key)
             for room in self.program.getClassrooms():
                 room.clear_schedule_cache(self.program)
             return HttpResponseRedirect(self.get_full_path())
@@ -87,6 +90,10 @@ class SchedulingModule(ProgramModuleObj):
                 
                 if needs_update:
                     cls = Class.objects.get(id=commands[1])
+                    #   Clear the availability cache for the teachers.
+                    for teacher in cls.teachers():
+                        cache_key = teacher.availability_cache_key(self.program)
+                        cache.delete(cache_key)
                     
                     #   Clear the cached data for the rooms that the class has, so the class is removed from those.
                     if (cls.initial_rooms() is not None):
@@ -121,6 +128,7 @@ class SchedulingModule(ProgramModuleObj):
         cls_list = list(self.program.classes())
         for c in cls_list: c.temp_status = c.scheduling_status()
         context['num_total_classes'] = len(cls_list)
+        context['num_assigned_classes'] = len(filter(lambda x: x.temp_status == 'Needs resources', cls_list))
         context['num_scheduled_classes'] = len(filter(lambda x: x.temp_status == 'Needs room', cls_list))
         context['num_finished_classes'] = len(filter(lambda x: x.temp_status == 'Happy', cls_list))
 
