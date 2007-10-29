@@ -463,21 +463,39 @@ class Program(models.Model):
                 result[c.name].timeslots.append(c.event)
             result[c.name].furnishings = c.associated_resources()
             result[c.name].sequence = c.schedule_sequence(self)
-                
+            
         for c in result:
             result[c].timegroup = Event.collapse(result[c].timeslots)
         
         return result
     
+    def classroom_group_key(self):
+        return 'program__groupedclassrooms:%d' % self.id
+    
+    def clear_classroom_cache(self):
+        from django.core.cache import cache
+        
+        cache_key = classroom_group_key(self)
+        cache.delete(cache_key)
+    
     def groupedClassrooms(self):
         from esp.resources.models import ResourceType
+        from django.core.cache import cache
+        
+        cache_key = self.classroom_group_key()
+        result = cache.get(cache_key)
+        if result is not None:
+            return result
+        
         classrooms = self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
         
         result = self.collapsed_dict(list(classrooms))
         key_list = result.keys()
         key_list.sort()
         #   Turn this into a list instead of a dictionary.
-        return [result[key] for key in key_list]
+        ans = [result[key] for key in key_list]
+        cache.set(cache_key, ans)
+        return ans
         
     def addClassroom(self, classroom_form):
         from esp.program.modules.forms.resources import ClassroomForm

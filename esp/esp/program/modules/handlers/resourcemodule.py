@@ -138,6 +138,7 @@ class ResourceModule(ProgramModuleObj):
                 
             if request.method == 'POST':
                 data = request.POST.copy()
+                self.program.clear_classroom_cache()
                 
                 if data['command'] == 'reallyremove':
                     #   delete classroom and associated resources
