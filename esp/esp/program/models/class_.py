@@ -323,7 +323,14 @@ class Class(models.Model):
             
         available_times = intersect_lists(timeslot_list)
         
+        #   If the class is already scheduled, put its time in.
+        if self.meeting_times.count() > 0:
+            for k in self.meeting_times.all():
+                if k not in available_times:
+                    available_times.append(k)
+        
         timeslots = Event.group_contiguous(available_times)
+
         viable_list = []
 
         for timegroup in timeslots:
