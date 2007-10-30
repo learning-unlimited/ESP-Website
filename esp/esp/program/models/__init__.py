@@ -411,14 +411,31 @@ class Program(models.Model):
                         students[k] = v.count()
         return students
 
-    def isFull(self):
+    def isFull(self, use_cache=True):
         """ Can this program accept any more students? """
+        CACHE_KEY = "PROGRAM__ISFULL_%s" % self.id
+        CACHE_DURATION = 10
+
+        if use_cache:
+            from django.core.cache import cache
+            isfull = cache.get(CACHE_KEY)
+            if isfull != None:
+                return isfull
 
         # Some programs don't have caps; this is represented with program_size_max in [ 0, None ]
         if self.program_size_max is None or self.program_size_max == 0:
             return False
 
-        return ( self.num_students()['confirmed'] >= self.program_size_max )
+        students_count = 0
+        for c in self.classes():
+            students_count += c.num_students(use_cache=use_cache)
+
+        isfull = ( students_count >= self.program_size_max )
+
+        if use_cache:
+            cache.set(CACHE_KEY, isfull, CACHE_DURATION)
+
+        return isfull
 
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
