@@ -71,6 +71,8 @@ def branch_find(view_func):
         cache_key = 'qsdeditor_%s_%s_%s_%s' % (request.user.id,
                                                url, subsection, filename)
 
+        cache_key = cache_key.replace(' ', '')
+
         retVal = cache.get(cache_key)
 
         if retVal is not None:
