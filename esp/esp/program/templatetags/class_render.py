@@ -5,7 +5,10 @@ register = template.Library()
 
 def cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
     #   if not user or not prereg_url:
-    return 'CLASS_DISPLAY__%s' % cls.id
+    if user:
+        return 'CLASS_DISPLAY_peruser__%s' % (cls.id)
+    else:
+        return 'CLASS_DISPLAY__%s' % cls.id
 
     #   return None
 
