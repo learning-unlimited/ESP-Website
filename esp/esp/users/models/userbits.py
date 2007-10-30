@@ -60,6 +60,7 @@ class UserBitManager(ProcedureManager):
             if hasattr(self.user, 'id') and user.id is not None:
                 user_ids = [user_id]
             else:
+                assert False
                 user_ids = [ userid['id'] for userid in User.objects.values('id') ]
                 user_ids.append('None')
 

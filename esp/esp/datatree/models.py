@@ -35,6 +35,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.db.models import Q
 from django.db import transaction
+from django.core.cache import cache
 from esp.db.fields import AjaxForeignKey
 from esp.utils.memdb import mem_db
 
@@ -569,6 +570,15 @@ class DataTree(models.Model):
     @staticmethod
     def get_by_uri(uri, create = False):
         " Get the node by the URI, A/B/.../asdf "
+        orig_uri = uri
+
+        CACHE_KEY_PREFIX="DATATREE_GETBYURI___"
+        CACHE_KEY = CACHE_KEY_PREFIX + orig_uri
+
+        base_node = cache.get(CACHE_KEY)
+        if base_node:
+            return base_node
+
         # first we strip
 
         #assert uri != 'V/Flags/Registration/Preliminary', 'Hmm'
@@ -578,12 +588,15 @@ class DataTree(models.Model):
         try:
             node = DataTree.objects.get(uri = uri,
                                     uri_correct = True)
+            cache.set(CACHE_KEY, node, 1) # We only cache for one second
             return node
         except:
             pass
         
         if uri == '':
-            return DataTree.root()
+            node = DataTree.root()
+            cache.set(CACHE_KEY, node, 1) # We only cache for one second
+            return node
 
         pieces = uri.split(DataTree.DELIMITER)
         if len(pieces) > DataTree.MAX_DEPTH:
@@ -595,6 +608,8 @@ class DataTree(models.Model):
         
         try:
             node = parent[cur_name]
+            
+            cache.set(CACHE_KEY, node, 1) # We only cache for one second
             return node
         except:
             pass
@@ -606,6 +621,7 @@ class DataTree(models.Model):
         node = parent[cur_name]
         node.uri_correct = True
         node.save(uri_fix = True)
+        cache.set(CACHE_KEY, node, 1) # We only cache for one second
         return node
 
     @staticmethod
