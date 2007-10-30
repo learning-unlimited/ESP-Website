@@ -86,16 +86,20 @@ class StudentClassRegModule(ProgramModuleObj):
         blockCount = 0
 
         schedule = []
+        timeslot_dict = {}
+        for cls in classList:
+            for mt in cls.meeting_times.all().values('id'):
+                timeslot_dict.update({mt['id']: cls})
+            
         for timeslot in timeslots:
             if prevTimeSlot != None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
 
-            newClasses = classList.filter(meeting_times = timeslot)
-            if len(newClasses) > 0:
-                schedule.append((timeslot, newClasses[0], blockCount))
+            if timeslot.id in timeslot_dict:
+                schedule.append((timeslot, timeslot_dict[timeslot.id], blockCount + 1))
             else:
-                schedule.append((timeslot, None, blockCount))
+                schedule.append((timeslot, None, blockCount + 1))
 
             prevTimeSlot = timeslot
                 
@@ -125,7 +129,7 @@ class StudentClassRegModule(ProgramModuleObj):
             cobj.update_cache_students()
             return self.goToCore(tl) # go to the core view.
         else:
-            raise ESPError(False), 'Class is full. Please go back to the catalog and choose another class.'
+            raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'
 
 
     @needs_student
@@ -146,11 +150,13 @@ class StudentClassRegModule(ProgramModuleObj):
         ts = ts[0]
 
         prereg_url = self.program.get_learn_url + 'addclass/'
-
+        user_grade = ESPUser(request.user).getGrade()
+        
          # using .extra() to select all the category text simultaneously
-        classes = Class.objects.catalog(self.program, ts)
+        classes = [c for c in Class.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if not c.isFull()] 
 
         categories = {}
+
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
 

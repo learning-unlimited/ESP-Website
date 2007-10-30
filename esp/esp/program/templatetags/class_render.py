@@ -4,10 +4,10 @@ from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
 
 def cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
-    if not user or not prereg_url:
-        return 'CLASS_DISPLAY__%s' % cls.id
+    #   if not user or not prereg_url:
+    return 'CLASS_DISPLAY__%s' % cls.id
 
-    return None
+    #   return None
 
 def minimal_cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
     if not user or not prereg_url:

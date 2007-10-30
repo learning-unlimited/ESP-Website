@@ -168,6 +168,9 @@ class Event(models.Model):
         return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
                + self.end.strftime('%I:%M%p').lower().strip('0')
     
+    def pretty_date(self):
+        return self.start.strftime('%A, %B %d')
+    
     def pretty_start_time(self):
         return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0')
     

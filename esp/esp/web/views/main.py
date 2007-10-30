@@ -143,6 +143,7 @@ def program(request, tl, one, two, module, extra = None):
 		raise Http404("Program not found.")
 
 	prog = prog.program_set.all()
+        
 	if len(prog) < 1:
 		return render_to_response('errors/404.html', request, GetNode('Q/Web'), {})
 

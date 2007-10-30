@@ -13,6 +13,9 @@ Note: Student registration is no longer open. Please use this page to view your 
 <br />
 {% endif %}
 
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+
+<div id="program_form">
  <table cellpadding="3" style="width: 600px; margin: auto" border=1>
 <tr>
 <th colspan="3">
@@ -21,10 +24,10 @@ Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{reque
 </tr>
 {% for timeslot in timeslots %}
 {% ifchanged timeslot.0.start.day %}
-<tr><th colspan="3" height="3"></th></tr>
+<tr><th class="small" colspan="3" height="3" style="text-align: center;">{{ timeslot.0.pretty_date }}</th></tr>
 {% endifchanged %}
 {% ifchanged timeslot.2 %}
-<tr><th colspan="3" height="3"></th></tr>
+<tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
 {% endifchanged %}
 <tr><td width="25%" valign="top" align="center"> {{ timeslot.0.short_description }} </td>
 	{% if timeslot.1 %}
@@ -49,4 +52,5 @@ Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{reque
 
 {% endfor %}
 </table> 
+</div>
 <br/>
