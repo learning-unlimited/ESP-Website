@@ -427,9 +427,9 @@ class Class(models.Model):
         
     def __str__(self):
         if self.title() is not None:
-            return self.title()
+            return "%s: %s" % (self.id, self.title())
         else:
-            return ""
+            return "%s: (none)" % self.id
 
     def delete(self, adminoverride = False):
         if self.num_students() > 0 and not adminoverride:
