@@ -58,9 +58,10 @@ class UserBitManager(ProcedureManager):
         def update(self):
             """ Purges all userbit-related cache. """
             if hasattr(self.user, 'id') and user.id is not None:
-                user_ids = [user_id]
+                user_ids = [self.user.id]
+            elif type(self.user) == int:
+                user_ids = [self.user]
             else:
-                assert False
                 user_ids = [ userid['id'] for userid in User.objects.values('id') ]
                 user_ids.append('None')
 
