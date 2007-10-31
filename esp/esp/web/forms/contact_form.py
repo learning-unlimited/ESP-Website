@@ -54,7 +54,7 @@ email_addresses = {
     'general'     : 'esp@mit.edu',    
     'esp-web' : 'web@esp.mit.edu',
     'satprep' : 'satprep-director@mit.edu',
-    'splash'  : 'splash-director@mit.edu',
+    'splash'  : 'esp@mit.edu',
     'hssp'    : 'hssp-director@mit.edu',
     'junction': 'junction-director@mit.edu',
     'splashonwheels': 'splash-on-wheels@mit.edu',

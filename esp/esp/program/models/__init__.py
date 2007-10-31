@@ -426,9 +426,13 @@ class Program(models.Model):
         if self.program_size_max is None or self.program_size_max == 0:
             return False
 
-        students_count = 0
-        for c in self.classes():
-            students_count += c.num_students(use_cache=use_cache)
+        students_dict = self.students(QObjects = True)
+        if students_dict.has_key('classreg'):
+            students_count = User.objects.filter(students_dict['classreg']).count()
+        else:
+            students_count = 0
+            for c in self.classes():
+                students_count += c.num_students(use_cache=True)
 
         isfull = ( students_count >= self.program_size_max )
 

@@ -365,6 +365,16 @@ class ESPUser(User, AnonymousUser):
         r.res_type = ResourceType.get_or_create('Teacher Availability')
         r.save()
 
+    def enrollment_cache_key(self, program):
+        if program is not None:
+            return 'EnrolledClasses__%s' % program.id
+        else:
+            return 'EnrolledClasses__noprogram'
+    
+    def clear_enrollment_cache(self, program):
+        cache = UserBit.objects.cache(self)
+        cache[self.enrollment_cache_key(program)] = None
+
     def getEnrolledClasses(self, program=None, request=None):
 
         if not hasattr(program, 'id'):
@@ -373,8 +383,6 @@ class ESPUser(User, AnonymousUser):
             program_id = program.id
 
         request_key = '%s%s' % (self.id, program_id)
-
-
 
         if hasattr(request, '_enrolled_classes'):
             if request_key in request._enrolled_classes:
@@ -394,7 +402,7 @@ class ESPUser(User, AnonymousUser):
 
         cache = UserBit.objects.cache(self)
         
-        retVal = cache['EnrolledClasses__%s' % program_id]
+        retVal = cache[self.enrollment_cache_key(program)]
 
         if retVal is not None:
             if isinstance(request, HttpRequest):
@@ -411,7 +419,7 @@ class ESPUser(User, AnonymousUser):
 
         list(retVal)
 
-        cache['EnrolledClasses__%s' % program_id] = retVal
+        cache[self.enrollment_cache_key(program)] = retVal
 
         if isinstance(request, HttpRequest):
             request._enrolled_classes[request_key] = retVal

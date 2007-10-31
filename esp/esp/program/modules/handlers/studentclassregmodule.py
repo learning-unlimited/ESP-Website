@@ -66,9 +66,9 @@ class StudentClassRegModule(ProgramModuleObj):
     
     def isCompleted(self):
         self.user = ESPUser(self.user)
-        if self.user.getEnrolledClasses().count() == 0:
+        if self.user.getEnrolledClasses(self.program).count() == 0:
             return False
-        return self.user.getEnrolledClasses().filter(parent_program = self.program).count() > 0
+        return self.user.getEnrolledClasses(self.program).count() > 0
 
     def deadline_met(self):
         #tmpModule = ProgramModuleObj()
