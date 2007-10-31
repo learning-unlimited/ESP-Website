@@ -700,7 +700,8 @@ class Class(models.Model):
             
 
     def update_cache_students(self):
-        from esp.program.templatetags.class_render import cache_key_func
+        from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func
+        cache.delete(core_cache_key_func(self))
         cache.delete(cache_key_func(self))
 
         self.cache.update()
@@ -744,7 +745,7 @@ class Class(models.Model):
             self.cache['students'] = students
             
 
-            #self.update_cache_students()
+            self.update_cache_students()
             return True
         else:
             #    Pre-registration failed because the class is full.
