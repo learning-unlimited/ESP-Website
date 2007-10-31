@@ -486,7 +486,8 @@ class Class(models.Model):
         if not self.isAccepted():
             return 'This class is not accepted.'
 
-        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not ESPUser(user).canRegToFullProgram(self.parent_program):
+#        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not ESPUser(user).canRegToFullProgram(self.parent_program):
+        if checkFull and self.parent_program.isFull(use_cache=True) and not ESPUser(user).canRegToFullProgram(self.parent_program):
             return 'This programm cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull(use_cache=use_cache):

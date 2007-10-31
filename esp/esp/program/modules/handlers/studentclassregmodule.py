@@ -118,8 +118,8 @@ class StudentClassRegModule(ProgramModuleObj):
             from esp.dblog.models import error
             raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL."
 
-        if ( not UserBit.objects.UserHasPerms(request.user, prog.anchor, GetNode("V/Deadline/Registration/Student/Classes") ) ) and len( ESPUser(request.user).getEnrolledClasses(prog, request) ) >= 1:
-            raise ESPError(False), "You are only allowed to register for one class at this time.  Please come back later!"
+#        if ( not UserBit.objects.UserHasPerms(request.user, prog.anchor, GetNode("V/Deadline/Registration/Student/Classes") ) ) and len( ESPUser(request.user).getEnrolledClasses(prog, request) ) >= 1:
+#            raise ESPError(False), "You are only allowed to register for one class at this time.  Please come back later!"
 
         cobj = Class.objects.filter(id=classid)[0]
         error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
