@@ -68,7 +68,7 @@ class StudentClassRegModule(ProgramModuleObj):
         self.user = ESPUser(self.user)
         if self.user.getEnrolledClasses(self.program).count() == 0:
             return False
-        return self.user.getEnrolledClasses(self.program).count() > 0
+        return (self.user.getEnrolledClasses(self.program).count() > 0) and (UserBit.UserHasPerms(self.user, self.program.anchor_id, GetNode('V/Deadline/Registration/Student')))
 
     def deadline_met(self):
         #tmpModule = ProgramModuleObj()
