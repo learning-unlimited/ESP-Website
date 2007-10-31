@@ -112,7 +112,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
   
     @needs_student
     @meets_grade
-    @meets_deadline('/Classes/OneClass')
+    @meets_deadline('/MainPage')
     def studentreg(self, request, tl, one, two, module, extra, prog):
     	    """ Display a student reg page """
 
