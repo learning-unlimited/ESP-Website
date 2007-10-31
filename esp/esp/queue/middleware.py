@@ -3,12 +3,27 @@
 import time
 from esp.queue.models import *
 from django.http import HttpResponse
+import re
+
+no_queue_list = [ 
+    r'^18.187.*',
+    r'^18.208.*',
+    r'^127\.0\.0\.1$',
+    ]
+
+no_queue_list = [ re.compile(x) for x in no_queue_list ]
 
 class QueueMiddleware(object):
 
     def process_request(self, request):
-        q = QueueItem(request)
+        if request.META.has_key('REMOTE_ADDR'):
+            ip = request.META['REMOTE_ADDR']
+            for i in no_queue_list:
+                if re.search(i, ip):
+                    return None
 
+        q = QueueItem(request)
+        
         try:
             q.update_queue()
         except WaitInQueue, wait:
