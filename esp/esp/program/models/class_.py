@@ -708,8 +708,9 @@ class Class(models.Model):
 
 
     def update_cache(self):
-        from esp.program.templatetags.class_render import cache_key_func
+        from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func
         cache.delete(cache_key_func(self))
+        cache.delete(core_cache_key_func(self))
         
         self.teachers(use_cache = False)
 
@@ -835,6 +836,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             urllist.insert(0,tmpnode.name)
             tmpnode = tmpnode.parent
         return "/".join(urllist)
+
+    def save(self):
+        self.update_cache()
+        super(Class, self).save()
                                
     class Admin:
         pass
