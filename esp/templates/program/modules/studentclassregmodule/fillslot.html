@@ -21,6 +21,10 @@
      Pick a class for {{ timeslot.short_description }}
 </h1>
 
+{% if timeslot.priority %}
+<center><div class="info">{{ timeslot.description }}</div><br /></center>
+{% endif %}
+
 {% if request.user.onsite_local %}
 
 {% if not request.GET.filter %}
