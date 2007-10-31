@@ -130,7 +130,7 @@ def bio(request, tl, last, first, usernum = 0):
 
 	classes = ArchiveClass.getForUser(founduser)
 
-	return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'), {'user': founduser,
+	return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'), {'biouser': founduser,
 											   'bio': bio,
 											   'classes': classes})
 

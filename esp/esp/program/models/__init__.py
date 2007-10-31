@@ -496,7 +496,7 @@ class Program(models.Model):
     def clear_classroom_cache(self):
         from django.core.cache import cache
         
-        cache_key = classroom_group_key(self)
+        cache_key = self.classroom_group_key(self)
         cache.delete(cache_key)
     
     def groupedClassrooms(self):

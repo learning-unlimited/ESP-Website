@@ -30,7 +30,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 </a>
 {% endifequal %}
 <br /><br />
-<h2>{{user.name|upper}}, {{bio.slugbio}}</h2>
+<h2>{{biouser.name|upper}}, {{bio.slugbio}}</h2>
 <hr />
 
 
@@ -39,16 +39,16 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 <table cellspacing=0 cellpadding="5" border="0">
 <tr>
   <td width="300">
-  <strong>Major:</strong> {{user.getLastProfile.teacher_info.major|default:"Not available."}} <br /><br />
-  <strong>College:</strong> {{user.getLastProfile.teacher_info.college|default:"Not available."}} <br /><br />
-  <strong>Year of Graduation:</strong> {{user.getLastProfile.teacher_info.graduation_year|default:"Not available."}} <br /><br />
-  <strong>Email Address:</strong> <tt style="text-size: 130%;">{{user.username}}@esp.mit.edu</tt>
+  <strong>Major:</strong> {{biouser.getLastProfile.teacher_info.major|default:"Not available."}} <br /><br />
+  <strong>College:</strong> {{biouser.getLastProfile.teacher_info.college|default:"Not available."}} <br /><br />
+  <strong>Year of Graduation:</strong> {{biouser.getLastProfile.teacher_info.graduation_year|default:"Not available."}} <br /><br />
+  <strong>Email Address:</strong> <tt style="text-size: 130%;">{{biouser.username}}@esp.mit.edu</tt>
       
 
   </td>
   <td>
-   <img src="/media/{{bio.picture}}" title="Picture of {{user.name}}"  
-        alt="Picture of {{user.name}}" align="right" />
+   <img src="/media/{{bio.picture}}" title="Picture of {{biouser.name}}"  
+        alt="Picture of {{biouser.name}}" align="right" />
   </td>
 </tr>
 <tr>
