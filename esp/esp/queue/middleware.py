@@ -9,12 +9,14 @@ import os
 import re
 import random
 
-no_queue_list = [ 
+no_queue_list = [
+    r'^18.187.',
+    r'^18.208.',
     ]
 
 no_queue_list = [ re.compile(x) for x in no_queue_list ]
 
-USERS_IN_SITE = 1
+USERS_IN_SITE = 150
 SITE_TIMEOUT = timedelta(minutes=5)
 SITE_REFRESH_TIME = 240
 CACHE_KEY_USERS = "CACHE_KEY_USERS_ON_SITE"
@@ -23,8 +25,8 @@ CACHE_KEY_IN = "CACHE_KEY_USERS_IN_SITE"
 class QueueMiddleware(object):
 
     def process_request(self, request):
-#        if os.getloadavg()[1] < 10.0: # We don't care for less-than-crazy loads
-#            return None
+        if os.getloadavg()[1] < 10.0: # We don't care for less-than-crazy loads
+            return None
 
         ip = request.META['REMOTE_ADDR']
         for i in no_queue_list:
