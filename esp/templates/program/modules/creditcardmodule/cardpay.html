@@ -145,7 +145,7 @@ function testCreditCard() {
 
 <!-- Defaults -->
 <input type="hidden" name="BillingCountry" value="840" />
-<input type="hidden" name="ChargeAmount" value="{{ itemizedcosttotal }}" />
+<input type="hidden" name="ChargeAmount" value="{{ itemizedcosttotal|floatformat:2 }}" />
 <input type="hidden" name="ReturnLink" value="http://{{request.META.SERVER_NAME}}/learn/{{program.getUrlBase}}/studentreg" />
 <input type="hidden" name="ReturnLinkLabel" value="Student Registration for {{program.niceName }}"  />
 
