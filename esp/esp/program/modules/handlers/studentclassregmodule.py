@@ -68,7 +68,7 @@ class StudentClassRegModule(ProgramModuleObj):
         self.user = ESPUser(self.user)
         if self.user.getEnrolledClasses(self.program).count() == 0:
             return False
-        return (self.user.getEnrolledClasses(self.program).count() > 0) and (UserBit.UserHasPerms(self.user, self.program.anchor_id, GetNode('V/Deadline/Registration/Student')))
+        return (self.user.getEnrolledClasses(self.program).count() > 0) and (UserBit.UserHasPerms(self.user, self.program.anchor_id, GetNode('V/Deadline/Registration/Student/Classes')))
 
     def deadline_met(self):
         #tmpModule = ProgramModuleObj()
@@ -123,6 +123,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
         cobj = Class.objects.filter(id=classid)[0]
         error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
+        
+        if not hasattr(self.user, onsite_local):
+            self.user.onsite_local = False
+            
         if error and not self.user.onsite_local:
             raise ESPError(False), error
         if cobj.preregister_student(self.user, self.user.onsite_local):

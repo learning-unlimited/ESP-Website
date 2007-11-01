@@ -1,16 +1,33 @@
 {% extends "elements/receipt.html" %}
 
-{% block title %}Pre-Registration for {{one}} Receipt{% endblock %}
+{% block title %}Pre-Registration for {{ one }} Receipt{% endblock %}
 
 {% block subsection_name %} {% endblock %}
 
 {% block body %}
 <br>
+
 <p>
-Your class selection for {{ one }} has been saved. You may come back and change your class selections later, up until 2 days before the program begins.
+Your class selection for {{ one }} has been saved. You may come back and change your class selections until 8:00pm on Tuesday, Nov. 13.  Class changes may also be done during Splash, but we can only switch you into classes that are not full.
 </p>
 
+<p>Splash is on Saturday and Sunday, Nov. 17-18, at MIT in Cambridge, MA.  Please arrive at least one hour before your first class (your schedule is shown below).  If you have not already paid online, please bring a check for $30 (made out to "MIT ESP").  Check-in will be in the lobby of <a href="http://whereis.mit.edu/map-jpg?selection=13">MIT building 13</a> until 9:00 AM on November 17, and in the lobby of <a href="http://whereis.mit.edu/map-jpg?selection=10">building 10</a> for the rest of the weekend.   We will be posting more information to the <a href="/learn/Splash/index.html">Splash page</a> as it becomes available.</p>
+
+<p>Your parents do not need to come to Splash, although they are welcome to participate in our <a href="http://esp.mit.edu/learn/Splash/parentsprogram.html">parents' program</a> and explore attractions in Boston and Cambridge.  Except in special circumstances, parents may not attend classes.</p>
+
 <p>Please print and fill out the <a href="/media/uploaded/07_10/Medical_and_Liability_Forms.pdf">medical and liability forms</a>.  You must bring both of these forms, completed and signed by your parents, to Splash in order to participate.</p>
+
+<p>
+<b>Summary:</b> Please bring the following to Splash registration in MIT Lobby 13 on Saturday, November 17:
+<ul>
+<li>This receipt
+<li>Completed and signed <a href="http://esp.mit.edu/media/uploaded/07_10/Medical_and_Liability_Forms.pdf">liability and medical forms</a>
+<li>$30 check for "MIT ESP"
+</ul>
+</p>
+
+<br />
+<hr size="1" color="#000000" />
 
 <p>
 User Information: <br />
@@ -27,10 +44,10 @@ User Information: <br />
 </tr>
 {% for timeslot in timeslots %}
 <tr>
-  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.nicenames|join:"<br />" }} </td>
+  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.short_description }} </td>
   <td>
 	{% if timeslot.1 %}
-	{{timeslot.1.title}}{% else %} <em>Nothing Selected</em> {% endif %}
+	{{ timeslot.1.title }}{% else %} <em>Nothing Selected</em> {% endif %}
   </td>
 </tr>
 {% endfor %}
@@ -43,9 +60,7 @@ Please print this page for your records.
 <br />
 <br />
 <pre>
-Please Note: Class selections are subject to change up
-until and on the day of the event. MIT Educational Studies
-Program cannot guarantee the successful fruition of a
-proposed class.
+Note: Class selections are subject to change until the first day of the program.
+The MIT Educational Studies Program cannot guarantee that all proposed classes will be taught.
 </pre>
 {% endblock %}
