@@ -48,6 +48,29 @@ class CostItem(forms.Form):
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
 
+
+    def studentDesc(self):
+        """ Return a description for each line item type that students can be filtered by. """
+        student_desc = {}
+
+        for i in LineItemType.objects.filter(anchor=self.program.anchor):
+            student_desc[i.label] = """Students who have opted for '%s'""" % i.label
+
+        return student_desc
+
+    def students(self, QObject = False):
+        """ Return the useful lists of students for the Extra Costs module. """
+
+        student_lists = {}
+        # Get all the line item types for this program.
+        for i in LineItemType.objects.filter(anchor=self.program.anchor):
+            if QObject:
+                student_lists[i.label] = self.getQForUser(Q(lineitem__type = i))
+            else:
+                student_lists[i.label] = User.objects.filter(lineitem__type = i).distinct()
+
+        return student_lists
+
     def isCompleted(self):
         return LineItem.purchased(self.program.anchor, self.user).count() > 0
 
