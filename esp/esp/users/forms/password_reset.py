@@ -96,7 +96,7 @@ class NewPasswordSetForm(forms.Form):
     def clean_username(self):
         from esp.middleware import ESPError
         if not self.clean_data.has_key('code'):
-            raise ESPError(), "The form that you submitted does not contain a valid password-reset code.  If you arrived at this form from an e-mail, are you certain that you used the entire URL from the e-mail (including the bit after '?code=')?"
+            raise ESPError(False), "The form that you submitted does not contain a valid password-reset code.  If you arrived at this form from an e-mail, are you certain that you used the entire URL from the e-mail (including the bit after '?code=')?"
         try:
             user = User.objects.get(username = self.clean_data['username'].strip(),
                                     password = self.clean_data['code'])
@@ -108,6 +108,9 @@ class NewPasswordSetForm(forms.Form):
 
     def clean_password_confirm(self):
         new_passwd= self.clean_data['password_confirm'].strip()
+
+        if not self.clean_data.has_key('password'):
+            raise forms.ValidationError('Invalid password; confirmation failed')
 
         if self.clean_data['password'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
