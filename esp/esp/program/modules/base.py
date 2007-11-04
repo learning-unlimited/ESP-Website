@@ -235,6 +235,7 @@ class ProgramModuleObj(models.Model):
             
         if len(classes) == 1:
             if not self.user.canEdit(classes[0]):
+                from esp.middleware import ESPError
                 raise ESPError(False), 'You do not have permission to edit %s.' %\
                       classes[0].title()
             else:
