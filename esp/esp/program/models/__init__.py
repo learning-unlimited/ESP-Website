@@ -853,10 +853,10 @@ class FinancialAidRequest(models.Model):
 
     done = models.BooleanField(default=False, editable=False)
 
-    reviewed = models.BooleanField(default=False, editable=False, verbose_name='Reviewed by Directors')
+    reviewed = models.BooleanField(default=False, verbose_name='Reviewed by Directors')
 
-    amount_received = models.IntegerField(blank=True,null=True, editable=False, verbose_name='Amount granted')
-    amount_needed = models.IntegerField(blank=True,null=True, editable=False, verbose_name='Amount due from student')
+    amount_received = models.IntegerField(blank=True,null=True, verbose_name='Amount granted')
+    amount_needed = models.IntegerField(blank=True,null=True, verbose_name='Amount due from student')
 
     def __str__(self):
         """ Represent this as a string. """

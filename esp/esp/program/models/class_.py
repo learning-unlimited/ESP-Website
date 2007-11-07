@@ -195,7 +195,7 @@ class Class(models.Model):
             duration = self.duration
         
         if event_list is None:
-            event_list = list(self.meeting_times.all())
+            event_list = list(self.meeting_times.all().order_by('start'))
         #   If you're 15 minutes short that's OK.
         time_tolerance = 15 * 60
         if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:

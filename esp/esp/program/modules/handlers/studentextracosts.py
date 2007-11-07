@@ -75,6 +75,7 @@ class StudentExtraCosts(ProgramModuleObj):
         return LineItem.purchased(self.program.anchor, self.user).count() > 0
 
     @needs_student
+    @meets_deadline('/ExtraCosts')
     def extracosts(self,request, tl, one, two, module, extra, prog):
         """
         Query the user for any extra items they may wish to purchase for this program

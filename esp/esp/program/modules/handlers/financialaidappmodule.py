@@ -88,7 +88,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                                                                 program = self.program)
 
         Form = forms.form_for_model(FinancialAidRequest)
-        
+      
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
             if form.is_valid():
@@ -154,10 +154,9 @@ This request can be (re)viewed at:
             
         else:
             form = Form(initial = app.__dict__)
-
-
+            
         return render_to_response(self.baseDir()+'application.html',
                                   request,
                                   (self.program, tl),
-                                  {'form': form,'app':app})
+                                  {'form': form, 'app': app})
 

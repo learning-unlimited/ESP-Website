@@ -9,6 +9,7 @@ ADMINS = (
     ('Michael Price', 'pricem@mit.edu')
 )
 MANAGERS = ADMINS
+SITE_INFO = (1, 'price-esp.mit.edu', 'Michael Price ESP Dev Site')
 
 DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
 DATABASE_NAME = 'django'             # Or path to database file if using sqlite3.

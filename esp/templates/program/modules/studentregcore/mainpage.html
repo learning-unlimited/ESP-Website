@@ -28,10 +28,14 @@ This program is now full!  You can no longer register for it; you may only use t
 {% endif %}
 {% endif %}
 <p>
-  Please complete the following steps to register for {{program.niceName}}.
+  Please complete the following steps to register for {{ program.niceName }}.
   When each step is completed, the corresponding box in the right-hand column will
-  be &#8220;checked off&#8221;. After finishing all the steps, click the &#8220;save&#8221;
+  be &#8220;checked off&#8221;. After finishing all the steps, click the &#8220;Confirm&#8221;
   button at the bottom of the page.
+</p>
+
+<p>
+Please note that your class selections are saved immediately when you click the "Add Class" button.  You do not need to confirm your registration after every class change.  Rather, please click "Confirm" or "View Receipt" when you have finished all steps of the registration process.
 </p>
 
 <center><div class="note">
@@ -98,10 +102,10 @@ This program is now full!  You can no longer register for it; you may only use t
 {% endif %}{% else %}
 {% if not completedAll %}
 <div class="errormsg">
-Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Save</em> button below (it will be active at this point).
+Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Confirm</em> button below (it will be active at this point).
 {% else %}
 <div class="info">
-Please click <em>Save</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
+Please click <em>Confirm</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
 {% endif %}
 </div>
 {% endif %}
@@ -114,7 +118,7 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 
 
 <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-<input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
+<input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Confirm{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
 {% if isConfirmed %}
  | 
 <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
@@ -125,7 +129,7 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 
 <br />
 <p>
-  Thanks for registering!  You can come back and change any of the above information until 2 days before {{program.niceName}} begins.  If you have any questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
+  Thanks for registering!  You can come back and change any of the above information until the Tuesday before {{ program.niceName }} begins.  If you have any questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
 </p>
 
 {% endblock %}

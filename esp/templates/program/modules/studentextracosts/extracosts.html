@@ -2,6 +2,11 @@
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
 {% load subsection %}
 {% block subsection %}
 {{ "Student Registration"|subsection }}{% endblock %}
@@ -17,18 +22,39 @@
 {% render_inline_qsd program.anchor "learn:studentreg" %}
 
 {% if forms %}
+<div id="program_form">
 <h2>This program contains additional items that you can pay for online.</h2>
+<br />
 
 <p>To purchase any of the following items, please check its corresponding checkbox and click "Save".  They will be added to your bill if you pay by credit card.</p>
+
+<p>Food and other additional items can only be changed up until <b>1 week before the program.</b></p>
 
 <br />
 
 <form action="" method="post">
+<center>
+<table width="400" cellpadding="2" cellspacing="0">
+<tr><th colspan="3">Additional Items for {{ program.niceName }}</th></tr>
+<tr>    
+    <th class="small">Selected?</th>
+    <th class="small">Item</th>
+    <th class="small">Cost</th>
+</tr>
 {% for f in forms %}
-<ul> {% if f.IsPaidFor %}[PAID]{% else %}{{ f.form.cost }}{% endif %} - {{ f.LineItem.label }} <i>(${% if financial_aid %}{{ f.LineItem.financial_aid_value|floatformat:2}}{% else %}{{ f.LineItem.value|floatformat:2 }}{% endif %})</i> </ul>
+<tr>
+    <td>{% if f.IsPaidFor %}[PAID]{% else %}{{ f.form.cost }}{% endif %}</td>
+    <td>{{ f.LineItem.label }} </td>
+    <td><i>(${% if financial_aid %}{{ f.LineItem.financial_aid_value|floatformat:2}}{% else %}{{ f.LineItem.value|floatformat:2 }}{% endif %})</i></td>
+</tr>
 {% endfor %}
-<br />
-<input type="submit" value="Save"/>
+<tr>
+    <td colspan="3" align="center">
+        <input type="submit" class="fancybutton" value="Save"/>
+    </td>
+</tr>
+</table>
+</center>
 </form>
 
 {% endif %}
