@@ -92,13 +92,13 @@
 </tr>
 <tr style="border: 1px solid #CCCCCC">
  <th colspan="2" style="text-align: center;">
-    <input type="submit" class="button" name="submitform" value="Save Progress" />
-    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
     {% if app.done %}
     <input type="submit" class="button" name="submitform" value="Mark as Incomplete" />
     {% else %}
     <input type="submit" class="button" name="submitform" value="Complete" />
     {% endif %}
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <input type="submit" class="button" name="submitform" value="Save Progress" />
  </th>
 </tr>
 </table>
