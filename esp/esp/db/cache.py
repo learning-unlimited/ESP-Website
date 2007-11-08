@@ -10,8 +10,9 @@ class GenericCacheHelper(object):
         UserBit.objects.cache(user)['key'] = 'new value'
     """
 
-    # 1-hour caching
-    cache_time = 3600
+    # 24-hour caching
+    cache_time = 86400
+
     def __init__(self, class_):
         self.class_ = class_
 
