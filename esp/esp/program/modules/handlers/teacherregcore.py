@@ -37,7 +37,7 @@ from esp.datatree.models import GetNode
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
     
-    @meets_deadline()
+    @meets_deadline("/MainPage")
     @needs_teacher
     def teacherreg(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """

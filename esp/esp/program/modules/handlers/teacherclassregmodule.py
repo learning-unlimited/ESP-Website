@@ -195,7 +195,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return [(str(x.id), x.name) for x in res_types]
 
     @needs_teacher
-    @meets_deadline()
+    @meets_deadline("/Classes/View")
     def class_students(self, request, tl, one, two, module, extra, prog):
     
         cls, found = self.getClassFromId(extra)
@@ -220,7 +220,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
 
     @needs_teacher
-    @meets_deadline()
+    @meets_deadline("/Classes/View")
     def class_status(self, request, tl, one, two, module, extra, prog):
         clsid = 0
         if request.POST.has_key('clsid'):
@@ -241,6 +241,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
 	
     @needs_teacher
+    @meets_deadline("/Classes")
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm    
         from esp.qsdmedia.models import Media
@@ -401,7 +402,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                                          'txtTeachers': txtTeachers,
                                                                                          'coteachers':  coteachers,
                                                                                          'conflicts':   conflictingusers})
-    @meets_deadline()
+    @meets_deadline("/Classes")
     @needs_teacher
     def editclass(self, request, tl, one, two, module, extra, prog):
         classes = Class.objects.filter(id = extra)
