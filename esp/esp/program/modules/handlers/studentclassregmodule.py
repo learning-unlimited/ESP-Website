@@ -124,7 +124,7 @@ class StudentClassRegModule(ProgramModuleObj):
         cobj = Class.objects.filter(id=classid)[0]
         error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
         
-        if not hasattr(self.user, 'onsite_local'):
+        if not hasattr(self.user, "onsite_local"):
             self.user.onsite_local = False
             
         if error and not self.user.onsite_local:
