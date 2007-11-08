@@ -12,6 +12,8 @@ import random
 no_queue_list = [
     r'^18.187.',
     r'^18.208.',
+    r'^18.85.',
+    r'^18.244.',
     ]
 
 no_queue_list = [ re.compile(x) for x in no_queue_list ]
