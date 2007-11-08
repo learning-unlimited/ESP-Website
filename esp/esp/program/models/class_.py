@@ -299,6 +299,9 @@ class Class(models.Model):
         from esp.resources.models import ResourceType, Resource
         
         def intersect_lists(list_of_lists):
+            if len(list_of_lists) = 0:
+                return []
+
             base_list = list_of_lists[0]
             for other_list in list_of_lists[1:]:
                 i = 0

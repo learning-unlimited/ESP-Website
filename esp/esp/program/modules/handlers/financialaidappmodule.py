@@ -92,12 +92,14 @@ class FinancialAidAppModule(ProgramModuleObj):
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
             if form.is_valid():
-                app.__dict__.update(form.clean_data)
-                if request.POST['submitform'].lower() == 'complete':
+                app.__dict__.update(form.clean_data)                
+                if not request.POST.has_key('submitform') or request.POST['submitform'].lower() == 'complete':
                     app.done = True
-                    
-                if request.POST['submitform'].lower() == 'mark as unfinished':
+                elif request.POST['submitform'].lower() == 'mark as unfinished':
                     app.done = False
+                else:
+                    assert False, request.POST
+#                    raise ESPError(), "Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Unfinished'."
                     
                 # Automatically accept apps for people with subsidized lunches
                 if app.reduced_lunch:
