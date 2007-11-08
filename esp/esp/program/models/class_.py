@@ -299,7 +299,7 @@ class Class(models.Model):
         from esp.resources.models import ResourceType, Resource
         
         def intersect_lists(list_of_lists):
-            if len(list_of_lists) = 0:
+            if len(list_of_lists) == 0:
                 return []
 
             base_list = list_of_lists[0]
