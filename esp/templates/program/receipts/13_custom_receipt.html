@@ -11,7 +11,7 @@
 Your class selection for {{ one }} has been saved. You may come back and change your class selections until 8:00pm on Tuesday, Nov. 13.  Class changes may also be done during Splash, but we can only switch you into classes that are not full.
 </p>
 
-<p>Splash is on Saturday and Sunday, Nov. 17-18, at MIT in Cambridge, MA.  Please arrive at least one hour before your first class (your schedule is shown below).  If you have not already paid online, please bring a check for $30 (made out to "MIT ESP").  Check-in will be in the lobby of <a href="http://whereis.mit.edu/map-jpg?selection=13">MIT building 13</a> until 9:00 AM on November 17, and in the lobby of <a href="http://whereis.mit.edu/map-jpg?selection=10">building 10</a> for the rest of the weekend.   We will be posting more information to the <a href="/learn/Splash/index.html">Splash page</a> as it becomes available.</p>
+<p>Splash is on Saturday and Sunday, Nov. 17-18, at MIT in Cambridge, MA.  Please arrive at least one hour before your first class (your schedule is shown below). {% if owe_money %} Please bring a check for ${{ itemizedcosttotal|floatformat:2 }} (made out to "MIT ESP"). {% endif %} Check-in will be in the lobby of <a href="http://whereis.mit.edu/map-jpg?selection=13">MIT building 13</a> until 9:00 AM on November 17, and in the lobby of <a href="http://whereis.mit.edu/map-jpg?selection=10">building 10</a> for the rest of the weekend.   We will be posting more information to the <a href="/learn/Splash/index.html">Splash page</a> as it becomes available.</p>
 
 <p>Your parents do not need to come to Splash, although they are welcome to participate in our <a href="http://esp.mit.edu/learn/Splash/parentsprogram.html">parents' program</a> and explore attractions in Boston and Cambridge.  Except in special circumstances, parents may not attend classes.</p>
 
@@ -22,7 +22,7 @@ Your class selection for {{ one }} has been saved. You may come back and change 
 <ul>
 <li>This receipt
 <li>Completed and signed <a href="http://esp.mit.edu/media/uploaded/07_10/Medical_and_Liability_Forms.pdf">liability and medical forms</a>
-<li>$30 check for "MIT ESP"
+{% if owe_money %}<li>${{ itemizedcosttotal|floatformat:2 }} check for "MIT ESP"{% endif %}
 </ul>
 </p>
 
@@ -52,6 +52,16 @@ User Information: <br />
 </tr>
 {% endfor %}
 </table>
+
+<h3>Itemized Receipt</h3>
+<table>
+{% for payment in itemizedcosts %}
+<tr><td>{{ payment.type.label }}</td><td>{% if payment.transaction %}PAID: {% endif %}${% if financial_aid %}{{ payment.type.financial_aid_value|floatformat:2 }}{% else %}{{ payment.type.value|floatformat:2 }}{% endif %}</td></tr>
+{% endfor %}
+<tr><td align="right"><b>Balance (amount still owed):</b></td><td>${{ itemizedcosttotal|floatformat:2 }}</td></tr>
+
+</table>
+
 <br />
 <br />
 

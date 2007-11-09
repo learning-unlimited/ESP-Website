@@ -38,9 +38,16 @@ This program is now full!  You can no longer register for it; you may only use t
   registration to save your spot in classes. 
 </p>
 
-<p>
-Please note that your class selections are saved immediately when you click the "Add Class" button.  You do not need to confirm your registration after every class change.  Rather, please click "Confirm" or "View Receipt" when you have finished all steps of the registration process.
-</p>
+<center>
+{% if not completedAll %}
+<div class="errormsg">
+Please finish the required steps listed below (they will be checked off when they are completed). Then, click on the <em>Confirm</em> button at the bottom of this page.
+{% else %}
+<div class="info">
+Please finalize your registration, then <b>click <em>Confirm</em></b> below to indicate that you've finished filling out this form.  Upon clicking this you will be given a receipt with further instructions!  Note that paying with a credit card <b>does not completely confirm</b> your registration, because you can still adjust your schedule after paying.
+{% endif %}
+</div>
+</center>
 
 <center><div class="note">
 <b>Parents:</b> You should not be at this page!  Please let your kids choose their classes and fill out the registration forms.

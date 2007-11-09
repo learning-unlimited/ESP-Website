@@ -77,6 +77,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 	context['one'] = one
 	context['two'] = two
 
+        from esp.money.models import LineItem, LineItemType
+        context['itemizedcosts'] = LineItem.purchased(prog.anchor, request.user, filter_already_paid=False)
+        context['itemizedcosttotal'] = LineItem.purchasedTotalCost(prog.anchor, request.user)
+        context['owe_money'] = ( context['itemizedcosttotal'] != 0 )
+
+
         if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog):
             raise ESPError(log = False), "This program has filled!  It can't accept any more students.  Please try again next session."
 
