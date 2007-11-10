@@ -84,7 +84,7 @@ class Event(models.Model):
     end = models.DateTimeField() # Event end time
     short_description = models.TextField() # Event short description
     description = models.TextField() # Event textual description; not computer-parseable
-    event_type = models.ForeignKey(EventType) # The tyoe of event.  This implies, though does not require, the types of data that are keyed to this event.
+    event_type = models.ForeignKey(EventType) # The type of event.  This implies, though does not require, the types of data that are keyed to this event.
     #    container_series = models.ForeignKey(Series, blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
 

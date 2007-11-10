@@ -1,0 +1,43 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{ prog.niceName }} Block/Room Schedule{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+
+<style type="text/css">
+tr {
+	vertical-align: top;
+}
+</style>
+{% endblock %}
+
+{% block subsection_name %}{% endblock %}
+
+{% block content %}
+
+<h1>Block/Room Schedule - {{ prog.niceName }}</h1>
+
+<p>
+<table border="1">
+<tr>
+{% for e in events %}<th bgcolor="{% cycle lightgrey,grey %}">{{ e.event.pretty_time }}</th>
+{% endfor %}
+</tr>
+<tr>
+{% for e in events %}
+<td style='text-align: top' bgcolor="{% cycle lightgrey,grey %}" width="200">
+{% for c in e.classes %}
+<table width="100%" border="0">
+<tr><td bgcolor="{% cycle lightgrey,grey %}">
+<b>{% for r in c.prettyrooms %}{{ r }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}</b> <small>({{ c.anchor.friendly_name }})</small>
+</td></tr>
+</table>
+{% endfor %}
+</td>
+{% endfor %}
+</tr>
+</table>
+
+
+{% endblock %}
