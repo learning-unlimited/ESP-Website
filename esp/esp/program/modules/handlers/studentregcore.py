@@ -77,7 +77,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 	context['one'] = one
 	context['two'] = two
 
-        from esp.money.models import LineItem, LineItemType
+        from esp.money.models import LineItem, LineItemType, RegisterLineItem
+        for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
+            RegisterLineItem(request.user, i)
+
         context['itemizedcosts'] = LineItem.purchased(prog.anchor, request.user, filter_already_paid=False)
         context['itemizedcosttotal'] = LineItem.purchasedTotalCost(prog.anchor, request.user)
         context['owe_money'] = ( context['itemizedcosttotal'] != 0 )
