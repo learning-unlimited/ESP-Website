@@ -861,16 +861,26 @@ class FinancialAidRequest(models.Model):
     def __str__(self):
         """ Represent this as a string. """
         accepted_verb = GetNode('V/Flags/Registration/Accepted')
-        num_classes = UserBit.find_by_anchor_perms(Class, self.user, accepted_verb).filter(parent_program = self.program).count()
+        if self.reduced_lunch:
+            reducedlunch = "(Free Lunch)"
+        else:
+            reducedlunch = ''
+            
+        explanation = self.extra_explaination
+        if explanation is None:
+            explanation = ''
+        elif len(explanation) > 40:
+            explanation = explanation[:40] + "..."
 
-        string = "Financial Aid Application for %s (enrolled in %s classes)"%\
-                 (ESPUser(self.user).name(), num_classes)
+
+        string = "%s for %s (%s, %s) %s"%\
+                 (ESPUser(self.user).name(), self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
-            string = "Finished " + string
+            string = "Finished: [" + string + "]"
 
         if self.reviewed:
-            string += " (reviewed)"
+            string += " (REVIEWED)"
 
         return string
 
