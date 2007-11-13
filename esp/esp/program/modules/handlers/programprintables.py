@@ -550,7 +550,7 @@ Student schedule for %s:
 
         for cls in classes:
             cls_rooms = cls.classroomassignments()
-            for roomassignment in roomassignments:
+            for roomassignment in cls_rooms:
                 update_dict = {'room': roomassignment.resource.name,
                                'cls': cls,
                                'timeblock': roomassignment.resource.event.short_description}
