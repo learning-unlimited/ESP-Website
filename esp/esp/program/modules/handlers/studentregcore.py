@@ -69,7 +69,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @needs_student
     @meets_grade
-    @meets_deadline()
+    @meets_deadline("/Confirm")
     def confirmreg(self, request, tl, one, two, module, extra, prog):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
