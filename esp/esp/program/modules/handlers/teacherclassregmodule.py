@@ -241,7 +241,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
 	
     @needs_teacher
-    @meets_deadline("/Classes")
+    @meets_deadline("/MainPage")
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm    
         from esp.qsdmedia.models import Media

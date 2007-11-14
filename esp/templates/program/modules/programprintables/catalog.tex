@@ -37,7 +37,7 @@
 {{ cls.class_info|texescape }} \\
 \textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
 \textit{Maximum Size: {{cls.class_size_max }} } \\
-\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"\\" }} } \\
+\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\ \textbf{" }} } \\
 {% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}
 
 \end{tabular}

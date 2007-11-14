@@ -76,10 +76,45 @@ into the text of the message&mdash;the parameters are listed below.
     </tr>
     <tr>
       <th><span style="white-space: nowrap;">
+     {% templatetag openvariable %}user.username{% templatetag closevariable %}
+          </span>
+      </th>
+      <td>User's ESP Web Site Username</td>
+    </tr>
+    <tr>
+      <th><span style="white-space: nowrap;">
+     {% templatetag openvariable %}user.first_name{% templatetag closevariable %}
+          </span>
+      </th>
+      <td>User's First Name</td>
+    </tr>
+    <tr>
+      <th><span style="white-space: nowrap;">
+     {% templatetag openvariable %}user.last_name{% templatetag closevariable %}
+          </span>
+      </th>
+      <td>User's Last Name</td>
+    </tr>
+    <tr>
+      <th><span style="white-space: nowrap;">
      {% templatetag openvariable %}program.schedule{% templatetag closevariable %}
           </span>
       </th>
-      <td>User's Schedule</td>
+      <td>Schedule for Program</td>
+    </tr>
+    <tr>
+      <th><span style="white-space: nowrap;">
+     {% templatetag openvariable %}program.transcript{% templatetag closevariable %}
+          </span>
+      </th>
+      <td>Transcript (classes and descriptions) for Program</td>
+    </tr>
+    <tr>
+      <th><span style="white-space: nowrap;">
+     {% templatetag openvariable %}program.receipt{% templatetag closevariable %}
+          </span>
+      </th>
+      <td>Confirmation receipt for Program</td>
     </tr>
     <tr>
       <th><span style="white-space: nowrap;">

@@ -294,7 +294,32 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'teacherlist.html', request, (prog, tl), context)
 
     def get_msg_vars(self, user, key):
-        User = ESPUser(user)
+        user = ESPUser(user)
+        
+        if key == 'receipt':
+            #   Take the user's most recent registration profile.
+            from django.template import Context, Template
+            from django.template.loader import find_template_source
+            from esp.settings import TEMPLATE_DIRS
+            from esp.money.models import LineItem, LineItemType, RegisterLineItem
+                
+            prof = user.getLastProfile()
+            
+            for i in LineItemType.objects.filter(anchor=prof.program.anchor, optional=False):
+                RegisterLineItem(user, i)
+            
+            context_dict = {'prog': prof.program, 'first_name': user.first_name, 'last_name': user.last_name, 'username': user.username, 'e_mail': prof.contact_user.e_mail, 'schedule': ProgramPrintables.getSchedule(prof.program, user)}
+            
+            context_dict['itemizedcosts'] = LineItem.purchased(prof.program.anchor, user, filter_already_paid=False)
+            context_dict['itemizedcosttotal'] = LineItem.purchasedTotalCost(prof.program.anchor, user)
+            context_dict['owe_money'] = ( context_dict['itemizedcosttotal'] != 0 )
+            
+            t = Template(open(TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
+            c = Context(context_dict)
+            result_str = t.render(c)
+
+            return result_str
+            
         if key == 'schedule':
             return ProgramPrintables.getSchedule(self.program, user)
         if key == 'transcript':
@@ -398,7 +423,7 @@ class ProgramPrintables(ProgramModuleObj):
         schedule = """
 Student schedule for %s:
 
- Time               | Class                   | Room""" % student.name()
+ Time               | Class                                  | Room""" % student.name()
 
         
         classes = ProgramPrintables.get_student_classlist(program, student)
@@ -412,7 +437,7 @@ Student schedule for %s:
                 
             schedule += """
 %s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
-               cls.title().ljust(25),
+               cls.title().ljust(40),
                rooms)
                
         return schedule
@@ -540,28 +565,31 @@ Student schedule for %s:
     @needs_admin
     def roomschedules(self, request, tl, one, two, module, extra, prog):
         """ generate class room rosters"""
+        from esp.cal.models import Event
+        
         classes = [ cls for cls in self.program.classes()
                     if cls.isAccepted()                      ]
         context = {}
         classes.sort()
 
         rooms = {}
-        scheditems = ['']
+        scheditems = []
 
         for cls in classes:
-            cls_rooms = cls.classroomassignments()
-            for roomassignment in cls_rooms:
-                update_dict = {'room': roomassignment.resource.name,
-                               'cls': cls,
-                               'timeblock': roomassignment.resource.event.short_description}
-                if rooms.has_key(roomassignment.resource.id):
-                    rooms[roomassignment.resource.id].append(update_dict)
-                else:
-                    rooms[roomassignment.resource.id] = [update_dict]
+            for room in cls.initial_rooms():
+                for event_group in Event.collapse(list(cls.meeting_times.all())):
+                    update_dict = {'room': room.name,
+                                   'cls': cls,
+                                   'timeblock': event_group}
+                    if rooms.has_key(room.name):
+                        rooms[room.name].append(update_dict)
+                    else:
+                        rooms[room.name] = [update_dict]
             
-        for scheditem in rooms.values():
-            for dictobj in scheditem:
-                scheditems.append(dictobj)
+        for room_name in rooms:
+            rooms[room_name].sort(key=lambda x: x['timeblock'])
+            for val in rooms[room_name]:
+                scheditems.append(val)
                 
         context['scheditems'] = scheditems
 

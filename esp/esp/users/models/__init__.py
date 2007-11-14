@@ -220,7 +220,11 @@ class ESPUser(User, AnonymousUser):
     def get_msg_vars(self, otheruser, key):
         """ This function will be called when rendering a message. """
         
-        if key == 'name':
+        if key == 'first_name':
+            return otheruser.first_name
+        elif key == 'last_name':
+            return otheruser.last_name
+        elif key == 'name':
             return ESPUser(otheruser).name()
         elif key == 'recover_url':
             return 'http://esp.mit.edu/myesp/recoveremail/?code=%s' % \

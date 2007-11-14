@@ -46,7 +46,6 @@ class NameTagModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'selectoptions.html', request, (prog, tl), context)
 
 
-
     @needs_admin
     def generatetags(self, request, tl, one, two, module, extra, prog):
         """ generate nametags """
@@ -57,7 +56,8 @@ class NameTagModule(ProgramModuleObj):
 
         
         if idtype == 'students':
-            students = self.program.students_union()
+            student_dict = self.program.students(QObjects = True)
+            students = User.objects.filter(student_dict['classreg'] | student_dict['confirmed']).distinct()
             
             students = [ ESPUser(student) for student in
                          students ]
@@ -71,13 +71,9 @@ class NameTagModule(ProgramModuleObj):
                 
         elif idtype == 'teacher':
             teachers = []
-            teacherdict = self.program.teachers()
-            for key in teacherdict:
-                tlist = list(teacherdict[key])
-                for teacher in tlist:
-                    if teacher not in teachers:
-                        teachers.append(teacher)
-                
+            teacher_dict = self.program.teachers(QObjects=True)
+            teachers = User.objects.filter(teacher_dict['teacher_profile'] | teacher_dict['class_rejected']).distinct()
+
 	    teachers = [ ESPUser(teacher) for teacher in teachers ]
             
             teachers.sort()

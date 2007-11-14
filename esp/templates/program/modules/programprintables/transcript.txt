@@ -2,5 +2,5 @@
 Course                                 | Teacher[s]    |
 ---------------------------------------+---------------+
 {% for cls in classlist %}
-{{ cls.title }}                        | {{ cls.teachers }}
+{{ cls.title }}                        | {% for t in cls.teachers %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
 {% endfor %}
