@@ -115,13 +115,14 @@ class LineItemType(models.Model):
 	label = models.TextField()
 	anchor = AjaxForeignKey(DataTree)
 	optional = models.BooleanField(default=True)
+	show_on_schedule = models.BooleanField(default=False, null=True)
 
 	@classmethod
 	def forAnchor(cls, anchor):
 		return cls.objects.filter(anchor=anchor)
 
 	def __str__(self):
-		return str(self.label) + " : " + str(self.value) + " (for %s)" % self.anchor
+		return str(self.label) + " : " + str(self.value) + "/" + str(self.financial_aid_value) + " (for %s)" % self.anchor
 
 	class Admin:
 		pass

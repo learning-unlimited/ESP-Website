@@ -443,35 +443,6 @@ Student schedule for %s:
         return schedule
 
     @needs_admin
-    def studentschedules(self, request, tl, one, two, module, extra, prog):
-        """ generate student schedules """
-
-        filterObj, found = get_user_list(request, self.program.getLists(True))
-
-        if not found:
-            return filterObj
-
-        context = {'module': self     }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
-
-        students.sort()
-        
-        scheditems = []
-
-        for student in students:
-            # get list of valid classes
-            classes = [ cls for cls in student.getEnrolledClasses()
-                                if cls.parent_program == self.program
-                                and cls.isAccepted()                       ]
-            # now we sort them by time/title
-            classes.sort()
-
-            student.classes = classes
-            
-        context['students'] = students
-        return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
-
-    @needs_admin
     def onsiteregform(self, request, tl, one, two, module, extra, prog):
 
         # Hack together a pseudocontext:
@@ -486,9 +457,15 @@ Student schedule for %s:
 
     @needs_admin
     def studentschedules_finaid(self, request, tl, one, two, module, extra, prog):
+        """ generate student schedules; now a unified function """
+        return studentschedules(self, request, tl, one, two, module, extra, prog)
+    
+    @needs_admin
+    def studentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
         from esp.program.models import FinancialAidRequest
-        
+        from esp.money.models import LineItem, LineItemType, RegisterLineItem
+
         filterObj, found = get_user_list(request, self.program.getLists(True))
 
         if not found:
@@ -508,22 +485,15 @@ Student schedule for %s:
                                 and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
+            
             #   add financial aid information
-            default_cost = 200
-            if len(classes) == 2:
-                default_cost = 300
+            for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
+                RegisterLineItem(student, i)
                 
-            finaid = FinancialAidRequest.objects.filter(program=prog, user=student)
-            if len(finaid) > 1:
-                raise ESPError('There are multiple financial aid requests for %s' % student)
-            elif len(finaid) == 1:
-                if finaid[0].reviewed and finaid[0].amount_needed is not None:
-                    default_cost = finaid[0].amount_needed
+            student.itemizedcosts = LineItem.purchased(prog.anchor, student, filter_already_paid=False)
+            student.itemizedcosttotal = LineItem.purchasedTotalCost(prog.anchor, student)
+            student.has_paid = ( student.itemizedcosttotal == 0 )
         
-            #if default_cost is None:
-            #    default_cost = 0
-                
-            student.cost = default_cost
             student.payment_info = True
             student.classes = classes
             

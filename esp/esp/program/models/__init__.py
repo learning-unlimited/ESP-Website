@@ -840,7 +840,7 @@ class FinancialAidRequest(models.Model):
     program = models.ForeignKey(Program, editable = False)
     user    = AjaxForeignKey(User, editable = False)
 
-    approved = models.DateTimeField(blank=True, null=True, editable = False)
+    approved = models.DateTimeField(blank=True, null=True)
 
     reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', null=True, blank=True)
 

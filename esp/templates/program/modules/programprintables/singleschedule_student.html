@@ -1,39 +1,43 @@
-{% if onsiteregform %}{% else %}<div class="title">Student Schedule for <br /><br />
-    <span>{{ student.name }}</span>
-</div>
+{% if onsiteregform %}{% else %}
+<table align="center" width="100%">
+<tr>
+    <td valign="top" align="center" width="25%">
+        {% if student.payment_info %}
+        <b>Amount owed:</b> 
+        <div style="border: 1px solid black">
+            <table cellpadding="5px" border="0"><tr><td style="font-size: 1.2em; font-weight: bold;">${{ student.itemizedcosttotal|floatformat:2 }}</td></tr></table>
+        </div>
+        {% else %}&nbsp;
+        {% endif %}
+    </td>
+    <td>
+        <div class="title">Student Schedule for <br /><br />
+            <span>{{ student.name }}</span>
+        </div>
+    </td>
+    <td valign="top" align="center" width="25%">
+        {% if student.payment_info %}
+        <b>Meal tickets:</b>
+            {% if student.itemizedcosts %}
+            <ul>
+            {% for item in student.itemizedcosts %}
+                {% if item.type.show_on_schedule %}<li>{{ item.type.label }}{% endif %}
+            {% endfor %}
+            </ul>
+            {% else %}None
+            {% endif %}
+        {% else %}&nbsp;
+        {% endif %}
+    </td>
+</tr>
+</table>
+
 <div class="description">Here is your class schedule!<br />
 For help finding your classrooms, please consult the directions and maps in your guidebook.<br />
 If you have any questions, please go to the program office.
 </div>
 {% endif %}
-<div style="height: 1in;">&nbsp;</div>
-<br />
-{% if student.payment_info %}
-<table align="center" cellspacing="0" cellpadding="5px" border="0">
-<tr>
-    <td>
-        Payment due:
-    </td>
-    <td>
-        <div style="border: 1px solid black">
-            <table cellpadding="5px" border="0"><tr><td style="font-size: 1.2em; font-weight: bold;">${{ student.cost|floatformat:2 }}</td></tr></table>
-        </div>
-    </td>
-</tr>
-<tr>
-    <td>
-        Payment status:
-    </td>
-    <td>
-        <div style="border: 1px solid black">
-            <table cellpadding="5px" border="0"><tr><td width="100">&nbsp;</td></tr></table>
-        </div>
-    </td>
-</tr>
-<tr><td colspan="2" align="center"> (Payment should be made by check to "MIT ESP")  </td></tr>
-</table>
-{% endif %}
-<div style="height: 1in;">&nbsp;</div>
+<div style="height: 0.5in;">&nbsp;</div>
 <br />
 {% if onsiteregform %}<h2><center>Please write in your class choices here:</center></h2>{% endif %}
 <table align="center" cellspacing="0" cellpadding="4px" class="schedule">
@@ -51,7 +55,7 @@ If you have any questions, please go to the program office.
    </tr>{% for cls in student.classes %}
    <tr>
      <td>{{ cls.friendly_times|join:"<br />" }}</td>
-     <td>{% if cls.classrooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</td>
+     <td>{% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</td>
      <td>{{ cls.title }}</td>
      {% if onsiteregform %}{% else %}<td>{{ cls.getTeacherNames|join:", " }}</td>{% endif %}
    </tr>

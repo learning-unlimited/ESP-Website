@@ -625,19 +625,13 @@ class Class(models.Model):
 
         return cmp(self.title(), other.title())
 
-        
-
 
     def firstBlockEvent(self):
-        eventList = []
-        for timeanchor in self.meeting_times.all():
-            events = Event.objects.filter(anchor=timeanchor)
-            if len(events) == 1:
-                eventList.append(events[0])
-        if len(eventList) == 0:
+        eventList = self.meeting_times.all()
+        if eventList.count() == 0:
             return None
-        eventList.sort()
-        return eventList[0]
+        else:
+            return eventList[0]
 
     def num_students(self, use_cache=True):
         return len(self.students(use_cache=use_cache))
