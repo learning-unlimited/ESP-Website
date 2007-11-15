@@ -590,7 +590,6 @@ Student schedule for %s:
         """ generate student schedules; now a unified function """
         return studentschedules(self, request, tl, one, two, module, extra, prog)
     
-    @needs_admin
     def studentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
         from esp.program.models import FinancialAidRequest
