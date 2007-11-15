@@ -71,7 +71,7 @@ class ProgramPrintables(ProgramModuleObj):
 
 
         def sort_fn(a,b):
-            if a.user.last_name > b.user.last_name:
+            if a.user.last_name.lower() > b.user.last_name.lower():
                 return 1
             return -1
 
