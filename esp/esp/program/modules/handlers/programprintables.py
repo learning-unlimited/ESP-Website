@@ -56,19 +56,23 @@ class ProgramPrintables(ProgramModuleObj):
         if request.GET.has_key('filter'):
             try:
                 ids = [ int(x) for x in request.GET.getlist('filter') ]
+                single_select = ( len(ids) == 1 )
             except ValueError:
                 ids = None
+                single_select = False
 
             if ids == None:
                 lineitems = LineItem.objects.filter(type__anchor=prog.anchor).order_by('type_id','user_id').select_related()
             else:
                 lineitems = LineItem.objects.filter(type__anchor=prog.anchor, type__id__in=ids).order_by('type_id','user_id').select_related()
         else:
+            single_select = False
             lineitems = LineItem.objects.filter(type__anchor=prog.anchor).order_by('type_id','user_id').select_related()
 
         context = { 'lineitems': lineitems,
                     'hide_paid': request.GET.has_key('hide_paid') and request.GET['hide_paid'] == 'True',
-                    'prog': prog }
+                    'prog': prog,
+                    'single_select': single_select }
 
         return render_to_response(self.baseDir()+'paid_list.html', request, (prog, tl), context)
 

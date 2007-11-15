@@ -31,11 +31,13 @@ td, th {
 </head>
 <body>
 
+<h1>{% if single_select %}{{ lineitems.0.type.label }} Purchase List{% else %}Purchased Items List{% endif %}</h1>
+
 <table style="border: 1px solid black; border-collapse: collapse;">
 <tr>
  <th>Num</th>
  <th>Name</th>
- <th>Item</th>
+{% if single_select %}{% else %} <th>Item</th>{% endif %}
 {% if hide_paid %}{% else %} <th>Paid?</th>
  <th>Has Financial Aid?</th>
  <th>Cost?</th>{% endif %}
@@ -44,7 +46,7 @@ td, th {
 <tr>
  <td>{{ forloop.counter }}</td>
  <td>{{ lineitem.user.first_name }} {{ lineitem.user.last_name }}</td>
- <td>{{ lineitem.type.label }}</td>
+{% if single_select %}{% else %} <td>{{ lineitem.type.label }}</td>{% endif %}
 {% if hide_paid %}{% else %} <td>{% if lineitem.transaction.executed %}X{% endif %}</td>
  <td>{% if lineitem.has_financial_aid %}X{% endif %}</td>
  <td>{% if lineitem.has_financial_aid %}{{ lineitem.type.financial_aid_value|floatformat:2 }}{% else %}{{ lineitem.type.value|floatformat:2 }}{% endif%}</td>
