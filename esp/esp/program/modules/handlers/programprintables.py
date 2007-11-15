@@ -38,10 +38,40 @@ from esp.money.models    import Transaction
 from esp.program.models  import Class
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
+from esp.money.models import LineItem, LineItemType
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
     Things from checklists to rosters to attendance sheets can be found here. """
+
+    @needs_admin
+    def paid_list_filter(self, request, tl, one, two, module, extra, prog):
+        lineitemtypes = LineItemType.forAnchor(prog.anchor)
+        context = { 'lineitemtypes': lineitemtypes }
+        return render_to_response(self.baseDir()+'paid_list_filter.html', request, (prog, tl), context)
+
+    @needs_admin
+    def paid_list(self, request, tl, one, two, module, extra, prog):
+
+        if request.GET.has_key('filter'):
+            try:
+                ids = [ int(x) for x in request.GET.getlist('filter') ]
+            except ValueError:
+                ids = None
+
+            if ids == None:
+                lineitems = LineItem.objects.filter(type__anchor=prog.anchor).order_by('type_id','user_id').select_related()
+            else:
+                lineitems = LineItem.objects.filter(type__anchor=prog.anchor, type__id__in=ids).order_by('type_id','user_id').select_related()
+        else:
+            lineitems = LineItem.objects.filter(type__anchor=prog.anchor).order_by('type_id','user_id').select_related()
+
+        context = { 'lineitems': lineitems,
+                    'hide_paid': request.GET.has_key('hide_paid') and request.GET['hide_paid'] == 'True',
+                    'prog': prog }
+
+        return render_to_response(self.baseDir()+'paid_list.html', request, (prog, tl), context)
+
     
     @needs_admin
     def printoptions(self, request, tl, one, two, module, extra, prog):

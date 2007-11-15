@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>{{ prog.niceName }} Payment Info</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; margin: 0; font-size: 12px;}
+.title { text-align: center; font-size: 12pt; font-family: georgia; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+.facts { text-align: center; border: 0; }
+.facts th { text-align: right; font-size: 12pt; font-weight: bold; }
+.facts td { text-align: left; font-size: 12pt;}
+.facts td.paid { border: 1px solid black; text-align: center;
+                 }
+.title { padding: 1in 0 0 0; }
+.schedule {border: 1px solid black; }
+.schedule td { border: 1px solid black; }
+.schedule th { border: 1px solid black; vertical-align: top; }
+.schedule td { vertical-align: top; }
+.schedule th.day { border-bottom: 0; }
+.schedule td.oldday { border-bottom: 0;
+                      border-top: 0;}
+td.newday { border-width: 2px 1px 0 1px;}
+#pagebreak {page-break-after: always; }
+.description { text-align: center; padding: .2in 0 .2in 0; }
+td, th {
+       border: 1px solid black; 
+       border-collapse: collapse
+}
+</style>
+
+</head>
+<body>
+
+<table style="border: 1px solid black; border-collapse: collapse;">
+<tr>
+ <th>Num</th>
+ <th>Name</th>
+ <th>Item</th>
+{% if hide_paid %}{% else %} <th>Paid?</th>
+ <th>Has Financial Aid?</th>
+ <th>Cost?</th>{% endif %}
+</tr>
+{% for lineitem in lineitems %}
+<tr>
+ <td>{{ forloop.counter }}</td>
+ <td>{{ lineitem.user.first_name }} {{ lineitem.user.last_name }}</td>
+ <td>{{ lineitem.type.label }}</td>
+{% if hide_paid %}{% else %} <td>{% if lineitem.transaction.executed %}X{% endif %}</td>
+ <td>{% if lineitem.has_financial_aid %}X{% endif %}</td>
+ <td>{% if lineitem.has_financial_aid %}{{ lineitem.type.financial_aid_value|floatformat:2 }}{% else %}{{ lineitem.type.value|floatformat:2 }}{% endif%}</td>
+{% endif %}
+</tr>
+{% endfor %}
+</table>
+
+</body>
+</html>

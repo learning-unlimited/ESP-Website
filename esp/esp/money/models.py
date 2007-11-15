@@ -140,6 +140,9 @@ class LineItem(models.Model):
 		""" Has the student in question applied for and received financial aid? """
 		return ( FinancialAidRequest.objects.filter(user=espuser, program__anchor=anchor, approved__isnull=False).count() > 0 )
 
+	def has_financial_aid(self):
+		return ( FinancialAidRequest.objects.filter(user=self.user, program__anchor=self.type.anchor, approved__isnull=False).count() > 0 )
+
 	@classmethod
 	def purchased(cls, anchor, espuser, filter_already_paid=True):
 		if filter_already_paid:
