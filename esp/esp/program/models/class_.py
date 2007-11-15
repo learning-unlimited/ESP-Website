@@ -627,7 +627,7 @@ class Class(models.Model):
 
 
     def firstBlockEvent(self):
-        eventList = self.meeting_times.all()
+        eventList = self.meeting_times.all().order_by('start')
         if eventList.count() == 0:
             return None
         else:

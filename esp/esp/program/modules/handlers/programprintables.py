@@ -127,6 +127,9 @@ class ProgramPrintables(ProgramModuleObj):
 
         classes = Class.objects.filter(parent_program = self.program)
 
+        order_by_time = False
+        if request.GET.has_key('bytime'):
+            order_by_time = True
 
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
@@ -137,8 +140,9 @@ class ProgramPrintables(ProgramModuleObj):
             for cls in classes:
                 cls_dict[str(cls.id)] = cls
             classes = [cls_dict[clsid] for clsid in clsids]
-            classes.sort(Class.catalog_sort)
-            
+
+        if order_by_time:
+            classes.sort()
         else:
             classes.sort(Class.catalog_sort)
 
@@ -147,7 +151,10 @@ class ProgramPrintables(ProgramModuleObj):
         if extra is None or len(str(extra).strip()) == 0:
             extra = 'pdf'
 
-        return render_to_latex(self.baseDir()+'catalog.tex', context, extra)
+        if order_by_time:
+            return render_to_latex(self.baseDir()+'catalog_bytime.tex', context, extra)
+        else:
+            return render_to_latex(self.baseDir()+'catalog.tex', context, extra)
 
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
