@@ -5,7 +5,7 @@
         {% if student.payment_info %}
         <b>Amount owed:</b> 
         <div style="border: 1px solid black">
-            <table cellpadding="5px" border="0"><tr><td style="font-size: 1.2em; font-weight: bold;">${{ student.itemizedcosttotal|floatformat:2 }}</td></tr></table>
+            <table cellpadding="5px" border="0"><tr><td style="font-size: 1.2em; font-weight: bold;">${{ student.itemizedcosttotal|floatformat:"-2" }}</td></tr></table>
         </div>
         {% else %}&nbsp;
         {% endif %}

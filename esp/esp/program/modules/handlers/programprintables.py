@@ -150,13 +150,13 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_latex(self.baseDir()+'catalog.tex', context, extra)
 
     @needs_admin
-    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y)):
-        " This renders the course catalog in LaTeX. "
-
+    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
         classes = Class.objects.filter(parent_program = self.program)
 
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
+                   
+        classes = filter(filt_exp, classes)                  
 
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
@@ -177,7 +177,7 @@ class ProgramPrintables(ProgramModuleObj):
     def classesbytime(self, request, tl, one, two, module, extra, prog):
         def cmp_time(one, other):
             if (one.meeting_times.count() > 0 and other.meeting_times.count() > 0):
-                cmp0 = cmp(one.meeting_times.all()[0].id, other.meeting_times.all()[0].id)
+                cmp0 = cmp(one.meeting_times.all()[0].start, other.meeting_times.all()[0].start)
             else:
                 cmp0 = cmp(one.meeting_times.count(), other.meeting_times.count())
 
@@ -200,7 +200,142 @@ class ProgramPrintables(ProgramModuleObj):
         
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_title)
 
+    @needs_admin
+    def classesbyroom(self, request, tl, one, two, module, extra, prog):
+        def cmp_room(one, other):
+            room_one = one.initial_rooms()[0]
+            room_other = other.initial_rooms()[0]
+            
+            cmp0 = cmp(room_one.name, room_other.name)
 
+            if cmp0 != 0:
+                return cmp0
+
+            return cmp(one, other)
+        
+        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_room)
+
+    @needs_admin
+    def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
+        from esp.users.models import ContactInfo
+        
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct() ]
+        teachers.sort()
+
+        scheditems = []
+
+        for teacher in teachers:
+            # get list of valid classes
+            classes = [ cls for cls in teacher.getTaughtClasses()
+                    if cls.parent_program == self.program
+                    and cls.isAccepted()                       ]
+            # now we sort them by time/title
+            classes.sort()
+
+            # aseering 9-29-2007, 1:30am: There must be a better way to do this...
+            ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
+            if ci.count() > 0:
+                phone_cell = ci[0].phone_cell
+            else:
+                phone_cell = 'N/A'
+
+            if len(classes) > 0:
+                scheditems.append({'name': teacher.name(),
+                               'user': teacher,
+                               'phonenum': phone_cell,
+                               'cls' : classes[0]})
+        
+        scheditems = filter(filt_exp, scheditems)
+        scheditems.sort(sort_exp)
+
+        context['scheditems'] = scheditems
+
+        return render_to_response(self.baseDir()+'teacherlist.html', request, (prog, tl), context)
+
+    @needs_admin
+    def teacherlist(self, request, tl, one, two, module, extra, prog):
+        """ default list of teachers; function left in for compatibility """
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog)
+
+    @needs_admin
+    def teachersbytime(self, request, tl, one, two, module, extra, prog):
+        
+        def cmpsort(one,other):
+            if (one['cls'].meeting_times.count() > 0 and other['cls'].meeting_times.count() > 0):
+                cmp0 = cmp(one['cls'].meeting_times.all()[0].start, other['cls'].meeting_times.all()[0].start)
+            else:
+                cmp0 = cmp(one['cls'].meeting_times.count(), other['cls'].meeting_times.count())
+                
+            if cmp0 != 0:
+                return cmp0
+
+            return cmp(one, other)
+
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
+            
+    
+    @needs_admin
+    def teachersbyname(self, request, tl, one, two, module, extra, prog):
+        
+        def cmpsort(one,other):
+            one_name = one['user'].last_name
+            other_name = other['user'].last_name
+            cmp0 = cmp(one_name, other_name)
+                
+            if cmp0 != 0:
+                return cmp0
+
+            return cmp(one['name'], other['name'])
+
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
+
+    @needs_admin
+    def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
+        
+        rooms = self.program.groupedClassrooms()
+        rooms = filter(filt_exp, rooms)
+        rooms.sort(sort_exp)
+
+        context = {'rooms': rooms, 'program': self.program}
+
+        return render_to_response(self.baseDir()+'roomlist.html', request, (prog, tl), context)
+        
+    @needs_admin
+    def roomsbytime(self, request, tl, one, two, module, extra, prog):
+        #   List of open classrooms, sorted by the first time they are available
+        def filt(one):
+            return one.available_any_time()
+        
+        def cmpsort(one, other):
+            #   Find when available
+            return cmp(one.available_times()[0], other.available_times()[0])
+
+        return self.roomsbyFOO(request, tl, one, two, module, extra, prog, cmpsort, filt)
+        
+
+    @needs_admin
+    def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        students = filter(filt_exp, [ ESPUser(user) for user in filterObj.getList(User).distinct() ])
+        students.sort()
+        context['students'] = students
+        
+        return render_to_response(self.baseDir()+'studentlist.html', request, (prog, tl), context)
+        
+    @needs_admin
+    def studentsbyname(self, request, tl, one, two, module, extra, prog):
+        """ default function to get student list for program """
+        return self.studentsbyFOO(request, tl, one, two, module, extra, prog)
+        
     @needs_admin
     def satprepStudentCheckboxes(self, request, tl, one, two, module, extra, prog):
         students = [ESPUser(student) for student in self.program.students_union() ]
@@ -237,61 +372,6 @@ class ProgramPrintables(ProgramModuleObj):
         context['scheditems'] = scheditems
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
-
-    @needs_admin
-    def teacherlist(self, request, tl, one, two, module, extra, prog):
-        """ generate list of teachers """
-
-        filterObj, found = get_user_list(request, self.program.getLists(True))
-        if not found:
-            return filterObj
-
-
-        context = {'module': self     }
-        teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct() ]
-        teachers.sort()
-
-
-        scheditems = []
-
-        for teacher in teachers:
-            # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtClasses()
-                    if cls.parent_program == self.program
-                    and cls.isAccepted()                       ]
-            # now we sort them by time/title
-            classes.sort()            
-
-            from esp.users.models import ContactInfo
-            for cls in classes:
-
-                # aseering 9-29-2007, 1:30am: There must be a better way to do this...
-                ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
-                if ci.count() > 0:
-                    phone_cell = ci[0].phone_cell
-                else:
-                    phone_cell = '-'
-
-                scheditems.append({'name': teacher.name(),
-                                   'phonenum': phone_cell,
-                                   'cls' : cls})
-
-        def cmpsort(one,other):
-            if (one['cls'].meeting_times.count() > 0 and other['cls'].meeting_times.count() > 0):
-                cmp0 = cmp(one['cls'].meeting_times.all()[0].id, other['cls'].meeting_times.all()[0].id)
-            else:
-                cmp0 = cmp(one['cls'].meeting_times.count(), other['cls'].meeting_times.count())
-                
-            if cmp0 != 0:
-                return cmp0
-
-            return cmp(one, other)
-
-        scheditems.sort(cmpsort)
-
-        context['scheditems'] = scheditems
-
-        return render_to_response(self.baseDir()+'teacherlist.html', request, (prog, tl), context)
 
     def get_msg_vars(self, user, key):
         user = ESPUser(user)

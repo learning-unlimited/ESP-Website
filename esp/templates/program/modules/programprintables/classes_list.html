@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Student Schedules for {{program.niceName}}</title>
+<title>List of Classes for {{program.niceName}}</title>
 <style type="text/css" media="print,screen">
 body { font-family: georgia; margin: 0; font-size: 12px;}
 .title { text-align: center; font-size: 12pt; font-family: georgia; }
@@ -33,7 +33,8 @@ td, th {
 
 <table style="border: 1px solid black; border-collapse: collapse;">
 <tr>
- <th>Num</th>
+ <th>#</th>
+ <th>Class Code</th>
  <th>Class Title</th>
  <th>Description (short)</th>
  <th>Teachers</th>
@@ -43,6 +44,7 @@ td, th {
 {% for cls in classes %}
 <tr>
  <td>{{forloop.counter}}</td>
+ <td>{{ cls.emailcode }}</td>
  <td>{{ cls.title }}</td>
  <td>{{ cls.class_info|truncatewords_html:10 }}
  <td>{{ cls.getTeacherNames|join:", " }}</td>

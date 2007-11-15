@@ -658,7 +658,7 @@ class Class(models.Model):
             teachers.append(name)
         return teachers
 
-    def friendly_times(self, use_cache=False):
+    def friendly_times(self, use_cache=True):
         """ Return a friendlier, prettier format for the times.
 
         If the events of this class are next to each other (within 10-minute overlap,
@@ -688,7 +688,7 @@ class Class(models.Model):
         """
         events = list(self.meeting_times.all())
 
-        txtTimes = [ event.pretty_time() for event
+        txtTimes = [ event.short_time() for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=10)) ]
 
         self.cache['friendly_times'] = txtTimes

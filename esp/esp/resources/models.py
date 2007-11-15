@@ -254,10 +254,17 @@ class Resource(models.Model):
     def is_conflicted(self):
         return (self.assignments().count() > 1)
     
+    def available_any_time(self):
+        return (len(self.available_times()) > 0)
+    
+    def available_times(self):
+        event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times()))
+        return '<br /> '.join([str(e) for e in Event.collapse(event_list)])
+    
     def matching_times(self):
         #   Find all times for which a resource of the same name is available.
         event_list = [item['event'] for item in self.identical_resources().values('event')]
-        return Event.objects.filter(id__in=event_list)
+        return Event.objects.filter(id__in=event_list).order_by('start')
     
     def is_independent(self):
         if self.is_unique:
@@ -265,11 +272,16 @@ class Resource(models.Model):
         else:
             return False
         
-    def is_available(self, QObjects=False):
-        if QObjects:
-            return QNot(self.is_taken(True))
+    def is_available(self, QObjects=False, timeslot=None):
+        if timeslot is None:
+            test_resource = self
         else:
-            return not (self.is_taken(False))
+            test_resource = self.identical_resources().filter(event=timeslot)[0]
+        
+        if QObjects:
+            return QNot(test_resource.is_taken(True))
+        else:
+            return not (test_resource.is_taken(False))
         
     def is_taken(self, QObjects=False):
         if QObjects:

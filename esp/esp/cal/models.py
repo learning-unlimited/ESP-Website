@@ -100,6 +100,16 @@ class Event(models.Model):
     def __str__(self):
         return self.start.strftime('%a %b %d: %I %p') + ' to ' + self.end.strftime('%I %p')
 
+    def short_time(self):
+        day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        
+        if self.start.hour >= 12 and self.end.hour >= 12:
+            return '%s %d to %d PM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, (self.end.hour - 1) % 12 + 1)
+        elif self.start.hour < 12 and self.end.hour >= 12:
+            return '%s %d AM to %d PM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, (self.end.hour - 1) % 12 + 1)
+        else:
+            return '%s %d to %d AM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, (self.end.hour - 1) % 12 + 1)
+
     def is_happening(self, time=datetime.now()):
         """ Return True if the specified time is between start and end """
         return (time > self.start and time < self.end)
