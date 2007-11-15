@@ -69,7 +69,16 @@ class ProgramPrintables(ProgramModuleObj):
             single_select = False
             lineitems = LineItem.objects.filter(type__anchor=prog.anchor).order_by('type_id','user_id').select_related()
 
-        context = { 'lineitems': lineitems,
+
+        def sort_fn(a,b):
+            if a.user.last_name > b.user.last_name:
+                return 1
+            return -1
+
+        lineitems_list = list(lineitems)
+        lineitems_list.sort(sort_fn)
+
+        context = { 'lineitems': lineitems_list,
                     'hide_paid': request.GET.has_key('hide_paid') and request.GET['hide_paid'] == 'True',
                     'prog': prog,
                     'single_select': single_select }
