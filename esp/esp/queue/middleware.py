@@ -27,9 +27,12 @@ CACHE_KEY_IN = "CACHE_KEY_USERS_IN_SITE"
 class QueueMiddleware(object):
 
     def process_request(self, request):
-        if os.getloadavg()[1] < 10.0: # We don't care for less-than-crazy loads
-            return None
-
+        try:
+            if os.getloadavg()[1] < 10.0: # We don't care for less-than-crazy loads
+                return None
+        except AttributeError:
+            pass
+        
         ip = request.META['REMOTE_ADDR']
         for i in no_queue_list:
             if re.search(i, ip):
