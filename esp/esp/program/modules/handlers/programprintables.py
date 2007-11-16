@@ -595,13 +595,17 @@ Student schedule for %s:
         from esp.program.models import FinancialAidRequest
         from esp.money.models import LineItem, LineItemType, RegisterLineItem
 
-        filterObj, found = get_user_list(request, self.program.getLists(True))
-
-        if not found:
-            return filterObj
-
         context = {'module': self     }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
+
+        if extra == 'onsite':
+            students = [ESPUser(User.objects.get(id=request.GET['userid']))]
+        else:
+            filterObj, found = get_user_list(request, self.program.getLists(True))
+    
+            if not found:
+                return filterObj
+
+            students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
 
         students.sort()
         

@@ -56,7 +56,8 @@ class OnsiteClassSchedule(ProgramModuleObj):
 
     @needs_student
     def studentschedule(self, request, *args, **kwargs):
-        request.GET = {'extra': str(285), 'op':'usersearch',
+        #   tl, one, two, module, extra, prog
+        request.GET = {'op':'usersearch',
                        'userid': str(self.user.id) }
 
         module = [module for module in self.program.getModules('manage')
@@ -64,7 +65,9 @@ class OnsiteClassSchedule(ProgramModuleObj):
 
         module.user = self.user
         module.program = self.program
-        return module.studentschedules(request, *args, **kwargs)
+        
+        kwargs = {'tl': args[0], 'one': args[1], 'two': args[2], 'module': args[3], 'extra': 'onsite', 'prog': args[5]}
+        return module.studentschedules(request, **kwargs)
 
         
     @needs_onsite

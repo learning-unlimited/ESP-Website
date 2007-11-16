@@ -110,3 +110,5 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
                                'django.core.context_processors.request',
                                'django.core.context_processors.auth',
                                )  
+
+AUTH_PROFILE_MODULE='users.ESPUser_Profile'

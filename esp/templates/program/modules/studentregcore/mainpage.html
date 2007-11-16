@@ -18,81 +18,86 @@
 <br /><br />
 <h1>Student registration for {{program.niceName}} </h1>
 
-{% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentreg" %}
-<div id="catalog">
-{% if program.isFull %}
-{% if not canRegToFullProgram %}
-<div class="errormsg">
-This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
-{% endif %}
-{% endif %}
-<p>
-  Please complete the following steps to register for {{ program.niceName }}.
-  When each step is completed, the corresponding box in the right-hand column will
-  be &#8220;checked off&#8221;. After finishing all the steps, click the &#8220;Confirm&#8221;
-  button at the bottom of the page.
-</p>
-<p>  <b>Please note</b>: Your classes are saved immediately
-  when you click the "Add this Class!" button.  You do not need to confirm or save your entire
-  registration to save your spot in classes. 
-</p>
+{% if not request.user.onsite_local %}
 
-<center>
-{% if not completedAll %}
-<div class="errormsg">
-Please finish the required steps listed below (they will be checked off when they are completed). Then, click on the <em>Confirm</em> button at the bottom of this page.
-{% else %}
-<div class="info">
-Please finalize your registration, then <b>click <em>Confirm</em></b> below to indicate that you've finished filling out this form.  Upon clicking this you will be given a receipt with further instructions!  Note that paying with a credit card <b>does not completely confirm</b> your registration, because you can still adjust your schedule after paying.
+    {% load render_qsd %}
+    {% render_inline_qsd program.anchor "learn:studentreg" %}
+    <div id="catalog">
+    {% if program.isFull %}
+    {% if not canRegToFullProgram %}
+    <div class="errormsg">
+    This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+    {% endif %}
+    {% endif %}
+    <p>
+    Please complete the following steps to register for {{ program.niceName }}.
+    When each step is completed, the corresponding box in the right-hand column will
+    be &#8220;checked off&#8221;. After finishing all the steps, click the &#8220;Confirm&#8221;
+    button at the bottom of the page.
+    </p>
+    <p>  <b>Please note</b>: Your classes are saved immediately
+    when you click the "Add this Class!" button.  You do not need to confirm or save your entire
+    registration to save your spot in classes. 
+    </p>
+    
+    <center>
+    {% if not completedAll %}
+    <div class="errormsg">
+    Please finish the required steps listed below (they will be checked off when they are completed). Then, click on the <em>Confirm</em> button at the bottom of this page.
+    {% else %}
+    <div class="info">
+    Please finalize your registration, then <b>click <em>Confirm</em></b> below to indicate that you've finished filling out this form.  Upon clicking this you will be given a receipt with further instructions!  Note that paying with a credit card <b>does not completely confirm</b> your registration, because you can still adjust your schedule after paying.
+    {% endif %}
+    </div>
+    </center>
+    
+    <center><div class="note">
+    <b>Parents:</b> You should not be at this page!  Please let your kids choose their classes and fill out the registration forms.
+    </div></center>
+    
+    <table style="text-align: center" align="center" width="400">
+    <tr><th>Steps for Registration</th><th>Done?</th></tr>
+    {% for module in modules %}
+    {% if module.isStep %}
+    <tr>
+    <td>{% if module.useTemplate %}
+    <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
+        {{ module.module.link_title }} 
+        </a> <em>(below)</em>
+    {% else %}
+        {{ module.makeLink }}
+    {% endif %}
+    {% if not module.module.required %} <em>(not required)</em> {% endif %}
+    </td>
+    <td>{% if not module.useTemplate %}
+    <a href="{{ module.get_full_path }}">
+    {% else %}
+    <a href="#module-{{ module.id }}">
+    {% endif %}
+    <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" 
+        {% if module.isCompleted %}title="Done!" alt="Done!"{% else %}
+        title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
+    </a>
+    </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+    <tr>
+    <td><a href="#confirmreg" title="Confirm Registration">
+            Confirm Registration</a> <em>(below)</em>
+    </td>
+    <td>
+    <a href="#confirmreg">
+        <img src="/media/images/{% if not isConfirmed %}no{% endif %}checkmark.gif" class="nocheckmark" />
+    </a>
+    </td>
+    </tr>   
+    </table>
+    
+    <br />
+
 {% endif %}
-</div>
-</center>
 
-<center><div class="note">
-<b>Parents:</b> You should not be at this page!  Please let your kids choose their classes and fill out the registration forms.
-</div></center>
-
-<table style="text-align: center" align="center" width="400">
-<tr><th>Steps for Registration</th><th>Done?</th></tr>
-{% for module in modules %}
-{% if module.isStep %}
- <tr>
-  <td>{% if module.useTemplate %}
-   <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-    {{ module.module.link_title }} 
-    </a> <em>(below)</em>
-   {% else %}
-    {{ module.makeLink }}
-   {% endif %}
-   {% if not module.module.required %} <em>(not required)</em> {% endif %}
-  </td>
-  <td>{% if not module.useTemplate %}
-   <a href="{{ module.get_full_path }}">
-   {% else %}
-   <a href="#module-{{ module.id }}">
-   {% endif %}
-   <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" 
-     {% if module.isCompleted %}title="Done!" alt="Done!"{% else %}
-       title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
-   </a>
-  </td>
-</tr>
-{% endif %}
-{% endfor %}
- <tr>
-  <td><a href="#confirmreg" title="Confirm Registration">
-        Confirm Registration</a> <em>(below)</em>
-  </td>
-  <td>
-   <a href="#confirmreg">
-      <img src="/media/images/{% if not isConfirmed %}no{% endif %}checkmark.gif" class="nocheckmark" />
-   </a>
-  </td>
- </tr>   
-</table>
-
-<br />
 {% for module in modules %}
 {% if module.useTemplate %}
 <a name="module-{{module.id}}"></a>
@@ -123,24 +128,25 @@ Please click <em>Confirm</em> below to confirm your registration into {{program.
 
 </center>
 {% endif %}
-<center>
 
-<a name="confirmreg"></a>
-
-
-<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-<input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Confirm{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
-{% if isConfirmed %}
- | 
-<form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
-<input class="button" type="submit" value="Cancel Registration" />
+{% if not request.user.onsite_local %}
+    <center>
+    <a name="confirmreg"></a>
+    
+    <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
+    <input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Confirm{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
+    {% if isConfirmed %}
+    | 
+    <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
+    <input class="button" type="submit" value="Cancel Registration" />
+    {% endif %}
+    
+    </center>
+    
+    <br />
+    <p>
+    Thanks for registering!  You can come back and change any of the above information until the Tuesday before {{ program.niceName }} begins.  If you have any questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
+    </p>
 {% endif %}
-
-</center>
-
-<br />
-<p>
-  Thanks for registering!  You can come back and change any of the above information until the Tuesday before {{ program.niceName }} begins.  If you have any questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
-</p>
 
 {% endblock %}

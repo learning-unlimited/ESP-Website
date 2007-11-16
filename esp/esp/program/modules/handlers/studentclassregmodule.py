@@ -112,20 +112,21 @@ class StudentClassRegModule(ProgramModuleObj):
     def addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
 
+        #   Explicitly set the user's onsiteness, since we refer to it soon.
+        if not hasattr(self.user, "onsite_local"):
+            self.user.onsite_local = False
+
         if request.POST.has_key('class_id'):
             classid = request.POST['class_id']
         else:
             from esp.dblog.models import error
             raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
 
-        if ( not UserBit.objects.UserHasPerms(request.user, prog.anchor, GetNode("V/Deadline/Registration/Student/Classes") ) ) and len( ESPUser(request.user).getEnrolledClasses(prog, request) ) >= 1:
+        if (not self.user.onsite_local) and (not UserBit.objects.UserHasPerms(request.user, prog.anchor, GetNode("V/Deadline/Registration/Student/Classes") ) ) and len( ESPUser(request.user).getEnrolledClasses(prog, request) ) >= 1:
             raise ESPError(False), "You are only allowed to register for one class at this time.  Please come back later!"
 
         cobj = Class.objects.filter(id=classid)[0]
         error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
-        
-        if not hasattr(self.user, "onsite_local"):
-            self.user.onsite_local = False
             
         if error and not self.user.onsite_local:
             raise ESPError(False), error
@@ -146,7 +147,7 @@ class StudentClassRegModule(ProgramModuleObj):
             extra = int(extra)
         except:
             raise ESPError(False), 'Please use the link at the main registration page.'
-        
+        user = ESPUser(request.user)        
         ts = Event.objects.filter(id=extra)
         if len(ts) < 1:
             raise Http404()
@@ -154,10 +155,11 @@ class StudentClassRegModule(ProgramModuleObj):
         ts = ts[0]
 
         prereg_url = self.program.get_learn_url + 'addclass/'
-        user_grade = ESPUser(request.user).getGrade()
+        user_grade = user.getGrade()
+        is_onsite = user.isOnsite(self.program)
         
          # using .extra() to select all the category text simultaneously
-        classes = [c for c in Class.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if not c.isFull()] 
+        classes = [c for c in Class.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull()) or is_onsite] 
 
         categories = {}
 

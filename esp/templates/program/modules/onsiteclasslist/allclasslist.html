@@ -1,56 +1,16 @@
 
-{% extends "outlines/series-3.html" %}
+<html>
+<head>
+<meta http-equiv="refresh" content="{{ refresh_time }}" />
+<title>On-site Class List for {{ prog.niceName }}</title>
+</head>
 
-{% block title %} {{program.niceName}} {% endblock %}
+<body bgcolor="#FFFFFF">
 
-{% load subsection %}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
 
-{% block subsection %}
-    {{ "Open Classes"|subsection }}
-{% endblock %}
-
-{% block stylesheets %}
-    {{ block.super }}
-    <style type="text/css">
-        #catalog table {
-        border: 1px solid #CCC;
-        border-width: 1px;
-        border-collapse: collapse;
-        }
-        
-        
-        #catalog th {
-        font-family: Arial, sans-serif;
-        padding: 5px;
-        font-size: 15px;
-        background-color: #c6def7;
-        color: #000;
-        }
-        
-        #catalog td {
-        font-family: serif;
-        padding: 2px;
-        font-size: 14px;
-        background-color: #ffffff;
-        color: #000;
-        }
-
-        #divmaintext h1 {
-        font-size: 22pt;
-        color: black;
-        font-family: arial;
-        text-align: center;
-        width: 100%;
-        }
-    </style>
-{% endblock %}
-
-{% block content %}
 <br />
 
-<h1>
-    {{ program.niceName }}: Classes
-</h1>
 
 {% load class_render %}
 
@@ -73,4 +33,5 @@
     <a href="/onsite/{{ program.getUrlBase }}/main">Return to on-site portal</a>
 </p>
 
-{% endblock %}
+</body>
+</html>

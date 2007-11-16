@@ -29,10 +29,11 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-
+from datetime import datetime, timedelta
 from esp.program.modules.base import ProgramModuleObj, needs_onsite
 from esp.program.models import Class
 from esp.web.util import render_to_response
+from esp.cal.models import Event
 
 class OnSiteClassList(ProgramModuleObj):
 
@@ -40,15 +41,30 @@ class OnSiteClassList(ProgramModuleObj):
     def classList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """
 
+        if request.GET.has_key('refresh'):
+            refresh_time = request.GET['refresh']
+        else:
+            refresh_time = 30
+
         # using .extra() to select all the category text simultaneously
         classes = Class.objects.catalog(self.program)
 
+        #   time_now = datetime.now()
+        time_now = datetime.now()
+        window_start = time_now + timedelta(-1, 85800)
+        window_end = time_now + timedelta(0, 3000)
+        curtime = Event.objects.filter(start__gte=window_start, start__lte=window_end)
+        if curtime.count() > 0:
+            curtime = curtime[0]
+        else:
+            curtime = 'Any Time'
+        
         categories = {}
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
         
         return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), 
-            {'classes': classes, 'one': one, 'two': two, 'categories': categories.values()})
+            {'prog': prog, 'refresh_time': refresh_time, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two, 'categories': categories.values()})
 
     @needs_onsite
     def allClassList(self, request, tl, one, two, module, extra, prog):

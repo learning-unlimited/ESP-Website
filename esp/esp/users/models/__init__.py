@@ -454,10 +454,9 @@ class ESPUser(User, AnonymousUser):
         if program is None:
             return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
                    UserBit.objects.user_has_verb(self, verb)
-
-        
         else:
-            return UserBit.UserHasPerms(self, program.anchor, verb)
+            return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
+                    UserBit.UserHasPerms(self, program.anchor, verb)
 
     def recoverPassword(self):
         # generate the code, send the email.

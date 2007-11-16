@@ -1,0 +1,12 @@
+{% if show_class %}
+    {% if not class.isFull %}
+    <tr>
+        <td>
+            <b>{{ class.emailcode }}</b>
+        </td>
+        <td>
+            {{ class.title }}
+        </td>
+    </tr>
+    {% endif %}
+{% endif %}

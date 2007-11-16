@@ -18,6 +18,12 @@ def minimal_cache_key_func(cls, user=None, prereg_url=None, filter=False, reques
 
     return None
 
+def current_cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
+    if not user or not prereg_url:
+        return 'CLASS_CURRENT__%s' % cls.id
+
+    return None
+
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func)
 def render_class_core(cls):
     return { 'class': cls }
@@ -53,6 +59,19 @@ def render_class_minimal(cls, user=None, prereg_url=None, filter=False, request=
             'prereg_url': prereg_url,
             'errormsg':   errormsg,
             'show_class': show_class}
+            
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_current.html', cache_key_func=minimal_cache_key_func)
+def render_class_current(cls, user=None, prereg_url=None, filter=False, request=None):
+    errormsg = None
+
+    if user and prereg_url:
+        errormsg = cls.cannotAdd(user, True, request=request)
+
+    show_class =  (not filter) or (not errormsg)
+
+    return {'class':      cls,
+            'show_class': show_class}
+                        
             
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_preview.html', cache_key_func=minimal_cache_key_func)
 def render_class_preview(cls, user=None, prereg_url=None, filter=False, request=None):

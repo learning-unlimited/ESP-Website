@@ -31,7 +31,7 @@
 \vspace{.1in}
 \begin{multicols}{2} 
  {%endifchanged %}
-\begin{tabular}{p{.45\textwidth} }
+%\begin{tabular}{p{.45\textwidth} }
 \textbf{% templatetag openbrace %}{{cls.emailcode}}: {{ cls.title|texescape }} } \\
 \textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
 {{ cls.class_info|texescape }} \\
@@ -40,7 +40,7 @@
 \textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\ \textbf{" }} } \\
 {% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}
 
-\end{tabular}
+%\end{tabular}
 \vspace{.1in}
 {% endfor %}
 \end{multicols}

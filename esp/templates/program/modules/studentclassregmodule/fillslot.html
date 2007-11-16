@@ -4,6 +4,25 @@
 {% block title %}{{program.niceName}}{% endblock %}
 
 {% block xtrajs %}
+<script type="text/javascript">
+<!--
+  function submit_prereg(clsid) {
+     // prereg for a class
+     document.getElementById('submitbutton'+clsid).disabled = true;
+     return true;
+  }
+
+  function submit_override_prereg(clsid) {
+     // prereg for a class
+     if (confirm('Are you sure you want to override this block?') &&
+         confirm('Are you really sure?!?')) {
+        document.getElementById('submitbutton'+clsid).disabled = true;
+        return true;
+     }
+     return false;
+  }
+//-->
+</script>
 {% endblock %}
 
 {% block subsection_name %}Course Catalogue{% endblock %}

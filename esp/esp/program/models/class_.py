@@ -178,6 +178,22 @@ class Class(models.Model):
         else:
             return []
    
+    def starts_soon(self):
+        #   Return true if the class's start time is less than 50 minutes after the current time
+        #   and less than 10 minutes before the current time.
+        st = self.start_time().start
+        time_now = datetime.datetime.now()
+        if st is None:
+            return False
+        else:
+            td = time_now - st
+            if td.days == 0 and td.seconds < 3000:
+                return True
+            elif td.days == -1 and td.seconds > 85800:
+                return True
+            else:
+                return False
+   
     def start_time(self):
         if self.meeting_times.count() > 0:
             return self.meeting_times.order_by('start')[0]
