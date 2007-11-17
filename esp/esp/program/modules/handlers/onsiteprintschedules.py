@@ -74,6 +74,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
         students = []
 
         for student in old_students:
+            student.updateOnsite(request)
             # get list of valid classes
             classes = [ cls for cls in student.getEnrolledClasses()
                         if cls.parent_program == self.program

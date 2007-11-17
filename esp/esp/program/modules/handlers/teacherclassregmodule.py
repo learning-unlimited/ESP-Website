@@ -292,7 +292,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
     @needs_teacher
-    @meets_deadline('/Classes')
+    @meets_deadline('/MainPage')
     def coteachers(self, request, tl, one, two, module, extra, prog):
         from esp.users.models import ESPUser 
         if not request.POST.has_key('clsid'):

@@ -34,6 +34,7 @@ from esp.datatree.models import DataTree
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
 from esp.program.models import FinancialAidRequest
+from esp.users.models import ESPUser
 
 def RegisterLineItem(espuser, lineitemtype):
 	"""  
@@ -112,6 +113,7 @@ class Transaction(models.Model):
 class LineItemType(models.Model):
 	value = models.FloatField(max_digits = 10, decimal_places = 2)
 	financial_aid_value = models.FloatField(max_digits=10, decimal_places=2)
+        onsite_value = models.FloatField(max_digits=10, decimal_places=2)
 	label = models.TextField()
 	anchor = AjaxForeignKey(DataTree)
 	optional = models.BooleanField(default=True)
@@ -165,8 +167,12 @@ class LineItem(models.Model):
 			for i in my_costs:
 				my_costs_sum += i.type.financial_aid_value
 		else:
-			for i in my_costs:
-				my_costs_sum += i.type.value
+			if hasattr(espuser, 'other_user') and espuser.other_user:
+				for i in my_costs:
+					my_costs_sum += i.type.onsite_value
+			else:			
+                        	for i in my_costs:
+					my_costs_sum += i.type.value
 
 		return my_costs_sum
 

@@ -29,6 +29,7 @@ Email: web@esp.mit.edu
 """
 
 import datetime
+import time
 
 # django Util
 from django.db import models
@@ -181,18 +182,24 @@ class Class(models.Model):
     def starts_soon(self):
         #   Return true if the class's start time is less than 50 minutes after the current time
         #   and less than 10 minutes before the current time.
-        st = self.start_time().start
-        time_now = datetime.datetime.now()
+        first_block = self.start_time()
+        if first_block is None:
+            return False
+        else:
+            st = first_block.start
+            
+
         if st is None:
             return False
         else:
-            td = time_now - st
-            if td.days == 0 and td.seconds < 3000:
-                return True
-            elif td.days == -1 and td.seconds > 85800:
+            td = time.time() - time.mktime(st.timetuple())
+            print td
+            if td < 600 and td > -3000:
                 return True
             else:
                 return False
+            
+
    
     def start_time(self):
         if self.meeting_times.count() > 0:

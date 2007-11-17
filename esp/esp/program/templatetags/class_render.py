@@ -60,7 +60,7 @@ def render_class_minimal(cls, user=None, prereg_url=None, filter=False, request=
             'errormsg':   errormsg,
             'show_class': show_class}
             
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_current.html', cache_key_func=minimal_cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_current.html', cache_key_func=current_cache_key_func)
 def render_class_current(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
 

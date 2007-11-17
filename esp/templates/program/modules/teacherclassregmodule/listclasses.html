@@ -72,7 +72,7 @@ If you have any questions regarding the program, <br /> please email the
 {% endif %}
        </form>
     </td>
-{% if teacherclsmodule.classRegInfo.allow_coteach and module.deadline_met %}
+{% if teacherclsmodule.classRegInfo.allow_coteach %}
    <td class="clsmiddle">
        <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}" />

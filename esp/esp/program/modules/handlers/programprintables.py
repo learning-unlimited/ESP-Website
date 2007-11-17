@@ -612,6 +612,7 @@ Student schedule for %s:
         scheditems = []
 
         for student in students:
+            student.updateOnsite(request)
             # get list of valid classes
             classes = [ cls for cls in student.getEnrolledClasses()
                                 if cls.parent_program == self.program
