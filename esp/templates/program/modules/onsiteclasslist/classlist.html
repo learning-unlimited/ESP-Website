@@ -25,7 +25,7 @@
         <th style="font-size: 1.5em" class="materials">Code</th>
         <th style="font-size: 1.5em" class="materials">Class Title</th>
     </tr>
-    {% for class in classes %}{% if class.starts_soon %}{% render_class_current class %}{% endif %}{% endfor %}
+    {% for class in classes %}{% if class.starts_soon %}{% if not class.isFull %}{% render_class_current class %}{% endif %}{% endif %}{% endfor %}
 </table>
 </td>
 <td width="40%" valign="top">
