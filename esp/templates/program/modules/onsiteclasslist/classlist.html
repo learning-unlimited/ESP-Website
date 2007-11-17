@@ -19,11 +19,11 @@
 <td width="60%" valign="top">
   <table cellpadding="2" cellspacing="0" width="100%">
     <tr>
-        <th colspan="2">{{ prog.niceName }}: Classes starting near {{ current_time }}</th>
+        <th style="font-size: 1.5em" colspan="2">{{ prog.niceName }}: Classes starting near {{ current_time }}</th>
     </tr>
     <tr>
-        <th class="materials">Code</th>
-        <th class="materials">Class Title</th>
+        <th style="font-size: 1.5em" class="materials">Code</th>
+        <th style="font-size: 1.5em" class="materials">Class Title</th>
     </tr>
     {% for class in classes %}{% if class.starts_soon %}{% render_class_current class %}{% endif %}{% endfor %}
 </table>
