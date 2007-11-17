@@ -61,6 +61,8 @@ class NameTagModule(ProgramModuleObj):
             
             students = [ ESPUser(student) for student in
                          students ]
+
+            students = filter(lambda x: len(x.first_name+x.last_name), students)
             students.sort()
 
             
@@ -75,7 +77,7 @@ class NameTagModule(ProgramModuleObj):
             teachers = User.objects.filter(teacher_dict['teacher_profile'] | teacher_dict['class_rejected']).distinct()
 
 	    teachers = [ ESPUser(teacher) for teacher in teachers ]
-            
+            teachers = filter(lambda x: len(x.first_name+x.last_name), teachers)
             teachers.sort()
 
             for teacher in teachers:
@@ -87,7 +89,7 @@ class NameTagModule(ProgramModuleObj):
             users = []
             volunteers = request.POST['volunteers']
             for user in volunteers.split("\n"):
-                arruser = user.split(",")
+                arruser = user.split(",", 1)
                 if len(arruser) >= 2:
                     users.append({'title': arruser[1].strip(),
                                   'name' : arruser[0].strip(),

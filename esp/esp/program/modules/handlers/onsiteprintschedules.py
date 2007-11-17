@@ -39,6 +39,7 @@ from esp.datatree.models import GetNode
 from esp.users.models import UserBit
 from datetime         import datetime
 from esp.db.models    import Q
+from esp.money.models import LineItemType, RegisterLineItem, LineItem
 
 class OnsitePrintSchedules(ProgramModuleObj):
 
@@ -68,7 +69,30 @@ class OnsitePrintSchedules(ProgramModuleObj):
             ubit.save()
 
         # get students
-        students = [ ESPUser(ubit.user) for ubit in ubits ]
+        old_students = set([ ESPUser(ubit.user) for ubit in ubits ])
+
+        students = []
+
+        for student in old_students:
+            # get list of valid classes
+            classes = [ cls for cls in student.getEnrolledClasses()
+                        if cls.parent_program == self.program
+                        and cls.isAccepted()                       ]
+            # now we sort them by time/title
+            classes.sort()
+                
+            #   add financial aid information
+            for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
+                RegisterLineItem(student, i)
+                    
+            student.itemizedcosts = LineItem.purchased(prog.anchor, student, filter_already_paid=False)
+            student.itemizedcosttotal = LineItem.purchasedTotalCost(prog.anchor, student)
+            student.has_paid = ( student.itemizedcosttotal == 0 )
+                    
+            student.payment_info = True
+            student.classes = classes
+                
+            students.append(student)
 
         if len(students) == 0:
             response = HttpResponse('')

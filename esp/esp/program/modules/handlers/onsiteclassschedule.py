@@ -34,23 +34,21 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser, UserBit
 from esp.datatree.models import GetNode
-from datetime         import datetime
+from datetime         import datetime, timedelta
 class OnsiteClassSchedule(ProgramModuleObj):
 
 
     @needs_student
     def printschedule(self, request, *args, **kwargs):
-        verb  = GetNode('V/Publish/Print')
+        verb  = request.get_node('V/Publish/Print')
         qsc   = self.program.anchor.tree_create(['Schedule'])
 
-        if UserBit.objects.filter(user = self.user,
-                                  verb = verb,
-                                  qsc = qsc,
-                                  enddate__gte = datetime.now()).count() == 0:
-            newbit = UserBit(user = self.user, verb = verb,
-                             qsc = qsc, recursive = False)
+        if len(UserBit.objects.filter(user=self.user,
+                                  verb=verb,
+                                  qsc=qsc).exclude(enddate__lte=datetime.now())[:1]) == 0:
 
-            newbit.save()
+            newbit = UserBit.objects.create(user=self.user, verb=verb,
+                             qsc=qsc, recursive=False, enddate=datetime.now() + timedelta(days=1))
 
         return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
 
