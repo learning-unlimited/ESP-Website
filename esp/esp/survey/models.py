@@ -33,15 +33,236 @@ Email: web@esp.mit.edu
 
 import datetime
 from django.db import models
+from django.template import loader
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 from esp.db.fields import AjaxForeignKey
 
 # Models to depend on.
-from esp.datatree.models import DataTre
+from esp.datatree.models import DataTree
 
-class SurveyUnit(models.Model):
+
+
+
+
+
+
+class ListField(object):
+    """ Create a list type field descriptor. Allows you to 
+    pack lists (actually tuples) into a delimited string easily.
+
+    Example Usage:
+        class A(models.Model):
+            b = models.TextField()
+            a = ListField('b')
+    
+        c = A()
+
+        c.a = ('a','b','c')
+
+        print c.b
+        >>> "a|b|c"
+
+        c.save()
+
+    """        
+    field_name = ''
+    separator = '|'
+
+
+    def __init__(self, field_name, separator='|'):
+        self.field_name = field_name
+        self.separator = separator
+
+
+    def __get__(self, instance, class_):
+        data = str(getattr(instance, self.field_name) or '').strip()
+        if not data:
+            return ()
+        else:
+            return tuple(str(data).split(self.separator))
+
+
+    def __set__(self, instance, value):
+        data = self.separator.join(map(str, value))
+        setattr(instance, self.field_name, data)
+
+
+
+
+class Survey(models.Model):
+    """ A single survey. """
+    name = models.CharField(maxlength=255)
+    anchor = AjaxForeignKey(DataTree, related_name='surveys',
+                            help_text="Usually the program.")
+
+    class Admin:
+        pass
+
+
+class SurveyResponse(models.Model):
+    """ A single survey taken by a person. """
     time_filled = models.DateTimeField(default=datetime.datetime.now)
-    anchor = models.AjaxForeignKey(DataTree)
+    survey = models.ForeignKey(Survey, db_index=True)
+
+
+    def set_answers(self, get_or_post, save=False):
+        """ For a given get or post, get a set of answers. """
+        answers = []
+
+        for question in self.questions:
+            value = question.get_value(get_or_post)
+            if not isinstance(value, basestring):
+                value = '+' + pickle.dumps(value)
+            else:
+                value = ':' + value
+
+            answers.append(Answer(self, question, value))
+
+        if save:
+            for answer in answers:
+                answer.save()
+
+        return answers
+            
+
+    class Admin:
+        pass
+
+
+    def __str__(self):
+        return "Survey for %s filled out at %s" % (self.anchor,
+                                                   self.time_filled)
+
+
+
 
 class QuestionType(models.Model):
-    
+    """ A type of question.
+    Examples:
+        - Yes/No
+        - Rate from 1-5
+        - Free Response short
+        - Free Response long
+    """
+
+    name = models.CharField(maxlength=255)
+    _param_names = models.TextField("Parameter names",
+                                    help_text="A pipe (|) delimited list of parameter names.")
+    param_names = ListField('_param_names')
+
+    @property
+    def template_file(self):
+        return 'surveys/questions/%s.html' % self.name.replace(' ', '_').lower()
+
+
+    def __str__(self):
+        return '<QuestionType "%s">' % self.name
+
+
+    class Admin:
+        pass
+
+
+
+
+class Question(models.Model):
+    survey = models.ForeignKey(Survey, related_name="questions")
+    name = models.CharField(maxlength=255)
+    question_type = models.ForeignKey(QuestionType)
+    _param_values = models.TextField("Parameter values", 
+                                     help_text="A pipe (|) delimited list of values.")
+
+    param_values = ListField('_param_names')
+
+
+    def get_params(self):
+        " Get the parameters for this question, as a dictionary. "
+        
+        a, b = self.type.param_names, self.param_values
+        params = dict(zip(a,b))
+        min_length = min(len(a), len(b))
+        params['list'] = b[min_length:]
+
+        return params
+
+
+    def __str__(self):
+        return 'Question "%s" (%s)' % (self.name, self.question_type)
+
+
+    def get_value(self, data_dict):
+        question_key = 'Q%s' % self.id
+
+        try:
+            value = data_dict.getlist(question_key)
+            if len(value) == 1:
+                value = value[0]
+        except AttributeError:
+            value = data_dict.get(question_key, '')
+
+        return value
+
+
+    def render(self, data_dict=None):
+        """ Render this question to text (usually HTML).
+
+        If specified, data_dict will contain the pre-filled data
+        from a GET or POST operation.
+        """
+
+        ##########
+        # Get any pre-filled data
+        if not data_dict:
+            data_dict = {}
+        value = self.get_value(data_dict)
+
+        ##########
+        # Render the HTML
+        params = self.get_params()
+        params['value'] = value
+
+        return loader.render_to_string(self.type.template_file, params)
+
+
+    class Admin:
+        pass
+
+
+
+
+class Answer(models.Model):
+    """ An answer for a single question for a single survey response. """
+
+    survey_response = models.ForeignKey(SurveyResponse, db_index=True,
+                                        related_name='answers')
+    question = models.ForeignKey(Question, db_index=True)
+    value = models.TextField()
+
+    @property
+    def answer(self):
+        """ The actual, unpickled answer. """
+        if not self.value:
+            return None
+
+        if self.value[0] == '+':
+            try:
+                value = pickle.loads(self.value[1:])
+            except:
+                value = self.value[1:]
+        else:
+            value = self.value[1:]
+
+        return value
+
+
+    class Admin:
+        pass
+
+
+    def __str__(self):
+        return "Answer for %s" % (self.question)
