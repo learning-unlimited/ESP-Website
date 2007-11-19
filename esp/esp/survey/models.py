@@ -151,7 +151,7 @@ class QuestionType(models.Model):
     """
 
     name = models.CharField(maxlength=255)
-    _param_names = models.TextField("Parameter names",
+    _param_names = models.TextField("Parameter names", blank=True,
                                     help_text="A pipe (|) delimited list of parameter names.")
     param_names = ListField('_param_names')
 
@@ -174,7 +174,7 @@ class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions")
     name = models.CharField(maxlength=255)
     question_type = models.ForeignKey(QuestionType)
-    _param_values = models.TextField("Parameter values", 
+    _param_values = models.TextField("Parameter values", blank=True,
                                      help_text="A pipe (|) delimited list of values.")
 
     param_values = ListField('_param_names')
