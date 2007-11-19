@@ -174,6 +174,8 @@ class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions")
     name = models.CharField(maxlength=255)
     question_type = models.ForeignKey(QuestionType)
+    anchor = AjaxForeignKey(DataTree, related_name="question",
+                            help_text="What this question applies to (a class, a program?)")
     _param_values = models.TextField("Parameter values", blank=True,
                                      help_text="A pipe (|) delimited list of values.")
 
