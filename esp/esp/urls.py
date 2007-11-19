@@ -100,7 +100,9 @@ urlpatterns += patterns('',
                         (r'^alumni/', include('esp.membership.alumni_urls')),
                         (r'^membership/', include('esp.membership.urls')),
                         (r'^',  include('esp.miniblog.urls')),
+                        (r'^',  include('esp.survey.urls')),
                         )
+
 
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
@@ -129,6 +131,7 @@ urlpatterns += patterns('esp.web.views.everything',
     (r'^contact/contact/?$', 'contact'),
     (r'^contact/contact/(?P<section>[^/]+)/?$', 'contact'),
 #    (r'^contact/submit.html$', 'contact_submit'),
+
 
     # Program stuff
     (r'^(onsite|manage|teach|learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
