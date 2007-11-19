@@ -174,12 +174,11 @@ class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions")
     name = models.CharField(maxlength=255)
     question_type = models.ForeignKey(QuestionType)
-    anchor = AjaxForeignKey(DataTree, related_name="question",
-                            help_text="What this question applies to (a class, a program?)")
     _param_values = models.TextField("Parameter values", blank=True,
                                      help_text="A pipe (|) delimited list of values.")
-
     param_values = ListField('_param_names')
+    anchor = AjaxForeignKey(DataTree, related_name="questions", help_text="What is this quesiton related to?")
+    seq = models.IntegerField(default=0)
 
 
     def get_params(self):
