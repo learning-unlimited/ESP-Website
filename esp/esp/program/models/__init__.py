@@ -624,6 +624,9 @@ class Program(models.Model):
         """ Fetch a list of relevant programs for a given user and verb """
         return UserBit.find_by_anchor_perms(Program,user,verb)
 
+    @classmethod
+    def by_prog_inst(cls, program, instance):
+        return Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
 
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """

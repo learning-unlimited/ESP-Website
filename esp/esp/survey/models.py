@@ -100,6 +100,8 @@ class Survey(models.Model):
     anchor = AjaxForeignKey(DataTree, related_name='surveys',
                             help_text="Usually the program.")
 
+    category = models.CharField(maxlength=32) # teach|learn|etc
+
     class Admin:
         pass
 
@@ -114,7 +116,7 @@ class SurveyResponse(models.Model):
         """ For a given get or post, get a set of answers. """
         answers = []
 
-        for question in self.questions:
+        for question in self.survey.questions:
             value = question.get_value(get_or_post)
             if not isinstance(value, basestring):
                 value = '+' + pickle.dumps(value)
@@ -205,7 +207,7 @@ class Question(models.Model):
             if len(value) == 1:
                 value = value[0]
         except AttributeError:
-            value = data_dict.get(question_key, '')
+            value = data_dict.get(question_key, None)
 
         return value
 

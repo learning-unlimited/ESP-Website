@@ -1,0 +1,31 @@
+{% extends "outlines/series-3.html" %}
+{% load subsection %}
+
+{% block title %}Please Select a Survey{% endblock %}
+
+{% block keywords %}{% endblock %}
+
+{% block description %}Please Select a Survey{% endblock %}
+
+{% block subsection %}Please Select a Survey{% endblock %}
+
+{% block content %}
+
+<h1>{{ survey.name }}</h1>
+
+<form action="." method="POST">
+
+<h2>Questions:</h2>
+{% for question in questions %}{{ question.render }}{% endfor %}
+
+{% if perclass_questions %}
+{% for class in classes %}
+<h3>Questions for "{{ class.title }}"</h3>
+{% for question in perclass_questions %}{{ question.render }}{% endfor %}
+{% endfor %}
+
+<input type="Submit" value="Submit Survey" />
+
+</form>
+
+{% endblock %}

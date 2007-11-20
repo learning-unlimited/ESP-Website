@@ -1,0 +1,28 @@
+{% extends "outlines/series-3.html" %}
+{% load subsection %}
+
+{% block title %}Please Select a Survey{% endblock %}
+
+{% block keywords %}{% endblock %}
+
+{% block description %}Please Select a Survey{% endblock %}
+
+{% block subsection %}Please Select a Survey{% endblock %}
+
+{% block content %}
+
+<h1>Please Select a Survey:</h1>
+
+{% if error %}
+<font color="red"><p>Error: We lost track of your survey!  Please try again.</p></font>
+{% else %}
+<p> Several surveys were found for this program:</p>
+{% endif %}
+
+<ul>
+{% for s in surveys %}
+<li><a href="?survey_id={{ s.id }}">{{ s.name }}</a></li>
+{% endfor %}
+</ul>
+
+{% endblock %}

@@ -33,4 +33,57 @@ Email: web@esp.mit.edu
 
 import datetime
 from django.db import models
-from esp.datatree.models import DataTree
+from esp.datatree.models import DataTree, GetNode
+from esp.users.models import UserBit
+from esp.program.models import Program
+from esp.survey.models import Question, Survey, SurveyResponse
+from esp.web.util import render_to_response
+from esp.middleware import ESPError
+from django.http import Http404, HttpResponseRedirect
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def survey_view(request, tl, program, instance):
+    try:
+        prog = Program.by_prog_inst(program, instance)
+    except Program.DoesNotExist:
+        raise Http404
+
+    if UserBit.UserHasPerms(request.user, prog.anchor, GetNode("V/Flags/Survey/Filed")):
+        raise ESPError(False), "You've already filled out the survey.  Thanks for responding!"
+
+    surveys = Survey.objects.filter(anchor = prog.anchor, category = tl).select_related()
+
+    if request.REQUEST.has_key('survey_id'):
+        try:
+            s_id = int( request.REQUEST['survey_id'] )
+            surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
+        except ValueError:
+            pass
+
+    if len(surveys) < 1:
+        raise ESPError(False), "Sorry, no such survey exists for this program!"
+
+    if len(surveys) > 1:
+        return render_to_response('survey/choose_survey.html', request, prog.anchor, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+
+        survey = surveys[0]
+
+        if request.POST:
+            response = SurveyResponse()
+            response.survey = survey
+            response.save()
+            
+            response.set_answers(request.POST, save=True)
+
+            return HttpResponseRedirect("survey_thankyou.html")
+        else:
+            questions = survey.questions.filter(anchor = prog.anchor)
+            perclass_questions = survey.questions.filter(anchor__friendly_name="Classes", anchor__parent = prog.anchor)
+
+            classes = ESPUser(request.user).getEnrolledClasses(prog, request)
+
+            context = { 'survey': survey, 'questions': questions, 'perclass_questions': perclass_questions, 'classes': classes }
+
+            return render_to_response( 'survey/survey.html', request, prog.anchor, context )
+
