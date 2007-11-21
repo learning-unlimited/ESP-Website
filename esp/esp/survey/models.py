@@ -111,7 +111,8 @@ class SurveyResponse(models.Model):
 
         keys = filter(lambda x: x.startswith('question_'), get_or_post.keys())
         for key in keys:
-            value = get_or_post[key]
+            value = get_or_post.getlist(key)
+            if len(value) == 1: value = value[0]
             str_list = key.split('_')
             if len(str_list) < 2 or len(str_list) > 3:
                 raise ESPError(), 'Inappropriate question key: %s' % key
