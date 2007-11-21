@@ -4,12 +4,9 @@
 <tr>
     <td width="30%">{{ name }}</td>
     <td width="70%">
-        <select name="question_{{ id }}" multiple>
-        <!-- <option value="" selected>[No favorite]</option> -->
         {% templatetag openblock %} for l in lst {% templatetag closeblock %}
-        <option value="{% templatetag openvariable %} l.id {% templatetag closevariable %}">{% templatetag openvariable %} l.emailcode {% templatetag closevariable %}: {% templatetag openvariable %} l.title {% templatetag closevariable %}</option>
+        <input type="checkbox" name="question_{{ id }}" value="{% templatetag openvariable %} l.id {% templatetag closevariable %}" />{% templatetag openvariable %} l.emailcode {% templatetag closevariable %}: {% templatetag openvariable %} l.title {% templatetag closevariable %}<br />
         {% templatetag openblock %} endfor {% templatetag closeblock %}
-        </select>
     </td>
 </tr>
 </table>
