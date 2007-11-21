@@ -212,7 +212,7 @@ class Question(models.Model):
         return params
 
     def __str__(self):
-        return '"%s" (%s)' % (self.name, self.question_type.name)
+        return '%s, %d: "%s" (%s)' % (self.survey.name, self.seq, self.name, self.question_type.name)
 
     def get_value(self, data_dict):
         question_key = 'question_%s' % self.id
@@ -253,6 +253,9 @@ class Question(models.Model):
 
     class Admin:
         pass
+    
+    class Meta:
+        ordering = ['seq']
 
 
 class Answer(models.Model):

@@ -78,7 +78,11 @@ def survey_view(request, tl, program, instance):
         response.survey = survey
         response.save()
         
-        sv = GetNode('V/Flags/Survey/Filed')
+        if tl == 'learn':
+            sv = GetNode('V/Flags/Survey/Filed')
+        else:
+            sv = GetNode('V/Flags/TeacherSurvey/Filed')
+            
         ub = UserBit(user=request.user, verb=sv, qsc=prog.anchor)
         ub.save()
         
@@ -89,7 +93,9 @@ def survey_view(request, tl, program, instance):
         questions = survey.questions.filter(anchor = prog.anchor).order_by('seq')
         perclass_questions = survey.questions.filter(anchor__name="Classes", anchor__parent = prog.anchor)
         
-        classes = ESPUser(request.user).getEnrolledClasses(prog, request)
+        user = ESPUser(request.user)
+        user.clear_enrollment_cache(prog)
+        classes = user.getEnrolledClasses(prog, request)
         
         context = { 'survey': survey, 'questions': questions, 'perclass_questions': perclass_questions, 'program': prog, 'classes': classes }
 

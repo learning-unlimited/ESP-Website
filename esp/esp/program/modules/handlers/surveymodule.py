@@ -50,17 +50,33 @@ class SurveyModule(ProgramModuleObj, CoreModule):
             return {'student_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
         return {'student_survey': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
 
+    def teachers(self, QObject = False):
+        verb = GetNode('V/Flags/TeacherSurvey/Filed')
+        qsc  = GetNode("/".join(self.program.anchor.tree_encode()))
+
+        if QObject:
+            return {'teacher_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
+        return {'teacher_survey': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
+
     def studentDesc(self):
         return {'student_survey': """Students who filled out the survey"""}
+
+    def teacherDesc(self):
+        return {'teacher_survey': """Teachers who filled out the survey"""}
 
     def isStep(self):
         return False
 
     def getNavBars(self):
         nav_bars = []
-        nav_bars.append({ 'link': '/learn/%s/survey/' % ( self.program.getUrlBase() ),
-                'text': '%s Survey' % ( self.program.niceSubName() ),
-                'section': 'learn'})
+        if self.module.module_type == 'learn':
+            nav_bars.append({ 'link': '/learn/%s/survey/' % ( self.program.getUrlBase() ),
+                    'text': '%s Survey' % ( self.program.niceSubName() ),
+                    'section': 'learn'})
+        elif self.module.module_type == 'teach':                    
+            nav_bars.append({ 'link': '/teach/%s/survey/' % ( self.program.getUrlBase() ),
+                    'text': '%s Survey' % ( self.program.niceSubName() ),
+                    'section': 'teach'})
 
         return nav_bars
     
