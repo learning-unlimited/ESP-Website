@@ -50,6 +50,11 @@ def survey_view(request, tl, program, instance):
     except Program.DoesNotExist:
         raise Http404
 
+    user = ESPUser(request.user)
+    
+    if (tl == 'teach' and not user.isTeacher()) or (tl == 'learn' and not user.isStudent()):
+        raise ESPError(), 'You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.'
+
     if request.GET.has_key('done'):
         return render_to_response('survey/completed_survey.html', request, prog.anchor, {'prog': prog})
     
@@ -93,7 +98,6 @@ def survey_view(request, tl, program, instance):
         questions = survey.questions.filter(anchor = prog.anchor).order_by('seq')
         perclass_questions = survey.questions.filter(anchor__name="Classes", anchor__parent = prog.anchor)
         
-        user = ESPUser(request.user)
         user.clear_enrollment_cache(prog)
         classes = user.getEnrolledClasses(prog, request)
         

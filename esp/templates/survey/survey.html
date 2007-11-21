@@ -25,7 +25,7 @@
 <div id="program_form">
 <form method="post" action="{{ request.path }}">
 
-{% for question in questions %}{{ question.render }}{% endfor %}
+{% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
 
 {% if perclass_questions %}
 {% for class in classes %}
@@ -35,7 +35,7 @@
     </tr>
     </table>
     {% for question in perclass_questions %}
-        {{ question.render|substituteclass:class }}
+        {{ question.render|substitute:class }}
     {% endfor %}
 {% endfor %}
 {% endif %}

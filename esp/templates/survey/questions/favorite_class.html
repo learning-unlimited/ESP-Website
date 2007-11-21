@@ -1,0 +1,14 @@
+<!-- Question Type: Favorite Class -->
+{% load survey %}
+<table width="600">
+<tr>
+    <td width="30%">{{ name }}</td>
+    <td width="70%">
+        <select name="question_{{ id }}">
+        {% templatetag openblock %} for l in lst {% templatetag closeblock %}
+        <option value="{% templatetag openvariable %} l.id {% templatetag closevariable %}">{% templatetag openvariable %} l.emailcode {% templatetag closevariable %}: {% templatetag openvariable %} l.title {% templatetag closevariable %}</option>
+        {% templatetag openblock %} endfor {% templatetag closeblock %}
+        </select>
+    </td>
+</tr>
+</table>

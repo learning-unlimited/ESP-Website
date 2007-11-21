@@ -41,7 +41,15 @@ def field_width(min_val, max_val):
     return '%d%%' % (70 / (int(max_val) - int(min_val) + 1))
     
 @register.filter
-def substituteclass(input_str, cls):
+def substitute(input_str, item):
+    #   Puts all of the attributes of the given item in the context dictionary
     t = template.Template(input_str)
-    c = template.Context(cls.__dict__)
+    c = template.Context(item.__dict__)
+    return t.render(c)
+
+@register.filter
+def uselist(input_str, lst):
+    #   Takes a list of stuff and puts it in context as 'lst'
+    t = template.Template(input_str)
+    c = template.Context({'lst': lst})
     return t.render(c)
