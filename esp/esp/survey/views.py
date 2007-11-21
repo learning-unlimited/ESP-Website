@@ -78,6 +78,10 @@ def survey_view(request, tl, program, instance):
         response.survey = survey
         response.save()
         
+        sv = GetNode('V/Flags/Survey/Filed')
+        ub = UserBit(user=request.user, verb=sv, qsc=prog.anchor)
+        ub.save()
+        
         response.set_answers(request.POST, save=True)
 
         return HttpResponseRedirect(request.path + "?done")
