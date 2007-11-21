@@ -1,31 +1,59 @@
 {% extends "outlines/series-3.html" %}
+
+{% block title %}{{ program.niceName }} Survey{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
 {% load subsection %}
-
-{% block title %}Please Select a Survey{% endblock %}
-
-{% block keywords %}{% endblock %}
-
-{% block description %}Please Select a Survey{% endblock %}
-
-{% block subsection %}Please Select a Survey{% endblock %}
+{% block subsection %}
+    {{ "Survey"|subsection }}
+{% endblock %}
 
 {% block content %}
+{% load survey %}
 
-<h1>{{ survey.name }}</h1>
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br /><br />
+<h1>Survey for {{ program.niceName }} </h1>
 
-<form action="." method="POST">
+<div id="program_form">
+<form method="post" action="{{ request.path }}">
 
-<h2>Questions:</h2>
 {% for question in questions %}{{ question.render }}{% endfor %}
 
 {% if perclass_questions %}
 {% for class in classes %}
-<h3>Questions for "{{ class.title }}"</h3>
-{% for question in perclass_questions %}{{ question.render }}{% endfor %}
+    <table width="600">
+    <tr>
+        <th>Questions for {{ class.emailcode }}: {{ class.title }}</th>
+    </tr>
+    </table>
+    {% for question in perclass_questions %}
+        {{ question.render|substituteclass:class }}
+    {% endfor %}
 {% endfor %}
+{% endif %}
 
-<input type="Submit" value="Submit Survey" />
+<table width="600">
+    <tr>
+        <th>Submit</th>
+    </tr>
+    <tr>
+        <td align="center">
+            Click the button below to finish your survey.  Thank you so much for your time!<br />
+            <input type="Submit" class="fancybutton" value="Submit Survey" />
+        </td>
+    </tr>
+</table>
+</center>
 
 </form>
+</div>
 
 {% endblock %}

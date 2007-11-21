@@ -156,6 +156,7 @@ INSTALLED_APPS = (
     'esp.dblog',
     'esp.membership',
     'esp.queue',
+    'esp.survey',
 )
 
 

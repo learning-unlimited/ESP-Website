@@ -1,0 +1,13 @@
+<!-- Question Type: Numeric Rating -->
+{% load survey %}
+<table width="600">
+<tr>
+    <td width="30%">{{ name }}</td>
+    {% for i in 1|intrange:number_of_ratings %}
+        <td width="{{ 1|field_width:number_of_ratings }}"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="{{ i }}" />{{ i }}
+        {% if forloop.first %}<br />{{ lower_text }}{% endif %}
+        {% if forloop.last %}<br />{{ upper_text }}{% endif %}
+        </td>
+    {% endfor %}
+</tr>
+</table>

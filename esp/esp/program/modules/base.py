@@ -168,7 +168,6 @@ class ProgramModuleObj(models.Model):
         else:
             module = modules[0]
 
-
         if module:
             moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog)
             moduleobj = module.getPythonClass()()

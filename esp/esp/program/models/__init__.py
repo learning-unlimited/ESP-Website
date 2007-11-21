@@ -582,6 +582,10 @@ class Program(models.Model):
 
         return durationList
 
+    def getSurveys(self):
+        from esp.survey.models import Survey
+        return Survey.objects.filter(anchor=self.anchor)
+
     def getModules(self, user = None, tl = None):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base

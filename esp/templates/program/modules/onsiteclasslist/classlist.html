@@ -35,14 +35,14 @@
     </tr>
     <tr><td>
     {% for class in classes %}
-        {% if not class.isFull %}
+        {% if not class.isFull %}{% if not class.already_passed %}
             {% ifchanged %}
                 </td></tr>
                 <tr><th class="materials">{{ class.category.category }}</th></tr>
                 <tr><td>
             {% endifchanged %}
             {{ class.emailcode }}
-        {% endif %}
+        {% endif %}{% endif %}
     {% endfor %}
     </table>
 </td>

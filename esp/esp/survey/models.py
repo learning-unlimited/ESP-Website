@@ -44,12 +44,8 @@ from esp.db.fields import AjaxForeignKey
 
 # Models to depend on.
 from esp.datatree.models import DataTree
-
-
-
-
-
-
+from esp.middleware import ESPError
+from esp.program.models import Class
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to 
@@ -73,11 +69,9 @@ class ListField(object):
     field_name = ''
     separator = '|'
 
-
     def __init__(self, field_name, separator='|'):
         self.field_name = field_name
         self.separator = separator
-
 
     def __get__(self, instance, class_):
         data = str(getattr(instance, self.field_name) or '').strip()
@@ -86,12 +80,9 @@ class ListField(object):
         else:
             return tuple(str(data).split(self.separator))
 
-
     def __set__(self, instance, value):
         data = self.separator.join(map(str, value))
         setattr(instance, self.field_name, data)
-
-
 
 
 class Survey(models.Model):
@@ -101,7 +92,10 @@ class Survey(models.Model):
                             help_text="Usually the program.")
 
     category = models.CharField(maxlength=32) # teach|learn|etc
-
+    
+    def __str__(self):
+        return '%s (%s) for %s' % (self.name, self.category, str(self.anchor))
+    
     class Admin:
         pass
 
@@ -111,19 +105,51 @@ class SurveyResponse(models.Model):
     time_filled = models.DateTimeField(default=datetime.datetime.now)
     survey = models.ForeignKey(Survey, db_index=True)
 
-
     def set_answers(self, get_or_post, save=False):
         """ For a given get or post, get a set of answers. """
         answers = []
 
-        for question in self.survey.questions:
-            value = question.get_value(get_or_post)
-            if not isinstance(value, basestring):
-                value = '+' + pickle.dumps(value)
-            else:
-                value = ':' + value
+        keys = filter(lambda x: x.startswith('question_'), get_or_post.keys())
+        for key in keys:
+            value = get_or_post[key]
+            str_list = key.split('_')
+            if len(str_list) < 2 or len(str_list) > 3:
+                raise ESPError(), 'Inappropriate question key: %s' % key
+            
+            new_answer = Answer()
+            new_answer.survey_response = self
+            
+            if len(str_list) > 2:
+                try:
+                    qid = int(str_list[1])
+                    cid = int(str_list[2])
+                    question = Question.objects.get(id=qid)
+                    cls = Class.objects.get(id=cid)
+                except Class.DoesNotExist:
+                    raise ESPError(), 'Error finding class from %s' % key
+                except Question.DoesNotExist:
+                    raise ESPError(), 'Error finding question from %s' % key
+                except ValueError:
+                    raise ESPError(), 'Error getting IDs from %s' % key
 
-            answers.append(Answer(self, question, value))
+                new_answer.anchor = cls.anchor
+                
+            elif len(str_list) == 2:
+                try:
+                    qid = int(str_list[1])
+                    question = Question.objects.get(id=qid)
+                except Question.DoesNotExist:
+                    raise ESPError(), 'Error finding question from %s' % key
+                except ValueError:
+                    raise ESPError(), 'Error getting IDs from %s' % key
+                new_answer.anchor = self.survey.anchor
+                
+            if not isinstance(value, basestring):
+                new_answer.value = '+' + pickle.dumps(value)
+            else:
+                new_answer.value = ':' + value
+            new_answer.question = question 
+            answers.append(new_answer)
 
         if save:
             for answer in answers:
@@ -131,16 +157,12 @@ class SurveyResponse(models.Model):
 
         return answers
             
-
     class Admin:
         pass
-
-
+    
     def __str__(self):
-        return "Survey for %s filled out at %s" % (self.anchor,
+        return "Survey for %s filled out at %s" % (self.survey.anchor,
                                                    self.time_filled)
-
-
 
 
 class QuestionType(models.Model):
@@ -159,17 +181,13 @@ class QuestionType(models.Model):
 
     @property
     def template_file(self):
-        return 'surveys/questions/%s.html' % self.name.replace(' ', '_').lower()
-
+        return 'survey/questions/%s.html' % self.name.replace(' ', '_').lower()
 
     def __str__(self):
-        return '<QuestionType "%s">' % self.name
-
+        return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
 
     class Admin:
         pass
-
-
 
 
 class Question(models.Model):
@@ -178,15 +196,14 @@ class Question(models.Model):
     question_type = models.ForeignKey(QuestionType)
     _param_values = models.TextField("Parameter values", blank=True,
                                      help_text="A pipe (|) delimited list of values.")
-    param_values = ListField('_param_names')
+    param_values = ListField('_param_values')
     anchor = AjaxForeignKey(DataTree, related_name="questions", help_text="What is this quesiton related to?")
     seq = models.IntegerField(default=0)
-
 
     def get_params(self):
         " Get the parameters for this question, as a dictionary. "
         
-        a, b = self.type.param_names, self.param_values
+        a, b = self.question_type.param_names, self.param_values
         params = dict(zip(map(lambda x: x.replace(' ', '_').lower(), a),
                           b))
         min_length = min(len(a), len(b))
@@ -194,13 +211,11 @@ class Question(models.Model):
 
         return params
 
-
     def __str__(self):
-        return 'Question "%s" (%s)' % (self.name, self.question_type)
-
+        return '"%s" (%s)' % (self.name, self.question_type.name)
 
     def get_value(self, data_dict):
-        question_key = 'Q%s' % self.id
+        question_key = 'question_%s' % self.id
 
         try:
             value = data_dict.getlist(question_key)
@@ -210,7 +225,6 @@ class Question(models.Model):
             value = data_dict.get(question_key, None)
 
         return value
-
 
     def render(self, data_dict=None):
         """ Render this question to text (usually HTML).
@@ -228,15 +242,17 @@ class Question(models.Model):
         ##########
         # Render the HTML
         params = self.get_params()
+        params['name'] = self.name
+        params['id'] = self.id
         params['value'] = value
+        
+        if self.anchor.name == 'Classes':
+            params['for_class'] = True
 
-        return loader.render_to_string(self.type.template_file, params)
-
+        return loader.render_to_string(self.question_type.template_file, params)
 
     class Admin:
         pass
-
-
 
 
 class Answer(models.Model):
@@ -244,6 +260,7 @@ class Answer(models.Model):
 
     survey_response = models.ForeignKey(SurveyResponse, db_index=True,
                                         related_name='answers')
+    anchor = AjaxForeignKey(DataTree)                                        
     question = models.ForeignKey(Question, db_index=True)
     value = models.TextField()
 
@@ -267,6 +284,5 @@ class Answer(models.Model):
     class Admin:
         pass
 
-
     def __str__(self):
-        return "Answer for %s" % (self.question)
+        return "Answer for question #%d: %s" % (self.question.id, self.value)

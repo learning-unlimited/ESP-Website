@@ -199,7 +199,13 @@ class Class(models.Model):
             else:
                 return False
             
-
+    def already_passed(self):
+        start_time = self.start_time()
+	if start_time is None:
+            return True
+        if time.time() - time.mktime(start_time.start.timetuple()) > 600:
+            return True
+        return False
    
     def start_time(self):
         if self.meeting_times.count() > 0:
