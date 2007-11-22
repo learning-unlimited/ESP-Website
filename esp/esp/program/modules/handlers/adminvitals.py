@@ -34,6 +34,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import Class, Program
 from esp.users.models import UserBit, ESPUser
+from django.contrib.auth.models import User
 
 class AdminVitals(ProgramModuleObj):
     doc = """ This allows you to view the major numbers for your program on the main page.
@@ -53,10 +54,14 @@ class AdminVitals(ProgramModuleObj):
         vitals['classrejected'] = vitals['classtotal'] - vitals['classapproved'] - vitals['classunreviewed']
 
 
+        proganchor = self.program.anchor
+
         vitals['teachernum'] = self.program.teachers().items()
-        vitals['teachernum'].append(('total', self.program.teachers_union()))
+#        vitals['teachernum'].append(('total', # students_union generates a stupidly expensive query; need something better, possibly "all Students with a UserBit Q inside this program"
+                                     # self.program.teachers_union()))
         vitals['studentnum'] = self.program.students().items()
-        vitals['studentnum'].append(('total', self.program.students_union()))
+#        vitals['studentnum'].append(('total', # students_union generates a stupidly expensive query; need something better, possibly "all Students with a UserBit Q inside this program"
+                                     # self.program.students_union()))
         
         timeslots = self.program.getTimeSlots()
 
