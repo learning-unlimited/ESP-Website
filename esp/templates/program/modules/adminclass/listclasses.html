@@ -279,9 +279,10 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
     <td class="clsleft classname">
       <em>(None available)</em>
     </td>
-{% for check in program.checkitems.all %}<td>&nbsp;</td>{% endfor %}
+{% for check in program.checkitems_all_cached %}<td>&nbsp;</td>{% endfor %}
    </tr>
   {% endif %}
+
 {% load class_manage_row %}
   {% for cls in classes %}
   <tr id="{{cls.id}}-row">

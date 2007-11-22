@@ -237,6 +237,19 @@ class Program(models.Model):
     program_size_max = models.IntegerField(null=True)
     program_modules = models.ManyToManyField(ProgramModule)
 
+    def checkitems_all_cached(self):
+        """  The main Manage page requests checkitems.all() O(n) times in
+        the number of classes in the program.  Minimize the number of these
+        calls that actually hit the db. """
+        CACHE_KEY = "PROGRAM__CHECKITEM__CACHE__%d" % self.id
+        val = cache.get(CACHE_KEY)
+        if val == None:
+            val = self.checkitems.all()
+            len(val)
+            cache.set(CACHE_KEY, val, 1)
+        
+        return val
+
     def _get_type_url(self, type):
         if hasattr(self, '_type_url'):
             if type in self._type_url:

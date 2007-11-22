@@ -31,7 +31,7 @@
 
 {% load class_checkmarks %}
 {# checklist ... #}
-{% for check in program.checkitems.all %}
+{% for check in program.checkitems_all_cached %}
     <td class="class_checkitem">
      <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step={{check.id}}"
         onclick="clickCheckMark({{cls.id}},{{check.id}},'{{cls.id}}-{{check.id}}'); return false;" >

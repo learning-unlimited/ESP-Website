@@ -42,9 +42,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context = {}
         modules = self.program.getModules(self.user, 'manage')
         
+        from datetime import datetime
+        times = []
         for module in modules:
+            times.append( ( datetime.now(), module) )
             context = module.prepare(context)
-
                     
         context['modules'] = modules
         context['one'] = one

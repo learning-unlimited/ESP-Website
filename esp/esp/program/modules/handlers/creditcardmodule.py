@@ -51,7 +51,7 @@ class CreditCardModule(ProgramModuleObj):
     def students(self, QObject = False):
         # this should be fixed...this is the best I can do for now - Axiak
         transactions = Transaction.objects.filter(anchor = self.program.anchor)
-        userids = [ x.fbo.id for x in transactions ]
+        userids = [ x.fbo_id for x in transactions ]
         QObj = Q(id__in = userids)
 
         if QObject:

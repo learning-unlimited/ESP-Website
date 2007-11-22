@@ -44,12 +44,11 @@ class AdminVitals(ProgramModuleObj):
 
         if context is None: context = {}
         
-        classes = self.program.classes()
+        classes = self.program.classes().select_related()
         vitals = {'classtotal': classes.count()}
-        classes = list(classes)
         
-        vitals['classapproved'] = len([x for x in classes if x.isAccepted() ])
-        vitals['classunreviewed'] = len([x for x in classes if not x.isReviewed() ])
+        vitals['classapproved'] = classes.filter(status=10).count()
+        vitals['classunreviewed'] = classes.exclude(status=0).count()
 
         vitals['classrejected'] = vitals['classtotal'] - vitals['classapproved'] - vitals['classunreviewed']
 
@@ -73,7 +72,7 @@ class AdminVitals(ProgramModuleObj):
 
             if curTimeslot['classcount'] == 0:
                 curTimeslot['studentcount'] = 0
-            else:
+            else: 
                 curTimeslot['studentcount'] = \
                       reduce(operator.add, [x.num_students() for x in curclasses ])
             

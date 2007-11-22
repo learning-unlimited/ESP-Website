@@ -127,6 +127,22 @@ class Class(models.Model):
 
     objects = ClassManager()
 
+    def checklist_progress_all_cached(self):
+        """ The main Manage page requests checklist_progress.all() O(n) times
+        per checkbox in the program.  Minimize the number of these calls that
+        actually hit the db. """
+        CACHE_KEY = "CLASS__CHECKLIST_PROGRESS__CACHE__%d" % self.id
+        val = cache.get(CACHE_KEY)
+        if val == None:
+            val = self.checklist_progress.all()
+            len(val) # force the query to be executed before caching it
+            cache.set(CACHE_KEY, val, 1)
+
+        return val
+
+
+
+
     def __init__(self, *args, **kwargs):
         super(Class, self).__init__(*args, **kwargs)
         self.cache = Class.objects.cache(self)
@@ -674,13 +690,8 @@ class Class(models.Model):
     def getTeacherNames(self):
         teachers = []
         for teacher in self.teachers():
-            try:
-                contact = teacher.getLastProfile().contact_user
-                name = '%s %s' % (contact.first_name,
-                                  contact.last_name)
-            except:
-                name = '%s %s' % (teacher.first_name,
-                                  teacher.last_name)
+            name = '%s %s' % (teacher.first_name,
+                              teacher.last_name)
 
             if name.strip() == '':
                 name = teacher.username
