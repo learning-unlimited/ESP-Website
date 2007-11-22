@@ -45,13 +45,13 @@ class OnSiteRegister(ProgramModuleObj):
 
     def updatePaid(self, paid=True):
         t = Transaction.objects.filter(fbo    = self.student,
-                                       anchor = self.program.anchor)
+                                       anchor = self.program_anchor_cached())
         if t.count() > 0 and not paid:
             for trans in t:
                 trans.delete()
 
         if t.count() == 0 and paid:
-            trans = Transaction(anchor = self.program.anchor,
+            trans = Transaction(anchor = self.program_anchor_cached(),
                                 fbo    = self.student,
                                 payer  = self.student,
                                 amount = 30.00,
@@ -69,13 +69,13 @@ class OnSiteRegister(ProgramModuleObj):
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,
                                     verb = verb,
-                                    qsc  = self.program.anchor)
+                                    qsc  = self.program_anchor_cached())
         if len(ub) > 0:
             return False
 
         ub = UserBit()
         ub.verb = verb
-        ub.qsc  = self.program.anchor
+        ub.qsc  = self.program_anchor_cached()
         ub.user = self.student
         ub.recursive = False
         ub.save()

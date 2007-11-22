@@ -48,13 +48,13 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,
                                     verb = verb,
-                                    qsc  = self.program.anchor)
+                                    qsc  = self.program_anchor_cached())
         if len(ub) > 0:
             return False
 
         ub = UserBit()
         ub.verb = verb
-        ub.qsc  = self.program.anchor
+        ub.qsc  = self.program_anchor_cached()
         ub.user = self.student
         ub.recursive = False
         ub.save()

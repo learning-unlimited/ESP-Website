@@ -41,7 +41,7 @@ from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import LOGIN_URL, REDIRECT_FIELD_NAME
 from urllib import quote
 from esp.db.models import Q
-
+from django.core.cache import cache
 
 class CoreModule(object):
     """
@@ -54,6 +54,16 @@ class ProgramModuleObj(models.Model):
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
     required = models.BooleanField()
+
+    def program_anchor_cached(self):
+        """ We reference "self.program.anchor" quite often.  Getting it requires two DB lookups.  So, cache it. """
+        CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__%d" % self.id
+        val = cache.get(CACHE_KEY)
+        if val == None:
+            val = self.program.anchor
+            cache.set(CACHE_KEY, val, 1)
+
+        return val
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':

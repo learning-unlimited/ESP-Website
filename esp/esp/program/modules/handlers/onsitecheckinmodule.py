@@ -49,7 +49,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     def updatePaid(self, paid=True):
         t = Transaction.objects.filter(fbo    = self.student,
-                                       anchor = self.program.anchor)
+                                       anchor = self.program_anchor_cached())
         if t.count() > 0 and not paid:
             for trans in t:
                 trans.delete()
@@ -64,7 +64,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     if info.count() == 1:
                         payment_amount = info[0].base_cost
             
-            trans = Transaction(anchor = self.program.anchor,
+            trans = Transaction(anchor = self.program_anchor_cached(),
                                 fbo    = self.student,
                                 payer  = self.student,
                                 amount = payment_amount,
@@ -81,13 +81,13 @@ class OnSiteCheckinModule(ProgramModuleObj):
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,
                                     verb = verb,
-                                    qsc  = self.program.anchor)
+                                    qsc  = self.program_anchor_cached())
         if len(ub) > 0:
             return False
 
         ub = UserBit()
         ub.verb = verb
-        ub.qsc  = self.program.anchor
+        ub.qsc  = self.program_anchor_cached()
         ub.user = self.student
         ub.recursive = False
         ub.save()
@@ -99,7 +99,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,
                                     verb = verb,
-                                    qsc  = self.program.anchor)
+                                    qsc  = self.program_anchor_cached())
         for userbit in ub:
             userbit.delete()
 
@@ -108,26 +108,26 @@ class OnSiteCheckinModule(ProgramModuleObj):
     def hasAttended(self):
         verb = GetNode('V/Flags/Registration/Attended')
         return UserBit.UserHasPerms(self.student,
-                                    self.program.anchor,
+                                    self.program_anchor_cached(),
                                     verb)
 
     def hasPaid(self):
         verb = GetNode('V/Flags/Registration/Paid')
         return UserBit.UserHasPerms(self.student,
-                                    self.program.anchor,
+                                    self.program_anchor_cached(),
                                     verb) or \
                Transaction.objects.filter(fbo = self.student,
-                                          anchor = self.program.anchor).count() > 0
+                                          anchor = self.program_anchor_cached()).count() > 0
     
     def hasMedical(self):
         verb = GetNode('V/Flags/Registration/MedicalFiled')
         return UserBit.UserHasPerms(self.student,
-                                    self.program.anchor,
+                                    self.program_anchor_cached(),
                                     verb)
     def hasLiability(self):
         verb = GetNode('V/Flags/Registration/LiabilityFiled')
         return UserBit.UserHasPerms(self.student,
-                                    self.program.anchor,
+                                    self.program_anchor_cached(),
                                     verb)
 
         

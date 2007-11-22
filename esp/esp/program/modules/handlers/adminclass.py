@@ -451,7 +451,7 @@ class AdminClass(ProgramModuleObj):
                        new_data['message_for_directors'] != newclass.message_for_directors and \
                        self.classRegInfo.director_email:
 
-                    send_mail('['+self.program.anchor.parent.friendly_name+"] Directors' Comments for Teacher Reg", \
+                    send_mail('['+self.program_anchor_cached().parent.friendly_name+"] Directors' Comments for Teacher Reg", \
                               """ Directors\' comments below:\nClass Title: %s\n\n %s\n\n>>>>>>>>>>>EOM""" % \
                               (new_data['title'], new_data['message_for_directors']) , \
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
@@ -470,7 +470,7 @@ class AdminClass(ProgramModuleObj):
                 # datatree maintenance
                 newclass.parent_program = self.program
                 newclass.category = ClassCategories.objects.get(id=new_data['category'])
-                newclass.anchor = self.program.anchor.tree_create(['DummyClass'])
+                newclass.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
                 newclass.anchor.save()
                 newclass.enrollment = 0
                 newclass.save()

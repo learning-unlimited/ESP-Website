@@ -45,12 +45,12 @@ class CreditCardModule(ProgramModuleObj):
         return '%s.00' % str(self.creditCardInfo.base_cost)
 
     def isCompleted(self):
-        return Transaction.objects.filter(anchor = self.program.anchor,
+        return Transaction.objects.filter(anchor = self.program_anchor_cached(),
                                           fbo = self.user).count() > 0
 
     def students(self, QObject = False):
         # this should be fixed...this is the best I can do for now - Axiak
-        transactions = Transaction.objects.filter(anchor = self.program.anchor)
+        transactions = Transaction.objects.filter(anchor = self.program_anchor_cached())
         userids = [ x.fbo_id for x in transactions ]
         QObj = Q(id__in = userids)
 
@@ -92,7 +92,7 @@ class CreditCardModule(ProgramModuleObj):
         context = {'module': self}
         paymenttype = PaymentType.objects.get(description__icontains = 'credit card')
         payment = Transaction()
-        payment.anchor = self.program.anchor
+        payment.anchor = self.program_anchor_cached()
         payment.executed = False # have not verified yet...
         payment.fbo = self.user
         payment.payer = self.user

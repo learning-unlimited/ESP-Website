@@ -476,7 +476,7 @@ class ProgramPrintables(ProgramModuleObj):
         if request.GET.has_key('payer_post'):
             form = RefundInfoForm(request.GET, initial=initial)
             if form.is_valid():
-                transactions = Transaction.objects.filter(fbo = user, anchor = self.program.anchor)
+                transactions = Transaction.objects.filter(fbo = user, anchor = self.program_anchor_cached())
                 if transactions.count() == 0:
                     transaction = Transaction()
                 else:
@@ -499,7 +499,7 @@ class ProgramPrintables(ProgramModuleObj):
         else:
             form = RefundInfoForm(initial = initial)
 
-        transactions = Transaction.objects.filter(fbo = user, anchor = self.program.anchor)
+        transactions = Transaction.objects.filter(fbo = user, anchor = self.program_anchor_cached())
         if transactions.count() == 0:
             transaction = Transaction()
         else:
@@ -715,7 +715,7 @@ Student schedule for %s:
 
         receipts = []
         for student in students:
-            transactions = Transaction.objects.filter(fbo = student, anchor = self.program.anchor)
+            transactions = Transaction.objects.filter(fbo = student, anchor = self.program_anchor_cached())
             if transactions.count() == 0:
                 transaction = Transaction()
             else:
@@ -739,7 +739,7 @@ Student schedule for %s:
         students.sort()
                                     
         finished_verb = GetNode('V/Finished')
-        finished_qsc  = self.program.anchor.tree_create(['SATPrepLabel'])
+        finished_qsc  = self.program_anchor_cached().tree_create(['SATPrepLabel'])
         
         #if request.GET.has_key('print'):
             
@@ -842,7 +842,7 @@ Student schedule for %s:
 
         studentList = []
         for student in students:
-            t = Transaction.objects.filter(fbo = student, anchor = self.program.anchor)
+            t = Transaction.objects.filter(fbo = student, anchor = self.program_anchor_cached())
             
             paid_symbol = ''
             if t.count() > 0:
@@ -875,7 +875,7 @@ Student schedule for %s:
             student_list = []
             
             for student in c.students():
-                t = Transaction.objects.filter(fbo = student, anchor = self.program.anchor)
+                t = Transaction.objects.filter(fbo = student, anchor = self.program_anchor_cached())
                 
                 paid_symbol = ''
                 if t.count() > 0:

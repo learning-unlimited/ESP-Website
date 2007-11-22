@@ -65,7 +65,7 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
         
-        announcements = self.program.anchor.tree_create(['Announcements'])
+        announcements = self.program_anchor_cached().tree_create(['Announcements'])
         filterid, subject, body  = [request.POST['filterid'],
                                     request.POST['subject'],
                                     request.POST['body']    ]

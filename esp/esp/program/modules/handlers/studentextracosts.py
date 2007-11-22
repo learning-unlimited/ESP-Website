@@ -53,7 +53,7 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
 
-        for i in LineItemType.objects.filter(anchor=self.program.anchor):
+        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached()):
             student_desc[i.label] = """Students who have opted for '%s'""" % i.label
 
         return student_desc
@@ -63,7 +63,7 @@ class StudentExtraCosts(ProgramModuleObj):
 
         student_lists = {}
         # Get all the line item types for this program.
-        for i in LineItemType.objects.filter(anchor=self.program.anchor):
+        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached()):
             if QObject:
                 student_lists[i.label] = self.getQForUser(Q(lineitem__type = i))
             else:
@@ -72,7 +72,7 @@ class StudentExtraCosts(ProgramModuleObj):
         return student_lists
 
     def isCompleted(self):
-        return LineItem.purchased(self.program.anchor, self.user).count() > 0
+        return LineItem.purchased(self.program_anchor_cached(), self.user).count() > 0
 
     @needs_student
     @meets_deadline('/ExtraCosts')

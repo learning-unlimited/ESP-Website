@@ -52,7 +52,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
                                     request, (prog, tl), {})
 
         verb  = GetNode('V/Publish/Print')
-        qsc   = self.program.anchor.tree_create(['Schedule'])
+        qsc   = self.program_anchor_cached().tree_create(['Schedule'])
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = datetime.now())
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = datetime.now())
 

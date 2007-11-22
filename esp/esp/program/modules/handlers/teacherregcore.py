@@ -56,7 +56,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         context['two'] = two
 
         context['progposts'] = Entry.find_posts_by_perms(self.user,GetNode('V/Subscribe'),
-                                                         self.program.anchor.tree_create(['Announcements', 'Teachers']))
+                                                         self.program_anchor_cached().tree_create(['Announcements', 'Teachers']))
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
     def isStep(self):
@@ -69,7 +69,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 	context['one'] = one
 	context['two'] = two
 	context['teacher'] = self.user
-	context['timeslots'] = self.program.anchor.tree_create(['Templates', 'TimeSlots']).series_set.all()
+	context['timeslots'] = self.program_anchor_cached().tree_create(['Templates', 'TimeSlots']).series_set.all()
 	
 	clsList = [ x for x in self.user.getEditable(Class) if x.parent_program == self.program ]
 	

@@ -54,7 +54,7 @@ class AdminVitals(ProgramModuleObj):
         vitals['classrejected'] = vitals['classtotal'] - vitals['classapproved'] - vitals['classunreviewed']
 
 
-        proganchor = self.program.anchor
+        proganchor = self.program_anchor_cached()
 
         vitals['teachernum'] = self.program.teachers().items()
 #        vitals['teachernum'].append(('total', # students_union generates a stupidly expensive query; need something better, possibly "all Students with a UserBit Q inside this program"
@@ -73,7 +73,7 @@ class AdminVitals(ProgramModuleObj):
             curclasses = Class.objects.filter(parent_program = self.program,
                                               meeting_times  = timeslot)
 
-            curTimeslot['classcount'] = curclasses.count()
+            curTimeslot['classcount'] = len(curclasses)
 
             if curTimeslot['classcount'] == 0:
                 curTimeslot['studentcount'] = 0

@@ -44,7 +44,7 @@ class SurveyModule(ProgramModuleObj, CoreModule):
 
     def students(self, QObject = False):
         verb = GetNode('V/Flags/Survey/Filed')
-        qsc  = GetNode("/".join(self.program.anchor.tree_encode()))
+        qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()))
 
         if QObject:
             return {'student_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
@@ -52,7 +52,7 @@ class SurveyModule(ProgramModuleObj, CoreModule):
 
     def teachers(self, QObject = False):
         verb = GetNode('V/Flags/TeacherSurvey/Filed')
-        qsc  = GetNode("/".join(self.program.anchor.tree_encode()))
+        qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()))
 
         if QObject:
             return {'teacher_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}

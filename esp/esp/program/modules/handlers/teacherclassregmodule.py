@@ -473,7 +473,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # datatree maintenance
                 if newclass_isnew:
                     newclass.parent_program = self.program
-                    newclass.anchor = self.program.anchor.tree_create(['DummyClass'])
+                    newclass.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
 
                     newclass.anchor.save()
                     newclass.enrollment = 0

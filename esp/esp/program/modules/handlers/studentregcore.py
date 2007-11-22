@@ -46,19 +46,19 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
         STUDREP_QSC  = GetNode('Q')
         
-        qsc  = GetNode("/".join(self.program.anchor.tree_encode()) + "/Confirmation")
+        qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Confirmation")
 
         Q_studentrep = Q(userbit__qsc = STUDREP_QSC) & Q(userbit__verb = STUDREP_VERB)
 
         if QObject:
             return {'confirmed': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb)),
-                    'attended' : self.getQForUser(Q(userbit__qsc = self.program.anchor) &\
+                    'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached()) &\
                                                   Q(userbit__verb = verb2)),
                     'studentrep': self.getQForUser(Q_studentrep)}
         
         
         return {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct(),
-                'attended' : User.objects.filter(userbit__qsc = self.program.anchor, \
+                'attended' : User.objects.filter(userbit__qsc = self.program_anchor_cached(), \
                                                     userbit__verb = verb2).distinct(),
                 'studentrep': User.objects.filter(Q_studentrep).distinct()}
 

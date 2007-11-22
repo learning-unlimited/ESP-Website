@@ -229,7 +229,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
 
         timeslots = self.program.getTimeSlots()
 
-        dummy_anchor = self.program.anchor.tree_create(['DummyClass'])
+        dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
         dummy_anchor.save()
         
         for user in user_list:

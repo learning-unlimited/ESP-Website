@@ -74,9 +74,9 @@ class AvailabilityModule(ProgramModuleObj):
         """ Returns a list of teachers who have indicated at least one segment of teaching availability for this program. """
         
         if QObject is True:
-            return {'availability': self.getQForUser(Q(resource__event__anchor = self.program.anchor))}
+            return {'availability': self.getQForUser(Q(resource__event__anchor = self.program_anchor_cached()))}
         
-        teacher_list = Resource.objects.filter(event__anchor=self.program.anchor).values('user').distinct()
+        teacher_list = Resource.objects.filter(event__anchor=self.program_anchor_cached()).values('user').distinct()
         
         return {'availability': [t['user'] for t in teacher_list]}
 
