@@ -58,7 +58,12 @@ def survey_view(request, tl, program, instance):
     if request.GET.has_key('done'):
         return render_to_response('survey/completed_survey.html', request, prog.anchor, {'prog': prog})
     
-    if UserBit.UserHasPerms(request.user, prog.anchor, GetNode("V/Flags/Survey/Filed")):
+    if tl == 'learn':
+        sv = GetNode('V/Flags/Survey/Filed')
+    else:
+        sv = GetNode('V/Flags/TeacherSurvey/Filed')
+
+    if UserBit.UserHasPerms(request.user, prog.anchor, sv):
         raise ESPError(False), "You've already filled out the survey.  Thanks for responding!"
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
@@ -83,11 +88,6 @@ def survey_view(request, tl, program, instance):
         response.survey = survey
         response.save()
         
-        if tl == 'learn':
-            sv = GetNode('V/Flags/Survey/Filed')
-        else:
-            sv = GetNode('V/Flags/TeacherSurvey/Filed')
-            
         ub = UserBit(user=request.user, verb=sv, qsc=prog.anchor)
         ub.save()
         
@@ -99,8 +99,13 @@ def survey_view(request, tl, program, instance):
         perclass_questions = survey.questions.filter(anchor__name="Classes", anchor__parent = prog.anchor)
         
         user.clear_enrollment_cache(prog)
-        classes = user.getEnrolledClasses(prog, request)
-        
+        if tl == 'learn':
+            classes = user.getEnrolledClasses(prog, request)
+        elif tl == 'teach':
+            classes = user.getTaughtClasses(prog)
+        else:
+            classes = []
+
         context = { 'survey': survey, 'questions': questions, 'perclass_questions': perclass_questions, 'program': prog, 'classes': classes }
 
         return render_to_response('survey/survey.html', request, prog.anchor, context)
