@@ -679,7 +679,24 @@ class Class(models.Model):
             return eventList[0]
 
     def num_students(self, use_cache=True):
-        return len(self.students(use_cache=use_cache))
+        retVal = self.cache['num_students']
+        if retVal is not None and use_cache:
+            return retVal
+
+        if use_cache:
+            retValCount = self.cache['students']
+            if retValCache != None:
+                retVal = len(retValCache)
+                cache['num_students'] = retVal
+                return retVal
+
+        v = GetNode( 'V/Flags/Registration/Preliminary' )
+
+        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True).count()
+
+        self.cache['num_students'] = retVal
+        return retVal            
+
 
     def isFull(self, use_cache=True):
         if self.num_students(use_cache=use_cache) >= self.class_size_max:
@@ -749,6 +766,9 @@ class Class(models.Model):
         cache.delete(cache_key_func(self))
         cache.delete(core_cache_key_func(self))
         
+        from esp.program.templatetags.class_manage_row import cache_key as class_manage_row_cache_key
+        cache.delete(class_manage_row_cache_key(self, None)) # this cache_key doesn't actually care about the program, as classes can only be associated with one program.  If we ever change this, update this function call.
+
         self.teachers(use_cache = False)
 
         self.cache.update()

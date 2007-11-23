@@ -18,7 +18,7 @@ function assignRoom(clsid){
 }
 
 var checks = {
-{% for check in program.checkitems.all %}
+{% for check in program.checkitems_all_cached %}
      "{{ check.id|addslashes }}": "{{check.title|addslashes}}",
 {% endfor %}
 };
@@ -287,7 +287,6 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
   {% for cls in classes %}
   <tr id="{{cls.id}}-row">
    {% render_class_row cls program %}
-
    </tr>
    {% endfor %}
 

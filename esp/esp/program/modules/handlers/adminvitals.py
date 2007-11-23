@@ -35,6 +35,10 @@ from django.contrib.auth.decorators import login_required
 from esp.program.models import Class, Program
 from esp.users.models import UserBit, ESPUser
 from django.contrib.auth.models import User
+from django.core.cache import cache
+
+class KeyDoesNotExist(Exception):
+    pass
 
 class AdminVitals(ProgramModuleObj):
     doc = """ This allows you to view the major numbers for your program on the main page.
@@ -46,13 +50,11 @@ class AdminVitals(ProgramModuleObj):
         if context is None: context = {}
         
         classes = self.program.classes().select_related()
-        vitals = {'classtotal': classes.count()}
+        vitals = {'classtotal': classes}
         
-        vitals['classapproved'] = classes.filter(status=10).count()
-        vitals['classunreviewed'] = classes.exclude(status=0).count()
-
-        vitals['classrejected'] = vitals['classtotal'] - vitals['classapproved'] - vitals['classunreviewed']
-
+        vitals['classapproved'] = classes.filter(status=10)
+        vitals['classunreviewed'] = classes.filter(status=0)
+        vitals['classrejected'] = classes.filter(status=-10)
 
         proganchor = self.program_anchor_cached()
 
@@ -73,13 +75,19 @@ class AdminVitals(ProgramModuleObj):
             curclasses = Class.objects.filter(parent_program = self.program,
                                               meeting_times  = timeslot)
 
-            curTimeslot['classcount'] = len(curclasses)
+            curTimeslot['classcount'] = curclasses
 
-            if curTimeslot['classcount'] == 0:
-                curTimeslot['studentcount'] = 0
-            else: 
-                curTimeslot['studentcount'] = \
-                      reduce(operator.add, [x.num_students() for x in curclasses ])
+            class studentcounter:
+                self.clslist = []
+
+                def count(self):
+                     lst = [x.num_students() for x in self.clslist]
+                     return reduce(operator.add, lst)
+
+                def __init__(self, newclslist):
+                    self.clslist = newclslist
+
+            curTimeslot['studentcount'] = studentcounter(curclasses)
             
             vitals['timeslots'].append(curTimeslot)
 

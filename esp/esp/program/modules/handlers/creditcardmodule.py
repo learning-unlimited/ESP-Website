@@ -50,9 +50,10 @@ class CreditCardModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         # this should be fixed...this is the best I can do for now - Axiak
-        transactions = Transaction.objects.filter(anchor = self.program_anchor_cached())
-        userids = [ x.fbo_id for x in transactions ]
-        QObj = Q(id__in = userids)
+        # I think this is substantially better; it's the same thing, but in one query. - Adam
+        #transactions = Transaction.objects.filter(anchor = self.program_anchor_cached())
+        #userids = [ x.fbo_id for x in transactions ]
+        QObj = Q(fbo__anchor=self.program_anchor_cached())
 
         if QObject:
             return {'creditcard': QObj}

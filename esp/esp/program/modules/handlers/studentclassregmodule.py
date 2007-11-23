@@ -49,16 +49,16 @@ class StudentClassRegModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         from esp.program.models import Class
-        Conf = Q(userbit__qsc__parent = self.program.classes_node()) & \
-               Q(userbit__verb = GetNode('V/Flags/Registration/Confirmed'))
+        from django.db.models import Q as django_Q
 
-        Prel = Q(userbit__qsc__parent = self.program.classes_node()) & \
-               Q(userbit__verb = GetNode('V/Flags/Registration/Preliminary'))
+        Par = django_Q(userbit__qsc__parent=self.program.classes_node())
+        Conf = django_Q(userbit__verb = GetNode('V/Flags/Registration/Confirmed'))
+        Prel = django_Q(userbit__verb = GetNode('V/Flags/Registration/Preliminary'))
         
         if QObject:
-            return {'classreg': self.getQForUser(Conf | Prel)}
+            return {'classreg': self.getQForUser(Par & (Conf | Prel))}
         else:
-            return {'classreg': User.objects.filter((Conf | Prel)).distinct()}
+            return {'classreg': User.objects.filter(Par & (Conf | Prel)).distinct()}
 
 
     def studentDesc(self):
