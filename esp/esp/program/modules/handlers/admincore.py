@@ -33,7 +33,6 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 
-
 class AdminCore(ProgramModuleObj, CoreModule):
 
     @needs_admin
@@ -55,7 +54,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         
         for module in modules:
             context = module.prepare(context)
-                    
+ 
         context['modules'] = modules
         context['one'] = one
         context['two'] = two

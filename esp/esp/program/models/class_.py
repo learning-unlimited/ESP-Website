@@ -684,7 +684,7 @@ class Class(models.Model):
             return retVal
 
         if use_cache:
-            retValCount = self.cache['students']
+            retValCache = self.cache['students']
             if retValCache != None:
                 retVal = len(retValCache)
                 cache['num_students'] = retVal
