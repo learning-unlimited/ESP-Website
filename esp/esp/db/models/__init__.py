@@ -235,7 +235,8 @@ class QOperator(DjangoQOperator):
 
         
         for val in self.args:
-            val.set_or_found(or_value) # set the value for all the children
+            if hasattr(val, 'set_or_found'):
+                val.set_or_found(or_value) # set the value for all the children
 
     def search_for_or(self):
         """ Returns true if an OR exists. """
