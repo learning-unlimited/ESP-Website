@@ -67,7 +67,7 @@ urlpatterns += patterns('django.views.generic',
                         (r'.php$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
                         )
 
-urlpatterns += patterns('esp.web.views.everything',
+urlpatterns += patterns('esp.web.views.bio',
 
                         # bios
                         (r'^(teach|learn)/teachers/([-A-Za-z0-9_ \.]+)/([-A-Za-z_ \.]+)([0-9]*)/bio.html$', 'bio'),
@@ -103,10 +103,14 @@ urlpatterns += patterns('',
                         (r'^',  include('esp.survey.urls')),
                         )
 
+urlpatterns += patterns('esp.web.views.json',
+
+     # JSON
+    (r'json/teachers/$', 'teacher_lookup'))
 
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
-urlpatterns += patterns('esp.web.views.everything',
+urlpatterns += patterns('esp.web.views.main',
 
     # Possibly overspecific, possibly too general.
     (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
@@ -117,14 +121,6 @@ urlpatterns += patterns('esp.web.views.everything',
         { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia }),
     (r'^qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
         { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'url': '' }),
-)
-
-# things that need to move
-
-urlpatterns += patterns('esp.web.views.everything',
-
-     # JSON
-    (r'json/teachers/$', 'teacher_lookup'),
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
@@ -145,6 +141,7 @@ urlpatterns += patterns('esp.web.views.everything',
     (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
+    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp') )
     
     # Event-generation
     # Needs to get fixed (axiak)
@@ -152,14 +149,9 @@ urlpatterns += patterns('esp.web.views.everything',
     #(r'^events/edit/$', 'esp.cal.views.updateevent'),
     #(r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
 
-
+urlpatterns += patterns('esp.web.views.navBar',
     # Update navbar
-    (r'^navbar/edit.scm', 'updateNavBar'),
-    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
-    # Reimbursement requests
-    # Needs to be better
-    #(r'^money/reimbursement/$', 'esp.money.views.create_reimbursement'),
-    )
+    (r'^navbar/edit.scm', 'updateNavBar') )
 
 urlpatterns += patterns('esp.program.views',
                     (r'^manage/([-A-Za-z0-9_ ]+)/?', 'managepage'),

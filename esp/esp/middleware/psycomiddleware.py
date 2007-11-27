@@ -9,8 +9,8 @@ import re
 from django.contrib.auth.middleware import AuthenticationMiddleware
 psyco.cannotcompile(re.compile)
 psyco.cannotcompile(AuthenticationMiddleware.process_request)        
-psyco.profile(0.25)
-
+#psyco.profile(0.25)
+psyco.full()
 
 class PsycoMiddleware(object):
     """
