@@ -122,7 +122,11 @@ def prepare_program(program, form):
 
     userbits += [('V/Flags/Public', 0, form.clean_data['publish_start'], form.clean_data['publish_end'])]
     userbits += [('V/Deadline/Registration/Student', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    userbits += [('V/Deadline/Registration/Student/MainPage', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Student/Catalog', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
     userbits += [('V/Deadline/Registration/Teacher', 0, form.clean_data['teacher_reg_start'], form.clean_data['teacher_reg_end'])]
+    userbits += [('V/Deadline/Registration/Teacher/MainPage', 0, form.clean_data['teacher_reg_start'], form.clean_data['publish_end'])]
+    
     for director in form.clean_data['admins']:
         userbits += [('V/Administer', director, None, None)]
         

@@ -86,7 +86,6 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
             return [{ 'link': '/teach/%s/teacherreg' % ( self.program.getUrlBase() ),
                       'text': '%s Teacher Registration' % ( self.program.niceSubName() ),
                       'section': 'teach'}]
-
         else:
             return []
 

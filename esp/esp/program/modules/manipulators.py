@@ -142,7 +142,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
                               is_required=True, \
                               choices=class_sizes),
                               
-            forms.TextField(field_name="prereqs", is_required=False),                  
+            forms.LargeTextField(field_name="prereqs", is_required=False),                  
 
             CheckboxSelectMultipleField(field_name="resources", \
                                               choices=module.getResourceTypes()),

@@ -191,7 +191,9 @@ class TeacherClassRegModule(ProgramModuleObj):
    
     def getResourceTypes(self):
         #   Get a list of all resource types, excluding the fundamental ones.
-        res_types = ResourceType.objects.filter(priority_default__gt=0)
+        Q_thisprog = Q(program__id=self.program.id)
+        Q_global = Q(program__id__isnull=True)
+        res_types = ResourceType.objects.filter(Q_thisprog | Q_global).filter(priority_default__gt=0)
         return [(str(x.id), x.name) for x in res_types]
 
     @needs_teacher

@@ -381,8 +381,6 @@ class ProgramModuleObj(models.Model):
     def extensions(self):
         return []
 
-    def getNavBars(self):
-        return []
 
     @classmethod
     def getSummary(cls):

@@ -18,19 +18,16 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.   T
 
 <p>If you would like to co-teach this class with others, please click the "Coteachers" button next to the appropriate class at the teacher registration page after you submit this form.</p>
 
-<p align="center">
+<form action="{{request.path}}" name="clsform" method="post">
+
+<div id="program_form">
+<center>
 <div class="info">
 <b>Teachers:</b> Please ensure that you are available to teach your class at any of the times you have specified that you are available.  If there is any chance that your plans may change and you won't be able to teach, please hold off on this form and <a href="mailto:{{ program.director_email }}">contact the program directors</a>.  We're just trying to minimize the number of classes that have to be cancelled after registration begins.
 <br />
 <br />
 To specify when you are available, go <a href="javascript:history.go(-1);">back to the main page</a> and click on "Indicate Your Availability".
 </div>
-</p>
-
-<form action="{{request.path}}" name="clsform" method="post">
-
-<div id="program_form">
-<center>
 <table width="500">
     <tr><th colspan="2">Course Creation/Editing Form</th></tr>
     {% if form.has_errors %}
