@@ -762,12 +762,10 @@ class Class(models.Model):
 
 
     def update_cache(self):
-        from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func
-        cache.delete(cache_key_func(self))
-        cache.delete(core_cache_key_func(self))
-        
         from esp.program.templatetags.class_manage_row import cache_key as class_manage_row_cache_key
         cache.delete(class_manage_row_cache_key(self, None)) # this cache_key doesn't actually care about the program, as classes can only be associated with one program.  If we ever change this, update this function call.
+
+        self.update_cache_students()
 
         self.teachers(use_cache = False)
 
@@ -895,8 +893,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return "/".join(urllist)
 
     def save(self):
-        self.update_cache()
         super(Class, self).save()
+        self.update_cache()
                                
     class Admin:
         pass
