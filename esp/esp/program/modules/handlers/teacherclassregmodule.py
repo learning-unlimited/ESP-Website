@@ -425,8 +425,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         
         new_data = MultiValueDict()
         context = {'module': self}
-        new_data['grade_max'] = str(self.getClassGrades()[-1:][0])
-        new_data['class_size_max']  = str(self.getClassSizes()[-1:][0])
         
         manipulator = manipulators.TeacherClassRegManipulator(self)
 

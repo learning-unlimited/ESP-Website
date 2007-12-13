@@ -96,11 +96,11 @@ class TeacherClassRegManipulator(forms.Manipulator):
     """Manipulator for A class registration """
     def __init__(self, module):
         
-        class_sizes = module.getClassSizes()
+        class_sizes = [""] + module.getClassSizes()
         class_sizes = zip(class_sizes, class_sizes)
         size_order = IsLessThanOtherField('class_size_max', 'Minimum size must be less than the maximum size.')
         
-        class_grades = module.getClassGrades()
+        class_grades = [""] + module.getClassGrades()
         class_grades = zip(class_grades, class_grades)
 
         grade_order = IsLessThanOtherField('grade_max', 'Minimum grade must be less than the maximum grade.')
@@ -127,20 +127,22 @@ class TeacherClassRegManipulator(forms.Manipulator):
             forms.SelectField(field_name="grade_min", \
                               is_required=True, \
                               choices=class_grades, \
-                              validator_list=[grade_order]),
+                              validator_list=[grade_order, validators.isNotEmpty]),
             
             forms.SelectField(field_name="grade_max", \
                               is_required=True, \
-                              choices=class_grades),
+                              choices=class_grades, \
+			      validator_list=[validators.isNotEmpty]),
             
             forms.SelectField(field_name="class_size_min", \
                               is_required=True, \
                               choices=class_sizes, \
-                              validator_list=[size_order]),
+                              validator_list=[size_order, validators.isNotEmpty]),
 
             forms.SelectField(field_name="class_size_max", \
                               is_required=True, \
-                              choices=class_sizes),
+                              choices=class_sizes, \
+			      validator_list=[validators.isNotEmpty]),
                               
             forms.LargeTextField(field_name="prereqs", is_required=False),                  
 
