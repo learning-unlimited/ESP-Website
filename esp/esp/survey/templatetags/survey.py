@@ -103,6 +103,8 @@ def makelist(lst):
 
 @register.filter
 def numeric_stats(lst, n):
+    if len(lst) == 0:
+        return "No responses"
     t = tally(lst)
     a = weighted_avg(t)
     result = '<ul><li> mean: ' + ( '%.2f' % a ) + '</li></ul>'
@@ -116,6 +118,8 @@ def numeric_stats(lst, n):
 
 @register.filter
 def boolean_stats(lst):
+    if len(lst) == 0:
+        return "No responses"
     t = tally(lst)
     a = 100 * weighted_avg(t)
     result = '<ul><li> % "Yes": ' + ( '%.2f' % a ) + '</li></ul>'
