@@ -80,7 +80,11 @@ def weighted_avg(dct):
                 weight = 1
         s += weight * dct[key]
         n += dct[key]
-    return s / n
+    
+    if n == 0:
+        return 0
+    else:
+        return s / n
 
 @register.filter
 def stripempty(lst):
