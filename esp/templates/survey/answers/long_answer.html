@@ -1,0 +1,9 @@
+<!-- Responses for Question Type: Long Text -->
+{% templatetag openblock %} load survey {% templatetag closeblock %}
+{% load survey %}
+<table width="600">
+<tr>
+    <td width="35%"><b>{{ name }}</b></td>
+    <td><ul>{% templatetag openvariable %} lst|stripempty|makelist {% templatetag closevariable %}</ul></td>
+</tr>
+</table>

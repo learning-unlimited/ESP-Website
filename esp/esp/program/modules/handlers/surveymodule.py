@@ -36,7 +36,7 @@ from esp.datatree.models import GetNode
 from esp.db.models      import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
-from esp.survey.views   import survey_view
+from esp.survey.views   import survey_view, survey_review
 
 import operator
 
@@ -77,9 +77,14 @@ class SurveyModule(ProgramModuleObj, CoreModule):
             nav_bars.append({ 'link': '/teach/%s/survey/' % ( self.program.getUrlBase() ),
                     'text': '%s Survey' % ( self.program.niceSubName() ),
                     'section': 'teach'})
+            nav_bars.append({ 'link': '/teach/%s/survey/review' % ( self.program.getUrlBase() ),
+                    'text': '%s Student Surveys' % ( self.program.niceSubName() ),
+                    'section': 'teach'})
 
         return nav_bars
     
     def survey(self, request, tl, one, two, module, extra, prog):
-        return survey_view(request, tl, one, two)
-
+        if extra is None or extra == '':
+                return survey_view(request, tl, one, two)
+        if extra == 'review':
+                return survey_review(request, tl, one, two)

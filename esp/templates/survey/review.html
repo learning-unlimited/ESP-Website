@@ -1,0 +1,44 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{ program.niceName }} Survey Responses{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+    {{ "Survey"|subsection }}
+{% endblock %}
+
+{% block content %}
+{% load survey %}
+
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br /><br />
+<h1>Survey Responses for {{ program.niceName }} </h1>
+
+<div id="program_form">
+<center>
+
+{% if perclass_data %}
+{% for c in perclass_data %}
+    <table width="600">
+    <tr>
+        <th>Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
+    </tr>
+    </table>
+    {% for q in c.questions %}
+	{{ q.question.dump|uselist:q.answers }}
+    {% endfor %}
+{% endfor %}
+{% endif %}
+
+</center>
+</div>
+
+{% endblock %}

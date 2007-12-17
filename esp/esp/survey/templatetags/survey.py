@@ -53,3 +53,72 @@ def uselist(input_str, lst):
     t = template.Template(input_str)
     c = template.Context({'lst': lst})
     return t.render(c)
+
+@register.filter
+def tally(lst):
+    #   Takes a list and returns a dictionary of entry: frequency
+    d = {}
+    for item in lst:
+        if d.has_key(str(item)):
+            d[str(item)] += 1
+        else:
+            d[str(item)] = 1
+    return d
+
+@register.filter
+def weighted_avg(dct):
+    #   Takes a dictionary of number: freq. and returns weighted avg. (float)
+    #   Accepts "Yes", "True" as 1 and "No", "False" as 0.
+    s = 0.0
+    n = 0
+    for key in dct.keys():
+        try:
+            weight = int(key, 10)
+        except TypeError:
+            weight = 0
+            if ['yes', 'true'].count(lower(key)) > 0:
+                weight = 1
+        s += weight * dct[key]
+        n += dct[key]
+    return s / n
+
+@register.filter
+def stripempty(lst):
+    #   Takes a list and deletes empty entries. Whitespace-only is empty.
+    return [ item for item in lst if len(str(item).strip()) > 0 ]
+
+@register.filter
+def makelist(lst):
+    #   Because I can't understand Django's built-in unordered_list -ageng
+    if len(lst) == 0:
+        return "No responses"
+    result = ""
+    for item in lst:
+        result += "<li>" + item + "</li>"
+    return result
+
+@register.filter
+def numeric_stats(lst, n):
+    t = tally(lst)
+    a = weighted_avg(t)
+    result = '<ul><li> mean: ' + ( '%.2f' % a ) + '</li></ul>'
+    result += '<ul>'
+    for i in range(1, n+1):
+        if not t.has_key(str(i)):
+            t[str(i)] = 0
+        result += '<li>' + str(i) + ': ' + str(t[str(i)]) + '</li>'
+    result += '</ul>'
+    return result
+
+@register.filter
+def boolean_stats(lst):
+    t = tally(lst)
+    a = 100 * weighted_avg(t)
+    result = '<ul><li> % "Yes": ' + ( '%.2f' % a ) + '</li></ul>'
+    result += '<ul>'
+    for i in ['Yes', 'No']:
+        if not t.has_key(str(i)):
+            t[str(i)] = 0
+        result += '<li>' + str(i) + ': ' + str(t[str(i)]) + '</li>'
+    result += '</ul>'
+    return result
