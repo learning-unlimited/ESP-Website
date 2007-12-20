@@ -35,12 +35,13 @@ import datetime
 from django.db import models
 from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit, ESPUser
-from esp.program.models import Program
+from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.web.util import render_to_response
 from esp.middleware import ESPError
 from django.http import Http404, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
+from esp.survey.templatetags.survey import tally, weighted_avg  # I don't know precisely why, but this feels wrong. -ageng
 
 @login_required
 def survey_view(request, tl, program, instance):
@@ -149,3 +150,81 @@ def survey_review(request, tl, program, instance):
     context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data }
     
     return render_to_response('survey/review.html', request, prog.anchor, context)
+
+# To be replaced with something more useful, eventually.
+@login_required
+def top_classes(request, tl, program, instance):
+    try:
+        prog = Program.by_prog_inst(program, instance)
+    except Program.DoesNotExist:
+        raise Http404
+    
+    user = ESPUser(request.user)
+    
+    if (tl == 'manage' and user.isAdmin(prog.anchor)):
+        surveys = prog.getSurveys().filter(category = 'learn').select_related()
+    else:
+        raise ESPError(False), 'You need to be a teacher or administrator of this program to review survey responses.'
+    
+    if request.REQUEST.has_key('survey_id'):
+        try:
+            s_id = int( request.REQUEST['survey_id'] )
+            surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
+        except ValueError:
+            pass
+    
+    if len(surveys) < 1:
+        raise ESPError(False), 'Sorry, no such survey exists for this program!'
+
+    if len(surveys) > 1:
+        return render_to_response('survey/choose_survey.html', request, prog.anchor, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+    
+    survey = surveys[0]
+    
+    
+    if tl == 'manage':
+        classes = prog.classes()
+        rating_questions = survey.questions.filter(name__contains='overall rating')
+        if len(rating_questions) < 1:
+            raise ESPError(False), 'Couldn\'t find an "overall rating" question in this survey.'
+        rating_question = rating_questions[0]
+        
+        rating_cut = 0.0
+        try:
+            rating_cut = float( rating_question.get_params()['number_of_ratings'] ) - 1
+        except ValueError:
+            pass
+        if request.REQUEST.has_key('rating_cut'):
+            try:
+                rating_cut = float( request.REQUEST['rating_cut'] )
+            except ValueError:
+                pass
+            
+        num_cut = 1
+        if request.REQUEST.has_key('num_cut'):
+            try:
+                num_cut = int( request.REQUEST['num_cut'] )
+            except ValueError:
+                pass
+        
+        categories = ClassCategories.objects.all().order_by('category').exclude(category__contains='SAT')
+        categories = [ x.category for x in categories ]
+        
+        perclass_data = []
+        initclass_data = [ { 'class': x, 'ratings': [ x.answer for x in Answer.objects.filter(anchor=x.anchor, question=rating_question) ] } for x in classes ]
+        for c in initclass_data:
+            c['numratings'] = len(c['ratings'])
+            if c['numratings'] < num_cut:
+                continue
+            c['avg'] = weighted_avg(tally(c['ratings']))
+            if c['avg'] < rating_cut:
+                continue
+            c['teacher'] = c['class'].teachers()[0]
+            c['numteachers'] = c['class'].teachers().count()
+            if c['numteachers'] > 1:
+                c['coteachers'] = c['class'].teachers()[1:]
+            del c['ratings']
+            perclass_data.append(c)
+    context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data, 'rating_cut': rating_cut, 'num_cut': num_cut, 'categories': categories }
+    
+    return render_to_response('survey/top_classes.html', request, prog.anchor, context)

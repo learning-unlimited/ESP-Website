@@ -36,7 +36,7 @@ from esp.datatree.models import GetNode
 from esp.db.models      import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
-from esp.survey.views   import survey_view, survey_review
+from esp.survey.views   import survey_view, survey_review, top_classes
 
 import operator
 
@@ -84,6 +84,8 @@ class SurveyModule(ProgramModuleObj, CoreModule):
         return nav_bars
     
     def survey(self, request, tl, one, two, module, extra, prog):
+        if tl == 'manage':
+                return top_classes(request, tl, one, two)
         if extra is None or extra == '':
                 return survey_view(request, tl, one, two)
         if extra == 'review':
