@@ -107,7 +107,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
         
 
         categories = ClassCategories.objects.all().order_by('category').exclude(category__contains='SAT')
-        categories = [ (x.id, x.category) for x in categories ]
+        categories = [("", "")] + [ (x.id, x.category) for x in categories ]
 
         self.fields = (
             forms.TextField(field_name="title", \
@@ -122,7 +122,8 @@ class TeacherClassRegManipulator(forms.Manipulator):
             
             forms.SelectField(field_name="category", \
                               is_required=True, \
-                              choices=categories),
+                              choices=categories, \
+                              validator_list=[validators.isNotEmpty]),
 
             forms.SelectField(field_name="grade_min", \
                               is_required=True, \
@@ -132,7 +133,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
             forms.SelectField(field_name="grade_max", \
                               is_required=True, \
                               choices=class_grades, \
-			      validator_list=[validators.isNotEmpty]),
+                              validator_list=[validators.isNotEmpty]),
             
             forms.SelectField(field_name="class_size_min", \
                               is_required=True, \
@@ -142,7 +143,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
             forms.SelectField(field_name="class_size_max", \
                               is_required=True, \
                               choices=class_sizes, \
-			      validator_list=[validators.isNotEmpty]),
+                              validator_list=[validators.isNotEmpty]),
                               
             forms.LargeTextField(field_name="prereqs", is_required=False),                  
 
@@ -168,7 +169,9 @@ class TeacherClassRegManipulator(forms.Manipulator):
 
         if not module.classRegInfo.display_times or module.classRegInfo.times_selectmultiple:
             self.fields = self.fields + (forms.SelectField(field_name="duration", \
-                                                           choices=module.getDurations()),)
+                                                           is_required=True, \
+                                                           choices=[("", "")] + module.getDurations(), \
+                                                           validator_list=[validators.isNotEmpty]),)
 
 
 
