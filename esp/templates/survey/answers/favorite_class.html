@@ -1,16 +1,11 @@
 <!-- Responses for Question Type: Favorite Class -->
-<!-- Yet to be actually implemented. -->
 
-{% comment %}
-{% load survey %}
+{% templatetag openblock %} load survey {% templatetag closeblock %}
 <table width="600">
 <tr>
-    <td width="30%">{{ name }}</td>
-    <td width="70%">
-        {% templatetag openblock %} for l in lst {% templatetag closeblock %}
-        <input type="checkbox" name="question_{{ id }}" value="{% templatetag openvariable %} l.id {% templatetag closevariable %}" />{% templatetag openvariable %} l.emailcode {% templatetag closevariable %}: {% templatetag openvariable %} l.title {% templatetag closevariable %}<br />
-        {% templatetag openblock %} endfor {% templatetag closeblock %}
+    <td width="35%" valign="top"><b>{{ name }}</b></td>
+    <td>
+        {% templatetag openvariable %} lst|favorite_classes:20 {% templatetag closevariable %}
     </td>
 </tr>
 </table>
-{% endcomment %}

@@ -1164,6 +1164,9 @@ class PersistentQueryFilter(models.Model):
         except:
             raise ESPError(), 'Invalid Q object stored in database.'
 
+        #   Do not include users if they have disabled their account.
+        if self.item_model.find('auth.models.User') >= 0:
+            QObj = QObj & Q(is_active=True)
 
         return QObj
 

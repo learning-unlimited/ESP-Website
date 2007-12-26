@@ -29,6 +29,8 @@ Email: web@esp.mit.edu
 """
 
 from django import template
+from django.template import loader
+from esp.program.models.class_ import Class
 
 register = template.Library()
 
@@ -74,9 +76,9 @@ def weighted_avg(dct):
     for key in dct.keys():
         try:
             weight = int(key, 10)
-        except TypeError:
+        except:
             weight = 0
-            if ['yes', 'true'].count(lower(key)) > 0:
+            if ['yes', 'true'].count(key.lower()) > 0:
                 weight = 1
         s += weight * dct[key]
         n += dct[key]
@@ -98,7 +100,7 @@ def makelist(lst):
         return "No responses"
     result = ""
     for item in lst:
-        result += "<li>" + item + "</li>"
+        result += "<li>" + item + "</li>" + '\n'
     return result
 
 @register.filter
@@ -130,3 +132,111 @@ def boolean_stats(lst):
         result += '<li>' + str(i) + ': ' + str(t[str(i)]) + '</li>'
     result += '</ul>'
     return result
+
+@register.filter
+def average(lst):
+    if len(lst) == 0:
+        return 'N/A'
+    try:
+        sum = 0.0
+        for l in lst:
+            sum += float(l)
+        return str(round(sum / len(lst), 2))
+    except:
+        return 'N/A'
+    
+@register.filter
+def stdev(lst):
+    if len(lst) == 0:
+        return 'N/A'
+    try:
+        sum = 0.0
+        std_sum = 0.0
+        for l in lst:
+            sum += float(l)
+        mean = sum / len(lst)
+        for l in lst:
+            std_sum += abs(float(l) - mean)
+        return str(round(std_sum / len(lst), 2))
+    except:
+        return 'N/A'
+    
+@register.filter
+def histogram(answer_list, format='html'):
+    """ Generate Postscript code for a histogram of the provided results, save it and return a string pointing to it. """
+    from esp.settings import MEDIA_ROOT, TEMPLATE_DIRS
+    HISTOGRAM_PATH = 'images/histograms/'
+    HISTOGRAM_DIR = MEDIA_ROOT + HISTOGRAM_PATH
+    from esp.web.util.latex import get_rand_file_base
+    import os
+    
+    template_file = TEMPLATE_DIRS + '/survey/histogram_base.eps'
+    file_base = get_rand_file_base()
+    file_name = '/tmp/%s.eps' % file_base
+    image_width = 2.75
+    
+    #   Place results in key, value pairs where keys contain values and values contain frequencies.
+    context = {}
+    context['file_name'] = file_name
+    context['title'] = 'Results of survey'
+    context['num_responses'] = len(answer_list)
+    
+    context['results'] = []
+    for ans in answer_list:
+        try:
+            i = [r['value'] for r in context['results']].index(str(ans))
+            context['results'][i]['freq'] += 1
+        except ValueError:
+            context['results'].append({'value': ans, 'freq': 1})
+    
+    context['results'].sort(key=lambda x: x['value'])
+    
+    #   Compute simple stats so postscript doesn't have to
+    max_freq = 0
+    context['num_keys'] = len(context['results'])
+    for item in context['results']:
+        if item['freq'] > max_freq:
+            max_freq = item['freq']
+            context['max_freq'] = max_freq
+    
+    file_contents = loader.render_to_string(template_file, context)
+    file_obj = open(file_name, 'w')
+    file_obj.write(file_contents)
+    file_obj.close()
+    
+    #   We have the necessary EPS file, now we do any necessary conversions and include
+    #   it into the output.
+    if format == 'tex':
+        return '\includegraphics[width=%fin]{%s}' % (image_width, file_name)
+    elif format == 'html':
+        os.system('gs -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s%s.png %s' % (HISTOGRAM_DIR, file_base, file_name))
+        return '<img src="%s.png" />' % ('/media/' + HISTOGRAM_PATH + file_base)
+    
+@register.filter
+def favorite_classes(answer_list, limit):
+    result_header = '<ol>\n'
+    result_footer = '</ol>\n'
+    result_body = ''
+    
+    class_dict = {}
+    
+    for a in answer_list:
+        for i in a:
+            ind = int(i)
+            if class_dict.has_key(ind):
+                class_dict[ind] += 1
+            else:
+                class_dict[ind] = 1
+               
+    key_list = class_dict.keys()
+    key_list.sort(key=lambda x: -class_dict[x])
+   
+    max_count = min(limit, len(key_list))
+   
+    for key in key_list[:max_count]:
+        cl = Class.objects.filter(id=key)
+        if cl.count() == 1:
+            result_body += '<li>%s: %s (%d votes)\n' % (cl[0].emailcode(), cl[0].title(), class_dict[key])
+
+    return result_header + result_body + result_footer
+        

@@ -28,7 +28,7 @@ LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
 
-PROJECT_ROOT = '/esp/esp/'
+PROJECT_ROOT = '/esp/'
 MEDIA_ROOT = PROJECT_ROOT + 'public/media/'
 MEDIA_URL = '/media/'
 ADMIN_MEDIA_PREFIX = '/admin/media/'
@@ -63,7 +63,7 @@ ROOT_URLCONF = 'esp.urls'
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
-    '/esp/esp/templates'
+    '/esp/templates'
 )
 
 INSTALLED_APPS = (

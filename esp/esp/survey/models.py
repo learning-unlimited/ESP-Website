@@ -34,6 +34,8 @@ Email: web@esp.mit.edu
 import datetime
 from django.db import models
 from django.template import loader
+from django.core.cache import cache
+
 
 try:
     import cPickle as pickle
@@ -45,7 +47,7 @@ from esp.db.fields import AjaxForeignKey
 # Models to depend on.
 from esp.datatree.models import DataTree
 from esp.middleware import ESPError
-from esp.program.models import Class
+from esp.program.models import Class, Program
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to 
@@ -96,6 +98,21 @@ class Survey(models.Model):
     def __str__(self):
         return '%s (%s) for %s' % (self.name, self.category, str(self.anchor))
     
+    def num_participants(self):
+        #   If there is a program anchored to the anchor, select the appropriate number
+        #   of participants based on the category.
+        progs = Program.objects.filter(anchor=self.anchor)
+        if progs.count() == 1:
+            prog = progs[0]
+            if self.category == 'teach':
+                return prog.num_teachers()['class_rejected']
+            elif self.category == 'learn':
+                return prog.num_students()['confirmed']
+            else:
+                return 0
+        else:
+            return 0
+        
     class Admin:
         pass
 
@@ -179,6 +196,7 @@ class QuestionType(models.Model):
     _param_names = models.TextField("Parameter names", blank=True,
                                     help_text="A pipe (|) delimited list of parameter names.")
     param_names = ListField('_param_names')
+    is_numeric = models.BooleanField(null=True)
 
     @property
     def template_file(self):
@@ -282,6 +300,37 @@ class Question(models.Model):
             params['for_class'] = True
 
         return loader.render_to_string(self.question_type.answers_template_file, params)
+
+    def global_average(self):
+        def pretty_val(val):
+            if val == 0:
+                return 'N/A'
+            else:
+                return str(round(val, 2))
+        
+        if not self.question_type.is_numeric:
+            return None
+        
+        try:
+            average_key = 'question_%d_avg' % self.id
+            
+            test_val = cache.get(average_key)
+            if test_val is None:
+                ans = Answer.objects.filter(question=self)
+                ans_count = ans.count()
+                ans_sum = 0.0
+                for a in ans:
+                    ans_sum += float(a.answer)
+                if ans_count == 0:
+                    new_val = 0
+                else:
+                    new_val = ans_sum / ans_count;
+                cache.set(average_key, new_val)
+                return pretty_val(new_val)
+            else:
+                return pretty_val(test_val)
+        except:
+            return 'N/A'
 
     class Admin:
         pass

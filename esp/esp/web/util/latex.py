@@ -68,7 +68,8 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
 def gen_latex(texcode, type='pdf'):
     """ Generate the latex code. """
 
-    file_base = get_rand_file_base()
+    remove_files = True
+    file_base = TEX_TEMP + get_rand_file_base()
 
     if type == 'tex':
         return HttpResponse(texcode, mimetype='text/plain')
@@ -84,7 +85,10 @@ def gen_latex(texcode, type='pdf'):
 
     if type=='pdf':
         mime = 'application/pdf'
-        os.system('cd /tmp; pdflatex %s.tex' % file_base)
+        os.system('cd /tmp; latex %s.tex' % file_base)
+        os.system('cd /tmp; dvipdfm %s' % file_base)
+        if remove_files:
+            os.remove('%s.dvi' % file_base)
         
     elif type=='dvi':
         mime = 'application/x-dvi'
@@ -94,20 +98,23 @@ def gen_latex(texcode, type='pdf'):
         mime = 'application/postscript'
         os.system('cd /tmp; latex %s.tex' % file_base)
         os.system('cd /tmp; dvips %s -o %s.ps' % (file_base, file_base))
-        os.remove('%s.dvi' % file_base)
+        if remove_files:
+            os.remove('%s.dvi' % file_base)
         
     elif type=='log':
         mime = 'text/plain'
         os.system('cd /tmp; latex %s.tex' % file_base)
+        
     else:
         raise ESPError(), 'Invalid type received for latex generation: %s should be one of %s' % (type, file_types)
     
-
+    
     try:
         tex_log_file = open(file_base+'.log')
         tex_log      = tex_log_file.read()
         tex_log_file.close()
-        os.remove(file_base+'.log')
+        if remove_files: 
+            os.remove(file_base+'.log')
     except:
         tex_log      = ''
 
@@ -116,8 +123,9 @@ def gen_latex(texcode, type='pdf'):
             new_file     = open(file_base+'.'+type)
             new_contents = new_file.read()
             new_file.close()
-            os.remove(file_base+'.'+type)
-            os.remove(file_base+'.tex')
+            if remove_files:
+                os.remove(file_base+'.'+type)
+                os.remove(file_base+'.tex')
         
         except:
             raise ESPError(), 'Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type)
@@ -136,8 +144,7 @@ def get_rand_file_base():
     while os.path.exists('%s%s.%s' % (TEX_TEMP, rand, TEX_EXT)):
         rand = md5(str(random())).hexdigest()
 
-   
-    return TEX_TEMP + rand
+    return rand
 
 
 

@@ -25,15 +25,73 @@
 <div id="program_form">
 <center>
 
+{% for s in surveys %}
+    <table width="600">
+    <tr>
+        <th>Responses for: {{ s.name }}</th>
+    </tr>
+    </table>
+    {% for q in s.display_data.questions %}
+        {% if q.question.question_type.is_numeric %}
+        <table width="600">
+        <tr>
+            <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
+            <td>
+                {% if not q.answers|length_is:0 %}
+                    {{ q.answers|histogram:"html" }} 
+                {% else %} 
+                    There are no responses to this question.
+                {% endif %}
+            </td>
+            <td>
+                <b>Statistics:</b>
+                <ul>
+                    <li>Number of responses: {{ q.answers|length }}/{{ s.num_participants }}
+                    <li>Average: {{ q.answers|average }}
+                    <li>Std. deviation: {{ q.answers|stdev }}
+                </ul>
+            </td>
+        </tr>
+        </table>
+        {% else %}
+            {{ q.question.dump|uselist:q.answers }}
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+
 {% if perclass_data %}
 {% for c in perclass_data %}
     <table width="600">
     <tr>
-        <th>Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
+        <th class="small">Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
     </tr>
     </table>
     {% for q in c.questions %}
-	{{ q.question.dump|uselist:q.answers }}
+        {% if q.question.question_type.is_numeric %}
+        <table width="600">
+        <tr>
+            <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
+            <td>
+                {% if not q.answers|length_is:0 %}
+                    {{ q.answers|histogram:"html" }} 
+                {% else %} 
+                    There are no responses to this question.
+                {% endif %}
+            </td>
+            <td>
+                <b>Statistics:</b>
+                <ul>
+                    <li>Number of responses: {{ q.answers|length }}/{{ c.class.num_students }}
+                    <li>Average: {{ q.answers|average }}
+                    <li>Std. deviation: {{ q.answers|stdev }}
+                    <li>Average for all classes: {{ q.question.global_average }}
+                </ul>
+            </td>
+        </tr>
+        </table>
+        {% else %}
+            {{ q.question.dump|uselist:q.answers }}
+        {% endif %}
     {% endfor %}
 {% endfor %}
 {% endif %}

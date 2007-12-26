@@ -38,6 +38,8 @@ from esp.users.models import UserBit, ESPUser
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.web.util import render_to_response
+from esp.web.util.latex import render_to_latex
+from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
 from django.http import Http404, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
@@ -111,8 +113,7 @@ def survey_view(request, tl, program, instance):
 
         return render_to_response('survey/survey.html', request, prog.anchor, context)
 
-@login_required
-def survey_review(request, tl, program, instance):
+def get_survey_info(request, tl, program, instance):
     try:
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
@@ -123,7 +124,8 @@ def survey_review(request, tl, program, instance):
     if (tl == 'teach' and user.isTeacher()):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()
     elif (tl == 'manage' and user.isAdmin(prog.anchor)):
-        raise ESPError(False), 'Meerp, sorry... I haven&apos;t written this part yet. -ageng'
+        #   Meerp, no problem... I took care of it.   -Michael
+        surveys = prog.getSurveys().select_related()
     else:
         raise ESPError(False), 'You need to be a teacher or administrator of this program to review survey responses.'
     
@@ -137,19 +139,54 @@ def survey_review(request, tl, program, instance):
     if len(surveys) < 1:
         raise ESPError(False), "Sorry, no such survey exists for this program!"
 
-    if len(surveys) > 1:
-        return render_to_response('survey/choose_survey.html', request, prog.anchor, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+    return (user, prog, surveys)
     
-    survey = surveys[0]
+
+def display_survey(user, prog, surveys, request, tl, format):
+    """ Wrapper doing the necessary work for the survey output. """
+    perclass_data = []
     
     if tl == 'teach':
+        #   In the teach category, show only class-specific questions
         classes = user.getTaughtClasses(prog)
-        perclass_questions = survey.questions.filter(anchor__name="Classes", anchor__parent = prog.anchor)
+        perclass_questions = surveys[0].questions.filter(anchor__name="Classes", anchor__parent = prog.anchor).order_by('seq')
         perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': [ x.answer for x in Answer.objects.filter(anchor=x.anchor, question=y) ] } for y in perclass_questions ] } for x in classes ]
+        surveys = []
+    elif tl == 'manage':
+        #   In the manage category, pack the data in as extra attributes to the surveys
+        surveys = list(surveys)
+        for s in surveys:
+            questions = s.questions.filter(anchor = prog.anchor).order_by('seq')
+            s.display_data = {'questions': [ { 'question': y, 'answers': [ x.answer for x in Answer.objects.filter(question=y) ] } for y in questions ]}
+            questions2 = s.questions.filter(anchor__parent = prog.anchor, question_type__is_numeric = True).order_by('seq')
+            s.display_data['questions'].extend([{ 'question': y, 'answers': [ x.answer for x in Answer.objects.filter(question=y) ] } for y in questions2])
+            
+    #   Prune blank answers to textual questions
+    for dict in perclass_data:
+        for q in dict['questions']:
+            q['answers'] = [x for x in q['answers'] if (type(x) != str or (len(x) > 0 and not x.isspace()))]            
+            
+    context = {'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data}
     
-    context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data }
+    #   Choose+use appropriate output format
+    if format == 'html':
+        return render_to_response('survey/review.html', request, prog.anchor, context)
+    elif format == 'tex':
+        return render_to_latex('survey/review.tex', context, 'pdf')
+
+@login_required
+def survey_review(request, tl, program, instance):
+    """ A view of all the survey results pertaining to a particular user in the given program. """
+
+    (user, prog, surveys) = get_survey_info(request, tl, program, instance)
+    return display_survey(user, prog, surveys, request, tl, 'html')
+
+@login_required
+def survey_graphical(request, tl, program, instance):
+    """ A PDF view of the survey results with histograms. """
     
-    return render_to_response('survey/review.html', request, prog.anchor, context)
+    (user, prog, surveys) = get_survey_info(request, tl, program, instance)
+    return display_survey(user, prog, surveys, request, tl,'tex')
 
 # To be replaced with something more useful, eventually.
 @login_required

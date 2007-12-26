@@ -36,33 +36,11 @@ from esp.datatree.models import GetNode
 from esp.db.models      import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
-from esp.survey.views   import survey_view, survey_review, survey_graphical
+from esp.survey.views   import survey_view, survey_review, survey_graphical, top_classes
 
 import operator
 
-class SurveyModule(ProgramModuleObj, CoreModule):
-
-    def students(self, QObject = False):
-        verb = GetNode('V/Flags/Survey/Filed')
-        qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()))
-
-        if QObject:
-            return {'student_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
-        return {'student_survey': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
-
-    def teachers(self, QObject = False):
-        verb = GetNode('V/Flags/TeacherSurvey/Filed')
-        qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()))
-
-        if QObject:
-            return {'teacher_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
-        return {'teacher_survey': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
-
-    def studentDesc(self):
-        return {'student_survey': """Students who filled out the survey"""}
-
-    def teacherDesc(self):
-        return {'teacher_survey': """Teachers who filled out the survey"""}
+class SurveyManagement(ProgramModuleObj):
 
     def isStep(self):
         return False
@@ -73,21 +51,33 @@ class SurveyModule(ProgramModuleObj, CoreModule):
             nav_bars.append({ 'link': '/learn/%s/survey/' % ( self.program.getUrlBase() ),
                     'text': '%s Survey' % ( self.program.niceSubName() ),
                     'section': 'learn'})
-        elif self.module.module_type == 'teach':                    
-            nav_bars.append({ 'link': '/teach/%s/survey/' % ( self.program.getUrlBase() ),
-                    'text': '%s Survey' % ( self.program.niceSubName() ),
-                    'section': 'teach'})
-            nav_bars.append({ 'link': '/teach/%s/survey/review' % ( self.program.getUrlBase() ),
-                    'text': '%s Student Surveys' % ( self.program.niceSubName() ),
-                    'section': 'teach'})
-
         return nav_bars
     
-    def survey(self, request, tl, one, two, module, extra, prog):
+    @needs_admin
+    def survey_create(self, request, tl, one, two, module, extra, prog):
+       
+        context = {'program': prog}
+        
+        return render_to_response('program/modules/surveymanagement/create.html', request, prog.anchor, context)
+    
+    @needs_admin
+    def survey_edit(self, request, tl, one, two, module, extra, prog):
+
+        context = {'program': prog}
+        
+        return render_to_response('program/modules/surveymanagement/edit.html', request, prog.anchor, context)
+    
+    def surveys(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':
-            return survey_view(request, tl, one, two)
+            return render_to_response('program/modules/surveymanagement/main.html', request, prog.anchor, {'program': prog, 'surveys': prog.getSurveys()})
+        elif extra == 'edit':
+            return self.survey_edit(request, tl, one, two, module, extra, prog)
+        elif extra == 'create':
+            return self.survey_create(request, tl, one, two, module, extra, prog)
         elif extra == 'review':
             return survey_review(request, tl, one, two)
         elif extra == 'review_pdf':
             return survey_graphical(request, tl, one, two)
+        elif extra == 'top_classes':
+            return top_classes(request, tl, one, two)
         

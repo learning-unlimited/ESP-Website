@@ -544,6 +544,18 @@ class Program(models.Model):
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')
 
+    def date_range(self):
+        dates = self.getTimeSlots()
+        d1 = min(dates).start
+        d2 = max(dates).end
+        if d1.year == d2.year:
+            if d1.month == d2.month:
+                return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+            else:
+                return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
+        else:
+            return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+
     def getResourceTypes(self):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
