@@ -170,7 +170,7 @@ def histogram(answer_list, format='html'):
     from esp.web.util.latex import get_rand_file_base
     import os
     
-    template_file = TEMPLATE_DIRS + '/survey/histogram_base.eps'
+    template_file = TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
     file_base = get_rand_file_base()
     file_name = '/tmp/%s.eps' % file_base
     image_width = 2.75
