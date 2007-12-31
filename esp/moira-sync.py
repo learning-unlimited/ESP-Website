@@ -1,23 +1,7 @@
+#!/sw/bin/python
 #!/usr/bin/python
 
-####################
-# Begin Configuration Variables
-####################
-
-path_to_esp = '/esp/esp/'
-blanche_exec_template = "blanche -r -u -n %(email_name)s && blanche -r -k -n %(email_name)s 2>/dev/null"
-blanche_nonrecursive_exec_template = "blanche -u -n %(email_name)s && blanche -k -n %(email_name)s 2>/dev/null"
-admin_node = GetNode("V/Administer")
-web_qsc_node = GetNode("Q/Web")
-program_qsc_node = GetNode("Q/Programs")
-custom_prog_email_mappings = { "Q/Programs": ("esp-officers", blanche_nonrecursive_exec_template),
-                               "Q/Programs/SplashOnWheels": "splash-on-wheels",
-                               "Q/Programs/ProveIt": "proveit" }
-
-####################
-# Begin Code
-####################
-
+path_to_esp = '/sw/local/esp/esp/'
 
 # Generic setup code to be able to import esp stuff
 import sys
@@ -31,6 +15,24 @@ import esp.manage
 from esp.users.models import ESPUser, UserBit
 from esp.datatree.models import DataTree, GetNode
 from datetime import datetime, timedelta
+
+####################
+# Begin Configuration Variables
+####################
+
+blanche_exec_template = "blanche -r -u -n %(email_name)s 2>/dev/null && blanche -r -k -n %(email_name)s 2>/dev/null"
+blanche_nonrecursive_exec_template = "blanche -u -n %(email_name)s 2>/dev/null && blanche -k -n %(email_name)s 2>/dev/null"
+blanche_espofficers_espexec = "%s && %s" % (blanche_exec_template % { 'email_name': 'esp-exec' }, blanche_nonrecursive_exec_template % { 'email_name': 'esp-officers' }) 
+admin_node = GetNode("V/Administer")
+web_qsc_node = GetNode("Q/Web")
+program_qsc_node = GetNode("Q/Programs")
+custom_prog_email_mappings = { "Q/Programs": ("esp-officers", blanche_espofficers_espexec),
+                               "Q/Programs/SplashOnWheels": "splash-on-wheels",
+                               "Q/Programs/ProveIt": "proveit" }
+
+####################
+# Begin Code
+####################
 
 def clean(str):
     """ Return 'str', minus any characters not in the accept list """
@@ -77,6 +79,8 @@ for prog_node in list(program_qsc_node.children()) + [program_qsc_node]:
     users_list = [dekrb(i.strip()) for i in users if i.strip() != '']
     users.close()
 
+    print blanche_exec % { 'email_name': email_name }
+
     for username in users_list:
         # This only works for people who add their @mit.edu address to the list,
         # _AND_ use their @mit.edu address for their esp.mit.edu account.
@@ -90,9 +94,18 @@ for prog_node in list(program_qsc_node.children()) + [program_qsc_node]:
         # A "for" loop is the easiest way to handle this.
         for user in user_set:
             # Grant bits to the program, if needed
+            # This could probably be made cleaner with a call to get_or_create and a test with special code depending on whether the bit was created or not.
+            # There are several fundamental problems; most revolving around the userbit__uniquetest constraint in the db and the fact that, while there may be no _valid_ bit for a given operation, there can be expired bits.
+            # Also, UserBit Implications may trip things up, if they fail to save due to constraint violation.
             if not UserBit.UserHasPerms(user, prog_node, admin_node):
-                UserBit.objects.create(user=user, qsc=prog_node, verb=admin_node, startdate=datetime.now(), enddate = datetime.now() + timedelta(365), recursive=True)
+                ub, created = UserBit.objects.get_or_create(user=user, qsc=prog_node, verb=admin_node, defaults = { 'enddate': datetime.now() + timedelta(365) })
+                if not created:
+                    ub.enddate = datetime.now() + timedelta(365)
+                    ub.save()
 
             # Grant bits to the website, if needed
             if not UserBit.UserHasPerms(user, web_qsc_node, admin_node):
-                UserBit.objects.create(user=user, qsc=web_qsc_node, verb=admin_node, startdate=datetime.now(), enddate = datetime.now() + timedelta(365), recursive=True)
+                ub, created = UserBit.objects.get_or_create(user=user, qsc=web_qsc_node, verb=admin_node, defaults = { 'enddate': datetime.now() + timedelta(365) })
+                if not created:
+                    ub.enddate = datetime.now() + timedelta(365)
+                    ub.save()
