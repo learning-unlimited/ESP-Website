@@ -47,10 +47,10 @@ LATEX_BG      = 'Transparent' #'white'
 mimes         = {'gif': 'image/gif',
                  'png': 'image/png'}
 
-commands = {'latex'  : 'openin_any=p /usr/bin/latex',
-            'dvips'  : '/usr/bin/dvips',
-            'convert': '/usr/bin/convert',
-            'dvipng' : '/usr/bin/dvipng'}
+commands = {'latex'  : 'openin_any=p latex',
+            'dvips'  : 'dvips',
+            'convert': 'convert',
+            'dvipng' : 'dvipng'}
 
 TMP      = '/tmp'
 
@@ -102,7 +102,7 @@ class LatexImage(models.Model):
         else:
             cur_dpi = self.dpi
 
-        os.system('cd %s; %s -interaction=nonstopmode %s &>/dev/null' % \
+        os.system('cd %s && %s -interaction=nonstopmode %s &>/dev/null' % \
                   (TMP, commands['latex'], self.image))
 
         os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi &> /dev/null' % \
