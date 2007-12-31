@@ -448,7 +448,7 @@ class UserBit(models.Model):
         super(UserBit, self).save()
 
         UserBitImplication.addUserBit(self) # follow implications
-        
+
     def delete(self):
         if not hasattr(self.user,'id') or self.user.id is None:
             UserBit.updateCache(None)
@@ -579,7 +579,8 @@ class UserBitImplication(models.Model):
         return UserBit(user = originalBit.user,
                        qsc  = qsc_implied,
                        verb = verb_implied,
-                       recursive = self.recursive)
+                       recursive = self.recursive,
+                       enddate = originalBit.enddate)
 
 
     @staticmethod
