@@ -71,58 +71,15 @@ class TeacherClassRegModule(ProgramModuleObj):
 
 
     def teachers(self, QObject = False):
-        from esp.program.models import Class
-        from esp.users.models import UserBit, ESPUser
-        from datetime import datetime
-        now = datetime.now()
-        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = now)
-        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = now)
-
-        Q_approvedbits    = Q(verb = GetNode('V/Flags/Class/Approved')) &\
-                            Q(qsc__parent = self.program.classes_node())&\
-                            Q_after_start                               &\
-                            Q_before_end
-
-        Q_proposedbits    = Q(verb = GetNode('V/Flags/Class/Proposed')) &\
-                            Q(qsc__parent = self.program.classes_node())&\
-                            Q_after_start                               &\
-                            Q_before_end
-
-        # Got the bits required to find classes
-        approvedbits      = UserBit.objects.filter(Q_approvedbits).values('qsc').distinct()
-        proposedbits      = UserBit.objects.filter(Q_proposedbits).values('qsc').distinct()
-
-        approved_qsc_ids = [ bit['qsc'] for bit in approvedbits ]
-        proposed_qsc_ids = [ bit['qsc'] for bit in proposedbits ]
-
-        if len(approved_qsc_ids) == 0:
-            Q_approved_class = Q(id=-1)
-            Q_approved_teacher = Q(id=-1)
-        else:
-            Q_approved_class = Q(anchor__in = approved_qsc_ids)
-            Q_approved_teacher = Q(userbit__qsc__in = approved_qsc_ids) &\
-                                 Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
-            
-        if len(proposed_qsc_ids) == 0:
-            Q_proposed_class = Q(id=-1)
-            Q_proposed_teacher = Q(id=-1)
-        else:
-            Q_proposed_class = Q(anchor__in = proposed_qsc_ids)
-            Q_proposed_teacher = Q(userbit__qsc__in = proposed_qsc_ids) &\
-                                 Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
-
-            
-        rejectedclasses  = Class.objects.filter(parent_program = self.program).exclude( \
-                                                Q_approved_class).exclude( \
-                                                Q_proposed_class).values('anchor').distinct()
-
-        rejected_qsc_ids = [ cls['anchor'] for cls in rejectedclasses ]
-
-        if len(rejected_qsc_ids) == 0:
-            Q_rejected_teacher = Q(id=-1)
-        else:
-            Q_rejected_teacher = Q(userbit__qsc__in = rejected_qsc_ids) &\
-                                 Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
+        #   New approach: Pile the class datatree anchor IDs into the appropriate lists.
+        
+        rejected_list = [x['anchor'] for x in self.program.classes().filter(status__lt=0).values('anchor')]
+        approved_list = [x['anchor'] for x in self.program.classes().filter(status__gt=0).values('anchor')]
+        proposed_list = [x['anchor'] for x in self.program.classes().filter(status=0).values('anchor')]
+        Q_isteacher = Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
+        Q_rejected_teacher = Q(userbit__qsc__in=rejected_list) & Q_isteacher
+        Q_approved_teacher = Q(userbit__qsc__in=approved_list) & Q_isteacher
+        Q_proposed_teacher = Q(userbit__qsc__in=proposed_list) & Q_isteacher
 
         if QObject:
             return {'class_approved': self.getQForUser(Q_approved_teacher),
