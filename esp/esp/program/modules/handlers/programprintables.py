@@ -369,23 +369,37 @@ class ProgramPrintables(ProgramModuleObj):
         
 
     @needs_admin
-    def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
+    def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}):
         filterObj, found = get_user_list(request, self.program.getLists(True))
         if not found:
             return filterObj
 
         context = {'module': self     }
         students = filter(filt_exp, [ ESPUser(user) for user in filterObj.getList(User).distinct() ])
+        for s in students:
+            extra_dict = extra_func(s)
+            for key in extra_dict:
+                setattr(s, key, extra_dict[key])
         students.sort()
         context['students'] = students
         
-        return render_to_response(self.baseDir()+'studentlist.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
         
     @needs_admin
     def studentsbyname(self, request, tl, one, two, module, extra, prog):
         """ default function to get student list for program """
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog)
         
+    @needs_admin
+    def emergencycontacts(self, request, tl, one, two, module, extra, prog):
+        """ student list, having emergency contact information instead """
+        from esp.program.models import RegistrationProfile
+        
+        def emergency_stuff(student):
+            return {'emerg_contact': RegistrationProfile.getLastForProgram(student, prog).contact_emergency}
+        
+        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff)
+    
     @needs_admin
     def satprepStudentCheckboxes(self, request, tl, one, two, module, extra, prog):
         students = [ESPUser(student) for student in self.program.students_union() ]
