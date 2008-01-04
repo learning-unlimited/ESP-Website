@@ -1,0 +1,91 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Alumni: Share Your Experiences{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Stay in touch"|subsection }}
+{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script>
+<script type="text/javascript" src="/media/scripts/json.js"></script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h2>Staying in touch!</h2>
+
+<p>
+You might remember a lot about ESP that we don't.  Maybe you were a quiet teacher that didn't come to a lot of meetings.  Maybe you were in ESP before most of the current members were born.  Regardless of your situation, the form below lets you contribute any amount of information to the ESP archives - and to a discussion with your fellow alumni.
+</p>
+
+<p>
+Use the following form to create a discussion thread, then (if you want) you can respond to it with a first message.
+</p>
+
+{% if success %}
+<div class="info">Contact submission successful!</div>
+{% endif %}
+
+<div id="alumni_form">
+  <form action="{{ request.path }}" method="post">
+  <table align="center" width="600">
+
+  <thead>
+    <tr>
+      <th colspan="2">
+        Submit Something
+      </th>
+    </tr>
+  </thead>
+
+  <tbody>
+  {% if form.errors %}
+    <tr>
+      <td colspan="2">
+        <div class="errors">
+        There 
+        {% if form.errors|length_is:1 %}is an error{% else %}
+        are errors{% endif %} in the below form. Please fix and resubmit.<br />
+        </div>
+      </td>
+    </tr>
+  {% endif %}
+
+  {{ form }}
+  </tbody>
+  <tbody>
+    <tr> 
+      <td colspan="2" class="submit">
+        <input type="hidden" name="method" value="lookup" />
+        When finished, click here: 
+        <input class="fancybutton" type="submit"
+               name="sendemail" value="Send!" />
+      </td>
+    </tr>
+  </tbody>
+  </table>
+</form>
+</div>
+
+{% include "membership/thread_list.html" %}
+
+<p>
+<a href="/alumni/">Click here</a> to return to the main alumni page.
+</p>
+
+{% endblock %}

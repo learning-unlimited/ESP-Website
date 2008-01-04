@@ -1,0 +1,33 @@
+An alumni filled a form out on the ESP web site:
+
+{% if contact_form.clean_data.alt_user %}
+They were already in the ESP web site, and identified themselves
+as the following user: {{ contact_form.clean_data.alt_user }}
+{% else %}
+Contact information (no user account)
+-------------------
+Name:               {{ contact_form.clean_data.first_name }} {{ contact_form.clean_data.last_name }}
+E-mail address:     {{ contact_form.clean_data.e_mail }}
+Mailing address:    {{ contact_form.clean_data.address_street }}
+                    {{ contact_form.clean_data.address_city }}, {{ contact_form.clean_data.address_state }} {{ contact_form.clean_data.address_zip }}
+Phone numbers:
+-   Cell:           {{ contact_form.clean_data.phone_cell }}
+-   Day:            {{ contact_form.clean_data.phone_day }}
+-   Evening:        {{ contact_form.clean_data.phone_even }}
+{% endif %}
+
+Information about their role in ESP
+-----------------------------------
+From year:	                                                {{ main_form.clean_data.start_year }}
+To year:	                                                {{ main_form.clean_data.end_year }}
+Send me a biannual e-mail newsletter:	                        {{ main_form.clean_data.news_interest }}
+Join our alumni advising e-mail list:	                        {{ main_form.clean_data.advising_interest }}
+
+Involvement in ESP programs/activities:	
+
+{{ main_form.clean_data.involvement }}
+
+-----------
+End of form
+
+

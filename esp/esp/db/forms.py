@@ -1,58 +1,22 @@
 from django.core import validators
-from django import oldforms
+from django.db import models
+from django import oldforms, newforms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
 import re
 
 get_id_re = re.compile('.*\D(\d+)\D')
 
-class AjaxForeignKeyFormField(oldforms.FormField):
-    def __init__(self, field_name, field,queryset=None,
-                 is_required=False, validator_list=None,
-                 member_name=None, ajax_func = None, width=None):
-        self.queryset    = queryset
-        self.field_name  = field_name
-        self.field       = field
-        self.is_required = is_required
+class AjaxForeignKeyFieldBase:
 
-        if width is None:
-            self.width = '25em'
-        else:
-            self.width = width
-
-        if ajax_func is None:
-            self.ajax_func = 'ajax_autocomplete'
-        else:
-            self.ajax_func = ajax_func
-        
-        if validator_list is None:
-            validator_list = []
-
-        self.validator_list = [self.isProperPost] + validator_list
-
-    def extract_data(self, data):
-        try:
-            value = data[self.field_name]
-        except KeyError:
-            value = data.get(self.field.attname, '')
-
-        try:
-            return int(str(value))
-        except ValueError:
-            return ''
-
-    def prepare(self, data):
-        try:
-            new_data =  self.isProperPost(self, data)
-            data[self.field_name] = new_data
-        except validators.ValidationError:
-            return
-
-
-    def render(self, data):
+    def render(self, *args, **kwargs):
         """
         Renders the actual ajax widget.
         """
+        if len(args) == 1:
+            data = args[0]
+        else:
+            data = args[1]
 
         old_init_val = init_val = data
 
@@ -166,14 +130,114 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 </div>
 <div class="raw_id_admin">
   <a href="../" class="related-lookup" id="lookup_%s" onclick="return showRelatedObjectLookupPopup(this);">
-  <img src="/media/admin/img/admin/selector-search.gif" width="16" height="16" alt="Lookup" /></a>   
+  <img src="/media/admin/img/admin/selector-search.gif" border="0" width="16" height="16" alt="Lookup" /></a>   
    &nbsp;<strong>%s</strong>
 </div>
 """ % (fn,fn,fn,self.field.blank and ' required' or '',addslashes(data or ''),fn,
        fn,old_init_val)
 
         return css + html + javascript
+    
+class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, newforms.Widget):
+    
+    def __init__(self, attrs=None, *args, **kwargs):
+        
+        super(AjaxForeignKeyWidget, self).__init__(attrs, *args, **kwargs)
+        if attrs.has_key('field'):
+            self.field = attrs['field']
+            self.field_name = self.field.name
+        elif attrs.has_key('type'):
+            #   Anyone have a better hack here?
+            self.field = models.ForeignKey(attrs['type'])
+            
+        if attrs.has_key('width'):
+            self.width = attrs['width']
+        #   render function is provided by AjaxForeignKeyFieldBase
+    
+    
+class AjaxForeignKeyNewformField(newforms.IntegerField):
+    """ An Ajax autocompletion field that works like the other fields in django.newforms.
+        You need to initialize it in one of two ways:
+        -   [name] = AjaxForeignKeyNewformField(key_type=[model], field_name=[name])
+        -   [name] = AjaxForeignKeyNewformField(field=[field])
+            where [field] is the field in a model (i.e. ForeignKey) 
+    """
+    def __init__(self, field_name='', field=None, key_type=None, required=False, label='', initial=None, widget=None, help_text='', ajax_func=None):
+        
+        if field:
+            self.widget = AjaxForeignKeyWidget(attrs={'field': field, 'width': 35})
+        elif key_type:
+            self.widget = AjaxForeignKeyWidget(attrs={'type': key_type, 'width': 35})
+        else:
+            raise NotImplementedError
+        
+        self.label = label
+        self.required = required
+        self.help_text = help_text
+        self.initial = initial
+        self.widget.field_name = field_name
 
+        if ajax_func is None:
+            self.widget.ajax_func = 'ajax_autocomplete'
+        else:
+            self.widget.ajax_func = ajax_func
+            
+    def clean(self, value):
+        if (value is None or value == '') and not self.required:
+            return None
+        
+        try:
+            value = int(value)
+        except ValueError:
+            match = get_id_re.match(value)
+            if match:
+                value = match.groups()[0]
+            else:
+                raise validators.ValidationError, "Invalid text sent for key."
+
+        return value
+            
+class AjaxForeignKeyFormField(AjaxForeignKeyFieldBase, oldforms.FormField):
+    def __init__(self, field_name, field,queryset=None,
+                 is_required=False, validator_list=None,
+                 member_name=None, ajax_func = None, width=None):
+        self.queryset    = queryset
+        self.field_name  = field_name
+        self.field       = field
+        self.is_required = is_required
+
+        if width is None:
+            self.width = '25em'
+        else:
+            self.width = width
+
+        if ajax_func is None:
+            self.ajax_func = 'ajax_autocomplete'
+        else:
+            self.ajax_func = ajax_func
+        
+        if validator_list is None:
+            validator_list = []
+
+        self.validator_list = [self.isProperPost] + validator_list
+
+    def extract_data(self, data):
+        try:
+            value = data[self.field_name]
+        except KeyError:
+            value = data.get(self.field.attname, '')
+
+        try:
+            return int(str(value))
+        except ValueError:
+            return ''
+
+    def prepare(self, data):
+        try:
+            new_data =  self.isProperPost(self, data)
+            data[self.field_name] = new_data
+        except validators.ValidationError:
+            return
 
     def isProperPost(self, field, data):
         try:

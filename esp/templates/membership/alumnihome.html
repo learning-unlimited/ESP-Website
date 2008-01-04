@@ -1,0 +1,47 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Alumni: Home Page{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{{ "Stay in touch"|subsection }}
+{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+{% endblock %}
+
+{% block content %}
+<h2>ESP Alumni Portal</h2><br />
+
+<p>
+Thanks for visiting ESP.  Maybe it's been a while and you can barely remember what ESP is; or maybe you're Mike Shaw.  In any case, we're trying to help you learn more about ESP, and to help ESP learn more about its past.  How come HSSP was so much cooler in the 1960s and 1970s?  Was 2007's Splash really the largest ever?  Is there any way for us to run a non-disaster residential program?  These are the kinds of questions we might be able to answer with your help (and maybe you'll raise more).  Or at least we'll have some fun talking about them.
+</p>
+
+<p>
+We're also interested in what role you played in ESP.  Submit the <a href="contact/">contact form</a> to link yourself and others to a past or present ESP program, or start a discussion.
+</p>
+
+<p>
+The following features are available to you:
+<ul>
+<li><a href="contact/">Submit a story, class or event for discussion</a>
+<li><a href="lookup/">Look up fellow alumni and share contact information</a>
+</ul>
+</p>
+
+<p>
+Also, feel free to browse the following informational pages:
+<ul>
+{% for item in links %}
+<li><a href="/alumni/{{ item.name }}.html">{{ item.title }}</a>
+{% endfor %}
+</ul>
+</p>
+
+{% include "membership/thread_list.html" %}
+
+{% endblock %}

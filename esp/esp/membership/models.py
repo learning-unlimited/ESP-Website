@@ -31,21 +31,11 @@ Email: web@esp.mit.edu
 
 from django.db import models
 from esp.db.fields import AjaxForeignKey
+from esp.utils.forms import save_instance
+from esp.datatree.models import DataTree
 from esp.program.models import ContactInfo
 import datetime
 
-attend_status_choices = (
-    ('Definitely', 'Definitely'),
-    ('Probably', 'Probably'),
-    ('Possibly', 'Possibly'),
-    ('No','No'),
-    )
-
-partofesp_choices = (
-    ('Yes', 'Yes'),
-    ('No', 'No'),
-    )
-    
 rsvp_choices = (
     ('Yes', 'Yes'),
     ('No', 'No'),
@@ -57,7 +47,6 @@ guest_choices = (
     ('2', '2'),
     ('3', '3'),
     )
-
 
 class AlumniRSVP(models.Model):
     name = models.CharField('Your name', maxlength=30)
@@ -74,48 +63,106 @@ class AlumniRSVP(models.Model):
     class Admin:
         pass
 
-class AlumniContact(models.Model):
-    """ This model answers the following questions: 
-    1. If you were not part of ESP, please let us know (check box)
-    2. I was part of ESP from [box for year] until [box for year]
-    3. I was involved in: (check box list of all programs we know of, and then an
-    'other' options)
-    4. Can we make the above information available to other alumni? (check box)
-    5. Contact information boxes for address, email, and phone
-    6. Are you able to attend ESP's landmark 50th anniversary celebration on
-    Saturday, September 14th?
-    7. Would you like to get involved with ESP again by:
-    a. receiving our biannual e-newsletter updating you on our current activities
-    b. becoming part of an alumni advising email list
-    c. volunteering for current programs
-    8. To find out a little bit more about what we are up to check out [Link to a
-    blurb written specifically for them]
-    9. Any more information they'd like to provide. (blank box) 
-    """
-    partofesp = models.CharField('Were you a part of any ESP programs (such as Splash, HSSP, SAT Prep, Junction or Mesh) at MIT?',choices=partofesp_choices, maxlength=10)
+class AlumniInfo(models.Model):
     start_year = models.IntegerField('From year',blank=True,null=True)
     end_year = models.IntegerField('To year',blank=True,null=True)
     involvement = models.TextField('What ESP programs/activities (HSSP, Splash, SAT Prep, etc.) were you involved with?',blank=True,null=True)
-    contactinfo = AjaxForeignKey(ContactInfo, blank=True, related_name='alumni_user', verbose_name='Contact Information')
     
     news_interest = models.BooleanField('Would you like to receive our e-mail newsletter twice yearly?', null=True)
-    reconnect_interest = models.BooleanField('Would you like reconnect with other ESP alumni?', null=True)
     advising_interest = models.BooleanField('Would you like to join an e-mail list of alumni that advise ESP?', null=True)
-    volunteer_interest = models.BooleanField('Would you like to volunteer at current ESP programs?', null=True)
     
-    attend_interest = models.CharField('Are you able to attend ESP\'s 50th anniversary event on September 14-15, 2007?', choices=attend_status_choices, maxlength=50)
+    contactinfo = AjaxForeignKey(ContactInfo, blank=True, related_name='alumni_user', verbose_name='Contact Information')
     
-    comments = models.TextField('Is there anything else you would like to tell us?  Do you have any questions?', blank=True,null=True)
-
-    create_ts = models.DateTimeField(default=datetime.datetime.now,
-                                     editable=False)
-
     def __str__(self):
-        comments = ''
-        if self.comments and self.comments != '':
-            comments = '(...)'
+        return "%s %s (%s-%s)" % (self.contactinfo.first_name, self.contactinfo.last_name, self.start_year, self.end_year)
         
-        return "%s %s-%s (Attending: %s) %s" % (self.contactinfo, self.start_year, self.end_year, self.attend_interest, comments)
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        names = data.strip().split(',')
+        last = names[0]
+
+        query_set = cls.objects.filter(contactinfo__last_name__istartswith = last.strip())
+
+        if len(names) > 1:
+            first  = ','.join(names[1:])
+            if len(first.strip()) > 0:
+                query_set = query_set.filter(contactinfo__first_name__istartswith = first.strip())
+
+        values = query_set.select_related().order_by('start_year').values('id', 'start_year', 'end_year', 'contactinfo')
+
+        for value in values:
+            ci = ContactInfo.objects.get(id=value['contactinfo'])
+            value['ajax_str'] = '%s, %s (%s-%s)' % (ci.last_name, ci.first_name, value['start_year'], value['end_year'])
+        return values
+
+    def ajax_str(self):
+        return "%s, %s (%s-%s)" % (self.contactinfo.last_name, self.contactinfo.first_name, self.start_year, self.end_year)
+
+    @staticmethod
+    def lookup(data):
+        """ Take the first_name, last_name, start_year, end_year fields and see if you can find people.
+        Return a QuerySet of AlumniInfos. """
+
+        qs = AlumniInfo.objects.all()
+        if data.has_key('first_name') and data['first_name'] is not None:
+            qs = AlumniInfo.objects.filter(contactinfo__first_name__icontains=data['first_name'])
+        if data.has_key('last_name') and data['last_name'] is not None:
+            qs = AlumniInfo.objects.filter(contactinfo__last_name__icontains=data['last_name'])
+        if data.has_key('start_year') and data['start_year'] is not None:
+            qs = AlumniInfo.objects.filter(start_year__gte=data['start_year'])
+        if data.has_key('end_year') and data['end_year'] is not None:
+            qs = AlumniInfo.objects.filter(end_year__lte=data['end_year'])
+        return qs.order_by('start_year')
     
     class Admin:
         pass
+    
+    
+class AlumniMessage(models.Model):
+    #   A simple thread posting.
+    poster = models.CharField('Who are you?', maxlength=128)
+    thread = models.ForeignKey('AlumniContact')
+    seq = models.IntegerField()
+    content = models.TextField('Message')
+    
+    TEMPLATE_FILE = 'membership/single_message.html'
+    
+    def __str__(self):
+        return 'Post by %s (ref: %s)' % (self.poster, self.thread.comment)
+    
+    def html(self):
+        from django.template import loader
+        context = {'content': self.content, 'seq': self.seq, 'poster': self.poster}
+        return loader.render_to_string(self.TEMPLATE_FILE, context)
+    
+class AlumniContact(models.Model):
+    #   An AlumniContact is like the start of a discussion thread consisting of AlumniMessages.
+    participants = models.ManyToManyField(AlumniInfo, verbose_name='Select people to associate posting with')
+    anchor = models.ForeignKey(DataTree, verbose_name='Program (if any) to associate posting with', null=True)
+    year = models.IntegerField('Year[s]')
+    timestamp = models.DateTimeField(default = datetime.datetime.now)
+    comment = models.CharField('Post title/note', maxlength=256, null=True)
+
+    def __str__(self):
+        return '%s (year: %s)' % (self.comment, self.year)
+
+    def get_reply_form(self):
+        from esp.membership.forms import AlumniMessageForm
+        #   If the form is already there, don't mess with it.  
+        #   Otherwise, come up with a blank one.
+        if hasattr(self, 'reply_form'):
+            return self.reply_form
+        else:
+            self.reply_form = AlumniMessageForm(thread=self)
+            return self.reply_form
+
+    def max_seq(self):
+        messages = AlumniMessage.objects.filter(thread=self).order_by('-seq')
+        if messages.count() > 0:
+            return messages[0].seq
+        else:
+            return 0
+
+    def messages(self):
+        qs = AlumniMessage.objects.filter(thread=self).order_by('seq')
+        return list(qs)

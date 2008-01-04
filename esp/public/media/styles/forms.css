@@ -209,3 +209,7 @@
 #program_form td.underline {
     border-bottom: 1px dashed #699;
 }
+
+div.raw_id_admin {
+    visibility: hidden;
+}
