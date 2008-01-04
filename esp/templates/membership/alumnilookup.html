@@ -103,22 +103,25 @@
 {% if lookup_performed %}
 <div id="catalog">
 <br />
-<table width="500" align="center" cellpadding="0" cellspacing="0">
+<table width="600" align="center" cellpadding="0" cellspacing="0">
 <tr>
     <th colspan="3" align="center">Lookup found {{ lookup_list|length }} matches</th>
 </tr>
 {% if not lookup_list|length_is:0 %}
     <tr>
-        <th width="25%" class="materials">Name</th>
-        <th width="25%" class="materials">Years</th>
-        <th width="50%" class="materials">Involvement in ESP</th>
+        <th width="20%" class="materials">Name</th>
+        <th width="20%" class="materials">Years</th>
+        <th width="60%" class="materials">Involvement in ESP</th>
     </tr>
+    </table>
     {% for lookup_result in lookup_list %}
+    <table width="600" align="center" cellpadding="0" cellspacing="0">
         <tr>
-            <td>{{ lookup_result.contactinfo.first_name }} {{ lookup_result.contactinfo.last_name }}</td>
-            <td>{{ lookup_result.start_year }} -- {{ lookup_result.end_year }}</td>
-            <td>{{ lookup_result.involvement }}</td>
+            <td width="20%" valign="top">{{ lookup_result.contactinfo.first_name }} {{ lookup_result.contactinfo.last_name }}</td>
+            <td width="20%" valign="top">{{ lookup_result.start_year }} -- {{ lookup_result.end_year }}</td>
+            <td width="60%" valign="top">{{ lookup_result.involvement }}</td>
         </tr>
+    </table>
     {% endfor %}
 {% endif %}
 </table>

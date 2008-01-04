@@ -102,16 +102,22 @@ class AlumniInfo(models.Model):
     def lookup(data):
         """ Take the first_name, last_name, start_year, end_year fields and see if you can find people.
         Return a QuerySet of AlumniInfos. """
+        def check_data_for_key(key):
+            return data.has_key(key) and data[key] is not None
 
         qs = AlumniInfo.objects.all()
-        if data.has_key('first_name') and data['first_name'] is not None:
-            qs = AlumniInfo.objects.filter(contactinfo__first_name__icontains=data['first_name'])
-        if data.has_key('last_name') and data['last_name'] is not None:
-            qs = AlumniInfo.objects.filter(contactinfo__last_name__icontains=data['last_name'])
-        if data.has_key('start_year') and data['start_year'] is not None:
-            qs = AlumniInfo.objects.filter(start_year__gte=data['start_year'])
-        if data.has_key('end_year') and data['end_year'] is not None:
-            qs = AlumniInfo.objects.filter(end_year__lte=data['end_year'])
+        if check_data_for_key('first_name'):
+            qs = qs.filter(contactinfo__first_name__icontains=data['first_name'])
+        if check_data_for_key('last_name'):
+            qs = qs.filter(contactinfo__last_name__icontains=data['last_name'])
+        
+        if check_data_for_key('start_year') and check_data_for_key('end_year'):
+            qs = qs.filter(start_year__lte=data['end_year'], end_year__gte=data['start_year'])
+        elif check_data_for_key('start_year'):
+            qs = qs.filter(start_year=data['start_year'])
+        elif check_data_for_key('end_year'):
+            qs = qs.filter(end_year=data['end_year'])
+            
         return qs.order_by('start_year')
     
     class Admin:
