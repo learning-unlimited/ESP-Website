@@ -41,6 +41,7 @@ class UserContactManipulator(forms.Manipulator):
             makeRequired = False
             
         phone_validators = [OneOfSetAreFilled(['phone_day','phone_cell'])]
+        self.makeRequired = makeRequired
         self.fields = (
             forms.TextField(field_name="first_name", length=25, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="last_name", length=30, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
@@ -53,6 +54,11 @@ class UserContactManipulator(forms.Manipulator):
             forms.TextField(field_name="address_zip", length=5, maxlength=5, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.HiddenField(field_name="address_postal",is_required=False),
         )
+
+class TeacherContactManipulator(UserContactManipulator):
+    def __init__(self, *args, **kwargs):
+        super(TeacherContactManipulator, self).__init__(*args, **kwargs)        
+        self.fields[4].is_required = self.makeRequired
         
 class EmergContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
@@ -158,7 +164,7 @@ class StudentProfileManipulator(forms.Manipulator):
 class TeacherProfileManipulator(forms.Manipulator):
     """ The teacher profile manipulator created from other manipulators """
     def __init__(self, user = None):
-        self.fields = UserContactManipulator(user).fields + \
+        self.fields = TeacherContactManipulator(user).fields + \
                       TeacherInfoManipulator(user).fields
 
 class GuardianProfileManipulator(forms.Manipulator):
