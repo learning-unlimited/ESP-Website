@@ -70,7 +70,9 @@ def texescape(value):
         else:
             value += "''" + strings[i]
 
-    # deal with new-lines
+    # deal with new-lines and a couple other oddities
+    value = value.replace('[', '(')
+    value = value.replace(']', ')')
     value = value.replace('\r\n', '\n')
     value = value.replace('\r',   '\n')
     value = value.replace('\n',   '\\\\\n')
