@@ -111,61 +111,11 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
 
-
-navbar_data = [
-	{ 'link': '/teach/what-to-teach.html',
-	  'text': 'What You Can Teach',
-	'indent': False },
-	{ 'link': '/teach/prev-classes.html',
-	  'text': 'Previous Classes',
-	  'indent': False },
-	{ 'link': '/teach/teaching-time.html',
-	  'text': 'Time Commitments',
-	  'indent': False },
-	{ 'link': '/teach/training.html',
-	  'text': 'Teacher Training',
-	  'indent': False },
-	{ 'link': '/teach/ta.html',
-	  'text': 'Become a TA',
-	  'indent': False },
-	{ 'link': '/teach/coteach.html',
-	  'text': 'Co-Teach',
-	  'indent': False },
-	{ 'link': '/teach/reimburse.html',
-	  'text': 'Reimbursements',
-	  'indent': False },
-	{ 'link': '/programs/hssp/teach.html',
-	  'text': 'HSSP',
-	  'indent': False },
-	{ 'link': '/programs/hssp/classreg.html',
-	  'text': 'Class Registration',
-	  'indent': True },
-	{ 'link': '/teach/teacherinformation.html',
-	  'text': 'Teacher Information',
-	  'indent': True },
-	{ 'link': '/programs/hssp/summerhssp.html',
-	  'text': 'Summer HSSP',
-	  'indent': False },
-	{ 'link': '/programs/hssp/classreg.html',
-	  'text': 'Class Registration',
-	  'indent': True },
-	{ 'link': '/programs/firehose/teach.html',
-	  'text': 'Firehose',
-	  'indent': False },
-	{ 'link': '/programs/junction/teach.html',
-	  'text': 'JUNCTION',
-	  'indent': False },
-	{ 'link': '/programs/junction/classreg.html',
-	  'text': 'Class Registration',
-	  'indent': True },
-	{ 'link': '/programs/delve/teach.html',
-	  'text': 'DELVE (AP Program)',
-	  'indent': False }
-]
+#   The data we used to have here was bogus.
+navbar_data = []
 
 class DefaultNavBarData(object):
     value = navbar_data
-
 
 default_navbar_data = DefaultNavBarData()
 

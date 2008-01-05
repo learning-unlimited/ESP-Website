@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.web.models import NavBarEntry
-from esp.users.models import UserBit, AnonymousUser
+from esp.users.models import UserBit, AnonymousUser, ESPUser
 from esp.datatree.models import GetNode
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from esp.datatree.models import DataTree
@@ -43,7 +43,7 @@ from esp.db.models import Q
 
 EDIT_VERB_STRING = 'V/Administer/Edit/QSD'
 
-def qsd_tree_program(qsdTree, node, section, user):
+def qsd_tree_program(qsdTree, node, sections, user):
     """
     This function will go through the tree and add
     appropriate Program-related entries.
@@ -52,6 +52,10 @@ def qsd_tree_program(qsdTree, node, section, user):
     """
     # useful for copying objects
     import copy
+    
+    # if the user is in a certain section of the site (i.e their URL has /teach/, /learn/ etc in it),
+    # then this will be the first element in sections.
+    section = sections[0]
 
     # all programs that have been displayed
     displayed_programs = {}
@@ -61,7 +65,7 @@ def qsd_tree_program(qsdTree, node, section, user):
                                  link='',text='')
 
     if node.depth() > 2:
-        parent_navbars = NavBarEntry.objects.filter(path = node.parent, section=section)
+        parent_navbars = NavBarEntry.objects.filter(path = node.parent, section__in=sections)
 
         if len(parent_navbars[:1]) > 0:
             parent_navbar = parent_navbars[0]
@@ -109,9 +113,17 @@ def makeNavBar(user, node, section = ''):
         
         
         def _value(self):
-            user = self.user
+            user = ESPUser(self.user)
             node = self.node
-            section = self.section or ''
+            sections = [self.section, '']
+            if user.isTeacher():
+                sections += ['teach']
+            if user.isAdmin():
+                sections += ['manage']
+            if user.isStudent():
+                sections += ['learn']
+            if user.isOnsite():
+                sections += ['onsite']
 
             edit_verb = GetNode(EDIT_VERB_STRING)
 
@@ -125,7 +137,7 @@ def makeNavBar(user, node, section = ''):
                                                                         anchor__name__icontains=i.text)
 
             from esp.db.models import QSplit
-            qsdTree = list(NavBarEntry.objects.filter(path = self.node, section=section).order_by('sort_rank')) + list(NavBarEntry.objects.filter(path__parent = self.node, section=section).order_by('sort_rank'))
+            qsdTree = list(NavBarEntry.objects.filter(path = self.node, section__in=sections).order_by('sort_rank')) + list(NavBarEntry.objects.filter(path__parent = self.node, section__in=sections).order_by('sort_rank'))
 
             if user is None or isinstance(user, AnonymousUser) or user.id is None:
                 has_edit_bits = False
@@ -136,12 +148,12 @@ def makeNavBar(user, node, section = ''):
 
 
             # add program entries
-            qsdTreeList = list(qsd_tree_program(qsdTreeList, node, section, user))
+            qsdTreeList = list(qsd_tree_program(qsdTreeList, node, sections, user))
 
             context = { 'node': node,
                     'has_edit_bits': has_edit_bits,
                     'qsdTree': qsdTreeList,
-                    'section': section
+                    'section': sections[0]
                         }
 
             

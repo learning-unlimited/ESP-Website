@@ -39,11 +39,14 @@ from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
 
 @login_required
-def bio_edit(request, tl, last, first, usernum=0, progid = None, external = False):
+def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False):
 	""" Edits a teacher bio """
 	from esp.web.manipulators import TeacherBioManipulator
 	
-	founduser = ESPUser.getUserFromNum(first, last, usernum)
+	if tl == '':
+		founduser = ESPUser(request.user)
+	else:
+		founduser = ESPUser.getUserFromNum(first, last, usernum)
 
 	if not founduser.isTeacher():
 		raise ESPError(False), '%s is not a teacher of ESP.' % \
@@ -102,7 +105,7 @@ def bio_edit(request, tl, last, first, usernum=0, progid = None, external = Fals
 		new_data['bio']          = lastbio.bio
 		new_data['picture_file'] = lastbio.picture
 		
-	return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/Bio'), {'form':    forms.FormWrapper(manipulator, new_data, errors),
+	return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/myesp'), {'form':    forms.FormWrapper(manipulator, new_data, errors),
 											       'user':    founduser,
 											       'picture_file': lastbio.picture})
 

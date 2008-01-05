@@ -35,6 +35,7 @@ from esp.users.models import User
 from esp.db.fields import AjaxForeignKey
 
 from django.db import models
+from esp.db.models import Q
 import pickle
 
 ########################################
@@ -188,7 +189,10 @@ class Resource(models.Model):
         return Resource.objects.filter(group_id=self.group_id)
     
     def associated_resources(self):
-        return self.grouped_resources().exclude(id=self.id)
+        rt1 = ResourceType.get_or_create('Classroom')
+        rt2 = ResourceType.get_or_create('Teacher Availability')
+        Q_assoc_types = Q(res_type=rt1) | Q(res_type=rt2)
+        return self.grouped_resources().exclude(id=self.id).exclude(Q_assoc_types)
     
     def assign_to_class(self, new_class):
         new_ra = ResourceAssignment()
