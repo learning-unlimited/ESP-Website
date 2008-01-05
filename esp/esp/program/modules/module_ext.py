@@ -85,6 +85,7 @@ class CreditCardModuleInfo(models.Model):
 class RemoteProfile(models.Model):
     from esp.users.models import User
     from esp.program.models import Program
+    from esp.cal.models import Event
 
     user      = AjaxForeignKey(User,blank=True, null=True)
     program   = models.ForeignKey(Program,blank=True, null=True)
@@ -93,7 +94,7 @@ class RemoteProfile(models.Model):
     bus_runs  = models.ManyToManyField(DataTree,
                                        related_name="bus_teachers",
                                        blank=True)
-    volunteer_times = models.ManyToManyField(DataTree,
+    volunteer_times = models.ManyToManyField(Event,
                                              related_name='teacher_volunteer_set',
                                              blank=True)
 

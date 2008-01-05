@@ -286,11 +286,15 @@ class CheckboxSelectMultipleField(forms.SelectMultipleField):
     def prepare(self, new_data):
         # new_data has "split" this field into several fields, so flatten it
         # back into a single list.
+        """
         data_list = []
         for value, readable_value in self.choices:
             if new_data.get('%s%s' % (self.field_name, value), '') == 'on':
                 data_list.append(value)
         new_data.setlist(self.field_name, data_list)
+        """
+        #   really? doesn't look that way now    -Michael P
+        pass
 
     def render(self, data):
         output = ['<ul%s>' % (self.ul_class and ' class="%s"' % self.ul_class or '')]

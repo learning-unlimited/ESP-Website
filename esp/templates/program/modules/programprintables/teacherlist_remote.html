@@ -1,0 +1,62 @@
+<html>
+<head>
+<title>Teacher List</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; margin: 0; font-size: 12px;}
+.title { text-align: center; font-size: 12pt; font-family: georgia; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+.facts { text-align: center; border: 0; }
+.facts th { text-align: right; font-size: 12pt; font-weight: bold; }
+.facts td { text-align: left; font-size: 12pt;}
+.facts td.paid { border: 1px solid black; text-align: center;
+                 }
+.title { padding: 1in 0 0 0; }
+.schedule {border: 1px solid black; }
+.schedule td { border: 1px solid black; }
+.schedule th { border: 1px solid black; vertical-align: top; }
+.schedule td { vertical-align: top; }
+.schedule th.day { border-bottom: 0; }
+.schedule td.oldday { border-bottom: 0;
+                      border-top: 0;}
+td.newday { border-width: 2px 1px 0 1px;}
+#pagebreak {page-break-after: always; }
+.description { text-align: center; padding: .2in 0 .2in 0; }
+td, th {
+       border: 1px solid black;
+       border-collapse: collapse
+}
+.box { width: 15px; height: 15px; border: 2px solid black; 
+   font-weight: bold; text-align: center; vertical-align: middle;
+}
+</style>
+
+</head>
+<body>
+
+<h1>Teachers and Remote Profile Information</h1>
+
+<table style="border: 1px solid black; border-collapse: collapse;">
+<tr>
+ <th># </th>
+ <th>Name</th>
+ <th>Cellphone #</th>
+ <th>Volunteer?</th>
+ <th>Volunteer Times</th>
+ <th>Needs Ride?</th>
+</tr>
+
+{% for scheditem in scheditems %}
+<tr>
+ <td>{{ forloop.counter }}</td>
+ <td>{{ scheditem.name }}</td>
+ <td>{{ scheditem.phonenum }}</td>
+ <td><div class="box">{% if scheditem.user.remoteprofile.volunteer %}X{% else %}&nbsp;{% endif %}</div></td>
+ <td>{% for t in scheditem.user.remoteprofile.volunteer_times.all %} {{ t.short_time }}{% if not forloop.last %}<br />{% endif %}{% endfor %}</td>
+ <td><div class="box">{% if scheditem.user.remoteprofile.needs_bus %}X{% else %}&nbsp;{% endif %}</div></td>
+</tr>
+{% endfor %}
+
+
+</body>
+</html>

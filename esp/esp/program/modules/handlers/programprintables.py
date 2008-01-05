@@ -266,7 +266,7 @@ class ProgramPrintables(ProgramModuleObj):
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_room)
 
     @needs_admin
-    def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
+    def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
         from esp.users.models import ContactInfo
         
         filterObj, found = get_user_list(request, self.program.getLists(True))
@@ -275,6 +275,10 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'module': self     }
         teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct() ]
+        for t in teachers:
+            extra_dict = extra_func(t)
+            for key in extra_dict:
+                setattr(t, key, extra_dict[key])
         teachers.sort()
 
         scheditems = []
@@ -305,7 +309,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+'teacherlist.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
 
     @needs_admin
     def teacherlist(self, request, tl, one, two, module, extra, prog):
@@ -345,15 +349,19 @@ class ProgramPrintables(ProgramModuleObj):
         return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
 
     @needs_admin
-    def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
+    def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
         
         rooms = self.program.groupedClassrooms()
         rooms = filter(filt_exp, rooms)
+        for s in rooms:
+            extra_dict = extra_func(s)
+            for key in extra_dict:
+                setattr(s, key, extra_dict[key])
         rooms.sort(sort_exp)
 
         context = {'rooms': rooms, 'program': self.program}
 
-        return render_to_response(self.baseDir()+'roomlist.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
         
     @needs_admin
     def roomsbytime(self, request, tl, one, two, module, extra, prog):
@@ -380,7 +388,7 @@ class ProgramPrintables(ProgramModuleObj):
             extra_dict = extra_func(s)
             for key in extra_dict:
                 setattr(s, key, extra_dict[key])
-        students.sort()
+        students.sort(sort_exp)
         context['students'] = students
         
         return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
@@ -436,6 +444,19 @@ class ProgramPrintables(ProgramModuleObj):
         context['scheditems'] = scheditems
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
+
+    @needs_admin
+    def teacherinfo(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.module_ext import RemoteProfile
+        
+        def get_remote_info(teacher):
+            qs = RemoteProfile.objects.filter(user=teacher, program=prog)
+            if qs.count() > 0:
+                return {'remoteprofile': qs[0]}
+            else:
+                return {}
+            
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, extra_func=get_remote_info, template_file='teacherlist_remote.html')
 
     def get_msg_vars(self, user, key):
         user = ESPUser(user)

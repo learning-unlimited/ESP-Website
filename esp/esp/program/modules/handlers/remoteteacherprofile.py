@@ -33,6 +33,7 @@ from esp.program.modules         import module_ext, manipulators
 from esp.program.models          import Program, Class, ClassCategories
 from esp.datatree.models         import DataTree, GetNode
 from esp.web.util                import render_to_response
+from esp.middleware              import ESPError
 from django                      import forms
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
@@ -51,25 +52,20 @@ class RemoteTeacherProfile(ProgramModuleObj):
         return [(str(x.id),x.short_description) for x in times]
 
     def teachers(self, QObject = False):
-        return {}
-        #Q_teachers = Q(remoteteacherparticipationprofile__program = self.program)
-        #if QObject:
-        #    return {'teacher_remoteprofile': Q_teachers}
-
-        #teachers = User.objects.filter(Q_teachers).distinct()
-        #return {'teacher_remoteprofile': teachers }
+        Q_teachers = Q(remoteprofile__program = self.program)
+        if QObject:
+            return {'teacher_remoteprofile': self.getQForUser(Q_teachers)}
+        
+        teachers = User.objects.filter(Q_teachers).distinct()
+        return {'teacher_remoteprofile': teachers}
 
     def teacherDesc(self):
         return {'teacher_remoteprofile': """Teachers who have completed the remote volunteer profile."""}
 
     def isCompleted(self):
-        regProf, created = module_ext.RemoteProfile.objects.get_or_create(user = self.user,
-                                                                                              program = self.program)
-        
+        regProf, created = module_ext.RemoteProfile.objects.get_or_create(user = self.user, program = self.program)
         return not created
 
-
- 
     @meets_deadline()
     @needs_teacher
     def editremoteprofile(self, request, tl, one, two, module, extra, prog):
@@ -94,19 +90,13 @@ class RemoteTeacherProfile(ProgramModuleObj):
                     if k != 'volunteer_times':
                         profile.__dict__[k] = v
 
-
                 profile.volunteer_times.clear()
 
-
                 for block in new_data.getlist('volunteer_times'):
-                    try:
-                        tmpQsc = DataTree.objects.get(id = int(block))
-                        profile.volunteer_times.add(tmpQsc)
-                    except:
-                        raise ESPError(), "Invalid timeblock given."
+                    tmp_event = Event.objects.get(id = int(block))
+                    profile.volunteer_times.add(tmp_event)
 
                 profile.save()
-
                 
                 return self.goToCore(tl)
                             
