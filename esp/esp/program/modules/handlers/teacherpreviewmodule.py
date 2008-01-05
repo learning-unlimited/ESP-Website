@@ -29,17 +29,49 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj
+from esp.middleware              import ESPError
 from esp.program.models          import Class
 from datetime                    import timedelta
+from esp.users.models            import ESPUser
+from esp.web.util        import render_to_response
 
 class TeacherPreviewModule(ProgramModuleObj):
-    """ This program module allows teachers to view classes already added to the program. """
+    """ This program module allows teachers to view classes already added to the program.
+        And, for now, also some printables. """
+
+    def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedules.html'):
+        #   Use the template defined in ProgramPrintables
+        from esp.program.modules.handlers import ProgramPrintables
+        context = {'module': self}
+        pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
+        if pmos.count() == 1:
+            pmo = ProgramPrintables(pmos[0])
+            teacher = ESPUser(request.user)
+            scheditems = []
+            for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
+                if cls.isAccepted():
+                    scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': cls})
+            scheditems.sort()
+            context['scheditems'] = scheditems
+            return render_to_response(pmo.baseDir()+template_file, request, (prog, tl), context)
+        else:
+            raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.' 
+    
+    def teacherschedule(self, request, tl, one, two, module, extra, prog):
+        return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='teacherschedule.html')
+
+    def classroster(self, request, tl, one, two, module, extra, prog):
+        return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='classrosters.html')
+
+    def get_handouts(self):
+        return {'teacherschedule': 'Your Class Schedule', 'classroster': 'Class Rosters'}
 
     def prepare(self, context={}):
         if context is None: context = {}
 
         classes = Class.objects.catalog(self.program, None, True)
         
+        #   First, the already-registered classes.
         categories = {}
         for cls in classes:
             if cls.category_id not in categories:
@@ -48,5 +80,11 @@ class TeacherPreviewModule(ProgramModuleObj):
                 categories[cls.category_id]['classes'].append(cls)
         
         context['categories'] = [categories[cat_id] for cat_id in categories]
+        context['prog'] = self.program
+        
+        #   Then, the printables.
+        
+        handout_dict = self.get_handouts()
+        context['handouts'] = [{'url': key, 'title': handout_dict[key]} for key in handout_dict]
         
         return context
