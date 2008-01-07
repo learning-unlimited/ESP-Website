@@ -108,6 +108,20 @@ def genTemplate():
     """ Generates the DataTree tree nodes listed in 'templates' above, including implicit parents (ie. given Q/Foo/Bar, will autogenerate Q/Foo and Q as well, even if they aren't listed)
 
     Returns a list of DataTree nodes corresponding exactly (in order, target, etc.) to the names in templates """
-    from esp.datatree.models import GetNode
-    return [ GetNode(i) for i in tree_template ]
+    
+    from esp.datatree.models import DataTree
+    node_list = [ DataTree.get_by_uri(i, create=True) for i in tree_template ]
+    
+    #   Special URI changes to override default tree structure (i.e. URIs start with '/')
+    for n in node_list:
+        n.expire_uri()
+
+    Q_node = DataTree.objects.get(uri__endswith='Q')
+    V_node = DataTree.objects.get(uri__endswith='V')
+    Q_node.uri = 'Q'
+    V_node.uri = 'V'
+    for n in node_list:
+        n.get_uri()
+
+        
 

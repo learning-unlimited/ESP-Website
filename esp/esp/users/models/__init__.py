@@ -48,6 +48,8 @@ from esp.db.models.prepared import ProcedureManager
 from esp.db.cache import GenericCacheHelper
 from esp.users.models.userbits import UserBit
 from django.http import HttpRequest
+from django.template import loader
+from django.core.mail import send_mail
 
 try:
     import cPickle as pickle
@@ -614,6 +616,9 @@ class ESPUser(User, AnonymousUser):
         return schoolyear + 12 - grade      
 
     
+shirt_sizes = (('S', 'Small'), ('M', 'Medium'), ('L', 'Large'), ('XL', 'Extra-large'), ('XXL', 'Dan Zaharopol'))
+shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))    
+    
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
@@ -621,6 +626,9 @@ class StudentInfo(models.Model):
     school = models.CharField(maxlength=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, null=True, default = False)
+    studentrep_expl = models.TextField(blank=True, null=True)
+    shirt_size = models.CharField(maxlength=5, blank=True, choices=shirt_sizes, null=True)
+    shirt_type = models.CharField(maxlength=20, blank=True, choices=shirt_types, null=True)
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -648,12 +656,15 @@ class StudentInfo(models.Model):
         return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
     
     def updateForm(self, form_dict):
-        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
+        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
+        form_dict['shirt_size']      = self.shirt_size
+        form_dict['shirt_type']      = self.shirt_type
+        form_dict['studentrep_expl'] = self.studentrep_expl
         form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
                                                             qsc  = STUDREP_QSC,
                                                             verb = STUDREP_VERB)
@@ -662,7 +673,7 @@ class StudentInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
-        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
+        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         
         if regProfile.student_info is None:
@@ -674,8 +685,21 @@ class StudentInfo(models.Model):
         studentInfo.graduation_year = new_data['graduation_year']
         studentInfo.school          = new_data['school']
         studentInfo.dob             = new_data['dob']
+        studentInfo.shirt_size      = new_data['shirt_size']
+        studentInfo.shirt_type      = new_data['shirt_type']
+        studentInfo.studentrep_expl = new_data['studentrep_expl']
         studentInfo.save()
         if new_data['studentrep']:
+            #   E-mail membership notifying them of the student rep request.
+            subj = '[ESP Membership] Student Rep Request: ' + curUser.first_name + ' ' + curUser.last_name
+            to_email = ['esp-membership@mit.edu']
+            from_email = 'ESP Profile Editor <regprofile@esp.mit.edu>'
+            t = loader.get_template('email/studentreprequest')
+            msgtext = t.render({'user': curUser, 'info': studentInfo, 'prog': regProfile.program})
+            send_mail(subj, msgtext, from_email, to_email, fail_silently = True)
+            
+            #   Add the user bit representing a student rep request.  
+            #   The membership coordinator has to make the 'real' student rep bit.
             UserBit.objects.get_or_create(user = curUser,
                                           verb = STUDREP_VERB,
                                           qsc  = STUDREP_QSC,
@@ -695,9 +719,6 @@ class StudentInfo(models.Model):
             
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
-
-shirt_sizes = (('S', 'Small'), ('M', 'Medium'), ('L', 'Large'), ('XL', 'Extra-large'), ('XXL', 'Dan Zaharopol'))
-shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
 
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """

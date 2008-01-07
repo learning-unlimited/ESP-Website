@@ -9,9 +9,8 @@ body { font-family: georgia; margin: 0; font-size: 12px;}
 .facts { text-align: center; border: 0; }
 .facts th { text-align: right; font-size: 12pt; font-weight: bold; }
 .facts td { text-align: left; font-size: 12pt;}
-.facts td.paid { border: 1px solid black; text-align: center;
-                 }
-.title { padding: 1in 0 0 0; }
+.facts td.paid { border: 1px solid black; text-align: center; }
+.title { padding: 0.75in 0 0 0; }            
 .schedule {border: 1px solid black; }
 .schedule td { border: 1px solid black; }
 .schedule th { border: 1px solid black; vertical-align: top; }
@@ -22,6 +21,9 @@ body { font-family: georgia; margin: 0; font-size: 12px;}
 td.newday { border-width: 2px 1px 0 1px;}
 #pagebreak {page-break-after: always; }
 .description { text-align: center; padding: .2in 0 .2in 0; }
+.box {padding: 0.1in; width: 75%; border: 2px solid black; 
+  text-align: center; font-size: 12pt; vertical-align: middle;
+}
 </style>
 
 </head>
@@ -33,6 +35,12 @@ td.newday { border-width: 2px 1px 0 1px;}
 </table>
 <div id="pagebreak">&nbsp;</div>
 {% endif %}
+
+<p align="center" style="font-size: 10pt">
+    <b>MIT Educational Studies Program</b> (617) 253-4882<br />
+    <center><div class="box"><b>{{ program.niceName }}: {{ program.date_range }} </b><br />Do not remove until conclusion of program</div></center>
+</p>
+
 <div class="title">Room Schedule for <br /><br />
     <span>{{ scheditem.room }}</span>
 </div>

@@ -183,10 +183,11 @@ class Class(models.Model):
         return Resource.objects.filter(id__in=ra_list)
 
     def initial_rooms(self):
+        from esp.resources.models import Resource
         if self.meeting_times.count() > 0:
             return self.classrooms().filter(event=self.meeting_times.order_by('start')[0]).order_by('id')
         else:
-            return None
+            return Resource.objects.none()
 
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
@@ -746,7 +747,7 @@ class Class(models.Model):
         events = list(self.meeting_times.all())
 
         txtTimes = [ event.short_time() for event
-                     in Event.collapse(events, tol=datetime.timedelta(minutes=10)) ]
+                     in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
         self.cache['friendly_times'] = txtTimes
 

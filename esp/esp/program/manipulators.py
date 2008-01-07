@@ -108,16 +108,17 @@ class StudentInfoManipulator(forms.Manipulator):
             makeRequired = False
             
         import datetime
+        from esp.users.models import shirt_sizes, shirt_types
         cur_year = datetime.date.today().year
         
         self.fields = (
             GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)]),
-            
-#            forms.SelectField(field_name="graduation_year", choices=zip(range(cur_year,cur_year+20),range(cur_year,cur_year+20)), is_required=makeRequired),
             forms.TextField(field_name="school", length=24, maxlength=128),
             HTMLDateField(field_name="dob", is_required=makeRequired),
-            forms.CheckboxField(field_name='studentrep', is_required=False),
-
+            forms.CheckboxField(field_name="studentrep", is_required=False),
+            forms.LargeTextField(field_name="studentrep_expl", is_required=False, rows=8, cols=45),
+            forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes),
+            forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types),
             )
 
 

@@ -536,7 +536,7 @@ class DataTree(models.Model):
             return cls.ROOT_NODE
         except cls.DoesNotExist:
             root = cls( name = cls.ROOT_NAME,
-                        uri  = '/',
+                        uri  = '',
                         uri_correct = True,
                         rangestart = 0,
                         rangeend = 0+cls.START_SIZE - 1)

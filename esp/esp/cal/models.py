@@ -103,12 +103,19 @@ class Event(models.Model):
     def short_time(self):
         day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         
+        start_minutes = ''
+        end_minutes = ''
+        if self.start.minute != 0:
+            start_minutes = ':%d' % self.start.minute
+        if self.end.minute != 0:
+            end_minutes = ':%d' % self.end.minute
+            
         if self.start.hour >= 12 and self.end.hour >= 12:
-            return '%s %d to %d PM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, (self.end.hour - 1) % 12 + 1)
+            return '%s %d%s to %d%s PM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
         elif self.start.hour < 12 and self.end.hour >= 12:
-            return '%s %d AM to %d PM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, (self.end.hour - 1) % 12 + 1)
+            return '%s %d%s AM to %d%s PM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
         else:
-            return '%s %d to %d AM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, (self.end.hour - 1) % 12 + 1)
+            return '%s %d%s to %d%s AM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
 
     def is_happening(self, time=datetime.now()):
         """ Return True if the specified time is between start and end """

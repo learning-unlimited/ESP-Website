@@ -289,11 +289,8 @@ class ProgramModuleObj(models.Model):
             canView = self.user.__dict__['onsite_local']
 
         if not canView:
-            canView = UserBit.UserHasPerms(self.user,
-                                           self.program.anchor_id,
-                                           GetNode('V/Deadline/Registration/'+{'learn':'Student',
-                                                                               'teach':'Teacher'}[self.module.module_type]+extension))
-
+            test_node = GetNode('V/Deadline/Registration/'+{'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension)
+            canView = UserBit.UserHasPerms(self.user, self.program.anchor_id, test_node)
 
         return canView
 

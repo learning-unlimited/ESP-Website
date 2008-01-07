@@ -13,6 +13,8 @@
 
 <p>Timeslots represent each of the class periods for your program, at the finest scale if overlapping classes will be allowed (e.g. 1 hour for Splash).  Each resource is available for a particular range of times (resources will not become available until you select a set of times).  Please add all necessary timeslots below.</p>
 
+<p>Keep in mind that classes generally begin 5 minutes after the hour (or half hour) and end 5 minuts before the hour (or half hour), allowing 10 minutes between classes.  So, for example, a 9 - 10 AM time block really should start at 09:05 and be 50 minutes long.  Please put the approximate time in the 'name' field (i.e. 9 - 10 AM) and the exact times in the 'description' field (i.e. 9:05 - 9:55 AM).</p>
+
 <div id="program_form">
 <form method="post" action="/manage/{{ prog.url }}/resources/timeslot">
 <input type="hidden" name="command" value="addedit" />

@@ -71,7 +71,7 @@ def class_options_row(cls):
     context['cls_start_time'] = cls.start_time()
     context['cls_friendly_times'] = [ft for ft in cls.friendly_times()]
     context['cls_viable_times'] = [{'id': vt.id, 'pretty_start_time': vt.pretty_start_time(), 'selected': ((cls.start_time() is not None) and (cls.start_time().id == vt.id))} for vt in cls.viable_times()]
-    if cls.initial_rooms() is not None:
+    if cls.initial_rooms().count() > 0:
         context['cls_initial_rooms'] = [{'id': room.id, 'name': room.name, 'num_students': room.num_students, 'resources': [r.res_type.name for r in room.associated_resources()]} for room in cls.initial_rooms()]
     context['cls_sufficient_length'] = cls.sufficient_length()
     context['cls_students_actual'] = cls.num_students()

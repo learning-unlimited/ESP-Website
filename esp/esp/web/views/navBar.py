@@ -79,10 +79,9 @@ def qsd_tree_program(qsdTree, node, sections, user):
         yield item
 
         if entry.indent: continue
-        program_set = Program.objects.filter(anchor__parent = entry.path_id)
-
+        program_set = Program.objects.filter(anchor__parent = entry.path)
+        
         for program in program_set:
-
                 # check to see if we've displayed this program yet.
                 if program.id in displayed_programs: continue
                 displayed_programs[program.id] = True
@@ -96,6 +95,7 @@ def qsd_tree_program(qsdTree, node, sections, user):
 
                         # update the variables in this with that which was given
                         navbar.__dict__.update(navbar_dict)
+                        navbar.path = module.program.anchor.parent
 
                         # send this one along next
                         yield {'entry': navbar,'has_bits':False}
@@ -128,8 +128,6 @@ def makeNavBar(user, node, section = ''):
             edit_verb = GetNode(EDIT_VERB_STRING)
 
             navBarSectionHeaders = NavBarEntry.objects.filter(path__child_set__program__isnull = False)
-
-            #assert False, navBarSectionHeaders
             
             navBarAssociatedPrograms = { }
             for i in navBarSectionHeaders:
@@ -155,9 +153,6 @@ def makeNavBar(user, node, section = ''):
                     'qsdTree': qsdTreeList,
                     'section': sections[0]
                         }
-
-            
-            
 
             return context
 

@@ -70,12 +70,12 @@ class SurveyModule(ProgramModuleObj, CoreModule):
     def getNavBars(self):
         nav_bars = []
         if self.module.module_type == 'learn':
-            if super(SurveyModule, self).deadline_met('/Survey'):
+            if self.deadline_met('/Survey'):
                 nav_bars.append({ 'link': '/learn/%s/survey/' % ( self.program.getUrlBase() ),
                         'text': '%s Survey' % ( self.program.niceSubName() ),
                         'section': 'learn'})
         elif self.module.module_type == 'teach':
-            if super(SurveyModule, self).deadline_met('/Survey'):                    
+            if self.deadline_met('/Survey'):                    
                 nav_bars.append({ 'link': '/teach/%s/survey/' % ( self.program.getUrlBase() ),
                         'text': '%s Survey' % ( self.program.niceSubName() ),
                         'section': 'teach'})

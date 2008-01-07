@@ -96,7 +96,7 @@ class SchedulingModule(ProgramModuleObj):
                         cache.delete(cache_key)
                     
                     #   Clear the cached data for the rooms that the class has, so the class is removed from those.
-                    if (cls.initial_rooms() is not None):
+                    if (cls.initial_rooms().count() > 0):
                         for room in cls.initial_rooms(): room.clear_schedule_cache(self.program)
                     
                     #   Hope you don't mind this extra temporary attribute.
@@ -121,7 +121,7 @@ class SchedulingModule(ProgramModuleObj):
 
                     #   Clear the cache for this class and its new room.
                     cls.clear_resource_cache()
-                    if (cls.initial_rooms() is not None):
+                    if (cls.initial_rooms().count() > 0):
                         for room in cls.initial_rooms(): room.clear_schedule_cache(self.program)
 
         #   Provide some helpful statistics.  This should be totally reliant on cache.

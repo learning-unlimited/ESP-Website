@@ -253,10 +253,14 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classesbyroom(self, request, tl, one, two, module, extra, prog):
         def cmp_room(one, other):
-            room_one = one.initial_rooms()[0]
-            room_other = other.initial_rooms()[0]
+            qs_one = one.initial_rooms()
+            qs_other = other.initial_rooms()
+            cmp0 = 0
             
-            cmp0 = cmp(room_one.name, room_other.name)
+            if qs_one.count() > 0 and qs_other.count() > 0:
+                room_one = qs_one[0]
+                room_other = qs_other[0]
+                cmp0 = cmp(room_one.name, room_other.name)
 
             if cmp0 != 0:
                 return cmp0

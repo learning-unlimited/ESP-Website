@@ -5,7 +5,7 @@
 </tr>
 
 <tr>
- <td><label for="id_school">School Name:</label></td>
+ <td><label for="id_school">School/Employer:</label></td>
  <td>{{ form.school }} {% if form.school.errors %}
    <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
    {% endif %}
@@ -13,7 +13,7 @@
 </tr>
 
 <tr>
- <td><label for="id_school">Graduation Year:</label></td>
+ <td><label for="id_school">Graduation Year:</label><br /><div style="font-size: 0.8em">(Enter 'G' if you're a graduate student)</div></td>
  <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
    {% endif %}
@@ -21,7 +21,7 @@
 </tr>
 
 <tr>
- <td><label for="id_major">Major:</label></td>
+ <td><label for="id_major">Major/Department:</label></td>
  <td>{{ form.major }} {% if form.major.errors %}
    <br /><span class="form_error">{{ form.major.errors|join:", " }}</span>
    {% endif %}

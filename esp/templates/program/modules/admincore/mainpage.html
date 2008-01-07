@@ -27,6 +27,8 @@ function updateDocs(docs) {
 <br /><br />
 <h1>Admin Dashboard for {{program.niceName}} </h1>
 
+{% include "program/modules/admincore/returnlink.html" %}
+
 <center>
 {% for module in modules %}
 {% if module.useTemplate %}

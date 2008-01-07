@@ -1,0 +1,9 @@
+<p>
+{% if prog %}
+<a href="/manage/{{ prog.getUrlBase }}/main">Click here</a> to return to the main program management page.
+{% else %}
+{% if program %}
+<a href="/manage/{{ program.getUrlBase }}/main">Click here</a> to return to the main program management page.
+{% endif %}
+{% endif %}
+</p>

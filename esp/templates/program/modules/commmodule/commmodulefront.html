@@ -157,4 +157,7 @@ Final  Sentence: (with parentheses for added readibility)<br />
 <input type="submit" value="Get List Instead" name="submitform" />
 <input type="hidden" name="keys" value="{{lists|join:",,"|addslashes}}" />
 </form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
 {% endblock %}

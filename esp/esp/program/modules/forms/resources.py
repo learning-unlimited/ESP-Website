@@ -9,8 +9,8 @@ from esp.utils.widgets import DateTimeWidget
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
-    name = forms.CharField()
-    description = forms.CharField(required=False, widget=forms.Textarea)
+    name = forms.CharField(help_text='Approximate time block (i.e. "Sat 9 - 10 AM")')
+    description = forms.CharField(required=False, widget=forms.Textarea, help_text='Include the exact times here (i.e. "First class period: Sat 9:05 - 9:55 AM)"')
     start = forms.DateTimeField(label='Start Time', help_text='Format: YYYY-MM-DD HH:MM:SS <br />Example: 2007-10-14 14:00:00', widget=DateTimeWidget)
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
