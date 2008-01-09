@@ -616,7 +616,7 @@ class ESPUser(User, AnonymousUser):
         return schoolyear + 12 - grade      
 
     
-shirt_sizes = (('S', 'Small'), ('M', 'Medium'), ('L', 'Large'), ('XL', 'Extra-large'), ('XXL', 'Dan Zaharopol'))
+shirt_sizes = (('S', 'S'), ('M', 'M'), ('L', 'L'), ('XL', 'XL'), ('XXL', 'XXL'))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))    
     
 class StudentInfo(models.Model):
