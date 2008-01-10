@@ -401,16 +401,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                     newclass_isnew = True
                     newclass = Class()
 
-                if len(new_data['message_for_directors'].strip()) > 0 and \
-                       new_data['message_for_directors'] != newclass.message_for_directors and \
-                       self.program.director_email:
-                    send_mail('['+self.program.niceName()+"] Comments for: " + new_data.get('title'), \
-                              """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nComments to Director:\n%s\n\n""" % \
-                              (new_data['title'], new_data['class_info'], new_data['message_for_directors']) , \
-                              ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
-                              [self.program.director_email], True)
-
-
                 for k, v in new_data.items():
                     if k not in ('category', 'resources', 'viable_times'):
                         newclass.__dict__[k] = v
@@ -453,6 +443,16 @@ class TeacherClassRegModule(ProgramModuleObj):
                     rr.target = newclass
                     rr.res_type = ResourceType.objects.get(id=res_type_id)
                     rr.save()
+
+                # send mail to directors
+                if len(new_data['message_for_directors'].strip()) > 0 and \
+                       new_data['message_for_directors'] != newclass.message_for_directors and \
+                       self.program.director_email:
+                    send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
+                              """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nComments to Director:\n%s\n\n""" % \
+                              (new_data['title'], new_data['class_info'], new_data['message_for_directors']) , \
+                              ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
+                              [self.program.director_email], True)
 
                 # add userbits
                 if newclass_isnew:
