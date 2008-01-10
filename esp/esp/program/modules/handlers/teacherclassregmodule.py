@@ -396,10 +396,14 @@ class TeacherClassRegModule(ProgramModuleObj):
                 manipulator.do_html2python(new_data)
 
                 newclass_isnew = False
+                newclass_newmessage = True
 
                 if newclass is None:
                     newclass_isnew = True
                     newclass = Class()
+                else:
+                    if new_data['message_for_directors'] == newclass.message_for_directors:
+                        newclass_newmessage = False
 
                 for k, v in new_data.items():
                     if k not in ('category', 'resources', 'viable_times'):
@@ -446,7 +450,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 # send mail to directors
                 if len(new_data['message_for_directors'].strip()) > 0 and \
-                       new_data['message_for_directors'] != newclass.message_for_directors and \
+                       newclass_newmessage and \
                        self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
                               """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nComments to Director:\n%s\n\n""" % \
