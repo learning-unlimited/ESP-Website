@@ -404,8 +404,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 if len(new_data['message_for_directors'].strip()) > 0 and \
                        new_data['message_for_directors'] != newclass.message_for_directors and \
                        self.program.director_email:
-                    
-                    send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + newclass.title(), \
+                    send_mail('['+self.program.niceName()+"] Comments for: " + new_data.get('title'), \
                               """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nComments to Director:\n%s\n\n""" % \
                               (new_data['title'], new_data['class_info'], new_data['message_for_directors']) , \
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
