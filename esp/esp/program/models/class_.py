@@ -688,7 +688,7 @@ class Class(models.Model):
             retValCache = self.cache['students']
             if retValCache != None:
                 retVal = len(retValCache)
-                cache['num_students'] = retVal
+                self.cache['num_students'] = retVal
                 return retVal
 
         v = GetNode( 'V/Flags/Registration/Preliminary' )

@@ -66,9 +66,11 @@ def class_options_row(cls):
     cls_minutes = cls_total_minutes - cls_hours * 60
     context['cls_duration'] = '%d hr %d min' % (cls_hours, cls_minutes)
     context['cls_requests'] = [r.res_type.name for r in cls.getResourceRequests()]
-    context['cls_teachers'] = [{'first_name': t.first_name, 'last_name': t.last_name} for t in cls.teachers()]
+    context['cls_teachers'] = [{'first_name': t.first_name, 'last_name': t.last_name, 'available_times': [e.short_time() for e in t.getAvailableTimes(cls.parent_program)]} for t in cls.teachers()]
     context['cls_scheduling_status'] = color_needs(cls.scheduling_status())
     context['cls_start_time'] = cls.start_time()
+    if context['cls_start_time'] is None:
+        context['cls_start_time'] = {'id': -1}
     context['cls_friendly_times'] = [ft for ft in cls.friendly_times()]
     context['cls_viable_times'] = [{'id': vt.id, 'pretty_start_time': vt.pretty_start_time(), 'selected': ((cls.start_time() is not None) and (cls.start_time().id == vt.id))} for vt in cls.viable_times()]
     context['cls_initial_rooms'] = [{'id': room.id, 'name': room.name, 'num_students': room.num_students, 'resources': [r.res_type.name for r in room.associated_resources()]} for room in cls.initial_rooms()]

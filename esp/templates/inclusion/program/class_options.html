@@ -13,7 +13,15 @@
         </td>
         <td>
             {% for teacher in cls_teachers %}
-            {{ teacher.first_name }} {{teacher.last_name }}{% if not forloop.last %}<br />{% endif %}
+            <a class="tooltip">{{ teacher.first_name }} {{ teacher.last_name }}
+            <span><b>{{ teacher.first_name }} {{ teacher.last_name }}</b><br />
+            <b>Available times:</b><br />
+            {% if teacher.available_times|length_is:0 %}None{% else %}
+            {% for t in teacher.available_times %}
+            - {{ t }} <br />
+            {% endfor %}{% endif %}
+            </span></a>
+            {% if not forloop.last %}<br />{% endif %}
             {% endfor %}
         </td>
         <td>{{ cls_scheduling_status }}</td>

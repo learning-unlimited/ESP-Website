@@ -1,8 +1,8 @@
 .tooltip {
     position: relative; /*this is the key*/
     z-index: 24;
-    color: #000000;
-    text-decoration: none;
+    color: #000000 !important;
+    text-decoration: none !important;
 }
 
 .tooltip:hover {
