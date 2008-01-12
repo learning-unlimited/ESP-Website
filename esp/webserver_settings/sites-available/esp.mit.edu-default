@@ -13,6 +13,7 @@ PythonTranshandler filehandler
 	ServerAdmin esp@mit.edu
 	DocumentRoot /esp
 
+	Redirect "/teach/ SplashOnWheels/2008_Winter/teacherreg/" http://esp.mit.edu/teach/SplashOnWheels/2008_Winter/teacherreg/
 	<Location "/">
 
 	    SetHandler python-program

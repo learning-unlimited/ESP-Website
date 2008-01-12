@@ -106,9 +106,9 @@ class Event(models.Model):
         start_minutes = ''
         end_minutes = ''
         if self.start.minute != 0:
-            start_minutes = ':%2d' % self.start.minute
+            start_minutes = ':%02d' % self.start.minute
         if self.end.minute != 0:
-            end_minutes = ':%2d' % self.end.minute
+            end_minutes = ':%02d' % self.end.minute
             
         if self.start.hour >= 12 and self.end.hour >= 12:
             return '%s %d%s to %d%s PM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)

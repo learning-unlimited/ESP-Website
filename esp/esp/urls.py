@@ -73,13 +73,7 @@ urlpatterns += patterns('esp.web.views.bio',
                         (r'^(teach|learn)/teachers/([-A-Za-z0-9_ \.]+)/([-A-Za-z_ \.]+)([0-9]*)/bio.html$', 'bio'),
                         (r'^myesp/teacherbio/?$', 'bio_edit'),
                         (r'^(teach|learn)/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z_ ]+)([0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
-
-
-                   
-                        # DB-generated QSD pages: HTML or plaintext
-#                        (r'^(?P<url>.*)\.html$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': qsd} ),
-                        (r'^(?P<url>.*)\.poll$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': poll} ),
-)
+                        )
 
 urlpatterns += patterns('',
                         (r'^myesp/', include('esp.users.urls'),)
@@ -142,7 +136,13 @@ urlpatterns += patterns('esp.web.views.main',
     (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp') )
+    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
+
+    # DB-generated QSD pages: HTML or plaintext
+    #                        (r'^(?P<url>.*)\.html$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': qsd} ),
+    (r'^(?P<url>.*)\.poll$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': poll} ),
+
+                        )
     
     # Event-generation
     # Needs to get fixed (axiak)

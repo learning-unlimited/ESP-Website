@@ -716,7 +716,7 @@ class Class(models.Model):
             teachers.append(name)
         return teachers
 
-    def friendly_times(self, use_cache=True):
+    def friendly_times(self, use_cache=False):
         """ Return a friendlier, prettier format for the times.
 
         If the events of this class are next to each other (within 10-minute overlap,

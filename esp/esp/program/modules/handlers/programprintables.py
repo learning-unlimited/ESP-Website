@@ -526,7 +526,8 @@ class ProgramPrintables(ProgramModuleObj):
 
                 context['payer_name'] = form.clean_data['payer_name']
                 context['payer_address'] = form.clean_data['payer_address']                
-
+                context['omars_number'] = form.clean_data['omars_number']
+                context['credit_card_num'] = form.clean_data['credit_card_num']
                 context['amount'] = '%.02f' % (transaction.amount)
 
                 if extra:

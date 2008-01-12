@@ -1,8 +1,8 @@
-NameVirtualHost *:81
+NameVirtualHost *
 # Default virtual host for ~axiak/esp
 # Please copy and create more dev servers if you want!
 # Using mod_python
-<VirtualHost *:81>
+<VirtualHost *>
         ServerName espdev.axiak.net
 	ServerAdmin esp@mit.edu
 	DocumentRoot /home/axiak/esp

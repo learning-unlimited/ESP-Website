@@ -82,7 +82,7 @@ class OnSiteNormalRegManipulator(forms.Manipulator):
                             validator_list=[validators.isNotEmpty]),
             forms.SelectField(field_name="grade", \
                               is_required=True, \
-                              choices=zip(range(6, 13), range(6, 13))),
+                              choices=zip(range(7, 13), range(7, 13))),
             forms.CheckboxField(field_name="paid"),
             forms.CheckboxField(field_name="medical"),
             forms.CheckboxField(field_name="liability")

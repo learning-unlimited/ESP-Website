@@ -57,7 +57,7 @@ class OnSiteClassList(ProgramModuleObj):
         if curtime.count() > 0:
             curtime = curtime[0]
         else:
-            curtime = 'Any Time'
+            curtime = None
         
         categories = {}
         for cls in classes:

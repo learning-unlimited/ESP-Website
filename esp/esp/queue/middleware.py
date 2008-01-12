@@ -14,6 +14,7 @@ no_queue_list = [
     r'^18.208.',
     r'^18.85.',
     r'^18.244.',
+    r'^18.90.',
     ]
 
 no_queue_list = [ re.compile(x) for x in no_queue_list ]

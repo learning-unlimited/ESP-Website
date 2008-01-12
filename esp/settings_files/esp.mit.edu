@@ -50,7 +50,9 @@ TEMPLATE_DEBUG = DEBUG
 
 INTERNAL_IPS = (
     '18.208.0.164',
+    '18.187.7.102',
     '71.126.253.25',
+    '72.93.219.106',
     '127.0.0.1',
 )
 
@@ -141,6 +143,7 @@ INSTALLED_APPS = (
     'esp.web',
     'esp.program',
     'esp.program.modules',
+    'esp.survey',
     'esp.datatree',
     'esp.workflow',
     'esp.dbmail',

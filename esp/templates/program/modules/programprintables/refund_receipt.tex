@@ -4,7 +4,7 @@
 {% block maincontent %}
 {{ block.super }}
 
-{\huge Refund Receipt for {\bf {{ program.niceName|texescape }} }} \\
+{\huge Refund Request for {\bf {{ program.niceName|texescape }} }} \\
 
 {\large Please sign below and send this via mail or fax to:} \\
 
@@ -36,9 +36,11 @@ Transaction ID: &\texttt{ {{ transaction.id|texescape }} } \\
 Transaction Date: &\texttt{ {{ transaction.update_ts|date:"F nS, Y" }} }\\
 Payer's Name: &\texttt{ {{ payer_name|texescape }} } \\
 Payer's Address: &{\large \texttt{ {\bf {{ payer_address|texescape }}}} } \\
-Credit Card Number: & \texttt{ \rule{3.5in}{0.25pt} } \\
+OMARS Transaction Number: &\texttt{ {{ omars_number|texescape }} } \\
+\vspace{.1in} \\
+Credit Card Number: &\rule{1.5in}{0.25pt} \hspace{.5in} Expiration date: \rule{.8in}{0.25pt}\\
 \end{tabular}
-\vspace{.5in}
+\vspace{.4in}
 \\
 
 By printing and/or sending this document, MIT Educational Studies Program
@@ -46,10 +48,10 @@ voids the transaction above. \\
 \\
 By signing below, I, \underline{ {{ payer_name|texescape }} }, assert that I have paid ESP \${{ amount }} on {{ transaction.update_ts|date:"F nS, Y" }} and that the credit card I used is under the address (bolded) above.
 
-\vspace{1in}
+\vspace{.6in}
 \rule{4.5in}{0.25pt} \\
 {{ payer_name|texescape }}\\
-\vspace{1.75in}\\
+\vspace{1.5in}\\
 {\small If there are any questions, please contact \texttt{esp-treasurer@mit.edu}.}
 
 {% endblock %}
