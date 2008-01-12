@@ -338,7 +338,7 @@ class ESPUser(User, AnonymousUser):
         #   Subtract out the times that they are already teaching.
         other_classes = self.getTaughtClasses(program)
         other_times = [[mt['id'] for mt in cls.meeting_times.values('id')] for cls in other_classes]
-        result = Event.objects.filter(id__in=res_list)
+        result = program.getTimeSlots().filter(id__in=res_list)
         for lst in other_times:
             result = result.exclude(id__in=lst)
             
