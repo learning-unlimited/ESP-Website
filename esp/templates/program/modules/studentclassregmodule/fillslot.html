@@ -85,6 +85,9 @@
 </table>
 </div>
 {% load class_render %}
+
+{% if classes|length_is:0 %}Did you update your profile? Make sure you <a href="../profile">update your profile</a> before trying to sign up for classes.{% endif %}
+
 {% for class in classes %}
 
 <div id="catalog">
