@@ -83,6 +83,9 @@ class FinancialAidAppModule(ProgramModuleObj):
         """
         A way for a student to apply for financial aid.
         """
+        from datetime import datetime
+        from django.core.mail import send_mail
+        from esp.settings import SITE_INFO
         
         app, created = FinancialAidRequest.objects.get_or_create(user = self.user,
                                                                 program = self.program)
@@ -92,36 +95,40 @@ class FinancialAidAppModule(ProgramModuleObj):
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
             if form.is_valid():
-                app.__dict__.update(form.clean_data)                
+                app.__dict__.update(form.clean_data)
+               
                 if not request.POST.has_key('submitform') or request.POST['submitform'].lower() == 'complete':
                     app.done = True
-                elif request.POST['submitform'].lower() == 'mark as unfinished':
+                elif request.POST['submitform'].lower() == 'mark as incomplete' or request.POST['submitform'].lower() == 'save progress':
                     app.done = False
                 else:
-                    assert False, request.POST
-#                    raise ESPError(), "Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Unfinished'."
-                    
+                    raise ESPError(), "Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'."
+                
+                app.save()
+   
                 # Automatically accept apps for people with subsidized lunches
                 if app.reduced_lunch:
-                    from datetime import datetime
                     app.approved = datetime.now()
                     # This probably really wants a template.  Oh well.
                     app.save()
 
-                    from django.core.mail import send_mail
-                    from esp.settings import SITE_INFO
-                    send_mail( '%s %s received Financial Aid for %s' % (request.user.first_name, 
-                                                                       request.user.last_name,
-                                                                       prog.niceName()), 
-                               """
-%s %s received Financial Aid for %s on %s, for stating that they receive a free or reduced-price lunch.
+                if app.approved:
+                    date_str = str(app.approved)
+                    subj_str = '%s %s received Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
+                    msg_str = "\n%s %s received Financial Aid for %s on %s, for stating that they receive a free or reduced-price lunch."
+                else:
+                    date_str = str(datetime.now())
+                    subj_str = '%s %s applied for Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
+                    msg_str = "\n%s %s applied for Financial Aid for %s on %s, but did not state that they receive a free or reduced-price lunch."
+                send_mail(subj_str, (msg_str +
+                """
 
 Here is their form data:
 
 ========================================
 Program:  %s
 User:  %s %s <%s>
-Approved:  %s (Automated Approval)
+Approved:  %s
 Has Reduced Lunch:  %s
 Household Income:  $%s
 Form Was Filled Out by Non-Student:  %s
@@ -134,23 +141,23 @@ This request can be (re)viewed at:
 <http://%s/admin/program/financialaidrequest/%s/>
 
 
-""" % (request.user.first_name, 
-       request.user.last_name,
-       prog.niceName(),
-       str(app.approved),
-       str(app.program),
-       request.user.first_name,
-       request.user.last_name,
-       str(app.user),
-       str(app.approved),
-       str(app.reduced_lunch),
-       str(app.household_income),
-       str(app.student_prepare),
-       str(app.extra_explaination),
-       SITE_INFO[1], # server hostname
-       str(app.id)), 
-                               'web@esp.mit.edu',
-                               [ prog.director_email ] )
+""") % (request.user.first_name, 
+    request.user.last_name,
+    prog.niceName(),
+    date_str,
+    str(app.program),
+    request.user.first_name,
+    request.user.last_name,
+    str(app.user),
+    date_str,
+    str(app.reduced_lunch),
+    str(app.household_income),
+    str(app.student_prepare),
+    str(app.extra_explaination),
+    SITE_INFO[1], # server hostname
+    str(app.id)), 
+                            'web@esp.mit.edu',
+                            [ prog.director_email ] )
                               
                 return self.goToCore(tl)
             
