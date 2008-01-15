@@ -229,6 +229,11 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                 except:
                     raise ESPError(False), 'Please enter a valid US zipcode.'
                 zipcodes = zipc.close_zipcodes(request.GET['zipdistance'])
+                # Excludes zipcodes within a certain radius, giving an annulus; can fail to exclude people who used to live outside the radius.
+                # This may have something to do with the Q_include line below taking more than just the most recent profile. -ageng, 2008-01-15
+                if request.GET.has_key('zipdistance_exclude') and len(request.GET['zipdistance_exclude'].strip()) > 0:
+                    zipcodes_exclude = zipc.close_zipcodes(request.GET['zipdistance_exclude'])
+                    zipcodes = [ zipcode for zipcode in zipcodes if zipcode not in zipcodes_exclude ]
                 if len(zipcodes) > 0:
                     Q_include &= Q(registrationprofile__contact_user__address_zip__in = zipcodes)
                     update = True
