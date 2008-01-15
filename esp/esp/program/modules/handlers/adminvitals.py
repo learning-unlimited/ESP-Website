@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import Class, Program
-from esp.users.models import UserBit, ESPUser
+from esp.users.models import UserBit, ESPUser, shirt_sizes, shirt_types
 from django.contrib.auth.models import User
 from django.core.cache import cache
 
@@ -92,6 +92,33 @@ class AdminVitals(ProgramModuleObj):
             vitals['timeslots'].append(curTimeslot)
 
         context['vitals'] = vitals
+        
+        # List of students' t-shirt sizes as indicated in their profiles. Currently parasitizing vitals.
+        shirt_count = {}
+        shirts = {}
+        for shirt_type in shirt_types:
+            shirt_count[ shirt_type[0] ] = {}
+            for shirt_size in shirt_sizes:
+                shirt_count[ shirt_type[0] ][ shirt_size[0] ] = 0
+        for student in self.program.students()['classreg']:
+            profile = ESPUser(student).getLastProfile().student_info
+            if profile is not None:
+                if profile.shirt_type is not None and profile.shirt_size is not None:
+                    shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
+        shirts['students'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
+        
+        for shirt_type in shirt_types:
+            for shirt_size in shirt_sizes:
+                shirt_count[ shirt_type[0] ][ shirt_size[0] ] = 0
+        for teacher in self.program.teachers()['class_approved']:
+            profile = ESPUser(teacher).getLastProfile().teacher_info
+            if profile is not None:
+                if profile.shirt_type is not None and profile.shirt_size is not None:
+                    shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
+        shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
+        context['shirt_sizes'] = shirt_sizes
+        context['shirt_types'] = shirt_types
+        context['shirts'] = shirts
         
         return context
     

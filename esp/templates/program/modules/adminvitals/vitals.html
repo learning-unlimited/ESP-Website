@@ -3,6 +3,11 @@
      border: 1px solid black; border-collapse: collapse;
 }
 #vitals th { text-align: right; }
+
+#shirts table, #shirts th, #shirts td { 
+     border: 1px solid black; border-collapse: collapse;
+}
+#shirts th, #shirts td { text-align: center; }
 </style>
 
 <hr />
@@ -62,4 +67,46 @@
 {% endfor %}
 </table>
 
+</div>
+
+<!-- T-Shirt Estimates -->
+<hr />
+<h2 style="text-align: center">T-Shirt Estimates</h2>
+<br />
+<div id="shirts">
+<table>
+
+<tr><th colspan="{{ shirt_sizes|length|add:1 }}">Students registered for at least one class</th></tr>
+<tr>
+    <td></td>
+    {% for shirt_size in shirt_sizes %}
+        <th>{{ shirt_size.1 }}</th>
+    {% endfor %}
+</tr>
+{% for type in shirts.students %}
+<tr>
+    <th>{{ type.type }}</th>
+    {% for count in type.distribution %}
+        <td>{{ count }}</td>
+    {% endfor %}
+</tr>
+{% endfor %}
+
+<tr><th colspan="{{ shirt_sizes|length|add:1 }}">Teachers teaching at least one class</th></tr>
+<tr>
+    <td></td>
+    {% for shirt_size in shirt_sizes %}
+        <th>{{ shirt_size.1 }}</th>
+    {% endfor %}
+</tr>
+{% for type in shirts.teachers %}
+<tr>
+    <th>{{ type.type }}</th>
+    {% for count in type.distribution %}
+        <td>{{ count }}</td>
+    {% endfor %}
+</tr>
+{% endfor %}
+
+</table>
 </div>
