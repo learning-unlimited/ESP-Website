@@ -60,7 +60,6 @@ class ClassCacheHelper(GenericCacheHelper):
     def get_key(cls):
         return 'ClassCache__%s' % cls._get_pk_val()
 
-
 class ClassManager(ProcedureManager):
 
     def approved(self):
@@ -954,6 +953,70 @@ class ProgramCheckItem(models.Model):
         app_label = 'program'
         db_table = 'program_programcheckitem'
 
+
+
+class ClassImplication(models.Model):
+    """ Indicates class prerequisites corequisites, and the like """
+    class = models.ForeignKey(Class, null=True)
+    parent = models.ForeignKey('self', null=True, default=None)
+    is_prereq = models.BooleanField(default=True) # if not a prereq, it's a coreq
+    enforce = models.BooleanField(default=True)
+    member_ids = models.CommaSeparatedIntegerField(blank=True, null=False)
+    operation = models.CharField(max_length=4, choices = ( ('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One') ))
+
+    def member_id_ints_get(self):
+        return [ int(s) for s in self.member_ids.split(',') ]
+
+    def member_id_ints_set(self, value):
+        self.member_ids = ",".join([ str(n) for n in value ])
+
+    member_id_ints = property( member_id_ints_get, member_id_ints_set )
+
+    def _and(lst):
+        """ True iff all elements in lst are true """
+        for i in lst:
+            if not i:
+                return False
+
+        return True
+
+    def _or(lst):
+        """ True iff at least one element in lst is true """
+        for i in lst:
+            if i:
+                return True
+
+        return False
+
+    def _xor(lst):
+        """ True iff lst contains exactly one true element """
+        true_count = 0
+
+        for i in lst:
+            if i:
+                true_count += 1
+
+            if true_count > 1:
+                return False
+
+        if true_count == 1:
+            return True
+        else:
+            return False
+            
+    _ops = { 'AND': _and, 'OR': _or, 'XOR': _xor }
+
+    def fails_implication(self, student, already_seen_implications=set()):
+        """ Returns either False, or the ClassImplication that fails (may be self, may be a subimplication) """
+        class_set = Class.objects.filter(id__in=self.member_id_ints)
+
+        class_valid_iterator = ( (student in c.students()) for c in class_set )
+        subimplication_valid_iterator = ( (not i.fails_implication()) for i in self.classimplication_set.all() )
+
+        if not _ops[self.operation](class_valid_iterator) or not _ops[self.operation](subimplication_valid_iterator):
+            return self
+        else:
+            return False        
 
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
