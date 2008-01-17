@@ -957,12 +957,12 @@ class ProgramCheckItem(models.Model):
 
 class ClassImplication(models.Model):
     """ Indicates class prerequisites corequisites, and the like """
-    class = models.ForeignKey(Class, null=True)
+    cls = models.ForeignKey(Class, null=True)
     parent = models.ForeignKey('self', null=True, default=None)
     is_prereq = models.BooleanField(default=True) # if not a prereq, it's a coreq
     enforce = models.BooleanField(default=True)
     member_ids = models.CommaSeparatedIntegerField(blank=True, null=False)
-    operation = models.CharField(max_length=4, choices = ( ('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One') ))
+    operation = models.CharField(maxlength=4, choices = ( ('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One') ))
 
     def member_id_ints_get(self):
         return [ int(s) for s in self.member_ids.split(',') ]
