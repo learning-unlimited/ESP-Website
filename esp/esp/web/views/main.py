@@ -134,21 +134,13 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 @cache_control(private=True)
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
-
-	treeItem = "Q/Programs/" + one + "/" + two
-
-	try:
-		prog = DataTree.get_by_uri(treeItem)
-	except DataTree.NoSuchNodeException:
-		raise Http404("Program not found.")
-
-	prog = prog.program_set.all()
+        from esp.program.models import Program
         
-	if len(prog) < 1:
-		return render_to_response('errors/404.html', request, GetNode('Q/Web'), {})
-
-	prog = prog[0]
-
+	try:
+		prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
+	except Program.DoesNotExist:
+		raise Http404("Program not found.")
+        
 	if program_handlers.has_key(module):
 		return program_handlers[module](request, tl, one, two, module, extra, prog)
 

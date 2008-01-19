@@ -121,10 +121,21 @@ def prepare_program(program, form):
         datatrees += [(program_node_name + sub_node, '')]
 
     userbits += [('V/Flags/Public', 0, form.clean_data['publish_start'], form.clean_data['publish_end'])]
+    
     userbits += [('V/Deadline/Registration/Student', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    userbits += [('V/Deadline/Registration/Student/Applications', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    userbits += [('V/Deadline/Registration/Student/Catalog', 0, form.clean_data['student_reg_start'], None)]
+    userbits += [('V/Deadline/Registration/Student/Classes', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    userbits += [('V/Deadline/Registration/Student/Classes/OneClass', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    userbits += [('V/Deadline/Registration/Student/Confirm', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Student/ExtraCosts', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
     userbits += [('V/Deadline/Registration/Student/MainPage', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
-    userbits += [('V/Deadline/Registration/Student/Catalog', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Student/Payment', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
+    
     userbits += [('V/Deadline/Registration/Teacher', 0, form.clean_data['teacher_reg_start'], form.clean_data['teacher_reg_end'])]
+    userbits += [('V/Deadline/Registration/Teacher/Catalog', 0, form.clean_data['teacher_reg_start'], None)]
+    userbits += [('V/Deadline/Registration/Teacher/Classes', 0, form.clean_data['teacher_reg_start'], form.clean_data['teacher_reg_end'])]
+    userbits += [('V/Deadline/Registration/Teacher/Classes/View', 0, form.clean_data['teacher_reg_start'], form.clean_data['publish_end'])]
     userbits += [('V/Deadline/Registration/Teacher/MainPage', 0, form.clean_data['teacher_reg_start'], form.clean_data['publish_end'])]
     
     for director in form.clean_data['admins']:
