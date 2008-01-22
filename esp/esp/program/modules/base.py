@@ -299,7 +299,7 @@ class ProgramModuleObj(models.Model):
     def get_full_path(self):
         str_array = self.program.anchor.tree_encode()
         url = '/'+self.module.module_type \
-              +'/'+'/'.join(str_array[2:])+'/'+self.module.main_call
+              +'/'+'/'.join(str_array[-2:])+'/'+self.module.main_call
         return url
 
     @classmethod

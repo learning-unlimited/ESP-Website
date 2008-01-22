@@ -246,6 +246,40 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
         </td>
     </tr>
     
+    {% if subprograms %}
+    {% for subprogram in subprograms %}
+    <tr>
+        <th colspan="2">Section Wizard for Subprogram: {{ subprogram.name }}</th>
+    </tr>
+    <tr>
+        <td>
+            <label for="id_section_count_{{ subprogram.id_string }}">
+                Number of Sections to Create
+            </label>
+            {% if subprogram.section_count_field.errors %}
+            <br /><span class="form_error">{{ subprogram.section_count_field.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ subprogram.section_count_field }}
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <label for="id_section_duration_{{ subprogram.id_string }}">
+                Preferred Duration of Sections
+            </label>
+            {% if subprogram.section_duration_field.errors %}
+            <br /><span class="form_error">{{ subprogram.section_duration_field.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ subprogram.section_duration_field }}
+        </td>
+    </tr>
+    {% endfor %}
+    {% endif %}
+    
     <tr>
         <td align="center" colspan="2">
     

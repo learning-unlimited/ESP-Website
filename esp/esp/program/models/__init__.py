@@ -257,7 +257,7 @@ class Program(models.Model):
         else:
             self._type_url = {}
 
-        self._type_url[type] = '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[2:]))
+        self._type_url[type] = '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[-2:]))
 
         return self._type_url[type]
 
@@ -277,13 +277,13 @@ class Program(models.Model):
 
     def url(self):
         str_array = self.anchor.tree_encode()
-        return '/'.join(str_array[2:])
+        return '/'.join(str_array[-2:])
     
     def __str__(self):
         return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
 
     def parent(self):
-        return anchor.parent
+        return self.anchor.parent
 
     def niceName(self):
         return str(self).replace("_", " ")
@@ -293,6 +293,7 @@ class Program(models.Model):
 
     def getUrlBase(self):
         """ gets the base url of this class """
+        return self.url() # This makes looking up subprograms by name work; I've left it so that it can be undone without too much effort
         tmpnode = self.anchor
         urllist = []
         while tmpnode.name != 'Programs':
@@ -610,7 +611,10 @@ class Program(models.Model):
     def getSurveys(self):
         from esp.survey.models import Survey
         return Survey.objects.filter(anchor=self.anchor)
-
+    
+    def getSubprograms(self):
+        return Program.objects.filter(anchor__parent__in=self.anchor['Subprograms'].children())
+    
     def getModules(self, user = None, tl = None):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base

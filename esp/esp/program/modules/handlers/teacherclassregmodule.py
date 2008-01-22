@@ -29,8 +29,9 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext, manipulators
-from esp.program.models          import Program, Class, ClassCategories
+from esp.program.models          import Program, Class, ClassCategories, ClassImplication
 from esp.datatree.models         import DataTree, GetNode
 from esp.web.util                import render_to_response
 from django                      import forms
@@ -390,9 +391,26 @@ class TeacherClassRegModule(ProgramModuleObj):
                 return self.goToCore();
             
             new_data = request.POST.copy()
-
             errors = manipulator.get_validation_errors(new_data)
-            if not errors:
+            
+            # Silently drop errors from section wizard when we're not using it
+            if newclass is not None:
+                if prog.getSubprograms().count() > 0:
+                    for subprogram in prog.getSubprograms():
+                        subprogram_string = subprogram.niceName().replace(' ', '_')
+                        try:
+                            del errors['section_count_' + subprogram_string]
+                            del errors['section_duration_' + subprogram_string]
+                        except KeyError:
+                            pass
+            # Drop duration-validation errors if we didn't let them pick
+            if len(self.getDurations()) < 1:
+                try:
+                    del errors['duration']
+                except KeyError:
+                    pass
+            
+            if not errors: # will succeed for errors an empty dictionary
                 manipulator.do_html2python(new_data)
 
                 newclass_isnew = False
@@ -406,9 +424,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                         newclass_newmessage = False
 
                 for k, v in new_data.items():
-                    if k not in ('category', 'resources', 'viable_times'):
+                    if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
                         newclass.__dict__[k] = v
-
+                
                 newclass.category = ClassCategories.objects.get(id=new_data['category'])
 
                 if new_data['duration'] == '':
@@ -418,7 +436,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                         newclass.duration = float(new_data['duration'])
                     except:
                         newclass.duration = 0.0
-
                     
                 # datatree maintenance
                 if newclass_isnew:
@@ -433,12 +450,94 @@ class TeacherClassRegModule(ProgramModuleObj):
                     nodestring = newclass.category.category[:1].upper() + str(newclass.id)
                     newclass.anchor = self.program.classes_node().tree_create([nodestring])
                     newclass.anchor.tree_create(['TeacherEmail'])
-                    
                 newclass.anchor.friendly_name = newclass.title
-
                 newclass.anchor.save()
-
                 newclass.save()
+                
+                # create classes in subprograms -- the work for this should probably be farmed out to another function
+                if newclass_isnew:
+                    if prog.getSubprograms().count() > 0:
+                        # copy class information to section data
+                        section_data = {}
+                        for k, v in new_data.items():
+                            if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
+                                section_data[k] = v
+                        
+                        # prepare a ClassImplication, to be ready for student reg
+                        newclassimplication = ClassImplication()
+                        newclassimplication.cls = newclass
+                        newclassimplication.operation = 'OR'
+                        implied_id_ints = []
+                        
+                        for subprogram in prog.getSubprograms():
+                            # prepare some information 
+                            subprogram_string = subprogram.niceName().replace(' ', '_')
+                            try:
+                                subprogram_module = ProgramModuleObj.getFromProgModule(subprogram, self.module)
+                                subprogram_classreginfo = ClassRegModuleInfo.objects.get(module__program=subprogram)
+                            except:
+                                continue
+                            
+                            # modify data as appropriate to subprogram
+                            if new_data['section_duration_' + subprogram_string] == '':
+                                section_data['duration'] = 0.0
+                            else:
+                                try:
+                                    section_data['duration'] = float(new_data['section_duration_' + subprogram_string])
+                                except:
+                                    section_data['duration'] = 0.0
+                            section_data['parent_program_id'] = subprogram.id
+                            
+                            section_count = 1
+                            try:
+                                section_count = int(new_data['section_count_' + subprogram_string])
+                            except:
+                                pass
+                            for i in range(0, section_count):
+                                # make a new class and copy the section data into it
+                                section = Class()
+                                for k, v in section_data.items():
+                                    section.__dict__[k] = v
+                                section.category = ClassCategories.objects.get(id=new_data['category'])
+                                
+                                # get an id
+                                section.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
+                                section.anchor.save()
+                                section.enrollment = 0 # I question whether this really needs to be here. -ageng 2008-01-21
+                                section.save()
+                                section.anchor.delete(True)
+                                
+                                # set up the class's actual location on the data tree
+                                nodestring = section.category.category[:1].upper() + str(section.id)
+                                section.anchor = subprogram.classes_node().tree_create([nodestring])
+                                section.anchor.tree_create(['TeacherEmail'])
+                                section.anchor.friendly_name = section.title
+                                section.anchor.save()
+                                section.save()
+                                
+                                # create the userbits for the section
+                                section.makeTeacher(self.user)
+                                section.makeAdmin(self.user, subprogram_classreginfo.teacher_class_noedit)
+                                section.subscribe(self.user)
+                                subprogram.teacherSubscribe(self.user)
+                                section.propose()
+                                
+                                # create resource requests for each section
+                                section.clearResourceRequests()
+                                for res_type_id in request.POST.getlist('resources'):
+                                    if res_type_id in subprogram_module.getResourceTypes():
+                                        rr = ResourceRequest()
+                                        rr.target = section
+                                        rr.res_type = ResourceType.objects.get(id=res_type_id)
+                                        rr.save()
+                                
+                                # update class implication list
+                                implied_id_ints.append( section.id )
+                                
+                                section.update_cache()
+                        
+                        newclassimplication.member_id_ints = implied_id_ints
+                        newclassimplication.save()
 
                 #   Save resource requests
                 newclass.clearResourceRequests()
@@ -476,7 +575,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                 #   This line is for testing only. -Michael P
                 #   return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
                 return self.goToCore(tl)
-                            
         else:
             errors = {}
             if newclass is not None:
@@ -489,13 +587,22 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         context['one'] = one
         context['two'] = two
+        context['form'] = forms.FormWrapper(manipulator, new_data, errors)
+        
         if newclass is None:
             context['addoredit'] = 'Add'
+            if prog.getSubprograms().count() > 0:
+                context['subprograms'] = []
+                for subprogram in prog.getSubprograms():
+                    subprogram_string = subprogram.niceName().replace(' ', '_')
+                    context['subprograms'].append({ 'name': subprogram.niceName(), \
+                                                    'id_string': subprogram_string, \
+                                                    'section_count_field': context['form']['section_count_' + subprogram_string], \
+                                                    'section_duration_field': context['form']['section_duration_' + subprogram_string]})
         else:
             context['addoredit'] = 'Edit'
-
-        context['form'] = forms.FormWrapper(manipulator, new_data, errors)
-
+        
+        # Don't bother showing duration selection if there isn't anything to choose from
         if len(self.getDurations()) < 1:
             context['durations'] = False
         else:

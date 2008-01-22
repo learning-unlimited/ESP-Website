@@ -172,6 +172,20 @@ class TeacherClassRegManipulator(forms.Manipulator):
                                                            is_required=True, \
                                                            choices=[("", "")] + module.getDurations(), \
                                                            validator_list=[validators.isNotEmpty]),)
+        
+        # Includes a "section wizard" to create sections of the same class for subprograms
+        if module.program.getSubprograms().count() > 0:
+            for subprogram in module.program.getSubprograms():
+                timeslots = [""] + range(1, subprogram.getTimeSlots().count() + 1)
+                timeslots = zip(timeslots, timeslots)
+                self.fields = self.fields + (forms.SelectField(field_name='section_count_' + subprogram.niceName().replace(' ', '_'), \
+                                                            is_required=True, \
+                                                            choices=timeslots, \
+                                                            validator_list=[validators.isNotEmpty]),)
+                self.fields = self.fields + (forms.SelectField(field_name='section_duration_' + subprogram.niceName().replace(' ', '_'), \
+                                                            is_required=True, \
+                                                            choices=[("","")] + subprogram.getDurations(), \
+                                                            validator_list=[validators.isNotEmpty]),)
 
 
 
@@ -254,15 +268,20 @@ class ClassRoomAssignmentConflictValidator(object):
         self.rooms = rooms
         
     def __call__(self, form_data, all_data):
-         from esp.program.models import ClassRoomAssignment
-         rooms = all_data.getlist(self.rooms)
-         meeting_times = all_data.getlist(self.meeting_times)
-         for room in rooms:
-             for meeting_time in meeting_times:
-                 if len(meeting_time.strip()) > 0 and len(room.strip()) > 0:
-                     if (ClassRoomAssignment.objects.filter(timeslot = meeting_time, room = room).exclude(cls = self.cls).count() > 0):
-                         raise validators.ValidationError, 'The room assignment conflicts with another class.'
-        
+        from esp.resources.models import Resource, ResourceType
+        rooms = all_data.getlist(self.rooms)
+        #meeting_times = all_data.getlist(self.meeting_times)
+        for room in rooms:
+            if len(room.strip()) > 0:
+                r = Resource.objects.get(id=room)
+                if r.assignments().count() > 0:
+                    if ( r not in self.cls.classrooms() or r.is_conflicted() ):
+                        raise validators.ValidationError, 'The room assignment conflicts with another class.'
+            #for meeting_time in meeting_times:
+            #    if len(meeting_time.strip()) > 0 and len(room.strip()) > 0:
+            #        if (Resource.objects.filter(timeslot = meeting_time, room = room).exclude(cls = self.cls).count() > 0):
+            #            raise validators.ValidationError, 'The room assignment conflicts with another class.'
+
 
 # Django's CheckboxSelectMultipleField fails miserably, and It's probably very version-dependent.
 # Here's an ESP implementation that'll work on (many) django platforms

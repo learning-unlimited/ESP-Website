@@ -52,7 +52,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
 from esp.program.models import JunctionStudentApp
 
-__all__ = ['Class', 'JunctionAppReview', 'ProgramCheckItem', 'ClassManager', 'ClassCategories']
+__all__ = ['Class', 'JunctionAppReview', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
 
 class ClassCacheHelper(GenericCacheHelper):
@@ -468,7 +468,7 @@ class Class(models.Model):
 
     def url(self):
         str_array = self.anchor.tree_encode()
-        return '/'.join(str_array[2:])
+        return '/'.join(str_array[-4:])
 
     def got_qsd(self):
         return QuasiStaticData.objects.filter(path = self.anchor).values('id').count() > 0
@@ -885,6 +885,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             
     def getUrlBase(self):
         """ gets the base url of this class """
+        return self.url() # This makes looking up subprograms by name work; I've left it so that it can be undone without too much effort
         tmpnode = self.anchor
         urllist = []
         while tmpnode.name != 'Programs':
@@ -957,11 +958,11 @@ class ProgramCheckItem(models.Model):
 
 class ClassImplication(models.Model):
     """ Indicates class prerequisites corequisites, and the like """
-    cls = models.ForeignKey(Class, null=True)
-    parent = models.ForeignKey('self', null=True, default=None)
+    cls = models.ForeignKey(Class, null=True) # parent class
+    parent = models.ForeignKey('self', null=True, default=None) # parent classimplication
     is_prereq = models.BooleanField(default=True) # if not a prereq, it's a coreq
     enforce = models.BooleanField(default=True)
-    member_ids = models.CommaSeparatedIntegerField(blank=True, null=False)
+    member_ids = models.CommaSeparatedIntegerField(maxlength=100, blank=True, null=False) # implied classes (get implied implications with classimplication_set instead)
     operation = models.CharField(maxlength=4, choices = ( ('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One') ))
 
     def member_id_ints_get(self):
@@ -971,7 +972,18 @@ class ClassImplication(models.Model):
         self.member_ids = ",".join([ str(n) for n in value ])
 
     member_id_ints = property( member_id_ints_get, member_id_ints_set )
-
+    
+    class Meta:
+        verbose_name_plural = 'Class Implications'
+        app_label = 'program'
+        db_table = 'program_classimplications'
+    
+    class Admin:
+        pass
+    
+    def __str__(self):
+        return 'Implications for %s' % self.cls
+    
     def _and(lst):
         """ True iff all elements in lst are true """
         for i in lst:
@@ -1016,7 +1028,7 @@ class ClassImplication(models.Model):
         if not _ops[self.operation](class_valid_iterator) or not _ops[self.operation](subimplication_valid_iterator):
             return self
         else:
-            return False        
+            return False
 
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
