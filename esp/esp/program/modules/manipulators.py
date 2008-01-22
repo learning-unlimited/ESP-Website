@@ -170,7 +170,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
         if not module.classRegInfo.display_times or module.classRegInfo.times_selectmultiple:
             self.fields = self.fields + (forms.SelectField(field_name="duration", \
                                                            is_required=True, \
-                                                           choices=[("", "")] + module.getDurations(), \
+                                                           choices=[("", "")] + sorted(module.getDurations()), \
                                                            validator_list=[validators.isNotEmpty]),)
         
         # Includes a "section wizard" to create sections of the same class for subprograms
@@ -184,7 +184,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
                                                             validator_list=[validators.isNotEmpty]),)
                 self.fields = self.fields + (forms.SelectField(field_name='section_duration_' + subprogram.niceName().replace(' ', '_'), \
                                                             is_required=True, \
-                                                            choices=[("","")] + subprogram.getDurations(), \
+                                                            choices=[("","")] + sorted(subprogram.getDurations()), \
                                                             validator_list=[validators.isNotEmpty]),)
 
 
