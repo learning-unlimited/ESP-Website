@@ -26,7 +26,8 @@ def current_cache_key_func(cls, user=None, prereg_url=None, filter=False, reques
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func)
 def render_class_core(cls):
-    return { 'class': cls }
+    return {'class': cls,
+            'isfull': cls.num_students() >= cls.class_size_max}
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func)
 def render_class(cls, user=None, prereg_url=None, filter=False, request=None):
