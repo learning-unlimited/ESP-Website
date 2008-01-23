@@ -194,6 +194,23 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
     {% endif %}
     {% endif %}
     
+    {% if form.session_count %}
+    <tr>
+        <td>
+            <label class="header">
+            Number of weekends you want the class to run:
+            </label>
+
+            {% if form.session_count.errors %}
+            <br /><span class="form_error">{{ form.session_count.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.session_count }}
+        </td>
+    </tr>
+    {% endif %}
+    
     {% if form.viable_times %}
     <tr>
         <td>

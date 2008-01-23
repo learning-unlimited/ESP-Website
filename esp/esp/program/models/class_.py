@@ -117,6 +117,7 @@ class Class(models.Model):
     directors_notes = models.TextField(blank=True, null=True)
     status   = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted
     duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
+    session_count = models.IntegerField(default=1)
 
     #   Viable times replaced by availability of teacher (function viable_times below)
     #   Resources replaced by resource assignment (functions getResources, getResourceAssignments below)

@@ -64,6 +64,16 @@ class ClassRegModuleInfo(models.Model):
     class_durations       = models.CharField(maxlength=128, blank=True, null=True)
     teacher_class_noedit = models.DateTimeField(blank=True, null=True)
     
+    session_counts       = models.CommaSeparatedIntegerField(maxlength=100, blank=True)
+
+    def session_counts_ints_get(self):
+        return [ int(s) for s in self.session_counts.split(',') ]
+
+    def session_counts_ints_set(self, value):
+        self.session_counts = ",".join([ str(n) for n in value ])
+    
+    session_counts_ints = property( session_counts_ints_get, session_counts_ints_set )
+    
     class_durations_any = models.BooleanField(blank=True, null=True)
     def __str__(self):
         return 'Class Reg Ext. for %s' % str(self.module)

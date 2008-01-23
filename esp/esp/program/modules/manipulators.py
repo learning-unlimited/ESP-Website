@@ -158,7 +158,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
         if module.classRegInfo.set_prereqs:
             self.fields += (forms.LargeTextField(field_name='prereqs'),)
                                  
-
+        # Select viable times?
         if module.classRegInfo.display_times:
             if module.classRegInfo.times_selectmultiple:
                 self.fields = self.fields + (CheckboxSelectMultipleField(field_name="viable_times", \
@@ -166,13 +166,23 @@ class TeacherClassRegManipulator(forms.Manipulator):
             else:
                 self.fields = self.fields + (forms.SelectField(field_name="viable_times", \
                                               choices=module.getTimes()),)
-
+        
+        # ...or show duration selection?
         if not module.classRegInfo.display_times or module.classRegInfo.times_selectmultiple:
             self.fields = self.fields + (forms.SelectField(field_name="duration", \
                                                            is_required=True, \
                                                            choices=[("", "")] + sorted(module.getDurations()), \
                                                            validator_list=[validators.isNotEmpty]),)
         
+        # Ask for number of sessions to run?
+        if module.classRegInfo.session_counts:
+            session_count_choices = module.classRegInfo.session_counts_ints
+            session_count_choices = zip(session_count_choices, session_count_choices)
+            self.fields = self.fields + (forms.SelectField(field_name='session_count', \
+                                                        is_required=True, \
+                                                        choices=[("", "")] + session_count_choices, \
+                                                        validator_list=[validators.isNotEmpty]),)
+
         # Includes a "section wizard" to create sections of the same class for subprograms
         if module.program.getSubprograms().count() > 0:
             for subprogram in module.program.getSubprograms():
