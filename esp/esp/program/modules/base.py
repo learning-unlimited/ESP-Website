@@ -206,7 +206,7 @@ class ProgramModuleObj(models.Model):
                 m.request = request
                 m.user    = ESPUser(request.user)
                 m.__class__ = m.module.getPythonClass()
-                if not m.isCompleted():
+                if m.user.is_authenticated() and not m.isCompleted():
                     return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
 
         if hasattr(moduleobj, call_txt):
