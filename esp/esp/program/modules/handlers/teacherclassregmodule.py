@@ -34,6 +34,7 @@ from esp.program.modules         import module_ext, manipulators
 from esp.program.models          import Program, Class, ClassCategories, ClassImplication
 from esp.datatree.models         import DataTree, GetNode
 from esp.web.util                import render_to_response
+from esp.middleware              import ESPError
 from django                      import forms
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
@@ -114,16 +115,15 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def getClassSizes(self):
         min_size, max_size, class_size_step = (0, 200, 10)
-        if self.classRegInfo.class_min_size:
-            min_size = self.classRegInfo.class_min_size
-            
+
         if self.classRegInfo.class_max_size:
             max_size = self.classRegInfo.class_max_size
             
         if self.classRegInfo.class_size_step:
             class_size_step = self.classRegInfo.class_size_step
 
-        ret_range = [i for i in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30] if i >= min_size and i <= max_size] + range(max(30+class_size_step, min_size), max(30+class_size_step, max_size+1), class_size_step)
+        ret_range = range(1, 23) + [30, 35, 40, 150]
+        ret_range = filter(lambda x: ((x >= min_size) and (x <= max_size)), ret_range)
 
         return ret_range
 
@@ -147,11 +147,17 @@ class TeacherClassRegModule(ProgramModuleObj):
         resources = self.program.getResources()
         return [(str(x.id), x.name) for x in resources]
    
-    def getResourceTypes(self):
+    def getResourceTypes(self, is_global=None):
         #   Get a list of all resource types, excluding the fundamental ones.
-        Q_thisprog = Q(program__id=self.program.id)
-        Q_global = Q(program__id__isnull=True)
-        res_types = ResourceType.objects.filter(Q_thisprog | Q_global).filter(priority_default__gt=0)
+        base_types = self.program.getResourceTypes().filter(priority_default__gt=0)
+        
+        if is_global is True:
+            res_types = base_types.filter(program__isnull=True)
+        elif is_global is False:
+            res_types = base_types.filter(program__isnull=False)
+        else:
+            res_types = base_types
+            
         return [(str(x.id), x.name) for x in res_types]
 
     @needs_teacher
@@ -486,13 +492,20 @@ class TeacherClassRegModule(ProgramModuleObj):
                                     section_data['duration'] = float(new_data['section_duration_' + subprogram_string])
                                 except:
                                     section_data['duration'] = 0.0
-                            section_data['parent_program_id'] = subprogram.id
-                            
+                                    
                             section_count = 1
                             try:
                                 section_count = int(new_data['section_count_' + subprogram_string])
                             except:
                                 pass
+                                    
+                            max_duration = self.program.total_duration()
+                            max_hours = max_duration.days * 24.0 + max_duration.seconds / 3600.0
+                            if section_data['duration'] * section_count > max_hours:
+                                raise ESPError(False), 'We love you too!  However, you attempted to create too many sections of your class.  There is not enough time in the program to support those sections.  Please go back to the class editing page and reduce the length or quantity of sections.'
+                                    
+                            section_data['parent_program_id'] = subprogram.id
+                            
                             for i in range(0, section_count):
                                 # make a new class and copy the section data into it
                                 section = Class()
@@ -539,21 +552,28 @@ class TeacherClassRegModule(ProgramModuleObj):
                         newclassimplication.member_id_ints = implied_id_ints
                         newclassimplication.save()
 
-                #   Save resource requests
+                #   Save resource requests (currently we do not treat global and specialized requests differently)
                 newclass.clearResourceRequests()
-                for res_type_id in request.POST.getlist('resources'):
+                for res_type_id in request.POST.getlist('resources') + request.POST.getlist('global_resources'):
                     rr = ResourceRequest()
                     rr.target = newclass
                     rr.res_type = ResourceType.objects.get(id=res_type_id)
                     rr.save()
 
+                #   Add a component to the message for directors if the teacher is providing their own space.
+                prepend_str = '*** Notice *** \n The teacher has specified that they will provide their own space for this class.  Please contact them for the size and resources the space provides (if they have not specified below) and create the appropriate resources for scheduling. \n**************\n\n'
+                if new_data['has_own_space']:
+                    message_for_directors = prepend_str + new_data['message_for_directors']
+                else:
+                    message_for_directors = new_data['message_for_directors']
+
                 # send mail to directors
-                if len(new_data['message_for_directors'].strip()) > 0 and \
+                if len(message_for_directors.strip()) > 0 and \
                        newclass_newmessage and \
                        self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
                               """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nComments to Director:\n%s\n\n""" % \
-                              (new_data['title'], new_data['class_info'], new_data['message_for_directors']) , \
+                              (new_data['title'], new_data['class_info'], message_for_directors) , \
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
                               [self.program.director_email], True)
 
@@ -580,7 +600,10 @@ class TeacherClassRegModule(ProgramModuleObj):
             if newclass is not None:
                 new_data = newclass.__dict__
                 new_data['category'] = newclass.category.id
-                new_data['resources'] = [ req.res_type.id for req in ResourceRequest.objects.filter(target=newclass) ]
+                new_data['global_resources'] = [ req.res_type.id for req in ResourceRequest.objects.filter(target=newclass, res_type__program__isnull=True) ]
+                new_data['resources'] = [ req.res_type.id for req in ResourceRequest.objects.filter(target=newclass, res_type__program__isnull=False) ]
+                new_data['allow_lateness'] = newclass.allow_lateness
+                new_data['has_own_space'] = False
                 new_data['title'] = newclass.anchor.friendly_name
                 new_data['url']   = newclass.anchor.name
                 context['class'] = newclass

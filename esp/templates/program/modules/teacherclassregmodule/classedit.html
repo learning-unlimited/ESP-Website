@@ -13,7 +13,7 @@
 <h1>{{ addoredit }}ing a class for {{ program.niceName }}</h1>
 
 <p>
-Thank you for teaching for {{ one }}. Please fill out/update the form below.   The required fields are bordered in red.
+Thank you for your interest in teaching for {{ one }}. Please fill out or update the form below.   The required fields are bordered in red.
 </p>
 
 <p>If you would like to co-teach this class with others, please click the "Coteachers" button next to the appropriate class at the teacher registration page after you submit this form.</p>
@@ -23,12 +23,12 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.   T
 <div id="program_form">
 <center>
 <div class="info">
-<b>Teachers:</b> Please ensure that you are available to teach your class at any of the times you have specified that you are available.  If there is any chance that your plans may change and you won't be able to teach, please hold off on this form and <a href="mailto:{{ program.director_email }}">contact the program directors</a>.  We're just trying to minimize the number of classes that have to be cancelled after registration begins.
+<b>Teachers:</b> Please ensure that you are available to teach your class at any of the times you have specified that you are available.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form.  <a href="mailto:{{ program.director_email }}">Contact the program directors</a>.  We're just trying to minimize the number of classes that have to be cancelled after registration begins.
 <br />
 <br />
-To specify when you are available, go <a href="javascript:history.go(-1);">back to the main page</a> and click on "Indicate Your Availability".
+To specify when you are available, go here: <a href="/teach/{{ program.url }}/availability">Indicate Your Availability</a>.
 </div>
-<table width="500">
+<table width="550">
     <tr><th colspan="2">Course Creation/Editing Form</th></tr>
     {% if form.has_errors %}
     <tr>
@@ -80,7 +80,7 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
             {{ form.class_info }}
         </td>
     </tr>
-    <tr><th colspan="2" class="small"><p><b>Tip</b>: Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &quot;pi&quot;)</p></th></tr>
+    <tr><th colspan="2" class="smaller"><p><b>Tip</b>: Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &quot;pi&quot;)</p></th></tr>
 
     {% if form.prereqs %}
     <tr>
@@ -147,20 +147,6 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
     
     <tr>
         <td>
-        <label for="id_class_size_min">
-        Minimum Size:
-        </label>
-        </td>
-        <td>
-        {% if form.class_size_min.errors %}
-        <span class="form_error">{{ form.class_size_min.errors|join:", " }}</span><br />
-        {% endif %}
-        {{ form.class_size_min }}
-        </td>
-    </tr>
-    
-    <tr>
-        <td>
         <label for="id_class_size_max">
         Maximum Size:
         </label>
@@ -173,7 +159,7 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
         </td>
     </tr>
     
-    <tr><th colspan="2"><p><b>Note</b>: The above class-size and grade-range values are <strong>absolute</strong>, not the &#8220;optimum&#8221; nor &#8220;recommended&#8221; amounts.  We will not allow any more students than you specify, nor allow any students in grades outside the range you specify.  So, be very careful to set your ranges correctly!</p></th></tr>
+    <tr><th colspan="2" class="smaller"><p><b>Note</b>: The above class-size and grade-range values are absolute, not the &#8220;optimum&#8221; nor &#8220;recommended&#8221; amounts.  We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. </p></th></tr>
 
     {% if durations %}
     {% if form.duration %}
@@ -194,6 +180,23 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
     {% endif %}
     {% endif %}
     
+    {% if form.allow_lateness %}
+    <tr>
+        <td>
+            <label for="id_duration" class="header">
+            Punctuality:
+            </label>
+
+            {% if form.allow_lateness.errors %}
+            <br /><span class="form_error">{{ form.allow_lateness.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.allow_lateness }}
+        </td>
+    </tr>
+    {% endif %}
+
     {% if form.session_count %}
     <tr>
         <td>
@@ -211,6 +214,10 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
     </tr>
     {% endif %}
     
+    <tr>
+        <th colspan="2">Logistics</th>
+    </tr>
+
     {% if form.viable_times %}
     <tr>
         <td>
@@ -227,11 +234,46 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
         </td>
     </tr>
     {% endif %}
-    
+
+    {% if form.has_own_space %}
+    <tr>
+        <td>
+            <label for="id_duration" class="header">
+            Location:
+            </label>
+
+            {% if form.has_own_space.errors %}
+            <br /><span class="form_error">{{ form.has_own_space.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.has_own_space }}
+        </td>
+    </tr>
+    {% endif %}
+
+    <tr>
+        <th colspan="2" class="smaller"><p>
+        We can usually supply some common resources ("equipment/classroom options") at your request.  But if your class is truly uncommon, {{ one }} may also have access to unusual rooms and supplies.  These possibilities are listed in the second section, "special requests."
+        </p></th>
+    </tr>
     <tr>
         <td>
             <label class="header">
-            Resources Required (check all that apply):
+            Equipment/classroom options (check all that apply):
+            </label>
+            {% if form.global_resources.errors %}
+            <br /><span class="form_error">{{ form.global_resources.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.global_resources }}
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <label class="header">
+            Special requests:
             </label>
             {% if form.resources.errors %}
             <br /><span class="form_error">{{ form.resources.errors|join:", " }}</span><br />
@@ -241,7 +283,12 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
             {{ form.resources }}
         </td>
     </tr>
-
+    <tr>
+        <th colspan="2" class="smaller"><p>
+        <b>We cannot guarantee you any of the special resources listed above</b>.  We will contact you
+   if we are unable to get you the resource you need.  If you need any of these, please describe what you need in the
+   comments to the directors box!</p></th>
+    </tr>
     <tr>
         <td>
             <label for="id_message_for_directors" class="header">
@@ -250,7 +297,7 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
             <br />
 	    <br />
 
-	    <i>(Please include any special equipment requests.  Remember that you can be reimbursed for up to $30, more if you ask, for class equipment if you have an itemized receipt.)</i>
+	    <span style="font-weight: normal">Please explain any special equipment requests.  Remember that you can be reimbursed for up to $30 (or more with the directors' approval) for class expenses if you submit itemized receipts.</span>
 
             </label>
 
@@ -264,7 +311,14 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
     </tr>
     
     <!--This block can be removed after HSSP Spring 2008 teacher reg.-->
-    {% ifequal program.niceName "HSSP Spring 2008" %}<tr><th colspan="2"><p><b>Note:</b> This year we're running a new program, Spark, on the first day of HSSP. Students will use the day to preview HSSP classes and also attend a few one-time classes like those at Splash! When you register a new class, we show you a Section Wizard to help you create your preview sessions. You may edit them and add Splash-style classes at <a href="/teach/Spark/2008_Spring/teacherreg">Spark! teacher registration</a>. The more sessions you create, the more students will be able to preview it, so please consider offering as many as you can.</p></th></tr><tr><td colspan="2">&nbsp;</td></tr>{% endifequal %}
+    {% ifequal program.niceName "HSSP Spring 2008" %}
+    <tr>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+    <tr>
+        <th colspan="2" class="smaller"><p><b>Note:</b> This year we're running a new program, Spark, on the first day of HSSP. Students will use the day to preview HSSP classes and also attend a few one-time classes like those at Splash! When you register a new class, we show you a Section Wizard to help you create your preview sessions. You may edit them and add Splash-style classes at <a href="/teach/Spark/2008_Spring/teacherreg">Spark! teacher registration</a>. The more sessions you create, the more students will be able to preview it, so please consider offering as many as you can.</p></th>
+    </tr>
+    {% endifequal %}
     
     {% if subprograms %}
     {% for subprogram in subprograms %}
@@ -300,10 +354,20 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
     </tr>
     {% endfor %}
     {% endif %}
-    
+    <tr>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+    <tr>
+        <th colspan="2">Submit</th>
+    </tr>
+    <tr>
+        <th colspan="2" class="smaller"><p>
+        Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
+        </p></th>
+    </tr>
     <tr>
         <td align="center" colspan="2">
-    
+            <br />
             {% if class.id %}
                 <input type="hidden" name="class_id" value="{{ class.id }}" />
             {% endif %}
@@ -319,6 +383,7 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
             {% endif %}
             &nbsp; &nbsp; &nbsp; | &nbsp; &nbsp; &nbsp; 
             <input class="button" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
+            <br /><br />
         </td>
     </tr>    
 </table>

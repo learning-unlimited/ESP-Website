@@ -65,7 +65,7 @@ class AvailabilityModule(ProgramModuleObj):
         for a in available_slots:
             available_time = available_time + a.duration()
         
-        if total_time > available_time:
+        if (total_time > available_time):
             return False
         else:
             return True

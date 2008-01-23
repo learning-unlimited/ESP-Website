@@ -17,7 +17,7 @@
     </tr>
     {% for h in handouts %}
     <tr>
-        <td class="class_stuff"><a href="../{{ h.url }}">{{ h.title }}</a></td>
+        <td class="class_stuff"><a href="/teach/{{ program.url }}/{{ h.url }}">{{ h.title }}</a></td>
     </tr>
     {% endfor %}
 </table>

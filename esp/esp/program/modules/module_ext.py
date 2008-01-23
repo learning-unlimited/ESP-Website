@@ -51,20 +51,32 @@ class StudentClassRegModuleInfo(models.Model):
     
 
 class ClassRegModuleInfo(models.Model):
-    module       = models.ForeignKey(ProgramModuleObj)
+    module               = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, null=True)
     set_prereqs          = models.BooleanField(blank=True, null=True)
     display_times        = models.BooleanField(blank=True, null=True)
     times_selectmultiple = models.BooleanField(blank=True, null=True)
-    class_min_size       = models.IntegerField(blank=True, null=True)
+    
+    #   The maximum length of a class, in minutes.
+    class_max_duration   = models.IntegerField(blank=True, null=True)
+    
     class_max_size       = models.IntegerField(blank=True, null=True)
     
     class_size_step      = models.IntegerField(blank=True, null=True)
     director_email       = models.CharField(maxlength=64, blank=True, null=True)
-    class_durations       = models.CharField(maxlength=128, blank=True, null=True)
+    class_durations      = models.CharField(maxlength=128, blank=True, null=True)
     teacher_class_noedit = models.DateTimeField(blank=True, null=True)
     
     session_counts       = models.CommaSeparatedIntegerField(maxlength=100, blank=True)
+    
+    #   An HTML color code for the program.  All classes will appear in some variant
+    #   of this color in the catalog and registration pages.  If null, the default
+    #   ESP colors will be used.
+    color_code           = models.CharField(maxlength=6, blank=True, null=True)
+
+    #   If this is true, teachers will be allowed to specify that students may
+    #   come to their class late.
+    allow_lateness       = models.BooleanField(blank=True, null=True)
 
     def session_counts_ints_get(self):
         return [ int(s) for s in self.session_counts.split(',') ]

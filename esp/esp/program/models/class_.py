@@ -110,14 +110,21 @@ class Class(models.Model):
     message_for_directors = models.TextField(blank=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
-    class_size_min = models.IntegerField()
+    class_size_min = models.IntegerField(blank=True, null=True)
     class_size_max = models.IntegerField()
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
     directors_notes = models.TextField(blank=True, null=True)
     status   = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted
     duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
+    
+    #   If the teacher can request the number of class sessions (i.e. number of weeks for HSSP),
+    #   this field will store their choice.
     session_count = models.IntegerField(default=1)
+    
+    #   Set to true if a teacher (and the program directors) allow students to join the
+    #   class significantly later than the usual 5 minute grace period.
+    allow_lateness = models.BooleanField(default=False)
 
     #   Viable times replaced by availability of teacher (function viable_times below)
     #   Resources replaced by resource assignment (functions getResources, getResourceAssignments below)

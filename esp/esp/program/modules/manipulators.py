@@ -105,6 +105,11 @@ class TeacherClassRegManipulator(forms.Manipulator):
 
         grade_order = IsLessThanOtherField('grade_max', 'Minimum grade must be less than the maximum grade.')
         
+        location_choices = [    (True, "I will arrange my own space for this class (e.g. space in my laboratory).  I have explained this in 'Comments to Director' below."),
+                                (False, "I would like ESP to supply a classroom and/or other resources for my class.")]
+                                
+        lateness_choices = [    (True, "Students may join this class up to 20 minutes after the official start time."),
+                                (False, "My class is not suited to late additions.")]                                
 
         categories = ClassCategories.objects.all().order_by('category').exclude(category__contains='SAT')
         categories = [("", "")] + [ (x.id, x.category) for x in categories ]
@@ -134,21 +139,19 @@ class TeacherClassRegManipulator(forms.Manipulator):
                               is_required=True, \
                               choices=class_grades, \
                               validator_list=[validators.isNotEmpty]),
-            
-            forms.SelectField(field_name="class_size_min", \
-                              is_required=True, \
-                              choices=class_sizes, \
-                              validator_list=[size_order, validators.isNotEmpty]),
 
             forms.SelectField(field_name="class_size_max", \
                               is_required=True, \
                               choices=class_sizes, \
-                              validator_list=[validators.isNotEmpty]),
-                              
-            forms.LargeTextField(field_name="prereqs", is_required=False),                  
+                              validator_list=[validators.isNotEmpty]),      
+                      
+            forms.RadioSelectField(field_name="has_own_space", is_required=True, choices=location_choices),
+
+            CheckboxSelectMultipleField(field_name="global_resources", \
+                                              choices=module.getResourceTypes(is_global=True)),
 
             CheckboxSelectMultipleField(field_name="resources", \
-                                              choices=module.getResourceTypes()),
+                                              choices=module.getResourceTypes(is_global=False)),
 
             forms.LargeTextField(field_name="message_for_directors", \
                                  is_required=False)
@@ -156,7 +159,9 @@ class TeacherClassRegManipulator(forms.Manipulator):
             )
 
         if module.classRegInfo.set_prereqs:
-            self.fields += (forms.LargeTextField(field_name='prereqs'),)
+            self.fields += (forms.LargeTextField(field_name='prereqs', is_required=False),)
+        if module.classRegInfo.allow_lateness:
+            self.fields += (forms.RadioSelectField(field_name='allow_lateness', is_required=True, choices=lateness_choices),)
                                  
         # Select viable times?
         if module.classRegInfo.display_times:

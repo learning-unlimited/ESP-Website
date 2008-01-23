@@ -172,6 +172,15 @@
     text-align: center;
 }
 
+#program_form th.smaller {
+   font-family: Arial, Helvetica, sans-serif;
+   padding: 5px;
+   font-size: 0.9em;
+   background-color: #ffffff;
+   color: #000000;
+   text-align: left;
+}
+
 #program_form input {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
@@ -200,14 +209,14 @@
     color: #c6def7;
 }
 
-#program_form th.small {
-    font-size: 12px;
-    text-align: left;
-    font-weight: bold;
-}
-
 #program_form td.underline {
     border-bottom: 1px dashed #699;
+}
+
+#program_form ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin-left: 0;
 }
 
 div.raw_id_admin {

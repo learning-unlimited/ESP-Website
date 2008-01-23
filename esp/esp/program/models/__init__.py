@@ -34,7 +34,7 @@ from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser
 from esp.lib.markdown import markdown
 from esp.qsd.models import QuasiStaticData
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.core.cache import cache
 from esp.miniblog.models import Entry
 from django.db.models import Q
@@ -545,6 +545,14 @@ class Program(models.Model):
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')
 
+    def total_duration(self):
+        """ Returns the total length of the events in this program, as a timedelta object. """
+        ts_list = self.getTimeSlots()
+        time_sum = timedelta()
+        for t in ts_list:
+            time_sum = time_sum + (t.end - t.start)
+        return time_sum
+
     def date_range(self):
         dates = self.getTimeSlots()
         d1 = min(dates).start
@@ -561,7 +569,16 @@ class Program(models.Model):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
         exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
-        return ResourceType.objects.filter(Q(program=self) | Q(program__isnull=True)).exclude(id__in=[t.id for t in exclude_types])
+        
+        Q_filters = Q(program=self) | Q(program__isnull=True)
+        
+        #   Inherit resource types from parent programs.
+        parent_program = self.getParentProgram()
+        if parent_program is not None:
+            Q_parent = Q(id__in=[rt.id for rt in parent_program.getResourceTypes()])
+            Q_filters = Q_filters | Q_parent
+        
+        return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types])
 
     def getResources(self):
         from esp.resources.models import Resource
@@ -587,9 +604,16 @@ class Program(models.Model):
         #   Filters down the floating resources to those that are not taken.
         return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot))
 
-    def getDurations(self):
+    def getDurations(self, round=True):
         """ Find all contiguous time blocks and provide a list of duration options. """
+        from esp.program.modules.module_ext import ClassRegModuleInfo
+        
         times = Event.group_contiguous(list(self.getTimeSlots()))
+        info_list = ClassRegModuleInfo.objects.filter(module__program=self)
+        if info_list.count() == 1 and type(info_list[0].class_max_duration) == int:
+            max_seconds = info_list[0].class_max_duration * 60
+        else:
+            max_seconds = None
 
         durationDict = {}
         
@@ -600,9 +624,15 @@ class Program(models.Model):
                 for j in range(i, n):
                     time_option = t_list[j].end - t_list[i].start
                     durationSeconds = time_option.seconds
-                    durationDict[durationSeconds / 3600.0] = \
-                                        str(durationSeconds / 3600) + ':' + \
-                                        str((durationSeconds / 60) % 60).rjust(2,'0')
+                    #   If desired, round up to the nearest 15 minutes
+                    if round:
+                        rounded_seconds = int(durationSeconds / 900.0 + 1.0) * 900
+                    else:
+                        rounded_seconds = durationSeconds
+                    if (max_seconds is None) or (durationSeconds <= max_seconds):
+                        durationDict[durationSeconds / 3600.0] = \
+                                        str(rounded_seconds / 3600) + ':' + \
+                                        str((rounded_seconds / 60) % 60).rjust(2,'0')
             
         durationList = durationDict.items()
 
@@ -614,6 +644,16 @@ class Program(models.Model):
     
     def getSubprograms(self):
         return Program.objects.filter(anchor__parent__in=self.anchor['Subprograms'].children())
+    
+    def getParentProgram(self):
+        #   Ridiculous syntax is actually correct for our subprograms scheme.
+        pl = []
+        if self.anchor.parent.parent.name == 'Subprograms':
+            pl = Program.objects.filter(anchor=self.anchor.parent.parent.parent)
+        if len(pl) == 1:
+            return pl[0]
+        else:
+            return None
     
     def getModules(self, user = None, tl = None):
         """ Gets a list of modules for this program. """

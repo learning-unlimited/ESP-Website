@@ -196,6 +196,18 @@ class ProgramModuleObj(models.Model):
         moduleobj.request = request
         moduleobj.user    = ESPUser(request.user)
         moduleobj.fixExtensions()
+        
+        #   For core modules, redirect to the incomplete required modules in the same section first.
+        #   The pages should all redirect to the core on completion.  If none are needed, the
+        #   code here won't do anything and the page will be returned as usual.
+        if isinstance(moduleobj, CoreModule):
+            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).order_by('seq')
+            for m in other_modules:
+                m.request = request
+                m.user    = ESPUser(request.user)
+                m.__class__ = m.module.getPythonClass()
+                if not m.isCompleted():
+                    return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
 
         if hasattr(moduleobj, call_txt):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
