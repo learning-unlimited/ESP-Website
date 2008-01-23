@@ -246,6 +246,9 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
         </td>
     </tr>
     
+    <!--This block can be removed after HSSP Spring 2008 teacher reg.-->
+    {% ifequal program.niceName "HSSP Spring 2008" %}<tr><th colspan="2"><p><b>Note:</b> This year we're running a new program, Spark, on the first day of HSSP. Students will use the day to preview HSSP classes and also attend a few one-time classes like those at Splash! When you register a new class, we show you a Section Wizard to help you create your preview sessions. You may edit them and add Splash-style classes at <a href="/teach/Spark/2008_Spring/teacherreg">Spark! teacher registration</a>. The more sessions you create, the more students will be able to preview it, so please consider offering as many as you can.</p></th></tr><tr><td colspan="2">&nbsp;</td></tr>{% endifequal %}
+    
     {% if subprograms %}
     {% for subprogram in subprograms %}
     <tr>
@@ -264,6 +267,7 @@ To specify when you are available, go <a href="javascript:history.go(-1);">back 
             {{ subprogram.section_count_field }}
         </td>
     </tr>
+    <!--Later this should be made more versatile-->
     <tr>
         <td>
             <label for="id_section_duration_{{ subprogram.id_string }}">
