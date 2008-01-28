@@ -52,7 +52,8 @@ class ProgramModule(models.Model):
     admin_title = models.CharField(maxlength=128)
 
     # Main view function associated with this Program Module
-    main_call  = models.CharField(maxlength=32)
+    #   Not all program modules have main calls!
+    main_call  = models.CharField(maxlength=32, blank=True, null=True)
 
     # aseering 3-19-2007 -- ??; no idea what this is for
     check_call = models.CharField(maxlength=32, blank=True, null=True)
