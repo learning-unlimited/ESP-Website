@@ -563,7 +563,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 #   Add a component to the message for directors if the teacher is providing their own space.
                 prepend_str = '*** Notice *** \n The teacher has specified that they will provide their own space for this class.  Please contact them for the size and resources the space provides (if they have not specified below) and create the appropriate resources for scheduling. \n**************\n\n'
                 
-                if new_data['has_own_space']:
+                if ( new_data['has_own_space'] == 'True' ):
                     message_for_directors = prepend_str + new_data['message_for_directors']
                 else:
                     message_for_directors = new_data['message_for_directors']
