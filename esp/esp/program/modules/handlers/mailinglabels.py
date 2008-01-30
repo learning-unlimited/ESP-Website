@@ -168,7 +168,9 @@ class MailingLabels(ProgramModuleObj):
         addresses = {}
         ids_zipped = []
 
-        if infos[0].k12school_set.all().count() > 0:
+        infos = [i in infos if i != None]
+
+        if len(infos) > 0 and infos[0].k12school_set.all().count() > 0:
             use_title = True
         else:
             use_title = False

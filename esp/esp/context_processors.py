@@ -7,8 +7,10 @@ def media_url(request):
 
 def esp_user(request):
     from esp.users.models import ESPUser
-    user = ESPUser(request.user)
-    return {'user': user}
+    if hasattr(request, 'user'):
+        user = ESPUser(request.user)
+        return {'user': user}
+    return {}
 
 def test_cookie(request):
 
