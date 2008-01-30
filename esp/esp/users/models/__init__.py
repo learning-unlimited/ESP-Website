@@ -34,7 +34,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
 #from peak.api import security, binding
 from esp.workflow.models import Controller
-from datetime import datetime
+from datetime import datetime, timedelta
 from esp.db.models import Q, qlist
 from esp.dblog.models import error
 from django.db.models.query import QuerySet
@@ -249,7 +249,16 @@ class ESPUser(User, AnonymousUser):
                 error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
             else:
                 return all_classes.filter(parent_program = program)
-
+    
+    def getTaughtTime(self, program = None, include_scheduled = True):
+        """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
+            If include_scheduled is given as False, we don't count time for already-scheduled classes. """
+        user_classes = self.getTaughtClasses(program)
+        total_time = timedelta()
+        for c in user_classes:
+            if include_scheduled or (c.start_time() is None):
+                total_time = total_time + timedelta(hours=c.duration)
+        return total_time
 
     def getUserNum(self):
         """ Returns the "number" of a user, which is distinct from id.

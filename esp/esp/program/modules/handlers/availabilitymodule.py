@@ -56,12 +56,9 @@ class AvailabilityModule(ProgramModuleObj):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
         self.user = ESPUser(self.user)
         available_slots = self.user.getAvailableTimes(self.program)
-        user_classes = self.user.getTaughtClasses(self.program)
         
-        total_time = timedelta()
+        total_time = self.user.getTaughtTime(self.program, include_scheduled=False)
         available_time = timedelta()
-        for c in user_classes:
-            total_time = total_time + timedelta(hours=c.duration)
         for a in available_slots:
             available_time = available_time + a.duration()
         

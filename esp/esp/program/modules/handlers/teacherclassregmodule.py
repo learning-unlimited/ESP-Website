@@ -42,8 +42,9 @@ from django.core.mail            import send_mail
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
 from esp.db.models               import Q
-from esp.users.models            import User
+from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
+from datetime                    import timedelta
 
 class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -259,8 +260,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @needs_teacher
     @meets_deadline('/MainPage')
-    def coteachers(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import ESPUser 
+    def coteachers(self, request, tl, one, two, module, extra, prog): 
         if not request.POST.has_key('clsid'):
             return self.goToCore(tl) # just fails.
 
@@ -421,6 +421,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 newclass_isnew = False
                 newclass_newmessage = True
+                newclass_oldtime = timedelta() # Remember the old class duration so that we can sanity-check things later.
 
                 if newclass is None:
                     newclass_isnew = True
@@ -428,6 +429,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 else:
                     if new_data['message_for_directors'] == newclass.message_for_directors:
                         newclass_newmessage = False
+                    newclass_oldtime = timedelta(hours=newclass.duration)
 
                 for k, v in new_data.items():
                     if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
@@ -442,7 +444,15 @@ class TeacherClassRegModule(ProgramModuleObj):
                         newclass.duration = float(new_data['duration'])
                     except:
                         newclass.duration = 0.0
-                    
+                
+                # Makes sure the program has time for this class
+                # If the time you're already teaching plus the time of the class you propose exceeds the program's total time, fail.
+                # The newclass_oldtime term balances things out if this isn't actually a new class.
+                self.user = ESPUser(self.user)
+                if self.user.getTaughtTime(prog, include_scheduled=True) + timedelta(hours=newclass.duration) > self.program.total_duration() + newclass_oldtime:
+                    raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
+
+                
                 # datatree maintenance
                 if newclass_isnew:
                     newclass.parent_program = self.program
@@ -499,9 +509,11 @@ class TeacherClassRegModule(ProgramModuleObj):
                             except:
                                 pass
                                     
-                            max_duration = self.program.total_duration()
-                            max_hours = max_duration.days * 24.0 + max_duration.seconds / 3600.0
-                            if section_data['duration'] * section_count > max_hours:
+                            # If the time of the proposed sections plus the time you're already teaching for this program exceed the program's total time, fail.
+                            if timedelta(hours = section_data['duration'] * section_count) + self.user.getTaughtTime(subprogram, include_scheduled=True) > subprogram.total_duration():
+                                # Delete new class--prevent teacherless classes from showing up when we throw an error right here.
+                                # If there's more than one subprogram, this won't avoid orphaned sections and classimplications.
+                                newclass.delete()
                                 raise ESPError(False), 'We love you too!  However, you attempted to create too many sections of your class.  There is not enough time in the program to support those sections.  Please go back to the class editing page and reduce the length or quantity of sections.'
                                     
                             section_data['parent_program_id'] = subprogram.id
@@ -641,7 +653,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         limit = 10
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
-        from esp.users.models import ESPUser
 
         Q_teacher = Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))
 

@@ -7,7 +7,7 @@
 /* <![CDATA[ */
 
 function deleteClass() {
-    if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students.')) {
+    if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
        return true;
     }
     return false;
@@ -269,7 +269,7 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
 <div id="battlescreen">
 <table cellpadding="4px" cellspacing="0" align="center">
   <tr>
-    <th colspan="8">
+    <th colspan="9">
        Manage the classes of {{program.niceName}}
     </th>
   </tr>
