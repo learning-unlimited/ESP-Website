@@ -178,11 +178,9 @@ class StudentClassRegModule(ProgramModuleObj):
     # we can also ``changeslot''
     changeslot = fillslot
 
-    @meets_deadline('/Catalog')
-    def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
+    # This function actually renders the catalog
+    def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
-        
-
         # using .extra() to select all the category text simultaneously
         classes = Class.objects.catalog(self.program)
 
@@ -194,6 +192,23 @@ class StudentClassRegModule(ProgramModuleObj):
                                                                                        'one':        one,
                                                                                        'two':        two,
                                                                                        'categories': categories.values()})
+    
+    # This function exists only to apply the @meets_deadline decorator.
+    @meets_deadline('/Catalog')
+    def catalog_student(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        """ Return the program class catalog, after checking the deadline """
+        return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+
+    # This function gets called and branches off to the two above depending on the user's role
+    def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        """ Check user role and maybe return the program class catalog """
+        
+        user = ESPUser(request.user)
+        if user.isTeacher() or user.isAdmin(self.program.anchor):
+            return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+        else:
+            return self.catalog_student(request, tl, one, two, module, extra, prog, timeslot)
+    
 
     @needs_student
     def class_docs(self, request, tl, one, two, module, extra, prog):
