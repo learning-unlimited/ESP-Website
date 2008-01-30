@@ -445,9 +445,11 @@ class Program(models.Model):
         if students_dict.has_key('classreg'):
             students_count = User.objects.filter(students_dict['classreg']).count()
         else:
-            students_count = 0
-            for c in self.classes():
-                students_count += c.num_students(use_cache=True)
+            from django.contrib.auth.models import User
+            students_count = User.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
+#            students_count = 0
+#            for c in self.classes():
+#                students_count += c.num_students(use_cache=True)
 
         isfull = ( students_count >= self.program_size_max )
 
