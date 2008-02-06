@@ -37,205 +37,205 @@ from db.fields import AjaxForeignKey
 from datetime import datetime
 
 class AccountingException(Exception):
-        pass
+    pass
 
 class CompletedTransactionException(AccountingException):
-        pass
+    pass
 
 class EmptyTransactionException(AccountingException):
-        pass
+    pass
 
 class LineItemType(models.Model):
-        """ A set of default values for a line item """
-        text = models.TextField() # description of line item
-        amount = models.DecimalField(max_digits=9, decimal_places=2, default=0.0) # default amount
-        anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitemtype',null=True) # account to post the line item
-        finaid_amount = models.DecimalField(max_digits=9, decimal_places=2, default=0.0) # amount after financial aid
-        finaid_anchor = AjaxForeignKey(DataTree,null=True,related_name='accounting_finaiditemtype')
-        
-        def __str__(self):
-		if self.anchor: url = self.anchor.get_url()
-		else: url = 'NULL'
-                return "LineItemType: %s (%.02f or %.02f for %s)" % (self.text, self.amount, self.finaid_amount, url)
+    """ A set of default values for a line item """
+    text = models.TextField() # description of line item
+    amount = models.DecimalField(max_digits=9, decimal_places=2, default=0.0) # default amount
+    anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitemtype',null=True) # account to post the line item
+    finaid_amount = models.DecimalField(max_digits=9, decimal_places=2, default=0.0) # amount after financial aid
+    finaid_anchor = AjaxForeignKey(DataTree,null=True,related_name='accounting_finaiditemtype')
+    
+    def __str__(self):
+        if self.anchor: url = self.anchor.get_url()
+        else: url = 'NULL'
+        return "LineItemType: %s (%.02f or %.02f for %s)" % (self.text, self.amount, self.finaid_amount, url)
 
-        class Admin:
-                pass
+    class Admin:
+        pass
 
 class Balance(models.Model):
-        """ A posted balance for an account.  This serves the purpose of keeping
-            transactions from collecting ad infinitum on a ledger, so the entire
-            history of a ledger need not be explored to determine the balance on
-            that ledger. """
-        anchor = AjaxForeignKey(DataTree, related_name='balance')
-        user = AjaxForeignKey(user, related_name='balance')
-        timestamp = models.DateTimeField()
-        amount = models.DecimalField(max_digits=16, decimal_places=2)
-        past = models.ForeignKey('self', null=True)
+    """ A posted balance for an account.  This serves the purpose of keeping
+        transactions from collecting ad infinitum on a ledger, so the entire
+        history of a ledger need not be explored to determine the balance on
+        that ledger. """
+    anchor = AjaxForeignKey(DataTree, related_name='balance')
+    user = AjaxForeignKey(user, related_name='balance')
+    timestamp = models.DateTimeField()
+    amount = models.DecimalField(max_digits=16, decimal_places=2)
+    past = models.ForeignKey('self', null=True)
 
-        def __unicode__(self):
-                return u'Balance for %s in %s as of %s: %14.02f' % (self.user, str(self.anchor), str(self.timestamp), self.amount)
+    def __unicode__(self):
+        return u'Balance for %s in %s as of %s: %14.02f' % (self.user, str(self.anchor), str(self.timestamp), self.amount)
 
-        class Admin:
-                pass
+    class Admin:
+        pass
 
-        class Meta:
-                order_with_respect_to = 'anchor'
-                ordering = ['-timestamp']
+    class Meta:
+        order_with_respect_to = 'anchor'
+        ordering = ['-timestamp']
 
-        @staticmethod
-        def get_current_balance(anchor, user=None, li_type=None):
-                # Determine the set of prevously posted balances
-                q = Q(anchor=anchor, past__isnull=True)
-                if user is not None:
-                        q = q & Q(user=user)
-                bals = Balance.objects.filter(q)
+    @staticmethod
+    def get_current_balance(anchor, user=None, li_type=None):
+        # Determine the set of prevously posted balances
+        q = Q(anchor=anchor, past__isnull=True)
+        if user is not None:
+            q = q & Q(user=user)
+        bals = Balance.objects.filter(q)
 
-                # Calculate the total posted balance on the account
-                bal_start = sum([bal.amount for bal in bals])
+        # Calculate the total posted balance on the account
+        bal_start = sum([bal.amount for bal in bals])
 
-                # Find the pending line items that apply to the account
-                q = Q(transaction__complete=True, posted_to__isnull=True, anchor=anchor)
-                if user is not None: q = q & Q(user=user)
-                if li_type is not None: q = q & Q(li_type=li_type)
-                items = LineItem.objects.filter(q)
+        # Find the pending line items that apply to the account
+        q = Q(transaction__complete=True, posted_to__isnull=True, anchor=anchor)
+        if user is not None: q = q & Q(user=user)
+        if li_type is not None: q = q & Q(li_type=li_type)
+        items = LineItem.objects.filter(q)
 
-                # Total the pending line items
-                bal_items = sum([li.amount for li in items])
+        # Total the pending line items
+        bal_items = sum([li.amount for li in items])
 
-                # Operation Complete!
-                return (bal_start + bal_items, bal_start, bal_items, bals, items)
+        # Operation Complete!
+        return (bal_start + bal_items, bal_start, bal_items, bals, items)
 
-        @classmethod
-        def _post_balance_slave(klass, anchor, user, li_set, bal_last):
-                bal = klass.objects.create(anchor=anchor, user=user, amount=0.0, past=bal_last, timestamp=datetime.now())
-                li_set = [li for li in li_set if li.user == user]
-                bal_items = sum([li.amount for li in li_set])
-                bal.amount = bal_items + bal_last.amount
-                bal.save()
-                for li in li_set:
-                        li.posted_to = bal
-                        li.save()
-                return bal
+    @classmethod
+    def _post_balance_slave(klass, anchor, user, li_set, bal_last):
+        bal = klass.objects.create(anchor=anchor, user=user, amount=0.0, past=bal_last, timestamp=datetime.now())
+        li_set = [li for li in li_set if li.user == user]
+        bal_items = sum([li.amount for li in li_set])
+        bal.amount = bal_items + bal_last.amount
+        bal.save()
+        for li in li_set:
+            li.posted_to = bal
+            li.save()
+        return bal
 
-        @classmethod
-        @transaction.commit_on_success
-        def post_balance(klass, anchor, user=None):
-                q = Q(anchor=anchor,posted_to__isnull=True)
-                if user is not None: q = q & Q(user=user)
-                li_set = LineItem.objects.filter(q)
-                u_set = set([li.user for li in li_set])
-                bal_set = []
-                for user in u_set:
-                        bal_last = klass.objects.filter(anchor=anchor,past__isnull=True,user=user)
-                        if bal_last: bal_last = bal_last[0]
-                        else: bal_last = None
-                        bal = klass._post_balance_slave( anchor, user, li_set, bal_last )
-                        bal_set.append(bal)
-                return bal_set
+    @classmethod
+    @transaction.commit_on_success
+    def post_balance(klass, anchor, user=None):
+        q = Q(anchor=anchor,posted_to__isnull=True)
+        if user is not None: q = q & Q(user=user)
+        li_set = LineItem.objects.filter(q)
+        u_set = set([li.user for li in li_set])
+        bal_set = []
+        for user in u_set:
+            bal_last = klass.objects.filter(anchor=anchor,past__isnull=True,user=user)
+            if bal_last: bal_last = bal_last[0]
+            else: bal_last = None
+            bal = klass._post_balance_slave( anchor, user, li_set, bal_last )
+            bal_set.append(bal)
+        return bal_set
 
 
 class Transaction(models.Model):
-        """ A double-ledger accounting transaction """
-        timestamp = models.DateTimeField()
-        text = models.TextField()
-        complete = models.BooleanField(default=False)
+    """ A double-ledger accounting transaction """
+    timestamp = models.DateTimeField()
+    text = models.TextField()
+    complete = models.BooleanField(default=False)
 
-        def __str__(self):
-                if self.complete: completion = ''
-                else: completion = ' (INCOMPLETE)'
-                return "T-%u (%s): %s" % (self.id, str(self.timestamp), self.text + completion)
+    def __str__(self):
+        if self.complete: completion = ''
+        else: completion = ' (INCOMPLETE)'
+        return "T-%u (%s): %s" % (self.id, str(self.timestamp), self.text + completion)
 
-        class Admin:
-                pass
+    class Admin:
+        pass
 
-        @classmethod
-        def begin(klass,anchor,text,reference=None):
-                """ Create a new transaction """
-                t = klass()
-		t.anchor = anchor
-                t.text = text
-                t.timestamp = datetime.now()
-                t.complete = False
-                t.reference = reference
-                t.save()
+    @classmethod
+    def begin(klass,anchor,text,reference=None):
+        """ Create a new transaction """
+        t = klass()
+        t.anchor = anchor
+        t.text = text
+        t.timestamp = datetime.now()
+        t.complete = False
+        t.reference = reference
+        t.save()
 
-                # Operation Complete!
-                return t
+        # Operation Complete!
+        return t
 
-        @transaction.commit_on_success
-        def add_item(self, user, li_type, finaid=False, amount=None, text=None, anchor=None):
-                """ Add a line item to this transaction. Note that positive amounts on program accounts indicate an expense to the organization, and negative amounts indicate income to the organization. This condition is reversed for asset accounts. """
-                if self.complete: raise CompletedTransactionException
+    @transaction.commit_on_success
+    def add_item(self, user, li_type, finaid=False, amount=None, text=None, anchor=None):
+        """ Add a line item to this transaction. Note that positive amounts on program accounts indicate an expense to the organization, and negative amounts indicate income to the organization. This condition is reversed for asset accounts. """
+        if self.complete: raise CompletedTransactionException
 
-                li = LineItem()
-                li.transaction = self
+        li = LineItem()
+        li.transaction = self
 
-                if anchor is None: anchor = li_type.anchor
-                li.anchor = anchor
+        if anchor is None: anchor = li_type.anchor
+        li.anchor = anchor
 
-                if amount is None:
-                        if not finaid: amount = li_type.amount
-                        elif li_type.finaid_amount != li_type.amount:
-                                amount = li_type.finaid_amount
-                                finaid_amount = li_type.amount - amount
+        if amount is None:
+            if not finaid: amount = li_type.amount
+            elif li_type.finaid_amount != li_type.amount:
+                amount = li_type.finaid_amount
+                finaid_amount = li_type.amount - amount
 
-                                fa_li = LineItem()
-                                fa_li.transaction = self
-                                fa_li.anchor = li_type.finaid_anchor
-                                fa_li.amount = -finaid_amount
-                                fa_li.user = user
-                                fa_li.li_type = LineItemType.objects.get(text='Financial Aid')
-                                fa_li.text = fa_li.li_type.text
-                                fa_li.save()
-			else: amount = li_type.amount
+                fa_li = LineItem()
+                fa_li.transaction = self
+                fa_li.anchor = li_type.finaid_anchor
+                fa_li.amount = -finaid_amount
+                fa_li.user = user
+                fa_li.li_type = LineItemType.objects.get(text='Financial Aid')
+                fa_li.text = fa_li.li_type.text
+                fa_li.save()
+            else: amount = li_type.amount
 
-                li.amount = amount
-                li.user = user
-                if text is None: text = li_type.text
-                li.text = text
-                li.li_type = li_type
-                li.save()
+        li.amount = amount
+        li.user = user
+        if text is None: text = li_type.text
+        li.text = text
+        li.li_type = li_type
+        li.save()
 
-                # Operation Complete!
-                return li
+        # Operation Complete!
+        return li
 
-        @transaction.commit_on_success
-        def post_balance(self, user, text, anchor):
-                """ Post a transaction balance to an account and complete the transaction. """
-                if self.complete: raise CompletedTransactionException
+    @transaction.commit_on_success
+    def post_balance(self, user, text, anchor):
+        """ Post a transaction balance to an account and complete the transaction. """
+        if self.complete: raise CompletedTransactionException
 
-                items = self.lineitem_set.all()
-                if items.count() == 0: raise EmptyTransactionException
-                amounts = [li.amount for li in items]
-                balance = -sum(amounts)
-                li_type = LineItemType.objects.get(text='Balance Posting')
+        items = self.lineitem_set.all()
+        if items.count() == 0: raise EmptyTransactionException
+        amounts = [li.amount for li in items]
+        balance = -sum(amounts)
+        li_type = LineItemType.objects.get(text='Balance Posting')
 
-                li = LineItem()
-                li.transaction = self
-                li.anchor = anchor
-                li.amount = balance
-                li.user = user
-                li.text = text
-                li.li_type = li_type
-                li.save()
+        li = LineItem()
+        li.transaction = self
+        li.anchor = anchor
+        li.amount = balance
+        li.user = user
+        li.text = text
+        li.li_type = li_type
+        li.save()
 
-                self.complete = True
-                self.save()
+        self.complete = True
+        self.save()
 
-                return li
+        return li
 
 class LineItem(models.Model):
-        """ A transaction line item """
-        transaction = models.ForeignKey(Transaction)
-        user = AjaxForeignKey(User,related_name='accounting_lineitem')
-        anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitem')
-        amount = models.DecimalField(max_digits=9, decimal_places=2)
-        text = models.TextField()
-        li_type = models.ForeignKey(LineItemType)
-        posted_to = models.ForeignKey(Balance, null=True)
+    """ A transaction line item """
+    transaction = models.ForeignKey(Transaction)
+    user = AjaxForeignKey(User,related_name='accounting_lineitem')
+    anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitem')
+    amount = models.DecimalField(max_digits=9, decimal_places=2)
+    text = models.TextField()
+    li_type = models.ForeignKey(LineItemType)
+    posted_to = models.ForeignKey(Balance, null=True)
 
-        def __str__(self):
-                return "L-%u (T-%u): %.02f %s, %s" % (self.id, self.transaction.id, self.amount, self.user.username, self.text)
+    def __str__(self):
+        return "L-%u (T-%u): %.02f %s, %s" % (self.id, self.transaction.id, self.amount, self.user.username, self.text)
 
-        class Admin:
-                pass
+    class Admin:
+        pass

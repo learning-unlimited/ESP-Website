@@ -35,52 +35,120 @@ from datatree.models import DataTree
 from db.fields import AjaxForeignKey
 from accounting_core import *
 from checksum import Checksum
+from datetime import datetime
+
+class MultipleDocumentError(ESPError):
+    pass
 
 class PurchaseOrder(models.Model):
-        """ A purchase order available for invoicing in a given accounting ledger """
-        anchor = AjaxForeignKey(DataTree)
-        address = models.TextField()
-        fax = models.CharField(blank=True, max_length=16)
-        phone = models.CharField(blank=True, max_length=16)
-        email = models.EmailField(blank=True)
-        reference = models.TextField()
-        rules = models.TextField()
-        notes = models.TextField()
+    """ A purchase order available for invoicing in a given accounting ledger """
+    anchor = AjaxForeignKey(DataTree)
+    address = models.TextField()
+    fax = models.CharField(blank=True, max_length=16)
+    phone = models.CharField(blank=True, max_length=16)
+    email = models.EmailField(blank=True)
+    reference = models.TextField()
+    rules = models.TextField()
+    notes = models.TextField()
 
-        def __unicode__(self):
-                return u'PurchaseOrder account %u (ref: %s)' % (self.id, self.reference)
-        
-        class Admin:
-                pass
+    def __unicode__(self):
+        return u'PurchaseOrder account %u (ref: %s)' % (self.id, self.reference)
+    
+    class Admin:
+        pass
 
 class Document(models.Model):
-        """ A tracer for a transaction """
+    """ A tracer for a transaction """
 
-        TYPE_CHOICES=(
-                (0, 'Journal'),
-                (1, 'Correction'),
-                (2, 'Invoice'),
-                (3, 'Receipt'),
-                (4, 'CC Authorization'),
-                (5, 'CC Sale'),
-                (6, 'Refund Authorization'),
-                (7, 'Reimbursement Request'),
-                (8, 'Green Form'),
-                (9, 'Inventory')
-        )
+    TYPE_CHOICES=(
+        (0, 'Journal'),
+        (1, 'Correction'),
+        (2, 'Invoice'),
+        (3, 'Receipt'),
+        (4, 'CC Authorization'),
+        (5, 'CC Sale'),
+        (6, 'Refund Authorization'),
+        (7, 'Reimbursement Request'),
+        (8, 'Green Form'),
+        (9, 'Inventory')
+    )
 
-        # Document header
-	anchor = AjaxForeignKey(DataTree)
-        txn = models.ForeignKey(Transaction)
-        doctype = models.IntegerField(choices=TYPE_CHOICES)
+    # Document header
+    anchor = AjaxForeignKey(DataTree)
+    user = AjaxForeignKey(User, blank=True, null=True)
+    txn = models.ForeignKey(Transaction)
+    doctype = models.IntegerField(choices=TYPE_CHOICES)
 
-        # Document workflow (creates next_set and prev_set)
-        docs_next = models.ManyToManyField('self', symmetrical=False, related_name='docs_prev')
+    # Document workflow (creates next_set and prev_set)
+    docs_next = models.ManyToManyField('self', symmetrical=False, related_name='docs_prev')
 
-        # Document references
-        locator = models.CharField(max_length=16, unique=True)
-        po = models.ForeignKey(PurchaseOrder, null=True)
-        cc_ref = models.TextField(blank=True,default='')
+    # Document references
+    locator = models.CharField(max_length=16, unique=True)
+    po = models.ForeignKey(PurchaseOrder, null=True)
+    cc_ref = models.TextField(blank=True,default='')
 
-        # Tools
-        _checksum = Checksum(rotors=2, base_length=8)
+    # Tools
+    _checksum = Checksum(rotors=2, base_length=8)
+    
+    
+    #   This is new and untested code, fortunately we don't use it yet.
+    #   Michael P, 2/5/2008
+    
+    def set_default_locator(self):
+        self.locator = _checksum.calculate(str(self.id))
+
+    @staticmethod
+    def get_invoice(user, anchor, li_types=[], finaid=False):
+        """ Create an "empty shopping cart" for a particular user in a particular
+        anchor (i.e. program). """
+        
+        qs = Document.objects.filter(user=user, anchor=anchor, txn__complete=False)
+        
+        if qs.count() > 1:
+            raise MultipleDocumentError(False), 'Found multiple uncompleted transactions for this user and anchor.'
+        elif qs.count() == 1:
+            return qs[0]
+        else:
+            new_tx = Transaction.begin(anchor, 'User payments for %s: %s' % (anchor.parent.friendly_name, anchor.friendly_name))
+            new_tx.save()
+            for lit in li_types:
+                new_tx.add_item(user, lit, finaid)
+                
+            new_doc = Document()
+            new_doc.txn = new_tx
+            new_doc.doctype = 2
+            new_doc.user = user
+            new_doc.locator = 'N/A'
+            new_doc.save()
+            
+            new_doc.set_default_locator()
+            new_doc.save()
+            
+            return new_doc
+    
+    @staticmethod
+    def get_by_locator(loc):
+        return Document.objects.filter(locator=loc)
+    
+    @staticmethod
+    def receive_creditcard(user, loc, amt, cc_id):
+        """ Call this function when a successful credit card payment is received. """
+        old_doc = Document.get_by_locator(loc)
+
+        new_tx = Transaction.begin(cart.anchor, 'Credit card payment')
+        li_type = LineItemType.objects.get_or_create(text='Credit Card Payment',anchor=nodes['cc-pending'])
+        new_tx.add_item(user, li_type, amount=amt)
+        
+        new_doc = Document()
+        new_doc.txn = new_tx
+        new_doc.doctype = 3
+        new_doc.user = user
+        new_doc.cc_ref = cc_id
+        new_doc.save()
+        
+        new_doc.set_default_locator()
+        new_doc.docs_prev.add(old_doc)
+        new_doc.save()
+        
+        return new_doc
+        
