@@ -372,7 +372,6 @@ class Program(models.Model):
 
         for k, v in desc.items():
             lists[k]['description'] = v
-        from esp.users.models import User
         usertypes = ['Student', 'Teacher', 'Guardian', 'Educator']
 
         
@@ -445,7 +444,6 @@ class Program(models.Model):
         if students_dict.has_key('classreg'):
             students_count = User.objects.filter(students_dict['classreg']).count()
         else:
-            from django.contrib.auth.models import User
             students_count = User.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
 #            students_count = 0
 #            for c in self.classes():
@@ -646,6 +644,8 @@ class Program(models.Model):
         return Survey.objects.filter(anchor=self.anchor)
     
     def getSubprograms(self):
+        if not self.anchor.has_key('Subprograms'):
+            return Program.objects.filter(id=-1)
         return Program.objects.filter(anchor__parent__in=self.anchor['Subprograms'].children())
     
     def getParentProgram(self):
