@@ -35,37 +35,24 @@ from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
 from esp.db.models       import Q
 from esp.users.models    import User
-from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
+from esp.accounting_core.models import LineItem, LineItemType, Balance, Transaction
+from esp.accounting_docs.models import Document
 
 class CreditCardModule_CS(ProgramModuleObj):
-    def extensions(self):
-        return [('creditCardInfo', module_ext.CreditCardModuleInfo)]
-
     def cost(self, espuser, anchor):
-        return '%s.00' % str(self.creditCardInfo.base_cost)
+        return Document.get_invoice(espuser, self.program.anchor).txn.get_balance()
 
     def isCompleted(self):
-        return Transaction.objects.filter(anchor = self.program_anchor_cached(),
-                                          fbo = self.user).count() > 0
+        return Document.get_invoice(self.user, self.program.anchor).txn.complete
 
     def students(self, QObject = False):
-        # this should be fixed...this is the best I can do for now - Axiak
-        # I think this is substantially better; it's the same thing, but in one query. - Adam
-        #transactions = Transaction.objects.filter(anchor = self.program_anchor_cached())
-        #userids = [ x.fbo_id for x in transactions ]
-        QObj = Q(fbo__anchor=self.program_anchor_cached())
-
         if QObject:
-            return {'creditcard': QObj}
+            return {'creditcard': Q()}
         else:
-            from esp.users.models import ESPUser
-            
-            return {'creditcard':User.objects.filter(QObj).distinct()}
-
-
+            return {'creditcard': []}
 
     def studentDesc(self):
-        return {'creditcard': """Students who have filled out the credit card form."""}
+        return {'creditcard': """Students who have paid using the new credit card module."""}
      
     @meets_deadline('/Payment')
     @usercheck_usetl

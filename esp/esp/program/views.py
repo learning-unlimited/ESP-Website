@@ -47,6 +47,7 @@ from esp.program.models import Program
 from esp.program.modules.base import needs_admin
 from esp.program.forms import ProgramCreationForm
 from esp.program.setup import prepare_program, commit_program
+from esp.accounting_docs.models import Document
 
 @login_required
 def updateClass(request, id):
@@ -173,5 +174,11 @@ def managepage(request, page):
             form = ProgramCreationForm()
         
         return render_to_response('program/newprogram.html', request, request.get_node('Q/Programs/'), {'form': form})
+        
+    if page == 'submit_transaction':
+        #   Pull information from Cybersource "post-back"
+        
+        receipt_doc = Document.receive_creditcard(user, loc, amt, cc_id)
+        return render_to_response('accounting_docs/document.html', request, request.get_node('Q/Accounting/'), {'doc': receipt_doc})
         
     raise Http404

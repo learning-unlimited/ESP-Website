@@ -459,6 +459,14 @@ class ESPUser(User, AnonymousUser):
     def canRegToFullProgram(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
+    def hasFinancialAid(self, anchor):
+        progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
+        apps = FinancialAidRequest.objects.filter(user=self, program__in=progs)
+        for a in apps:
+            if a.approved:
+                return True
+        return False
+
     def isOnsite(self, program = None):
         verb = GetNode('V/Registration/OnSite')
         if program is None:

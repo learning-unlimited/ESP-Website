@@ -199,15 +199,18 @@ class Transaction(models.Model):
         # Operation Complete!
         return li
 
+    def get_balance(self):
+        items = self.lineitem_set.all()
+        if items.count() == 0: raise EmptyTransactionException
+        amounts = [li.amount for li in items]
+        return -sum(amounts)
+
     @transaction.commit_on_success
     def post_balance(self, user, text, anchor):
         """ Post a transaction balance to an account and complete the transaction. """
         if self.complete: raise CompletedTransactionException
 
-        items = self.lineitem_set.all()
-        if items.count() == 0: raise EmptyTransactionException
-        amounts = [li.amount for li in items]
-        balance = -sum(amounts)
+        balance = self.get_balance()
         li_type = LineItemType.objects.get(text='Balance Posting')
 
         li = LineItem()

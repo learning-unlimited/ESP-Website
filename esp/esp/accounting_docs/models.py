@@ -101,9 +101,12 @@ class Document(models.Model):
         self.locator = Document._checksum.calculate(str(self.id))
 
     @staticmethod
-    def get_invoice(user, anchor, li_types=[], finaid=False):
+    def get_invoice(user, anchor, li_types=[], dont_duplicate=False, finaid=None):
         """ Create an "empty shopping cart" for a particular user in a particular
         anchor (i.e. program). """
+        
+        if finaid is None:
+            finaid = ESPUser(user).hasFinancialAid(anchor)
         
         qs = Document.objects.filter(user=user, anchor=anchor, txn__complete=False)
         
@@ -115,7 +118,8 @@ class Document(models.Model):
             new_tx = Transaction.begin(anchor, 'User payments for %s: %s' % (anchor.parent.friendly_name, anchor.friendly_name))
             new_tx.save()
             for lit in li_types:
-                new_tx.add_item(user, lit, finaid)
+                if not dont_duplicate or new_tx.lineitem_set.filter(li_type=lit).count() == 0:
+                    new_tx.add_item(user, lit, finaid)
                 
             new_doc = Document()
             new_doc.txn = new_tx
@@ -156,6 +160,9 @@ class Document(models.Model):
         new_doc.save()
         
         return new_doc
-        
+    
+    def get_items(self):
+        return self.txn.lineitem_set
+    
     class Admin:
         pass
