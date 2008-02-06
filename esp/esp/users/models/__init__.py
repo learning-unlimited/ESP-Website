@@ -33,7 +33,6 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
 #from peak.api import security, binding
-from esp.workflow.models import Controller
 from datetime import datetime, timedelta
 from esp.db.models import Q, qlist
 from esp.dblog.models import error

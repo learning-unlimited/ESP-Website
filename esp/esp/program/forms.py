@@ -80,6 +80,10 @@ class ProgramCreationForm(forms.form_for_model(Program)):
         
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
 
+    def load_program(self, program):
+        #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
+        pass
+
     # use field grouping
     as_table = grouped_as_table
 

@@ -37,7 +37,6 @@ from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import GetNode
 from esp.users.models import UserBit, ESPUser
 from esp.dbmail.models import MessageRequest, EmailRequest
-from esp.dbmail.controllers import EmailController
 from datetime import datetime
 
 def show_miniblog(request, url, subsection = None, section_redirect_keys = {}, extramsg=''):

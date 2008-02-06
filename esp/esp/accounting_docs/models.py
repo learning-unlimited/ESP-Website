@@ -37,15 +37,18 @@ from accounting_core import *
 from checksum import Checksum
 from datetime import datetime
 
-class MultipleDocumentError(ESPError):
+from esp.middleware import ESPError_Log
+from esp.accounting_core.models import Transaction
+
+class MultipleDocumentError(ESPError_Log):
     pass
 
 class PurchaseOrder(models.Model):
     """ A purchase order available for invoicing in a given accounting ledger """
     anchor = AjaxForeignKey(DataTree)
     address = models.TextField()
-    fax = models.CharField(blank=True, max_length=16)
-    phone = models.CharField(blank=True, max_length=16)
+    fax = models.CharField(blank=True, maxlength=16)
+    phone = models.CharField(blank=True, maxlength=16)
     email = models.EmailField(blank=True)
     reference = models.TextField()
     rules = models.TextField()
@@ -83,7 +86,7 @@ class Document(models.Model):
     docs_next = models.ManyToManyField('self', symmetrical=False, related_name='docs_prev')
 
     # Document references
-    locator = models.CharField(max_length=16, unique=True)
+    locator = models.CharField(maxlength=16, unique=True)
     po = models.ForeignKey(PurchaseOrder, null=True)
     cc_ref = models.TextField(blank=True,default='')
 
@@ -95,7 +98,7 @@ class Document(models.Model):
     #   Michael P, 2/5/2008
     
     def set_default_locator(self):
-        self.locator = _checksum.calculate(str(self.id))
+        self.locator = Document._checksum.calculate(str(self.id))
 
     @staticmethod
     def get_invoice(user, anchor, li_types=[], finaid=False):
@@ -116,6 +119,7 @@ class Document(models.Model):
                 
             new_doc = Document()
             new_doc.txn = new_tx
+            new_doc.anchor = anchor
             new_doc.doctype = 2
             new_doc.user = user
             new_doc.locator = 'N/A'
@@ -142,6 +146,7 @@ class Document(models.Model):
         new_doc = Document()
         new_doc.txn = new_tx
         new_doc.doctype = 3
+        new_doc.anchor = old_doc.anchor
         new_doc.user = user
         new_doc.cc_ref = cc_id
         new_doc.save()
@@ -152,3 +157,5 @@ class Document(models.Model):
         
         return new_doc
         
+    class Admin:
+        pass

@@ -223,8 +223,6 @@ class ArchiveClass(models.Model):
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
         return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')
     
-
-    
     
 class Program(models.Model):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """

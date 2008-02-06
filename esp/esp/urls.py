@@ -30,7 +30,6 @@ Email: web@esp.mit.edu
 from django.conf.urls.defaults import *
 from esp.program.models import Class
 from esp.qsd.views import qsd
-from esp.poll.views import poll
 from esp.qsdmedia.views import qsdmedia
 from esp.settings import PROJECT_ROOT
 from esp.settings import MEDIA_ROOT
@@ -140,8 +139,6 @@ urlpatterns += patterns('esp.web.views.main',
 
     # DB-generated QSD pages: HTML or plaintext
     #                        (r'^(?P<url>.*)\.html$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': qsd} ),
-    (r'^(?P<url>.*)\.poll$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': poll} ),
-
                         )
     
     # Event-generation

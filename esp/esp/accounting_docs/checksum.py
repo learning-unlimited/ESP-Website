@@ -35,8 +35,11 @@ class Checksum(object):
         return _checksum(code, self.rotors)[0]
 
     def calculate(self, code):
-        cks = self.pad_with x max(0, self.base_length - len(code)) + code
+        padding = ''
+        for i in range(0, self.base_length - len(code)):
+            padding += pad_with
+        cks = padding + code
         return cks + _checksum(code, self.rotors)[1]
 
-    def assert(self, code):
+    def assert_code(self, code):
         if not self.verify(code): raise BadChecksumException

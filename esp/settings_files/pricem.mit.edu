@@ -78,7 +78,6 @@ INSTALLED_APPS = (
     'esp.program',
     'esp.program.modules',
     'esp.datatree',
-    'esp.workflow',
     'esp.dbmail',
     'esp.cal',
     'esp.lib',
@@ -88,10 +87,11 @@ INSTALLED_APPS = (
     'esp.money',
     'esp.resources',
     'esp.gen_media',
-    'esp.poll',
     'esp.dblog',
     'esp.membership',
     'esp.survey',
+    'esp.accounting_core',
+    'esp.accounting_docs',
 )
 
 EMAIL_HOST = 'outgoing.mit.edu'
