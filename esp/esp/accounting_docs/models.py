@@ -100,6 +100,12 @@ class Document(models.Model):
     def set_default_locator(self):
         self.locator = Document._checksum.calculate(str(self.id))
 
+    def get_locator(self):
+        if self.locator == None or self.locator == '':
+            self.set_default_locator()
+
+        return self.locator
+
     @staticmethod
     def get_invoice(user, anchor, li_types=[], dont_duplicate=False, finaid=None):
         """ Create an "empty shopping cart" for a particular user in a particular
@@ -162,7 +168,7 @@ class Document(models.Model):
         return new_doc
     
     def get_items(self):
-        return self.txn.lineitem_set
+        return self.txn.lineitem_set.all()
     
     class Admin:
         pass

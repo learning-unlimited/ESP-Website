@@ -176,9 +176,20 @@ def managepage(request, page):
         return render_to_response('program/newprogram.html', request, request.get_node('Q/Programs/'), {'form': form})
         
     if page == 'submit_transaction':
-        #   Pull information from Cybersource "post-back"
-        
-        receipt_doc = Document.receive_creditcard(user, loc, amt, cc_id)
-        return render_to_response('accounting_docs/document.html', request, request.get_node('Q/Accounting/'), {'doc': receipt_doc})
+        if request.GET.has_key("accepted"):
+
+            try:
+                from decimal import Decimal
+                post_locator = request.POST['merchantDefinedData1']
+                post_amount = Decimal(request.POST['amount'])
+                
+                document = Document.receive_creditcard(request.user, post_locator, post_amount, '[Cybersource]')
+
+            except:
+                raise ESPError(), "A server error occurred while logging your credit card transaction.  The transaction has not been lost; this just means that the green Credit Card checkbox may not be properly checked off, allowing you to finish registering for this program.  Please <a href=\"mailto:esp-webmasters@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
+
+            return HttpResponseRedirect("http://%s/learn/Splash/2007/confirmreg" % request.POST['HTTP_HOST'])
+            
+        return render_to_response( 'accounting_docs/credit_rejected.html', request, request.get_node('Q/Accounting/'), {} )
         
     raise Http404

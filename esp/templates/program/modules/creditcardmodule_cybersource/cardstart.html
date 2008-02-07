@@ -13,24 +13,14 @@
 <li>Fill out the form on the next page completely.</li>
 <li>When going to the next page, you may be warned that the page's certificate<br />
  is not signed by a trusted authority. This untrusted authority is MIT. <br />To convince your computer to trust MIT, <a href="http://ca.mit.edu/mitca.crt" title="Download MIT Certificate Authority">get the MIT CA (Certificate Authority)</a>.
-<li>Check your answers for accuracy, and submit.</li>
-<li>If the charge fails for any reason, you will have to fill out the form again.</li>
-<li>When finished, you will receive an on-screen receipt.</li>
-
-<li>Please print the receipt, and then close this window.<br/>
 </ol>
 </p>
-
-<p><b>Please note:</b> Paying with a credit card does not confirm your attendance to Splash; it just saves you from needing to pay on-site.  We automatically guarantee admission into any class that you register for online, whether or not you pay in advance, as long as you do ultimately confirm your registration.  (This allows us more flexibility in working with students who need financial aid.)
-<p>We ask that students confirm their registration (by returning to the <a href="/learn/{{ program.getUrlBase }}/studentreg/" title="Return to main registration page">main registration page</a> and clicking the "Confirm" button) so that we know that they are done adjusting their schedules and purchasing additional meals and T-shirts, and we can start to print out schedules and other paperwork.</p>
-
-<br />
 
 <h3>What you're currently paying for:</h3>
 <p>
 <table>
 {% for payment in itemizedcosts %}
-<tr><td>{{ payment.type.label }}</td><td>{% if payment.transaction %}PAID{% else %}${% if financial_aid %}{{ payment.type.financial_aid_value|floatformat:2}}{% else %}{{ payment.type.value|floatformat:2 }}{% endif %}{% endif %}</td></tr>
+<tr><td>{{ payment.type.label }}</td><td>${{ payment.type.value|floatformat:2 }}</td></tr>
 {% endfor %}
 <tr><td align="right"><b>Total:</b></td><td>${{ itemizedcosttotal|floatformat:2 }}</td></tr>
 
@@ -39,7 +29,7 @@
 
 <p>When you are ready, please move on to the <a href="https://{{ current_site.domain }}/{{ tl }}/{{ one }}/{{ two }}/paynow" title="Proceed to payment form.">payment form.</a>
 
-<p>If you would like to cancel at this time, please close this window or <a href="/learn/{{ program.getUrlBase }}/studentreg/" title="Return to main registration page">return to the main registration page</a>.</p>
+<p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg/" title="Return to main registration page">return to the main registration page</a>.</p>
 
 {% endblock %}
 

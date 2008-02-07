@@ -140,15 +140,15 @@ function testCreditCard() {
 <br />
 <p>Required fields are boxed in a red border and marked with an asterisk.</p>
 <form onsubmit="return formTest();" action="https://shopmitprd.mit.edu/controller/index.php?auto_submit=Y" method="post" autocomplete="off"> 
-<!--<form onsubmit="return formTest();" action="https://shopmit.mit.edu/bin/cgiemail2/esp/www/creditcard_email.txt" method="post" autocomplete="off">-->
-<input type="hidden" name="comments" value="ESP__{{program.id }}-{{module.payment.id}}" />
-<input type="hidden" name="" value="" />
+
+<input type="hidden" name="comments" value="ESP Invoice {{ invoice.get_locator }} (for {{ program.niceName }})" />
+<input type="hidden" name="merchantDefinedData1" value="{{ invoice.get_locator }}" />
+
+<input type="hidden" name="amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
+<input type="hidden" name="merchant_id" value="MIT_SAO_ESP" />
 
 <!-- Defaults -->
 <input type="hidden" name="billTo_country" value="US" />
-<input type="hidden" name="amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
-<input type="hidden" name="ReturnLink" value="http://{{request.META.SERVER_NAME}}/learn/{{program.getUrlBase}}/studentreg" />
-<input type="hidden" name="ReturnLinkLabel" value="Student Registration for {{program.niceName }}"  />
 
 <p>
 Autofill contact information:
@@ -158,11 +158,6 @@ Autofill contact information:
    title="Autofill with student information">with Student Information</a>
 <em>(JavaScript required)</em>
 <br />
-<!-- 
-<strong>Note: While this form uses non-secure HTTP, all senstive credit-card information 
-<br />
-is sent over the internet using secure HTTPS.</strong>
--->
 </p>
 
 <table class="payproc1">
@@ -231,34 +226,12 @@ is sent over the internet using secure HTTPS.</strong>
 <h3>Itemized Price List</h3>
 <table>
 {% for payment in itemizedcosts %}
-<tr><td>{{ payment.type.label }}</td><td>{% if payment.transaction %}PAID{% else %}${% if financial_aid %}{{ payment.type.financial_aid_value|floatformat:2}}{% else %}{{ payment.type.value|floatformat:2 }}{% endif %}{% endif %}</td></tr>
+<tr><td>{{ payment.type.label }}</td><td>{{ payment.value|floatformat:2 }}</td></tr>
 {% endfor %}
 <tr><td align="right"><b>Total:</b></td><td>${{ itemizedcosttotal|floatformat:2 }}</td></tr>
 
 </table>
-
-<br/>
-<h2 style="text-align: center">
-<b>Check your selections carefully!</b>
-</h2>
-
-<br/>
-<ol>
-<li>If you make a mistake, you will have to fill this form out again.</li>
-<li>When you are sure everything is correct, please click "Submit Payment" <b>once</b>.</li>
-<li>Please be patient. It may take some time to process the credit card transaction.</li>
-<li>DO NOT submit multiple times, or else you may be charged multiple times.</li>
-</ol>
-<p style="text-align: center">
-<input id="paybutton" onsubmit="return testForm();" class="button" type="submit" value="Submit Payment"><br/>
-</p>
-
 </form>
-
-<hr/>
-<h3 style="text-align: center"><a name="cvminfo"></a>About the CVM box</h3>
-<p style="text-align: center"><img alt="Credit card CVM" src="/media/images/cvm.gif"></p>
-
 
 {% endblock %}
 
