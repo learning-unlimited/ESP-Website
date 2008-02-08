@@ -31,10 +31,11 @@ Email: web@esp.mit.edu
 from django.db import models, transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
-from datatree.models import DataTree
-from db.fields import AjaxForeignKey
-from accounting_core import *
-from checksum import Checksum
+from esp.datatree.models import DataTree
+from esp.db.fields import AjaxForeignKey
+from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem
+from esp.accounting_docs.checksum import Checksum
+from esp.users.models import ESPUser
 from datetime import datetime
 
 from esp.middleware import ESPError_Log
@@ -169,6 +170,9 @@ class Document(models.Model):
     
     def get_items(self):
         return self.txn.lineitem_set.all()
+    
+    def cost(self):
+        return -self.txn.get_balance()
     
     class Admin:
         pass

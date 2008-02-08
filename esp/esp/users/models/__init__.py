@@ -460,6 +460,8 @@ class ESPUser(User, AnonymousUser):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
     def hasFinancialAid(self, anchor):
+        from esp.program.models import Program, FinancialAidRequest
+        
         progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
         apps = FinancialAidRequest.objects.filter(user=self, program__in=progs)
         for a in apps:

@@ -34,7 +34,7 @@ from esp.web.util        import render_to_response
 from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
 from esp.db.models       import Q
-from esp.users.models    import User
+from esp.users.models    import User, ESPUser
 #from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
 from esp.accounting_core.models import LineItemType
 from esp.accounting_docs.models import Document
@@ -73,36 +73,17 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     @usercheck_usetl
     def startpay(self, request, tl, one, two, module, extra, prog):
         # Force users to pay for non-optional stuffs
-        invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor, optional=False), dont_duplicate_li=True)
+        user = ESPUser(request.user)
+        invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor, optional=False), dont_duplicate=True)
 
         context = {}
         context['module'] = self
         context['one'] = one
         context['two'] = two
         context['tl']  = tl
+        context['user'] = user
         context['itemizedcosts'] = invoice.get_items()
-        context['itemizedcosttotal'] = invoice.cost(request.user, prog.anchor)
-        context['financial_aid'] = request.user.hasFinancialAid(prog)
-        return render_to_response(self.baseDir() + 'cardstart.html', request, (prog, tl), context)
-
-    @usercheck_usetl
-    def paynow(self, request, tl, one, two, module, extra, prog):
-        # Force users to pay for non-optional stuffs.  Once more, just in case.
-        invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor, optional=False), dont_duplicate_li=True)
-
-        context = {'module': self}
-
-        yearnow = datetime.now().year
-        context['years'] = zip(['%02d' % x for x in
-                                range(yearnow-2000,yearnow+20-2000)],
-                               range(yearnow, yearnow+20))
-        context['module'] = self
-
-        context['invoice'] = invoice
-        context['program'] = prog
-
-        context['itemizedcosts'] = invoice.get_items()
-        context['itemizedcosttotal'] = invoice.cost(request.user, prog.anchor)
-        context['financial_aid'] = request.user.hasFinancialAid(prog)
+        context['itemizedcosttotal'] = invoice.cost()
+        context['financial_aid'] = user.hasFinancialAid(prog.anchor)
         
-        return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir() + 'cardstart.html', request, (prog, tl), context)

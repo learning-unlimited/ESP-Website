@@ -31,8 +31,8 @@ Email: web@esp.mit.edu
 from django.db import models, transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
-from datatree.models import DataTree
-from db.fields import AjaxForeignKey
+from esp.datatree.models import DataTree
+from esp.db.fields import AjaxForeignKey
 
 from datetime import datetime
 
