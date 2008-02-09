@@ -1,0 +1,50 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Manage Resources for {{ prog.niceName }}{% endblock %}
+
+{% block subsection_name %}Resource Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Resources for {{ prog.niceName }}</h1>
+
+<div id="program_form">
+<form method="post" action="/manage/{{ prog.getUrlBase }}/create_rooms/">
+<table align="center" width="350">
+<tr>
+    <th colspan="2">Diagnostic Setup for {{ prog.niceName }}</th>
+</tr>
+<tr>
+    <th class="smaller">Timeslot:</th>
+    <td>
+        <select name="timeslot">
+        {% for t in prog.getTimeSlots %}<option value="{{ t.id }}">{{ t }}</option>{% endfor %}
+        </select>
+    </td>
+</tr>
+<tr>
+    <th class="smaller">Number of rooms to leave empty:</th>
+    <td>
+        <input type="text" name="empty_rooms" size="6" />
+    </td>
+</tr>
+<tr>
+    <th class="smaller">Enter the rooms on separate lines in the format: room number,capacity</th>
+    <td><textarea name="rooms" cols="40" rows="30">12-142,24
+4-163,95</textarea></td>
+</tr>
+
+<tr>
+    <td colspan="2" align="center"><input type="submit" class="fancybutton" name="Continue" /></td>
+</tr>
+
+</table>
+</form>
+</div>
+
+{% endblock %}
