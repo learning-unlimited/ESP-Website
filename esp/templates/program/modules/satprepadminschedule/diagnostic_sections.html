@@ -13,7 +13,7 @@
 
 <h1>Manage Resources for {{ prog.niceName }}</h1>
 
-<p>Your diagnostic sections have been created.  See below.</p>
+<p>Your diagnostic sections have been created.  The printable schedules and checklists (from the <a href="/manage/{{ prog.getUrlBase }}/printoptions">printables page</a>) will now reflect these assignments.  You may also use the {% templatetag openbrace %} program.schedule {% templatetag closebrace %} tag in e-mails from the <a href="/manage/{{ prog.getUrlBase }}/main">communications panel</a>.  See below for a summary of the assignments.</p>
 
 <div id="program_form">
 {% for section in sections %}
@@ -31,11 +31,9 @@
     <td>{{ s.first_name }} {{ s.last_name }}</td>
 </tr>
 {% endfor %}
-<tr>
-    <td colspan="2" align="center"><a href="/manage/{{ prog.getUrlBase }}/main">Back to the main program management page</a></td>
-</tr>
 </table>
 <br />
+<p><a href="/manage/{{ prog.getUrlBase }}/main">Back to the main program management page</a></p>
 {% endfor %}
 </div>
 

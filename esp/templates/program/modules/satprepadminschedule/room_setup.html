@@ -11,7 +11,19 @@
 
 {% block content %}
 
-<h1>Manage Resources for {{ prog.niceName }}</h1>
+<h1>Diagnostic Assignments for {{ prog.niceName }}</h1>
+
+<h2>Background</h2>
+
+<p>Please use this form to set up the sections for an SAT diagnostic exam.  Usually a diagnostic exam is held at the beginning of each session of SAT Prep.  The diagnostic is used to determine which class sections each student will be placed in for math, verbal, and writing.  The web site can automatically assign students to several different classrooms, based on their last names.  It can also adjust the number of students in each room to match the rooms' capacities.</p>
+
+<p>These sections will be disabled and new ones will be created for the math, verbal and writing classes after the diagnostic tests have been scored.  Please access these options at the <a href="/manage/{{ prog.getUrlBase }}/schedule_options/">SAT Prep scheduling page</a>.</p>
+
+<h2>Instructions</h2>
+
+<p>Please enter a list of classrooms, with each line containing a room number, followed by a comma, and then the room's capacity (i.e. '26-310,35').  Put each room on a separate line and do not leave an extra line at the end.  The scheduler can optionally ignore some of the classrooms at the end of your list; if you would like to do so, please enter a number other than "0" in the "Empty rooms" box.  Also, check that the correct timeslot for the exam is selected (<a href="/manage/{{ prog.getUrlBase }}/resources/timeslot">create one here if there aren't any</a>).</p>
+
+<p>Then, click "Submit" and wait.  It will take some time (a few minutes) for all of the rooms and their student lists to be saved.  You will be taken to a confirmation page showing which students were assigned to each section.  You may also want to print the <a href="/manage/{{ prog.getUrlBase }}/classchecklists/">class checklists</a> for all confirmed students.</p>
 
 <div id="program_form">
 <form method="post" action="/manage/{{ prog.getUrlBase }}/create_rooms/">
