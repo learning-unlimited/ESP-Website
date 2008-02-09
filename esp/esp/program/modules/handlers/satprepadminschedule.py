@@ -39,7 +39,9 @@ from esp.users.views import search_for_user, get_user_list
 from django.http import HttpResponseRedirect
 from django import forms
 from esp.program.models import SATPrepRegInfo, Class, ClassCategories
-
+from esp.cal.models import Event
+from esp.resources.models import Resource, ResourceType
+from esp.datatree.models import DataTree
 
 
 class SATPrepAdminSchedule(ProgramModuleObj):
@@ -54,6 +56,118 @@ class SATPrepAdminSchedule(ProgramModuleObj):
             SATPrep class. """
         
         return render_to_response(self.baseDir()+'options.html', request, (prog, tl), {})
+
+    @needs_admin
+    def create_rooms(self, request, tl, one, two, module, extra, prog):
+        """ Step 1 of the diagnostic setup process. """
+        
+        #   Show a page asking for a list of rooms and their capacities.
+        
+        if request.method == 'POST':
+            #   Receive the data and create a series of rooms in the specified timeslot.
+            data = request.POST.copy()
+            timeslot_id = int(data.get('timeslot'))
+            empty_rooms = data.get('empty_rooms')
+            rooms = data.get('rooms')
+            room_list = rooms.split('\n')
+            
+            timeslot = Event.objects.get(id=timeslot_id)
+            classroom_rt = ResourceType.get_or_create('Classroom')
+        
+            for s in room_list:
+                #   The rooms will be created without additional resources
+                str_dir = s.split(',')
+                if len(str_dir) == 2:
+                    res = Resource()
+                    res.name = str_dir[0]
+                    res.res_type = classroom_rt
+                    res.num_students = int(str_dir[1])
+                    res.event = timeslot
+                    res.save()
+                        
+            #   Redirect to the diagnostic sections page (step 2) excluding the last few rooms if desired.
+            empty_rooms_list = []
+            for t in room_list[(len(room_list) - int(empty_rooms)):]:
+                str_dir = t.split(',')
+                empty_rooms_list.append(str_dir[0])
+            empty_rooms_str = ','.join(empty_rooms_list)
+
+            return HttpResponseRedirect('/manage/%s/%s/diagnostic_sections?timeslot=%d&empty_rooms=%s' % (one, two, timeslot_id, empty_rooms_str))
+
+        context = {'prog': prog, 'room_indices': range(0, 22)}
+        return render_to_response(self.baseDir()+'room_setup.html', request, (prog, tl), context)
+    
+         
+         
+    @needs_admin
+    def diagnostic_sections(self, request, tl, one, two, module, extra, prog):
+        """ Step 2 of the diagnostic setup process. """
+        
+        #   Initialize some stuff
+        empty_rooms = request.GET['empty_rooms'].split(',')
+        
+        timeslot_id = int(request.GET['timeslot'])
+        timeslot = Event.objects.get(id=timeslot_id)
+        
+        rooms = list(prog.getClassrooms(timeslot=timeslot).exclude(name__in=empty_rooms))
+            
+        #   Get student list, sort alphabetically
+        students = list(prog.students()['confirmed'])
+        num_students = len(students)
+        students.sort(key=lambda s: s.last_name)
+        
+        debug_str = ''
+        total_size = 0
+        accum_capacity = {}
+        
+        #   Count cumulative capacity of rooms encountered so far
+        for r in rooms:
+            total_size += r.num_students
+            accum_capacity[r.id] = total_size - r.num_students
+            
+        #   Reverse the list so you know how much space is remaining
+        rooms.reverse()
+        for r in rooms:
+            r.add_students = num_students * r.num_students / total_size
+            
+        #   Iterate over the rooms, adding students until the number of students remaining
+        #   matches the proportion of space remaining
+        sections = []
+        students_remaining = num_students
+        i = 0
+        j = 0
+        for r in rooms:
+            new_section = {'timeslot': timeslot, 'students': [], 'room': r, 'index': i}
+            new_class = Class()
+            new_class.parent_program = prog
+            new_class.class_size_max = r.num_students
+            new_class.duration = timeslot.duration().seconds / 3600.0
+            new_class.grade_min = 9
+            new_class.grade_max = 12
+            new_class.anchor = DataTree.get_by_uri(prog.anchor.uri+'/Classes/Diag'+str(i+1), create=True)
+            new_class.category = ClassCategories.objects.get(category='SATPrep')
+            new_class.status = 10
+            new_class.save()
+            
+            new_class.meeting_times.add(timeslot)
+            new_class.assignClassRoom(r)
+            while students_remaining > (accum_capacity[r.id] * num_students / total_size):
+                debug_str += 'i=%d %d/%d ac=%d\n' % (i, j, num_students, accum_capacity[r.id])
+                new_class.preregister_student(students[j])
+                new_section['students'].append(students[j])
+                j += 1
+                students_remaining -= 1
+            if len(new_section['students']) > 0:
+                new_section['fln'] = new_section['students'][0].last_name
+                new_section['lln'] = new_section['students'][-1].last_name
+                new_class.anchor.friendly_name = 'SAT Prep Diagnostic %d: %s - %s' % (i + 1, new_section['fln'], new_section['lln'])
+                new_class.anchor.save()
+            i += 1
+            sections.append(new_section)
+       
+        context = {'prog': prog, 'sections': sections}
+        return render_to_response(self.baseDir()+'diagnostic_sections.html', request, (prog, tl), context)
+
 
     @needs_admin
     def satprep_schedulestud(self, request, tl, one, two, module, extra, prog):
