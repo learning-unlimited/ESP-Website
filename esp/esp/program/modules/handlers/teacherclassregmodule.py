@@ -581,9 +581,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     message_for_directors = new_data['message_for_directors']
 
                 # send mail to directors
-                if len(message_for_directors.strip()) > 0 and \
-                       newclass_newmessage and \
-                       self.program.director_email:
+                if newclass_newmessage and self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
                               """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nComments to Director:\n%s\n\n""" % \
                               (new_data['title'], new_data['class_info'], message_for_directors) , \
