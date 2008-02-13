@@ -166,6 +166,8 @@ class Document(models.Model):
         new_doc.docs_prev.add(old_doc)
         new_doc.save()
         
+        new_tx.end()
+
         return new_doc
     
     def get_items(self):
