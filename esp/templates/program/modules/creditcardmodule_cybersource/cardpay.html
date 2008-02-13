@@ -1,0 +1,266 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block xtrajs %}
+<style type="text/css">
+#divmaintext a { text-decoration: underline; }
+#divmaintext a:hover { text-decoration: none; }
+table.payproc1 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+}
+
+input.button {
+    background-color: #c6def7;
+    border: 1px solid black;
+    font-weight: bold;
+    font-size: 13px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+input.button:hover {
+    background-color: #333333;
+    color: #c6def7;
+}
+</style>
+<script type="text/javascript" src="/media/scripts/creditcard.js"></script>
+<script type="text/javascript">
+<!--
+
+// user contact information
+user_contact =  [
+{% for contactitem in module.user.getLastProfile.contact_user.items %}
+  ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
+  ['','']
+];
+
+// guardian contact information
+guardian_contact =  [
+{% for contactitem in module.user.getLastProfile.contact_guardian.items %}
+  ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
+  ['','']
+];
+
+
+// get an item from the above lists
+function getItem(arr, key) {
+
+   for (var i=0; i<arr.length; i++) {
+      if (arr[i][0] == key) {
+         if (arr[i][1] == 'None') {
+           return '';
+         }
+         return arr[i][1];
+      }
+   }
+   return '';
+}
+
+
+// autofill with contact information
+function autofill(ci) {
+   document.getElementById('billTo_firstName').value = 
+          getItem(ci, 'first_name') + ' ' + getItem(ci, 'last_name');
+   document.getElementById('billTo_street1').value = 
+          getItem(ci, 'address_street');
+   document.getElementById('billTo_city').value = 
+          getItem(ci, 'address_city');
+   document.getElementById('billTo_postalCode').value = 
+          getItem(ci, 'address_zip');   
+   document.getElementById('billTo_phoneNumber').value = 
+          getItem(ci, 'phone_day');
+   document.getElementById('billTo_state').value = 
+          getItem(ci, 'address_state');
+   document.getElementById('billTo_email').value = 
+          getItem(ci, 'e_mail');
+}
+
+// disable the submit button so that people pay once
+function payOnce() {
+  document.getElementById('paybutton').disabled = true;
+  return true;
+}
+
+
+// test the form...make sure it's valid.
+function formTest() {
+  errormsg = "You have errors with your form.\n\n";
+  errors = false;
+  
+  blankcheck = [['Cardnumber', 'card number'],
+                ['CardType', 'card type'],
+                ['billTo_firstName', 'cardholder\'s name'],
+                ['billTo_street1', 'address line 1'],
+                ['billTo_city', 'city'],
+                ['billTo_state', 'state'],
+                ['billTo_postalCode', 'zipcode'],
+                ['billTo_email', 'telephone'],
+                ['ExpiresMonth', 'expiration, month'],
+                ['ExpiresYear', 'expiration, year']];
+                
+  for (var i=0; i<blankcheck.length; i++) {
+
+     if (document.getElementById(blankcheck[i][0]).value == '') {
+          errormsg += "  -The "+blankcheck[i][1]+" is not filled in.\n";
+          errors = true;
+     }
+  }
+
+  if (!testCreditCard()) {
+    errormsg += "  -Your credit card is invalid.\n";
+    errors = true;
+  }
+
+  if (errors) {
+    alert(errormsg);
+    return false;
+  } 
+  payOnce();
+  return true;
+}
+
+function testCreditCard() {
+  myCardNo = document.getElementById('Cardnumber').value;
+  myCardType = document.getElementById('CardType').value;
+  if (checkCreditCard (myCardNo,myCardType)) {
+    return true;
+  } 
+  else {
+    return false;
+  }
+}
+//-->
+</script>
+{% endblock %}
+{% block content %}
+<h1>Credit Card Payment for {{ program.niceName }}</h1>
+
+<h2>Instructions for paying by credit card:</h2>
+<p>
+<ol>
+<li>Please review the costs below and make sure they are correct.  If you are concerned that there is a problem, please <a href="mailto:esp-webmasters@mit.edu">e-mail the webmasters</a>.
+<li>Click "Continue to Payment" at the bottom of the page.  You will be taken to a secure third party Web site where you can enter and submit your credit card information.  Please fill out and submit the form; you will be returned to a receipt page and then back to student registration.</li>
+</ol>
+</p>
+
+<form>
+{% include "program/modules/creditcardmodule_cybersource/transaction_record.html" %}
+</form>
+
+<br />
+
+<p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg/" title="Return to main registration page">return to the main registration page</a>.</p>
+
+<form onsubmit="return formTest();" action="https://shopmitprd.mit.edu/controller/index.php?auto_submit=Y" method="post" autocomplete="off"> 
+
+<br />
+<p>Please fill out the form below.  Required fields are boxed in a red border and marked with an asterisk.</p>
+
+<input type="hidden" name="comments" value="ESP Invoice {{ invoice.get_locator }} (for {{ program.niceName }})" />
+<input type="hidden" name="merchantDefinedData1" value="{{ invoice.get_locator }}" />
+
+<input type="hidden" name="amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
+<input type="hidden" name="merchant_id" value="MIT_SAO_ESP" />
+
+<!-- Defaults -->
+<input type="hidden" name="billTo_country" value="US" />
+
+<p>
+Autofill contact information:
+<a href="javascript:autofill(guardian_contact);"
+   title="Autofill with parent information">with Guardian Information</a> |
+<a href="javascript:autofill(user_contact);"
+   title="Autofill with student information">with Student Information</a>
+<em>(JavaScript required)</em>
+<br />
+</p>
+
+
+<div id="program_form">
+<table align="center" width="450">
+<tr>
+    <th colspan="2">Credit Card Information</th>
+</tr>
+<tr>
+ <th><label>Name *</label></th>
+ <td>
+    <label for="billTo_firstName">First: </label><input class="required" type="text" id="billTo_firstName" name="billTo_firstName" maxlength="60" size="40"> <br />
+    <label for="billTo_lastName">Last: </label><input class="required" type="text" id="billTo_lastName" name="billTo_lastName" maxlength="60" size="40">
+ </td>
+</tr>
+
+<tr>
+ <th><label for="billTo_company">Company</label></th>
+
+ <td><input type="text" id="billTo_company" name="billTo_company" maxlength=40 size=40></td>
+</tr>
+
+<tr>
+ <th><label for="billTo_street1">Address Line 1 *</label></th>
+ <td><input class="required" type="text" id="billTo_street1" name="billTo_street1" maxlength=60 size=40></td>
+</tr>
+
+<tr>
+ <th><label for="billTo_street2">Address Line 2</label></th>
+ <td><input type="text" name="billTo_street2" maxlength=60 size=40></td>
+
+</tr>
+
+<tr>
+ <th><label for="billTo_city">City *</label></th>
+ <td><input class="required" type="text" id="billTo_city" name="billTo_city" maxlength=25 size=25></td>
+</tr>
+
+<tr>
+ <th><label for="billTo_state">State *</label></th>
+ <td><input class="required" type="text" id="billTo_state" name="billTo_state" maxlength=2 size=2></td>
+</tr>
+
+<tr>
+ <th><label for="billTo_postalCode">Zipcode *</label></th>
+ <td><input class="required" type="text" id="billTo_postalCode" name="billTo_postalCode" maxlength=20 size=15> (5 or 9 digits only, no hyphen)</td>
+</tr>
+
+<tr>
+ <th><label for="billTo_phoneNumber">Telephone</label></th>
+ <td><input type="text" name="billTo_phoneNumber" id="billTo_phoneNumber" maxlength=30 size=20></td>
+
+</tr>
+
+<tr>
+ <th><label for="billTo_email">Email Address*</label></th>
+ <td><input class="required" type="text" id="billTo_email" name="billTo_email" maxlength=64 size=34></td>
+</tr>
+
+
+<tr>
+<td>&nbsp;</td>
+
+<td>&nbsp;</td>
+</tr>
+
+<tr>
+<td colspan="2" align="center" style="padding: 10px !important"><b>Total charge: </b><tt style="border: 1px solid black; padding: 1px 20px 1px 1px; font-size: 140%" width="0px"> ${{ itemizedcosttotal|floatformat:2 }} </tt><br /></td>
+</tr>
+
+<tr>
+<td colspan="2" align="center" />
+    <input id="submit_form" class="fancybutton" type="submit" value="Continue to Payment"><br/>
+</td>
+</tr>
+
+</table>
+</div>
+
+</form>
+
+{% endblock %}
+
