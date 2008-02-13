@@ -127,6 +127,9 @@ class Document(models.Model):
             for lit in li_types:
                 if not dont_duplicate or new_tx.lineitem_set.filter(li_type=lit).count() == 0:
                     new_tx.add_item(user, lit, finaid)
+                if dont_duplicate:
+                    if LineItem.objects.filter(transaction=new_tx, li_type=lit).count() == 0:
+                        new_tx.add_item(user, lit, finaid)
                 
             new_doc = Document()
             new_doc.txn = new_tx
