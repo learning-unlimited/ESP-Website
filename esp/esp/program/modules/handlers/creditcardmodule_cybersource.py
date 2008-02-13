@@ -71,10 +71,10 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
      
     @meets_deadline('/Payment')
     @usercheck_usetl
-    def startpay(self, request, tl, one, two, module, extra, prog):
+    def startpay_cybersource(self, request, tl, one, two, module, extra, prog):
         # Force users to pay for non-optional stuffs
         user = ESPUser(request.user)
-        invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor, optional=False), dont_duplicate=True)
+        invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor), dont_duplicate=True)
 
         context = {}
         context['module'] = self

@@ -37,7 +37,7 @@ class Checksum(object):
     def calculate(self, code):
         padding = ''
         for i in range(0, self.base_length - len(code)):
-            padding += pad_with
+            padding += self.pad_with
         cks = padding + code
         return cks + _checksum(code, self.rotors)[1]
 
