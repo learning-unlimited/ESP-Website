@@ -36,7 +36,7 @@ from datetime            import datetime
 from esp.db.models       import Q
 from esp.users.models    import User, ESPUser
 #from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
-from esp.accounting_core.models import LineItemType
+from esp.accounting_core.models import LineItemType, EmptyTransactionException
 from esp.accounting_docs.models import Document
 
 class CreditCardModule_Cybersource(ProgramModuleObj):
@@ -83,7 +83,12 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['tl']  = tl
         context['user'] = user
         context['itemizedcosts'] = invoice.get_items()
-        context['itemizedcosttotal'] = invoice.cost()
+
+        try:
+            context['itemizedcosttotal'] = invoice.cost()
+        except EmptyTransactionException:
+            context['itemizedcosttotal'] = 0
+            
         context['financial_aid'] = user.hasFinancialAid(prog.anchor)
         
         return render_to_response(self.baseDir() + 'cardstart.html', request, (prog, tl), context)
