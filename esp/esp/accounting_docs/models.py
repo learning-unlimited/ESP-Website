@@ -151,7 +151,7 @@ class Document(models.Model):
         old_doc = Document.get_by_locator(loc)
 
         new_tx = Transaction.begin(old_doc.anchor, 'Credit card payment')
-        li_type = LineItemType.objects.get_or_create(text='Credit Card Payment',anchor=GetNode("Q/Accounts/Pending"))
+        li_type, unused = LineItemType.objects.get_or_create(text='Credit Card Payment',anchor=GetNode("Q/Accounts/Pending"))
         new_tx.add_item(user, li_type, amount=amt)
         
         new_doc = Document()

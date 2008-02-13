@@ -191,7 +191,7 @@ def managepage(request, page):
             #            except:
             #                raise ESPError(), "A server error occurred while logging your credit card transaction.  The transaction has not been lost; this just means that the green Credit Card checkbox may not be properly checked off, allowing you to finish registering for this program.  Please <a href=\"mailto:esp-webmasters@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
 
-            return HttpResponseRedirect("http://%s/learn/Splash/2007/confirmreg" % request.POST['HTTP_HOST'])
+            return HttpResponseRedirect("http://%s/learn/Splash/2007/confirmreg" % request.META['HTTP_HOST'])
             
         return render_to_response( 'accounting_docs/credit_rejected.html', request, GetNode('Q/Accounting/'), {} )
 
