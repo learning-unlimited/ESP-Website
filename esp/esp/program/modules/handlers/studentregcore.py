@@ -35,6 +35,8 @@ from esp.users.models    import UserBit, ESPUser, User
 from esp.datatree.models import GetNode
 from esp.db.models import Q
 from esp.middleware   import ESPError
+from esp.accounting_docs.models import Document
+from esp.accounting_core.models import LineItemType, EmptyTransactionException
 
 import operator
 
@@ -73,16 +75,20 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def confirmreg(self, request, tl, one, two, module, extra, prog):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
-        invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor, optional=False), dont_duplicate_li=True)
+        lis = LineItemType.objects.filter(anchor=prog.anchor)
+        invoice = Document.get_invoice(request.user, prog.anchor, lis, dont_duplicate=True)
 
 	context = {}
 	context['one'] = one
 	context['two'] = two
 
-        from esp.money.models import LineItem, LineItemType, RegisterLineItem
-
         context['itemizedcosts'] = invoice.get_items()
-        context['itemizedcosttotal'] = invoice.cost(request.user, prog.anchor)
+
+        try:
+            context['itemizedcosttotal'] = invoice.cost()
+        except EmptyTransactionException:
+            context['itemizedcosttotal'] = 0.0
+
         context['owe_money'] = ( context['itemizedcosttotal'] != 0 )
 
 
