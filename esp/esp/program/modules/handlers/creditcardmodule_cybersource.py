@@ -90,5 +90,6 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             context['itemizedcosttotal'] = 0
             
         context['financial_aid'] = user.hasFinancialAid(prog.anchor)
+        context['invoice'] = invoice
         
         return render_to_response(self.baseDir() + 'cardstart.html', request, (prog, tl), context)

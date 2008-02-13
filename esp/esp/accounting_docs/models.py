@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from django.db import models, transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
-from esp.datatree.models import DataTree
+from esp.datatree.models import DataTree, GetNode
 from esp.db.fields import AjaxForeignKey
 from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem
 from esp.accounting_docs.checksum import Checksum
@@ -127,9 +127,6 @@ class Document(models.Model):
             for lit in li_types:
                 if not dont_duplicate or new_tx.lineitem_set.filter(li_type=lit).count() == 0:
                     new_tx.add_item(user, lit, finaid)
-                if dont_duplicate:
-                    if LineItem.objects.filter(transaction=new_tx, li_type=lit).count() == 0:
-                        new_tx.add_item(user, lit, finaid)
                 
             new_doc = Document()
             new_doc.txn = new_tx
@@ -146,15 +143,15 @@ class Document(models.Model):
     
     @staticmethod
     def get_by_locator(loc):
-        return Document.objects.filter(locator=loc)
+        return Document.objects.get(locator=loc)
     
     @staticmethod
     def receive_creditcard(user, loc, amt, cc_id):
         """ Call this function when a successful credit card payment is received. """
         old_doc = Document.get_by_locator(loc)
 
-        new_tx = Transaction.begin(cart.anchor, 'Credit card payment')
-        li_type = LineItemType.objects.get_or_create(text='Credit Card Payment',anchor=nodes['cc-pending'])
+        new_tx = Transaction.begin(old_doc.anchor, 'Credit card payment')
+        li_type = LineItemType.objects.get_or_create(text='Credit Card Payment',anchor=GetNode("Q/Accounts/Pending"))
         new_tx.add_item(user, li_type, amount=amt)
         
         new_doc = Document()
