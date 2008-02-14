@@ -194,7 +194,7 @@ def managepage(request, page):
             one = document.anchor.parent.name
             two = document.anchor.name
 
-            return HttpResponseRedirect("http://%s/learn/%s/%s/confirmreg" % (request.POST['HTTP_HOST'], one, two))
+            return HttpResponseRedirect("http://%s/learn/%s/%s/confirmreg" % (request.META['HTTP_HOST'], one, two))
             
         return render_to_response( 'accounting_docs/credit_rejected.html', request, GetNode('Q/Accounting/'), {} )
 
