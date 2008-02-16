@@ -162,10 +162,6 @@ class Transaction(models.Model):
         # Operation Complete!
         return t
 
-    def end(self):
-        self.complete = True
-        self.save()
-
     @transaction.commit_on_success
     def add_item(self, user, li_type, finaid=False, amount=None, text=None, anchor=None):
         """ Add a line item to this transaction. Note that positive amounts on program accounts indicate an expense to the organization, and negative amounts indicate income to the organization. This condition is reversed for asset accounts. """

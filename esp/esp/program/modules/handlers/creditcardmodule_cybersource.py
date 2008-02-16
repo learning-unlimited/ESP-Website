@@ -80,7 +80,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     def paynow_cybersource(self, request, tl, one, two, module, extra, prog):
         # Force users to pay for non-optional stuffs
         user = ESPUser(request.user)
-        invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor), dont_duplicate=True)
+        invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor['LineItemTypes']['Required']), dont_duplicate=True)
 
         context = {}
         context['module'] = self
@@ -98,24 +98,4 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['financial_aid'] = user.hasFinancialAid(prog.anchor)
         context['invoice'] = invoice
         
-        return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
-
-
-    @usercheck_usetl
-    def paynow(self, request, tl, one, two, module, extra, prog):
-        # Force users to pay for non-optional stuffs.  Once more, just in case.
-        invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor, optional=False), dont_duplicate=True)
-
-        context = {'module': self}
-
-        yearnow = datetime.now().year
-        context['years'] = zip(['%02d' % x for x in
-                                range(yearnow-2000,yearnow+20-2000)],
-                               range(yearnow, yearnow+20))
-        context['module'] = self
-
-        context['itemizedcosts'] = invoice.get_items()
-        context['itemizedcosttotal'] = invoice.cost()
-        context['financial_aid'] = user.hasFinancialAid(prog.anchor)
-
         return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)

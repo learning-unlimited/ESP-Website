@@ -75,8 +75,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def confirmreg(self, request, tl, one, two, module, extra, prog):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
-        lis = LineItemType.objects.filter(anchor=prog.anchor)
-        invoice = Document.get_invoice(request.user, prog.anchor, lis, dont_duplicate=True)
+
+        invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor['LineItemTypes']['Required']), dont_duplicate_li=True)
 
 	context = {}
 	context['one'] = one

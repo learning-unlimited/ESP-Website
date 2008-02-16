@@ -151,8 +151,8 @@ class Document(models.Model):
         old_doc = Document.get_by_locator(loc)
 
         new_tx = Transaction.begin(old_doc.anchor, 'Credit card payment')
-        li_type, unused = LineItemType.objects.get_or_create(text='Credit Card Payment',anchor=GetNode("Q/Accounts/Pending"))
-        new_tx.add_item(user, li_type, amount=amt)
+        li_type, unused = LineItemType.objects.get_or_create(text='Credit Card Payment',anchor=GetNode("Q/Accounts/Receivable/OnSite"))
+        new_tx.add_item(user, li_type, amount=-amt)
         
         new_doc = Document()
         new_doc.txn = new_tx
@@ -166,7 +166,7 @@ class Document(models.Model):
         new_doc.docs_prev.add(old_doc)
         new_doc.save()
         
-        new_tx.end()
+        new_tx.post_balance(user, "Credit Card payment received", GetNode("Q/Accounts/Realized"))
 
         return new_doc
     
