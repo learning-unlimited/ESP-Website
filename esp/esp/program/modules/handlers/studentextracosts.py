@@ -39,15 +39,24 @@ from django.template.loader import get_template
 from esp.program.models  import JunctionStudentApp
 from django              import newforms as forms
 from django.contrib.auth.models import User
+from esp.accounting_docs.models import Document
 
 from esp.money.models import LineItemType, LineItem, RegisterLineItem, UnRegisterLineItem
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
 
+class MultiCostItem(forms.Form):
+    cost = forms.BooleanField(required=False, label='')
+    count = forms.IntegerField(max_value=10, min_value=0)
+
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
+    def get_invoice(self):
+        return Document.get_invoice(self.user, self.program_anchor_cached(), LineItemType.objects.filter(anchor=self.program_anchor_cached()['LineItemTypes']['Required']), dont_duplicate=True)
 
+    def have_paid(self):
+        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 )
 
     def studentDesc(self):
         """ Return a description for each line item type that students can be filtered by. """
@@ -72,7 +81,7 @@ class StudentExtraCosts(ProgramModuleObj):
         return student_lists
 
     def isCompleted(self):
-        return LineItem.purchased(self.program_anchor_cached(), self.user).count() > 0
+        return ( self.get_invoice().txn.lineitem_set.all().count() > 0 )
 
     @needs_student
     @meets_deadline('/ExtraCosts')
@@ -83,35 +92,72 @@ class StudentExtraCosts(ProgramModuleObj):
         This module should ultimately deal with things like optional lab fees, etc.
         Right now it doesn't.
         """
-        # Force users to pay for non-optional stuffs
-        for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
-            RegisterLineItem(request.user, i)
-        
+        if self.have_paid():
+            raise ESPError(False), "You've already paid for this program; you can't pay again!"
+
         #costs_list = set(LineItemType.forAnchor(prog.anchor).filter(optional=True).filter(lineitem__transaction__isnull=False, lineitem__user=request.user)) | set([x for x in LineItemType.forAnchor(prog.anchor).filter(optional=True) if x.lineitem_set.count() == 0])
-        costs_list = LineItemType.forAnchor(prog.anchor).filter(optional=True)
+        costs_list = LineItemType.objects.filter(anchor=prog.anchor['LineItemTypes']['Optional']['BuyOne'])
+        multicosts_list = LineItemType.objects.filter(anchor=prog.anchor['LineItemTypes']['Optional']['BuyMany'])
+        
+        doc = self.get_invoice()
 
         if request.method == 'POST':
             costs_db = [ { 'LineItemType': x, 
                            'CostChoice': CostItem(request.POST, prefix="%s_" % x.id) }
-                         for x in costs_list ]
+                         for x in costs_list ] + \
+                         [ { 'LineItemType': x, 
+                             'CostChoice': MultiCostItem(request.POST, prefix="%s_" % i.id) }
+                           for x in multicosts_list ]
 
             for i in costs_db:
                 if not i['CostChoice'].is_valid():
                     raise ESPError("A non-required boolean is invalid in the Cost module")               
 
                 if i['CostChoice'].clean_data['cost']:
-                    RegisterLineItem(request.user, i['LineItemType'])
-                elif i['LineItemType'].optional:
-                    UnRegisterLineItem(request.user, i['LineItemType'])
+                    if i['CostChoice'].clean_data.has_key('count'):
+                        try:
+                            count = int(i['CostChoice'].clean_data['count'])
+                        except ValueError:
+                            raise ESPError(True), "Error: Invalid cost value"
+                    else:
+                        count = 1
+
+                    lis = doc.txn.lineitem_set.filter(li_type=i['LineItemType'])
+                    list_count = lis.count()
+
+                    if lis_count > count:
+                        for i in xrange(lis_count - count):
+                            lis[i].delete()
+
+                    if lis_count < count:
+                        for i in xrange(count - lis_count):
+                            l = LineItem()
+                            l.transaction = doc.txn
+                            l.user = request.user
+                            l.anchor = prog.anchor
+                            if request.user.hasFinancialAid(prog.anchor):
+                                l.amount = i['LineItemType'].finaid_amount
+                            else:
+                                l.amount = i['LineItemType'].amount
+                            l.text = i['LineItemType'].text
+                            l.li_type = i['LineItemType']
+                            l.posted_to = None
+                            l.save()
+
+                else:
+                    doc.txn.lineitem_set.filter(li_type=i['LineItemType']).delete()
 
             return self.goToCore(tl)
 
         else:
             checked_ids = set( [ x['id'] for x in LineItem.purchasedTypes(prog.anchor, request.user).values('id') ] )
             forms = [ { 'form': CostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ) } ),
-                        'LineItem': x,
-                        'IsPaidFor': x.lineitem_set.filter(transaction__isnull=False, user=request.user) }
-                      for x in costs_list ]
+                        'LineItem': x }
+                      for x in costs_list ] + \
+                      [ { 'form': MultiCostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ) } ),
+                          'LineItem': x }
+                        for x in multicosts_list ]
+
 
             return render_to_response(self.baseDir()+'extracosts.html',
                                       request,
