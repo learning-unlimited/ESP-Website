@@ -6,7 +6,7 @@
       class="approved"
       {% else %}
       class="unapproved"
-      {% endif %}> {{ cls|truncatewords:6 }}</span>
+      {% endif %}>{{ cls.title|stringformat:".40s" }}{% if cls.title|stringformat:".40s"|length_is:40 and not cls.title|length_is:40 %}...{% endif %}</span>
       </span>
     </td>
     <td class="clsleft classname" style="font-size: 60%; font-style: italic;">
