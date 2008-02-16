@@ -81,7 +81,7 @@ class StudentExtraCosts(ProgramModuleObj):
         return student_lists
 
     def isCompleted(self):
-        return ( self.get_invoice().txn.lineitem_set.all().count() > 0 )
+        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 or self.get_invoice().txn.lineitem_set.all().count() > 0 )
 
     @needs_student
     @meets_deadline('/ExtraCosts')
