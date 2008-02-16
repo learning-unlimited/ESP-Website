@@ -57,7 +57,7 @@ class PurchaseOrder(models.Model):
 
     def __unicode__(self):
         return u'PurchaseOrder account %u (ref: %s)' % (self.id, self.reference)
-    
+
     class Admin:
         pass
 
@@ -94,6 +94,19 @@ class Document(models.Model):
     # Tools
     _checksum = Checksum(rotors=2, base_length=8)
     
+
+    def __unicode__(self):
+        if self.txn.complete:
+            complete_str = " (complete)"
+        else:
+            complete_str = ""
+
+        choices_dict = dict(self.TYPE_CHOICES)
+            
+        return u"%s for %s on %s%s" % (choices_dict[self.doctype], str(self.user), str(self.anchor), complete_str)
+
+    def __str__(self):
+        return str(unicode(self))
     
     #   This is new and untested code, fortunately we don't use it yet.
     #   Michael P, 2/5/2008
