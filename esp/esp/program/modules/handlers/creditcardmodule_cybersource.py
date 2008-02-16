@@ -47,8 +47,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         return '%s.00' % str(self.creditCardInfo.base_cost)
 
     def isCompleted(self):
-        return Transaction.objects.filter(anchor = self.program_anchor_cached(),
-                                          fbo = self.user).count() > 0
+        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 )
 
     def students(self, QObject = False):
         # this should be fixed...this is the best I can do for now - Axiak
