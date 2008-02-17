@@ -1,4 +1,4 @@
-
+\
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -76,7 +76,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
 
-        invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor['LineItemTypes']['Required']), dont_duplicate_li=True)
+        invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate_li=True)
 
 	context = {}
 	context['one'] = one

@@ -53,7 +53,7 @@ class MultiCostItem(forms.Form):
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
     def get_invoice(self):
-        return Document.get_invoice(self.user, self.program_anchor_cached(), LineItemType.objects.filter(anchor=self.program_anchor_cached()['LineItemTypes']['Required']), dont_duplicate=True)
+        return Document.get_invoice(self.user, self.program_anchor_cached(), LineItemType.objects.filter(anchor=GetNode(self.program_anchor_cached().get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
 
     def have_paid(self):
         return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 )
@@ -96,8 +96,8 @@ class StudentExtraCosts(ProgramModuleObj):
             raise ESPError(False), "You've already paid for this program; you can't pay again!"
 
         #costs_list = set(LineItemType.forAnchor(prog.anchor).filter(optional=True).filter(lineitem__transaction__isnull=False, lineitem__user=request.user)) | set([x for x in LineItemType.forAnchor(prog.anchor).filter(optional=True) if x.lineitem_set.count() == 0])
-        costs_list = LineItemType.objects.filter(anchor=prog.anchor['LineItemTypes']['Optional']['BuyOne'])
-        multicosts_list = LineItemType.objects.filter(anchor=prog.anchor['LineItemTypes']['Optional']['BuyMany'])
+        costs_list = LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Optional/BuyOne'))
+        multicosts_list = LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Optional/BuyMany'))
         
         doc = self.get_invoice()
 

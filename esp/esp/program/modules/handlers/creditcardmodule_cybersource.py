@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.program.modules import module_ext
+from esp.datatree.models import GetNode
 from esp.web.util        import render_to_response
 from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
@@ -79,7 +80,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     def paynow_cybersource(self, request, tl, one, two, module, extra, prog):
         # Force users to pay for non-optional stuffs
         user = ESPUser(request.user)
-        invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=prog.anchor['LineItemTypes']['Required']), dont_duplicate=True)
+        invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
 
         context = {}
         context['module'] = self
