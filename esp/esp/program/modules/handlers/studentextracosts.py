@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,8 +39,9 @@ from esp.program.models  import JunctionStudentApp
 from django              import newforms as forms
 from django.contrib.auth.models import User
 from esp.accounting_docs.models import Document
+from esp.accounting_core.models import LineItem, LineItemType
 
-from esp.money.models import LineItemType, LineItem, RegisterLineItem, UnRegisterLineItem
+#from esp.money.models import LineItemType, LineItem, RegisterLineItem, UnRegisterLineItem
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
@@ -105,9 +105,11 @@ class StudentExtraCosts(ProgramModuleObj):
             costs_db = [ { 'LineItemType': x, 
                            'CostChoice': CostItem(request.POST, prefix="%s_" % x.id) }
                          for x in costs_list ] + \
-                         [ { 'LineItemType': x, 
-                             'CostChoice': MultiCostItem(request.POST, prefix="%s_" % i.id) }
-                           for x in multicosts_list ]
+                         [ x for x in \
+                               [ { 'LineItemType': x, 
+                                   'CostChoice': MultiCostItem(request.POST, prefix="%s_" % x.id) }
+                                 for x in multicosts_list ] \
+                               if x['CostChoice'].is_valid() and x['CostChoice'].clean_data.has_key('cost') ]
 
             for i in costs_db:
                 if not i['CostChoice'].is_valid():
@@ -123,26 +125,15 @@ class StudentExtraCosts(ProgramModuleObj):
                         count = 1
 
                     lis = doc.txn.lineitem_set.filter(li_type=i['LineItemType'])
-                    list_count = lis.count()
+                    lis_count = lis.count()
 
                     if lis_count > count:
                         for i in xrange(lis_count - count):
                             lis[i].delete()
 
                     if lis_count < count:
-                        for i in xrange(count - lis_count):
-                            l = LineItem()
-                            l.transaction = doc.txn
-                            l.user = request.user
-                            l.anchor = prog.anchor
-                            if request.user.hasFinancialAid(prog.anchor):
-                                l.amount = i['LineItemType'].finaid_amount
-                            else:
-                                l.amount = i['LineItemType'].amount
-                            l.text = i['LineItemType'].text
-                            l.li_type = i['LineItemType']
-                            l.posted_to = None
-                            l.save()
+                        for c in xrange(count - lis_count):
+                            doc.txn.add_item(request.user, i['LineItemType'], ESPUser(request.user).hasFinancialAid(prog.anchor))
 
                 else:
                     doc.txn.lineitem_set.filter(li_type=i['LineItemType']).delete()
@@ -150,17 +141,17 @@ class StudentExtraCosts(ProgramModuleObj):
             return self.goToCore(tl)
 
         else:
-            checked_ids = set( [ x['id'] for x in LineItem.purchasedTypes(prog.anchor, request.user).values('id') ] )
+            checked_ids = set( [ x.li_type_id for x in doc.txn.lineitem_set.all() ] )
             forms = [ { 'form': CostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ) } ),
                         'LineItem': x }
                       for x in costs_list ] + \
-                      [ { 'form': MultiCostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ) } ),
+                      [ { 'form': MultiCostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ), 'count': max(1, doc.txn.lineitem_set.filter(li_type=x).count()) } ),
                           'LineItem': x }
                         for x in multicosts_list ]
-
+                
 
             return render_to_response(self.baseDir()+'extracosts.html',
                                       request,
                                       (self.program, tl),
-                                      { 'forms': forms, 'financial_aid': LineItem.student_has_financial_aid(request.user, prog.anchor) })
+                                      { 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog.anchor), 'select_qty': len(multicosts_list) > 0 })
 

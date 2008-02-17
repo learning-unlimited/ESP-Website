@@ -81,7 +81,6 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         # Force users to pay for non-optional stuffs
         user = ESPUser(request.user)
         invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
-
         context = {}
         context['module'] = self
         context['one'] = one
