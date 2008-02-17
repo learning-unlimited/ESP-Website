@@ -63,7 +63,7 @@ class StudentExtraCosts(ProgramModuleObj):
         student_desc = {}
 
         for i in LineItemType.objects.filter(anchor=self.program_anchor_cached()):
-            student_desc[i.label] = """Students who have opted for '%s'""" % i.label
+            student_desc[i.text] = """Students who have opted for '%s'""" % i.text
 
         return student_desc
 
@@ -74,9 +74,9 @@ class StudentExtraCosts(ProgramModuleObj):
         # Get all the line item types for this program.
         for i in LineItemType.objects.filter(anchor=self.program_anchor_cached()):
             if QObject:
-                student_lists[i.label] = self.getQForUser(Q(lineitem__type = i))
+                student_lists[i.text] = self.getQForUser(Q(accounting_lineitem__li_type = i))
             else:
-                student_lists[i.label] = User.objects.filter(lineitem__type = i).distinct()
+                student_lists[i.text] = User.objects.filter(accounting_lineitem__li_type = i).distinct()
 
         return student_lists
 
