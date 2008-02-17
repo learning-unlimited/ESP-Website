@@ -56,10 +56,9 @@ User Information: <br />
 <h3>Itemized Receipt</h3>
 <table>
 {% for payment in itemizedcosts %}
-<tr><td>{{ payment.type.label }}</td><td>{% if payment.transaction %}PAID: {% endif %}${% if financial_aid %}{{ payment.type.financial_aid_value|floatformat:2 }}{% else %}{{ payment.type.value|floatformat:2 }}{% endif %}</td></tr>
+<tr><td>{{ payment.text }}</td><td>${{ payment.amount|floatformat:2 }}</td></tr>
 {% endfor %}
-<tr><td align="right"><b>Balance (amount still owed):</b></td><td>${{ itemizedcosttotal|floatformat:2 }}</td></tr>
-
+<tr><td align="right"><b>Balance (amount still due):</b></td><td{% if owe_money %} style="color: red"{% endif %}><b>${{ balance|floatformat:2 }}</b></td></tr>
 </table>
 
 <br />

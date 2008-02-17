@@ -37,6 +37,7 @@ from esp.db.models import Q
 from esp.middleware   import ESPError
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItemType, EmptyTransactionException
+from decimal import Decimal
 
 import operator
 
@@ -76,7 +77,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
 
-        invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
+        invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
+
+        receipt = Document.get_receipt(request.user, prog.anchor, [], get_complete=True)
 
 	context = {}
 	context['one'] = one
@@ -85,12 +88,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['itemizedcosts'] = invoice.get_items()
 
         try:
-            context['itemizedcosttotal'] = invoice.cost()
+            context['balance'] = Decimal("%0.2f" % invoice.cost())
         except EmptyTransactionException:
-            context['itemizedcosttotal'] = 0.0
-
-        context['owe_money'] = ( context['itemizedcosttotal'] != 0 )
-
+            context['balance'] = Decimal("0.0")
+            
+        context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
         if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog):
             raise ESPError(log = False), "This program has filled!  It can't accept any more students.  Please try again next session."

@@ -121,19 +121,21 @@ class Document(models.Model):
         return self.locator
 
     @staticmethod
-    def get_invoice(user, anchor, li_types=[], dont_duplicate=False, finaid=None):
+    def get_DOCTYPE(user, anchor, li_types=[], dont_duplicate=False, finaid=None, get_complete=False, doctype=None):
         """ Create an "empty shopping cart" for a particular user in a particular
         anchor (i.e. program). """
         
         if finaid is None:
             finaid = ESPUser(user).hasFinancialAid(anchor)
         
-        qs = Document.objects.filter(user=user, anchor=anchor, txn__complete=False).distinct()
+        qs = Document.objects.filter(user=user, anchor=anchor, doctype=doctype, txn__complete=get_complete).distinct()
         
         if qs.count() > 1:
             raise MultipleDocumentError, 'Found multiple uncompleted transactions for this user and anchor.'
         elif qs.count() == 1:
             return qs[0]
+        elif qs.count() < 1 and get_complete:
+            raise MultipleDocumentError, 'Found no complete documents with the requested properties'
         else:
             new_tx = Transaction.begin(anchor, 'User payments for %s: %s' % (anchor.parent.friendly_name, anchor.friendly_name))
             new_tx.save()
@@ -144,7 +146,7 @@ class Document(models.Model):
             new_doc = Document()
             new_doc.txn = new_tx
             new_doc.anchor = anchor
-            new_doc.doctype = 2
+            new_doc.doctype = doctype
             new_doc.user = user
             new_doc.locator = 'N/A'
             new_doc.save()
@@ -153,6 +155,15 @@ class Document(models.Model):
             new_doc.save()
             
             return new_doc
+
+    @classmethod
+    def get_invoice(cls, user, anchor, li_types=[], dont_duplicate=False, finaid=None, get_complete=False):
+        return cls.get_DOCTYPE(user, anchor, li_types=li_types, dont_duplicate=dont_duplicate, finaid=finaid, get_complete=get_complete, doctype=2)
+
+    @classmethod
+    def get_receipt(cls, user, anchor, li_types=[], dont_duplicate=False, finaid=None, get_complete=False):
+        return cls.get_DOCTYPE(user, anchor, li_types=li_types, dont_duplicate=dont_duplicate, finaid=finaid, get_complete=get_complete, doctype=3)
+
     
     @staticmethod
     def get_by_locator(loc):
@@ -180,6 +191,9 @@ class Document(models.Model):
         new_doc.save()
         
         new_tx.post_balance(user, "Credit Card payment received", GetNode("Q/Accounts/Realized"))
+
+        old_doc.txn.post_balance(user, "Credit Card payment received", old_doc.anchor)
+        old_doc.txn.save()
 
         return new_doc
     
