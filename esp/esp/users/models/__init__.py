@@ -292,7 +292,7 @@ class ESPUser(User, AnonymousUser):
         users = User.objects.filter(last_name__iexact = last,
                                     first_name__iexact = first).order_by('id')
         if len(users) <= num:
-            raise ESPError(), 'Could not find user "%s %s"' % (first, last)
+            raise ESPError(False), '"%s %s": Unknown User' % (first, last)
         
         return ESPUser(users[num])
         
