@@ -131,7 +131,7 @@ class Document(models.Model):
         qs = Document.objects.filter(user=user, anchor=anchor, txn__complete=False).distinct()
         
         if qs.count() > 1:
-            raise MultipleDocumentError(), 'Found multiple uncompleted transactions for this user and anchor.'
+            raise MultipleDocumentError, 'Found multiple uncompleted transactions for this user and anchor.'
         elif qs.count() == 1:
             return qs[0]
         else:
