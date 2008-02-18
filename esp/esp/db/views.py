@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.utils import simplejson
 from django.db.models.query import QuerySet
 
-user_is_staff = user_passes_test(lambda u: u.is_staff and u.is_authenticated())
+user_is_staff = user_passes_test(lambda u: u.is_authenticated() and u.is_staff and u.is_authenticated())
 
 @user_is_staff
 def ajax_autocomplete(request):
