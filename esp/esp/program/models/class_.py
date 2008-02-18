@@ -115,7 +115,7 @@ class Class(models.Model):
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
     directors_notes = models.TextField(blank=True, null=True)
-    status   = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted
+    status   = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted, -20 = cancel[l]ed
     duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
     
     #   If the teacher can request the number of class sessions (i.e. number of weeks for HSSP),
@@ -544,7 +544,7 @@ class Class(models.Model):
 
 #        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not ESPUser(user).canRegToFullProgram(self.parent_program):
         if checkFull and self.parent_program.isFull(use_cache=True) and not ESPUser(user).canRegToFullProgram(self.parent_program):
-            return 'This programm cannot accept any more students!  Please try again in its next session.'
+            return 'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull(use_cache=use_cache):
             return 'Class is full!'
@@ -578,7 +578,7 @@ class Class(models.Model):
                 if self.meeting_times.filter(id = time.id).count() > 0:
                     return 'Conflicts with your schedule!'
 
-        # this use *can* add this class!
+        # this user *can* add this class!
         return False
 
     def makeTeacher(self, user):
@@ -781,9 +781,9 @@ class Class(models.Model):
 
     def unpreregister_student(self, user):
 
-        prereg_verb = GetNode('V/Flags/Registration/Preliminary')
+        prereg_verbs = [ GetNode('V/Flags/Registration/Preliminary'), GetNode('V/Flags/Registration/Preliminary/Automatic') ]
 
-        for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb=prereg_verb):
+        for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__in=prereg_verbs):
             ub.delete()
 
         # update the students cache
@@ -793,16 +793,20 @@ class Class(models.Model):
         self.cache['students'] = students
         
 
-    def preregister_student(self, user, overridefull=False):
+    def preregister_student(self, user, overridefull=False, automatic=False):
 
         prereg_verb = GetNode( 'V/Flags/Registration/Preliminary' )
-
-                
+        auto_verb = GetNode( 'V/Flags/Registration/Preliminary/Automatic' )
+        
         if overridefull or not self.isFull():
             #    Then, create the userbit denoting preregistration for this class.
             UserBit.objects.get_or_create(user = user, qsc = self.anchor,
-                                          verb = prereg_verb)
-
+                                          verb = prereg_verb, recursive = False)
+            # Set a userbit for auto-registered classes (i.e. Spark sections of HSSP classes)
+            if automatic:
+                UserBit.objects.get_or_create(user = user, qsc = self.anchor,
+                                              verb = auto_verb, recursive = False)
+            
             # update the students cache
             students = list(self.students())
             students.append(ESPUser(user))
@@ -836,7 +840,11 @@ class Class(models.Model):
 
     def isRejected(self):
         return self.status == -10
-
+    
+    def isCancelled(self):
+        return self.status == -20
+    isCanceled = isCancelled    # Yay alternative spellings
+    
     def accept(self, user=None, show_message=False):
         """ mark this class as accepted """
         if self.isAccepted():
@@ -874,6 +882,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.status = -10
         self.save()
 
+    def cancel(self):
+        """ Cancel this class. Has yet to do anything useful. """
+        self.status = -20
+        self.save()
             
     def docs_summary(self):
         """ Return the first three documents associated
@@ -1026,14 +1038,14 @@ class ClassImplication(models.Model):
             
     _ops = { 'AND': _and, 'OR': _or, 'XOR': _xor }
 
-    def fails_implication(self, student, already_seen_implications=set()):
+    def fails_implication(self, student, already_seen_implications=set(), without_classes=set()):
         """ Returns either False, or the ClassImplication that fails (may be self, may be a subimplication) """
-        class_set = Class.objects.filter(id__in=self.member_id_ints)
+        class_set = Class.objects.filter(id__in=self.member_id_ints).exclude(id__in=without_classes)
 
-        class_valid_iterator = ( (student in c.students()) for c in class_set )
-        subimplication_valid_iterator = ( (not i.fails_implication()) for i in self.classimplication_set.all() )
-
-        if not _ops[self.operation](class_valid_iterator) or not _ops[self.operation](subimplication_valid_iterator):
+        class_valid_iterator = [ (student in c.students()) for c in class_set ]
+        subimplication_valid_iterator = [ (not i.fails_implication(student, already_seen_implications, without_classes)) for i in self.classimplication_set.all() ]
+        
+        if not ClassImplication._ops[self.operation](class_valid_iterator + subimplication_valid_iterator):
             return self
         else:
             return False

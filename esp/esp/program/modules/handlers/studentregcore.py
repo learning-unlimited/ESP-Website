@@ -1,4 +1,4 @@
-\
+
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -159,7 +159,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     def getNavBars(self):
         nav_bars = []
-        if super(StudentRegCore, self).deadline_met() or ( self.user and self.program and UserBit.objects.UserHasPerms(self.user, self.program, GetNode("V/Deadline/Registration/Classes/OneClass")) ):
+        if super(StudentRegCore, self).deadline_met() or ( self.user and self.program and UserBit.objects.UserHasPerms(self.user, self.program, GetNode("V/Deadline/Registration/Student/Classes/OneClass")) ):
              nav_bars.append({ 'link': '/learn/%s/studentreg/' % ( self.program.getUrlBase() ),
                       'text': '%s Student Registration' % ( self.program.niceSubName() ),
                       'section': 'learn'})

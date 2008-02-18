@@ -423,13 +423,15 @@ class ESPUser(User, AnonymousUser):
                 request._enrolled_classes[request_key] = retVal
             return retVal
 
-        if not program:
-            Conf = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Confirmed'))
-            Prel = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Preliminary'))
-            
-            retVal = (Conf | Prel).distinct()
-        else:
-            retVal = Class.objects.filter_by_procedure('class__get_enrolled', self, program)
+        #if not program:
+        Conf = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Confirmed'))
+        Prel = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Preliminary'))
+        
+        retVal = (Conf | Prel).distinct()
+        #else:
+        if program:
+            #retVal = Class.objects.filter_by_procedure('class__get_enrolled', self, program)
+            retVal = retVal.filter(parent_program=program)
 
         list(retVal)
 
