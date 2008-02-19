@@ -35,7 +35,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
-from esp.db.models       import Q
+from esp.db.models       import Q, DjangoQ
 from django.template.loader import get_template
 from esp.cal.models import Event
 
@@ -211,44 +211,54 @@ class StudentClassRegModule(ProgramModuleObj):
     def changeslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to swap a class. Options have either the same name or same timeslot. """
         from esp.cal.models import Event
+        
+        user = ESPUser(request.user) 
+        prereg_url = self.program.get_learn_url + 'swapclass/' + extra
+        user_grade = user.getGrade()
+        is_onsite = user.isOnsite(self.program)
 
         try:
             extra = int(extra)
         except:
-            raise ESPError(False), 'Please use the link at the main registration page.'
-        user = ESPUser(request.user)        
+            raise ESPError(False), 'Please use the link at the main registration page.'       
         ts = Event.objects.filter(id=extra)
         if len(ts) < 1:
             raise Http404()
 
         ts = ts[0]
-                
-        prereg_url = self.program.get_learn_url + 'addclass/'
-        user_grade = user.getGrade()
-        is_onsite = user.isOnsite(self.program)
-        
-         # using .extra() to select all the category text simultaneously
-        classes = [c for c in Class.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull()) or is_onsite]
-        
+                        
         # Determining the old class, if any.
+        v_registered = request.get_node('V/Flags/Registration/Preliminary')
         oldclasses = Class.objects.filter(meeting_times=extra,
                              parent_program = self.program,
                              anchor__userbit_qsc__verb = v_registered,
                              anchor__userbit_qsc__user = self.user).distinct()
-        if oldclasses.count() == 1:
-            oldclass = oldclasses[0]
-            prereg_url = self.program.get_learn_url + 'swapclass/'
-            # The "friendly_name bit" is to test for classes with the same title without having to call c.title()
-            classes += [c for c in Class.objects.catalog(self.program).filter(grade_min__lte=user_grade, grade_max__gte=user_grade, anchor__friendly_name=oldclass.title()) if (not c.isFull()) or is_onsite]
-            classes = list(set(classes)) # Makes classes unique.
+        # If there isn't a class to replace, let's silently switch over to regular adding of classes.
+        if oldclasses.count() < 1:
+            return self.fillslot(request, tl, one, two, module, extra, prog)
+        # If there's more than one to replace, we don't know how to handle that.
+        if oldclasses.count() > 1:
+            raise ESPError(False), 'Sorry, our website doesn\'t know which class in that time slot you want to exchange! You\'ll have to go back and do it yourself by clearing the time slot first.'
+        # Still here? Okay, continue...
+        oldclass = oldclasses[0]
+        
+        # .objects.catalog() uses .extra() to select all the category text simultaneously
+        # The "friendly_name bit" is to test for classes with the same title without having to call c.title()
+        class_qset = Class.objects.catalog(self.program).filter( DjangoQ(meeting_times = ts) | DjangoQ(anchor__friendly_name = oldclass.title()) ) # same time or same title
+        class_qset = class_qset.filter(grade_min__lte=user_grade, grade_max__gte=user_grade) # filter within grade limits
+        classes = [c for c in class_qset if (not c.isFull()) or is_onsite] # show only viable classes
+        print [c.meeting_times for c in classes]
 
         categories = {}
 
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
-
+        
+        # Tell the template we're not actually registered in oldclass
+        #request._enrolled_classes = { '%s%s' % (self.user.id, prog.id): self.user.getEnrolledClasses(prog).exclude(id=oldclass.id) }
 
         return render_to_response(self.baseDir()+'changeslot.html', request, (prog, tl), {'classes':    classes,
+                                                                                        'oldclass':   oldclass,
                                                                                         'one':        one,
                                                                                         'two':        two,
                                                                                         'categories': categories.values(),

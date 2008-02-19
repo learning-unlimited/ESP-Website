@@ -38,6 +38,7 @@ Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{reque
 {% if module.deadline_met %}
         <td width='20%' align='center'>
 	<a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[remove]</a>
+	<a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[exchange]</a>
 	</td>
 {% endif %}
 	{% else %}

@@ -1,0 +1,124 @@
+
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}}{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+  function submit_prereg(clsid) {
+     // prereg for a class
+     document.getElementById('submitbutton'+clsid).disabled = true;
+     return true;
+  }
+
+  function submit_override_prereg(clsid) {
+     // prereg for a class
+     if (confirm('Are you sure you want to override this block?') &&
+         confirm('Are you really sure?!?')) {
+        document.getElementById('submitbutton'+clsid).disabled = true;
+        return true;
+     }
+     return false;
+  }
+//-->
+</script>
+{% endblock %}
+
+{% block subsection_name %}Course Catalogue{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/fillslot.css" />
+{% endblock %}
+
+{% block content %}
+<br />
+<h1>
+    {{ program.niceName }} <br /> 
+     Pick a class to switch with "{{ oldclass.title }}"
+</h1>
+
+{% if timeslot.priority %}
+<center><div class="info">{{ timeslot.description }}</div><br /></center>
+{% endif %}
+
+{% if request.user.onsite_local %}
+
+{% if not request.GET.filter %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}?filter=True">Filter out invalid classes</a>
+</h2>
+{% else %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}">Show all classes</a>
+</h2>
+{% endif %}
+{% endif %}
+
+<div id="catalog">
+
+<table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
+ <tr>
+  <th colspan="2">
+   <a name="top"></a>Jump to Categories
+  </th>
+ </tr>
+
+{% for category in categories %}
+{% if forloop.counter0|divisibleby:2 %}
+<tr>{% endif %}
+  <td style="width: 50%; vertical-align: top;" valign="top" align="center">
+
+    <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
+              {{category.category}}
+    </a>
+  </td>
+ {% if forloop.counter|divisibleby:2 %}
+</tr>{% endif %} 
+{% endfor %}
+{% if not categories|length|divisibleby:2 %}
+</tr>
+{% endif %}
+
+</table>
+</div>
+{% load class_render %}
+
+{% if classes|length_is:0 %}Did you update your profile? Make sure you <a href="../profile">update your profile</a> before trying to sign up for classes.{% endif %}
+
+{% for class in classes %}
+
+<div id="catalog">
+
+{% ifchanged class.category_id %}<hr size="1"/>
+
+    <a name="cat{{class.category_id}}"></a>
+      <p style="font-size: 1.2em;" class="category">
+         {{ class.category_txt }}
+      </p>
+{% if request.user.onsite_local %}
+{% if not request.GET.filter %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}?filter=True">Filter out invalid classes</a>
+</h2>
+{% else %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}">Show all classes</a>
+</h2>
+{% endif %}
+{% endif %}
+      <p class="linktop">
+         <a href="#top">[ Return to Category List ]</a>
+      </p> {% endifchanged %}
+
+{% render_class_swap class oldclass request.user prereg_url request.GET.filter request %}
+
+<br />
+{% endfor %}
+</div>
+
+<p><a href="../studentreg/">Back to Registration Form</a> (skip this block)</p>
+
+{% endblock %}

@@ -45,6 +45,33 @@ def render_class(cls, user=None, prereg_url=None, filter=False, request=None):
             'errormsg':   errormsg,
             'show_class': show_class}
 
+# We're not caching this yet because I doubt people will hit this function the same way repeatedly--same user and all.
+# The lambda is there because cache_inclusion_tag doesn't like receiving cache_key_func=None. -ageng 2008-02-18
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_swap.html', cache_key_func=lambda a, b, c, d, e, f: None)
+def render_class_swap(cls, swap_class, user=None, prereg_url=None, filter=False, request=None):
+    errormsg = None
+
+    if user and prereg_url:
+        errormsg = cls.cannotAdd(user, True, request=request)
+        if errormsg == 'Conflicts with your schedule!':
+            errormsg = None
+            for currentclass in user.getEnrolledClasses(cls.parent_program, request).exclude(id=swap_class.id):
+                for time in currentclass.meeting_times.all():
+                    if cls.meeting_times.filter(id = time.id).count() > 0:
+                        errormsg = 'Conflicts with your schedule!'
+    
+    if cls.id == swap_class.id:
+        errormsg = '(You are currently registered for this class.)'
+    
+    show_class =  (not filter) or (not errormsg)
+    
+    
+    return {'class':      cls,
+            'user':       user,
+            'prereg_url': prereg_url,
+            'errormsg':   errormsg,
+            'show_class': show_class}
+
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_minimal.html', cache_key_func=minimal_cache_key_func)
 def render_class_minimal(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
