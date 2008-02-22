@@ -80,6 +80,7 @@ def class_options_row(cls):
     context['cls_prereqs'] = cls.prereqs
     context['cls_message'] = cls.message_for_directors
     context['cls_viable_rooms'] = cls.viable_rooms()
+    context['cls_checkitems'] = [cm.title for cm in cls.checklist_progress.all()]
     
     return context
     

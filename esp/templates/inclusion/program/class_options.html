@@ -8,6 +8,8 @@
             <b>Requests:</b><br />
             {% for r in cls_requests %}- {{ r }}<br />{% endfor %}
             <b>Prereqs:</b>{{ cls_prereqs }}<br />
+	    <b>Checkboxes:</b><br />
+	    {% for c in cls_checkitems %}- {{ c }}<br />{% endfor %}
             <b>Comments:</b>{{ cls_message }}</span>
             </a>
         </td>

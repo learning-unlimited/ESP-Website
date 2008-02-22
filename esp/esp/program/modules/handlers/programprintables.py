@@ -1016,21 +1016,18 @@ Student schedule for %s:
     @needs_admin
     def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
         import csv
+        from django.http import HttpResponse
 
-        try:
-            import cStringIO as StringIO
-        except ImportError:
-            import StringIO
-        
-        OutputStr = StringIO()
-        write_cvs = csv.writer(OutputStr)
+        response = HttpResponse(mimetype="text/csv")
+        write_cvs = csv.writer(response)
 
+#        write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Msg for Directors", "Prereqs", "Directors Notes", "Times", "Rooms"))
         for cls in Class.objects.filter(parent_program=prog):
-            write_cvs.write(
+            write_cvs.writerow(
                 (cls.id,
-                 ", ".join(cls.teachers()),
-                 cls.title(),
-                 cls.duration,
+                 ", ".join([t.name() for t in cls.teachers()]),
+                cls.title(),
+                 cls.prettyDuration(),
                  cls.grade_min,
                  cls.grade_max,
                  cls.class_size_min,
@@ -1040,11 +1037,8 @@ Student schedule for %s:
                  cls.message_for_directors,
                  cls.prereqs,
                  cls.directors_notes,
-                 cls.viable_times(),
-                 cls.viable_rooms(),
-                ))
+                 ", ".join(cls.friendly_times()),
+                 ", ".join(cls.prettyrooms()),
+                 ))
 
-
-        from django.http import HttpResponse
-
-        return HttpResponse(OutputStr.getvalue())
+        return response

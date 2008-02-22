@@ -135,11 +135,11 @@ Please click <em>Confirm</em> below to confirm your registration into {{program.
     
     <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
     <input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Confirm{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
-    {% if isConfirmed %}
+    {% if isConfirmed %}{% if not have_paid %}
     | 
     <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
     <input class="button" type="submit" value="Cancel Registration" />
-    {% endif %}
+    {% endif %}{% endif %}
     
     </center>
     

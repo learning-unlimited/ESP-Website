@@ -39,6 +39,7 @@ from esp.users.models    import User, ESPUser
 #from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
 from esp.accounting_core.models import LineItemType, EmptyTransactionException
 from esp.accounting_docs.models import Document
+from esp.middleware      import ESPError
 
 class CreditCardModule_Cybersource(ProgramModuleObj):
     def extensions(self):
@@ -69,15 +70,23 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     def studentDesc(self):
         return {'creditcard': """Students who have filled out the credit card form."""}
      
-
+    def have_paid(self):
+        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 )
+            
     @meets_deadline('/Payment')
     @usercheck_usetl
     def startpay_cybersource(self, request, tl, one, two, module, extra, prog):
+        if self.have_paid():
+            raise ESPError(False), "You've already paid for this program; you can't pay again!"
+                    
         return render_to_response(self.baseDir() + 'cardstart.html', request, (prog, tl), {})
 
     @meets_deadline('/Payment')
     @usercheck_usetl
     def paynow_cybersource(self, request, tl, one, two, module, extra, prog):
+        if self.have_paid():
+            raise ESPError(False), "You've already paid for this program; you can't pay again!"
+        
         # Force users to pay for non-optional stuffs
         user = ESPUser(request.user)
         invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)

@@ -43,6 +43,9 @@ import operator
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
 
+    def have_paid(self):
+        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 )
+
     def students(self, QObject = False):
         verb = GetNode('V/Flags/Public')
         verb2 = GetNode('V/Flags/Registration/Attended')
@@ -117,6 +120,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @meets_grade    
     @meets_deadline()
     def cancelreg(self, request, tl, one, two, module, extra, prog):
+        if self.have_paid():
+            raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
+        
         bits = UserBit.objects.filter(user = self.user,
                                       verb = GetNode('V/Flags/Public'),
                                       qsc  = GetNode('/'.join(prog.anchor.tree_encode())+'/Confirmation'))
@@ -150,6 +156,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 	    context['two'] = two
             context['coremodule'] = self
             context['isConfirmed'] = self.program.isConfirmed(self.user)
+            context['have_paid'] = self.have_paid()
 
 	    return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
