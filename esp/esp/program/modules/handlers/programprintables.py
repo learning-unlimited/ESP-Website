@@ -1012,3 +1012,39 @@ Student schedule for %s:
 
         return render_to_latex(self.baseDir()+'completion_certificate.tex', context, file_type)
         
+
+    @needs_admin
+    def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
+        import csv
+
+        try:
+            import cStringIO as StringIO
+        except ImportError:
+            import StringIO
+        
+        OutputStr = StringIO()
+        write_cvs = csv.writer(OutputStr)
+
+        for cls in Class.objects.filter(parent_program=prog):
+            write_cvs.write(
+                (cls.id,
+                 ", ".join(cls.teachers()),
+                 cls.title(),
+                 cls.duration,
+                 cls.grade_min,
+                 cls.grade_max,
+                 cls.class_size_min,
+                 cls.class_size_max,
+                 cls.category,
+                 cls.class_info,
+                 cls.message_for_directors,
+                 cls.prereqs,
+                 cls.directors_notes,
+                 cls.viable_times(),
+                 cls.viable_rooms(),
+                ))
+
+
+        from django.http import HttpResponse
+
+        return HttpResponse(OutputStr.getvalue())
