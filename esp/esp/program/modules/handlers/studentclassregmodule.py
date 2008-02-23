@@ -35,7 +35,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
-from esp.db.models       import Q, DjangoQ
+from esp.db.models       import Q
 from django.template.loader import get_template
 from esp.cal.models import Event
 
@@ -156,8 +156,8 @@ class StudentClassRegModule(ProgramModuleObj):
                 if implication.fails_implication(self.user):
                     for cls in auto_classes:
                         cls.unpreregister_student(self.user)
-                    raise ESPError(False), 'You have no class blocks free for this class\'s prerequisites! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s".' % (blocked_class.parent_program.get_learn_url, blocked_class.parent_program.niceName(), blocked_class.title())
-        
+                    raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s".' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url, blocked_class.parent_program.niceName(), blocked_class.title())
+
         if error and not self.user.onsite_local:
             raise ESPError(False), error
         if cobj.preregister_student(self.user, self.user.onsite_local):
@@ -238,13 +238,13 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.fillslot(request, tl, one, two, module, extra, prog)
         # If there's more than one to replace, we don't know how to handle that.
         if oldclasses.count() > 1:
-            raise ESPError(False), 'Sorry, our website doesn\'t know which class in that time slot you want to exchange! You\'ll have to go back and do it yourself by clearing the time slot first.'
+            raise ESPError(False), 'Sorry, our website doesn\'t know which class in that time slot you want to change! You\'ll have to go back and do it yourself by clearing the time slot first.'
         # Still here? Okay, continue...
         oldclass = oldclasses[0]
         
         # .objects.catalog() uses .extra() to select all the category text simultaneously
         # The "friendly_name bit" is to test for classes with the same title without having to call c.title()
-        class_qset = Class.objects.catalog(self.program).filter( DjangoQ(meeting_times = ts) | DjangoQ(anchor__friendly_name = oldclass.title()) ) # same time or same title
+        class_qset = Class.objects.catalog(self.program).filter( anchor__friendly_name = oldclass.title() ) # same title
         class_qset = class_qset.filter(grade_min__lte=user_grade, grade_max__gte=user_grade) # filter within grade limits
         classes = [c for c in class_qset if (not c.isFull()) or is_onsite] # show only viable classes
         print [c.meeting_times for c in classes]
@@ -254,9 +254,6 @@ class StudentClassRegModule(ProgramModuleObj):
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
         
-        # Tell the template we're not actually registered in oldclass
-        #request._enrolled_classes = { '%s%s' % (self.user.id, prog.id): self.user.getEnrolledClasses(prog).exclude(id=oldclass.id) }
-
         return render_to_response(self.baseDir()+'changeslot.html', request, (prog, tl), {'classes':    classes,
                                                                                         'oldclass':   oldclass,
                                                                                         'one':        one,

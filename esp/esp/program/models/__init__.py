@@ -539,8 +539,24 @@ class Program(models.Model):
         assert False, 'todo'
         
     def classes(self):
-        return Class.objects.filter(parent_program = self).order_by('id')        
-
+        return Class.objects.filter(parent_program = self).order_by('id')
+    
+    def class_ids_implied(self, use_cache=True):
+        """ Returns the class ids implied by classes in this program. Returns [-1] for none so the cache doesn't keep getting hit. """
+        cache_key = 'PROGRAM__CLASS_IDS_IMPLIED__%s' % self.id
+        retVal = cache.get(cache_key)
+        if retVal and use_cache:
+            return retVal
+        retVal = set([])
+        for c in self.classes():
+            for imp in c.classimplication_set.all():
+                retVal = retVal.union(imp.member_id_ints)
+        if len(retVal) < 1:
+            retVal = [-1]
+        retVal = list(retVal)
+        cache.set(cache_key, retVal, 9999)
+        return retVal
+    
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')
 

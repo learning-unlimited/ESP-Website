@@ -1,10 +1,10 @@
 {% load latex %}
 {% load smartypants %}
     <tr>
-      <th colspan="2" style="width: 70%;">
+      <th colspan="2" style="width: 70%;{{ colorstring }}">
 	{% if class.got_qsd %}<a href="Classes/{{ class.emailcode }}/index.html">{% endif %}{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}{% if class.got_qsd %}</a>{% endif %}
       </th>
-      <th style="width: 30%;">
+      <th style="width: 30%;{{ colorstring }}">
        <span class="teachers">
        {% for teacher in class.teachers %}
        <a href="/teach/teachers/{{ teacher.last_name|urlencode }}/{{ teacher.first_name|urlencode }}{{ teacher.getUserNum }}/bio.html" 

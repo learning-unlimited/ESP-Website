@@ -26,8 +26,27 @@ def current_cache_key_func(cls, user=None, prereg_url=None, filter=False, reques
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func)
 def render_class_core(cls):
+    # It's my personal opinion that this quantity of code and lookups for colors might be overkill. -ageng 2008-02-23
+    colorstring = None
+    
+    # Check to see if this is an implied class; if so, grab the parent program and use its colors instead
+    prog = cls.parent_program
+    if prog.getParentProgram() is not None:
+        if cls.id in prog.getParentProgram().class_ids_implied():
+            prog = prog.getParentProgram()
+    
+    # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
+    mod = prog.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
+    if mod.count() == 1:
+        modinfo = mod[0].classregmoduleinfo_set.all()
+        if modinfo.count() == 1:
+            colorstring = modinfo[0].color_code
+    if colorstring is not None:
+        colorstring = ' background-color:#' + colorstring + ';'
+    
     return {'class': cls,
-            'isfull': cls.num_students() >= cls.class_size_max}
+            'isfull': cls.num_students() >= cls.class_size_max,
+            'colorstring': colorstring }
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func)
 def render_class(cls, user=None, prereg_url=None, filter=False, request=None):
