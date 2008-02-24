@@ -74,13 +74,15 @@ class SchedulingModule(ProgramModuleObj):
         if request.method == 'POST':
             #   Build up expected post variables: starttime_[clsid], room_[clsid]
             new_dict = request.POST.copy()
-                    
+
+            class_ids_to_process = set([ x[:-6] for x in new_dict.keys() if x[-6:] == "-dirty" and new_dict[x] == "True" ])
+
             for key in new_dict:
                 #   Find the variables that differ from existing data (something_new vs. something_old).
                 commands = key.split('_')
                 needs_update = False
 
-                if len(commands) > 2 and commands[2] == 'new':
+                if len(commands) > 2 and commands[1] in class_ids_to_process and commands[2] == 'new':
                     compare_to_key = commands[0] + '_' + commands[1] + '_old'
                     if compare_to_key in new_dict:
                         if int(new_dict[key]) != int(new_dict[compare_to_key]):

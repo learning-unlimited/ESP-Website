@@ -1,4 +1,4 @@
-<tr>
+<tr id="{{ cls_id }}-tr">
         
         <td>
             <a class="tooltip">{{ cls_code }}
@@ -35,7 +35,7 @@
                 <input type="hidden" name="starttime_{{ cls_id }}_old" value="{{ cls_start_time.id }}" />
             {% endif %}
             {% if cls_viable_times %}
-            <select name="starttime_{{ cls_id }}_new">
+            <select name="starttime_{{ cls_id }}_new" onclick="javascript:flagDirty({{ cls_id }})">
             <option value="-1">[None]</option>
             {% for ft in cls_viable_times %}
                 <option value="{{ ft.id }}" {% if ft.selected %}selected="selected"{% endif %}>{{ ft.pretty_start_time }}</option>
@@ -58,7 +58,7 @@
                     {% if not cls_initial_rooms|length_is:0 %}
                         <input type="hidden" name="room_{{ cls_id }}_old" value="{{ cls_initial_rooms.0.id }}" />
                     {% endif %}
-                    <select name="room_{{ cls_id }}_new">
+                    <select name="room_{{ cls_id }}_new" onclick="javascript:flagDirty({{ cls_id }})">
                     <option value="-1">[None]</option>
                     {% if not cls_initial_rooms|length_is:0 %}
                         <option value="{{ cls_initial_rooms.0.id }}" selected="selected">{{ cls_initial_rooms.0.name }} ({{ cls_initial_rooms.0.num_students }})</option>
@@ -79,6 +79,7 @@
             {% endif %}
         </td>
         <td>
+            <input type="hidden" id="{{ cls_id }}-dirty" name="{{ cls_id }}-dirty" value="False" />
             <input class="fancybutton" type="submit" value="Alter" />
         </td>
         

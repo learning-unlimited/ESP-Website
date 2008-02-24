@@ -6,6 +6,15 @@
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/tooltips.css" />
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+
+<script language="JavaScript">
+
+function flagDirty(id) {
+	document.getElementById(id + "-dirty").value = "True"
+	document.getElementById(id + "-tr").style.backgroundColor = "#F6CECE"
+}
+
+</script>
 {% endblock %}
 
 {% block subsection_name %}Don't Panic!{% endblock %}
