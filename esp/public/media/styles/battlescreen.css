@@ -98,8 +98,8 @@ color: #006600;
    font-family:Arial,helvetica,sans-serif;
    font-size:12px;
    border-width: 1px;
-   border-color: 000000;
-   background-color: ffffff;
+   border-color: #000000;
+   background-color: #ffffff;
 }
 
 #archives table.innertable

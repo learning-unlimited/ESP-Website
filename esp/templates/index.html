@@ -12,6 +12,36 @@
 <style type="text/css">
 html, body { background-image: url("{{ backgrounds|random }}"); }
 </style>
+
+<script type="text/javascript">
+  <!-- This focuses the login field once the page loads.
+  // I have no clue if any of this works in non-Firefox browsers. -ageng 2008-02-25
+  
+  form_touched = false;
+  function touchForm() {
+    form_touched = true;
+  }
+  
+  function focusLogin() {
+    if ( form_touched )
+      return true;
+    if ( document.getElementById )
+      loginfield = document.getElementById("user");
+    else if ( window.user )
+      loginfield = window.user;
+    if ( loginfield ) {
+      loginfield.focus();
+    }
+  }
+  
+  if ( window.addEventListener ) { window.addEventListener('load', focusLogin, false); }
+  else {
+    window.onload = focusLogin;
+    if ( window.captureEvents ) { window.captureEvents(Event.LOAD); }
+  }
+  
+  //-->
+</script>
 {% endblock %}
 
 {% block body %}
@@ -136,8 +166,8 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
       <tr>
-						<td><div class="divformcol1"><label for="q">Search:</label></div></td>
-				<td><div class="divformcol2"><input type="text" name="q" id="q" size="8" value="" maxlength="255" class="inputbox" accesskey="s" /></div></td>
+						<td><div class="divformcol1"><label for="q"><span style="text-decoration:underline;">S</span>earch:</label></div></td>
+				<td><div class="divformcol2"><input type="text" name="q" id="q" size="8" value="" maxlength="255" class="inputbox" accesskey="s" onfocus="touchForm();" /></div></td>
 				<td><div class="divformcol3"><input type="image" name="gosearch" id="gosearch" src="/media/images/home/go.gif" class="gobutton" alt="Go" title="" /></div></td>
 		      </tr>
     </table>
@@ -155,7 +185,7 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
         <td><div class="divformcol2">
 
           <!-- select name="quicklinks" id="quicklinks" class="selectbox" onchange="MM_jumpMenu('parent',this,0)" -->
-          <select name="quicklinks" id="quicklinks" class="selectbox">
+          <select name="quicklinks" id="quicklinks" class="selectbox" onfocus="touchForm();">
             <option value="#">Quick Links</option>
             <option value="/learn/HSSP/index.html">HSSP</option>
             <option value="/learn/Splash/index.html">Splash</option>
@@ -166,7 +196,7 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
             <option value="/learn/SplashOnWheels/index.html">Splash On Wheels</option>
           </select>
         </div></td>
-        <td><div class="divformcol3"><input type="image" name="goquick" id="goquick" src="/media/images/home/go.gif" class="gobutton" alt="Go" onclick="MM_jumpMenuGo('quicklinks','parent',0)" /></div></td>
+        <td><div class="divformcol3"><input type="image" name="goquick" id="goquick" src="/media/images/home/go.gif" class="gobutton" alt="Go" onclick="MM_jumpMenuGo('quicklinks','parent',0)" accesskey="q" /></div></td>
       </tr>
     </table>
   </form>
@@ -181,14 +211,14 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
     <input type="hidden" name="next" value="/" />
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
       <tr>
-        <td><div class="divformcol1"><label for="user">Login:</label></div></td>
-        <td><div class="divformcol2"><input type="text" name="username" id="user" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+        <td><div class="divformcol1"><label for="user"><span style="text-decoration:underline;">L</span>ogin:</label></div></td>
+        <td><div class="divformcol2"><input type="text" name="username" id="user" size="8" value="" maxlength="255" class="inputbox" onfocus="touchForm();" accesskey="l" /></div></td>
 
         <td><div class="divformcol3">&nbsp;</div></td>
       </tr>
       <tr>
-        <td><div class="divformcol1"><label for="pass">Password:</label></div></td>
-        <td><div class="divformcol2"><input type="password" name="password" id="pass" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+        <td><div class="divformcol1"><label for="pass"><span style="text-decoration:underline;">P</span>assword:</label></div></td>
+        <td><div class="divformcol2"><input type="password" name="password" id="pass" size="8" value="" maxlength="255" class="inputbox" onfocus="touchForm();" accesskey="p" /></div></td>
         <td><div class="divformcol3"><input type="image" name="gologin" id="gologin" src="/media/images/home/go.gif" class="gobutton" alt="Go" title="" /></div></td>
       </tr>
       <tr>
