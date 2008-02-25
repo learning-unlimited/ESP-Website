@@ -30,7 +30,7 @@ aptitude update
 aptitude dist-upgrade -y
 
 # Install the basic packages that we need for a basic fcgi layer, that we can use
-aptitude install -y python-django python-imaging python-flup python-setuptools texlive imagemagick subversion exim4 libmemcache0
+aptitude install -y python-django python-imaging python-flup python-setuptools texlive imagemagick subversion exim4 libmemcache0 python-psycopg dvipng python-dns
 
 # Extra packages that we might need in some setups
 #aptitude install -y memcached postgresql-8.1 lighttpd
