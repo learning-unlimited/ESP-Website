@@ -185,7 +185,7 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
         <td><div class="divformcol2">
 
           <!-- select name="quicklinks" id="quicklinks" class="selectbox" onchange="MM_jumpMenu('parent',this,0)" -->
-          <select name="quicklinks" id="quicklinks" class="selectbox" onfocus="touchForm();">
+          <select name="quicklinks" id="quicklinks" class="selectbox" accesskey="q" onfocus="touchForm();">
             <option value="#">Quick Links</option>
             <option value="/learn/HSSP/index.html">HSSP</option>
             <option value="/learn/Splash/index.html">Splash</option>
@@ -196,7 +196,7 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
             <option value="/learn/SplashOnWheels/index.html">Splash On Wheels</option>
           </select>
         </div></td>
-        <td><div class="divformcol3"><input type="image" name="goquick" id="goquick" src="/media/images/home/go.gif" class="gobutton" alt="Go" onclick="MM_jumpMenuGo('quicklinks','parent',0)" accesskey="q" /></div></td>
+        <td><div class="divformcol3"><input type="image" name="goquick" id="goquick" src="/media/images/home/go.gif" class="gobutton" alt="Go" onclick="MM_jumpMenuGo('quicklinks','parent',0)" /></div></td>
       </tr>
     </table>
   </form>
