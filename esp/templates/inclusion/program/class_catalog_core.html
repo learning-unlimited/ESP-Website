@@ -37,8 +37,10 @@
       <td style="width: 50%;" colspan="2">
          <strong>Grades:</strong>
            {{ class.grade_min }}--{{ class.grade_max }} <br />
+         {% if show_enrollment %}
          <strong>Enrollment: {% if isfull %}<font color="#990000">Class is full!</font></strong>{% else %}</strong>{{ class.num_students }}{% endif %}
            (max {{ class.class_size_max }})
+         {% endif %}
       </td>
     </tr>
     {% if class.media_count %}

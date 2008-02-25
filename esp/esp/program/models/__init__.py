@@ -705,7 +705,24 @@ class Program(models.Model):
             for module in modules:
                 module.setUser(user)
         return modules
+    
+    def getColor(self):
+        cache_key = 'PROGRAM__COLOR_%s' % self.id
+        retVal = cache.get(cache_key)
         
+        if not retVal:
+            mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
+            if mod.count() == 1:
+                modinfo = mod[0].classregmoduleinfo_set.all()
+                if modinfo.count() == 1:
+                    retVal = modinfo[0].color_code
+                    if retVal == None:
+                        retVal = -1 # store None as -1 because we read None as the absence of a cached value
+                    cache.set(cache_key, retVal, 9999)
+        if retVal == -1:
+            return None
+        return retVal
+    
     class Admin:
         pass
     
