@@ -125,7 +125,7 @@ class Document(models.Model):
         if finaid is None:
             finaid = ESPUser(user).hasFinancialAid(anchor)
         
-        qs = Document.objects.filter(user=user, anchor=anchor, doctype=doctype, txn__complete=get_complete).distinct()
+        qs = Document.objects.filter(user=user, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, doctype=doctype, txn__complete=get_complete).distinct()
         
         if qs.count() > 1:
             raise MultipleDocumentError, 'Found multiple uncompleted transactions for this user and anchor.'
@@ -139,6 +139,8 @@ class Document(models.Model):
             for lit in li_types:
                 if not dont_duplicate or new_tx.lineitem_set.filter(li_type=lit).count() == 0:
                     new_tx.add_item(user, lit, finaid)
+                else:
+                    assert False, 'skipping li type: %s, on %s' % (lit, new_tx)
                 
             new_doc = Document()
             new_doc.txn = new_tx

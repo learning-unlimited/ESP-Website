@@ -55,12 +55,15 @@ class ProgramModuleObj(models.Model):
     seq      = models.IntegerField()
     required = models.BooleanField()
 
-    def program_anchor_cached(self):
+    def program_anchor_cached(self, parent=False):
         """ We reference "self.program.anchor" quite often.  Getting it requires two DB lookups.  So, cache it. """
-        CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__%d" % self.id
+        CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__%d,%d" % ((parent and 1 or 0), self.id)
         val = cache.get(CACHE_KEY)
         if val == None:
-            val = self.program.anchor
+            if parent and self.program.getParentProgram():
+                val = self.program.getParentProgram().anchor
+            else:
+                val = self.program.anchor
             cache.set(CACHE_KEY, val, 1)
 
         return val

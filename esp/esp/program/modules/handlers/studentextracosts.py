@@ -53,16 +53,16 @@ class MultiCostItem(forms.Form):
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
     def get_invoice(self):
-        return Document.get_invoice(self.user, self.program_anchor_cached(), LineItemType.objects.filter(anchor=GetNode(self.program_anchor_cached().get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
+        return Document.get_invoice(self.user, self.program_anchor_cached(parent=True), LineItemType.objects.filter(anchor=GetNode(self.program_anchor_cached(parent=True).get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
 
     def have_paid(self):
-        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 )
+        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 )
 
     def studentDesc(self):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
 
-        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached()):
+        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached(parent=True)):
             student_desc[i.text] = """Students who have opted for '%s'""" % i.text
 
         return student_desc
@@ -72,7 +72,7 @@ class StudentExtraCosts(ProgramModuleObj):
 
         student_lists = {}
         # Get all the line item types for this program.
-        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached()):
+        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached(parent=True)):
             if QObject:
                 student_lists[i.text] = self.getQForUser(Q(accounting_lineitem__li_type = i))
             else:
@@ -81,7 +81,7 @@ class StudentExtraCosts(ProgramModuleObj):
         return student_lists
 
     def isCompleted(self):
-        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 or self.get_invoice().txn.lineitem_set.all().count() > 0 )
+        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 or self.get_invoice().txn.lineitem_set.all().count() > 0 )
 
     @needs_student
     @meets_deadline('/ExtraCosts')

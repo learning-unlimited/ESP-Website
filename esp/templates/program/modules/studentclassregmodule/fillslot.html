@@ -85,12 +85,18 @@
 </table>
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentreg" %}
+{% render_inline_qsd program.anchor "learn:catalog" %}
 
 </div>
 {% load class_render %}
 
-{% if classes|length_is:0 %}Did you update your profile? Make sure you <a href="../profile">update your profile</a> before trying to sign up for classes.{% endif %}
+{% if classes|length_is:0 %}
+There are no available classes during this time block for students of your grade level!
+<ul>
+<li>Did you update your profile? Make sure you <a href="../profile">update your profile</a> before trying to sign up for classes.
+<li>It could be that all classes at this time have filled.
+</ul>
+{% endif %}
 
 {% for class in classes %}
 
