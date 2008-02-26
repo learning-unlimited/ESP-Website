@@ -79,8 +79,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def confirmreg(self, request, tl, one, two, module, extra, prog):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
-
-        invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
+        
+        try:
+            invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
+        except:
+            invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
 
         receipt = Document.get_receipt(request.user, prog.anchor, [], get_complete=True)
 
