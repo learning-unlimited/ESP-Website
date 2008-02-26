@@ -87,8 +87,11 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% if not categories|length|divisibleby:2 %}
 </tr>
 {% endif %}
-
 </table>
+
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentreg" %}
+
 </div>
 <div id="catalog">
 {% load class_render %}

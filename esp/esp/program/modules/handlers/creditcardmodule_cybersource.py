@@ -37,7 +37,7 @@ from datetime            import datetime
 from esp.db.models       import Q
 from esp.users.models    import User, ESPUser
 #from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
-from esp.accounting_core.models import LineItemType, EmptyTransactionException
+from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance
 from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
 
@@ -89,7 +89,22 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         
         # Force users to pay for non-optional stuffs
         user = ESPUser(request.user)
-        invoice = Document.get_invoice(user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
+        
+        #   Default line item types
+        li_types = list(LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')))
+        
+        #   Add in subprogram line items that have not been paid for, so that people can "kill two birds
+        #   with one stone."  However, this requires us to make subprogram payments part of the parent
+        #   program.  Call it temporary.   -Michael
+        subprogram_anchors = [sp.anchor for sp in prog.getSubprograms()]
+        subprogram_li_types = []
+        for sa in subprogram_anchors:
+            subprogram_li_types += list(LineItemType.objects.filter(anchor=GetNode(sa.get_uri()+'/LineItemTypes/Required')))
+        for li in subprogram_li_types:
+            if Balance.get_current_balance(user, li)[0] == 0:
+                li_types.append(li)
+        
+        invoice = Document.get_invoice(user, prog.anchor, li_types, dont_duplicate=True)
         context = {}
         context['module'] = self
         context['one'] = one

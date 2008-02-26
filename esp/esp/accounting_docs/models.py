@@ -108,9 +108,6 @@ class Document(models.Model):
     def __str__(self):
         return str(unicode(self))
     
-    #   This is new and untested code, fortunately we don't use it yet.
-    #   Michael P, 2/5/2008
-    
     def set_default_locator(self):
         self.locator = Document._checksum.calculate(str(self.id))
 

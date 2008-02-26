@@ -19,9 +19,6 @@
 <h1>Student registration for {{program.niceName}} </h1>
 
 {% if not request.user.onsite_local %}
-
-    {% load render_qsd %}
-    {% render_inline_qsd program.anchor "learn:studentreg" %}
     <div id="catalog">
     {% if program.isFull %}
     {% if not canRegToFullProgram %}
@@ -35,11 +32,7 @@
     be &#8220;checked off&#8221;. After finishing all the steps, click the &#8220;Confirm&#8221;
     button at the bottom of the page.
     </p>
-    <p>  <b>Please note</b>: Your classes are saved immediately
-    when you click the "Add this Class!" button.  You do not need to confirm or save your entire
-    registration to save your spot in classes. 
-    </p>
-    
+
     <center>
     {% if not completedAll %}
     <div class="errormsg">
@@ -93,10 +86,11 @@
     </td>
     </tr>   
     </table>
-    
-    <br />
 
 {% endif %}
+
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentreg" %}
 
 {% for module in modules %}
 {% if module.useTemplate %}

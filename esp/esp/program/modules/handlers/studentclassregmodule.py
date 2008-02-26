@@ -138,13 +138,16 @@ class StudentClassRegModule(ProgramModuleObj):
         # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
         auto_classes = []
         blocked_class = None
+        cannotadd_error = ''
         for implication in ClassImplication.objects.filter(cls=cobj, parent__isnull=True):
             if implication.fails_implication(self.user):
                 for cls in Class.objects.filter(id__in=implication.member_id_ints):
-                    if cls.cannotAdd(self.user, checkFull=True, use_cache=False):
+                    #   Override size limits on subprogram classes (checkFull=False). -Michael P
+                    if cls.cannotAdd(self.user, checkFull=False, use_cache=False):
                         blocked_class = cls
+                        cannotadd_error = cls.cannotAdd(self.user, checkFull=False, use_cache=False)
                     else:
-                        if cls.preregister_student(self.user, self.user.onsite_local, automatic=True):
+                        if cls.preregister_student(self.user, overridefull=True, automatic=True):
                             cls.update_cache_students()
                             auto_classes.append(cls)
                             if implication.operation != 'AND':
@@ -156,8 +159,11 @@ class StudentClassRegModule(ProgramModuleObj):
                 if implication.fails_implication(self.user):
                     for cls in auto_classes:
                         cls.unpreregister_student(self.user)
-                    raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s".' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url, blocked_class.parent_program.niceName(), blocked_class.title())
-
+                    if blocked_class is not None:
+                        raise ESPError(True), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url, blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
+                    else:
+                        raise ESPError(True), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url, prog.niceName(), cannotadd_error)
+                    
         if error and not self.user.onsite_local:
             raise ESPError(False), error
         if cobj.preregister_student(self.user, self.user.onsite_local):
