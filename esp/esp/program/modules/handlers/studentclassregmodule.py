@@ -117,7 +117,9 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_deadline('/Classes/OneClass')
     def addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
-
+        
+        reg_verb = GetNode('V/Deadline/Registration/Student/Classes')
+        
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(self.user, "onsite_local"):
             self.user.onsite_local = False
@@ -129,14 +131,22 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
 
         # Can we register for more than one class yet?
-        if (not self.user.onsite_local) and (not UserBit.objects.UserHasPerms(request.user, prog.anchor, GetNode("V/Deadline/Registration/Student/Classes") ) ):
+        if (not self.user.onsite_local) and (not UserBit.objects.UserHasPerms(request.user, prog.anchor, reg_verb ) ):
             # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
             classes_registered = 0
             for cls in ESPUser(request.user).getEnrolledClasses(prog, request):
                 if not UserBit.objects.UserHasPerms(request.user, cls.anchor, GetNode('V/Flags/Registration/Preliminary/Automatic' )):
                     classes_registered += 1
             if classes_registered >= 1:
-                raise ESPError(False), "You are only allowed to register for one class at this time.  Please come back later!"
+                datestring = ''
+                bitlist = UserBit.objects.filter(user__isnull=True, qsc=prog.anchor, verb=reg_verb)
+                if len(bitlist) > 0:
+                    d = bitlist[0].startdate
+                    if d.date() == d.today().date():
+                        datestring = ' later today'
+                    else:
+                        datestring = bitlist[0].startdate.strftime(' on %B %d')
+                raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
 
         cobj = Class.objects.filter(id=classid)[0]
         error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
