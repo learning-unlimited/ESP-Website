@@ -127,9 +127,10 @@ class Document(models.Model):
         
         qs = Document.objects.filter(user=user, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, doctype=doctype, txn__complete=get_complete).distinct()
         
-        if qs.count() > 1:
+        """ if qs.count() > 1:
             raise MultipleDocumentError, 'Found multiple uncompleted transactions for this user and anchor.'
-        elif qs.count() == 1:
+        elif qs.count() == 1: """
+        if qs.count() >= 1:
             #   Retrieve the document, add on any line items that we received if necessary, and return.
             doc = qs[0]
             for lit in li_types:
