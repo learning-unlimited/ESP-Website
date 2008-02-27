@@ -858,12 +858,15 @@ class RegistrationProfile(models.Model):
         
     @staticmethod
     def getLastForProgram(user, program):
+        """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
         regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')
         if len(regProfList) < 1:
+            # Has this user already filled out a profile for the parent program?
             parent_program = program.getParentProgram()
             if parent_program is not None:
                 regProf = RegistrationProfile.getLastForProgram(user, parent_program)
                 regProf.program = program
+                # If they've filled out a profile for the parent program, use a copy of that.
                 if regProf.id is not None:
                     regProf.id = None
                     regProf.save()

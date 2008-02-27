@@ -111,12 +111,15 @@ class StudentInfoManipulator(forms.Manipulator):
         from esp.users.models import shirt_sizes, shirt_types
         cur_year = datetime.date.today().year
         
+        studentrep_explained = NonEmptyIfOtherChecked('studentrep', 'Please enter an explanation above.')
+        studentrep_explained.always_test = True # because validators normally aren't run if a field is blank
+        
         self.fields = (
             GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)]),
             forms.TextField(field_name="school", length=24, maxlength=128),
             HTMLDateField(field_name="dob", is_required=makeRequired),
             forms.CheckboxField(field_name="studentrep", is_required=False),
-            forms.LargeTextField(field_name="studentrep_expl", is_required=False, rows=8, cols=45),
+            forms.LargeTextField(field_name="studentrep_expl", is_required=False, rows=8, cols=45, validator_list=[studentrep_explained]),
             forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes),
             forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types),
             )
@@ -200,6 +203,16 @@ class OneOfSetAreFilled(object):
                 
         if not atleastOne:
             raise validators.ValidationError, 'At least one of the these fields must be filled in.'
+
+class NonEmptyIfOtherChecked(object):
+    """ Requires field to be nonempty if another is checked. """
+    def __init__(self, other_field_name, error_message):
+        self.other, self.error_message = other_field_name, error_message
+
+    def __call__(self, field_data, all_data):
+        if all_data[self.other] == 'on':
+            if field_data.strip() == '':
+                raise validators.ValidationError, self.error_message
 
 class GraduationYearField(forms.SelectField):
     #    def __init__(self, *args, **kwargs):

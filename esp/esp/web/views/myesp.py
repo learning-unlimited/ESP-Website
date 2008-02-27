@@ -359,6 +359,12 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		new_data = request.POST.copy()
 		manipulator.prepare(new_data)
 		errors = manipulator.get_validation_errors(new_data)
+		
+		# Don't suddenly demand an explanation from people who are already student reps
+		if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
+			if errors.has_key('studentrep_expl'):
+				del errors['studentrep_expl']
+		
 		if not errors:
 			manipulator.do_html2python(new_data)
 

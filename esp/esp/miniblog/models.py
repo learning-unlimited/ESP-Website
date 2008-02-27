@@ -156,8 +156,8 @@ class Comment(models.Model):
     content = models.TextField(help_text="HTML not allowed.")
 
     def __str__(self):
-        return 'Comment for %s by %s at %s' % (self.entry, self.author,
-                                               self.get_absolute_url())
+        return 'Comment for %s by %s on %s' % (self.entry, self.author,
+                                               self.post_ts.date())
     
     class Admin:
         search_fields = ['author__first_name','author__last_name',
