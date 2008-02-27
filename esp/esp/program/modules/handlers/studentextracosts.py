@@ -53,7 +53,7 @@ class MultiCostItem(forms.Form):
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
     def get_invoice(self):
-        return Document.get_invoice(self.user, self.program_anchor_cached(parent=True), LineItemType.objects.filter(anchor=GetNode(self.program_anchor_cached(parent=True).get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
+        return Document.get_invoice(self.user, self.program_anchor_cached(parent=True), [], dont_duplicate=True)
 
     def have_paid(self):
         return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 )

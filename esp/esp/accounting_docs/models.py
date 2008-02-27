@@ -130,18 +130,23 @@ class Document(models.Model):
         if qs.count() > 1:
             raise MultipleDocumentError, 'Found multiple uncompleted transactions for this user and anchor.'
         elif qs.count() == 1:
-            return qs[0]
+            #   Retrieve the document, add on any line items that we received if necessary, and return.
+            doc = qs[0]
+            for lit in li_types:
+                if not dont_duplicate or doc.txn.lineitem_set.filter(li_type=lit).count() == 0:
+                    new_tx.add_item(user, lit, finaid)
+                    lits.append(lit)
+            return doc
         elif qs.count() < 1 and get_complete:
             raise MultipleDocumentError, 'Found no complete documents with the requested properties'
         else:
+            #   Set up a new transaction and document with all of the requested line items.
             new_tx = Transaction.begin(anchor, 'User payments for %s: %s' % (anchor.parent.friendly_name, anchor.friendly_name))
             new_tx.save()
             for lit in li_types:
                 if not dont_duplicate or new_tx.lineitem_set.filter(li_type=lit).count() == 0:
                     new_tx.add_item(user, lit, finaid)
-                else:
-                    assert False, 'skipping li type: %s, on %s' % (lit, new_tx)
-                
+
             new_doc = Document()
             new_doc.txn = new_tx
             new_doc.anchor = anchor

@@ -671,6 +671,26 @@ class Program(models.Model):
             return pl[0]
         else:
             return None
+        
+    def getLineItemTypes(self, user=None):
+        from esp.accounting_core.models import LineItemType, Balance
+        
+        li_types = list(LineItemType.objects.filter(anchor=GetNode(self.anchor.get_uri()+'/LineItemTypes/Required')))
+        
+        #   OK, nevermind... Add in *parent program* line items that have not been paid for.
+        parent_li_types = []
+        cur_anchor = self.anchor
+        parent_prog = self.getParentProgram()
+        #   Check if there's a parent program and the student is registered for it.
+        if (parent_prog is not None) and (user is not None) and (User.objects.filter(parent_prog.students(QObjects=True)['classreg']).filter(id=user.id).count() != 0):
+            cur_anchor = parent_prog.anchor
+            parent_li_types += list(LineItemType.objects.filter(anchor=GetNode(parent_prog.anchor.get_uri()+'/LineItemTypes/Required')))
+        for li in parent_li_types:
+            li.bal = Balance.get_current_balance(user, li)
+            if Balance.get_current_balance(user, li)[0] == 0:
+                li_types.append(li)
+                
+        return li_types
     
     def getModules(self, user = None, tl = None):
         """ Gets a list of modules for this program. """

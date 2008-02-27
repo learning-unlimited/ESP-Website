@@ -91,37 +91,9 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         user = ESPUser(request.user)
         
         #   Default line item types
-        li_types = list(LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')))
-        
-        """
-        #   Add in subprogram line items that have not been paid for, so that people can "kill two birds
-        #   with one stone."  However, this requires us to make subprogram payments part of the parent
-        #   program.  Call it temporary.   -Michael
-        subprogram_anchors = [sp.anchor for sp in prog.getSubprograms()]
-        subprogram_li_types = []
-        for sa in subprogram_anchors:
-            subprogram_li_types += list(LineItemType.objects.filter(anchor=GetNode(sa.get_uri()+'/LineItemTypes/Required')))
-        for li in subprogram_li_types:
-            li.bal = Balance.get_current_balance(user, li)
-            if Balance.get_current_balance(user, li)[0] == 0:
-                li_types.append(li)
-        """
-        
-        #   OK, nevermind... Add in *parent program* line items that have not been paid for.
-        parent_li_types = []
-        cur_anchor = prog.anchor
-        parent_prog = prog.getParentProgram()
-        #   Check if there's a parent program and the student is registered for it.
-        if (parent_prog is not None) and (User.objects.filter(parent_prog.students(QObjects=True)['classreg']).filter(id=user.id).count() != 0):
-            cur_anchor = parent_prog.anchor
-            parent_li_types += list(LineItemType.objects.filter(anchor=GetNode(parent_prog.anchor.get_uri()+'/LineItemTypes/Required')))
-        for li in parent_li_types:
-            li.bal = Balance.get_current_balance(user, li)
-            if Balance.get_current_balance(user, li)[0] == 0:
-                li_types.append(li)
-        #   assert False, [li.__dict__ for li in li_types]
-                        
-        invoice = Document.get_invoice(user, cur_anchor, li_types, dont_duplicate=True)
+        li_types = self.program.getLineItemTypes(user)
+
+        invoice = Document.get_invoice(user, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
         context = {}
         context['module'] = self
         context['one'] = one

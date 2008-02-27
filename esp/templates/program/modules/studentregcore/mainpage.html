@@ -145,4 +145,8 @@ Please click <em>Confirm</em> below to confirm your registration into {{program.
     </p>
 {% endif %}
 
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentregfooter" %}
+
 {% endblock %}
+
