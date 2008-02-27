@@ -863,9 +863,10 @@ class RegistrationProfile(models.Model):
             parent_program = program.getParentProgram()
             if parent_program is not None:
                 regProf = RegistrationProfile.getLastForProgram(user, parent_program)
-                regProf.id = None
                 regProf.program = program
-                regProf.save()
+                if regProf.id is not None:
+                    regProf.id = None
+                    regProf.save()
             else:
                 regProf = RegistrationProfile()
                 regProf.user = user
