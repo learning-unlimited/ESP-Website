@@ -135,8 +135,7 @@ class Document(models.Model):
             doc = qs[0]
             for lit in li_types:
                 if not dont_duplicate or doc.txn.lineitem_set.filter(li_type=lit).count() == 0:
-                    new_tx.add_item(user, lit, finaid)
-                    lits.append(lit)
+                    doc.txn.add_item(user, lit, finaid)
             return doc
         elif qs.count() < 1 and get_complete:
             raise MultipleDocumentError, 'Found no complete documents with the requested properties'
@@ -197,7 +196,7 @@ class Document(models.Model):
         
         new_tx.post_balance(user, "Credit Card payment received", GetNode("Q/Accounts/Realized"))
 
-        old_doc.txn.post_balance(user, "Credit Card payment received", old_doc.anchor)
+        old_doc.txn.post_balance(user, "Credit Card payment received", GetNode("Q/Accounts/Receivable/OnSite"))
         old_doc.txn.save()
 
         return new_doc

@@ -174,20 +174,18 @@ class Transaction(models.Model):
         li.anchor = anchor
 
         if amount is None:
-            if not finaid: amount = li_type.amount
-            elif li_type.finaid_amount != li_type.amount:
-                amount = li_type.finaid_amount
-                finaid_amount = li_type.amount - amount
+            amount = li_type.amount
+            if finaid and (li_type.finaid_amount != amount):
+                finaid_amount = li_type.finaid_amount - amount
 
                 fa_li = LineItem()
                 fa_li.transaction = self
                 fa_li.anchor = li_type.finaid_anchor
-                fa_li.amount = -finaid_amount
+                fa_li.amount = finaid_amount
                 fa_li.user = user
                 fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', defaults={'amount': 0.0, 'anchor': GetNode("Q"), 'finaid_amount': 0.0, 'finaid_anchor': GetNode("Q") })
                 fa_li.text = fa_li.li_type.text
                 fa_li.save()
-            else: amount = li_type.amount
 
         li.amount = amount
         li.user = user
