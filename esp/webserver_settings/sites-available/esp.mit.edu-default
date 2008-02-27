@@ -13,25 +13,25 @@ PythonTranshandler filehandler
 	ServerAdmin esp@mit.edu
 	DocumentRoot /esp
 
-	Redirect "/teach/ SplashOnWheels/2008_Winter/teacherreg/" http://esp.mit.edu/teach/SplashOnWheels/2008_Winter/teacherreg/
-	<Location "/">
-
-	    SetHandler python-program
-	    PythonPath "['/esp/esp/'] + sys.path"
-	    PythonHandler modpython
-	    #PythonHandler django.core.handlers.modpython
-	    #PythonHandler django.core.handlers.profiler-hotshot
-	    SetEnv DJANGO_SETTINGS_MODULE esp.settings
-	    #PythonDebug On
-	</Location>
-
-	Alias /wiki /esp/wiki
-	<Location "/wiki">
-            SetHandler none
-	    DirectoryIndex index.php
-            RewriteRule ^(/wiki/index.php.*)$ $1 [L]
-            RewriteRule ^/wiki/(.*?)$ /wiki/index.php/$1 [QSA]
-        </Location>
+#	Redirect "/teach/ SplashOnWheels/2008_Winter/teacherreg/" http://esp.mit.edu/teach/SplashOnWheels/2008_Winter/teacherreg/
+#	<Location "/">
+#
+#	    SetHandler python-program
+#	    PythonPath "['/esp/esp/'] + sys.path"
+#	    PythonHandler modpython
+#	    #PythonHandler django.core.handlers.modpython
+#	    #PythonHandler django.core.handlers.profiler-hotshot
+#	    SetEnv DJANGO_SETTINGS_MODULE esp.settings
+#	    #PythonDebug On
+#	</Location>
+#
+#	Alias /wiki /esp/wiki/wiki
+#	<Location "/wiki">
+#            SetHandler none
+#	    DirectoryIndex index.php
+#            RewriteRule ^(/wiki/index.php.*)$ $1 [L]
+#            RewriteRule ^/wiki/(.*?)$ /wiki/index.php/$1 [QSA]
+#        </Location>
 
 #        Include /etc/request-tracker3.6/apache2-esp.conf
         Include /esp/esp/webserver_settings/trac-apache.conf
