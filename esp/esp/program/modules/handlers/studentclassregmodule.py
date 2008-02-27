@@ -83,12 +83,18 @@ class StudentClassRegModule(ProgramModuleObj):
 
         prevTimeSlot = None
         blockCount = 0
-
+        
+        user = ESPUser(self.user)
+        user_grade = user.getGrade()
+        is_onsite = user.isOnsite(self.program)
+        
         schedule = []
         timeslot_dict = {}
         for cls in classList:
+            class_qset = Class.objects.catalog(self.program).filter( anchor__friendly_name = cls.title(), grade_min__lte=user_grade, grade_max__gte=user_grade)
+            show_changeslot = ( len([0 for c in class_qset if (not c.isFull()) or is_onsite]) > 1 ) # Does the class have enough siblings to warrant a "change section" link?
             for mt in cls.meeting_times.all().values('id'):
-                timeslot_dict.update({mt['id']: cls})
+                timeslot_dict.update({mt['id']: (cls, show_changeslot)})
             
         for timeslot in timeslots:
             if prevTimeSlot != None:
@@ -96,9 +102,9 @@ class StudentClassRegModule(ProgramModuleObj):
                     blockCount += 1
 
             if timeslot.id in timeslot_dict:
-                schedule.append((timeslot, timeslot_dict[timeslot.id], blockCount + 1))
+                schedule.append((timeslot, timeslot_dict[timeslot.id][0], blockCount + 1, timeslot_dict[timeslot.id][1]))
             else:
-                schedule.append((timeslot, None, blockCount + 1))
+                schedule.append((timeslot, None, blockCount + 1, False))
 
             prevTimeSlot = timeslot
                 

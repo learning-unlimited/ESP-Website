@@ -36,9 +36,9 @@ Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{reque
         ({{timeslot.1.prettyrooms|join:", " }})
         {% endif %}</td>
 {% if module.deadline_met %}
-        <td width='20%' align='center'>
+        <td width='25%' align='center'>
 	<a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[remove]</a>
-	<a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change]</a>
+	{% if timeslot.3 %}<a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change section]</a>{% endif %}
 	</td>
 {% endif %}
 	{% else %}
