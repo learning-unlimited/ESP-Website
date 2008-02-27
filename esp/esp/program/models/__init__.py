@@ -860,9 +860,13 @@ class RegistrationProfile(models.Model):
     def getLastForProgram(user, program):
         regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')
         if len(regProfList) < 1:
-            regProf = RegistrationProfile()
-            regProf.user = user
-            regProf.program = program
+            parent_program = program.getParentProgram()
+            if parent_program is not None:
+                regProf = RegistrationProfile.getLastForProgram(user, parent_program)
+            else:
+                regProf = RegistrationProfile()
+                regProf.user = user
+                regProf.program = program
         else:
             regProf = regProfList[0]
         return regProf
