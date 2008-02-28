@@ -49,7 +49,15 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         return '%s.00' % str(self.creditCardInfo.base_cost)
 
     def isCompleted(self):
-        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 )
+        """ Whether the user has paid for this program or its parent program. """
+        if ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 ):
+            return True
+        else:
+            parent_program = self.program.getParentProgram()
+            if parent_program is not None:
+                return ( Document.objects.filter(user=self.user, anchor=parent_program.anchor, txn__complete=True).count() > 0 )
+    
+    have_paid = isCompleted
 
     def students(self, QObject = False):
         # this should be fixed...this is the best I can do for now - Axiak
@@ -70,9 +78,6 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     def studentDesc(self):
         return {'creditcard': """Students who have filled out the credit card form."""}
      
-    def have_paid(self):
-        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 )
-            
     @meets_deadline('/Payment')
     @usercheck_usetl
     def startpay_cybersource(self, request, tl, one, two, module, extra, prog):
