@@ -35,7 +35,7 @@
                 <input type="hidden" name="starttime_{{ cls_id }}_old" value="{{ cls_start_time.id }}" />
             {% endif %}
             {% if cls_viable_times %}
-            <select name="starttime_{{ cls_id }}_new" onclick="javascript:flagDirty({{ cls_id }})">
+            <select name="starttime_{{ cls_id }}_new" onchange="javascript:flagDirty({{ cls_id }})">
             <option value="-1">[None]</option>
             {% for ft in cls_viable_times %}
                 <option value="{{ ft.id }}" {% if ft.selected %}selected="selected"{% endif %}>{{ ft.pretty_start_time }}</option>
@@ -58,7 +58,7 @@
                     {% if not cls_initial_rooms|length_is:0 %}
                         <input type="hidden" name="room_{{ cls_id }}_old" value="{{ cls_initial_rooms.0.id }}" />
                     {% endif %}
-                    <select name="room_{{ cls_id }}_new" onclick="javascript:flagDirty({{ cls_id }})">
+                    <select name="room_{{ cls_id }}_new" onchange="javascript:flagDirty({{ cls_id }})">
                     <option value="-1">[None]</option>
                     {% if not cls_initial_rooms|length_is:0 %}
                         <option value="{{ cls_initial_rooms.0.id }}" selected="selected">{{ cls_initial_rooms.0.name }} ({{ cls_initial_rooms.0.num_students }})</option>
