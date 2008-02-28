@@ -128,6 +128,9 @@ Please click <em>Confirm</em> below to confirm your registration into {{program.
 </center>
 {% endif %}
 
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentregfooter" %}
+
 {% if not request.user.onsite_local %}
     <center>
     <a name="confirmreg"></a>
@@ -141,15 +144,7 @@ Please click <em>Confirm</em> below to confirm your registration into {{program.
     {% endif %}{% endif %}
     
     </center>
-    
-    <br />
-    <p>
-    Thanks for registering!  You can come back and change any of the above information until the Tuesday before {{ program.niceName }} begins.  If you have any questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
-    </p>
 {% endif %}
-
-{% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentregfooter" %}
 
 {% endblock %}
 
