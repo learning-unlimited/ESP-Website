@@ -29,19 +29,20 @@
     <p>
     Please complete the following steps to register for {{ program.niceName }}.
     When each step is completed, the corresponding box in the right-hand column will
-    be &#8220;checked off&#8221;. After finishing all the steps, click the &#8220;Confirm&#8221;
-    button at the bottom of the page.
+    be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
+    button at the bottom of the page. -->
     </p>
 
     <center>
+    <!--
     {% if not completedAll %}
     <div class="errormsg">
     Please finish the required steps listed below (they will be checked off when they are completed). Then, click on the <em>Confirm</em> button at the bottom of this page.
     {% else %}
     <div class="info">
-    Please finalize your registration, then <b>click <em>Confirm</em></b> below to indicate that you've finished filling out this form.  Upon clicking this you will be given a receipt with further instructions!  Note that paying with a credit card <b>does not completely confirm</b> your registration, because you can still adjust your schedule after paying.
-    {% endif %}
-    </div>
+    Please finalize your registration, then <b>click <em>Confirm</em></b> below to indicate that you've finished filling out this form.  Upon clicking this you will be given a receipt with further instructions!  Note that paying with a credit card <b>does not completely confirm</b> your registration, because you can still adjust your schedule after paying. 
+    {% endif %} 
+    </div> -->
     </center>
     
     <center><div class="note">
@@ -75,7 +76,7 @@
     </tr>
     {% endif %}
     {% endfor %}
-    <tr>
+    <!-- <tr>
     <td><a href="#confirmreg" title="Confirm Registration">
             Confirm Registration</a> <em>(below)</em>
     </td>
@@ -84,7 +85,7 @@
         <img src="/media/images/{% if not isConfirmed %}no{% endif %}checkmark.gif" class="nocheckmark" />
     </a>
     </td>
-    </tr>   
+    </tr> -->   
     </table>
 
 {% endif %}
@@ -112,6 +113,7 @@
 {% if program.isFull %}{% if not canRegToFullProgram %}
 <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
 {% endif %}{% else %}
+<!--
 {% if not completedAll %}
 <div class="errormsg">
 Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Confirm</em> button below (it will be active at this point).
@@ -120,6 +122,7 @@ Please finish the required steps listed above (they will be checked off when the
 Please click <em>Confirm</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
 {% endif %}
 </div>
+-->
 {% endif %}
 
 </center>
@@ -129,8 +132,8 @@ Please click <em>Confirm</em> below to confirm your registration into {{program.
     <center>
     <a name="confirmreg"></a>
     
-    <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-    <input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Confirm{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
+    <!-- <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
+    <input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Confirm{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form> -->
     {% if isConfirmed %}{% if not have_paid %}
     | 
     <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
