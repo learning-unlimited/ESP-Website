@@ -134,12 +134,14 @@ class TeacherInfoManipulator(forms.Manipulator):
         import datetime
         from esp.users.models import shirt_sizes, shirt_types
         cur_year = datetime.date.today().year
+        shirt_sizes = [('', '')] + list(shirt_sizes)
+        shirt_types = [('', '')] + list(shirt_types)
         self.fields = (
             forms.PositiveIntegerField(field_name="graduation_year", length=4, maxlength=4),
             forms.TextField(field_name="school", length=48, maxlength=128),
             forms.TextField(field_name="major", length=30, maxlength=32),
-            forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes),
-            forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types),
+            forms.SelectField(field_name="shirt_size", is_required=True, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
+            forms.SelectField(field_name="shirt_type", is_required=True, choices=shirt_types, validator_list=[validators.isNotEmpty]),
             )
 
 class EducatorInfoManipulator(forms.Manipulator):

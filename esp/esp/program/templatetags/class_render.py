@@ -32,7 +32,7 @@ def render_class_core(cls):
     
     # Show enrollment?
     prog = cls.parent_program
-    reg_verb = GetNode('V/Deadline/Registration/Student/Classes')
+    reg_verb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
     show_enrollment = UserBit.objects.UserHasPerms(None, prog.anchor, reg_verb)
     
     # Check to see if this is an implied class; if so, grab the parent program and use its colors instead
