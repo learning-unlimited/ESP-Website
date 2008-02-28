@@ -105,7 +105,7 @@ class AdminVitals(ProgramModuleObj):
             for student in student_dict['classreg']:
                 profile = ESPUser(student).getLastProfile().student_info
                 if profile is not None:
-                    if profile.shirt_type is not None and profile.shirt_size is not None:
+                    if profile.shirt_type in shirt_types and profile.shirt_size in shirt_sizes:
                         shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
             shirts['students'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
         
@@ -115,7 +115,7 @@ class AdminVitals(ProgramModuleObj):
         for teacher in self.program.teachers()['class_approved']:
             profile = ESPUser(teacher).getLastProfile().teacher_info
             if profile is not None:
-                if profile.shirt_type is not None and profile.shirt_size is not None:
+                if profile.shirt_type in shirt_types and profile.shirt_size in shirt_sizes:
                     shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
         shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
         context['shirt_sizes'] = shirt_sizes
