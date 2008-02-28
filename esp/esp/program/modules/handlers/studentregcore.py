@@ -44,7 +44,13 @@ import operator
 class StudentRegCore(ProgramModuleObj, CoreModule):
 
     def have_paid(self):
-        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 )
+        """ Whether the user has paid for this program or its parent program. Duplicated from creditcardmodule_cybersource. """
+        if ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 ):
+            return True
+        else:
+            parent_program = self.program.getParentProgram()
+            if parent_program is not None:
+                return ( Document.objects.filter(user=self.user, anchor=parent_program.anchor, txn__complete=True).count() > 0 )
 
     def students(self, QObject = False):
         verb = GetNode('V/Flags/Public')

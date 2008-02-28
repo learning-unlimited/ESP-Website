@@ -111,6 +111,9 @@ class StudentInfoManipulator(forms.Manipulator):
         from esp.users.models import shirt_sizes, shirt_types
         cur_year = datetime.date.today().year
         
+        shirt_sizes = [('', '')] + list(shirt_sizes)
+        shirt_types = [('', '')] + list(shirt_types)
+        
         studentrep_explained = NonEmptyIfOtherChecked('studentrep', 'Please enter an explanation above.')
         studentrep_explained.always_test = True # because validators normally aren't run if a field is blank
         
@@ -120,8 +123,8 @@ class StudentInfoManipulator(forms.Manipulator):
             HTMLDateField(field_name="dob", is_required=makeRequired),
             forms.CheckboxField(field_name="studentrep", is_required=False),
             forms.LargeTextField(field_name="studentrep_expl", is_required=False, rows=8, cols=45, validator_list=[studentrep_explained]),
-            forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes),
-            forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types),
+            forms.SelectField(field_name="shirt_size", is_required=True, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
+            forms.SelectField(field_name="shirt_type", is_required=True, choices=shirt_types, validator_list=[validators.isNotEmpty]),
             )
 
 
@@ -210,9 +213,10 @@ class NonEmptyIfOtherChecked(object):
         self.other, self.error_message = other_field_name, error_message
 
     def __call__(self, field_data, all_data):
-        if all_data[self.other] == 'on':
-            if field_data.strip() == '':
-                raise validators.ValidationError, self.error_message
+        if all_data.has_key(self.other):
+            if all_data[self.other] == 'on':
+                if field_data.strip() == '':
+                    raise validators.ValidationError, self.error_message
 
 class GraduationYearField(forms.SelectField):
     #    def __init__(self, *args, **kwargs):
