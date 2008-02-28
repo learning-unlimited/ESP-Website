@@ -145,7 +145,7 @@ class StudentClassRegModule(ProgramModuleObj):
                     if d.date() == d.today().date():
                         datestring = ' later today'
                     else:
-                        datestring = bitlist[0].startdate.strftime(' on %B %d')
+                        datestring = d.strftime(' on %B %d')
                 raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
 
         cobj = Class.objects.filter(id=classid)[0]
@@ -176,9 +176,9 @@ class StudentClassRegModule(ProgramModuleObj):
                     for cls in auto_classes:
                         cls.unpreregister_student(self.user)
                     if blocked_class is not None:
-                        raise ESPError(True), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url, blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
+                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url, blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
                     else:
-                        raise ESPError(True), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url, prog.niceName(), cannotadd_error)
+                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url, prog.niceName(), cannotadd_error)
                     
         if error and not self.user.onsite_local:
             raise ESPError(False), error
