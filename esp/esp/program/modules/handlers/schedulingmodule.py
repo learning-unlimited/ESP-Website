@@ -126,13 +126,16 @@ class SchedulingModule(ProgramModuleObj):
                     if (cls.initial_rooms().count() > 0):
                         for room in cls.initial_rooms(): room.clear_schedule_cache(self.program)
 
+        def count(fn, lst):
+            return reduce(lambda count, item: fn(item) and count + 1 or count, lst, 0)
+
         #   Provide some helpful statistics.  This should be totally reliant on cache.
         cls_list = list(self.program.classes())
         for c in cls_list: c.temp_status = c.scheduling_status()
         context['num_total_classes'] = len(cls_list)
-        context['num_assigned_classes'] = len(filter(lambda x: x.temp_status == 'Needs resources', cls_list))
-        context['num_scheduled_classes'] = len(filter(lambda x: x.temp_status == 'Needs room', cls_list))
-        context['num_finished_classes'] = len(filter(lambda x: x.temp_status == 'Happy', cls_list))
+        context['num_assigned_classes'] = count(lambda x: x.temp_status == 'Needs resources', cls_list)
+        context['num_scheduled_classes'] = count(lambda x: x.temp_status == 'Needs room', cls_list)
+        context['num_finished_classes'] = count(lambda x: x.temp_status == 'Happy', cls_list)
 
         #   So far, this page shows you the same stuff no matter what you do.
         return render_to_response(self.baseDir()+'main.html', request, (prog, tl), context)
