@@ -190,7 +190,7 @@ def managepage(request, page):
                 
             except:
                 from esp.middleware import ESPError
-                raise ESPError(), "A server error occurred while logging your credit card transaction.  The transaction has not been lost; this just means that the green Credit Card checkbox may not be properly checked off, allowing you to finish registering for this program.  Please <a href=\"mailto:esp-webmasters@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
+                raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:esp-webmasters@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
 
             one = document.anchor.parent.name
             two = document.anchor.name
