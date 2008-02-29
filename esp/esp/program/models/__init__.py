@@ -40,7 +40,7 @@ from esp.miniblog.models import Entry
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
-    
+
 # Create your models here.
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
@@ -943,9 +943,9 @@ class TeacherBio(models.Model):
         self.last_ts = datetime.now()
         if self.program_id is None:
             try:
-                self.program = Program.objects.get(id = 4)
+                self.program = Program.objects.get(anchor = GetNode("Q/Programs/Dummy_Programs/Profile_Storage"))
             except:
-                raise ESPError(), 'Error: There needs to exist an administrive program with id of 4.'
+                raise ESPError(), 'Error: There needs to exist an administrive program anchored at Q/Programs/Dummy_Programs/Profile_Storage.'
 
         super(TeacherBio, self).save()
 
