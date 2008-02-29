@@ -1,0 +1,51 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+
+<style>
+
+#biglink {
+	font-size: x-large;
+}
+
+</style>
+{% endblock %}
+
+{% block xtrajs %}
+{% endblock %}
+
+{% block content %}
+<h1>Credit Card Payments</h1>
+
+<table>
+
+<tr>
+<th>
+User:
+</th>
+<th>
+Payments:
+</th>
+</tr>
+{% for payment in payment_table %}
+<tr>
+<td>
+{{ payment.0.first_name }} {{ payment.0.last_name }}
+</td>
+<td>
+{% for doc in payment.1 %}
+{{ doc }}
+{% endfor %}
+</td>
+</tr>
+{% endfor %}
+</table>
+
+{% endblock %}
+
