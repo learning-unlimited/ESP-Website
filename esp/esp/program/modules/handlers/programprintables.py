@@ -268,6 +268,12 @@ class ProgramPrintables(ProgramModuleObj):
             return cmp(one, other)
         
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_room)
+    
+    @needs_admin
+    def classesbyid(self, request, tl, one, two, module, extra, prog):
+        def cmp_id(one, other):
+            return cmp(one.id, other.id)
+        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_id)
 
     @needs_admin
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
