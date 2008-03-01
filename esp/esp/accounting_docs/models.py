@@ -33,7 +33,7 @@ from django.db.models import Q
 from django.contrib.auth.models import User
 from esp.datatree.models import DataTree, GetNode
 from esp.db.fields import AjaxForeignKey
-from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem
+from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem, EmptyTransactionException
 from esp.accounting_docs.checksum import Checksum
 from esp.users.models import ESPUser
 from datetime import datetime
@@ -205,7 +205,14 @@ class Document(models.Model):
         return self.txn.lineitem_set.all()
     
     def cost(self):
-        return -self.txn.get_balance()
+        try:
+            return -self.txn.get_balance()
+        except EmptyTransactionException:
+            return 0
+
+    def getDoctypeStr(self):
+        doctypes = dict(self.TYPE_CHOICES)
+        return doctypes[self.doctype]
     
     class Admin:
         pass
