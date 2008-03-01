@@ -41,7 +41,7 @@ td.newday { border-width: 2px 1px 0 1px;}
 {% endif %}
 
 <!-- Layout hack: stuff in tables likes to center itself vertically. -->
-<table style="height:10in; border-width:0; border-spacing:0; padding:0; width:100%;">
+<table style="height:9in; border-width:0; border-spacing:0; padding:0; width:100%;">
 
 <!-- Layout hack: table cells expand to contain stuff. -->
 <tr><td style="height:1em; padding:1em;">
@@ -65,7 +65,7 @@ td.newday { border-width: 2px 1px 0 1px;}
 </tr>
 {% endifchanged %}
 <tr>
-  <td>{{ scheditem.timeblock }}</td>
+  <td>{{ scheditem.timeblock.short_time }}</td>
   <td>{{ scheditem.cls.title }}</td>
   <td>{{ scheditem.cls.getTeacherNames|join:"<br />" }}</td> 
 </tr>
