@@ -200,17 +200,13 @@ class ArchiveClass(models.Model):
         
     def students(self):
         from esp.users.models import ESPUser
-        userlist = []
-        for uid in self.student_ids.strip('|').split('|'):
-            userlist += User.objects.filter(id = uid)
-        return userlist
+        useridlist = [int(x) for x in self.student_ids.strip('|').split('|')]
+        return ESPUser.objects.filter(id__in = useridlist)
     
     def teachers(self):
         from esp.users.models import ESPUser
-        userlist = []
-        for uid in self.teacher_ids.strip('|').split('|'):
-            userlist += User.objects.filter(id = uid)
-        return userlist
+        useridlist = [int(x) for x in self.teacher_ids.strip('|').split('|')]
+        return User.objects.filter(id__in = useridlist)
     
     @staticmethod
     def getForUser(user):
