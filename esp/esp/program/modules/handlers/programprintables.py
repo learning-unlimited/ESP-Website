@@ -38,7 +38,9 @@ from esp.money.models    import Transaction
 from esp.program.models  import Class
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
-from esp.money.models import LineItem, LineItemType
+#from esp.money.models import LineItem, LineItemType
+from esp.accounting_docs.models import Document, MultipleDocumentError
+from esp.accounting_core.models import LineItem, LineItemType, Transaction
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -46,7 +48,7 @@ class ProgramPrintables(ProgramModuleObj):
 
     @needs_admin
     def paid_list_filter(self, request, tl, one, two, module, extra, prog):
-        lineitemtypes = LineItemType.forAnchor(prog.anchor)
+        lineitemtypes = LineItemType.objects.forProgram(prog)
         context = { 'lineitemtypes': lineitemtypes }
         return render_to_response(self.baseDir()+'paid_list_filter.html', request, (prog, tl), context)
 
@@ -62,13 +64,15 @@ class ProgramPrintables(ProgramModuleObj):
                 single_select = False
 
             if ids == None:
-                lineitems = LineItem.objects.filter(type__anchor=prog.anchor).order_by('type_id','user_id').select_related()
+                lineitems = LineItem.objects.forProgram(prog).order_by('li_type_id','user_id').select_related()
             else:
-                lineitems = LineItem.objects.filter(type__anchor=prog.anchor, type__id__in=ids).order_by('type_id','user_id').select_related()
+                lineitems = LineItem.objects.forProgram(prog).filter(li_type__id__in=ids).order_by('li_type_id','user_id').select_related()
         else:
             single_select = False
-            lineitems = LineItem.objects.filter(type__anchor=prog.anchor).order_by('type_id','user_id').select_related()
-
+            lineitems = LineItem.objects.forProgram(prog).order_by('type_id','user_id').select_related()
+        
+        for lineitem in lineitems:
+            lineitem.has_financial_aid = ESPUser(lineitem.user).hasFinancialAid(prog.anchor)
 
         def sort_fn(a,b):
             if a.user.last_name.lower() > b.user.last_name.lower():
@@ -476,17 +480,24 @@ class ProgramPrintables(ProgramModuleObj):
             from django.template import Context, Template
             from django.template.loader import find_template_source
             from esp.settings import TEMPLATE_DIRS
-            from esp.money.models import LineItem, LineItemType, RegisterLineItem
                 
             prof = user.getLastProfile()
             
-            for i in LineItemType.objects.filter(anchor=prof.program.anchor, optional=False):
-                RegisterLineItem(user, i)
+            li_types = prof.program.getLineItemTypes(user)
+            
+            # get program anchor or that of parent program
+            p_anchor = prof.program.anchor
+            if prof.program.getParentProgram():
+                p_anchor = prof.program.getParentProgram().anchor
+            try:
+                invoice = Document.get_invoice(user, p_anchor, li_types, dont_duplicate=True, get_complete=True)
+            except MultipleDocumentError:
+                invoice = Document.get_invoice(user, p_anchor, li_types, dont_duplicate=True)
             
             context_dict = {'prog': prof.program, 'first_name': user.first_name, 'last_name': user.last_name, 'username': user.username, 'e_mail': prof.contact_user.e_mail, 'schedule': ProgramPrintables.getSchedule(prof.program, user)}
             
-            context_dict['itemizedcosts'] = LineItem.purchased(prof.program.anchor, user, filter_already_paid=False)
-            context_dict['itemizedcosttotal'] = LineItem.purchasedTotalCost(prof.program.anchor, user)
+            context_dict['itemizedcosts'] = invoice.get_items()
+            context_dict['itemizedcosttotal'] = invoice.cost()
             context_dict['owe_money'] = ( context_dict['itemizedcosttotal'] != 0 )
             
             t = Template(open(TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
@@ -636,11 +647,10 @@ Student schedule for %s:
         """ generate student schedules; now a unified function """
         return studentschedules(self, request, tl, one, two, module, extra, prog)
     
+    @needs_admin
     def studentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
-        from esp.program.models import FinancialAidRequest
-        from esp.money.models import LineItem, LineItemType, RegisterLineItem
-
+        
         context = {'module': self     }
 
         if extra == 'onsite':
@@ -656,7 +666,15 @@ Student schedule for %s:
         students.sort()
         
         scheditems = []
-
+        
+        # get the list of students who are in the parent program.
+        parent_program_students_classreg = None
+        parent_program = prog.getParentProgram()
+        if parent_program is not None:
+            parent_program_students = parent_program.students()
+            if parent_program_students.has_key('classreg'):
+                parent_program_students_classreg = parent_program_students['classreg']
+        
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -666,12 +684,22 @@ Student schedule for %s:
             # now we sort them by time/title
             classes.sort()
             
-            #   add financial aid information
-            for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
-                RegisterLineItem(student, i)
-                
-            student.itemizedcosts = LineItem.purchased(prog.anchor, student, filter_already_paid=False)
-            student.itemizedcosttotal = LineItem.purchasedTotalCost(prog.anchor, student)
+            # note whether student is in parent program
+            student.in_parent_program = False
+            if parent_program_students_classreg is not None:
+                # we use the filter instead of simply "in" because the types of items in "students" and "parent_program_students_classreg" don't match.
+                student.in_parent_program = parent_program_students_classreg.filter(id=student.id).count() > 0
+            
+            # get payment information
+            li_types = prog.getLineItemTypes(student)
+            try:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+            except MultipleDocumentError:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+            
+            # attach payment information to student
+            student.itemizedcosts = invoice.get_items()
+            student.itemizedcosttotal = invoice.cost()
             student.has_paid = ( student.itemizedcosttotal == 0 )
         
             student.payment_info = True

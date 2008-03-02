@@ -31,7 +31,7 @@ td, th {
 </head>
 <body>
 
-<h1>{% if single_select %}{{ lineitems.0.type.label }} Purchase List{% else %}Purchased Items List{% endif %}</h1>
+<h1>{% if single_select %}{{ lineitems.0.li_type.text }} Purchase List{% else %}Purchased Items List{% endif %}</h1>
 
 <table style="border: 1px solid black; border-collapse: collapse;">
 <tr>
@@ -46,10 +46,10 @@ td, th {
 <tr>
  <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
  <td>{{ lineitem.user.first_name }} {{ lineitem.user.last_name }}</td>
-{% if single_select %}{% else %} <td>{{ lineitem.type.label }}</td>{% endif %}
-{% if hide_paid %}{% else %} <td>{% if lineitem.transaction.executed %}X{% endif %}</td>
+{% if single_select %}{% else %} <td>{{ lineitem.li_type.text }}</td>{% endif %}
+{% if hide_paid %}{% else %} <td>{% if lineitem.transaction.complete %}X{% endif %}</td>
  <td>{% if lineitem.has_financial_aid %}X{% endif %}</td>
- <td>{% if lineitem.has_financial_aid %}{{ lineitem.type.financial_aid_value|floatformat:2 }}{% else %}{{ lineitem.type.value|floatformat:2 }}{% endif%}</td>
+ <td>{{ lineitem.amount|floatformat:2 }}</td>
 {% endif %}
 </tr>
 {% endfor %}

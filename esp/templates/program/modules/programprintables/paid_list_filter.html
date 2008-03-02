@@ -12,12 +12,12 @@
 <p>
 <select multiple size="{{ lineitemtypes.count }}" name="filter">
 {% for lineitemtype in lineitemtypes %}
-<option value="{{ lineitemtype.id }}">{{ lineitemtype.label }}</option>
+<option value="{{ lineitemtype.id }}">{{ lineitemtype.text }}</option>
 {% endfor %}
 </select>
 </p>
 
-<p><input type="checkbox" checked="True" value="True" name="hide_paid"/>Hide Payment Information</p>
+<p><input type="checkbox" checked="True" value="True" name="hide_paid" id="hide_paid" /><label for="hide_paid">Hide Payment Information</label></p>
 
 <p><input type="Submit" /></p>
 

@@ -16,12 +16,15 @@
         </div>
     </td>
     <td valign="top" align="center" width="25%">
+        {% if student.in_parent_program %}
+            <div style="font-weight:bold;">{{ program.getParentProgram.niceName }} Student</div>
+        {% endif %}
         {% if student.payment_info %}
-        <b>Meal tickets:</b>
+        <!--<b>Meal tickets:</b>-->
             {% if student.itemizedcosts %}
             <ul>
             {% for item in student.itemizedcosts %}
-                {% if item.type.show_on_schedule %}<li>{{ item.type.label }}{% endif %}
+                {% if item.li_type.show_on_schedule %}<li>{{ item.li_type.text }}{% endif %}
             {% endfor %}
             </ul>
             {% else %}None
