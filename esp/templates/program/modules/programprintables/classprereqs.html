@@ -1,0 +1,70 @@
+<html>
+<head>
+<title>{{program.niceName}} Classes and their Prerequisites</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; margin: 0; font-size: 12px;}
+.title { text-align: center; font-size: 12pt; font-family: georgia; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+.facts { text-align: center; border: 0; }
+.facts th { text-align: right; font-size: 12pt; font-weight: bold; }
+.facts td { text-align: left; font-size: 12pt;}
+.facts td.paid { border: 1px solid black; text-align: center;
+                 }
+.title { padding: 1in 0 0 0; }
+.schedule {border: 1px solid black; }
+.schedule td { border: 1px solid black; }
+.schedule th { border: 1px solid black; vertical-align: top; }
+.schedule td { vertical-align: top; }
+.schedule th.day { border-bottom: 0; }
+.schedule td.oldday { border-bottom: 0;
+                      border-top: 0;}
+td.newday { border-width: 2px 1px 0 1px;}
+#pagebreak {page-break-after: always; }
+.description { text-align: center; padding: .2in 0 .2in 0; }
+td, th {
+       border: 1px solid black; 
+       border-collapse: collapse;
+       padding: 0.25em;
+}
+li {
+ margin-bottom: 0.5em;
+ padding-left: 2em;
+ text-indent: -2em;
+}
+</style>
+
+</head>
+<body>
+
+<table style="border: 1px solid black; border-collapse: collapse;">
+<tr>
+ <th>#</th>
+ <th>Class Code</th>
+ <th>Class Title</th>
+ <th>Prerequisites</th>
+</tr>
+{% for cls in classes %}
+<tr>
+ <td>{{forloop.counter}}</td>
+ <td>{{ cls.emailcode }}</td>
+ <td>{{ cls.title }}</td>
+ <td>
+  {% for implication in cls.implications %}
+  {{ implication.operation }} of:
+  <ul>
+   {% for prereq in implication.prereqs %}
+   <li>
+    {{ prereq }}
+    <br />( {{ prereq.friendly_times|join:", " }} in {{ prereq.prettyrooms|join:", " }} )
+   </li>
+   {% endfor %}
+  </ul>
+  {% endfor %}
+ </td>
+</tr>
+{% endfor %}
+</table>
+
+</body>
+</html>

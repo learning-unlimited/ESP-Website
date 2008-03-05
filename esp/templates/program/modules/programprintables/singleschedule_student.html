@@ -16,9 +16,13 @@
         </div>
     </td>
     <td valign="top" align="center" width="25%">
-        {% if student.in_parent_program %}
-            <div style="font-weight:bold;">{{ program.getParentProgram.niceName }} Student</div>
-        {% endif %}
+        <div style="font-weight:bold; text-align:left; text-indent:-3em;">
+            <div>Name: {{ student.name }}</div>
+            <div>Amount owed: ${{ student.itemizedcosttotal|floatformat:"-2" }}</div>
+            {% if student.in_parent_program %}
+                <div style="font-style:italic;">{{ program.getParentProgram.niceName }} Student</div>
+            {% endif %}
+        </div>
         {% if student.payment_info %}
         <!--<b>Meal tickets:</b>-->
             {% if student.itemizedcosts %}

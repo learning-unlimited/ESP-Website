@@ -245,7 +245,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classesbytitle(self, request, tl, one, two, module, extra, prog):
         def cmp_title(one, other):
-            cmp0 = cmp(one.anchor.friendly_name, other.anchor.friendly_name)
+            cmp0 = cmp(one.anchor.friendly_name.upper().lstrip().strip('"\',.<![($'), other.anchor.friendly_name.upper().lstrip().strip('"\',.<![($'))
 
             if cmp0 != 0:
                 return cmp0
@@ -278,6 +278,38 @@ class ProgramPrintables(ProgramModuleObj):
         def cmp_id(one, other):
             return cmp(one.id, other.id)
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_id)
+    
+    @needs_admin
+    def classprereqs(self, request, tl, one, two, module, extra, prog):
+        classes = Class.objects.filter(parent_program = self.program)
+
+        classes = [cls for cls in classes
+                   if cls.isAccepted()   ]
+        
+        sort_exp = lambda x,y: ((x.title() != y.title()) and cmp(x.title().upper().lstrip().strip('"\',.<![($'), y.title().upper().lstrip().strip('"\',.<![($'))) or cmp(x.id, y.id)
+        
+        if request.GET.has_key('clsids'):
+            clsids = request.GET['clsids'].split(',')
+            cls_dict = {}
+            for cls in classes:
+                cls_dict[str(cls.id)] = cls
+            classes = [cls_dict[clsid] for clsid in clsids]
+            classes.sort(sort_exp)
+        else:
+            classes.sort(sort_exp)
+        
+        for cls in classes:
+            cls.implications = []
+            for implication in cls.classimplication_set.filter(parent__isnull=True):
+                imp_info = {}
+                imp_info['operation'] = { 'AND':'All', 'OR':'Any', 'XOR':'Exactly one' }[implication.operation]
+                imp_info['prereqs'] = Class.objects.filter(id__in = implication.member_id_ints)
+                        #cls.prereqs += '<li>' + str(prereq_list[0].id) + ": " + prereq_list[0].title() + '<br />'
+                        #cls.prereqs += '(' + prereq_list[0].friendly_times().join(', ') + ' in ' + prereq_list[0].prettyrooms().join(', ') + '</li>'
+                cls.implications.append(imp_info)
+        
+        context = { 'classes': classes, 'program': self.program }
+        return render_to_response(self.baseDir()+'classprereqs.html', request, (prog, tl), context)
 
     @needs_admin
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
@@ -351,14 +383,14 @@ class ProgramPrintables(ProgramModuleObj):
     def teachersbyname(self, request, tl, one, two, module, extra, prog):
         
         def cmpsort(one,other):
-            one_name = one['user'].last_name
-            other_name = other['user'].last_name
+            one_name = one['user'].last_name.upper()
+            other_name = other['user'].last_name.upper()
             cmp0 = cmp(one_name, other_name)
                 
             if cmp0 != 0:
                 return cmp0
 
-            return cmp(one['name'], other['name'])
+            return cmp(one['name'].upper(), other['name'].upper())
 
         return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
 
@@ -643,11 +675,6 @@ Student schedule for %s:
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
     @needs_admin
-    def studentschedules_finaid(self, request, tl, one, two, module, extra, prog):
-        """ generate student schedules; now a unified function """
-        return studentschedules(self, request, tl, one, two, module, extra, prog)
-    
-    @needs_admin
     def studentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
         
@@ -700,8 +727,11 @@ Student schedule for %s:
             # attach payment information to student
             student.itemizedcosts = invoice.get_items()
             student.itemizedcosttotal = invoice.cost()
+            student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
+            if student.has_financial_aid:
+                student.itemizedcosttotal = 0
             student.has_paid = ( student.itemizedcosttotal == 0 )
-        
+            
             student.payment_info = True
             student.classes = classes
             
