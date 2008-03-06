@@ -100,6 +100,30 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def catalog(self, request, tl, one, two, module, extra, prog):
         " this sets the order of classes for the catalog. "
+        
+        cmp_fn = { "": Class.class_sort_noop,
+                   "category": Class.class_sort_by_category,
+                   "id": Class.class_sort_by_id,
+                   "teachers": Class.class_sort_by_teachers,
+                   "title": Class.class_sort_by_title,
+                   "timeblock": Class.class_sort_by_timeblock }
+
+        sort_list = []
+
+        if request.GET.has_key('first_sort'):
+            sort_list.append( cmp_fn[request.GET['first_sort']] )
+        else:
+            sort_list.append( cmp_fn["category"] )
+
+        if request.GET.has_key('second_sort'):
+            sort_list.append( cmp_fn[request.GET['second_sort']] )
+        else:
+            sort_list.append( cmp_fn["timeblock"] )
+
+        if request.GET.has_key('third_sort'):
+            sort_list.append( cmp_fn[request.GET['third_sort']] )
+        else:
+            sort_list.append( cmp_fn["title"] )
 
         if request.GET.has_key('ids') and request.GET.has_key('op') and \
            request.GET.has_key('clsid'):
@@ -150,7 +174,7 @@ class ProgramPrintables(ProgramModuleObj):
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
                                       (self.program, tl),
-                                      {'clsids': clsids, 'classes': classes})
+                                      {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys() })
 
         
         classes = Class.objects.filter(parent_program = self.program)
@@ -158,14 +182,14 @@ class ProgramPrintables(ProgramModuleObj):
         classes = [cls for cls in classes
                    if cls.isAccepted()    ]
 
-        classes.sort(Class.catalog_sort)
+        classes.sort(Class.sort_muxer(sort_list))
 
         clsids = ','.join([str(cls.id) for cls in classes])
 
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
                                   (self.program, tl),
-                                  {'clsids': clsids, 'classes': classes})
+                                  {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys()})
         
 
     @needs_admin

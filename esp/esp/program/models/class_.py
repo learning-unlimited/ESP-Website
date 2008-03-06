@@ -593,9 +593,10 @@ class Class(models.Model):
     def removeTeacher(self, user):
         v = GetNode('V/Flags/Registration/Teacher')
 
-        UserBit.objects.filter(user = user,
-                               qsc = self.anchor,
-                               verb = v).delete()
+        for u in UserBit.objects.filter(user = user,
+                                        qsc = self.anchor,
+                                        verb = v):
+            u.expire()
         return True
 
     def subscribe(self, user):
@@ -620,9 +621,12 @@ class Class(models.Model):
 
     def removeAdmin(self, user):
         v = GetNode('V/Administer/Edit')
-        UserBit.objects.filter(user = user,
-                               qsc = self.anchor,
-                               verb = v).delete()
+        
+        for u in UserBit.objects.filter(user = user,
+                                        qsc = self.anchor,
+                                        verb = v):
+            u.expire()
+
         return True
 
     def conflicts(self, teacher):
@@ -662,6 +666,41 @@ class Class(models.Model):
             return cmp1
         return cmp(one, other)
     
+    @staticmethod
+    def class_sort_by_category(one, other):
+        return cmp(one.category.category, other.category.category)
+        
+    @staticmethod
+    def class_sort_by_id(one, other):
+        return cmp(one.id, other.id)
+
+    @staticmethod
+    def class_sort_by_teachers(one, other):
+        return cmp(one.getTeacherNames().sort(), other.getTeacherNames().sort())
+    
+    @staticmethod
+    def class_sort_by_title(one, other):
+        return cmp(one.title(), other.title())
+
+    @staticmethod
+    def class_sort_by_timeblock(one, other):
+        return cmp(one.firstBlockEvent(), other.firstBlockEvent())
+
+    @staticmethod
+    def class_sort_noop(one, other):
+        return 0
+
+    @staticmethod
+    def sort_muxer(sorters):
+        def sort_fn(one, other):
+            for fn in sorters:
+                val = fn(one, other)
+                if val != 0:
+                    return val
+            return 0
+        return sort_fn
+
+
     def __cmp__(self, other):
         selfevent = self.firstBlockEvent()
         otherevent = other.firstBlockEvent()
@@ -784,7 +823,7 @@ class Class(models.Model):
         prereg_verbs = [ GetNode('V/Flags/Registration/Preliminary'), GetNode('V/Flags/Registration/Preliminary/Automatic') ]
 
         for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__in=prereg_verbs):
-            ub.delete()
+            ub.expire()
 
         # update the students cache
         students = list(self.students())
@@ -878,7 +917,9 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         """ Mark this class as rejected """
         verb = GetNode('V/Flags/Registration/Preliminary')
 
-        self.anchor.userbit_qsc.filter(verb = verb).delete()
+        for u in self.anchor.userbit_qsc.filter(verb = verb):
+            u.expire()
+
         self.status = -10
         self.save()
 
