@@ -65,7 +65,7 @@ def branch_find(view_func):
                 the standard ones are ['create','edit','read']
     """
 
-    def _new_func(request, url, subsection=None, filename=None, *args, **kwargs):
+    def _new_func(request, url='index.html', subsection=None, filename=None, *args, **kwargs):
 
 
         cache_key = 'qsdeditor_%s_%s_%s_%s' % (request.user.id,
