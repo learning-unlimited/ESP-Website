@@ -459,6 +459,10 @@ class UserBit(models.Model):
         
         UserBitImplication.deleteUserBit(self) #follow implications
 
+    def expire(self):
+        self.enddate = datetime.now()
+        self.save()
+
     def updateCache(cls, user_id):
         cls.objects.cache(user_id).update()
     updateCache = classmethod(updateCache)

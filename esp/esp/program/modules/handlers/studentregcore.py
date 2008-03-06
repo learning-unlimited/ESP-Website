@@ -138,7 +138,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         if len(bits) > 0:
             for bit in bits:
-                bit.delete()
+                bit.expire()
 
         return self.goToCore(tl)
   

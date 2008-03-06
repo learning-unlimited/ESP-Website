@@ -101,7 +101,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                     verb = verb,
                                     qsc  = self.program_anchor_cached())
         for userbit in ub:
-            userbit.delete()
+            userbit.expire()
 
         return True
 
