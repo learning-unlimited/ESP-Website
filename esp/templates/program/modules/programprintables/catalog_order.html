@@ -32,6 +32,38 @@ Get Catalog:
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/log?clsids={{clsids}}">log</a>)
 
 </p>
+
+<p>
+<form action="" method="get">
+Sort by
+<select name="first_sort">
+{% for op in sorting_options %}
+<option value="{{ op }}">{{ op }}</option>
+{% endfor %}
+</select>
+
+then
+
+<select name="second_sort">
+{% for op in sorting_options %}
+<option value="{{ op }}">{{ op }}</option>
+{% endfor %}
+</select>
+
+then
+
+<select name="third_sort">
+{% for op in sorting_options %}
+<option value="{{ op }}">{{ op }}</option>
+{% endfor %}
+</select>
+
+<input type="submit" value="Go!"/>
+</form>
+</p>
+
+<br /><br />
+
 <table cellspacing="0" cellpadding="0">
 <tr>
   <th>#</th>
