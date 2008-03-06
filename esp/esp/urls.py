@@ -55,6 +55,7 @@ urlpatterns += patterns('',
                      (r'^admin/', include('django.contrib.admin.urls')),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      (r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
+                     (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$','django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
                         )
 
 # generic stuff
@@ -81,7 +82,6 @@ urlpatterns += patterns('',
 urlpatterns += patterns('esp.qsd.views',
                         (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/(?P<url>.*).html$', 'qsd'),
                         (r'^(?P<url>.*)\.html$', 'qsd'),
-                        (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', 'django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
                         )
 
 # logging in and out
