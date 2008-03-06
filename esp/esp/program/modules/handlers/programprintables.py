@@ -109,19 +109,23 @@ class ProgramPrintables(ProgramModuleObj):
                    "timeblock": Class.class_sort_by_timeblock }
 
         sort_list = []
+        sort_name_list = []
 
         if request.GET.has_key('first_sort'):
             sort_list.append( cmp_fn[request.GET['first_sort']] )
+            sort_name_list.append( request.GET['first_sort'] )
         else:
             sort_list.append( cmp_fn["category"] )
 
         if request.GET.has_key('second_sort'):
             sort_list.append( cmp_fn[request.GET['second_sort']] )
+            sort_name_list.append( request.GET['second_sort'] )
         else:
             sort_list.append( cmp_fn["timeblock"] )
 
         if request.GET.has_key('third_sort'):
             sort_list.append( cmp_fn[request.GET['third_sort']] )
+            sort_name_list.append( request.GET['third_sort'] )
         else:
             sort_list.append( cmp_fn["title"] )
 
@@ -174,7 +178,7 @@ class ProgramPrintables(ProgramModuleObj):
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
                                       (self.program, tl),
-                                      {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys() })
+                                      {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list) })
 
         
         classes = Class.objects.filter(parent_program = self.program)
@@ -189,7 +193,7 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
                                   (self.program, tl),
-                                  {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys()})
+                                  {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list) })
         
 
     @needs_admin
@@ -198,9 +202,11 @@ class ProgramPrintables(ProgramModuleObj):
 
         classes = Class.objects.filter(parent_program = self.program)
 
-        order_by_time = False
-        if request.GET.has_key('bytime'):
-            order_by_time = True
+        if request.GET.has_key('sort_name_list'):
+            sort_name_list = request.GET['sort_name_list'].split(',')
+            first_sort = sort_name_list[0]
+        else:
+            first_sort = "category"
 
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
@@ -212,20 +218,12 @@ class ProgramPrintables(ProgramModuleObj):
                 cls_dict[str(cls.id)] = cls
             classes = [cls_dict[clsid] for clsid in clsids]
 
-        if order_by_time:
-            classes.sort()
-        else:
-            classes.sort(Class.catalog_sort)
-
         context = {'classes': classes, 'program': self.program}
 
         if extra is None or len(str(extra).strip()) == 0:
             extra = 'pdf'
 
-        if order_by_time:
-            return render_to_latex(self.baseDir()+'catalog_bytime.tex', context, extra)
-        else:
-            return render_to_latex(self.baseDir()+'catalog.tex', context, extra)
+        return render_to_latex(self.baseDir()+'catalog_%s.tex' % first_sort, context, extra)
 
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
