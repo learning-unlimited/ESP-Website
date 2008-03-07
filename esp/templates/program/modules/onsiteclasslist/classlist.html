@@ -1,11 +1,71 @@
 
 <html>
 <head>
-<meta http-equiv="refresh" content="{{ refresh_time }}" />
+
+<script>
+scroll_offset = 0;
+interval_handle = -1;
+
+function setElementStyleById(id, propertyName, propertyValue) {
+    if (!document.getElementById) return;
+    var el = document.getElementById(id);
+    if (el) el.style[propertyName] = propertyValue;
+}
+
+function getElementStyleById(id, propertyName) {
+    if (!document.getElementById) return;
+    var el = document.getElementById(id);
+    return el.style[propertyName];
+}
+
+function scroll() 
+{
+    scroll_offset -= {{ scrollspeed }};
+    elt1 = document.getElementById("scroller_top");
+    if (elt1.offsetHeight + scroll_offset < 0)
+    {
+        reset();
+    }
+    setElementStyleById("scroller_top", "top", scroll_offset + "px");
+    setElementStyleById("scroller_bottom", "top", scroll_offset + elt1.offsetHeight + "px");
+}
+
+function reset()
+{
+    if (interval_handle != -1)
+        clearInterval(interval_handle);
+    scroll_offset = 0;
+    scroll();
+    setTimeout("start_scrolling();", 3000);
+}
+
+function start_scrolling()
+{
+    interval_handle = setInterval("scroll();", 50);
+}
+</script>
+
+<style type="text/css">
+html, body {
+    overflow:hidden;
+}
+
+#scroller_top, #scroller_bottom {
+    position: absolute;
+    overflow: auto;
+    top: 0px;
+}
+
+.classitem {
+padding-bottom: 5px;
+}
+</style>
+
+<meta http-equiv="refresh" content="{{ refresh }}" />
 <title>On-site Class List for {{ prog.niceName }}</title>
 </head>
 
-<body bgcolor="#FFFFFF">
+<body bgcolor="#FFFFFF" onload="reset();">
 
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
 
@@ -17,7 +77,7 @@
 <table width="100%">
 <tr>
 {% if current_time %}
-<td width="60%" valign="top">
+<td width="65%" valign="top">
   <table cellpadding="2" cellspacing="0" width="100%">
     <tr>
         <th style="font-size: 1.5em" colspan="2">{{ prog.niceName }}: Open classes starting at {{ current_time.start|date:"D P" }}</th>
@@ -31,9 +91,10 @@
 </td>
 {% endif %}
 <td valign="top">
+  <div id="scroller_top" onclick="reset();">
   <table cellpadding="2" cellspacing="0" width="100%">
     <tr>
-        <th>Codes for All Open Classes</th>
+        <th>All Open Classes</th>
     </tr>
     <tr><td>
     {% for class in classes %}
@@ -43,18 +104,34 @@
                 <tr><th class="materials">{{ class.category.category }}</th></tr>
                 <tr><td>
             {% endifchanged %}
-            {{ class.emailcode }}
+            <div class="classitem"><b>{{ class.emailcode }}</b> ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}): <br /> {{ class.title }} <br /></div>
         {% endif %}{% endif %}
     {% endfor %}
     </table>
+    </div>
+    <br />
+    <div id="scroller_bottom" onclick="reset();">
+    <table cellpadding="2" cellspacing="0" width="100%">
+    <tr>
+        <th>All Open Classes</th>
+    </tr>
+    <tr><td>
+    {% for class in classes %}
+        {% if not class.isFull %}{% if not class.already_passed %}
+            {% ifchanged %}
+                </td></tr>
+                <tr><th class="materials">{{ class.category.category }}</th></tr>
+                <tr><td>
+            {% endifchanged %}
+            <div class="classitem"><b>{{ class.emailcode }}</b> ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}): <br /> {{ class.title }} <br /></div>
+        {% endif %}{% endif %}
+    {% endfor %}
+    </table>
+    </div>
 </td>
 </tr>
 </table>
 </div>
-
-<p align="center">
-    <a href="/onsite/{{ program.getUrlBase }}/main">Return to on-site portal</a>
-</p>
 
 </body>
 </html>

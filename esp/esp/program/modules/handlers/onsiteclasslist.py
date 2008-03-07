@@ -40,14 +40,23 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """
+        def cmp_class(one, other):
+            if cmp(one.category.id, other.category.id) != 0:
+                return cmp(one.category.id, other.category.id)
+            else:
+                return cmp(one.start_time(), other.start_time())
 
-        if request.GET.has_key('refresh'):
-            refresh_time = request.GET['refresh']
-        else:
-            refresh_time = 30
+        context = {}
+        defaults = {'refresh': 30, 'scrollspeed': 3}
+        for key_option in defaults.keys():
+            if request.GET.has_key(key_option):
+                context[key_option] = request.GET[key_option]
+            else:
+                context[key_option] = defaults[key_option]
 
         # using .extra() to select all the category text simultaneously
-        classes = Class.objects.catalog(self.program)
+        classes = list(Class.objects.catalog(self.program))
+        classes.sort(cmp=cmp_class)
 
         #   time_now = datetime.now()
         time_now = datetime.now()
@@ -62,9 +71,10 @@ class OnSiteClassList(ProgramModuleObj):
         categories = {}
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
+
+        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two, 'categories': categories.values()})
         
-        return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), 
-            {'prog': prog, 'refresh_time': refresh_time, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two, 'categories': categories.values()})
+        return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), context)
 
     @needs_onsite
     def allClassList(self, request, tl, one, two, module, extra, prog):
