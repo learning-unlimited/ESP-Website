@@ -100,7 +100,7 @@ def makelist(lst):
         return "No responses"
     result = ""
     for item in lst:
-        result += "<li>" + item + "</li>" + '\n'
+        result += "<li>" + str(item) + "</li>" + '\n'
     return result
 
 @register.filter

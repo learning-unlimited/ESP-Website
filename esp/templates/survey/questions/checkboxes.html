@@ -1,0 +1,16 @@
+<!-- Question Type: Checkboxes -->
+{% load survey %}
+<table width="600">
+<tr>
+    <td width="30%"><b>{{ name }}</b></td>
+    <td>
+    {% for choice in list %}
+        <div style="padding-left:2em; text-indent:-2em;">
+        <input type="checkbox" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}"
+               id="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}_{{ choice|slugify }}" value="{{ choice }}" />
+        <label for="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}_{{ choice|slugify }}">{{ choice }}</label>
+        </div>
+    {% endfor %}
+    </td>
+</tr>
+</table>

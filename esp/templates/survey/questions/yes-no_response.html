@@ -4,6 +4,6 @@
 <tr>
     <td width="30%"><b>{{ name }}</b></td>
     <td width="14%"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="Yes" />Yes</td>
-    <td><input type="radio" name="question_{{ id }}" value="No" />No</td>
+    <td><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="No" />No</td>
 </tr>
 </table>
