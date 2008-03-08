@@ -823,8 +823,9 @@ class Class(models.Model):
         prereg_verbs = [ GetNode('V/Flags/Registration/Preliminary'), GetNode('V/Flags/Registration/Preliminary/Automatic') ]
 
         for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__in=prereg_verbs):
-            ub.expire()
-
+            if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
+                ub.expire()
+        
         # update the students cache
         students = list(self.students())
         students = [ student for student in students
@@ -839,19 +840,20 @@ class Class(models.Model):
         
         if overridefull or not self.isFull():
             #    Then, create the userbit denoting preregistration for this class.
-            UserBit.objects.get_or_create(user = user, qsc = self.anchor,
-                                          verb = prereg_verb, recursive = False)
+            if not UserBit.objects.UserHasPerms(user, self.anchor, prereg_verb):
+                UserBit.objects.get_or_create(user = user, qsc = self.anchor,
+                                              verb = prereg_verb, startdate = datetime.datetime.now(), recursive = False)
             # Set a userbit for auto-registered classes (i.e. Spark sections of HSSP classes)
             if automatic:
-                UserBit.objects.get_or_create(user = user, qsc = self.anchor,
-                                              verb = auto_verb, recursive = False)
+                if not UserBit.objects.UserHasPerms(user, self.anchor, auto_verb):
+                    UserBit.objects.get_or_create(user = user, qsc = self.anchor,
+                                                  verb = auto_verb, startdate = datetime.datetime.now(), recursive = False)
             
             # update the students cache
             students = list(self.students())
             students.append(ESPUser(user))
             self.cache['students'] = students
             
-
             self.update_cache_students()
             return True
         else:
