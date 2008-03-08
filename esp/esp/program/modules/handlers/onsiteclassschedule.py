@@ -39,8 +39,11 @@ class OnsiteClassSchedule(ProgramModuleObj):
 
 
     @needs_student
-    def printschedule(self, request, *args, **kwargs):
+    def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
         verb  = request.get_node('V/Publish/Print')
+        if extra and extra != "":
+            verb = verb[extra]
+
         qsc   = self.program_anchor_cached().tree_create(['Schedule'])
 
         if len(UserBit.objects.filter(user=self.user,

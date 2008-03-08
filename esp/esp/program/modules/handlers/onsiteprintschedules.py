@@ -48,16 +48,22 @@ class OnsitePrintSchedules(ProgramModuleObj):
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
         if not request.GET.has_key('sure'):
-            return render_to_response(self.baseDir()+'instructions.html',
-                                    request, (prog, tl), {})
+            printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
-        verb  = GetNode('V/Publish/Print')
+            return render_to_response(self.baseDir()+'instructions.html',
+                                    request, (prog, tl), {'printers': printers})
+
+        verb_path = 'V/Publish/Print'
+        if extra and extra != '':
+            verb_path = "%s/%s" % (verb_path, extra)
+
+        verb  = GetNode(verb_path)
         qsc   = self.program_anchor_cached().tree_create(['Schedule'])
         Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = datetime.now())
         Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = datetime.now())
 
         Q_qsc  = Q(qsc  = qsc.id)
-        Q_verb = Q(verb = verb.id)
+        Q_verb = Q(verb__in = [ verb.id ] + list( verb.children() ) )
         
         ubits = UserBit.objects.filter(Q_qsc & \
                                        Q_verb & \

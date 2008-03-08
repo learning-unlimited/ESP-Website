@@ -34,6 +34,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_onsite
 from esp.program.models import Class
 from esp.web.util import render_to_response
 from esp.cal.models import Event
+from esp.datatree.models import GetNode
 
 class OnSiteClassList(ProgramModuleObj):
 
@@ -72,7 +73,9 @@ class OnSiteClassList(ProgramModuleObj):
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
 
-        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two, 'categories': categories.values()})
+        printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
+
+        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
         
         return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), context)
 
@@ -88,9 +91,11 @@ class OnSiteClassList(ProgramModuleObj):
         categories = {}
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
+
+        printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
         
         return render_to_response(self.baseDir()+'allclasslist.html', request, (prog, tl), 
-            {'classes': classes, 'one': one, 'two': two, 'categories': categories.values()})
+            {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
 
 
         

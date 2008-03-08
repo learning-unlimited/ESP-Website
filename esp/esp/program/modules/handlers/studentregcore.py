@@ -167,6 +167,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context['isConfirmed'] = self.program.isConfirmed(self.user)
             context['have_paid'] = self.have_paid()
 
+            context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
+
 	    return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
     def isStep(self):
