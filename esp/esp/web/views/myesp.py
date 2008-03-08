@@ -298,7 +298,7 @@ def myesp_switchback(request, module):
 	user.updateOnsite(request)
 
 	if not user.other_user:
-		raise ESPError(), 'You were not another user!'
+		raise ESPError(False), 'You were not another user!'
 
 	return HttpResponseRedirect(user.switch_back(request))
 

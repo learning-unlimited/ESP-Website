@@ -202,8 +202,11 @@ class Event(models.Model):
         return Class.objects.filter(meeting_times=self).count()
     
     def __cmp__(self, other):
-        return cmp(self.start, other.start)
-
+        try:
+            return cmp(self.start, other.start)
+        except:
+            return 0
+        
     class Admin:
         pass
 
