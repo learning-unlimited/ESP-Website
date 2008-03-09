@@ -34,7 +34,6 @@ http://www.djangosnippets.org/snippets/631/
 """
 
 import sys
-import django
 
 from django.conf import settings
 from django.views import debug
