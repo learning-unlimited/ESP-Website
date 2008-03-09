@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 
 == Addendum ==
-Much of the idea to generate the pretty HTML email is taken from Kenneth Arnold.
+The idea and much of the code to generate the pretty HTML email is taken from Kenneth Arnold.
 http://www.djangosnippets.org/snippets/631/
 """
 
