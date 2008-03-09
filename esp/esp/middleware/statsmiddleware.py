@@ -41,11 +41,16 @@ except ImportError:
 
 import base64
 
+regexp = re.compile(r'(?P<cmt><!--\s*STATS:(?P<fmt>.*?)-->)')
+
 class StatsMiddleware(object):
     """ Inspiration from http://davidavraamides.net/blog/2006/07/03/page-stats-middleware/"""
-    @staticmethod
-    def process_view(request, view_func, view_args, view_kwargs):
 
+    def process_request(self, request):
+        request.start_time = time()
+
+    def process_response(self, request, response):
+        #view_func, view_args, view_kwargs):
 
         from django.conf import settings
         debug = settings.DEBUG
@@ -54,19 +59,7 @@ class StatsMiddleware(object):
             # get number of db queries before we do anything
             n = len(connection.queries)
 
-        # time the view
-        start = time()
-        try:
-            view_func = vary_on_headers('Cookie')(view_func)
-            response = view_func(request, *view_args, **view_kwargs)
-        except Exception, e:
-            from esp.middleware import ESPErrorMiddleware
-            response = ESPErrorMiddleware().process_exception(request, e)
-            if response:
-                return response
-            raise e
-            
-        totTime = time() - start
+        totTime = time() - request.start_time
 
         stats = {
             'totTime': totTime,
@@ -90,12 +83,10 @@ class StatsMiddleware(object):
                                   'dbTime': dbTime,
                                   'queries':queries}
 
-        
 
         # replace the comment if found            
         if response and response.content:
             s = response.content
-            regexp = re.compile(r'(?P<cmt><!--\s*STATS:(?P<fmt>.*?)-->)')
             match = regexp.search(s)
             if match:
                 s = s[:match.start('cmt')] + \
@@ -106,7 +97,6 @@ class StatsMiddleware(object):
         if settings.DISPLAYSQL and settings.DEBUG and \
            request.META['REMOTE_ADDR'] in settings.INTERNAL_IPS:
             sqlcontent = "\n\n"+'<div class="sql">\n'
-            #sqlcontent += base64.encodestring(pickle.dumps(connection.queries))
             
             for q in connection.queries:
                 sqlcontent += "\n"+'%s:&nbsp;&nbsp;%s<br />' % \
@@ -118,6 +108,5 @@ class StatsMiddleware(object):
                 response.content = response.content[:pos] + \
                                    sqlcontent + \
                                    response.content[pos:]
-
         return response
 
