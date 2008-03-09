@@ -110,7 +110,8 @@ class PrettyErrorEmailMiddleware(object):
 
 if hasattr(django.core.mail, 'EmailMultiAlternatives'):
     # We already have what we need.. no need to run some more code.
-    from django.core.mail import EmailMultiAlternatives, mail_admins
+    EmailMultiAlternatives = django.core.mail.EmailMultiAlternatives
+    mail_admins = django.core.mail.mail_admins
 else:
     """
     Tools for sending email.
