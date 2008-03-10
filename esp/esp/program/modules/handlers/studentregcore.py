@@ -99,6 +99,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         context['itemizedcosts'] = invoice.get_items()
 
+        context['finaid'] = ESPUser(request.user).hasFinancialAid(prog.anchor)
+
         try:
             context['balance'] = Decimal("%0.2f" % invoice.cost())
         except EmptyTransactionException:

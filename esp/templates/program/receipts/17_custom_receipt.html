@@ -11,26 +11,19 @@ Your class selection for {{program.niceName}} has been saved. You can come back 
 
 <p>
 Please note that this does not <em>guarantee</em> enrollment in any class.
-You must show up to HSSP on the first day (Saturday, March 8th) to complete your registration.  HSSP classes on this day will be hosted as part of the Spark program; you are welcome to register for Spark classes in addition to HSSP classes as your schedule allows.  Check-in will be held in the lobby of MIT building 13 at 8:00 AM.  After 9:00 AM, newly arriving students should go to the lobby of building 10.  Signs will lead you to both locations from the main entrance of MIT at 77 Massachusetts Ave.<br />
+You must show up to HSSP on Saturday, March 15 to complete your registration.  Check-in will be held in the lobby of MIT building 10 at 9:00 AM.  After 10:00 AM, newly arriving students should go to the HSSP office (room 1-134).  Signs will lead you to both locations from the main entrance of MIT at 77 Massachusetts Ave.<br />
 <br />
-You must bring signed <a href="http://esp.mit.edu/media/uploaded/08_02/liability_medical.pdf">Spark medical and liability forms</a> on March 8th.  The <a href="http://esp.mit.edu/media/uploaded/08_02/hssp_liability_medical.pdf">HSSP medical and liability forms</a> must be filled out and signed by a guardian by March 15th in order for you to participate in the remainder of HSSP.  Some classes might require additional forms.
+You must bring the <a href="http://esp.mit.edu/media/uploaded/08_02/hssp_liability_medical.pdf">HSSP medical and liability forms</a>, filled out and signed by a guardian, by March 15th in order for you to participate in the remainder of HSSP.  <i> These forms are different from the ones you brought for Spark, so please make sure to bring these!</i>  Some classes might require additional forms.
 </p>
-
 <p>
-We would like you to have a good idea of what you can expect from us and what we can expect from you, so we've posted a <a href="http://esp.mit.edu/media/uploaded/08_02/student_agreement_sp08.pdf">student agreement form</a>.  Please carefully read it, then sign it and bring it by March 15th.
+We would like you to have a good idea of what you can expect from us and what we can expect from you, so we've posted a <a href="http://esp.mit.edu/media/uploaded/08_02/student_agreement_sp08.pdf">student agreement form</a>.  Please carefully read it, then sign it and bring it on March 15th.
 <br />
-<br />
-Please check back if you can to see if any more classes get added! Some teachers do not register their classes until later, so you may see some after you have preregistered. You are welcome to come back and change your class selection.
 <p>
-<b>Summary:</b> Please bring the following to Spark registration in Lobby 13 (1 hour before your first class on Saturday, March 8th):
-<ul>
-<li>This receipt
-<li>Completed and signed <a href="http://esp.mit.edu/media/uploaded/08_02/liability_medical.pdf">Spark liability and medical forms</a>
-</ul>
-Also bring the following to the first day of HSSP (1 hour before your first class on Saturday, March 15):
+<b>Summary:</b> Please bring the following to the first day of HSSP (1 hour before your first class on Saturday, March 15):
 <ul>
 <li>Completed and signed <a href="http://esp.mit.edu/media/uploaded/08_02/hssp_liability_medical.pdf">HSSP liability and medical forms</a>
 <li>Signed <a href="http://esp.mit.edu/media/uploaded/08_02/student_agreement_sp08.pdf">student agreement</a>
+{% if finaid %}{% else %}<li>Check or cash for $20, unless you pre-registered for HSSP <i>before</i> Spark{% endif %}
 </ul>
 </p>
 
@@ -51,7 +44,7 @@ User Information: <br />
 </tr>
 {% for timeslot in timeslots %}
 <tr>
-  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.friendly_name }} </td>
+  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.short_description }} </td>
   <td>
 	{% if timeslot.1 %}
 	{{timeslot.1.title}}{% else %} <em>Nothing Selected</em> {% endif %}
