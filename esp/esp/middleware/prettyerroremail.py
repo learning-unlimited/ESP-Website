@@ -42,6 +42,10 @@ from django.views import debug
 from django.template import defaultfilters
 from django.db.models.query import QuerySet
 
+# All of those exceptions we need to check against
+from django import http
+from django.core import exceptions
+
 __all__ = ('PrettyErrorEmailMiddleware',)
 
 class PrettyErrorEmailMiddleware(object):
@@ -56,6 +60,9 @@ class PrettyErrorEmailMiddleware(object):
     """
 
     ADMINS = None
+    # A tuple of exceptions to ignore and *not* send email for:
+    IGNORE_EXCEPTIONS = (http.Http404, SystemExit, exceptions.PermissionDenied)
+
     def process_request(self, request):
         """ In case a previous view wiped out the ADMINS variable,
         it'd be nice to resurrect it before the next request is handled.
@@ -69,7 +76,12 @@ class PrettyErrorEmailMiddleware(object):
             PrettyErrorEmailMiddleware.ADMINS = settings.ADMINS
 
         if settings.DEBUG:
-            return None
+            return
+
+        # If this is an error we don't want to hear about, just return.
+        if isinstance(exception, self.IGNORE_EXCEPTIONS) or \
+                exception in self.IGNORE_EXCEPTIONS:
+            return
 
         try:
             # Add the technical 500 page.
@@ -99,12 +111,12 @@ class PrettyErrorEmailMiddleware(object):
             msg.attach_alternative(debug_response.content, 'text/html')
             msg.send(fail_silently=True)
         except Exception, e:
-            return None
+            return
         else:
             # Now that ADMINS is empty, we shouldn't get a second email.
             settings.ADMINS = ()
 
-        return None
+        return
 
     def _get_traceback(self, exc_info=None):
         "Helper function to return the traceback as a string"

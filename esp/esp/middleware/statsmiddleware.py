@@ -50,7 +50,6 @@ class StatsMiddleware(object):
         request.start_time = time()
 
     def process_response(self, request, response):
-        #view_func, view_args, view_kwargs):
 
         from django.conf import settings
         debug = settings.DEBUG
