@@ -2,11 +2,9 @@
 from django.core.cache import cache
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
-from base64 import b64encode
 import datetime
 import random
 import string
-import struct
 
 
 # esp dependencies
