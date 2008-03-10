@@ -466,7 +466,24 @@ class UserBit(models.Model):
     def updateCache(cls, user_id):
         cls.objects.cache(user_id).update()
     updateCache = classmethod(updateCache)
-        
+
+    @classmethod
+    def time_cache(cls):
+        from django.contrib.auth.models import User
+        from esp.datatree.models import DataTree, GetNode
+        import time
+
+        axiak = User.objects.get(username='axiak')
+        splash = GetNode('Q/Programs/Splash/2007')
+
+        num_trials = 1000
+        verbs = UserBit.objects.bits_get_verb(axiak, splash)
+        old_time = time.time()
+
+        for i in range(num_trials):
+            verbs = UserBit.objects.bits_get_verb(axiak, splash)
+        print "Finished %s trials in %0.4f milliseconds per trial." % (num_trials, 1000* (time.time() - old_time) / num_trials)
+
     @staticmethod
     def has_bits(queryset):
         """ Returns False if there are no elements in queryset """
