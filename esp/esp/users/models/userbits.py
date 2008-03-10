@@ -2,9 +2,12 @@
 from django.core.cache import cache
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
+from base64 import b64encode
 import datetime
 import random
 import string
+import struct
+
 
 # esp dependencies
 from esp.db.models import Q
@@ -13,6 +16,9 @@ from esp.db.fields import AjaxForeignKey
 
 # model dependencies
 from esp.datatree.models import DataTree
+
+# Cache introspection
+from django.core.cache.backends.memcached import CacheClass as MemcachedClass
 
 
 __all__ = ['UserBit','UserBitImplication']
@@ -52,18 +58,21 @@ class UserBitManager(ProcedureManager):
             """
             return ''.join(random.choice(ascii_set) for x in range(length))
 
-        def set_global_key(self):
-            """ Set a new global userbit key. """
-            new_key = 'UB_%s' % self._get_random_string()
-            cache.set('UserBit_global', new_key, 86400)
-            return new_key
-
         def get_global_key(self):
             """ Return the global userbit key. """
-            global_key = cache.get('UserBit_global')
-            if global_key is None or global_key == 'None':
-                return self.set_global_key()
-            return global_key
+            new_key = 'UB_%s' % self._get_random_string()
+            if isinstance(cache, MemcachedClass):
+                # Using .add here is much safer than set.
+                cache._cache._set('add', 'UserBit_global', new_key, 86400, 0)
+                global_key = cache.get('UserBit_global')
+            else:
+                global_key = cache.get('UserBit_global')
+                if global_key == 'None':
+                    global_key = None
+                if global_key is None:
+                    cache.set('UserBit_global', new_key, 86400)
+
+            return global_key or new_key
 
         def delete_global_key(self):
             """ Delete the global key. """
@@ -89,12 +98,16 @@ class UserBitManager(ProcedureManager):
             anything about the user object.
             """
             user_key = self.get_key_to_get_user_key()
-            user_key_val = cache.get(user_key)
-            if user_key_val is None:
-                user_key_val = 'UB_u_%s' % self._get_random_string()
-                cache.set(user_key, user_key_val, 86400)
-
-            return user_key_val
+            new_key = 'UB_u_%s' % self._get_random_string()
+            if isinstance(cache, MemcachedClass):
+                # Using .add here is much safer than set.
+                cache._cache._set('add', user_key, new_key, 86400, 0)
+                current_key = cache.get(user_key)
+            else:
+                current_key = cache.get(user_key)
+                if current_key is None:
+                    cache.set(user_key, new_key, 86400)
+            return current_key or new_key
 
         def update(self):
             """ Purges all userbit-related cache. """
