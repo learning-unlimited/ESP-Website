@@ -61,7 +61,7 @@ class UserBitManager(ProcedureManager):
             new_key = 'UB_%s' % self._get_random_string()
             if isinstance(cache, MemcachedClass):
                 # Using .add here is much safer than set.
-                cache._cache._set('add', 'UserBit_global', new_key, 86400, 0)
+                cache._cache.add('UserBit_global', new_key, 86400)
                 global_key = cache.get('UserBit_global')
             else:
                 global_key = cache.get('UserBit_global')
@@ -99,7 +99,7 @@ class UserBitManager(ProcedureManager):
             new_key = 'UB_u_%s' % self._get_random_string()
             if isinstance(cache, MemcachedClass):
                 # Using .add here is much safer than set.
-                cache._cache._set('add', user_key, new_key, 86400, 0)
+                cache._cache.add(user_key, new_key, 86400)
                 current_key = cache.get(user_key)
             else:
                 current_key = cache.get(user_key)
