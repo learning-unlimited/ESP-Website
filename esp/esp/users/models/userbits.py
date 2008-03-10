@@ -3,6 +3,8 @@ from django.core.cache import cache
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 import datetime
+import random
+import string
 
 # esp dependencies
 from esp.db.models import Q
@@ -14,6 +16,8 @@ from esp.datatree.models import DataTree
 
 
 __all__ = ['UserBit','UserBitImplication']
+
+ascii_set = string.lowercase + string.uppercase + string.digits + '/=\:;.<>'
 
 class UserBitManager(ProcedureManager):
 
@@ -39,63 +43,80 @@ class UserBitManager(ProcedureManager):
         # 1 hour minute caching
         cache_time = 3600
 
+        def __init__(self, user=None):
+            self.user = user
+
+        def _get_random_string(self, length=7):
+            """ It's slow, but this function will generate a very dense random object. 
+            (26 * 2 + 10 + 8) ** 7 == 8235430000000 different possibilities.
+            """
+            return ''.join(random.choice(ascii_set) for x in range(length))
+
+        def set_global_key(self):
+            """ Set a new global userbit key. """
+            new_key = 'UB_%s' % self._get_random_string()
+            cache.set('UserBit_global', new_key, 86400)
+            return new_key
+
+        def get_global_key(self):
+            """ Return the global userbit key. """
+            global_key = cache.get('UserBit_global')
+            if global_key is None or global_key == 'None':
+                return self.set_global_key()
+            return global_key
+
+        def delete_global_key(self):
+            """ Delete the global key. """
+            cache.delete('UserBit_global')
+
+        def get_key_to_get_user_key(self):
+            """ Returns the key to get the user key. """
+            user = self.user
+            user_id = 'none'
+            if hasattr(user, 'id') and user.id is not None:
+                user_id = str(user.id)
+            elif isinstance(user, int):
+                user_id = str(user)
+
+            global_key = self.get_global_key()
+            user_key = '%s_user_%s' % (global_key, user_id)
+
+            return user_key
+
         def get_key_for_user(self):
             """
             Returns the key of the user, regardless of
             anything about the user object.
             """
-            user = self.user
-            key_start = 'UserBit__%s'
-            if hasattr(user,'id') and user.id is not None:
-                key = key_start % user.id
-            else:
-                key = key_start % 'none'
-            return key
+            user_key = self.get_key_to_get_user_key()
+            user_key_val = cache.get(user_key)
+            if user_key_val is None:
+                user_key_val = 'UB_u_%s' % self._get_random_string()
+                cache.set(user_key, user_key_val, 86400)
 
-        def __init__(self, user=None):
-            self.user = user
+            return user_key_val
 
         def update(self):
             """ Purges all userbit-related cache. """
-            if hasattr(self.user, 'id') and self.user.id is not None:
-                user_ids = [self.user.id]
-            elif type(self.user) == int:
-                user_ids = [self.user]
+            if self.user or (hasattr(self.user, 'id') and self.user.id is not None):
+                cache.delete(self.get_key_to_get_user_key())
             else:
-                user_ids = [ userid['id'] for userid in User.objects.values('id') ]
-                user_ids.append('None')
+                self.delete_global_key()
 
-            for userid in user_ids:
-                # delete the cache
-                cache.delete('UserBit__%s' % userid)
 
+        def _prefix_user_key(self, key):
+            user_key = self.get_key_for_user()
+            current_key = user_key + '_%s' % key
+            return current_key[:200]
 
         def __getitem__(self, key):
-            cache_dict = cache.get(self.get_key_for_user())
-            if cache_dict is None:
-                return None
-            if key in cache_dict:
-                return cache_dict[key]
-            else:
-                return None
+            return cache.get(self._prefix_user_key(key))
 
         def __setitem__(self, key, value):
-            global_key = self.get_key_for_user()
-            cache_dict = cache.get(global_key)
-            if cache_dict is None: cache_dict = {}
-
-            cache_dict[key] = value
-
-            cache.set(global_key, cache_dict, self.cache_time)
+            cache.set(self._prefix_user_key(key), value, self.cache_time)
 
         def __delitem__(self, key):
-            global_key = self.get_key_for_user()
-            cache_dict = cache.get(global_key)
-            if cache_dict is None: return
-
-            if key in cache_dict: del cache_dict[key]
-
-            cache.set(global_key, cache_dict, self.cache_time)
+            return cache.delete(self._prefix_user_key(key))
 
 
     cache = UserBitCache
@@ -148,7 +169,7 @@ class UserBitManager(ProcedureManager):
         If 'qsc_root' is specified, only return qsc structures at or below the specified node.
         """
 
-        user_cache_id = 'bit_get_%s__%s,%s,%s,%s' % (type, node.id, now, end_of_now,
+        user_cache_id = 'bit_get_%s__%s,%s,%s,%s' % (node_type, node.id, now, end_of_now,
                                                      node_root)
 
         retVal = self.cache(user)[user_cache_id]
@@ -440,22 +461,24 @@ class UserBit(models.Model):
                                                user, recurse)
 
     def save(self):
+        super(UserBit, self).save()
+
         if not hasattr(self.user,'id') or self.user.id is None:
             UserBit.updateCache(None)
         else:
             UserBit.updateCache(self.user.id)
 
-        super(UserBit, self).save()
 
         UserBitImplication.addUserBit(self) # follow implications
 
     def delete(self):
+        super(UserBit, self).delete()
+
         if not hasattr(self.user,'id') or self.user.id is None:
             UserBit.updateCache(None)
         else:
             UserBit.updateCache(self.user.id)
 
-        super(UserBit, self).delete()
         
         UserBitImplication.deleteUserBit(self) #follow implications
 
