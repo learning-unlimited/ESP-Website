@@ -739,6 +739,26 @@ class Program(models.Model):
             return None
         return retVal
     
+    def visibleEnrollments(self):
+        """
+        Returns whether class enrollments should show up in the catalog.
+        Current policy is that after everybody can sign up for one class, this returns True.
+        """
+        
+        cache_key = 'PROGRAM_VISIBLEENROLLMENTS_%s' % self.id
+        retVal = cache.get(cache_key)
+        
+        if retVal is None:
+            reg_verb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
+            retVal = False
+            if UserBit.objects.filter(user__isnull=True, qsc=self.anchor, verb=reg_verb, startdate__lte=datetime.now()).count() > 0:
+                retVal = True
+            else:
+                if UserBit.objects.filter(user__isnull=True, qsc__rangestart__lte=self.anchor.rangestart, qsc__rangeend__gte=self.anchor.rangeend, verb__rangestart__lte=reg_verb.rangestart, verb__rangeend__gte=reg_verb.rangeend, recursive=True, startdate__lte=datetime.now()).count() > 0:
+                    retVal = True
+            cache.set(cache_key, retVal, 9999)
+        return retVal
+    
     class Admin:
         pass
     

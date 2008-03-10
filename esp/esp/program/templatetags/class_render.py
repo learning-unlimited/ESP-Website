@@ -26,14 +26,10 @@ def current_cache_key_func(cls, user=None, prereg_url=None, filter=False, reques
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func)
 def render_class_core(cls):
-    # It'd be nice if I could compute show_enrollment without doing these imports. -ageng 2008-02-24
-    from esp.users.models import UserBit
-    from esp.datatree.models import GetNode
+    prog = cls.parent_program
     
     # Show enrollment?
-    prog = cls.parent_program
-    reg_verb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
-    show_enrollment = UserBit.objects.UserHasPerms(None, prog.anchor, reg_verb)
+    show_enrollment = prog.visibleEnrollments()
     
     # Check to see if this is an implied class; if so, grab the parent program and use its colors instead
     if prog.getParentProgram() is not None:
