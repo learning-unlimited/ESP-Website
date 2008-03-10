@@ -36,8 +36,11 @@ http://www.djangosnippets.org/snippets/631/
 import sys
 
 from django.conf import settings
-from django.views import debug
 import django.core.mail
+from django.views import debug
+
+from django.template import defaultfilters
+from django.db.models.query import QuerySet
 
 __all__ = ('PrettyErrorEmailMiddleware',)
 
@@ -82,7 +85,11 @@ class PrettyErrorEmailMiddleware(object):
 
             message = "%s\n\n%s" % (self._get_traceback(exc_info), request_repr)
 
+            # We have to register a new pprint function.
+            defaultfilters.register.filter(safe_filter(defaultfilters.pprint))
+
             debug_response = debug.technical_500_response(request, *exc_info)
+
             msg = EmailMultiAlternatives(settings.EMAIL_SUBJECT_PREFIX \
                                              + subject, message,
                                          settings.SERVER_EMAIL,
@@ -105,6 +112,64 @@ class PrettyErrorEmailMiddleware(object):
         return '\n'.join(traceback.format_exception(*(exc_info or sys.exc_info())))
 
 
+class SafeReprQuerySet(QuerySet):
+    """ This QuerySet class will be safe to `repr`.
+    That means:
+        1. If the QuerySet object passed is already evaluated, repr will behave as before.
+        2. If the QuerySet object has not been evaluated, repr will be the SQL.
+
+    Example usage::
+
+        >>> if isinstance(qs, QuerySet):
+        >>>     qs = SafeReprQuerySet.from_queryset(qs)
+        >>> print repr(qs)
+    """
+
+    @classmethod
+    def from_queryset(cls, queryset):
+        """ Take a queryset and create a SafeReprQuerySet from it. """
+        assert isinstance(queryset, QuerySet), "from_queryset requires a QuerySet object, recieved %r" % queryset
+        new_queryset = queryset._clone(klass=cls, _result_cache=queryset._result_cache)
+        new_queryset._old_class = queryset.__class__
+        return new_queryset
+
+    def __repr__(self):
+        """ Return a representation of this object that doesn't evaluate the SQL. """
+        old_class = self._old_class.__name__
+        if self._result_cache:
+            return QuerySet.__repr__(self)
+
+        try:
+            select, sql, params = self._get_sql_clause()
+            sql = ("SELECT " + (self._distinct and "DISTINCT " or "") + ",".join(select) + sql)
+            try:
+                return '<%s SQL:%r>' % (old_class, sql % tuple(params))
+            except:
+                return '<%s SQL:%r>' % (old_class, [sql, params])
+        except:
+            return '<%s object>' % old_class
+
+
+def safe_filter(old_method):
+    """ This decorator will clean the value to make sure that
+    if it's a QuerySet, it will become a SafeReprQuerySet prior
+    to being sent to the actual filter.
+    """
+    if getattr(old_method, '_saferepr', False):
+        return old_method
+
+    def _safe_func(value, *args, **kwargs):
+        if isinstance(value, QuerySet):
+            value = SafeReprQuerySet.from_queryset(value)
+        return old_method(value)
+    _safe_func.__name__ = old_method.__name__
+    _safe_func.__doc__ = old_method.__doc__
+    _safe_func._saferepr = True
+    _safe_func.is_safe = getattr(old_method, 'is_safe', False)
+
+    return _safe_func
+
+
 
 
 if hasattr(django.core.mail, 'EmailMultiAlternatives'):
@@ -112,6 +177,12 @@ if hasattr(django.core.mail, 'EmailMultiAlternatives'):
     EmailMultiAlternatives = django.core.mail.EmailMultiAlternatives
     mail_admins = django.core.mail.mail_admins
 else:
+
+    # ==========================================================
+    # THIS SECTION IS FOR COMPATIBILITY WITH DJANGO < rev. #5518
+    # ==========================================================
+    # THIS SECTION ENDS AT THE END OF THE FILE.
+
     """
     Tools for sending email.
 
