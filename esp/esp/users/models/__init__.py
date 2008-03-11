@@ -99,7 +99,7 @@ class ESPUser(User, AnonymousUser):
         else:
             models.Model.__init__(self, userObj, *args, **kwargs)
 
-
+        self.other_user = False
         self.cache = ESPUser.objects.cache(self)
 
     @classmethod

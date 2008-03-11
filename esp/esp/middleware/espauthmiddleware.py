@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -28,11 +27,28 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.middleware.statsmiddleware import *
-from esp.middleware.esperrormiddleware import *
-from esp.middleware.whitespacemiddleware import *
-from esp.middleware.fixiemiddleware import *
-from esp.middleware.espcachemiddleware import *
-from esp.middleware.prettyerroremail import *
-from esp.middleware.espauthmiddleware import *
 
+from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
+
+__all__ = ('ESPAuthMiddleware',)
+
+get_user = None
+ESPUser = None
+
+class ESPLazyUser(LazyUser):
+    def __get__(self, request, obj_type=None):
+        global get_user, ESPUser
+        if not hasattr(request, '_cached_user'):
+            if get_user is None or ESPUser is None:
+                from django.contrib.auth import get_user
+                from esp.users.models import ESPUser
+            request._cached_user = ESPUser(get_user(request))
+        return request._cached_user
+
+class ESPAuthMiddleware(object):
+    """ Much like the auth middleware except that this returns an ESPUser. """
+
+    def process_request(self, request):
+        assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
+        request.__class__.user = ESPLazyUser()
+        return None

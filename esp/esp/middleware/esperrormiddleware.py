@@ -29,6 +29,9 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+import datetime
+from django.conf import settings
+
 class Http403(Exception):
     pass
 
@@ -50,13 +53,50 @@ def ESPError(log=True):
         return ESPError_NoLog
  
 
-
 class ESPErrorMiddleware(object):
     """ This middleware handles errors appropriately.
     It will display a friendly error if there indeed was one
     (and emails the admin). This, of course, is only true if DEBUG is
     False in the settings.py. Otherwise, it doesn't do any of that.
     """
+
+    def process_response(self, request, response):
+        user = getattr(request, '_cached_user', -1)
+        if user == -1:
+            return response
+
+        if user and user.id:
+            if settings.SESSION_EXPIRE_AT_BROWSER_CLOSE:
+                max_age = None
+                expires = None
+            else:
+                max_age = settings.SESSION_COOKIE_AGE
+                expires = datetime.datetime.strftime(datetime.datetime.utcnow() + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE), "%a, %d-%b-%Y %H:%M:%S GMT")
+            ret_title = ''
+            try:
+                ret_title = request.session['user_morth']['retTitle']
+            except KeyError:
+                pass
+
+            new_values = {'cur_username': user.username,
+                          'cur_email': user.email,
+                          'cur_first_name': user.first_name,
+                          'cur_last_name': user.last_name,
+                          'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
+                          'cur_retTitle': ret_title,
+                          
+                          }
+
+            for key, value in new_values.iteritems():
+                response.set_cookie(key, value, max_age=max_age, expires=expires,
+                                    domain=settings.SESSION_COOKIE_DOMAIN,
+                                    secure=settings.SESSION_COOKIE_SECURE or None)
+
+        else:
+            map(response.delete_cookie, ('cur_username','cur_email',
+                                         'cur_first_name','cur_last_name',
+                                         'cur_other_user','cur_retTitle'))
+        return response
 
     def process_exception(self, request, exception):
         from django.shortcuts import render_to_response
