@@ -5,8 +5,8 @@
 %%Title: {{ file_name }}
 %%BoundingBox: 0 0 216 162
 
-/offsetx 18 def
-/offsety 36 def
+/offsetx {% if crowded %}30{% else %}18{% endif %} def
+/offsety {% if crowded %}48{% else %}36{% endif %} def
 /max_x 216 offsetx sub def
 /max_y 162 offsety sub def
 
@@ -59,8 +59,8 @@ tickSize -2 mul  0 rlineto
 %%%%%%%  Axes - generic values, reset as needed
 
 /tickSize{3}def
-/pX{180}def       %% Positive x-axis length
-/pY{108}def       %% Positive y-axis length
+/pX{% if crowded %}{168}{% else %}{180}{% endif %}def       %% Positive x-axis length
+/pY{% if crowded %}{96}{% else %}{108}{% endif %}def       %% Positive y-axis length
 /mX{0}def      %% Negative x-axis length
 /mY{0}def      %% Negative y-axis length
 /xTick{sectionwidth} def    %% tick length for x-axis
@@ -151,16 +151,25 @@ xlabel sw1 2 div sub ymax yspaceneg add moveto
 ({{ ans.freq }}) show
 
 /sw2 ({{ ans.value }}) stringwidth pop def
+{% if crowded %}
+xlabel sw2 0.924 mul sub sectionwidth 4 div add yspaceneg sw2 0.383 mul sub moveto
+gsave
+22.5 rotate
+{% else %}
 xlabel sw2 2 div sub yspaceneg moveto
+gsave
+{% endif %}
+%% sw2 yspaceneg 2 div translate
 0 0 0 setrgbcolor
 ({{ ans.value }}) show
+grestore
 
 {% endfor %}
 
 0 0 0.5 setrgbcolor
 
 /sw1 (Response) stringwidth pop def
-pX sw1 sub 2 div yspaceneg 2 mul moveto
+pX sw1 sub 2 div yspaceneg {% if crowded %}3.5{% else %}2{% endif %} mul moveto
 (Response) show
 /sw2 (Histogram of responses) stringwidth pop def
 pX sw2 sub 2 div pY yspacepos add moveto

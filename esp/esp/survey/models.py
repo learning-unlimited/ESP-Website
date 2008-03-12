@@ -197,6 +197,7 @@ class QuestionType(models.Model):
                                     help_text="A pipe (|) delimited list of parameter names.")
     param_names = ListField('_param_names')
     is_numeric = models.BooleanField(null=True)
+    is_countable = models.BooleanField(null=True)
 
     @property
     def template_file(self):

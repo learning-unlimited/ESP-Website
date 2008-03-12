@@ -175,6 +175,14 @@ def histogram(answer_list, format='html'):
     file_name = '/tmp/%s.eps' % file_base
     image_width = 2.75
     
+    processed_list = []
+    for ans in answer_list:
+        if isinstance(ans, list):
+            processed_list.extend(ans)
+        else:
+            processed_list.append(ans)
+    answer_list = processed_list
+    
     #   Place results in key, value pairs where keys contain values and values contain frequencies.
     context = {}
     context['file_name'] = file_name
@@ -182,12 +190,15 @@ def histogram(answer_list, format='html'):
     context['num_responses'] = len(answer_list)
     
     context['results'] = []
+    max_answer_length = 0
     for ans in answer_list:
         try:
             i = [r['value'] for r in context['results']].index(str(ans))
             context['results'][i]['freq'] += 1
         except ValueError:
             context['results'].append({'value': ans, 'freq': 1})
+        if len(ans) > max_answer_length:
+            max_answer_length = len(ans)
     
     context['results'].sort(key=lambda x: x['value'])
     
@@ -198,6 +209,12 @@ def histogram(answer_list, format='html'):
         if item['freq'] > max_freq:
             max_freq = item['freq']
             context['max_freq'] = max_freq
+    
+    #   Might we have trouble making text not overlap? 36 is an arbitrary limit.
+    if context['num_keys'] * max_answer_length > 36:
+        context['crowded'] = True
+    else:
+        context['crowded'] = False
     
     file_contents = loader.render_to_string(template_file, context)
     file_obj = open(file_name, 'w')

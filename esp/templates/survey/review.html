@@ -32,7 +32,7 @@
     </tr>
     </table>
     {% for q in s.display_data.questions %}
-        {% if q.question.question_type.is_numeric %}
+        {% if q.question.question_type.is_countable %}
         <table width="600">
         <tr>
             <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
@@ -47,8 +47,10 @@
                 <b>Statistics:</b>
                 <ul>
                     <li>Number of responses: {{ q.answers|length }}/{{ s.num_participants }}
+                    {% if q.question.question_type.is_numeric %}
                     <li>Average: {{ q.answers|average }}
                     <li>Std. deviation: {{ q.answers|stdev }}
+                    {% endif %}
                 </ul>
             </td>
         </tr>
