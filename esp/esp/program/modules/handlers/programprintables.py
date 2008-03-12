@@ -34,7 +34,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
-from esp.money.models    import Transaction
+#from esp.money.models    import Transaction
 from esp.program.models  import Class
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
@@ -968,14 +968,17 @@ Student schedule for %s:
 
         studentList = []
         for student in students:
-            t = Transaction.objects.filter(fbo = student, anchor = self.program_anchor_cached())
-            
             paid_symbol = ''
-            if t.count() > 0:
-                paid_symbol = '?'
-                for tr in t:
-                    if tr.executed is True:
-                        paid_symbol = 'X'
+            if student.hasFinancialAid(self.program_anchor_cached()):
+                paid_symbol = 'X'
+            else:
+                li_types = prog.getLineItemTypes(student)
+                try:
+                    invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+                except MultipleDocumentError:
+                    invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+                if invoice.cost() == 0:
+                    paid_symbol = 'X'
 
             studentList.append({'user': student, 'paid': paid_symbol})
 
@@ -1000,16 +1003,19 @@ Student schedule for %s:
             class_dict = {'cls': c}
             student_list = []
             
-            for student in c.students():
-                t = Transaction.objects.filter(fbo = student, anchor = self.program_anchor_cached())
-                
+            for student in students:
                 paid_symbol = ''
-                if t.count() > 0:
-                    paid_symbol = '?'
-                    for tr in t:
-                        if tr.executed is True:
-                            paid_symbol = 'X'
-    
+                if student.hasFinancialAid(self.program_anchor_cached()):
+                    paid_symbol = 'X'
+                else:
+                    li_types = prog.getLineItemTypes(student)
+                    try:
+                        invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+                    except MultipleDocumentError:
+                        invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+                    if invoice.cost() == 0:
+                        paid_symbol = 'X'
+                
                 student_list.append({'user': student, 'paid': paid_symbol})
             
             class_dict['students'] = student_list
