@@ -74,7 +74,8 @@ class NameTagModule(ProgramModuleObj):
         elif idtype == 'teacher':
             teachers = []
             teacher_dict = self.program.teachers(QObjects=True)
-            teachers = User.objects.filter(teacher_dict['teacher_profile'] | teacher_dict['class_rejected']).distinct()
+            teachers = User.objects.filter(teacher_dict['class_approved']).distinct()
+#            teachers = User.objects.filter(teacher_dict['teacher_profile'] | teacher_dict['class_rejected']).distinct()
 
 	    teachers = [ ESPUser(teacher) for teacher in teachers ]
             teachers = filter(lambda x: len(x.first_name+x.last_name), teachers)
