@@ -50,6 +50,9 @@ class NameTagModule(ProgramModuleObj):
     def generatetags(self, request, tl, one, two, module, extra, prog):
         """ generate nametags """
 
+        # Default to students
+        if 'type' not in request.POST:
+            raise ESPError(log=False), "You need to select the TYPE of Name Tag to print. (students,teachers,etc)"
         idtype = request.POST['type']
 
         users = []
