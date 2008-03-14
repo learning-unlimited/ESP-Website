@@ -35,6 +35,7 @@ from django.contrib.auth.decorators import login_required
 from esp.users.models import ESPUser, User
 from esp.db.models import Q
 from esp.users.views  import get_user_list
+from esp.middleware import ESPError
 
 class NameTagModule(ProgramModuleObj):
     """ This module allows you to generate a bunch of IDs for everyone in the program. """
