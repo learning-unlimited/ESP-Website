@@ -53,11 +53,12 @@ class StudentClassRegModule(ProgramModuleObj):
         Par = django_Q(userbit__qsc__parent=self.program.classes_node())
         Conf = django_Q(userbit__verb = GetNode('V/Flags/Registration/Confirmed'))
         Prel = django_Q(userbit__verb = GetNode('V/Flags/Registration/Preliminary'))
+        Unexpired = django_Q(userbit__enddate__isnull=True) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
         
         if QObject:
-            return {'classreg': self.getQForUser(Par & (Conf | Prel))}
+            return {'classreg': self.getQForUser(Par & Unexpired & (Conf | Prel))}
         else:
-            return {'classreg': User.objects.filter(Par & (Conf | Prel)).distinct()}
+            return {'classreg': User.objects.filter(Par & Unexpired & (Conf | Prel)).distinct()}
 
 
     def studentDesc(self):
