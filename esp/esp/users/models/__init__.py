@@ -464,7 +464,7 @@ class ESPUser(User, AnonymousUser):
     def hasFinancialAid(self, anchor):
         from esp.program.models import Program, FinancialAidRequest
         
-        progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
+        progs = [p['id'] for p in Program.objects.filter(anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend).values('id')]
         apps = FinancialAidRequest.objects.filter(user=self, program__in=progs)
         for a in apps:
             if a.approved:

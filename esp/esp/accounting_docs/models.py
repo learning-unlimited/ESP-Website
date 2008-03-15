@@ -125,12 +125,19 @@ class Document(models.Model):
         if finaid is None:
             finaid = ESPUser(user).hasFinancialAid(anchor)
         
-        qs = Document.objects.filter(user=user, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, doctype=doctype, txn__complete=get_complete).distinct()
+        qs = Document.objects.filter(user=user, anchor=anchor, doctype=doctype, txn__complete=get_complete).distinct()
         
         """ if qs.count() > 1:
             raise MultipleDocumentError, 'Found multiple uncompleted transactions for this user and anchor.'
         elif qs.count() == 1: """
-        if qs.count() >= 1:
+        additional_invoice = False
+        if qs.count() >= 1 and qs[0].txn.complete:
+            for lit in li_types:
+                #   If we're missing any line items, then we've got to make another invoice.
+                if (qs.count() >= 1) and (lit.id not in [a['li_type'] for a in qs[0].txn.lineitem_set.all().values('li_type')]):
+                    additional_invoice = True
+                    
+        if qs.count() >= 1 and not additional_invoice:
             #   Retrieve the document, add on any line items that we received if necessary, and return.
             doc = qs[0]
             for lit in li_types:
@@ -145,7 +152,12 @@ class Document(models.Model):
             new_tx.save()
             for lit in li_types:
                 if not dont_duplicate or new_tx.lineitem_set.filter(li_type=lit).count() == 0:
-                    new_tx.add_item(user, lit, finaid)
+                    if qs.count() == 0:
+                        new_tx.add_item(user, lit, finaid)
+                    else:
+                        #   If there's already an appropriate transaction but we're making a new one
+                        if qs[0].txn.lineitem_set.filter(li_type=lit).count() == 0:
+                            new_tx.add_item(user, lit, finaid)
 
             new_doc = Document()
             new_doc.txn = new_tx
@@ -197,6 +209,39 @@ class Document(models.Model):
         new_tx.post_balance(user, "Credit Card payment received", GetNode("Q/Accounts/Realized"))
 
         old_doc.txn.post_balance(user, "Credit Card payment received", GetNode("Q/Accounts/Receivable/OnSite"))
+        old_doc.txn.save()
+
+        return new_doc
+    
+    @staticmethod
+    def receive_onsite(user, loc, amt=None, ref=''):
+        """ Call this function for a user that pays on-site """
+        old_doc = Document.get_by_locator(loc)
+
+        if amt is None:
+            amt = old_doc.cost()
+            
+        print 'Receiving onsite payment for %s: $%.2f' % (user.id, amt)
+
+        new_tx = Transaction.begin(old_doc.anchor, 'On-site payment')
+        li_type, unused = LineItemType.objects.get_or_create(text='On-site payment expected',anchor=GetNode("Q/Accounts/Receivable/OnSite"))
+        new_tx.add_item(user, li_type, amount=-amt)
+        
+        new_doc = Document()
+        new_doc.txn = new_tx
+        new_doc.doctype = 3
+        new_doc.anchor = old_doc.anchor
+        new_doc.user = user
+        new_doc.cc_ref = ref
+        new_doc.save()
+        
+        new_doc.set_default_locator()
+        new_doc.docs_prev.add(old_doc)
+        new_doc.save()
+        
+        new_tx.post_balance(user, "On-site payment (cash or check) received", GetNode("Q/Accounts/Realized"))
+
+        old_doc.txn.post_balance(user, "On-site payment expected", GetNode("Q/Accounts/Receivable/OnSite"))
         old_doc.txn.save()
 
         return new_doc
