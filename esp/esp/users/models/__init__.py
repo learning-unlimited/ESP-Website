@@ -471,6 +471,73 @@ class ESPUser(User, AnonymousUser):
                 return True
         return False
 
+    def paymentStatus(self, anchor=None):
+        """ Returns a tuple of (has_paid, status_str, line_items) to indicate
+        the user's payment obligations to ESP:
+        -   has_paid: True or False, indicating whether any money is owed to
+            the accounts under the specified anchor
+        -   status: A string briefly explaining the status of the transactions
+        -   line_items: A list of the relevant line items
+        """
+        from esp.accounting_docs.models import Document
+        from esp.accounting_core.models import LineItem, Transaction
+        
+        if anchor is None:
+            anchor = DataTree.get_by_uri('Q/Programs')
+        
+        receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable')
+        realized_parent = DataTree.get_by_uri('Q/Accounts/Realized')
+        
+        #   We have to check both complete and incomplete documents.
+        docs = Document.objects.filter(user=self)
+        
+        li_list = []
+        for d in docs:
+            li_list += list(d.txn.lineitem_set.all())
+            
+        amt_charged = 0
+        amt_expected = 0
+        amt_paid = 0
+            
+        #   Compute amount charged by looking at line items posted under the specified anchor.
+        #   Compute amount expected by looking at line items posted to Accounts Receivable.
+        #   Compute amount paid by looking at line items posted to Accounts Realized.
+        
+        #   Exclude duplicate line items.  We may want to remove this soon, but it was
+        #   a necessity for HSSP/Spark.   -Michael
+        previous_li = []
+        for li in li_list:
+            li_str = '%.2f,%d' % (li.amount, li.anchor.id)
+            if li_str not in previous_li:
+                previous_li.append(li_str)
+            else:
+                continue
+
+            if li.anchor in anchor:
+                amt_charged -= li.amount
+            if li.anchor in receivable_parent:
+                amt_expected += li.amount
+            if li.anchor in realized_parent:
+                amt_paid += li.amount
+            
+        has_paid = False
+        status = 'Unknown'
+        if amt_charged == 0:
+            status = 'Empty'
+        elif amt_expected != 0:
+            if amt_paid == 0:
+                status = 'Pending/Unpaid'
+            else:
+                status = 'Partially paid'
+        else:
+            status = 'Fully paid'
+            has_paid = True
+            
+        amt_owed = amt_charged - amt_paid
+            
+        return (has_paid, status, amt_owed, li_list)
+        
+
     def isOnsite(self, program = None):
         verb = GetNode('V/Registration/OnSite')
         if program is None:

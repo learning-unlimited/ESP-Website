@@ -55,7 +55,7 @@ class LineItemTypeManager(ProcedureManager):
 class LineItemType(models.Model):
     """ A set of default values for a line item """
     text = models.TextField() # description of line item
-    amount = models.FloatField(max_digits=9, decimal_places=2, default=0.0) # default amount
+    amount = models.FloatField(help_text='This should be negative for student costs charged to a program.', max_digits=9, decimal_places=2, default=0.0) # default amount
     anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitemtype',null=True) # account to post the line item
     finaid_amount = models.FloatField(max_digits=9, decimal_places=2, default=0.0) # amount after financial aid
     finaid_anchor = AjaxForeignKey(DataTree,null=True,related_name='accounting_finaiditemtype')
@@ -253,7 +253,7 @@ class LineItem(models.Model):
     objects = LineItemManager()
 
     def __str__(self):
-        return "L-%u (T-%u): %.02f %s, %s" % (self.id, self.transaction.id, self.amount, self.user.username, self.text)
+        return "L-%u (T-%u): %.02f %s - %s, %s" % (self.id, self.transaction.id, self.amount, self.anchor.uri, self.user.username, self.text)
 
     class Admin:
         pass

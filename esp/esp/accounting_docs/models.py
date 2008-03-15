@@ -125,7 +125,9 @@ class Document(models.Model):
         if finaid is None:
             finaid = ESPUser(user).hasFinancialAid(anchor)
         
-        qs = Document.objects.filter(user=user, anchor=anchor, doctype=doctype, txn__complete=get_complete).distinct()
+        #   Put the documents in descending order of ID so, in case there is more than 1, the result is
+        #   consistent from run to run.
+        qs = Document.objects.filter(user=user, anchor=anchor, doctype=doctype, txn__complete=get_complete).order_by('-id').distinct()
         
         """ if qs.count() > 1:
             raise MultipleDocumentError, 'Found multiple uncompleted transactions for this user and anchor.'
@@ -133,7 +135,7 @@ class Document(models.Model):
         additional_invoice = False
         if qs.count() >= 1 and qs[0].txn.complete:
             for lit in li_types:
-                #   If we're missing any line items, then we've got to make another invoice.
+                #   If we're missing any line items, then we've got to make another invoice and return it.
                 if (qs.count() >= 1) and (lit.id not in [a['li_type'] for a in qs[0].txn.lineitem_set.all().values('li_type')]):
                     additional_invoice = True
                     
@@ -214,17 +216,33 @@ class Document(models.Model):
         return new_doc
     
     @staticmethod
+    def prepare_onsite(user, loc):
+        """ Call this function for all users that have registered online for a
+        program.  It will close off all the online transactions and leave anticipated
+        amounts in Accounts Receivable. """
+        
+        money_target = DataTree.get_by_uri('Q/Accounts/Receivable/OnSite')
+        old_doc = Document.get_by_locator(loc)
+        old_doc.txn.post_balance(student, 'Expecting on-site payment', money_target)
+    
+    @staticmethod
     def receive_onsite(user, loc, amt=None, ref=''):
-        """ Call this function for a user that pays on-site """
+        """ Call this function for each user that pays on-site.  If their initial
+        invoice was not closed, you will need to call prepare_onsite first.
+        The amount is assumed to be the balance of the user's obligations to ESP.
+        An additional note can be supplied in the ref field, although this is normally
+        used for Cybersource credit card transaction IDs. """
+        
+        money_src = DataTree.get_by_uri('Q/Accounts/Receivable/OnSite')
+        money_target = DataTree.get_by_uri('Q/Accounts/Realized')
+        
         old_doc = Document.get_by_locator(loc)
 
         if amt is None:
-            amt = old_doc.cost()
-            
-        print 'Receiving onsite payment for %s: $%.2f' % (user.id, amt)
+            amt = old_doc.cost(mask_receivable=True)
 
         new_tx = Transaction.begin(old_doc.anchor, 'On-site payment')
-        li_type, unused = LineItemType.objects.get_or_create(text='On-site payment expected',anchor=GetNode("Q/Accounts/Receivable/OnSite"))
+        li_type, unused = LineItemType.objects.get_or_create(text='Received on-site payment',anchor=money_src)
         new_tx.add_item(user, li_type, amount=-amt)
         
         new_doc = Document()
@@ -239,19 +257,28 @@ class Document(models.Model):
         new_doc.docs_prev.add(old_doc)
         new_doc.save()
         
-        new_tx.post_balance(user, "On-site payment (cash or check) received", GetNode("Q/Accounts/Realized"))
-
-        old_doc.txn.post_balance(user, "On-site payment expected", GetNode("Q/Accounts/Receivable/OnSite"))
-        old_doc.txn.save()
+        new_tx.post_balance(user, "On-site payment (cash or check) received", money_target)
 
         return new_doc
     
     def get_items(self):
         return self.txn.lineitem_set.all()
     
-    def cost(self):
+    def cost(self, mask_receivable=False):
+        """ Get the cost of line items on a document.
+        If mask_receivable is set to True, line items posting to Accounts Receivable
+        (which represent anticipated, not real, funds) will be ignored in the
+        calculation. """
+        receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable/')
         try:
-            return -self.txn.get_balance()
+            if not mask_receivable:
+                return self.txn.get_balance()
+            else:
+                bal = 0
+                for li in self.txn.lineitem_set.all():
+                    if li.anchor not in receivable_parent:
+                        bal -= li.amount
+                return bal
         except EmptyTransactionException:
             return 0
 
