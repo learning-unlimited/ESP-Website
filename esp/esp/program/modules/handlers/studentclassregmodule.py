@@ -211,8 +211,12 @@ class StudentClassRegModule(ProgramModuleObj):
         user_grade = user.getGrade()
         is_onsite = user.isOnsite(self.program)
         
-         # using .extra() to select all the category text simultaneously
-        classes = [c for c in Class.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull()) or is_onsite] 
+        # using .extra() to select all the category text simultaneously
+        #   Override both grade limits and size limits during onsite registration
+        if is_onsite:
+            classes = [c for c in Class.objects.catalog(self.program, ts)]
+        else:
+            classes = [c for c in Class.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull())] 
 
         categories = {}
 
