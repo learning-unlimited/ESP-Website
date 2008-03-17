@@ -587,7 +587,9 @@ class Class(models.Model):
         ub, created = UserBit.objects.get_or_create(user = user,
                                 qsc = self.anchor,
                                 verb = v)
+        ub.enddate = None
         ub.save()
+        
         return True
 
     def removeTeacher(self, user):
@@ -614,7 +616,8 @@ class Class(models.Model):
         ub, created = UserBit.objects.get_or_create(user = user,
                                 qsc = self.anchor,
                                 verb = v)
-
+        ub.enddate = None
+        ub.save()
 
         return True        
 

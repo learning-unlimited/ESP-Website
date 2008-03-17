@@ -209,6 +209,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         prereg_url = self.program.get_learn_url + 'addclass/'
         user_grade = user.getGrade()
+        user.updateOnsite(request)
         is_onsite = user.isOnsite(self.program)
         
         # using .extra() to select all the category text simultaneously
