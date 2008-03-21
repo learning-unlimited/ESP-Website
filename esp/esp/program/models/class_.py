@@ -834,8 +834,7 @@ class Class(models.Model):
         students = [ student for student in students
                      if student.id != user.id ]
         self.cache['students'] = students
-        self.cache['num_students'] = len(students)
-        
+        self.update_cache_students()
 
     def preregister_student(self, user, overridefull=False, automatic=False):
 
