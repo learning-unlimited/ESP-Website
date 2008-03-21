@@ -589,6 +589,10 @@ class ProgramPrintables(ProgramModuleObj):
                 transactions = Transaction.objects.filter(fbo = user, anchor = self.program_anchor_cached())
                 if transactions.count() == 0:
                     transaction = Transaction()
+                    try:
+                        transaction.amount = float(form.clean_data['txn_amount'])
+                    except:
+                        raise ESPError(False), 'No transaction was found, and you did not specify a valid refund amount.  Please enter a dollar amout such as "20.00" and try again.'
                 else:
                     transaction = transactions[0]
 
@@ -599,7 +603,7 @@ class ProgramPrintables(ProgramModuleObj):
                 context['payer_address'] = form.clean_data['payer_address']                
                 context['omars_number'] = form.clean_data['omars_number']
                 context['credit_card_num'] = form.clean_data['credit_card_num']
-                context['amount'] = '%.02f' % (transaction.amount)
+                context['amount'] = '%.02f' % (float(transaction.amount))
 
                 if extra:
                     file_type = extra.strip()

@@ -11,9 +11,9 @@
 \begin{boxedminipage}{2.75in}
 \begin{center}
 \texttt{Student Activities Finance Office \\
-ATTN: Laurie Ward \\
-77 Massachusetts Ave \\
-W20-549 \\
+ATTN: Catherine Hursh \\
+84 Massachusetts Ave \\
+Room W20-549 \\
 Cambridge, MA 02139 \\
 FAX: 617-253-8391 }
 \end{center}
@@ -33,12 +33,12 @@ Student Address: &\texttt{ {{user.getLastProfile.contact_user.address_street|tex
 Transaction Type: &\texttt{ {{transaction.payment_type|texescape }} } \\
 Transaction Amount: &\texttt{ \${{ amount }} } \\
 Transaction ID: &\texttt{ {{ transaction.id|texescape }} } \\
-Transaction Date: &\texttt{ {{ transaction.update_ts|date:"F nS, Y" }} }\\
+Transaction Date: &\texttt{ {{ transaction.update_ts|date:"F d, Y" }} }\\
 Payer's Name: &\texttt{ {{ payer_name|texescape }} } \\
 Payer's Address: &{\large \texttt{ {\bf {{ payer_address|texescape }}}} } \\
 OMARS Transaction Number: &\texttt{ {{ omars_number|texescape }} } \\
 \vspace{.1in} \\
-Credit Card Number: &\rule{1.5in}{0.25pt} \hspace{.5in} Expiration date: \rule{.8in}{0.25pt}\\
+Credit Card Number: &\rule{2in}{0.25pt} \hspace{.5in} Expiration date: \rule{.8in}{0.25pt}\\
 \end{tabular}
 \vspace{.4in}
 \\
@@ -46,7 +46,7 @@ Credit Card Number: &\rule{1.5in}{0.25pt} \hspace{.5in} Expiration date: \rule{.
 By printing and/or sending this document, MIT Educational Studies Program
 voids the transaction above. \\
 \\
-By signing below, I, \underline{ {{ payer_name|texescape }} }, assert that I have paid ESP \${{ amount }} on {{ transaction.update_ts|date:"F nS, Y" }} and that the credit card I used is under the address (bolded) above.
+By signing below, I, \underline{ {{ payer_name|texescape }} }, assert that I have paid ESP \${{ amount }} on {{ transaction.update_ts|date:"F d, Y" }} and that the credit card I used is under the address (bolded) above.
 
 \vspace{.6in}
 \rule{4.5in}{0.25pt} \\
