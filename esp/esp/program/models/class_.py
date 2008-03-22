@@ -128,9 +128,9 @@ class Class(models.Model):
 
     #   Viable times replaced by availability of teacher (function viable_times below)
     #   Resources replaced by resource assignment (functions getResources, getResourceAssignments below)
-    meeting_times = models.ManyToManyField(Event, related_name='meeting_times', null=True)
+    meeting_times = models.ManyToManyField(Event, related_name='meeting_times', null=True, blank=True)
 
-    checklist_progress = models.ManyToManyField('ProgramCheckItem', null=True)
+    checklist_progress = models.ManyToManyField('ProgramCheckItem', null=True, blank=True)
 
     objects = ClassManager()
 
