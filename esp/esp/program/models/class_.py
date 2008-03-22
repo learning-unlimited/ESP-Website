@@ -130,7 +130,7 @@ class Class(models.Model):
     #   Resources replaced by resource assignment (functions getResources, getResourceAssignments below)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', null=True)
 
-    checklist_progress = models.ManyToManyField('ProgramCheckItem')
+    checklist_progress = models.ManyToManyField('ProgramCheckItem', null=True)
 
     objects = ClassManager()
 
