@@ -703,8 +703,8 @@ class ESPUser(User, AnonymousUser):
         return schoolyear + 12 - grade      
 
     
-shirt_sizes = ('14/16', 'XS', 'S', 'M', 'L', 'XL', 'XXL')
-shirt_sizes = tuple(zip(shirt_sizes, shirt_sizes))
+shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
+shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))    
     
 class StudentInfo(models.Model):

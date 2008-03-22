@@ -18,6 +18,8 @@
     <td valign="top" align="center" width="25%">
         <div style="font-weight:bold; text-align:left; text-indent:-3em;">
             <div>Name: {{ student.name }}</div>
+            <div>Username: {{ student.username }}</div>
+            <div>User ID: {{ student.id }}</div>
             <div>Amount owed: ${{ student.itemizedcosttotal|floatformat:"-2" }}</div>
             {% if student.in_parent_program %}
                 <div style="font-style:italic;">{{ program.getParentProgram.niceName }} Student</div>
