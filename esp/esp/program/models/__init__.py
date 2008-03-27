@@ -475,7 +475,7 @@ class Program(models.Model):
         if timeslot is not None:
             return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom'))
         else:
-            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom'))
+            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
     
     def getAvailableClassrooms(self, timeslot):
         from esp.resources.models import ResourceType
@@ -493,6 +493,7 @@ class Program(models.Model):
                 result[c.name].timeslots.append(c.event)
             result[c.name].furnishings = c.associated_resources()
             result[c.name].sequence = c.schedule_sequence(self)
+            result[c.name].prog_available_times = c.available_times(self.anchor)
             
         for c in result:
             result[c].timegroup = Event.collapse(result[c].timeslots)
@@ -517,7 +518,7 @@ class Program(models.Model):
         if result is not None:
             return result
         
-        classrooms = self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
+        classrooms = self.getClassrooms()
         
         result = self.collapsed_dict(list(classrooms))
         key_list = result.keys()
@@ -535,7 +536,7 @@ class Program(models.Model):
         assert False, 'todo'
         
     def classes(self):
-        return Class.objects.filter(parent_program = self).order_by('id')
+        return ClassSubject.objects.filter(parent_program = self).order_by('id')        
     
     def class_ids_implied(self, use_cache=True):
         """ Returns the class ids implied by classes in this program. Returns [-1] for none so the cache doesn't keep getting hit. """
@@ -552,7 +553,14 @@ class Program(models.Model):
         retVal = list(retVal)
         cache.set(cache_key, retVal, 9999)
         return retVal
-    
+
+    def sections(self):
+        all_classes = self.classes()
+        section_ids = []
+        for c in all_classes:
+            section_ids += [item['id'] for item in c.sections.all().values('id')]
+        return ClassSection.objects.filter(id__in=section_ids).order_by('id')        
+
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')
 
@@ -918,13 +926,14 @@ class RegistrationProfile(models.Model):
             form_data = self.contact_emergency.updateForm(form_data, 'emerg_')
         return form_data
     
+    #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self):
         v = GetNode( 'V/Flags/Registration/Preliminary' )
-        return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode(['Classes']))
+        return UserBit.find_by_anchor_perms(ClassSection, self.user, v, self.program.anchor.tree_decode(['Classes']))
     
     def registered_classes(self):
         v = GetNode( 'V/Flags/Registration/Confirmed' )
-        return UserBit.find_by_anchor_perms(Class, self.user, v, self.program.anchor.tree_decode(['Classes']))
+        return UserBit.find_by_anchor_perms(ClassSection, self.user, v, self.program.anchor.tree_decode(['Classes']))
 
     class Admin:
         pass
@@ -1051,8 +1060,8 @@ class JunctionStudentApp(models.Model):
 
     program = models.ForeignKey(Program, editable = False)
     user    = AjaxForeignKey(User, editable = False)
-    class_prep = models.TextField(verbose_name = 'Your School Preperation',
-                      help_text = "Please describe your high school preperation. List the classes you've taken thus far.",
+    class_prep = models.TextField(verbose_name = 'Your School Preparation',
+                      help_text = "Please describe your high school preparation. List the classes you've taken thus far.",
                       blank=True,
                       null=True)
     

@@ -4,6 +4,11 @@
 
 {% block subsection_name %}Printing Options{% endblock %}
 
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
 {% block content %}
 <style type="text/css">
 #divmaintext table, #divmaintext th, #divmaintext td {
@@ -16,10 +21,8 @@
 <br /><br />
 <h1>Catalog order for {{program.niceName}}</h1>
 
-<p style="text-align: center">
-Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. 
-<br />
-(Sometimes it will look unbalanced etc.).
+<p>
+Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. (Sometimes it will look unbalanced, etc.)
 </p>
 <p>
 <a href="{{request.path}}">Reset Order</a> (default is by catagory, timeblock, title)
@@ -31,40 +34,40 @@ Get Catalog:
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
 
-</p>
-
-<p>
-<form action="" method="get">
-Sort by
-<select name="first_sort">
-{% for op in sorting_options %}
-<option value="{{ op }}">{{ op }}</option>
-{% endfor %}
-</select>
-
-then
-
-<select name="second_sort">
-{% for op in sorting_options %}
-<option value="{{ op }}">{{ op }}</option>
-{% endfor %}
-</select>
-
-then
-
-<select name="third_sort">
-{% for op in sorting_options %}
-<option value="{{ op }}">{{ op }}</option>
-{% endfor %}
-</select>
-
-<input type="submit" value="Go!"/>
-</form>
-</p>
-
-<br /><br />
-
+<div id="program_form">
 <table cellspacing="0" cellpadding="0">
+
+<tr>
+    <td colspan="6">
+        <form action="" method="get">
+        Sort by
+        <select name="first_sort">
+        {% for op in sorting_options %}
+        <option value="{{ op }}">{{ op }}</option>
+        {% endfor %}
+        </select>
+        
+        then
+        
+        <select name="second_sort">
+        {% for op in sorting_options %}
+        <option value="{{ op }}">{{ op }}</option>
+        {% endfor %}
+        </select>
+        
+        then
+        
+        <select name="third_sort">
+        {% for op in sorting_options %}
+        <option value="{{ op }}">{{ op }}</option>
+        {% endfor %}
+        </select>
+        
+        <input type="submit" value="Go!"/>
+        </form>
+    </td>
+</tr>
+
 <tr>
   <th>#</th>
   <th>ID</th>
@@ -93,6 +96,8 @@ then
 {% endfor %}
 
 </table>
+</div>
+
 <p>
 Get Catalog: 
 (<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 

@@ -29,7 +29,7 @@ def render_inline_qsd(input_anchor, qsd):
     if isinstance(input_anchor, basestring):
         try:
             anchor = DataTree.get_by_uri(input_anchor)
-        except DatTree.NoSuchNodeException:
+        except DataTree.NoSuchNodeException:
             return {}
                 
     elif isinstance(input_anchor, DataTree):

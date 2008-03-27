@@ -13,21 +13,14 @@
 <h1>{{ addoredit }}ing a class for {{ program.niceName }}</h1>
 
 <p>
-Thank you for your interest in teaching for {{ one }}. Please fill out or update the form below.   The required fields are bordered in red.
-</p>
+Thank you for your interest in teaching for {{ one }}!  Please ensure that you are available to teach your class at any of the times you have <a href="/teach/{{ program.url }}/availability">specified that you are available</a>.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form; <a href="mailto:{{ program.director_email }}">contact the program directors</a>.<p>
 
-<p>If you would like to co-teach this class with others, please click the "Coteachers" button next to the appropriate class at the teacher registration page after you submit this form.</p>
+<p>Please fill out or update the form below.  (The required fields are bordered in red.)  If you would like to co-teach this class with others, please click the "Modify Coteachers" button next to the appropriate class at the teacher registration page afterwards.  If you would like to teach multiple sections of the same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</p>
 
 <form action="{{request.path}}" name="clsform" method="post">
 
 <div id="program_form">
 <center>
-<div class="info">
-<b>Teachers:</b> Please ensure that you are available to teach your class at any of the times you have specified that you are available.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form.  <a href="mailto:{{ program.director_email }}">Contact the program directors</a>.  We're just trying to minimize the number of classes that have to be cancelled after registration begins.
-<br />
-<br />
-To specify when you are available, go here: <a href="/teach/{{ program.url }}/availability">Indicate Your Availability</a>.
-</div>
 <table width="550">
     <tr><th colspan="2">Course Creation/Editing Form</th></tr>
     {% if form.has_errors %}
@@ -50,6 +43,39 @@ To specify when you are available, go here: <a href="/teach/{{ program.url }}/av
             {{ form.title }} 
         </td>
     </tr>
+
+    <tr>
+        <td>
+            <label for="id_num_sections" class="header">Number of Sections:</label>
+            {% if form.num_sections.errors %}
+                <br />
+                <span class="form_error">{{ form.num_sections.errors|join:", " }}</span>
+                <br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.num_sections }} 
+        </td>
+    </tr>
+
+    {% if durations %}
+    {% if form.duration %}
+    <tr>
+        <td>
+            <label for="id_duration" class="header">
+            Length of Each Section (hours:minutes):
+            </label>
+
+            {% if form.duration.errors %}
+            <br /><span class="form_error">{{ form.duration.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.duration }}
+        </td>
+    </tr>
+    {% endif %}
+    {% endif %}
 
     {% comment %}
         <label for="id_url" class="header">
@@ -148,7 +174,7 @@ To specify when you are available, go here: <a href="/teach/{{ program.url }}/av
     <tr>
         <td>
         <label for="id_class_size_max">
-        Maximum Size:
+        Maximum Size (number of students):
         </label>
         </td>
         <td>
@@ -160,25 +186,6 @@ To specify when you are available, go here: <a href="/teach/{{ program.url }}/av
     </tr>
     
     <tr><th colspan="2" class="smaller"><p><b>Note</b>: The above class-size and grade-range values are absolute, not the &#8220;optimum&#8221; nor &#8220;recommended&#8221; amounts.  We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. </p></th></tr>
-
-    {% if durations %}
-    {% if form.duration %}
-    <tr>
-        <td>
-            <label for="id_duration" class="header">
-            Preferred Duration (hours:minutes):
-            </label>
-
-            {% if form.duration.errors %}
-            <br /><span class="form_error">{{ form.duration.errors|join:", " }}</span><br />
-            {% endif %}
-        </td>
-        <td>
-            {{ form.duration }}
-        </td>
-    </tr>
-    {% endif %}
-    {% endif %}
     
     {% if form.allow_lateness %}
     <tr>

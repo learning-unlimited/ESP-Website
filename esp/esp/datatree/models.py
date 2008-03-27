@@ -60,7 +60,7 @@ class DataTree(models.Model):
     ROOT_NAME   = 'ROOT'
     MAX_DEPTH   = 50
     LOCK_WAIT   = .01
-    MAX_WAIT    = 15  # Maximum time to wait for a tree unlock
+    MAX_WAIT    = 60  # Maximum time to wait for a tree unlock
     PERCENT_BAD = .10 # percent of nodes that have to be bad
                       # before a "rebuild" without "reinsert"
                       

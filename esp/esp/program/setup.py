@@ -156,7 +156,7 @@ def commit_program(prog, datatrees, userbits, modules):
     
     def gen_userbit(tup):
         new_ub = UserBit()
-        new_ub.verb = DataTree.get_by_uri(tup[0])
+        new_ub.verb = DataTree.get_by_uri(tup[0], create=True)
         new_ub.qsc = prog.anchor
         new_ub.recursive = False
         new_ub.startdate = tup[2]
@@ -199,20 +199,36 @@ ProgramTemplate = (
     '/Prospectives/Students',
     '/Prospectives/Volunteers',
     '/Classes',
-    '/Subprograms'
+    '/Subprograms',
+    '/LineItemTypes',
+    '/LineItemTypes/Required',
+    '/LineItemTypes/Optional',
+    '/Announcements',
+    '/Announcements/Teachers',
+    '/Confirmation',
     )
 
 VerbNodes = (
-		'V/Flags/Public',
-		'V/Deadline/Registration/Teacher',
-		'V/Administer',
-		'V/Administer/Edit',
-		'V/Administer/Edit/QSD',
-		'V/Administer/Edit/Class',
-		'V/Flags/Registration/Preliminary',
-		'V/Flags/Registration/Confirmed'
-	    )
-# NOTE: V/Flag/Public grants authorization to view a Q branch.
-# V/Deadline/Registration/Student enforces the student registration deadline for a program.
-# V/Deadline/Registration/Teacher enforces the teacher registration deadline for a program.
-
+    'V/Deadline/Registration/Student',
+    'V/Deadline/Registration/Student/Applications',
+    'V/Deadline/Registration/Student/Catalog',
+    'V/Deadline/Registration/Student/Classes',
+    'V/Deadline/Registration/Student/Classes/OneClass',
+    'V/Deadline/Registration/Student/Confirm',
+    'V/Deadline/Registration/Student/ExtraCosts',
+    'V/Deadline/Registration/Student/MainPage',
+    'V/Deadline/Registration/Student/Payment',
+    'V/Deadline/Registration/Teacher',
+    'V/Deadline/Registration/Teacher/Catalog',
+    'V/Deadline/Registration/Teacher/Classes',
+    'V/Deadline/Registration/Teacher/Classes/View',
+    'V/Deadline/Registration/Teacher/MainPage',
+    'V/Flags/Public',
+    'V/Administer',
+    'V/Administer/Edit',
+    'V/Administer/Edit/QSD',
+    'V/Administer/Edit/Class',
+    'V/Flags/Registration/Preliminary',
+    'V/Flags/Registration/Confirmed',
+    )
+    

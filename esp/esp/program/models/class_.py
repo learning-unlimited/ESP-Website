@@ -52,13 +52,46 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
 from esp.program.models import JunctionStudentApp
 
-__all__ = ['Class', 'JunctionAppReview', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
+__all__ = ['ClassSection', 'ClassSubject', 'JunctionAppReview', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
+
+class ProgramCheckItem(models.Model):
+    from esp.program.models import Program
+    
+    program = models.ForeignKey(Program, related_name='checkitems')
+    title   = models.CharField(maxlength=512)
+    seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
+                                          help_text = 'Lower is earlier')
+
+    def save(self, *args, **kwargs):
+        if self.seq is None:
+            try:
+                item = ProgramCheckItem.objects.filter(program = self.program).order_by('-seq')[0]
+                self.seq = item.seq + 5
+            except IndexError:
+                self.seq = 0
+        super(ProgramCheckItem, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return '%s for "%s"' % (self.title, str(self.program).strip())
+
+    class Admin:
+        pass
+
+    class Meta:
+        ordering = ('seq',)
+        app_label = 'program'
+        db_table = 'program_programcheckitem'
 
 
 class ClassCacheHelper(GenericCacheHelper):
     @staticmethod
     def get_key(cls):
         return 'ClassCache__%s' % cls._get_pk_val()
+    
+class SectionCacheHelper(GenericCacheHelper):
+    @staticmethod
+    def get_key(cls):
+        return 'SectionCache__%s' % cls._get_pk_val()
 
 class ClassManager(ProcedureManager):
 
@@ -87,7 +120,14 @@ class ClassManager(ProcedureManager):
             classes = self.approved().filter(parent_program = program)
             
         if ts is not None:
-            classes = classes.filter(meeting_times = ts)
+            #   Make a list of all section IDs for the program
+            section_list = []
+            for c in classes:
+                section_list += [item['id'] for item in c.sections.all().values('id')]
+            #   Get the IDs of those sections that have the right timeslot
+            section_ids = [sec['id'] for sec in ClassSection.objects.filter(meeting_times=ts, id__in=section_list).values('id')]
+            #   Get the class subjects having at least one of those sections.
+            classes = ClassSubject.objects.filter(sections__in=section_ids)
 
         return classes.extra(select=select,
                              where=where,
@@ -95,67 +135,97 @@ class ClassManager(ProcedureManager):
 
     cache = ClassCacheHelper
 
-class Class(models.Model):
 
-    """ A Class, as taught as part of an ESP program """
-    from esp.program.models import Program
-
-    anchor = AjaxForeignKey(DataTree)
-    parent_program = models.ForeignKey(Program)
-    # title drawn from anchor.friendly_name
-    # class number drawn from anchor.name
-    category = models.ForeignKey('ClassCategories',related_name = 'cls')
-    # teachers are drawn from permissions table
-    class_info = models.TextField(blank=True)
-    message_for_directors = models.TextField(blank=True)
-    grade_min = models.IntegerField()
-    grade_max = models.IntegerField()
-    class_size_min = models.IntegerField(blank=True, null=True)
-    class_size_max = models.IntegerField()
-    schedule = models.TextField(blank=True)
-    prereqs  = models.TextField(blank=True, null=True)
-    directors_notes = models.TextField(blank=True, null=True)
-    status   = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted, -20 = cancel[l]ed
-    duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
-    
-    #   If the teacher can request the number of class sessions (i.e. number of weeks for HSSP),
-    #   this field will store their choice.
-    session_count = models.IntegerField(default=1)
-    
-    #   Set to true if a teacher (and the program directors) allow students to join the
-    #   class significantly later than the usual 5 minute grace period.
-    allow_lateness = models.BooleanField(default=False)
-
-    #   Viable times replaced by availability of teacher (function viable_times below)
-    #   Resources replaced by resource assignment (functions getResources, getResourceAssignments below)
-    meeting_times = models.ManyToManyField(Event, related_name='meeting_times', null=True, blank=True)
-
-    checklist_progress = models.ManyToManyField('ProgramCheckItem', null=True, blank=True)
-
-    objects = ClassManager()
-
-    def checklist_progress_all_cached(self):
-        """ The main Manage page requests checklist_progress.all() O(n) times
-        per checkbox in the program.  Minimize the number of these calls that
-        actually hit the db. """
-        CACHE_KEY = "CLASS__CHECKLIST_PROGRESS__CACHE__%d" % self.id
+def checklist_progress_base(class_name):
+    """ The main Manage page requests checklist_progress.all() O(n) times
+    per checkbox in the program.  Minimize the number of these calls that
+    actually hit the db. """
+    def _progress(self):
+        CACHE_KEY = class_name.upper() + "__CHECKLIST_PROGRESS__CACHE__%d" % self.id
         val = cache.get(CACHE_KEY)
         if val == None:
             val = self.checklist_progress.all()
             len(val) # force the query to be executed before caching it
             cache.set(CACHE_KEY, val, 1)
-
+    
         return val
+    return _progress
 
 
+class ClassSection(models.Model):
+    """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
+    parallel sections for a course being taught more than once at Splash or Spark. """
+    
+    anchor = models.ForeignKey(DataTree)
+    status = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted
+    duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
+    meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
+    checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
 
+    cache = SectionCacheHelper
+    checklist_progress_all_cached = checklist_progress_base('ClassSection')
+
+    #   Some properties for traits that are actually traits of the ClassSubjects.
+    def _get_parent_class(self):
+        """ The many-to-many field should have only one ClassSubject per ClassSection. """
+        if self.cache['parent_class'] is not None:
+            return self.cache['parent_class']
+        else:
+            self.cache['parent_class'] = ClassSubject.objects.get(sections=self)
+            return self.cache['parent_class']
+    parent_class = property(_get_parent_class)
+    
+    def _get_parent_program(self):
+        return self.parent_class.parent_program
+    parent_program = property(_get_parent_program)
+        
+    def _get_teachers(self):
+        return self.parent_class.teachers()
+    teachers = property(_get_teachers)
+    
+    def _get_category(self):
+        return self.parent_class.category
+    category = property(_get_category)
+    
+    def _get_title(self):
+        return self.parent_class.title()
+    title = property(_get_title)
+    
+    def _get_capacity(self):
+        rooms = self.initial_rooms()
+        if len(rooms) == 0:
+            return self.parent_class.class_size_max
+        else:
+            rc = 0
+            for r in rooms:
+                rc += r.num_students
+            return min(self.parent_class.class_size_max, rc)
+    capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
-        super(Class, self).__init__(*args, **kwargs)
-        self.cache = Class.objects.cache(self)
+        super(ClassSection, self).__init__(*args, **kwargs)
+        self.cache = SectionCacheHelper(self)
 
-    class Meta:
-        verbose_name_plural = 'Classes'
+    def __str__(self):
+        pc = self.parent_class
+        return '%s: %s' % (self.emailcode(), pc.title())
+
+    def index(self):
+        """ Get index of this section among those belonging to the parent class. """
+        pc = self.parent_class
+        pc_sec_ids = [p['id'] for p in pc.sections.all().order_by('id').values('id')]
+        return pc_sec_ids.index(self.id) + 1
+
+    def delete(self, adminoverride=False):
+        if self.num_students() > 0 and not adminoverride:
+            return False
+        
+        if self.anchor:
+            self.anchor.delete(True)
+        self.meeting_times.clear()
+        self.checklist_progress.clear()
+        
+        super(ClassSection, self).delete()
 
     def getResourceAssignments(self):
         from esp.resources.models import ResourceAssignment
@@ -179,8 +249,11 @@ class Class(models.Model):
         return self.getResourceAssignments().filter(target=self, resource__res_type=cls_restype)
     
     def resourceassignments(self):
-        #   Get all assignments pertaining to floating resources like projectors.
-        return self.getResourceAssignments().filter(target=self, resource__is_unique=True)
+        """   Get all assignments pertaining to floating resources like projectors. """
+        from esp.resources.models import ResourceType
+        cls_restype = ResourceType.get_or_create('Classroom')
+        ta_restype = ResourceType.get_or_create('Teacher Availability')
+        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
     
     def classrooms(self):
         """ Returns the list of classroom resources assigned to this class."""
@@ -202,6 +275,9 @@ class Class(models.Model):
             return [x.name for x in self.initial_rooms()]
         else:
             return []
+   
+    def emailcode(self):
+        return self.parent_class.emailcode() + 's' + str(self.index())
    
     def starts_soon(self):
         #   Return true if the class's start time is less than 50 minutes after the current time
@@ -289,10 +365,8 @@ class Class(models.Model):
         from esp.program.templatetags.scheduling import options_key_func
         cache_key1 = 'class__viable_times:%d' % self.id
         cache_key2 = 'class__viable_rooms:%d' % self.id
-        cache_key3 = options_key_func(self)
         cache.delete(cache_key1)
         cache.delete(cache_key2)
-        cache.delete(cache_key3)
     
     def unsatisfied_requests(self):
         if self.classrooms().count() > 0:
@@ -311,10 +385,27 @@ class Class(models.Model):
         """ Get enough events following the first one until you have the class duration covered.
         Then add them. """
         
-        #   This means we have to clear the classrooms.  Sorry.
+        #   This means we have to clear the classrooms.
+        #   But we will try to re-assign the same room at the new times if it is available.
+        current_rooms = self.initial_rooms()
+        
         self.clearRooms()
+        self.clearFloatingResources()
+        
         event_list = self.extend_timeblock(first_event, merged=False)
         self.assign_meeting_times(event_list)
+        
+        #   Check to see if the desired rooms are available at the new times
+        availability = True
+        for e in event_list:
+            for room in current_rooms:
+                if not room.is_available(e):
+                    availability = False
+                    
+        #   If the desired rooms are available, assign them.  (If not, no big deal.)
+        if availability:
+            for room in current_rooms:
+                self.assign_room(room)
     
     def assign_room(self, base_room, compromise=True, clear_others=False):
         """ Assign the classroom given, except at the times needed by this class. """
@@ -369,7 +460,7 @@ class Class(models.Model):
         if result is not None:
             return result
 
-        teachers = self.teachers()
+        teachers = self.parent_class.teachers()
         num_teachers = teachers.count()
         ta_type = ResourceType.get_or_create('Teacher Availability')
 
@@ -456,181 +547,17 @@ class Class(models.Model):
             new_assignment.save()
             return True
 
-    def time_created(self):
-        #   Return the datetime for when the class was first created.
-        #   Oh wait, this is definitely not meh.
-        v = GetNode('V/Flags/Registration/Teacher')
-        q = self.anchor
-        ubl = UserBit.objects.filter(verb=v, qsc=q).order_by('startdate')
-        if ubl.count() > 0:
-            return ubl[0].startdate
-        else:
-            return None
-        
-    def emailcode(self):
-        """ Return the emailcode for this class.
-
-        The ``emailcode`` is defined as 'first letter of category' + id.
-        """
-        return self.category.category[0].upper()+str(self.id)
-
-    def url(self):
-        str_array = self.anchor.tree_encode()
-        return '/'.join(str_array[-4:])
-
-    def got_qsd(self):
-        return QuasiStaticData.objects.filter(path = self.anchor).values('id').count() > 0
-        
-    def __str__(self):
-        if self.title() is not None:
-            return "%s: %s" % (self.id, self.title())
-        else:
-            return "%s: (none)" % self.id
-
-    def delete(self, adminoverride = False):
-        if self.num_students() > 0 and not adminoverride:
-            return False
-
-        teachers = self.teachers()
-        for teacher in self.teachers():
-            self.removeTeacher(teacher)
-            self.removeAdmin(teacher)
-
-        if self.anchor:
-            self.anchor.delete(True)
-
-        self.meeting_times.clear()
-        super(Class, self).delete()
-        
-
-    def cache_time(self):
-        return 99999
-    
-    def title(self):
-
-        retVal = self.cache['title']
-
-        if retVal:
-            return retVal
-        
-        retVal = self.anchor.friendly_name
-
-        self.cache['title'] = retVal
-
-        return retVal
-    
-    def teachers(self, use_cache = True):
-        """ Return a queryset of all teachers of this class. """
-        retVal = self.cache['teachers']
-        if retVal is not None and use_cache:
-            return retVal
-        
-        v = GetNode('V/Flags/Registration/Teacher')
-
-        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
-
-        list(retVal)
-        
-        self.cache['teachers'] = retVal
-        return retVal
-
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
-        """ Go through and give an error message if this user cannot add this class to their schedule. """
-        if not user.isStudent():
-            return 'You are not a student!'
+        """ Go through and give an error message if this user cannot add this section to their schedule. """
         
-        if not self.isAccepted():
-            return 'This class is not accepted.'
-
-#        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not ESPUser(user).canRegToFullProgram(self.parent_program):
-        if checkFull and self.parent_program.isFull(use_cache=True) and not ESPUser(user).canRegToFullProgram(self.parent_program):
-            return 'This program cannot accept any more students!  Please try again in its next session.'
-
-        if checkFull and self.isFull(use_cache=use_cache):
-            return 'Class is full!'
-
-        if request:
-            verb_override = request.get_node('V/Flags/Registration/GradeOverride')
-            verb_conf = request.get_node('V/Flags/Registration/Confirmed')
-            verb_prelim = request.get_node('V/Flags/Registration/Preliminary')
-        else:
-            verb_override = GetNode('V/Flags/Registration/GradeOverride')
-            verb_conf = GetNode('V/Flags/Registration/Confirmed')
-            verb_prelim = GetNode('V/Flags/Registration/Preliminary')            
-
-        if user.getGrade() < self.grade_min or \
-               user.getGrade() > self.grade_max:
-            if not UserBit.UserHasPerms(user = user,
-                                        qsc  = self.anchor,
-                                        verb = verb_override):
-                return 'You are not in the requested grade range for this class.'
-
-        # student has no classes...no conflict there.
-        if user.getEnrolledClasses(self.parent_program, request).count() == 0:
-            return False
-
-        if user.isEnrolledInClass(self, request):
-            return 'You are already signed up for this class!'
-
         # check to see if there's a conflict:
-        for cls in user.getEnrolledClasses(self.parent_program, request):
-            for time in cls.meeting_times.all():
-                if self.meeting_times.filter(id = time.id).count() > 0:
-                    return 'Conflicts with your schedule!'
+        for sec in user.getEnrolledSections(self.parent_program):
+            for time in sec.meeting_times.all():
+                if len(self.meeting_times.filter(id = time.id)) > 0:
+                    return 'This section conflicts with your schedule!'
 
         # this user *can* add this class!
         return False
-
-    def makeTeacher(self, user):
-        v = GetNode('V/Flags/Registration/Teacher')
-        
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = self.anchor,
-                                verb = v)
-        ub.enddate = None
-        ub.save()
-        
-        return True
-
-    def removeTeacher(self, user):
-        v = GetNode('V/Flags/Registration/Teacher')
-
-        for u in UserBit.objects.filter(user = user,
-                                        qsc = self.anchor,
-                                        verb = v):
-            u.expire()
-        return True
-
-    def subscribe(self, user):
-        v = GetNode('V/Subscribe')
-
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = self.anchor,
-                                verb = v)
-
-        return True
-    
-    def makeAdmin(self, user, endtime = None):
-        v = GetNode('V/Administer/Edit')
-
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = self.anchor,
-                                verb = v)
-        ub.enddate = None
-        ub.save()
-
-        return True        
-
-
-    def removeAdmin(self, user):
-        v = GetNode('V/Administer/Edit')
-        
-        for u in UserBit.objects.filter(user = user,
-                                        qsc = self.anchor,
-                                        verb = v):
-            u.expire()
-
-        return True
 
     def conflicts(self, teacher):
         from esp.users.models import ESPUser
@@ -657,52 +584,15 @@ class Class(models.Model):
         self.cache['students'] = retVal
         return retVal
     
-
+    def clearStudents(self):
+        """ Remove all of the students that pre-registered for the section. """
+        reg_verb = DataTree.get_by_uri('V/Flags/Registration/Preliminary')
+        for u in self.anchor.userbit_qsc.filter(verb=reg_verb):
+            u.expire()
+    
     @staticmethod
     def idcmp(one, other):
         return cmp(one.id, other.id)
-
-    @staticmethod
-    def catalog_sort(one, other):
-        cmp1 = cmp(one.category.category, other.category.category)
-        if cmp1 != 0:
-            return cmp1
-        return cmp(one, other)
-    
-    @staticmethod
-    def class_sort_by_category(one, other):
-        return cmp(one.category.category, other.category.category)
-        
-    @staticmethod
-    def class_sort_by_id(one, other):
-        return cmp(one.id, other.id)
-
-    @staticmethod
-    def class_sort_by_teachers(one, other):
-        return cmp(one.getTeacherNames().sort(), other.getTeacherNames().sort())
-    
-    @staticmethod
-    def class_sort_by_title(one, other):
-        return cmp(one.title(), other.title())
-
-    @staticmethod
-    def class_sort_by_timeblock(one, other):
-        return cmp(one.firstBlockEvent(), other.firstBlockEvent())
-
-    @staticmethod
-    def class_sort_noop(one, other):
-        return 0
-
-    @staticmethod
-    def sort_muxer(sorters):
-        def sort_fn(one, other):
-            for fn in sorters:
-                val = fn(one, other)
-                if val != 0:
-                    return val
-            return 0
-        return sort_fn
-
 
     def __cmp__(self, other):
         selfevent = self.firstBlockEvent()
@@ -718,7 +608,7 @@ class Class(models.Model):
             if cmpresult != 0:
                 return cmpresult
 
-        return cmp(self.title(), other.title())
+        return cmp(self.title, other.title)
 
 
     def firstBlockEvent(self):
@@ -747,23 +637,15 @@ class Class(models.Model):
         self.cache['num_students'] = retVal
         return retVal            
 
+    def room_capacity(self):
+        ir = self.initial_rooms()
+        if ir.count() == 0:
+            return 0
+        else:
+            return reduce(lambda x,y: x+y, [r.num_students for r in ir]) 
 
     def isFull(self, use_cache=True):
-        if self.num_students(use_cache=use_cache) >= self.class_size_max:
-            return True
-        else:
-            return False
-    
-    def getTeacherNames(self):
-        teachers = []
-        for teacher in self.teachers():
-            name = '%s %s' % (teacher.first_name,
-                              teacher.last_name)
-
-            if name.strip() == '':
-                name = teacher.username
-            teachers.append(name)
-        return teachers
+        return (self.num_students() >= self.capacity)
 
     def friendly_times(self, use_cache=False):
         """ Return a friendlier, prettier format for the times.
@@ -802,6 +684,11 @@ class Class(models.Model):
 
         return txtTimes
             
+    def isAccepted(self): return self.status == 10
+    def isReviewed(self): return self.status != 0
+    def isRejected(self): return self.status == -10
+    def isCancelled(self): return self.status == -20
+    isCanceled = isCancelled   
 
     def update_cache_students(self):
         from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func
@@ -810,15 +697,11 @@ class Class(models.Model):
 
         self.cache.update()
 
-
     def update_cache(self):
         from esp.program.templatetags.class_manage_row import cache_key as class_manage_row_cache_key
         cache.delete(class_manage_row_cache_key(self, None)) # this cache_key doesn't actually care about the program, as classes can only be associated with one program.  If we ever change this, update this function call.
 
         self.update_cache_students()
-
-        self.teachers(use_cache = False)
-
         self.cache.update()
 
     def unpreregister_student(self, user):
@@ -875,6 +758,309 @@ class Class(models.Model):
                (int(self.duration),
             int((self.duration - int(self.duration)) * 60))
 
+    class Meta:
+        db_table = 'program_classsection'
+        app_label = 'program'
+        
+    class Admin:
+        pass
+
+class ClassSubject(models.Model):
+    """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
+    
+    from esp.program.models import Program
+    
+    anchor = AjaxForeignKey(DataTree)
+    parent_program = models.ForeignKey(Program)
+    category = models.ForeignKey('ClassCategories',related_name = 'cls')
+    class_info = models.TextField(blank=True)
+    allow_lateness = models.BooleanField(default=False)
+    message_for_directors = models.TextField(blank=True)
+    grade_min = models.IntegerField()
+    grade_max = models.IntegerField()
+    class_size_min = models.IntegerField(blank=True, null=True)
+    class_size_max = models.IntegerField()
+    schedule = models.TextField(blank=True)
+    prereqs  = models.TextField(blank=True, null=True)
+    directors_notes = models.TextField(blank=True, null=True)
+    checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
+
+    sections = models.ManyToManyField(ClassSection, blank=True)
+
+    objects = ClassManager()
+    checklist_progress_all_cached = checklist_progress_base('ClassSubject')
+
+    #   Backwards compatibility with Class database.
+    #   Do not use.
+    status = models.IntegerField(default=0)   
+    duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
+
+    def _get_meeting_times(self):
+        timeslot_id_list = []
+        for s in self.sections.all():
+            timeslot_id_list += [item['id'] for item in s.meeting_times.all().values('id')]
+        return Event.objects.filter(id__in=timeslot_id_list)
+    all_meeting_times = property(_get_meeting_times)
+
+    def _get_capacity(self):
+        c = 0
+        for s in self.sections.all():
+            c += s.capacity
+        return c
+    capacity = property(_get_capacity)
+
+    def __init__(self, *args, **kwargs):
+        super(ClassSubject, self).__init__(*args, **kwargs)
+        self.cache = ClassSubject.objects.cache(self)
+
+    def default_section(self, create=True):
+        """ Return the first section that was created for this class. """
+        sec_qs = self.sections.order_by('id')
+        if sec_qs.count() == 0:
+            if create:
+                return self.add_default_section()
+            else:
+                return None
+        else:
+            return sec_qs[0]
+
+    def add_section(self, duration=0.0, status=0):
+        """ Add a ClassSection belonging to this class. Can be run multiple times. """
+        
+        section_index = self.sections.count() + 1
+        
+        new_section = ClassSection()
+        new_section.duration = duration
+        new_section.anchor = DataTree.get_by_uri(self.anchor.uri + '/Section' + str(section_index), create=True)
+        new_section.status = status
+        new_section.save()
+        self.sections.add(new_section)
+        
+        return new_section
+
+    def add_default_section(self, duration=0.0, status=0):
+        """ Make sure this class has a section associated with it.  This should be called
+        at least once on every class.  Afterwards, additional sections can be created using
+        add_section. """
+        
+        #   Support migration from currently existing classes.
+        if self.status != 0:
+            status = self.status
+        if self.duration is not None and self.duration > 0:
+            duration = self.duration
+        
+        if self.sections.count() == 0:
+            return self.add_section(status, duration)
+        else:
+            return None
+
+    def time_created(self):
+        #   Return the datetime for when the class was first created.
+        #   Oh wait, this is definitely not meh.
+        v = GetNode('V/Flags/Registration/Teacher')
+        q = self.anchor
+        ubl = UserBit.objects.filter(verb=v, qsc=q).order_by('startdate')
+        if ubl.count() > 0:
+            return ubl[0].startdate
+        else:
+            return None
+        
+    def friendly_times(self):
+        collapsed_times = []
+        for s in self.sections.all():
+            collapsed_times += s.friendly_times()
+        return collapsed_times
+        
+    def students(self, use_cache=True):
+        result = []
+        for sec in self.sections.all():
+            result += sec.students(use_cache=use_cache)
+        return result
+        
+    def num_students(self):
+        result = 0
+        for sec in self.sections.all():
+            result += sec.num_students()
+        return result
+        
+    def emailcode(self):
+        """ Return the emailcode for this class.
+
+        The ``emailcode`` is defined as 'first letter of category' + id.
+        """
+        return self.category.category[0].upper()+str(self.id)
+
+    def url(self):
+        str_array = self.anchor.tree_encode()
+        return '/'.join(str_array[-4:])
+
+    def got_qsd(self):
+        return QuasiStaticData.objects.filter(path = self.anchor).values('id').count() > 0
+        
+    def __str__(self):
+        if self.title() is not None:
+            return "%s: %s" % (self.id, self.title())
+        else:
+            return "%s: (none)" % self.id
+
+    def delete(self, adminoverride = False):
+        if self.num_students() > 0 and not adminoverride:
+            return False
+        
+        teachers = self.teachers()
+        for teacher in self.teachers():
+            self.removeTeacher(teacher)
+            self.removeAdmin(teacher)
+
+        for sec in self.sections.all():
+            sec.delete()
+        self.sections.clear()
+        
+        if self.anchor:
+            self.anchor.delete(True)
+            
+        self.checklist_progress.clear()
+        
+        super(ClassSubject, self).delete()
+        
+    def cache_time(self):
+        return 99999
+    
+    def title(self):
+        retVal = self.cache['title']
+        if retVal:
+            return retVal
+        
+        retVal = self.anchor.friendly_name
+
+        self.cache['title'] = retVal
+        return retVal
+    
+    def teachers(self, use_cache = True):
+        """ Return a queryset of all teachers of this class. """
+        retVal = self.cache['teachers']
+        if retVal is not None and use_cache:
+            return retVal
+        
+        v = GetNode('V/Flags/Registration/Teacher')
+
+        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
+
+        list(retVal)
+        
+        self.cache['teachers'] = retVal
+        return retVal
+
+    def isFull(self, timeslot=None, use_cache=True):
+        """ A class subject is full if all of its sections are full. """
+        if timeslot is not None:
+            sections = self.sections.filter(meeting_times=timeslot)
+        else:
+            sections = self.sections.all()
+        for s in sections:
+            if not s.isFull(use_cache=use_cache):
+                return False
+        return True
+
+    def getTeacherNames(self):
+        teachers = []
+        for teacher in self.teachers():
+            name = '%s %s' % (teacher.first_name,
+                              teacher.last_name)
+            if name.strip() == '':
+                name = teacher.username
+            teachers.append(name)
+        return teachers
+
+    def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
+        """ Go through and give an error message if this user cannot add this class to their schedule. """
+        if not user.isStudent():
+            return 'You are not a student!'
+        
+        if not self.isAccepted():
+            return 'This class is not accepted.'
+
+#        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not ESPUser(user).canRegToFullProgram(self.parent_program):
+        if checkFull and self.parent_program.isFull(use_cache=True) and not ESPUser(user).canRegToFullProgram(self.parent_program):
+            return 'This program cannot accept any more students!  Please try again in its next session.'
+
+        if checkFull and self.isFull(use_cache=use_cache):
+            return 'Class is full!'
+
+        if request:
+            verb_override = request.get_node('V/Flags/Registration/GradeOverride')
+            verb_conf = request.get_node('V/Flags/Registration/Confirmed')
+            verb_prelim = request.get_node('V/Flags/Registration/Preliminary')
+        else:
+            verb_override = GetNode('V/Flags/Registration/GradeOverride')
+            verb_conf = GetNode('V/Flags/Registration/Confirmed')
+            verb_prelim = GetNode('V/Flags/Registration/Preliminary')            
+
+        if user.getGrade() < self.grade_min or \
+               user.getGrade() > self.grade_max:
+            if not UserBit.UserHasPerms(user = user,
+                                        qsc  = self.anchor,
+                                        verb = verb_override):
+                return 'You are not in the requested grade range for this class.'
+
+        # student has no classes...no conflict there.
+        if user.getEnrolledClasses(self.parent_program, request).count() == 0:
+            return False
+
+        if user.isEnrolledInClass(self, request):
+            return 'You are already signed up for this class!'
+
+        # check to see if there's a conflict with each section of the subject
+        for section in self.sections.all():
+            res = section.cannotAdd(user, checkFull, request, use_cache)
+            if res:
+                return res
+
+        # this user *can* add this class!
+        return False
+
+    def makeTeacher(self, user):
+        v = GetNode('V/Flags/Registration/Teacher')
+        
+        ub, created = UserBit.objects.get_or_create(user = user,
+                                qsc = self.anchor,
+                                verb = v)
+        ub.save()
+        return True
+
+    def removeTeacher(self, user):
+        v = GetNode('V/Flags/Registration/Teacher')
+
+        UserBit.objects.filter(user = user,
+                               qsc = self.anchor,
+                               verb = v).delete()
+        return True
+
+    def subscribe(self, user):
+        v = GetNode('V/Subscribe')
+
+        ub, created = UserBit.objects.get_or_create(user = user,
+                                qsc = self.anchor,
+                                verb = v)
+
+        return True
+    
+    def makeAdmin(self, user, endtime = None):
+        v = GetNode('V/Administer/Edit')
+
+        ub, created = UserBit.objects.get_or_create(user = user,
+                                qsc = self.anchor,
+                                verb = v)
+
+
+        return True        
+
+    def removeAdmin(self, user):
+        v = GetNode('V/Administer/Edit')
+        UserBit.objects.filter(user = user,
+                               qsc = self.anchor,
+                               verb = v).delete()
+        return True
 
     def isAccepted(self):
         return self.status == 10
@@ -896,6 +1082,11 @@ class Class(models.Model):
 
         self.status = 10
         self.save()
+        #   Accept any unreviewed sections.
+        for sec in self.sections.all():
+            if sec.status == 0:
+                sec.status = 10
+                sec.save()
 
         if not show_message:
             return True
@@ -919,19 +1110,26 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.save()
 
     def reject(self):
-        """ Mark this class as rejected """
-        verb = GetNode('V/Flags/Registration/Preliminary')
-
-        for u in self.anchor.userbit_qsc.filter(verb = verb):
-            u.expire()
-
+        """ Mark this class as rejected; also kicks out students from each section. """
+        for sec in self.sections.all():
+            sec.status = -10
+            sec.save()
+        self.clearStudents()
         self.status = -10
         self.save()
 
     def cancel(self):
         """ Cancel this class. Has yet to do anything useful. """
+        for sec in self.sections.all():
+            sec.status = -20
+            sec.save()
+        self.clearStudents()
         self.status = -20
         self.save()
+            
+    def clearStudents():
+        for sec in self.sections.all():
+            sec.clearStudents()
             
     def docs_summary(self):
         """ Return the first three documents associated
@@ -959,19 +1157,99 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             tmpnode = tmpnode.parent
         return "/".join(urllist)
 
+    def preregister_student(self, user, overridefull=False, automatic=False):
+        """ Register the student for the least full section of the class
+        that fits into their schedule. """
+        sections = user.getEnrolledSections()
+        time_taken = []
+        for c in sections:
+            time_taken += list(c.meeting_times.all())
+        
+        best_section = None
+        min_ratio = 1.0
+        for sec in self.sections.all():
+            available = True
+            for t in sec.meeting_times.all():
+                if t in time_taken:
+                    available = False
+            if available and (float(sec.num_students()) / (sec.capacity + 1)) < min_ratio:
+                min_ratio = float(sec.num_students()) / (sec.capacity + 1)
+                best_section = sec
+        
+        if best_section:
+            best_section.preregister_student(user, overridefull, automatic)
+            
+    def unpreregister_student(self, user):
+        """ Find the student's registration for the class and expire it. 
+        Also update the cache on each of the sections.  """
+        
+        prereg_verbs = [ GetNode('V/Flags/Registration/Preliminary'), GetNode('V/Flags/Registration/Preliminary/Automatic') ]
+        section_anchors = [s['anchor'] for s in self.sections.all().values('anchor')]
+
+        for ub in UserBit.objects.filter(user=user, qsc__in=section_anchors, verb__in=prereg_verbs):
+            sections = self.sections.filter(anchor=ub.qsc)
+            for s in sections:
+                s.update_cache_students()
+            if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
+                ub.expire()
+
+    def update_cache(self):
+        self.teachers(use_cache = False)
+
+    @staticmethod
+    def catalog_sort(one, other):
+        cmp1 = cmp(one.category.category, other.category.category)
+        if cmp1 != 0:
+            return cmp1
+        return cmp(one, other)
+    
+    @staticmethod
+    def class_sort_by_category(one, other):
+        return cmp(one.category.category, other.category.category)
+        
+    @staticmethod
+    def class_sort_by_id(one, other):
+        return cmp(one.id, other.id)
+
+    @staticmethod
+    def class_sort_by_teachers(one, other):
+        return cmp(one.getTeacherNames().sort(), other.getTeacherNames().sort())
+    
+    @staticmethod
+    def class_sort_by_title(one, other):
+        return cmp(one.title(), other.title())
+
+    @staticmethod
+    def class_sort_by_timeblock(one, other):
+        return cmp(one.all_meeting_times[0], other.all_meeting_times[0])
+
+    @staticmethod
+    def class_sort_noop(one, other):
+        return 0
+
+    @staticmethod
+    def sort_muxer(sorters):
+        def sort_fn(one, other):
+            for fn in sorters:
+                val = fn(one, other)
+                if val != 0:
+                    return val
+            return 0
+        return sort_fn
+
     def save(self):
-        super(Class, self).save()
+        super(ClassSubject, self).save()
         self.update_cache()
-                               
+
+    class Meta:
+        db_table = 'program_class'
+        app_label = 'program'
+        
     class Admin:
         pass
     
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_class'
-
 class JunctionAppReview(models.Model):
-    cls = models.ForeignKey(Class)
+    cls = models.ForeignKey(ClassSubject)
     junctionapp = models.ForeignKey(JunctionStudentApp)
     student     = AjaxForeignKey(User)
     score = models.IntegerField(blank=True,null=True)
@@ -988,43 +1266,9 @@ class JunctionAppReview(models.Model):
     class Admin:
         pass
 
-
-    class Admin:
-        pass
-
-class ProgramCheckItem(models.Model):
-    from esp.program.models import Program
-    
-    program = models.ForeignKey(Program, related_name='checkitems')
-    title   = models.CharField(maxlength=512)
-    seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
-                                          help_text = 'Lower is earlier')
-
-    def save(self, *args, **kwargs):
-        if self.seq is None:
-            try:
-                item = ProgramCheckItem.objects.filter(program = self.program).order_by('-seq')[0]
-                self.seq = item.seq + 5
-            except IndexError:
-                self.seq = 0
-        super(ProgramCheckItem, self).save(*args, **kwargs)
-
-    def __str__(self):
-        return '%s for "%s"' % (self.title, str(self.program).strip())
-
-    class Admin:
-        pass
-
-    class Meta:
-        ordering = ('seq',)
-        app_label = 'program'
-        db_table = 'program_programcheckitem'
-
-
-
 class ClassImplication(models.Model):
     """ Indicates class prerequisites corequisites, and the like """
-    cls = models.ForeignKey(Class, null=True) # parent class
+    cls = models.ForeignKey(ClassSubject, null=True) # parent class
     parent = models.ForeignKey('self', null=True, default=None) # parent classimplication
     is_prereq = models.BooleanField(default=True) # if not a prereq, it's a coreq
     enforce = models.BooleanField(default=True)
@@ -1086,7 +1330,7 @@ class ClassImplication(models.Model):
 
     def fails_implication(self, student, already_seen_implications=set(), without_classes=set()):
         """ Returns either False, or the ClassImplication that fails (may be self, may be a subimplication) """
-        class_set = Class.objects.filter(id__in=self.member_id_ints).exclude(id__in=without_classes)
+        class_set = ClassSubject.objects.filter(id__in=self.member_id_ints).exclude(id__in=without_classes)
 
         class_valid_iterator = [ (student in c.students()) for c in class_set ]
         subimplication_valid_iterator = [ (not i.fails_implication(student, already_seen_implications, without_classes)) for i in self.classimplication_set.all() ]
@@ -1095,6 +1339,7 @@ class ClassImplication(models.Model):
             return self
         else:
             return False
+
 
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class

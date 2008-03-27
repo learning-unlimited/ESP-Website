@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext, manipulators
-from esp.program.models          import Program, Class, ClassCategories, ClassImplication
+from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassImplication
 from esp.datatree.models         import DataTree, GetNode
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
@@ -163,19 +163,29 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @needs_teacher
     @meets_deadline("/Classes/View")
+    def section_students(self, request, tl, one, two, module, extra, prog):
+    
+        section = ClassSection.objects.filter(id=extra)
+        if section.count() != 1:
+            raise ESPError(False), 'Could not find that class section; please contact the webmasters.'
+
+        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'section': section[0], 'cls': section[0].parent_class})
+
+    @needs_teacher
+    @meets_deadline("/Classes/View")
     def class_students(self, request, tl, one, two, module, extra, prog):
     
-        cls, found = self.getClassFromId(extra)
-        if not found:
-            return cls
+        cls = ClassSubject.objects.filter(id=extra)
+        if cls.count() != 1:
+            raise ESPError(False), 'Could not find that class subject; please contact the webmasters.'
 
-        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'cls': cls})
+        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'cls': cls[0]})
         
 
     @needs_teacher
     @meets_deadline('/Classes')
     def deleteclass(self, request, tl, one, two, module, extra, prog):
-        classes = Class.objects.filter(id = extra)
+        classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
@@ -195,7 +205,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             clsid = extra
             
-        classes = Class.objects.filter(id = clsid)
+        classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
@@ -203,7 +213,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         context = {'cls': cls, 'module': self,
                    'blogposts': Entry.find_posts_by_perms(self.user,GetNode('V/Subscribe'),cls.anchor)
                   }
-
 
         return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
 	
@@ -219,7 +228,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             clsid = extra
             
-        classes = Class.objects.filter(id = clsid)
+        classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
 	
@@ -269,7 +278,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             ajax = True
             
-        classes = Class.objects.filter(id = request.POST['clsid'])
+        classes = ClassSubject.objects.filter(id = request.POST['clsid'])
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
 
@@ -371,7 +380,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @meets_deadline("/Classes")
     @needs_teacher
     def editclass(self, request, tl, one, two, module, extra, prog):
-        classes = Class.objects.filter(id = extra)
+        classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
@@ -425,11 +434,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 if newclass is None:
                     newclass_isnew = True
-                    newclass = Class()
+                    newclass = ClassSubject()
                 else:
                     if new_data['message_for_directors'] == newclass.message_for_directors:
                         newclass_newmessage = False
-                    newclass_oldtime = timedelta(hours=newclass.duration)
+                    newclass_oldtime = timedelta(hours=newclass.default_section().duration)
 
                 for k, v in new_data.items():
                     if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
@@ -437,22 +446,22 @@ class TeacherClassRegModule(ProgramModuleObj):
                 
                 newclass.category = ClassCategories.objects.get(id=new_data['category'])
 
+                #   Allow for no selected duration (directors will assign one to default value)
                 if new_data['duration'] == '':
-                    newclass.duration = 0.0
+                    new_duration = 0.0
                 else:
                     try:
-                        newclass.duration = float(new_data['duration'])
+                        new_duration = float(new_data['duration'])
                     except:
-                        newclass.duration = 0.0
-                
+                        new_duration = 0.0
+
                 # Makes sure the program has time for this class
                 # If the time you're already teaching plus the time of the class you propose exceeds the program's total time, fail.
                 # The newclass_oldtime term balances things out if this isn't actually a new class.
                 self.user = ESPUser(self.user)
-                if self.user.getTaughtTime(prog, include_scheduled=True) + timedelta(hours=newclass.duration) > self.program.total_duration() + newclass_oldtime:
+                if self.user.getTaughtTime(prog, include_scheduled=True) + timedelta(hours=new_duration) > self.program.total_duration() + newclass_oldtime:
                     raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
 
-                
                 # datatree maintenance
                 if newclass_isnew:
                     newclass.parent_program = self.program
@@ -466,10 +475,16 @@ class TeacherClassRegModule(ProgramModuleObj):
                     nodestring = newclass.category.category[:1].upper() + str(newclass.id)
                     newclass.anchor = self.program.classes_node().tree_create([nodestring])
                     newclass.anchor.tree_create(['TeacherEmail'])
+                    
                 newclass.anchor.friendly_name = newclass.title
                 newclass.anchor.save()
                 newclass.save()
                 
+                #   Give the class the appropriate number of sections as specified by the teacher.
+                section_list = []
+                for i in range(0, int(new_data['num_sections'])):
+                    section_list.append(newclass.add_section(duration=new_duration))
+
                 # create classes in subprograms -- the work for this should probably be farmed out to another function
                 if newclass_isnew:
                     if prog.getSubprograms().count() > 0:
@@ -518,59 +533,59 @@ class TeacherClassRegModule(ProgramModuleObj):
                                     
                             section_data['parent_program_id'] = subprogram.id
                             
+                            # make a new class and copy the section data into it
+                            section = ClassSubject()
+                            for k, v in section_data.items():
+                                section.__dict__[k] = v
+                            section.category = ClassCategories.objects.get(id=new_data['category'])
+                            
+                            # get an id
+                            section.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
+                            section.anchor.save()
+                            section.save()
+                            section.anchor.delete(True)
+                            
+                            # set up the class's actual location on the data tree
+                            nodestring = section.category.category[:1].upper() + str(section.id)
+                            section.anchor = subprogram.classes_node().tree_create([nodestring])
+                            section.anchor.tree_create(['TeacherEmail'])
+                            section.anchor.friendly_name = section.title
+                            section.anchor.save()
+                            section.save()
+                            
+                            # create the userbits for the section
+                            section.makeTeacher(self.user)
+                            section.makeAdmin(self.user, subprogram_classreginfo.teacher_class_noedit)
+                            section.subscribe(self.user)
+                            subprogram.teacherSubscribe(self.user)
+                            section.propose()
+
+                            # update class implication list
+                            implied_id_ints.append( section.id )
+                            
+                            section.update_cache()
                             for i in range(0, section_count):
-                                # make a new class and copy the section data into it
-                                section = Class()
-                                for k, v in section_data.items():
-                                    section.__dict__[k] = v
-                                section.category = ClassCategories.objects.get(id=new_data['category'])
-                                
-                                # get an id
-                                section.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-                                section.anchor.save()
-                                section.enrollment = 0 # I question whether this really needs to be here. -ageng 2008-01-21
-                                section.save()
-                                section.anchor.delete(True)
-                                
-                                # set up the class's actual location on the data tree
-                                nodestring = section.category.category[:1].upper() + str(section.id)
-                                section.anchor = subprogram.classes_node().tree_create([nodestring])
-                                section.anchor.tree_create(['TeacherEmail'])
-                                section.anchor.friendly_name = section.title
-                                section.anchor.save()
-                                section.save()
-                                
-                                # create the userbits for the section
-                                section.makeTeacher(self.user)
-                                section.makeAdmin(self.user, subprogram_classreginfo.teacher_class_noedit)
-                                section.subscribe(self.user)
-                                subprogram.teacherSubscribe(self.user)
-                                section.propose()
-                                
+                                subsection = section.add_section(duration=section_data['duration'])
                                 # create resource requests for each section
-                                section.clearResourceRequests()
                                 for res_type_id in request.POST.getlist('resources'):
                                     if res_type_id in subprogram_module.getResourceTypes():
                                         rr = ResourceRequest()
-                                        rr.target = section
+                                        rr.target = subsection
                                         rr.res_type = ResourceType.objects.get(id=res_type_id)
                                         rr.save()
-                                
-                                # update class implication list
-                                implied_id_ints.append( section.id )
-                                
-                                section.update_cache()
                         
                         newclassimplication.member_id_ints = implied_id_ints
                         newclassimplication.save()
 
                 #   Save resource requests (currently we do not treat global and specialized requests differently)
-                newclass.clearResourceRequests()
-                for res_type_id in request.POST.getlist('resources') + request.POST.getlist('global_resources'):
-                    rr = ResourceRequest()
-                    rr.target = newclass
-                    rr.res_type = ResourceType.objects.get(id=res_type_id)
-                    rr.save()
+                #   Note that resource requests now belong to the sections
+                for sec in newclass.sections.all():
+                    sec.clearResourceRequests()
+                    for res_type_id in request.POST.getlist('resources') + request.POST.getlist('global_resources'):
+                        rr = ResourceRequest()
+                        rr.target = sec
+                        rr.res_type = ResourceType.objects.get(id=res_type_id)
+                        rr.save()
 
                 #   Add a component to the message for directors if the teacher is providing their own space.
                 prepend_str = '*** Notice *** \n The teacher has specified that they will provide their own space for this class.  Please contact them for the size and resources the space provides (if they have not specified below) and create the appropriate resources for scheduling. \n**************\n\n'

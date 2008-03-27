@@ -1,21 +1,19 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}{{program.niceName}} Schedule{% endblock %}
+{% block title %}{{ program.niceName }} Schedule{% endblock %}
 
 {% block subsection_name %}Scheduling Options{% endblock %}
 
 {% block stylesheets %}
-{{block.super}}
-
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}
 
 {% block content %}
-<br />
-<br />
+<div id="divmaintext">
 
-<br /><br />
 <h1>
-Scheduling {{program.niceName}}
+Scheduling {{ program.niceName }}
 </h1>
 
 <h2>
@@ -23,14 +21,49 @@ Generate New Classes
 </h2>
 
 <p style="text-align: center">
-Please press the button below to create all the classes for {{program.niceName}}.<br />
-
+Please fill in the form below and press the "Submit" button to create all the classes for {{ program.niceName }}.<br />
 </p>
-<div class="errormsg">Warning: This may take a while!</div>
 
-<form method="post" action="{{request.path}}" name="confirm">
-<input type="submit" value="Create the classes!" />
-<input type="hidden" name="newclass_create" value="true" />
+<div id="program_form">
+<form method="post" action="{{ request.path }}" name="confirm">
+<table width="400">
+<tr><th colspan="4">Scheduling Options for {{ program.niceName }}</th></tr>
+<tr>
+    <td colspan="2">Time slots to use:</td>
+    <td colspan="2">
+        <select multiple="multiple" name="timeslot_ids">
+        {% for ts in timeslots %}
+            <option value="{{ ts.id }}">{{ ts }}</option>
+        {% endfor %}
+        </select>
+    </td>
+</tr>
+
+<tr>
+    <th class="small">Teacher</th>
+    <th class="small">Class</th>
+    <th class="small">Room Number</th>
+    <th class="small">Room Capacity</th>
+</tr>
+{% for tup in teacher_data %}
+<tr>
+    <td>{{ tup.0.name }}</td>
+    <td>{{ tup.1.get_subject_display }} {{ tup.1.get_section_display }}</td>
+    <td align="center"><input type="text" size="15" name="room_{{ tup.1.id }}" /></td>
+    <td align="center"><input type="text" size="6" name="capacity_{{ tup.1.id }}" /></td>
+</tr>
+{% endfor %}
+<tr>
+    <td colspan="4" align="center">
+        <div class="errormsg">Warning: This may take a while (several minutes).  Please be patient!</div>
+        <input class="fancybutton" type="submit" value="Create the classes!" />
+        <input type="hidden" name="newclass_create" value="true" />
+    </td>
+</tr>
+</table>
 </form>
+</div>
+
+</div>
 
 {% endblock %}

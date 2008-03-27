@@ -11,7 +11,7 @@
     padding-top: 3px !important;
     padding-bottom: 3px !important;
 /*   border: 1px solid #ccc;*/
-    border-bottom: 1px dashed #369;
+    border-top: 1px dashed #369;
     font-weight: normal;
     font-family: Arial, Helvetica, sans-serif;
 }
@@ -179,6 +179,7 @@
    background-color: #ffffff;
    color: #000000;
    text-align: left;
+   vertical-align: top;
 }
 
 #program_form input {
@@ -204,13 +205,34 @@
     font-family: Arial, Helvetica, sans-serif;
 }
 
+#program_form a.button {
+    background-color: #c6def7;
+    padding: 2px 5px 2px 5px;
+    border: 1px solid black;
+    font-weight: bold;
+    font-size: 12px;
+    text-decoration: none;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
 #program_form input.button:hover {
     background-color: #333399;
     color: #c6def7;
 }
 
+#program_form a.button:hover {
+    background-color: #333399;
+    text-decoration: none;
+    color: #c6def7;
+}
+
 #program_form td.underline {
     border-bottom: 1px dashed #699;
+}
+
+#program_form td.noborder {
+    border: none !important;
+    padding-top: 0px !important;
 }
 
 #program_form ul {

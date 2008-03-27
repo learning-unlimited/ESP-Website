@@ -238,8 +238,8 @@ class ESPUser(User, AnonymousUser):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         
-        from esp.program.models import Class, Program # Need the Class object.
-        all_classes = UserBit.find_by_anchor_perms(Class, self.getOld(), GetNode('V/Flags/Registration/Teacher'))
+        from esp.program.models import ClassSubject, Program # Need the Class object.
+        all_classes = UserBit.find_by_anchor_perms(ClassSubject, self.getOld(), GetNode('V/Flags/Registration/Teacher'))
         
         if program is None: # If we have no program specified
             return all_classes
@@ -249,16 +249,24 @@ class ESPUser(User, AnonymousUser):
             else:
                 return all_classes.filter(parent_program = program)
     
+    def getTaughtSections(self, program = None):
+        from esp.program.models import ClassSection
+        classes = list(self.getTaughtClasses(program))
+        section_ids = []
+        for c in classes:
+            section_ids += [v['id'] for v in c.sections.all().values('id')]
+        return ClassSection.objects.filter(id__in=section_ids)
+    
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
             If include_scheduled is given as False, we don't count time for already-scheduled classes. """
-        user_classes = self.getTaughtClasses(program)
+        user_sections = self.getTaughtSections(program)
         total_time = timedelta()
-        for c in user_classes:
-            if include_scheduled or (c.start_time() is None):
-                total_time = total_time + timedelta(hours=c.duration)
+        for s in user_sections:
+            if include_scheduled or (s.start_time() is None):
+                total_time = total_time + timedelta(hours=s.duration)
         return total_time
-
+            
     def getUserNum(self):
         """ Returns the "number" of a user, which is distinct from id.
             It's like the index if you search by lsat and first name."""
@@ -325,10 +333,13 @@ class ESPUser(User, AnonymousUser):
         else:
             return User.objects.filter(Q_useroftype)
 
-    def availability_cache_key(self, program):
-        return 'espuser__availabletimes:%d,%d' % (self.id, program.id)
+    def availability_cache_key(self, program, ignore_classes=False):
+        if ignore_classes:
+            return 'espuser__availabletimes_all:%d,%d' % (self.id, program.id)
+        else:
+            return 'espuser__availabletimes:%d,%d' % (self.id, program.id)
 
-    def getAvailableTimes(self, program):
+    def getAvailableTimes(self, program, ignore_classes=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.resources.models import Resource
@@ -336,7 +347,7 @@ class ESPUser(User, AnonymousUser):
         from django.core.cache import cache
         
         #   This is such a common operation that I think it should be cached.
-        cache_key = self.availability_cache_key(program)
+        cache_key = self.availability_cache_key(program, ignore_classes)
         result = cache.get(cache_key)
         if result is not None:
             return result
@@ -344,11 +355,13 @@ class ESPUser(User, AnonymousUser):
         res_list = [item['event'] for item in Resource.objects.filter(user=self).values('event')]
         
         #   Subtract out the times that they are already teaching.
-        other_classes = self.getTaughtClasses(program)
+        other_classes = self.getTaughtSections(program)
+
         other_times = [[mt['id'] for mt in cls.meeting_times.values('id')] for cls in other_classes]
         result = program.getTimeSlots().filter(id__in=res_list)
-        for lst in other_times:
-            result = result.exclude(id__in=lst)
+        if ignore_classes:
+            for lst in other_times:
+                result = result.exclude(id__in=lst)
             
         #   Finally, convert from a query set down to a list for caching
         listed_result = list(result)
@@ -405,9 +418,7 @@ class ESPUser(User, AnonymousUser):
             if isinstance(request, HttpRequest):
                 request._enrolled_classes = {}
 
-                
-        
-        from esp.program.models import Class
+        from esp.program.models import ClassSubject, ClassSection
 
         if hasattr(program,'id'):
             program_id = program.id
@@ -424,10 +435,12 @@ class ESPUser(User, AnonymousUser):
             return retVal
 
         #if not program:
-        Conf = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Confirmed'))
-        Prel = UserBit.find_by_anchor_perms(Class, self, GetNode('V/Flags/Registration/Preliminary'))
+        Conf = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Confirmed'))
+        Prel = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Preliminary'))
         
-        retVal = (Conf | Prel).distinct()
+        sections = (Conf | Prel).distinct()
+        subject_ids = [s.parent_class.id for s in sections]
+        retVal = ClassSubject.objects.filter(id__in=subject_ids)
         #else:
         if program:
             #retVal = Class.objects.filter_by_procedure('class__get_enrolled', self, program)
@@ -441,6 +454,16 @@ class ESPUser(User, AnonymousUser):
             request._enrolled_classes[request_key] = retVal
 
         return retVal
+
+    def getEnrolledSections(self, program=None):
+        from esp.program.models import ClassSection
+        Conf = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Confirmed'))
+        Prel = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Preliminary'))
+        sections = list((Conf | Prel).distinct())
+        if program is not None:
+            return [s for s in sections if s.parent_class.parent_program == program]
+        else:
+            return sections
 
     def isEnrolledInClass(self, clsObj, request=None):
 
@@ -464,13 +487,14 @@ class ESPUser(User, AnonymousUser):
     def hasFinancialAid(self, anchor):
         from esp.program.models import Program, FinancialAidRequest
         
-        progs = [p['id'] for p in Program.objects.filter(anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend).values('id')]
+        progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
         apps = FinancialAidRequest.objects.filter(user=self, program__in=progs)
         for a in apps:
             if a.approved:
                 return True
         return False
 
+    
     def paymentStatus(self, anchor=None):
         """ Returns a tuple of (has_paid, status_str, line_items) to indicate
         the user's payment obligations to ESP:

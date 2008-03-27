@@ -14,6 +14,7 @@
 <br />
 <form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
 	  <input type="hidden" name="class_id" value="{{ class.id }}" />
+          <input type="hidden" name="section_id" value="{{ section.id }}" />
   	  <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
                  id="submitbutton{{ class.id }}" />
 </form>
@@ -22,6 +23,7 @@
 {% else %}
 	<form name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
 	  <input type="hidden" name="class_id" value="{{ class.id }}" />
+          <input type="hidden" name="section_id" value="{{ section.id }}" />
   	  <input type="submit" class="addbutton" name="action" value="Add this class"
                  id="submitbutton{{ class.id }}" />
 	</form>{% endif %}

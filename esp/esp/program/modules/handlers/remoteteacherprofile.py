@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.program.modules         import module_ext, manipulators
-from esp.program.models          import Program, Class, ClassCategories
+from esp.program.models          import Program
 from esp.datatree.models         import DataTree, GetNode
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError

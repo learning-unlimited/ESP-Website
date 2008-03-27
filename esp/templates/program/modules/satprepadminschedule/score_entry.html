@@ -1,0 +1,101 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Manage Scores for {{ prog.niceName }}{% endblock %}
+
+{% block subsection_name %}Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+<h1>Score Entry for {{ prog.niceName }}</h1>
+
+{% if complete %}
+<p>Thank you for submitting scores. {{ num_updated }} score entries were changed.</p>
+
+{% if not errors|length_is:0 %}
+<p>The following lines caused problems (i.e. could not find student in the program, etc.).  Please fix them and upload again, or use the <a href="/teach/{{ prog.getUrlBase }}/satprepuserdiagnostic">individual score entry interface</a>.  You may also copy the text below, paste it into the text entry box below, and fix the errors before submitting again.
+
+<table width="600">
+<tr>
+    <th class="small">Problem lines</th>
+    <th class="small">Error</th>
+</tr>
+<tr>
+    <td width="50%">
+    <div class="code">
+    {% for e in errors %}{{ e }} <br />
+    {% endfor %}
+    </div>
+    </td>
+    <td width="50%">
+    <div class="code">
+    {% for e in error_reasons %}{{ e }} <br />
+    {% endfor %}
+    </div>
+    </td>
+</tr>
+</table>
+</p>
+
+{% endif %}
+
+<p>Now your options are:
+<ul>
+    <li><a href="/manage/{{ prog.getUrlBase }}/enter_scores/">Enter more scores</a> (shows more directions for this form)</li>
+    <li><a href="/manage/{{ prog.getUrlBase }}/schedule_options/">See other SAT Prep specific options</a></li>
+    <li><a href="/manage/{{ prog.getUrlBase }}/main/">Return to main program management page</a></li>
+</ul>
+</p>
+
+{% else %}
+
+<p>All students of SAT Prep should take diagnostic and practice exams.  Please export a score spreadsheet in the appropriate format and upload the file below.  You may do this as many times as is necessary to get everyone's scores in.  To enter individual scores, please go <a href="/teach/{{ prog.getUrlBase }}/satprepuserdiagnostic">here</a>.</p>
+
+<h3>Score file format:</h3>
+
+<p>The format you want has the following columns:
+
+<ol>
+    <li>Last name OR ESP ID #</li>
+    <li>First name (leave blank if you have an ESP ID #)</li>
+    <li>Subject: 'Math', 'Verbal', or 'Writing' (the first letter is sufficient)</li>
+    <li>The score, an integer on the 200-800 scale</li>
+</ol>
+</p>
+
+<h3>Example data:</h3>
+
+<div class="code">
+Jonathan,Smith,M,520 <br />
+26864,,V,730
+</div>
+
+<p>
+Please save the spreadsheet in a comma-separated variable (CSV) format and upload the file below.  A popular spreadsheet program such as Excel or OpenOffice can do this, although you may need to shuffle the columns around first.  You can upload any number of CSV files, and the scores will be merged with those already in the database.
+</p>
+
+{% endif %}
+
+<br />
+
+<div id="program_form">
+<form method="post" action="/manage/{{ prog.getUrlBase }}/enter_scores/" enctype="multipart/form-data">
+<table align="center" width="400">
+<tr>
+    <th colspan="2">Diagnostic Score Entry for {{ prog.niceName }}</th>
+</tr>
+
+{{ form }}
+
+<tr>
+    <td colspan="2" align="center"><input type="submit" class="fancybutton" value="Submit Scores" /></td>
+</tr>
+</table>
+</form>
+</div>
+
+{% endblock %}

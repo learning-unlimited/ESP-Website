@@ -1,21 +1,23 @@
+{% for sec in item.cls.sections.all %}
+<div style="page-break-after: always;">&nbsp;</div>
 <div class="classroster">
-  <div class="classtitle">{{ item.cls.title }}</div>
+  <div class="classtitle">{{ sec }}</div>
 
   <table align="center" cellspacing="0" cellpadding="0">
   <tr>
    <td>
-      <div class="blocks">{{ item.cls.friendly_times|join:"<br />" }}</div>
+      <div class="blocks">{{ sec.friendly_times|join:"<br />" }}</div>
    </td>
    <td>
-      <div class="classroom">{{ item.cls.prettyrooms|join:"<br />" }}</div>
+      <div class="classroom">{{ sec.prettyrooms|join:"<br />" }}</div>
    </td>
   </tr>
   </table>
   <br />
   <div class="teachername"><span>{{ item.teacher.name }}</span></div>
   <br />
-  <div class="teachername">Class Email: <tt>{{item.cls.emailcode}}-class@esp.mit.edu</tt><br />
-Students Email: <tt>{{item.cls.emailcode}}-students@esp.mit.edu</tt>
+  <div class="teachername">Class Email: <tt>{{ sec.emailcode }}-class@esp.mit.edu</tt><br />
+Students Email: <tt>{{ sec.emailcode }}-students@esp.mit.edu</tt>
   </div>
   <br />
   <br />
@@ -28,7 +30,7 @@ Students Email: <tt>{{item.cls.emailcode}}-students@esp.mit.edu</tt>
       <th>Student ID</th>
       <th>Student Name</th>
       <th>Grade</th>
-    </tr>{% for student in item.cls.students %}
+    </tr>{% for student in sec.students %}
     <tr>
       <td align="right">{{ forloop.counter }}</td>
       <td>{{ student.id }}</td>
@@ -39,3 +41,6 @@ Students Email: <tt>{{item.cls.emailcode}}-students@esp.mit.edu</tt>
     {% endfor %}
   </table>
 </div>
+
+<br />
+{% endfor %}

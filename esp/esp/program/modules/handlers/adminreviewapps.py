@@ -34,13 +34,13 @@ from esp.program.modules import module_ext
 from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
 from esp.users.models import ESPUser, UserBit, User
 from esp.web.util        import render_to_response
-from esp.program.models import Class, JunctionStudentApp, JunctionAppReview
+from esp.program.models import ClassSubject, JunctionStudentApp, JunctionAppReview
 from django.contrib.auth.decorators import login_required
 from esp.datatree.models import DataTree, GetNode
 from django.http import HttpResponseRedirect
 from esp.db.models import Q
 
-__all__ = ['TeacherReviewApps']
+__all__ = ['AdminReviewApps']
 
 class AdminReviewApps(ProgramModuleObj, CoreModule):
 
@@ -60,9 +60,14 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
     
     @needs_admin
     def review_students(self, request, tl, one, two, module, extra, prog):
+        """ Show a roster of the students in the class, allowing the administrators
+        to accept students into the program based on the teachers' reviews and the
+        students' applications. """
+        
+        accept_node = request.get_node('V/Flags/Registration/Accepted')
         try:
-            cls = Class.objects.get(id = extra)
-        except Class.DoesNotExist:
+            cls = ClassSubject.objects.get(id = extra)
+        except ClassSubject.DoesNotExist:
             raise ESPError(False), 'Cannot find class.'
 
         if not self.user.canEdit(cls):
@@ -71,7 +76,7 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         students = cls.students()
 
         for student in students:
-            student.added_class = student.userbit_set.filter(qsc = cls.anchor)[0].startdate
+            student.added_class = student.userbit_set.filter(qsc__rangestart__gte=cls.anchor.rangestart, qsc__rangeend__gte=cls.anchor.rangeend)[0].startdate
             try:
                 student.app = student.junctionstudentapp_set.get(program = self.program)
             except:
@@ -83,9 +88,13 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
                 student.app_reviewed = reviews[0]
             else:
                 student.app_reviewed = None
+            if UserBit.objects.filter(user=student, qsc=cls.anchor, verb=accept_node).count() > 0:
+                student.status = 'Accepted'
+            else:
+                student.status = 'Not accepted'
 
         students = list(students)
-        students.sort(lambda x,y: cmp(x.added_class,y.added_class))
+        students.sort(key=lambda x: x.last_name)
 
         return render_to_response(self.baseDir()+'roster.html',
                                   request,
@@ -99,13 +108,29 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
 
         accept_node = request.get_node('V/Flags/Registration/Accepted')
         try:
-            cls = Class.objects.get(id = request.GET.get('cls',''))
+            cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
             student = User.objects.get(id = request.GET.get('student',''))
         except:
             raise ESPError(False), 'Student or class not found.'
 
         UserBit.objects.get_or_create(user=student, qsc=cls.anchor,
                                       verb=accept_node, recursive=False)
+        return self.review_students(request, tl, one, two, module, extra, prog)
+    
+    @needs_admin
+    def reject_student(self, request, tl, one, two, module, extra, prog):
+        """ Reject a student from a class (does not affect their
+        registration). """
+
+        accept_node = request.get_node('V/Flags/Registration/Accepted')
+        try:
+            cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
+            student = User.objects.get(id = request.GET.get('student',''))
+        except:
+            raise ESPError(False), 'Student or class not found.'
+
+        UserBit.objects.filter(user=student, qsc=cls.anchor, verb=accept_node, recursive=False).delete()
+        
         return self.review_students(request, tl, one, two, module, extra, prog)
     
     @meets_deadline()
@@ -115,8 +140,8 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         reg_node = request.get_node('V/Flags/Registration/Preliminary')
 
         try:
-            cls = Class.objects.get(id = extra)
-        except Class.DoesNotExist:
+            cls = ClassSubject.objects.get(id = extra)
+        except ClassSubject.DoesNotExist:
             raise ESPError(False), 'Cannot find class.'
 
         if not self.user.canEdit(cls):
@@ -177,15 +202,39 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
                                    'student':student,
                                    'form': form})
 
+    @needs_admin
+    def view_app(self, request, tl, one, two, module, extra, prog):
+        reg_node = request.get_node('V/Flags/Registration/Preliminary')
+        try:
+            cls = ClassSubject.objects.get(id = extra)
+        except ClassSubject.DoesNotExist:
+            raise ESPError(False), 'Cannot find class.'
+        
+        student = request.GET.get('student',None)
+        if not student:
+            student = request.POST.get('student','')
+
+        try:
+            student = ESPUser(User.objects.get(id = student))
+        except ESPUser.DoesNotExist:
+            raise ESPError(False), 'Cannot find student, %s' % student
+
+        if not UserBit.objects.UserHasPerms(user = student,
+                                            qsc  = cls.anchor,
+                                            verb = reg_node):
+            raise ESPError(False), 'Student not a student of this class.'
+        
+        try:
+            student.app = student.junctionstudentapp_set.get(program = self.program)
+        except:
+            student.app = None
+            raise ESPError(False), 'Error: Student did not apply. Student is automatically rejected.'
+        
+        return render_to_response(self.baseDir()+'app_popup.html', request, (prog, tl), {'class': cls, 'student': student})
+
     def prepare(self, context):
         """ Sets the 'classes' template variable to contain the list of classes that the current user is teaching """
-        # aseering 7/6/2007: Added this because it overwrites the Junction
-        # class list on the main admin panel (they use the same variable name).
-        # The correct solution would be to use a different template variable
-        # name, but I don't know which templates use this file.
-        # Could whoever coded this, take a look at that?
-        if not context.has_key('classes'):
-            context['classes'] = self.user.getTaughtClasses().filter(parent_program = self.program)
+        context['classes_to_review'] = self.program.classes()
         return context
 
     def isStep(self):
@@ -208,7 +257,7 @@ Student schedule for %s:
  Time               | Class                   | Room""" % student.name()
 
 
-        classes = list(UserBit.find_by_anchor_perms(Class, student, accept_node).filter(parent_program = program))
+        classes = list(UserBit.find_by_anchor_perms(ClassSubject, student, accept_node).filter(parent_program = program))
 
         # now we sort them by time/title
         classes.sort()

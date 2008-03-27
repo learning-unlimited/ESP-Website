@@ -32,7 +32,7 @@ from django import forms
 from django.core import validators
 import re
 from esp.datatree.models import DataTree
-from esp.program.models import ClassCategories, Class
+from esp.program.models import ClassCategories, ClassSubject, ClassSection
 from esp.program.manipulators import isValidSATSectionScore
 
 class OnSiteRegManipulator(forms.Manipulator):
@@ -102,6 +102,8 @@ class TeacherClassRegManipulator(forms.Manipulator):
         
         class_grades = [""] + module.getClassGrades()
         class_grades = zip(class_grades, class_grades)
+        
+        section_list = range(1, module.program.getTimeSlots().count()+1)
 
         grade_order = IsLessThanOtherField('grade_max', 'Minimum grade must be less than the maximum grade.')
         
@@ -120,6 +122,11 @@ class TeacherClassRegManipulator(forms.Manipulator):
                             maxlength=64, \
                             is_required=True, \
                             validator_list=[validators.isNotEmpty]),
+
+            forms.SelectField(field_name="num_sections", \
+                              is_required=True, \
+                              choices=zip(section_list, section_list), \
+                              validator_list=[validators.isNotEmpty]),
 
             forms.LargeTextField(field_name="class_info", \
                             is_required=True, \
@@ -216,13 +223,25 @@ class RemoteTeacherManipulator(forms.Manipulator):
 
             
 class ClassManageManipulator(forms.Manipulator):
-    """Manipulator for managing a class. """
+    """Manipulator for managing a class subject. """
     def __init__(self, cls, module):
 
         self.fields = (
             forms.LargeTextField(field_name="directors_notes", \
                             is_required=False),
-                             
+            CheckboxSelectMultipleField(field_name="resources", \
+                                        choices=[(str(rt.id), rt.name) for rt in module.program.getResourceTypes()]),
+            forms.LargeTextField(field_name="message_for_directors", \
+                                 is_required=False),
+            CheckboxSelectMultipleField(field_name="manage_progress", \
+                                        choices=module.getManageSteps()),
+            )
+            
+class SectionManageManipulator(forms.Manipulator):
+    """Manipulator for managing a class section. """
+    def __init__(self, cls, module):
+
+        self.fields = (
             ClassSelectMeetingTimesField(field_name="meeting_times", \
                                          choices=module.getTimes(), \
                                          cls = cls, \
@@ -235,19 +254,9 @@ class ClassManageManipulator(forms.Manipulator):
                               # - Michael P
                               # validator_list=[ClassRoomAssignmentConflictValidator(cls, 'meeting_times','room')] \
                                               ),
-            CheckboxSelectMultipleField(field_name="resources", \
-                                        choices=[(str(rt.id), rt.name) for rt in module.program.getResourceTypes()]),
-
-            forms.LargeTextField(field_name="message_for_directors", \
-                                 is_required=False),
-
             CheckboxSelectMultipleField(field_name="manage_progress", \
                                         choices=module.getManageSteps()),
             )
-            
-
-
-
 
 class IsLessThanOtherField(object):
     def __init__(self, other_field_name, error_message):
@@ -268,7 +277,7 @@ class isClassSlugUnique(object):
         if len(class_anchors) < 1:
             return
 
-        classes = Class.objects.filter(anchor = class_anchors[0])
+        classes = ClassSubject.objects.filter(anchor = class_anchors[0])
         if len(classes) < 1:
             return
 

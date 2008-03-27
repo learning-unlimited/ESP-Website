@@ -33,6 +33,7 @@ Email: web@esp.mit.edu
 from esp.cal.models import Event
 from esp.users.models import User
 from esp.db.fields import AjaxForeignKey
+from esp.middleware import ESPError_Log
 
 from django.db import models
 from esp.db.models import Q
@@ -113,10 +114,11 @@ class ResourceType(models.Model):
         pass
 
 class ResourceRequest(models.Model):
-    """ A request for a particular type of resource associated with a particular class. """
-    from esp.program.models.class_ import Class
+    """ A request for a particular type of resource associated with a particular clas section. """
+    from esp.program.models.class_ import ClassSection, ClassSubject
     
-    target = models.ForeignKey(Class)
+    target = models.ForeignKey(ClassSection, null=True)
+    target_subj = models.ForeignKey(ClassSubject, null=True)
     res_type = models.ForeignKey(ResourceType)
     
     def __str__(self):
@@ -194,11 +196,26 @@ class Resource(models.Model):
         Q_assoc_types = Q(res_type=rt1) | Q(res_type=rt2)
         return self.grouped_resources().exclude(id=self.id).exclude(Q_assoc_types)
     
-    def assign_to_class(self, new_class):
-        new_ra = ResourceAssignment()
-        new_ra.resource = self
-        new_ra.target = new_class
-        new_ra.save()
+    #   Modified to handle assigning rooms to both classes and their individual sections.
+    #   Resource assignments are always handled at the section level now. 
+    #   The assign_to_class function is copied for backwards compatibility.
+    
+    def assign_to_subject(self, new_class, check_constraint=True):
+        for sec in new_class.sections.all():
+            self.assign_to_section(sec, check_constraint)
+        
+    def assign_to_section(self, section, check_constraint=True, override=False):
+        if override:
+            self.clear_assignments()
+        if self.is_available():
+            new_ra = ResourceAssignment()
+            new_ra.resource = self
+            new_ra.target = section
+            new_ra.save()
+        else:
+            raise ESPError_Log, 'Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id
+        
+    assign_to_class = assign_to_section
         
     def clear_assignments(self, program=None):
         if program is not None:
@@ -258,11 +275,14 @@ class Resource(models.Model):
     def is_conflicted(self):
         return (self.assignments().count() > 1)
     
-    def available_any_time(self):
-        return (len(self.available_times()) > 0)
+    def available_any_time(self, anchor=None):
+        return (len(self.available_times(anchor)) > 0)
     
-    def available_times(self):
-        event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times()))
+    def available_times(self, anchor=None):
+        if anchor:
+            event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times().filter(anchor=anchor)))
+        else:
+            event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times()))
         return '<br /> '.join([str(e) for e in Event.collapse(event_list)])
     
     def matching_times(self):
@@ -299,12 +319,13 @@ class Resource(models.Model):
     
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
-    from esp.program.models.class_ import Class
+    from esp.program.models.class_ import ClassSection, ClassSubject
     
     resource = models.ForeignKey(Resource)     #   Note: this really points to a bunch of Resources.
                                                #   See resources() below.
                                                
-    target = models.ForeignKey(Class)          #   Change to Event later?
+    target = models.ForeignKey(ClassSection, null=True)
+    target_subj = models.ForeignKey(ClassSubject, null=True)
     
     def __str__(self):
         return 'Resource assignment for %s' % str(self.target)

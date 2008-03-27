@@ -9,15 +9,16 @@
 
 <script language="JavaScript">
 
-function flagDirty(id) {
-	document.getElementById(id + "-dirty").value = "True"
-	document.getElementById(id + "-tr").style.backgroundColor = "#F6CECE"
+function flagDirty(id, prefix) {
+        id_str = prefix + id;
+	document.getElementById(id_str + "-dirty").value = "True";
+	document.getElementById(id_str + "-tr").style.backgroundColor = "#F6CECE";
 }
 
 </script>
 {% endblock %}
 
-{% block subsection_name %}Don't Panic!{% endblock %}
+{% block subsection_name %}Scheduling{% endblock %}
 
 {% block content %}
 

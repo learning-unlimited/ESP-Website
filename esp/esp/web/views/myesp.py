@@ -37,8 +37,7 @@ from esp.program.models import RegistrationProfile
 from esp.datatree.models import GetNode
 from esp.miniblog.models import Entry
 from esp.miniblog.views import preview_miniblog, create_miniblog
-from esp.program.models import Program, RegistrationProfile, Class, ClassCategories
-from esp.web.views.program import program_teacherreg2
+from esp.program.models import Program, RegistrationProfile, ClassSection, ClassSubject, ClassCategories
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
@@ -213,7 +212,7 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 
 			if command == 'edit' and objtype == 'class':
 				clsid = int(objid) # we have a class
-				clslist = list(Class.objects.filter(id = clsid))
+				clslist = list(ClassSubject.objects.filter(id = clsid))
 				if len(clslist) != 1:
 					assert False, 'Zero (or more than 1) classes match selected ID.'
 				clsobj = clslist[0]
@@ -232,7 +231,7 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 	if student_version:
 		clslist = currentUser.getEnrolledClasses()
 	else:
-		clslist = currentUser.getEditable(Class)
+		clslist = currentUser.getEditable(ClassSubject)
 
 	fullclslist = {}
 	

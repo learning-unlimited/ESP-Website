@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 
 from datetime import datetime, timedelta
 from esp.program.modules.base import ProgramModuleObj, needs_onsite
-from esp.program.models import Class
+from esp.program.models import ClassSubject, ClassSection
 from esp.web.util import render_to_response
 from esp.cal.models import Event
 from esp.datatree.models import GetNode
@@ -47,6 +47,14 @@ class OnSiteClassList(ProgramModuleObj):
             else:
                 return cmp(one.start_time(), other.start_time())
 
+        def cmp_section(one, other):
+            p1 = one.parent_class
+            p2 = other.parent_class
+            if cmp(p1.category.id, p2.category.id) != 0:
+                return cmp(p1.category.id, p2.category.id)
+            else:
+                return cmp(one.start_time(), other.start_time())
+
         context = {}
         defaults = {'refresh': 30, 'scrollspeed': 3}
         for key_option in defaults.keys():
@@ -55,11 +63,9 @@ class OnSiteClassList(ProgramModuleObj):
             else:
                 context[key_option] = defaults[key_option]
 
-        # using .extra() to select all the category text simultaneously
-        classes = list(Class.objects.catalog(self.program))
-        classes.sort(cmp=cmp_class)
+        classes = list(self.program.sections())
+        classes.sort(cmp=cmp_section)
 
-        #   time_now = datetime.now()
         time_now = datetime.now()
         window_start = time_now + timedelta(-1, 85800)
         window_end = time_now + timedelta(0, 3000)
@@ -70,8 +76,8 @@ class OnSiteClassList(ProgramModuleObj):
             curtime = None
         
         categories = {}
-        for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
+        for sec in classes:
+            categories[sec.parent_class.category_id] = {'id': sec.parent_class.category_id, 'category': sec.parent_class.category.category}
 
         printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
@@ -83,19 +89,20 @@ class OnSiteClassList(ProgramModuleObj):
     def allClassList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """
 
-        # using .extra() to select all the category text simultaneously
-        classes = [(i.num_students()/i.class_size_max, i) for i in Class.objects.catalog(self.program)]
+        #   This view still uses classes, not sections.  The templates show information
+        #   for each section of each class.
+        classes = [(i.num_students()/(i.class_size_max + 1), i) for i in self.program.classes()]
         classes.sort()
         classes = [i[1] for i in classes]
         
         categories = {}
         for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
+            categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category.category}
 
         printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
         
         return render_to_response(self.baseDir()+'allclasslist.html', request, (prog, tl), 
-            {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
+            {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
 
 
         

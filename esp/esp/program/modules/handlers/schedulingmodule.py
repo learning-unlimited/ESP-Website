@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin
 from esp.program.modules         import module_ext
-from esp.program.models          import Program, Class, ClassCategories
+from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories
 from esp.datatree.models         import DataTree, GetNode
 from esp.web.util                import render_to_response
 from django                      import newforms as forms
@@ -63,7 +63,10 @@ class SchedulingModule(ProgramModuleObj):
         if extra == 'refresh':
             #   Clear out all of those inclusion tags.
             for cls in self.program.classes():
-                cls.clear_resource_cache()
+                cache_key = options_key_func(cls)
+                cache.delete(cache_key)
+                for sec in cls.sections.all():
+                    sec.clear_resource_cache()
                 for teacher in cls.teachers():
                     cache_key = teacher.availability_cache_key(self.program)
                     cache.delete(cache_key)
@@ -75,14 +78,20 @@ class SchedulingModule(ProgramModuleObj):
             #   Build up expected post variables: starttime_[clsid], room_[clsid]
             new_dict = request.POST.copy()
 
-            class_ids_to_process = set([ x[:-6] for x in new_dict.keys() if x[-6:] == "-dirty" and new_dict[x] == "True" ])
-
-            for key in new_dict:
+            obj_ids_to_process = set([ x[:-6] for x in new_dict.keys() if x[-6:] == "-dirty" and new_dict[x] == "True" ])
+            class_ids_to_process = [x[4:] for x in obj_ids_to_process if x[:4] == 'cls-']
+            section_ids_to_process = [x[4:] for x in obj_ids_to_process if x[:4] == 'sec-']
+  
+            key_list = new_dict.keys()
+            key_list = filter(lambda a: a.endswith('new'), key_list)
+            for key in key_list:
                 #   Find the variables that differ from existing data (something_new vs. something_old).
                 commands = key.split('_')
                 needs_update = False
 
-                if len(commands) > 2 and commands[1] in class_ids_to_process and commands[2] == 'new':
+                #   Check whether this key applies to a section.
+                #   (Subjects currently don't have any options to change.)
+                if (len(commands) > 2) and (commands[1] in section_ids_to_process) and (commands[2] == 'new'):
                     compare_to_key = commands[0] + '_' + commands[1] + '_old'
                     if compare_to_key in new_dict:
                         if int(new_dict[key]) != int(new_dict[compare_to_key]):
@@ -91,61 +100,90 @@ class SchedulingModule(ProgramModuleObj):
                         needs_update = True
                 
                 if needs_update:
-                    cls = Class.objects.get(id=commands[1])
+                    sec = ClassSection.objects.get(id=commands[1])
+                    cls = sec.parent_class
+                    
                     #   Clear the availability cache for the teachers.
                     for teacher in cls.teachers():
                         cache_key = teacher.availability_cache_key(self.program)
                         cache.delete(cache_key)
                     
                     #   Clear the cached data for the rooms that the class has, so the class is removed from those.
-                    if (cls.initial_rooms().count() > 0):
-                        for room in cls.initial_rooms(): room.clear_schedule_cache(self.program)
+                    if (sec.initial_rooms().count() > 0):
+                        for room in sec.initial_rooms(): room.clear_schedule_cache(self.program)
                     
                     #   Hope you don't mind this extra temporary attribute.
-                    cls.time_changed = False
+                    sec.time_changed = False
                     if commands[0] == 'starttime':
                         #   Assign a new set of times to the class, clearing the rooms.
-                        cls.time_changed = True
+                        sec.time_changed = True
                         if int(new_dict[key]) == -1:
-                            cls.meeting_times.clear()
+                            sec.meeting_times.clear()
                         else:
-                            cls.assign_start_time(Event.objects.get(id=int(new_dict[key])))
+                            sec.assign_start_time(Event.objects.get(id=int(new_dict[key])))
 
-                    elif commands[0] == 'room' and not cls.time_changed:
+                    elif commands[0] == 'room' and not sec.time_changed:
                         #   Assign a new classroom to the class, clearing others first.
                         if int(new_dict[key]) == -1:
-                            cls.clearRooms()
+                            sec.clearRooms()
                         else:
                             new_room = Resource.objects.get(id=int(new_dict[key]))
-                            (status, errors) = cls.assign_room(new_room, compromise=True, clear_others=True)
+                            (status, errors) = sec.assign_room(new_room, compromise=True, clear_others=True)
                             if status is False:
                                 raise ESPError(False), 'Classroom assignment errors: %s' % errors
 
                     #   Clear the cache for this class and its new room.
-                    cls.clear_resource_cache()
-                    if (cls.initial_rooms().count() > 0):
-                        for room in cls.initial_rooms(): room.clear_schedule_cache(self.program)
+                    sec.clear_resource_cache()
+                    opt_key = options_key_func(cls)
+                    cache.delete(opt_key)
+                    if (sec.initial_rooms().count() > 0):
+                        for room in sec.initial_rooms(): room.clear_schedule_cache(self.program)
 
         def count(fn, lst):
             return reduce(lambda count, item: fn(item) and count + 1 or count, lst, 0)
 
         #   Provide some helpful statistics.  This should be totally reliant on cache.
         cls_list = list(self.program.classes())
-        for c in cls_list: c.temp_status = c.scheduling_status()
-        context['num_total_classes'] = len(cls_list)
-        context['num_assigned_classes'] = count(lambda x: x.temp_status == 'Needs resources', cls_list)
-        context['num_scheduled_classes'] = count(lambda x: x.temp_status == 'Needs room', cls_list)
-        context['num_finished_classes'] = count(lambda x: x.temp_status == 'Happy', cls_list)
+        sec_list = list(self.program.sections())
+        for c in sec_list: c.temp_status = c.scheduling_status()
+        context['num_total_classes'] = len(sec_list)
+        context['num_assigned_classes'] = len(filter(lambda x: x.temp_status == 'Needs resources', sec_list))
+        context['num_scheduled_classes'] = len(filter(lambda x: x.temp_status == 'Needs room', sec_list))
+        context['num_finished_classes'] = len(filter(lambda x: x.temp_status == 'Happy', sec_list))
 
         #   So far, this page shows you the same stuff no matter what you do.
         return render_to_response(self.baseDir()+'main.html', request, (prog, tl), context)
     
+    @needs_admin
+    def force_availability(self, request, tl, one, two, module, extra, prog):
+        teacher_dict = prog.teachers(QObjects=True)
+        
+        if request.method == 'POST':
+            if request.POST.has_key('sure') and request.POST['sure'] == 'True':
+                
+                #   Find all teachers who have not indicated their availability and do it for them.
+                unavailable_teachers = User.objects.filter(teacher_dict['class_approved']).exclude(teacher_dict['availability']).distinct()
+                for t in unavailable_teachers:
+                    teacher = ESPUser(t)
+                    for ts in prog.getTimeSlots():
+                        teacher.addAvailableTime(self.program, ts)
+                        
+                return self.scheduling(request, tl, one, two, module, 'refresh', prog)
+            else:
+                return self.scheduling(request, tl, one, two, module, '', prog)
+                
+        #   Normally, though, return a page explaining the issue.
+        context = {'prog': self.program}
+        context['good_teacher_num'] = User.objects.filter(teacher_dict['class_approved']).filter(teacher_dict['availability']).distinct().count()
+        context['total_teacher_num'] = User.objects.filter(teacher_dict['class_approved']).distinct().count()
+
+        return render_to_response(self.baseDir()+'force_prompt.html', request, (prog, tl), context)
 
     @needs_admin
     def securityschedule(self, request, tl, one, two, module, extra, prog):
         """ Display a list of classes (by classroom) for each timeblock in a program """
         events = Event.objects.filter(anchor=prog.anchor).order_by('start')
-        events_ctxt = [ { 'event': e, 'classes': Class.objects.filter(meeting_times=e).select_related() } for e in events ]
+        events_ctxt = [ { 'event': e, 'classes': ClassSection.objects.filter(meeting_times=e).select_related() } for e in events ]
 
         context = { 'events': events_ctxt }
 

@@ -35,7 +35,7 @@ from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
 #from esp.money.models    import Transaction
-from esp.program.models  import Class
+from esp.program.models  import ClassSubject, ClassSection
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
 #from esp.money.models import LineItem, LineItemType
@@ -101,12 +101,12 @@ class ProgramPrintables(ProgramModuleObj):
     def catalog(self, request, tl, one, two, module, extra, prog):
         " this sets the order of classes for the catalog. "
         
-        cmp_fn = { "": Class.class_sort_noop,
-                   "category": Class.class_sort_by_category,
-                   "id": Class.class_sort_by_id,
-                   "teachers": Class.class_sort_by_teachers,
-                   "title": Class.class_sort_by_title,
-                   "timeblock": Class.class_sort_by_timeblock }
+        cmp_fn = { "": ClassSubject.class_sort_noop,
+                   "category": ClassSubject.class_sort_by_category,
+                   "id": ClassSubject.class_sort_by_id,
+                   "teachers": ClassSubject.class_sort_by_teachers,
+                   "title": ClassSubject.class_sort_by_title,
+                   "timeblock": ClassSubject.class_sort_by_timeblock }
 
         sort_list = []
         sort_name_list = []
@@ -133,12 +133,12 @@ class ProgramPrintables(ProgramModuleObj):
            request.GET.has_key('clsid'):
             try:
                 clsid = int(request.GET['clsid'])
-                cls   = Class.objects.get(parent_program = self.program,
+                cls   = ClassSubject.objects.get(parent_program = self.program,
                                           id             = clsid)
             except:
                 raise ESPError(), 'Could not get the class object.'
 
-            classes = Class.objects.filter(parent_program = self.program)
+            classes = ClassSubject.objects.filter(parent_program = self.program)
             classes = [cls for cls in classes
                        if cls.isAccepted() ]
 
@@ -181,12 +181,12 @@ class ProgramPrintables(ProgramModuleObj):
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list) })
 
         
-        classes = Class.objects.filter(parent_program = self.program)
+        classes = ClassSubject.objects.filter(parent_program = self.program)
 
         classes = [cls for cls in classes
                    if cls.isAccepted()    ]
 
-        classes.sort(Class.sort_muxer(sort_list))
+        classes.sort(ClassSubject.catalog_sort)
 
         clsids = ','.join([str(cls.id) for cls in classes])
 
@@ -200,7 +200,7 @@ class ProgramPrintables(ProgramModuleObj):
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
 
-        classes = Class.objects.filter(parent_program = self.program)
+        classes = ClassSubject.objects.filter(parent_program = self.program)
 
         if request.GET.has_key('sort_name_list'):
             sort_name_list = request.GET['sort_name_list'].split(',')
@@ -227,7 +227,7 @@ class ProgramPrintables(ProgramModuleObj):
 
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
-        classes = Class.objects.filter(parent_program = self.program)
+        classes = ClassSubject.objects.filter(parent_program = self.program)
 
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
@@ -240,14 +240,32 @@ class ProgramPrintables(ProgramModuleObj):
             for cls in classes:
                 cls_dict[str(cls.id)] = cls
             classes = [cls_dict[clsid] for clsid in clsids]
-            classes.sort(sort_exp)
-            
-        else:
-            classes.sort(sort_exp)
+
+        classes.sort(sort_exp)
 
         context = {'classes': classes, 'program': self.program}
 
         return render_to_response(self.baseDir()+'classes_list.html', request, (prog, tl), context)
+
+    @needs_admin
+    def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
+        sections = self.program.sections()
+                   
+        sections = filter(lambda z: z.isAccepted(), sections)
+        sections = filter(filt_exp, sections)                  
+
+        if request.GET.has_key('secids'):
+            clsids = request.GET['secids'].split(',')
+            cls_dict = {}
+            for cls in sections:
+                cls_dict[str(cls.id)] = cls
+            sections = [cls_dict[clsid] for clsid in clsids]
+
+        sections.sort(sort_exp)
+
+        context = {'sections': sections, 'program': self.program}
+
+        return render_to_response(self.baseDir()+'sections_list.html', request, (prog, tl), context)
 
     @needs_admin
     def classesbytime(self, request, tl, one, two, module, extra, prog):
@@ -262,7 +280,7 @@ class ProgramPrintables(ProgramModuleObj):
 
             return cmp(one, other)
         
-        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_time)
+        return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_time)
 
     @needs_admin
     def classesbytitle(self, request, tl, one, two, module, extra, prog):
@@ -293,7 +311,7 @@ class ProgramPrintables(ProgramModuleObj):
 
             return cmp(one, other)
         
-        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_room)
+        return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_room)
     
     @needs_admin
     def classesbyid(self, request, tl, one, two, module, extra, prog):
@@ -303,7 +321,7 @@ class ProgramPrintables(ProgramModuleObj):
     
     @needs_admin
     def classprereqs(self, request, tl, one, two, module, extra, prog):
-        classes = Class.objects.filter(parent_program = self.program)
+        classes = ClassSubject.objects.filter(parent_program = self.program)
 
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
@@ -325,7 +343,7 @@ class ProgramPrintables(ProgramModuleObj):
             for implication in cls.classimplication_set.filter(parent__isnull=True):
                 imp_info = {}
                 imp_info['operation'] = { 'AND':'All', 'OR':'Any', 'XOR':'Exactly one' }[implication.operation]
-                imp_info['prereqs'] = Class.objects.filter(id__in = implication.member_id_ints)
+                imp_info['prereqs'] = ClassSubject.objects.filter(id__in = implication.member_id_ints)
                         #cls.prereqs += '<li>' + str(prereq_list[0].id) + ": " + prereq_list[0].title() + '<br />'
                         #cls.prereqs += '(' + prereq_list[0].friendly_times().join(', ') + ' in ' + prereq_list[0].prettyrooms().join(', ') + '</li>'
                 cls.implications.append(imp_info)
@@ -353,7 +371,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtClasses()
+            classes = [ cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
                     and cls.isAccepted()                       ]
             # now we sort them by time/title
@@ -435,11 +453,11 @@ class ProgramPrintables(ProgramModuleObj):
     def roomsbytime(self, request, tl, one, two, module, extra, prog):
         #   List of open classrooms, sorted by the first time they are available
         def filt(one):
-            return one.available_any_time()
+            return one.available_any_time(self.program.anchor)
         
         def cmpsort(one, other):
             #   Find when available
-            return cmp(one.available_times()[0], other.available_times()[0])
+            return cmp(one.available_times(self.program.anchor)[0], other.available_times(self.program.anchor)[0])
 
         return self.roomsbyFOO(request, tl, one, two, module, extra, prog, cmpsort, filt)
         
@@ -490,17 +508,15 @@ class ProgramPrintables(ProgramModuleObj):
         if not found:
             return filterObj
 
-
         context = {'module': self     }
         teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct()]
         teachers.sort()
-
 
         scheditems = []
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtClasses()
+            classes = [ cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
                     and cls.isAccepted()                       ]
             # now we sort them by time/title
@@ -682,7 +698,7 @@ Student schedule for %s:
                 
             schedule += """
 %s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
-               cls.title().ljust(40),
+               cls.title.ljust(40),
                rooms)
                
         return schedule
@@ -731,7 +747,7 @@ Student schedule for %s:
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
-            classes = [ cls for cls in student.getEnrolledClasses()
+            classes = [ cls for cls in student.getEnrolledSections()
                                 if cls.parent_program == self.program
                                 and cls.isAccepted()                       ]
             # now we sort them by time/title
@@ -782,7 +798,7 @@ Student schedule for %s:
 
         for student in students:
             # get list of valid classes
-            classes = [ cls for cls in student.getEnrolledClasses()
+            classes = [ cls for cls in student.getEnrolledSections()
                     if cls.parent_program == self.program
                     and cls.isAccepted()                       ]
             # now we sort them by time/title
@@ -801,7 +817,7 @@ Student schedule for %s:
         """ generate class room rosters"""
         from esp.cal.models import Event
         
-        classes = [ cls for cls in self.program.classes()
+        classes = [ cls for cls in self.program.sections()
                     if cls.isAccepted()                      ]
         context = {}
         classes.sort()
@@ -948,6 +964,7 @@ Student schedule for %s:
             tpl = 'classattendance.html'
         else:
             tpl = 'classrosters.html'
+        
         return render_to_response(self.baseDir()+tpl, request, (prog, tl), context)
         
 
@@ -1003,24 +1020,24 @@ Student schedule for %s:
         class_list = []
 
         for c in self.program.classes():
-            c.update_cache_students()
             class_dict = {'cls': c}
             student_list = []
             
             for student in students:
-                paid_symbol = ''
-                if student.hasFinancialAid(self.program_anchor_cached()):
-                    paid_symbol = 'X'
-                else:
-                    li_types = prog.getLineItemTypes(student)
-                    try:
-                        invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
-                    except MultipleDocumentError:
-                        invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
-                    if invoice.cost() == 0:
+                if c in student.getEnrolledClasses(self.program):
+                    paid_symbol = ''
+                    if student.hasFinancialAid(self.program_anchor_cached()):
                         paid_symbol = 'X'
-                
-                student_list.append({'user': student, 'paid': paid_symbol})
+                    else:
+                        li_types = prog.getLineItemTypes(student)
+                        try:
+                            invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+                        except MultipleDocumentError:
+                            invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+                        if invoice.cost() == 0:
+                            paid_symbol = 'X'
+                    
+                    student_list.append({'user': student, 'paid': paid_symbol})
             
             class_dict['students'] = student_list
             class_list.append(class_dict)
@@ -1063,7 +1080,7 @@ Student schedule for %s:
             classes = [cls for cls in self.program.classes()
                        if cls.isAccepted()                   ]
 
-            classes.sort(Class.idcmp)
+            classes.sort(ClassSubject.idcmp)
 
             for cls in classes:
                 for teacher in cls.teachers():

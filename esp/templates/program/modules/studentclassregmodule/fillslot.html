@@ -123,7 +123,7 @@ There are no available classes during this time block for students of your grade
          <a href="#top">[ Return to Category List ]</a>
       </p> {% endifchanged %}
 
-{% render_class class request.user prereg_url request.GET.filter request %}
+{% render_class class request.user prereg_url request.GET.filter timeslot request %}
 
 <br />
 {% endfor %}

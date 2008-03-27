@@ -56,7 +56,7 @@ li {
    {% for prereq in implication.prereqs %}
    <li>
     {{ prereq }}
-    <br />( {{ prereq.friendly_times|join:", " }} in {{ prereq.prettyrooms|join:", " }} )
+    <br />{% for sec in prereq.sections.all %}Section {{ sec.index }}: {{ sec.friendly_times|join:", " }} in {{ sec.prettyrooms|join:", " }}<br >{% endfor %}
    </li>
    {% endfor %}
   </ul>

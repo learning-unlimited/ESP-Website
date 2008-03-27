@@ -140,7 +140,11 @@ class SATPrepTeacherModuleInfo(models.Model):
         )
         
     SUBJECT_DICT = {'M': 'Math', 'V': 'Verbal', 'W': 'Writing'}
-    SECTION_DICT = {'A': 'Red', 'B': 'Orange', 'C': 'Yellow', 'D': 'Green', 'E': 'Blue', 'F': 'Violet'}
+    #   This is the unanimous decision of the ESP office, as of 11:30pm Friday Feb 22, 2008.
+    #   Old category labels are kept commented below.   -Michael P
+    SECTION_DICT = {'A': 'Helium', 'B': 'Neon', 'C': 'Argon', 'D': 'Krypton', 'E': 'Xenon', 'F': 'Radon'}
+    #   SECTION_DICT = {'A': 'Mercury', 'B': 'Venus', 'C': 'Mars', 'D': 'Jupiter', 'E': 'Saturn', 'F': 'Neptune'}
+    #   SECTION_DICT = {'A': 'Red', 'B': 'Orange', 'C': 'Yellow', 'D': 'Green', 'E': 'Blue', 'F': 'Violet'}
 
     sat_math = models.PositiveIntegerField(blank=True, null=True)
     sat_writ = models.PositiveIntegerField(blank=True, null=True)

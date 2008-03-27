@@ -221,7 +221,7 @@ class Document(models.Model):
         program.  It will close off all the online transactions and leave anticipated
         amounts in Accounts Receivable. """
         
-        money_target = DataTree.get_by_uri('Q/Accounts/Receivable/OnSite')
+        money_target = DataTree.get_by_uri('Q/Accounts/Receivable/OnSite', create=True)
         old_doc = Document.get_by_locator(loc)
         old_doc.txn.post_balance(student, 'Expecting on-site payment', money_target)
     
@@ -233,8 +233,8 @@ class Document(models.Model):
         An additional note can be supplied in the ref field, although this is normally
         used for Cybersource credit card transaction IDs. """
         
-        money_src = DataTree.get_by_uri('Q/Accounts/Receivable/OnSite')
-        money_target = DataTree.get_by_uri('Q/Accounts/Realized')
+        money_src = DataTree.get_by_uri('Q/Accounts/Receivable/OnSite', create=True)
+        money_target = DataTree.get_by_uri('Q/Accounts/Realized', create=True)
         
         old_doc = Document.get_by_locator(loc)
 
@@ -269,7 +269,7 @@ class Document(models.Model):
         If mask_receivable is set to True, line items posting to Accounts Receivable
         (which represent anticipated, not real, funds) will be ignored in the
         calculation. """
-        receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable/')
+        receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable/', create=True)
         try:
             if not mask_receivable:
                 return self.txn.get_balance()

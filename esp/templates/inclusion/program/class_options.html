@@ -1,19 +1,16 @@
-<tr id="{{ cls_id }}-tr">
-        
+<tr id="cls-{{ cls_id }}-tr">
         <td>
             <a class="tooltip">{{ cls_code }}
             <span><b>Title</b>: {{ cls_title }}<br />
-            <b>Duration</b>: {{ cls_duration }}<br />
-            <b>Num. Students (actual/max)</b>: {{ cls_students_actual }} / {{ cls_students_max }}<br />
             <b>Requests:</b><br />
             {% for r in cls_requests %}- {{ r }}<br />{% endfor %}
-            <b>Prereqs:</b>{{ cls_prereqs }}<br />
-	    <b>Checkboxes:</b><br />
+            <b>Prereqs:</b> {{ cls_prereqs }}<br />
+	    <b>Checkboxes: </b> <br />
 	    {% for c in cls_checkitems %}- {{ c }}<br />{% endfor %}
-            <b>Comments:</b>{{ cls_message }}</span>
+            <b>Comments:</b> {{ cls_message }}</span>
             </a>
         </td>
-        <td>
+        <td colspan="5">
             {% for teacher in cls_teachers %}
             <a class="tooltip">{{ teacher.first_name }} {{ teacher.last_name }}
             <span><b>{{ teacher.first_name }} {{ teacher.last_name }}</b><br />
@@ -23,64 +20,17 @@
             - {{ t }} <br />
             {% endfor %}{% endif %}
             </span></a>
-            {% if not forloop.last %}<br />{% endif %}
+            {% if not forloop.last %}, {% endif %}
             {% endfor %}
         </td>
-        <td>{{ cls_scheduling_status }}</td>
-	<td>{% if cls_high_school_only %}<font color="blue">{% endif %}{{ cls.grade_min }}-{{ cls.grade_max }}{% if cls_high_school_only %}</font>{% endif %}</td>
-        <td>{{ cls_duration }}</td>
-        <td>{% for ft in cls_friendly_times %}{{ ft }}<br />{% endfor %}</td>
+	<td>Grades: {% if cls_high_school_only %}<font color="blue">{% endif %}{{ cls.grade_min }}-{{ cls.grade_max }}{% if cls_high_school_only %}</font>{% endif %}</td>
         <td>
-            {% if cls_friendly_times %}
-                <input type="hidden" name="starttime_{{ cls_id }}_old" value="{{ cls_start_time.id }}" />
-            {% endif %}
-            {% if cls_viable_times %}
-            <select name="starttime_{{ cls_id }}_new" onchange="javascript:flagDirty({{ cls_id }})">
-            <option value="-1">[None]</option>
-            {% for ft in cls_viable_times %}
-                <option value="{{ ft.id }}" {% if ft.selected %}selected="selected"{% endif %}>{{ ft.pretty_start_time }}</option>
-            {% endfor %}
-            </select>
-            {% else %}
-            <span style="color: #999999">None feasible</span>
-            {% endif %}
-        </td>
-        <td>
-            {% for room in cls_initial_rooms %}
-            <a class="tooltip">{{ room.name }}
-            <span><b>Size:</b> {{ room.num_students }}<br />
-            <b>Resources:</b><br /> {% for ar in room.resources %}- {{ ar }}<br />{% endfor %}</span>
-            </a>{% if not forloop.last %},{% endif %}{% endfor %}
-        </td>
-        <td>
-            {% if cls_sufficient_length %}
-                {% if cls_viable_rooms %}
-                    {% if not cls_initial_rooms|length_is:0 %}
-                        <input type="hidden" name="room_{{ cls_id }}_old" value="{{ cls_initial_rooms.0.id }}" />
-                    {% endif %}
-                    <select name="room_{{ cls_id }}_new" onchange="javascript:flagDirty({{ cls_id }})">
-                    <option value="-1">[None]</option>
-                    {% if not cls_initial_rooms|length_is:0 %}
-                        <option value="{{ cls_initial_rooms.0.id }}" selected="selected">{{ cls_initial_rooms.0.name }} ({{ cls_initial_rooms.0.num_students }})</option>
-                    {% endif %}
-                    {% for vr in cls_viable_rooms %}
-                        <option value="{{ vr.id }}">{{ vr.name }} ({{ vr.num_students }})</option>
-                    {% endfor %}
-                    </select>
-                {% else %}
-                    {% if not cls_initial_rooms|length_is:0 %}
-                        {{ cls_initial_rooms.0.name }} ({{ cls_initial_rooms.0.num_students }})
-                    {% else %}
-                        <span style="color: #999999">None feasible</span>
-                    {% endif %}
-                {% endif %}
-            {% else %}
-                <span style="color: #999999">Assign time</span>
-            {% endif %}
-        </td>
-        <td>
-            <input type="hidden" id="{{ cls_id }}-dirty" name="{{ cls_id }}-dirty" value="False" />
+            <input type="hidden" id="cls-{{ cls_id }}-dirty" name="cls-{{ cls_id }}-dirty" value="False" />
             <input class="fancybutton" type="submit" value="Alter" />
         </td>
-        
-    </tr>
+</tr>
+
+{% for sec in cls_sections %}
+    {% include "inclusion/program/section_scheduling.html" %}
+{% endfor %}
+

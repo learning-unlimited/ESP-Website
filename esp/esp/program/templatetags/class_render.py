@@ -3,11 +3,13 @@ from esp.web.util.template import cache_inclusion_tag
     
 register = template.Library()
 
-def cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
-   if not user or not prereg_url:
-        return 'CLASS_DISPLAY__%s' % cls.id
-
-   return None
+def cache_key_func(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
+    if not user or not prereg_url:
+        if timeslot:
+            return 'CLASS_DISPLAY__%s_%s' % (cls.id, timeslot.id)
+        else:
+            return 'CLASS_DISPLAY__%s' % cls.id
+    return None
 
 def core_cache_key_func(cls):
     return 'CLASS_CORE_DISPLAY__%s' % cls.id
@@ -15,17 +17,22 @@ def core_cache_key_func(cls):
 def minimal_cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
     if not user or not prereg_url:
         return 'CLASS_MINDISPLAY__%s' % cls.id
-
     return None
 
 def current_cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
     if not user or not prereg_url:
         return 'CLASS_CURRENT__%s' % cls.id
-
     return None
+
+def preview_cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
+    if not user or not prereg_url:
+        return 'CLASS_PREVIEW__%s' % cls.id
+    return None
+
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func)
 def render_class_core(cls):
+
     prog = cls.parent_program
     
     # Show enrollment?
@@ -42,21 +49,27 @@ def render_class_core(cls):
         colorstring = ' background-color:#' + colorstring + ';'
     
     return {'class': cls,
-            'isfull': cls.num_students() >= cls.class_size_max,
+            'isfull': (cls.isFull()),
             'colorstring': colorstring,
             'show_enrollment': show_enrollment }
-
+            
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func)
-def render_class(cls, user=None, prereg_url=None, filter=False, request=None):
+def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
     errormsg = None
 
     if user and prereg_url:
         errormsg = cls.cannotAdd(user, True, request=request)
-
+    
     show_class =  (not filter) or (not errormsg)
     
+    section = None
+    if timeslot is not None:
+        sections = cls.sections.filter(meeting_times=timeslot)
+        if sections.count() > 0:
+            section = sections[0]
     
     return {'class':      cls,
+            'section':    section,
             'user':       user,
             'prereg_url': prereg_url,
             'errormsg':   errormsg,
@@ -118,7 +131,7 @@ def render_class_current(cls, user=None, prereg_url=None, filter=False, request=
             'show_class': show_class}
                         
             
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_preview.html', cache_key_func=minimal_cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_preview.html', cache_key_func=preview_cache_key_func)
 def render_class_preview(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
 

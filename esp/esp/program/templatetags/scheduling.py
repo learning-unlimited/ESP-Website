@@ -54,6 +54,34 @@ def scheduling_matrix_row(room, program):
             
 @cache_inclusion_tag(register, 'inclusion/program/class_options.html', cache_key_func=options_key_func)
 def class_options_row(cls):
+    """ So it's no longer just one row.  This returns a block of rows for the scheduling table,
+    one with information about the class and its teachers, and then one for setting the times
+    and rooms of each section. """
+    def prepare_section_dict(sec):
+        context = {}
+        
+        context['code'] = sec.emailcode()
+        context['id'] = sec.id
+        context['index'] = sec.index()
+        context['title'] = str(sec)
+        total_minutes = sec.duration * 60
+        hours = int(total_minutes / 60)
+        minutes = total_minutes - hours * 60
+        context['duration'] = '%d hr %d min' % (hours, minutes)
+        context['scheduling_status'] = color_needs(sec.scheduling_status())
+        context['start_time'] = sec.start_time()
+        if context['start_time'] is None:
+            context['start_time'] = {'id': -1}
+        context['friendly_times'] = [ft for ft in sec.friendly_times()]
+        context['viable_times'] = [{'id': vt.id, 'pretty_start_time': vt.pretty_start_time(), 'selected': ((sec.start_time() is not None) and (sec.start_time().id == vt.id))} for vt in sec.viable_times()]
+        context['initial_rooms'] = [{'id': room.id, 'name': room.name, 'num_students': room.num_students, 'resources': [r.res_type.name for r in room.associated_resources()]} for room in sec.initial_rooms()]
+        context['sufficient_length'] = sec.sufficient_length()
+        context['students_actual'] = sec.num_students()
+        context['students_max'] = sec.parent_class.class_size_max
+        context['viable_rooms'] = sec.viable_rooms()
+        
+        return context
+        
     context = {}
 
     context['cls'] = cls
@@ -61,26 +89,13 @@ def class_options_row(cls):
     context['cls_id'] = cls.id
     context['cls_title'] = cls.anchor.friendly_name
     context['cls_code'] = cls.emailcode()
-    cls_total_minutes = cls.duration * 60
-    cls_hours = int(cls_total_minutes / 60)
-    cls_minutes = cls_total_minutes - cls_hours * 60
-    context['cls_duration'] = '%d hr %d min' % (cls_hours, cls_minutes)
-    context['cls_requests'] = [r.res_type.name for r in cls.getResourceRequests()]
+    context['cls_requests'] = [r.res_type.name for r in cls.default_section().getResourceRequests()]
     context['cls_teachers'] = [{'first_name': t.first_name, 'last_name': t.last_name, 'available_times': [e.short_time() for e in t.getAvailableTimes(cls.parent_program)]} for t in cls.teachers()]
-    context['cls_scheduling_status'] = color_needs(cls.scheduling_status())
-    context['cls_start_time'] = cls.start_time()
-    if context['cls_start_time'] is None:
-        context['cls_start_time'] = {'id': -1}
-    context['cls_friendly_times'] = [ft for ft in cls.friendly_times()]
-    context['cls_viable_times'] = [{'id': vt.id, 'pretty_start_time': vt.pretty_start_time(), 'selected': ((cls.start_time() is not None) and (cls.start_time().id == vt.id))} for vt in cls.viable_times()]
-    context['cls_initial_rooms'] = [{'id': room.id, 'name': room.name, 'num_students': room.num_students, 'resources': [r.res_type.name for r in room.associated_resources()]} for room in cls.initial_rooms()]
-    context['cls_sufficient_length'] = cls.sufficient_length()
-    context['cls_students_actual'] = cls.num_students()
-    context['cls_students_max'] = cls.class_size_max
     context['cls_prereqs'] = cls.prereqs
     context['cls_message'] = cls.message_for_directors
-    context['cls_viable_rooms'] = cls.viable_rooms()
     context['cls_checkitems'] = [cm.title for cm in cls.checklist_progress.all()]
     
+    context['cls_sections'] = [prepare_section_dict(s) for s in cls.sections.all()]
+
     return context
     

@@ -34,7 +34,7 @@ from esp.program.modules import module_ext
 from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
 from esp.users.models import ESPUser, UserBit, User
 from esp.web.util        import render_to_response
-from esp.program.models import Class, JunctionStudentApp, JunctionAppReview
+from esp.program.models import ClassSubject, JunctionStudentApp, JunctionAppReview
 from django.contrib.auth.decorators import login_required
 from esp.datatree.models import DataTree
 from django.http import HttpResponseRedirect
@@ -47,8 +47,8 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
     @needs_teacher
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
-            cls = Class.objects.get(id = extra)
-        except Class.DoesNotExist:
+            cls = ClassSubject.objects.get(id = extra)
+        except ClassSubject.DoesNotExist:
             raise ESPError(False), 'Cannot find class.'
 
         if not self.user.canEdit(cls):
@@ -88,8 +88,8 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
         reg_node = request.get_node('V/Flags/Registration/Preliminary')
 
         try:
-            cls = Class.objects.get(id = extra)
-        except Class.DoesNotExist:
+            cls = ClassSubject.objects.get(id = extra)
+        except ClassSubject.DoesNotExist:
             raise ESPError(False), 'Cannot find class.'
 
         if not self.user.canEdit(cls):

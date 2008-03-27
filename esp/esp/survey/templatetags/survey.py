@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 
 from django import template
 from django.template import loader
-from esp.program.models.class_ import Class
+from esp.program.models.class_ import ClassSubject
 
 register = template.Library()
 

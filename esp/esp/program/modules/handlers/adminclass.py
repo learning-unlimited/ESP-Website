@@ -30,72 +30,67 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.program.models import Class, Program, ProgramCheckItem
+
+from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
 from esp.users.models import UserBit, ESPUser, User
 from esp.datatree.models import DataTree
-from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
-from esp.program.modules.manipulators import ClassManageManipulator
-from django import forms
+
+from esp.web.util        import render_to_response
+from esp.program.modules.forms.management import ClassManageForm, SectionManageForm
+
+from django import oldforms
+from django import newforms as forms
 from django.http import HttpResponseRedirect, HttpResponse
+from django.utils.datastructures import MultiValueDict
+from django.contrib.auth.decorators import login_required
+
+""" Module in the middle of a rewrite. -Michael """
 
 class AdminClass(ProgramModuleObj):
     doc = """ This module is extremely useful for managing classes if you have them them in your program.
         Works best with student and teacher class modules, but they are not necessary.
         Options for this are available on the main manage page.
         """
-    def getManageSteps(self):
-        return [(str(x.id),x.title) for x in self.program.checkitems.all()]
-    
-    def getResources(self):
-        resources = self.program.getResources()
-        return [(str(x.id), x.name) for x in resources]
+        
+    form_choice_types = ['status', 'room', 'progress', 'resources', 'times', 'min_grade', 'max_grade']
+    def getFormChoices(self, field_str):
+        """ A more compact function for zipping up the options available on class
+        management forms. """
+        
+        if field_str == 'status':
+            return ((-20, 'Cancelled'), (-10, 'Rejected'), (0, 'Unreviewed'), (10, 'Accepted'))
+        if field_str == 'room':
+            room_choices = [(c.name, c.name) for c in self.program.groupedClassrooms()]
+            return [(None, 'Unassigned')] + room_choices
+        if field_str == 'progress':
+            return ((str(x.id),x.title) for x in self.program.checkitems.all())
+        if field_str == 'resources':
+            resources = self.program.getFloatingResources()
+            return ((x.name, x.name) for x in resources)
+        if field_str == 'times':
+            times = self.program.getTimeSlots()
+            return ((str(x.id),x.short_description) for x in times)
+        if field_str == 'min_grade' or field_str == 'max_grade':
+            min_grade, max_grade = (7, 12)
+            if self.program.grade_min:
+                min_grade = self.program.grade_min
+            if self.program.grade_max:
+                max_grade = self.program.grade_max
+            return ((i, str(i)) for i in range(min_grade, max_grade + 1))
 
-    def getClassSizes(self):
-        min_size, max_size, class_size_step = (0, 200, 10)
-        if self.classRegInfo.class_min_size:
-            min_size = self.classRegInfo.class_min_size
-            
-        if self.classRegInfo.class_max_size:
-            max_size = self.classRegInfo.class_max_size
-            
-        if self.classRegInfo.class_size_step:
-            class_size_step = self.classRegInfo.class_size_step
-
-        return range(min_size, max_size+1, class_size_step)
-
-    def getTimes(self):
-        times = self.program.getTimeSlots()
-        return [(str(x.id),x.short_description) for x in times]
-
-    def timeslotNumClasses(self):
+    def timeslot_counts(self):
         timeslots = self.program.getTimeSlots()
         clsTimeSlots = []
         for timeslot in timeslots:
-            curTimeslot = {'slotname': timeslot.friendly_name}
-            
-            curclasses = Class.objects.filter(parent_program = self.program,
-                                              meeting_times  = timeslot)
-
-            curTimeslot['classcount'] = curclasses.count()
-
+            curTimeslot = {'slotname': timeslot.short_time()}
+            section_list = self.program.sections().filter(meeting_times=timeslot)
+            curTimeslot['classcount'] = section_list.count()
             clsTimeSlots.append(curTimeslot)
         return clsTimeSlots
 
-
-    def getClassGrades(self):
-        min_grade, max_grade = (6, 12)
-        if self.program.grade_min:
-            min_grade = self.program.grade_min
-        if self.program.grade_max:
-            max_grade = self.program.grade_max
-
-        return range(min_grade, max_grade+1)
-
     def getClasses(self):
-        return self.user.getEditable(Class).filter(parent_program = self.program)
+        return self.user.getEditable(ClassSubject).filter(parent_program = self.program)
         
     def prepare(self, context=None):
         if context is None: context = {}
@@ -140,81 +135,71 @@ class AdminClass(ProgramModuleObj):
                 
         return (render_to_response(self.baseDir()+'cannotfindclass.html', {}), False)
 
+    @needs_admin
+    def deletesection(self, request, tl, one, two, module, extra, prog):
+        """ A little function to remove the section specified in POST. """
+        if request.method == 'POST':
+            if request.has_key('sure') and request.POST['sure'] == 'True':
+                try:
+                    s = ClassSection.objects.get(id=int(request.GET['sec_id']))
+                    s.delete()
+                    return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
+                except:
+                    raise ESPError(False), 'Unable to delete a section.  The section requested was: %s' % request.GET['sec_id']
+        else:
+            section_id = int(request.GET['sec_id'])
+            section = ClassSection.objects.get(id=section_id)
+            context = {'sec': section, 'module': self}
+            
+            return render_to_response(self.baseDir()+'delete_confirm.html', request, (prog, tl), context)
                 
     @needs_admin
-    def manageclass(self, request, tl, one, two, module, extra, prog):
-        from esp.datatree.models import GetNode
+    def addsection(self, request, tl, one, two, module, extra, prog):
+        """ A little function to add a section to the class specified in POST. """
         cls, found = self.getClass(request,extra)
-        if not found:
-            return cls
-        context = {'class': cls,
-                   'module': self}
-
-        manipulator = ClassManageManipulator(cls, self)
-        new_data = {}
-        if request.method == 'POST' and request.POST.has_key('manage_post'):
-            new_data = request.POST.copy()
-
-            errors = manipulator.get_validation_errors(new_data)
-            
-            if not errors:
-                verb_start = 'V/Flags/Class/'
-                manipulator.do_html2python(new_data)
-                progress = request.POST.getlist('manage_progress')
-                for step in self.program.checkitems.all():
-                    if str(step.id) in progress:
-                        cls.checklist_progress.add(step)
-                    else:
-                        cls.checklist_progress.remove(step)
-
-                cls.meeting_times.clear()
-                cls.directors_notes = new_data['directors_notes']
-                cls.message_for_directors = new_data['message_for_directors']
-                                
-                for meeting_time in request.POST.getlist('meeting_times'):
-                    cls.meeting_times.add(Event.objects.get(id = meeting_time))
+        cls.add_section()
                     
-                cls.save()
-                rooms = request.POST.getlist('room')
-                cls.clearRooms()
-                for room in rooms:
-                    if len(room.strip()) > 0:
-                        cls.assignClassRoom(DataTree.objects.get(id = room))
+        return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
 
-                cls.update_cache()
-                if request.POST.has_key('ajax'):
-                    return HttpResponse('')
-                else:
-                    return self.goToCore(tl)
-        else:
-            new_data['meeting_times']   = [x.id for x in cls.meeting_times.all()]
-            new_data['directors_notes'] = cls.directors_notes
-            new_data['message_for_directors'] = cls.message_for_directors            
-            new_data['resources'] = [ resource.id for resource in cls.getResources() ]
-
-            new_data['manage_progress'] = [str(x.id) for x in
-                                           cls.checklist_progress.all()]
-
+    @needs_admin
+    def manageclass(self, request, tl, one, two, module, extra, prog):
+        cls, found = self.getClass(request,extra)
+        sections = cls.sections.all()
+        if not found:
+            return ESPError(False), 'Unable to find the requested class.'
+        context = {}
+        
+        cls_form = ClassManageForm(self, subject=cls)
+        sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in sections]
+        
+        if request.method == 'POST':
+            data = request.POST.copy()
+            #   assert False, data
             
-            classrooms = cls.classrooms()
-            if len(classrooms) > 0:
-                new_data['room']      = cls.classrooms()[0].id
-            errors = {}
-
-        form = forms.FormWrapper(manipulator, new_data, errors)
-        context['form'] = form
-
-        if request.POST.has_key('ajax') or request.GET.has_key('ajax'):
-            from django.shortcuts import render_to_response as django_response
-            context['program'] = prog
-            return django_response(self.baseDir()+'manageclass_ajax.html',
-                                      context)
-        else:
-            return render_to_response(self.baseDir()+'manageclass.html',
-                                      request,
-                                      (prog, tl),
-                                      context)
-
+            cls_form.data = data
+            cls_form.is_bound = True
+            valid = cls_form.is_valid()
+            for sf in sec_forms:
+                sf.data = data
+                sf.is_bound = True
+                valid = (valid and sf.is_valid())
+            
+            if valid:
+                cls_alter = ClassSubject.objects.get(id=cls_form.clean_data['clsid'])
+                cls_form.save_data(cls_alter)
+                for sf in sec_forms:
+                    sec_alter = ClassSection.objects.get(id=sf.clean_data['secid'])
+                    sf.save_data(sec_alter)
+                return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))
+        
+        context['class'] = cls
+        context['sections'] = sections
+        context['cls_form'] = cls_form
+        context['sec_forms'] = sec_forms
+        context['program'] = self.program
+        context['module'] = self
+        
+        return render_to_response(self.baseDir()+'manageclass.html', request, (prog, tl), context)
 
     @needs_admin
     def approveclass(self, request, tl, one, two, module, extra, prog):
@@ -247,7 +232,7 @@ class AdminClass(ProgramModuleObj):
         return self.goToCore(tl)
 
     def change_checkmark(self, class_id, check_id):
-        cls = Class.objects.get(id = class_id)
+        cls = ClassSubject.objects.get(id = class_id)
         check = ProgramCheckItem.objects.get(id = check_id)
     
         if len(cls.checklist_progress.filter(id = check_id).values('id')[:1]) > 0:
@@ -281,9 +266,6 @@ class AdminClass(ProgramModuleObj):
 
         return self.goToCore(tl)
 
-        
-
-
     @needs_admin
     def main(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
@@ -300,11 +282,9 @@ class AdminClass(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
-    
- 
     @needs_admin
     def deleteclass(self, request, tl, one, two, module, extra, prog):
-        classes = Class.objects.filter(id = extra)
+        classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
@@ -322,7 +302,7 @@ class AdminClass(ProgramModuleObj):
         else:
             ajax = True
             
-        classes = Class.objects.filter(id = request.POST['clsid'])
+        classes = ClassSubject.objects.filter(id = request.POST['clsid'])
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
 
@@ -415,123 +395,20 @@ class AdminClass(ProgramModuleObj):
                                                                                          'txtTeachers': txtTeachers,
                                                                                          'coteachers':  coteachers,
                                                                                          'conflicts':   conflictingusers})
+    
     @needs_admin
     def editclass(self, request, tl, one, two, module, extra, prog):
-        classes = Class.objects.filter(id = extra)
+        """ Hand over to the teacher class reg module so we only have this code in one place. """
+        from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
+        
+        classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
-        return self.makeaclass(request, tl, one, two, module, extra, prog, cls)
-
-    @needs_admin
-    def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
-        
-        new_data = MultiValueDict()
-        context = {'module': self}
-        new_data['grade_max'] = str(self.getClassGrades()[-1:][0])
-        new_data['class_size_max']  = str(self.getClassSizes()[-1:][0])
-        
-        manipulator = manipulators.TeacherClassRegManipulator(self)
-
-        if request.method == 'POST' and request.POST.has_key('class_reg_page'):
-            if not self.deadline_met():
-                return self.goToCore();
-            
-            new_data = request.POST.copy()
-            #assert False, new_data            
-            errors = manipulator.get_validation_errors(new_data)
-            if not errors:
-                manipulator.do_html2python(new_data)
-
-                if newclass is None:
-                    newclass = Class()
-
-                if len(new_data['message_for_directors'].strip()) > 0 and \
-                       new_data['message_for_directors'] != newclass.message_for_directors and \
-                       self.classRegInfo.director_email:
-
-                    send_mail('['+self.program_anchor_cached().parent.friendly_name+"] Directors' Comments for Teacher Reg", \
-                              """ Directors\' comments below:\nClass Title: %s\n\n %s\n\n>>>>>>>>>>>EOM""" % \
-                              (new_data['title'], new_data['message_for_directors']) , \
-                              ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
-                              [self.classRegInfo.director_email], True)
-
-
-                for k, v in new_data.items():
-                    if k != 'resources' and k != 'viable_times':
-                        newclass.__dict__[k] = v
-
-                if new_data['duration'] == '':
-                    newclass.duration = 0.0
-                else:
-                    newclass.duration = float(new_data['duration'])
-                    
-                # datatree maintenance
-                newclass.parent_program = self.program
-                newclass.category = ClassCategories.objects.get(id=new_data['category'])
-                newclass.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-                newclass.anchor.save()
-                newclass.enrollment = 0
-                newclass.save()
-                newclass.anchor.delete()
-                
-                nodestring = newclass.category.category[:1].upper() + str(newclass.id)
-                newclass.anchor = self.program.classes_node().tree_create([nodestring])
-                newclass.anchor.friendly_name = newclass.title
-                newclass.anchor.save()
-                newclass.save()
-
-
-                # ensure multiselect fields are set
-                newclass.viable_times.clear()
-                for block in request.POST.getlist('viable_times'):
-                    tmpQsc = DataTree.objects.get(id = int(block))
-                    newclass.viable_times.add(tmpQsc)
-
-
-                newclass.resources.clear()
-                for resource in request.POST.getlist('resources'):
-                    tmpQsc = DataTree.objects.get(id = int(resource))
-                    newclass.resources.add(tmpQsc)
-
-                # add userbits
-                newclass.makeTeacher(self.user)
-                newclass.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
-
-                return self.goToCore(tl)
-                            
-        else:
-            errors = {}
-            if newclass is not None:
-                new_data = newclass.__dict__
-                new_data['category'] = newclass.category.id
-                new_data['resources'] = [ resource.id for resource in newclass.resources.all() ]
-                new_data['viable_times'] = [ event.id for event in newclass.viable_times.all() ]
-                new_data['title'] = newclass.anchor.friendly_name
-                new_data['url']   = newclass.anchor.name
-                context['class'] = newclass
-
-        #assert False, new_data
-        context['one'] = one
-        context['two'] = two
-        if newclass is None:
-            context['addoredit'] = 'Add'
-        else:
-            context['addoredit'] = 'Edit'
-
-        #        assert False, new_data
-        context['form'] = forms.FormWrapper(manipulator, new_data, errors)
-
-
-        if len(self.getDurations()) < 2:
-            context['durations'] = False
-        else:
-            context['durations'] = True
-            
-        return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
-
-
+        #   May have to change so that the user is redirected to the dashboard after saving.
+        #   It might do this already.
+        return TeacherClassRegModule(self).makeaclass(request, tl, one, two, module, extra, prog, cls)
 
     @needs_admin
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):

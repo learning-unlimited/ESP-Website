@@ -20,7 +20,6 @@
             <div>Name: {{ student.name }}</div>
             <div>Username: {{ student.username }}</div>
             <div>User ID: {{ student.id }}</div>
-            <div>Amount owed: ${{ student.itemizedcosttotal|floatformat:"-2" }}</div>
             {% if student.in_parent_program %}
                 <div style="font-style:italic;">{{ program.getParentProgram.niceName }} Student</div>
             {% endif %}
@@ -66,6 +65,6 @@ If you have any questions, please go to the program office.
      <td>{{ cls.friendly_times|join:"<br />" }}</td>
      <td>{% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</td>
      <td>{{ cls.title }}</td>
-     {% if onsiteregform %}{% else %}<td>{{ cls.getTeacherNames|join:", " }}</td>{% endif %}
+     {% if onsiteregform %}{% else %}<td>{{ cls.parent_class.getTeacherNames|join:", " }}</td>{% endif %}
    </tr>
 {% endfor %}

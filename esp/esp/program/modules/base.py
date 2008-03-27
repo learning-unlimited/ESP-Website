@@ -247,7 +247,7 @@ class ProgramModuleObj(models.Model):
         """ This function can be called from a view to get a class object from an id. The id can be given
             with request or extra, but it will try to get it in any way. """
 
-        from esp.program.models import Class
+        from esp.program.models import ClassSubject
 
         classes = []
         try:
@@ -255,7 +255,7 @@ class ProgramModuleObj(models.Model):
         except:
             return (False, True)
         
-        classes = Class.objects.filter(id = clsid)
+        classes = ClassSubject.objects.filter(id = clsid)
             
         if len(classes) == 1:
             if not self.user.canEdit(classes[0]):

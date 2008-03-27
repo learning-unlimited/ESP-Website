@@ -34,7 +34,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 
 class AdminCore(ProgramModuleObj, CoreModule):
-
+        
     @needs_admin
     def main(self, request, tl, one, two, module, extra, prog):
         context = {}
@@ -48,7 +48,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
     @needs_admin
     def dashboard(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher eg page """
+        """ The administration panel showing statistics for the program, and a list
+        of classes with the ability to edit each one.  """
+        
         context = {}
         modules = self.program.getModules(self.user, 'manage')
         

@@ -35,7 +35,7 @@ from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits
-from esp.program.models import Class
+from esp.program.models import ClassSubject
 from django import forms
 
 from django.contrib.auth.models import User, AnonymousUser

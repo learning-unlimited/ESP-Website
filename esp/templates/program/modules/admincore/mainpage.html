@@ -15,6 +15,12 @@ function updateDocs(docs) {
 //-->
 </script>
 {% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
@@ -29,7 +35,6 @@ function updateDocs(docs) {
 
 {% include "program/modules/admincore/returnlink.html" %}
 
-<center>
 {% for module in modules %}
 {% if module.useTemplate %}
 <br />

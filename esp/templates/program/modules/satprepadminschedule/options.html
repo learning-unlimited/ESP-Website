@@ -1,38 +1,37 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}{{program.niceName}} Schedule{% endblock %}
+{% block title %}{{ program.niceName }} Schedule{% endblock %}
 
 {% block subsection_name %}Scheduling Options{% endblock %}
 
 {% block stylesheets %}
-{{block.super}}
+    {{ block.super }}
 
 {% endblock %}
 
 {% block content %}
 <br />
-<br />
-
-<br /><br />
 <h1>
-Scheduling {{program.niceName}}
+Scheduling {{ program.niceName }}
 </h1>
 
 <p style="text-align: center">
-On this page you can schedule {{program.niceName}}! You have multiple steps.
+On this page you can schedule {{ program.niceName }}! You have multiple steps.
 </p>
 
 <h2>Diagnostic Exam</h2>
 <ol>
     <li><a href="/manage/{{ program.getUrlBase }}/resources/timeslot">Create a timeslot for the test</a></li>
     <li><a href="/manage/{{ program.getUrlBase }}/create_rooms/">Set up exam classrooms and assign students to sections</a></li>
+    <li><a href="/manage/{{ program.getUrlBase }}/enter_scores">Enter SAT scores in bulk</a></li>
 </ol>
 
 <h2>Primary Classes</h2>
 <ol>
-    <li><a href="/manage/{{program.getUrlBase}}/satprep_teachassign" title="Assign Teachers to Sections">Assign Teachers to Sections</a></li>
-    <li><a href="/manage/{{program.getUrlBase}}/satprep_classgen" title="Generate Classes">Generate the Classes</a></li>
-    <li><a href="/manage/{{program.getUrlBase}}/satprep_schedulestud" title="Schedule Students">Schedule Students</a></li>
+    <li><a href="/manage/{{ program.getUrlBase }}/resources/timeslot">Create timeslots for the class periods</a></li>
+    <li><a href="/manage/{{ program.getUrlBase }}/satprep_teachassign" title="Assign Teachers to Sections">Assign Teachers to Sections</a></li>
+    <li><a href="/manage/{{ program.getUrlBase }}/satprep_classgen" title="Generate Classes">Generate the Classes</a></li>
+    <li><a href="/manage/{{ program.getUrlBase }}/satprep_schedulestud" title="Schedule Students">Schedule Students</a></li>
 </ol>
 
 {% include "program/modules/admincore/returnlink.html" %}

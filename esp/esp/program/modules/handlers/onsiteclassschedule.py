@@ -35,8 +35,8 @@ from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser, UserBit
 from esp.datatree.models import GetNode
 from datetime         import datetime, timedelta
-class OnsiteClassSchedule(ProgramModuleObj):
 
+class OnsiteClassSchedule(ProgramModuleObj):
 
     @needs_student
     def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
@@ -73,7 +73,8 @@ class OnsiteClassSchedule(ProgramModuleObj):
         
     @needs_onsite
     def schedule_students(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher eg page """
+        """ Redirect to student registration, having morphed into the desired
+        student. """
 
         user, found = search_for_user(request, ESPUser.getAllOfType('Student', False))
         if not found:

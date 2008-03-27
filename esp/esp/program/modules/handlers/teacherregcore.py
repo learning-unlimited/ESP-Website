@@ -40,7 +40,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
     @meets_deadline("/MainPage")
     @needs_teacher
     def teacherreg(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher eg page """
+        """ Display a teacher reg page """
         context = {}
         modules = self.program.getModules(self.user, 'teach')
 
@@ -62,25 +62,6 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
     def isStep(self):
         return False
     
-    @needs_teacher
-    def teacherregold(self, request, tl, one, two, module, extra, prog):
-	""" Display the registration page to allow a teacher to register for a program """
-        context = {}
-	context['one'] = one
-	context['two'] = two
-	context['teacher'] = self.user
-	context['timeslots'] = self.program_anchor_cached().tree_create(['Templates', 'TimeSlots']).series_set.all()
-	
-	clsList = [ x for x in self.user.getEditable(Class) if x.parent_program == self.program ]
-	
-#	if len(clsList) == 0:
-#            return program_teacherreg2(request, tl, one, two, module, extra, prog)
-            
-	context['classes'] = clsList
-	
-	return render_to_response('program/selectclass', request, (prog, tl), context)
-
-
     def getNavBars(self):
         if super(TeacherRegCore, self).deadline_met():
             return [{ 'link': '/teach/%s/teacherreg' % ( self.program.getUrlBase() ),

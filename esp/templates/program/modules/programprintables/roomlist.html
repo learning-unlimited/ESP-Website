@@ -45,7 +45,7 @@ body { font-family: georgia; }
 <tr>
     <td>{{ forloop.counter }}</td>
     <td>{{ room.name }}</td>
-    <td>&nbsp;{{ room.available_times }}</td>
+    <td>&nbsp;{{ room.prog_available_times }}</td>
     <td>&nbsp;
         {% for f in room.furnishings %}
             {{ f.res_type.name }}{% if not forloop.last %}<br />{% endif %}

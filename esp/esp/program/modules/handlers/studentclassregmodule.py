@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
 from esp.datatree.models import GetNode, DataTree
-from esp.program.models  import Class, ClassCategories, RegistrationProfile, ClassImplication
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
@@ -66,9 +66,9 @@ class StudentClassRegModule(ProgramModuleObj):
     
     def isCompleted(self):
         self.user = ESPUser(self.user)
-        if self.user.getEnrolledClasses(self.program).count() == 0:
+        if len(self.user.getEnrolledClasses(self.program)) == 0:
             return False
-        return (self.user.getEnrolledClasses(self.program).count() > 0)
+        return (len(self.user.getEnrolledClasses(self.program)) > 0)
 
     def deadline_met(self):
         #tmpModule = ProgramModuleObj()
@@ -91,11 +91,11 @@ class StudentClassRegModule(ProgramModuleObj):
         
         schedule = []
         timeslot_dict = {}
-        for cls in classList:
-            class_qset = Class.objects.catalog(self.program).filter( anchor__friendly_name = cls.title(), grade_min__lte=user_grade, grade_max__gte=user_grade)
+        for sec in classList:
+            class_qset = ClassSubject.objects.catalog(self.program).filter(anchor__friendly_name = sec.title, grade_min__lte=user_grade, grade_max__gte=user_grade)
             show_changeslot = ( len([0 for c in class_qset if (not c.isFull()) or is_onsite]) > 1 ) # Does the class have enough siblings to warrant a "change section" link?
-            for mt in cls.meeting_times.all().values('id'):
-                timeslot_dict.update({mt['id']: (cls, show_changeslot)})
+            for mt in sec.meeting_times.all().values('id'):
+                timeslot_dict.update({mt['id']: (sec, show_changeslot)})
             
         for timeslot in timeslots:
             if prevTimeSlot != None:
@@ -127,6 +127,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         if request.POST.has_key('class_id'):
             classid = request.POST['class_id']
+            sectionid = request.POST['section_id']
         else:
             from esp.dblog.models import error
             raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
@@ -149,7 +150,8 @@ class StudentClassRegModule(ProgramModuleObj):
                         datestring = d.strftime(' on %B %d')
                 raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
 
-        cobj = Class.objects.filter(id=classid)[0]
+        cobj = ClassSubject.objects.get(id=classid)
+        section = ClassSection.objects.get(id=sectionid)
         error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
         
         # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
@@ -158,14 +160,13 @@ class StudentClassRegModule(ProgramModuleObj):
         cannotadd_error = ''
         for implication in ClassImplication.objects.filter(cls=cobj, parent__isnull=True):
             if implication.fails_implication(self.user):
-                for cls in Class.objects.filter(id__in=implication.member_id_ints):
+                for cls in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     #   Override size limits on subprogram classes (checkFull=False). -Michael P
                     if cls.cannotAdd(self.user, checkFull=False, use_cache=False):
                         blocked_class = cls
                         cannotadd_error = cls.cannotAdd(self.user, checkFull=False, use_cache=False)
                     else:
                         if cls.preregister_student(self.user, overridefull=True, automatic=True):
-                            cls.update_cache_students()
                             auto_classes.append(cls)
                             if implication.operation != 'AND':
                                 break
@@ -183,8 +184,7 @@ class StudentClassRegModule(ProgramModuleObj):
                     
         if error and not self.user.onsite_local:
             raise ESPError(False), error
-        if cobj.preregister_student(self.user, self.user.onsite_local):
-            cobj.update_cache_students()
+        if section.preregister_student(self.user, self.user.onsite_local):
             return self.goToCore(tl) # go to the core view.
         else:
             raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'
@@ -212,18 +212,18 @@ class StudentClassRegModule(ProgramModuleObj):
         user.updateOnsite(request)
         is_onsite = user.isOnsite(self.program)
         
-        # using .extra() to select all the category text simultaneously
+        classes = [c for c in ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull(timeslot=ts)) or is_onsite] 
+
         #   Override both grade limits and size limits during onsite registration
         if is_onsite:
-            classes = [c for c in Class.objects.catalog(self.program, ts)]
+            classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = [c for c in Class.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull())] 
+            classes = [c for c in ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull(timeslot=ts))] 
 
         categories = {}
 
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
-
 
         return render_to_response(self.baseDir()+'fillslot.html', request, (prog, tl), {'classes':    classes,
                                                                                         'one':        one,
@@ -257,25 +257,26 @@ class StudentClassRegModule(ProgramModuleObj):
                         
         # Determining the old class, if any.
         v_registered = request.get_node('V/Flags/Registration/Preliminary')
-        oldclasses = Class.objects.filter(meeting_times=extra,
-                             parent_program = self.program,
+        oldclasses = ClassSubject.objects.filter(parent_program = self.program,
                              anchor__userbit_qsc__verb = v_registered,
                              anchor__userbit_qsc__user = self.user).distinct()
+        oldclasses = filter(lambda x: ts in x.all_meeting_times, oldclasses)
         # If there isn't a class to replace, let's silently switch over to regular adding of classes.
-        if oldclasses.count() < 1:
+        if len(oldclasses) < 1:
             return self.fillslot(request, tl, one, two, module, extra, prog)
         # If there's more than one to replace, we don't know how to handle that.
-        if oldclasses.count() > 1:
+        if len(oldclasses) > 1:
             raise ESPError(False), 'Sorry, our website doesn\'t know which class in that time slot you want to change! You\'ll have to go back and do it yourself by clearing the time slot first.'
         # Still here? Okay, continue...
         oldclass = oldclasses[0]
         
         # .objects.catalog() uses .extra() to select all the category text simultaneously
         # The "friendly_name bit" is to test for classes with the same title without having to call c.title()
-        class_qset = Class.objects.catalog(self.program).filter( anchor__friendly_name = oldclass.title() ) # same title
+
+        class_qset = ClassSubject.objects.catalog(self.program).filter( DjangoQ(meeting_times = ts) | DjangoQ(anchor__friendly_name = oldclass.title()) ) # same time or same title
+
         class_qset = class_qset.filter(grade_min__lte=user_grade, grade_max__gte=user_grade) # filter within grade limits
         classes = [c for c in class_qset if (not c.isFull()) or is_onsite] # show only viable classes
-        print [c.meeting_times for c in classes]
 
         categories = {}
 
@@ -294,7 +295,7 @@ class StudentClassRegModule(ProgramModuleObj):
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
-        classes = Class.objects.catalog(self.program)
+        classes = ClassSubject.objects.catalog(self.program)
 
         categories = {}
         for cls in classes:
@@ -332,7 +333,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             clsid = extra
             
-        classes = Class.objects.filter(id = clsid)
+        classes = ClassSubject.objects.filter(id = clsid)
         
         target_class = classes[0]
 
@@ -347,22 +348,18 @@ class StudentClassRegModule(ProgramModuleObj):
 	v_registered = request.get_node('V/Flags/Registration/Preliminary')
 	v_auto = request.get_node('V/Flags/Registration/Preliminary/Automatic')
         
-        classes = Class.objects.filter(meeting_times=extra,
-                             parent_program = self.program,
-                             anchor__userbit_qsc__verb = v_registered,
-                             anchor__userbit_qsc__user = self.user).distinct()
-
-        already_enrolled = [c.id for c in self.user.getEnrolledClasses()]
+        classes = self.user.getEnrolledClasses()
+        class_ids = [c.id for c in classes]
         for cls in classes:
             # Make sure deletion doesn't violate any class implications before proceeding
-            for implication in ClassImplication.objects.filter(cls__in=already_enrolled, enforce=True, parent__isnull=True):
+            for implication in ClassImplication.objects.filter(cls__in=class_ids, enforce=True, parent__isnull=True):
                 if implication.fails_implication(self.user, without_classes=set([cls.id])):
                     raise ESPError(False), 'This class is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url, implication.cls.parent_program.niceName())
             cls.unpreregister_student(self.user)
             
             # Undo auto-registrations of sections
             for implication in ClassImplication.objects.filter(cls=cls, enforce=True):
-                for auto_class in Class.objects.filter(id__in=implication.member_id_ints):
+                for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     if UserBit.objects.UserHasPerms(request.user, auto_class.anchor, v_auto):
                         auto_class.unpreregister_student(self.user)
 	return self.goToCore(tl)
@@ -387,7 +384,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 broken_implications = True
         
         # Determining the old class
-        oldclasses = Class.objects.filter(meeting_times=extra,
+        oldclasses = ClassSubject.objects.filter(meeting_times=extra,
                              parent_program = self.program,
                              anchor__userbit_qsc__verb = v_registered,
                              anchor__userbit_qsc__user = self.user).distinct()
@@ -408,7 +405,7 @@ class StudentClassRegModule(ProgramModuleObj):
         oldclass.unpreregister_student(self.user)
         
         # Checking if we can register for the new class
-        newclass = Class.objects.filter(id=classid)[0]
+        newclass = ClassSubject.objects.filter(id=classid)[0]
         error = newclass.cannotAdd(self.user, self.classRegInfo.enforce_max, use_cache=False)
         if error and not self.user.onsite_local:
             # Undo by re-registering the old class. Theoretically "overridefull" is okay, since they were already registered for oldclass anyway.

@@ -1,0 +1,37 @@
+<html>
+
+<head>
+    <title>MIT ESP - Viewing Student Application</title>
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+</head>
+
+<body bgcolor="#FFFFFF">
+<div id="program_form">
+<br />
+<table class="roster" width="600" id="app-{{ student.id }}">
+    <tr>
+        <th>Student Application: {{ student.first_name }} {{ student.last_name }}</th>
+    </tr>
+    <tr>
+        <th class="smaller">High school preparation</th>
+    </tr>
+    <tr>
+        <td>{{ student.app.class_prep }}</td>
+    </tr>
+    <tr>
+        <th class="smaller">My Ideal Summer...</th>
+    </tr>
+    <tr>
+        <td>{{ student.app.ideal_summer}}</td>
+    </tr>
+    <tr>
+        <th class="smaller">A difficult triumph</th>
+    </tr>
+    <tr>
+        <td>{{ student.app.difficulty }}</td>
+    </tr>
+</table>
+</div>
+
+</body>
+</html>

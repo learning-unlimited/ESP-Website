@@ -32,7 +32,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.program.models import Class, Program
+from esp.program.models import ClassSubject, Program
 from esp.users.models import UserBit, ESPUser
 
 class AdminMaterials(ProgramModuleObj):
@@ -70,7 +70,7 @@ class AdminMaterials(ProgramModuleObj):
 		    #	Append the class code on the filename if necessary
 		    target_id = int(form.clean_data['target_obj'])
 	            if target_id != prog.anchor.id:
-                        new_target_filename = Class.objects.get(anchor__id = target_id).emailcode() + '_' + form.clean_data['uploadedfile']['filename']
+                        new_target_filename = ClassSubject.objects.get(anchor__id = target_id).emailcode() + '_' + form.clean_data['uploadedfile']['filename']
                     else:
                         new_target_filename =  form.clean_data['uploadedfile']['filename']
 
@@ -88,7 +88,7 @@ class AdminMaterials(ProgramModuleObj):
 
         context = {'prog': self.program, 'module': self, 'uploadform': context_form}
 	
-	classes = Class.objects.filter(parent_program = prog)
+	classes = ClassSubject.objects.filter(parent_program = prog)
 	
         return render_to_response(self.baseDir()+'listmaterials.html', request, (prog, tl), context)
     

@@ -38,7 +38,7 @@ from esp.users.models    import ESPUser, User
 from esp.users.views import search_for_user, get_user_list
 from django.http import HttpResponseRedirect
 from django import forms
-from esp.program.models import SATPrepRegInfo, Class, ClassCategories
+from esp.program.models import SATPrepRegInfo, ClassSubject, ClassCategories
 from esp.cal.models import Event
 from esp.resources.models import Resource, ResourceType
 from esp.datatree.models import DataTree
@@ -138,7 +138,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         j = 0
         for r in rooms:
             new_section = {'timeslot': timeslot, 'students': [], 'room': r, 'index': i}
-            new_class = Class()
+            new_class = ClassSubject()
             new_class.parent_program = prog
             new_class.class_size_max = r.num_students
             new_class.duration = timeslot.duration().seconds / 3600.0
@@ -148,12 +148,13 @@ class SATPrepAdminSchedule(ProgramModuleObj):
             new_class.category = ClassCategories.objects.get(category='SATPrep')
             new_class.status = 10
             new_class.save()
+            new_sec = new_class.add_default_section()
             
-            new_class.meeting_times.add(timeslot)
-            new_class.assignClassRoom(r)
+            new_sec.meeting_times.add(timeslot)
+            new_sec.assignClassRoom(r)
             while students_remaining > (accum_capacity[r.id] * num_students / total_size):
                 debug_str += 'i=%d %d/%d ac=%d\n' % (i, j, num_students, accum_capacity[r.id])
-                new_class.preregister_student(students[j])
+                new_sec.preregister_student(students[j])
                 new_section['students'].append(students[j])
                 j += 1
                 students_remaining -= 1
@@ -170,11 +171,110 @@ class SATPrepAdminSchedule(ProgramModuleObj):
 
 
     @needs_admin
+    def enter_scores(self, request, tl, one, two, module, extra, prog):
+        """ Allow bulk entry of scores from a spreadsheet.  This works for either the diagnostic or
+        practice exams. """
+        
+        from esp.program.modules.forms.satprep import ScoreUploadForm
+        from esp.program.models import SATPrepRegInfo
+        
+        #   The scores should be saved in SATPrepRegInfos with the following fields:
+        #   user, program, and lookup the rest here...
+        reginfo_fields = {'diag_m': 'diag_math_score', 'diag_v': 'diag_verb_score', 'diag_w': 'diag_writ_score',
+                          'prac_m': 'prac_math_score', 'prac_v': 'prac_verb_score', 'prac_w': 'prac_writ_score'}
+        
+        context = {}
+        form = ScoreUploadForm()
+        
+        if request.method == 'POST':
+            data = request.POST.copy()
+            data.update(request.FILES)
+            form = ScoreUploadForm(data)
+            
+            if form.is_valid():
+                prefix = form.clean_data['test'] + '_'
+                
+                #   Check that at least one of the input methods is being used.
+                #   Copy over the content from the text box, then the file.
+                if len(form.clean_data['text']) > 3:
+                    content = form.clean_data['text']
+                elif form.clean_data['file'].has_key('content'):
+                    content = form.clean_data['file']['content']
+                else:
+                    return ESPError(False), 'You need to upload a file or enter score information in the box.  Please go back and do so.'
+                
+                lines = content.split('\n')
+                error_lines = []
+                error_reasons = []
+                n = 0
+                
+                #   Read through the input string
+                for line in lines:
+                    error_flag = False
+                    entry = line.split(',')
+                    
+                    #   Test the input data and report the error if there is one
+                    if len(entry) < 4:
+                        error_flag = True
+                        error_lines.append(line)
+                        error_reasons.append('Insufficient information in line.')
+                        continue
+                    
+                    try:
+                        id_num = int(entry[0])
+                        student = User.objects.get(id=id_num)
+                    except ValueError:
+                        student = prog.students()['confirmed'].filter(first_name__icontains=entry[1], last_name__icontains=entry[0])
+                        if student.count() != 1:
+                            error_flag = True
+                            error_lines.append(line)
+                            error_reasons.append('Found %d matching students in program.' % student.count())
+                        else:
+                            student = student[0]
+                    except User.DoesNotExist:
+                        error_flag = True
+                        error_lines.append(line)
+                        error_reasons.append('Invalid user ID of %d.' % id_num)
+                        
+                    if not error_flag:
+                        #   Add the student's score into the database
+                        score = int(entry[3])
+                        category = entry[2].lower()[0]
+                        field_name = reginfo_fields[prefix+category]
+                        reginfo = SATPrepRegInfo.getLastForProgram(student, prog)
+                        reginfo.__dict__[field_name] = score
+                        reginfo.save()
+                        n += 1
+                        
+                #   Summary information to display on completion
+                context['errors'] = error_lines
+                context['error_reasons'] = error_reasons
+                context['complete'] = True
+                context['num_updated'] = n
+
+        #   Populate default information
+        context['prog'] = prog
+        context['module'] = self
+        context['form'] = form
+        
+        return render_to_response(self.baseDir()+'score_entry.html', request, (prog, tl), context)
+
+
+    @needs_admin
     def satprep_schedulestud(self, request, tl, one, two, module, extra, prog):
-        """ An interface for scheduling all the students! """
-
+        """ An interface for scheduling all the students, provided the classes have already
+        been generated. """
+        from esp.program.modules.module_ext import SATPrepTeacherModuleInfo
         import string
+        import random
+        
+        def cmp_scores(test):
+            def _cmp(one, two):
+                return cmp(one[test], two[test])
 
+            return _cmp
+
+        #   Get confirmation and a list of users first.
         if not request.method == 'POST' and not request.POST.has_key('schedule_confirm'):
             return render_to_response(self.baseDir()+'schedule_confirm.html', request, (prog, tl), {})
 
@@ -184,13 +284,10 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         if not found:
             return filterObj
 
-        # got a list of users
-        import random
+        #   Find the user's scores and put them in a python list.
         users = list(filterObj.getList(User).distinct())
         random.shuffle(users)
-
         user_scores = []
-
         for user in users:
             satprepreginfo = SATPrepRegInfo.getLastForProgram(user, self.program)
             user_scores.append({'user': user,
@@ -198,21 +295,14 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                                 'writ': SATPrepAdminSchedule.getScore(satprepreginfo, 'writ'),
                                 'verb': SATPrepAdminSchedule.getScore(satprepreginfo, 'verb')})
 
-        def cmp_scores(test):
-            def _cmp(one, two):
-                return cmp(one[test], two[test])
-
-            return _cmp
-
         separated_list = {'math': {'none': [x['user'] for x in user_scores if x['math'] is None]},
                           'verb': {'none': [x['user'] for x in user_scores if x['verb'] is None]},
                           'writ': {'none': [x['user'] for x in user_scores if x['writ'] is None]}}
 
-        
-
         sections = list(string.ascii_uppercase[0:num_divisions])
         sections.sort(reverse = True)
         
+        #   Divide the users into sections.
         for test in ['math','verb','writ']:
             cur_list = [x for x in user_scores if x[test] is not None]
             cur_list.sort(cmp_scores(test))
@@ -230,36 +320,31 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                     separated_list[test][cur_section].append((cur_list[i]['user'],cur_list[i][test]))
                 else:
                     separated_list[test][cur_section] = [(cur_list[i]['user'],cur_list[i][test])]
-                    
-        #   assert False, 'Separated list: %s' % separated_list
+
+        #   Retrieve the class sections of the program, keeping track of their subject and level
+        #   in the class_list dictionary.
+        tmi = SATPrepTeacherModuleInfo.objects.filter(program=prog)
 
         class_list = {'verb': {}, 'writ': {}, 'math': {}}
-
-        for cls in list(self.program.classes()):
-            try:
-                test, section = cls.class_info.split('-')
-            except:
-                pass
-
-            if class_list[test[0:4].lower()].has_key(section):
-                class_list[test[0:4].lower()][section].append({'cls': cls,'numstudents': 0})
-            else:
-                class_list[test[0:4].lower()][section] = [ {'cls': cls,'numstudents': 0} ] 
-
-        #   assert False, 'Class list: %s' % class_list
-
+        for t in tmi:
+            section = t.section
+            subject = t.get_subject_display().lower()[:4]
+            cl = ESPUser(t.user).getTaughtClasses(prog)
+            for c in cl:
+                for s in c.sections.all():
+                    if class_list[subject].has_key(section):
+                        class_list[subject][section].append({'cls': s, 'numstudents': 0, 'maxstudents': s.room_capacity()})
+                    else:
+                        class_list[subject][section] = [{'cls': s, 'numstudents': 0, 'maxstudents': s.room_capacity()}] 
+        
         schedule = {} # userids -> list of time ids
 
-        dry_run = True
+        dry_run = False
         scheduling_log = []
         sched_nums = {}
-        log_file = '/home/price/work/esp/satprep_assignments.csv'
-        import csv
-        writer = csv.writer(open(log_file,'w'))
 
-        test = 'writ'
+        #   Assign students one by one to the appropriate class section in each subject.
         for test in ['writ','math','verb']:
-        #if test == 'writ':
             sched_nums[test] = 0
             new_list = separated_list[test]
             for section, userList in new_list.items():
@@ -273,16 +358,13 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                         cls['numstudents'] += 1
                         sched_nums[test] += 1
                         scheduling_log.append('Added %s to %s at %s' % (user, cls['cls'], cls['cls'].meeting_times.all()[0]))
-                        writer.writerow([user.id, cls['cls'].id])
+
                         if not dry_run:
                             cls['cls'].preregister_student(user)
                             cls['cls'].update_cache_students()
                             
                         for ts in cls['cls'].meeting_times.all():
                             schedule[user.id].append(ts.id)
-                            
-        #   assert False, 'Done. Copy the schedule map: %s' % schedule
-        #   assert False, 'Done. Put %d in math, %d in verbal, and %d in writing classes. %d total students.' % (sched_nums['math'], sched_nums['verb'], sched_nums['writ'], len(users))
 
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
 
@@ -291,22 +373,21 @@ class SATPrepAdminSchedule(ProgramModuleObj):
     def getSmallestClass(clsList, schedule):
         import random
 
-        # filter out classes that don't meet the schedule
+        #   Filter out classes that don't meet the schedule
         if len(schedule) > 0:
             clsList = [cls for cls in clsList if
                        len(set(x['id'] for x in cls['cls'].meeting_times.all().values('id'))
                         & set(schedule)) == 0 ]
         
-                       
-        
-        num_students = clsList[0]['numstudents']
+        #   Get the class with the lowest percentage fullness.
+        frac_students = clsList[0]['numstudents'] / clsList[0]['maxstudents']
 
         for i in range(1, len(clsList)):
-            if num_students > clsList[i]['numstudents']:
-                num_students = clsList[i]['numstudents']
+            if frac_students > (clsList[i]['numstudents'] / clsList[i]['maxstudents']):
+                frac_students = clsList[i]['numstudents'] / clsList[i]['maxstudents']
 
         cls_winner = random.choice([ x for x in clsList
-                                     if x['numstudents'] == num_students ])
+                                     if (x['numstudents'] / x['maxstudents']) == frac_students ])
         return cls_winner
                       
         
@@ -331,64 +412,90 @@ class SATPrepAdminSchedule(ProgramModuleObj):
     def satprep_classgen(self, request, tl, one, two, module, extra, prog):
         """ This view will generate the classes for all the users. """
 
+        delete = False
+
         if not request.method == 'POST' and not request.POST.has_key('newclass_create'):
-            return render_to_response(self.baseDir()+'newclass_confirm.html', request, (prog, tl), {})
+            #   Show the form asking for a room number and capacity for each teacher.
+            
+            user_list =  self.program.getLists()['teachers_satprepinfo']['list']
+            reginfos = [module_ext.SATPrepTeacherModuleInfo.objects.get(program=prog, user=u) for u in user_list]
+            reginfos.sort(key=lambda x: x.subject + x.section)
+            user_list = [r.user for r in reginfos]
+            
+            context = {'timeslots': prog.getTimeSlots(), 'teacher_data': zip([ESPUser(u) for u in user_list], reginfos)}
+            
+            return render_to_response(self.baseDir()+'newclass_confirm.html', request, (prog, tl), context)
 
-        # delete current classes
-        cur_classes = Class.objects.filter(parent_program = self.program)
-        [ cls.delete() for cls in cur_classes]
-
-        # get the list of users we're generating for
-        user_list =  self.program.getLists()['teachers_satprepinfo']['list']
-
-        timeslots = self.program.getTimeSlots()
+        #   Delete current classes if specified (currently turned off, not necessary)
+        if delete:
+            cur_classes = ClassSubject.objects.filter(parent_program = self.program)
+            [cls.delete() for cls in cur_classes]
 
         dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
         dummy_anchor.save()
         
-        for user in user_list:
-            
-            satprepmodule = module_ext.SATPrepTeacherModuleInfo.objects.get(program = self.program, user = user)
-            if satprepmodule.section is None or len(satprepmodule.section.strip()) == 0:
-                pass
+        data = request.POST.copy()
+        
+        #   Pull the timeslots from the multiselect field on the form.
+        timeslots = []
+        for ts_id in data.getlist('timeslot_ids'):
+            ts = Event.objects.get(id=ts_id)
+            timeslots.append(ts)
+        
+        #   Create classrooms based on the form input.
+        for key in data:
+            key_dir = key.split('_')
+            if len(key_dir) == 2 and key_dir[0] == 'room' and len(data[key]) > 0:
+                #   Extract a room number and capacity from POST data.
+                room_num = data.get(key)
+                cap_key = 'capacity_' + key_dir[1]
+                room_capacity = int(data.get(cap_key))
+                reginfo = module_ext.SATPrepTeacherModuleInfo.objects.get(id=int(key_dir[1]))
+                user = reginfo.user
 
-            for timeslot in timeslots:
-                # now we create a new class for each timeslot
-
-                newclass = Class()
+                #   Initialize a class subject.
+                newclass = ClassSubject()
                 newclass.parent_program = self.program
-                newclass.duration       = 0
-                newclass.class_info     = '%s-%s' % (satprepmodule.get_subject_display(),
-                                                     satprepmodule.section)
-                newclass.grade_min      = 6
+                newclass.class_info     = '%s: Section %s (%s)' % (reginfo.get_subject_display(), reginfo.section,
+                                                                   reginfo.get_section_display())
+                newclass.grade_min      = 9
                 newclass.grade_max      = 12
-
+    
                 newclass.class_size_min = 0
-                newclass.class_size_max = 0
+                newclass.class_size_max = room_capacity
                 
                 newclass.category = ClassCategories.objects.get(category = 'SATPrep')
                 newclass.anchor = dummy_anchor
-
+    
                 newclass.save()
                                 
                 nodestring = 'SAT' + str(newclass.id)
                 newclass.anchor = self.program.classes_node().tree_create([nodestring])
-                newclass.anchor.friendly_name = 'SATPrep %s-%s' % (satprepmodule.get_subject_display(),
-                                                                   satprepmodule.get_section_display())
-                newclass.anchor.save()
-
+                newclass.anchor.friendly_name = 'SAT Prep %s - %s' % (reginfo.get_subject_display(),
+                                                                   reginfo.get_section_display())
                 newclass.anchor.save()
                 newclass.anchor.tree_create(['TeacherEmail'])
                 newclass.save()
-
-                #cache this result
-                newclass.update_cache()
-                newclass.meeting_times.add(timeslot)
-
-                # add userbits
+                
                 newclass.makeTeacher(user)
                 newclass.accept()
-
+    
+                newclass.update_cache()
+                    
+                #   Create a section of the class for each timeslot.
+                #   The sections are all held in the same room by default.  This can be changed
+                #   in the scheduling module later.
+                for ts in timeslots:
+                    new_room = Resource()
+                    new_room.name = room_num
+                    new_room.res_type = ResourceType.get_or_create('Classroom')
+                    new_room.num_students = room_capacity
+                    new_room.event = ts
+                    new_room.save()
+                    sec = newclass.add_section(duration=(ts.duration().seconds / 3600.0))
+                    sec.meeting_times.add(ts)
+                    sec.assign_room(new_room)
+        
         dummy_anchor.delete()
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
         

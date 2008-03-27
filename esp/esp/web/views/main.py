@@ -47,7 +47,6 @@ from django.contrib.auth.models import User
 from esp.web.models import NavBarEntry
 from esp.web.util.main import render_to_response
 from esp.web.views.myesp import myesp_handlers
-from esp.web.views.program import program_handlers
 from esp.web.views.archives import archive_handlers
 from esp.miniblog.views import preview_miniblog
 from esp.middleware import ESPError
@@ -141,9 +140,6 @@ def program(request, tl, one, two, module, extra = None):
 	except Program.DoesNotExist:
 		raise Http404("Program not found.")
         
-	if program_handlers.has_key(module):
-		return program_handlers[module](request, tl, one, two, module, extra, prog)
-
 	from esp.program.modules.base import ProgramModuleObj
 	newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
 

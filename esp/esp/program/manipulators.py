@@ -137,7 +137,7 @@ class TeacherInfoManipulator(forms.Manipulator):
         shirt_sizes = [('', '')] + list(shirt_sizes)
         shirt_types = [('', '')] + list(shirt_types)
         self.fields = (
-            forms.PositiveIntegerField(field_name="graduation_year", length=4, maxlength=4),
+            forms.TextField(field_name="graduation_year", length=4, maxlength=4),
             forms.TextField(field_name="school", length=48, maxlength=128),
             forms.TextField(field_name="major", length=30, maxlength=32),
             forms.SelectField(field_name="shirt_size", is_required=True, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),

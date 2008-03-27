@@ -19,12 +19,7 @@ function updateDocs(docs) {
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
-<br />
-<br />
 
-{{ program.mainteacherreg }}
-
-<br /><br />
 <h1>Admin Portal for {{program.niceName}} </h1>
 
 <p style="text-align: center">
@@ -51,7 +46,7 @@ If you need any assistance, please email <tt>web@esp.mit.edu</tt>.
   {% if not module.useTemplate %}
     <li>{{ module.makeLink }}</li>
   {% else %}
-    <li><span onmouseover="updateDocs('{{module.docs|linebreaks|addslashes}}');"><em>{{ module.module.link_title }} (below)</em></span></li>
+    <li><span onmouseover="updateDocs('{{module.docs|linebreaks|addslashes}}');"><em>{{ module.module.link_title }} (part of Dashboard)</em></span></li>
   {% endif %}
 {% endif %}
 {% endfor %}

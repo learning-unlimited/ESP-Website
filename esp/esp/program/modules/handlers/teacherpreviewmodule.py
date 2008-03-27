@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj
 from esp.middleware              import ESPError
-from esp.program.models          import Class
+from esp.program.models          import ClassSubject
 from datetime                    import timedelta
 from esp.users.models            import ESPUser
 from esp.web.util        import render_to_response
@@ -69,7 +69,7 @@ class TeacherPreviewModule(ProgramModuleObj):
     def prepare(self, context={}):
         if context is None: context = {}
 
-        classes = Class.objects.catalog(self.program, None, True)
+        classes = ClassSubject.objects.catalog(self.program, None, True)
         
         #   First, the already-registered classes.
         categories = {}

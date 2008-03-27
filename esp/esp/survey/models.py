@@ -47,7 +47,7 @@ from esp.db.fields import AjaxForeignKey
 # Models to depend on.
 from esp.datatree.models import DataTree
 from esp.middleware import ESPError
-from esp.program.models import Class, Program
+from esp.program.models import ClassSubject, ClassSection, Program
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to 
@@ -142,8 +142,8 @@ class SurveyResponse(models.Model):
                     qid = int(str_list[1])
                     cid = int(str_list[2])
                     question = Question.objects.get(id=qid)
-                    cls = Class.objects.get(id=cid)
-                except Class.DoesNotExist:
+                    cls = ClassSubject.objects.get(id=cid)
+                except ClassSubject.DoesNotExist:
                     raise ESPError(), 'Error finding class from %s' % key
                 except Question.DoesNotExist:
                     raise ESPError(), 'Error finding question from %s' % key

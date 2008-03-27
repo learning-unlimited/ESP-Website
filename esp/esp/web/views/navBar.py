@@ -116,14 +116,20 @@ def makeNavBar(user, node, section = ''):
             user = ESPUser(self.user)
             node = self.node
             sections = [self.section, '']
-            if user.isTeacher():
-                sections += ['teach']
-            if user.isAdmin():
-                sections += ['manage']
-            if user.isStudent():
-                sections += ['learn']
-            if user.isOnsite():
-                sections += ['onsite']
+            
+            #   Show all applicable navbars for the type of user that is currently logged in.
+            #   This is disabled for the program sections, where we have lots of teach- or learn-
+            #   specific nav bars that are visible to all.
+            program_node = DataTree.get_by_uri('Q/Programs')
+            if not ((node.rangestart >= program_node.rangestart) and (node.rangeend <= program_node.rangeend)):
+                if user.isTeacher():
+                    sections += ['teach']
+                if user.isAdmin():
+                    sections += ['manage']
+                if user.isStudent():
+                    sections += ['learn']
+                if user.isOnsite():
+                    sections += ['onsite']
 
             edit_verb = GetNode(EDIT_VERB_STRING)
 

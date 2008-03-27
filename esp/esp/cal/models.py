@@ -198,8 +198,8 @@ class Event(models.Model):
     
     def num_classes(self):
         #   Return the number of classes assigned to this time slot.
-        from esp.program.models import Class
-        return Class.objects.filter(meeting_times=self).count()
+        from esp.program.models import ClassSection
+        return ClassSection.objects.filter(meeting_times=self).count()
     
     def __cmp__(self, other):
         try:

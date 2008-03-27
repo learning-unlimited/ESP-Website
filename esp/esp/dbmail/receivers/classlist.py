@@ -2,13 +2,14 @@
 
 from esp.dbmail.base import BaseHandler
 from esp.users.models import ESPUser
-from esp.program.models import Program, Class
+from esp.program.models import Program, ClassSubject, ClassSection
 
 class ClassList(BaseHandler):
 
     def process(self, user, class_id, user_type):
         try:
-            cls = Class.objects.get(id = class_id)
+            cls = ClassSubject.objects.get(id = class_id)
+            sections = cls.sections.all()
         except ESPUser.DoesNotExist:
             return
 
@@ -23,11 +24,11 @@ class ClassList(BaseHandler):
                                 for user in cls.teachers()     ]
 
         if user_type in ('students','class'):
-            self.recipients += ['%s %s <%s>' % (user.first_name,
-                                                user.last_name,
-                                                user.email)
-                                for user in cls.students()     ]
-
+            for section in sections:
+                self.recipients += ['%s %s <%s>' % (user.first_name,
+                                                    user.last_name,
+                                                    user.email)
+                                    for user in section.students()     ]
 
         if len(self.recipients) > 0:
             self.send = True

@@ -92,41 +92,11 @@ padding-bottom: 5px;
 {% endif %}
 <td valign="top">
   <div id="scroller_top" onclick="reset();">
-  <table cellpadding="2" cellspacing="0" width="100%">
-    <tr>
-        <th>All Open Classes</th>
-    </tr>
-    <tr><td>
-    {% for class in classes %}
-        {% if not class.isFull %}{% if not class.already_passed %}
-            {% ifchanged %}
-                </td></tr>
-                <tr><th class="materials">{{ class.category.category }}</th></tr>
-                <tr><td>
-            {% endifchanged %}
-            <div class="classitem"><b>{{ class.emailcode }}</b> ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}): <br /> {{ class.title }} <br /></div>
-        {% endif %}{% endif %}
-    {% endfor %}
-    </table>
+    {% include "program/modules/onsiteclasslist/allclass_fragment.html %}
     </div>
     <br />
     <div id="scroller_bottom" onclick="reset();">
-    <table cellpadding="2" cellspacing="0" width="100%">
-    <tr>
-        <th>All Open Classes</th>
-    </tr>
-    <tr><td>
-    {% for class in classes %}
-        {% if not class.isFull %}{% if not class.already_passed %}
-            {% ifchanged %}
-                </td></tr>
-                <tr><th class="materials">{{ class.category.category }}</th></tr>
-                <tr><td>
-            {% endifchanged %}
-            <div class="classitem"><b>{{ class.emailcode }}</b> ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}): <br /> {{ class.title }} <br /></div>
-        {% endif %}{% endif %}
-    {% endfor %}
-    </table>
+    {% include "program/modules/onsiteclasslist/allclass_fragment.html %}
     </div>
 </td>
 </tr>

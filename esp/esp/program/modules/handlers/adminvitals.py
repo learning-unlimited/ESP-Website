@@ -32,7 +32,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.program.models import Class, Program
+from esp.program.models import ClassSubject, ClassSection, Program
 from esp.users.models import UserBit, ESPUser, shirt_sizes, shirt_types
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -72,7 +72,7 @@ class AdminVitals(ProgramModuleObj):
         for timeslot in timeslots:
             curTimeslot = {'slotname': timeslot.short_description}
             
-            curclasses = Class.objects.filter(parent_program = self.program,
+            curclasses = ClassSection.objects.filter(class__parent_program = self.program,
                                               meeting_times  = timeslot)
 
             curTimeslot['classcount'] = curclasses
