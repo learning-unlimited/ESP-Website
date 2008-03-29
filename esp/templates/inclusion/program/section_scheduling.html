@@ -22,7 +22,7 @@
             <span style="color: #999999">None feasible</span>
             {% endif %}
         </td>
-        <td class="noborder">
+        <td class="noborder narrow">
             {% for room in sec.initial_rooms %}
             <a class="tooltip">{{ room.name }}
             <span><b>Size:</b> {{ room.num_students }}<br />
@@ -35,7 +35,7 @@
                     {% if not sec.initial_rooms|length_is:0 %}
                         <input type="hidden" name="room_{{ sec.id }}_old" value="{{ sec.initial_rooms.0.id }}" />
                     {% endif %}
-                    <select name="room_{{ sec.id }}_new" onchange="javascript:flagDirty('{{ sec.id }}', 'sec-')">
+                    <select class="narrow" name="room_{{ sec.id }}_new" onchange="javascript:flagDirty('{{ sec.id }}', 'sec-')">
                     <option value="-1">[None]</option>
                     {% if not sec.initial_rooms|length_is:0 %}
                         <option value="{{ sec.initial_rooms.0.id }}" selected="selected">{{ sec.initial_rooms.0.name }} ({{ sec.initial_rooms.0.num_students }})</option>

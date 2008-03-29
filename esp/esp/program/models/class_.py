@@ -790,8 +790,8 @@ class ClassSubject(models.Model):
     objects = ClassManager()
     checklist_progress_all_cached = checklist_progress_base('ClassSubject')
 
-    #   Backwards compatibility with Class database.
-    #   Do not use.
+    #   Backwards compatibility with Class database format.
+    #   Please don't use. :)
     status = models.IntegerField(default=0)   
     duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
 
@@ -850,7 +850,7 @@ class ClassSubject(models.Model):
             duration = self.duration
         
         if self.sections.count() == 0:
-            return self.add_section(status, duration)
+            return self.add_section(duration, status)
         else:
             return None
 
