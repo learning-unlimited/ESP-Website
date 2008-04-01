@@ -86,7 +86,8 @@ class MessageRequest(models.Model):
     recipients = models.ForeignKey(PersistentQueryFilter) # We will get the user from a query filter
     sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string 
     creator = AjaxForeignKey(User) # the person who sent this message
-    processed = models.BooleanField(default=False) # Have we made EmailRequest objects from this MessageRequest yet?
+    processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
+    processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
     email_all = models.BooleanField(default=True) # do we just want to create an emailrequest for each user?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
@@ -188,6 +189,7 @@ class TextOfEmail(models.Model):
     subject = models.TextField() # E-mail subject; plain text
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)
+    sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
 
     def __str__(self):
         return str(self.subject) + ' <' + str(self.send_to) + '>'
