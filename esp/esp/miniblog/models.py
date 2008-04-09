@@ -41,6 +41,26 @@ import datetime
 
 # Create your models here.
 
+class AnnouncementLink(models.Model):
+    anchor = AjaxForeignKey(DataTree)
+    title = models.CharField(maxlength=256) 
+    timestamp = models.DateTimeField(default=datetime.datetime.now, editable=False)
+    highlight_expire = models.DateTimeField(blank=True,null=True, help_text="When this should stop being showcased.")
+    section = models.CharField(maxlength=32,blank=True,null=True, help_text="e.g. 'teach' or 'learn' or blank")
+    href = models.URLField(help_text="The URL the link should point to.")
+
+    def __str__(self):
+        return "%s (links to %s)" % (self.title, self.href)
+
+    def get_absolute_url(self):
+        return self.href
+    
+    def makeTitle(self):
+        return self.title
+
+    class Admin:
+        pass
+
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     anchor = AjaxForeignKey(DataTree)

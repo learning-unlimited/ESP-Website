@@ -82,6 +82,7 @@ urlpatterns += patterns('',
 urlpatterns += patterns('esp.qsd.views',
                         (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/(?P<url>.*).html$', 'qsd'),
                         (r'^(?P<url>.*)\.html$', 'qsd'),
+                        (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', 'django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
                         )
 
 # logging in and out

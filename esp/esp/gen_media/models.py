@@ -87,7 +87,7 @@ class LatexImage(models.Model):
             raise ESPError(False), 'Unknown display style'
 
         tex = r"""\documentclass[fleqn]{article} \usepackage{amssymb,amsmath} """ +\
-              r"""\usepackage[latin1]{inputenc} \begin{document} \\""" + \
+              r"""\usepackage[latin1]{inputenc} \begin{document} """ + \
               r""" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}""" % \
               (style, self.content, style)
 
@@ -102,10 +102,10 @@ class LatexImage(models.Model):
         else:
             cur_dpi = self.dpi
 
-        os.system('cd %s && %s -interaction=nonstopmode %s &>/dev/null' % \
+        os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
                   (TMP, commands['latex'], self.image))
 
-        os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi &> /dev/null' % \
+        os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi > /dev/null' % \
                   (commands['dvipng'], LATEX_BG, cur_dpi, fullpath, fullpath))
 
         if self.filetype.lower() != 'png':

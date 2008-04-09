@@ -3,7 +3,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import DataTree
 from esp.users.models import UserBit
 from esp.db.models import Q
-from esp.miniblog.models import Entry
+from esp.miniblog.models import Entry, AnnouncementLink
 from django.core.cache import cache
 import re
 import datetime
@@ -51,24 +51,29 @@ def miniblog_for_user(parser, token):
 
             # And we get the result
             verb = DataTree.get_by_uri('V/Subscribe')
+            
+            models_to_search = [Entry, AnnouncementLink]
+            results = []
+            grand_total = 0
+            overflowed = False
+            for model in models_to_search:
+                result = UserBit.find_by_anchor_perms(model, self.user, verb).order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.datetime.now()) | Q(highlight_expire__isnull = True))
+                total = result.count()
 
-            result = UserBit.find_by_anchor_perms(Entry, self.user, verb).order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.datetime.now()) | Q(highlight_expire__isnull = True))
-
-            total = result.count()
-
-            if self.limit:
-                overflowed = ((total - self.limit) > 0)
-
-                result = result[:self.limit]
-            else:
-                overflowed = False
-                result = result
+                if self.limit:
+                    overflowed = ((total - self.limit) > 0)
+                    result = result[:self.limit]
+                else:
+                    overflowed = False
+                    result = result
+                results += result
+                grand_total += total
 
             map(str, result)
 
-            retVal = {'announcementList': result,
+            retVal = {'announcementList': results,
                       'overflowed':       overflowed,
-                      'total':            total}
+                      'total':            grand_total}
 
             if self.user.id is not None:
                 # cache for only 1 hour if it's an actual user.
