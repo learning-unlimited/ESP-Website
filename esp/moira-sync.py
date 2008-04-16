@@ -1,7 +1,7 @@
 #!/sw/bin/python
 #!/usr/bin/python
 
-path_to_esp = '/sw/local/esp/esp/'
+path_to_esp = '/esp/web/esp.mit.edu/'
 
 # Generic setup code to be able to import esp stuff
 import sys
@@ -24,6 +24,8 @@ blanche_exec_template = "blanche -r -u -n %(email_name)s 2>/dev/null && blanche 
 blanche_nonrecursive_exec_template = "blanche -u -n %(email_name)s 2>/dev/null && blanche -k -n %(email_name)s 2>/dev/null"
 blanche_espofficers_espexec = "%s && %s" % (blanche_exec_template % { 'email_name': 'esp-exec' }, blanche_nonrecursive_exec_template % { 'email_name': 'esp-officers' }) 
 admin_node = GetNode("V/Administer")
+admin_role_node = GetNode("V/Flags/UserRole/Administrator")
+root_qsc_node = GetNode("Q")
 web_qsc_node = GetNode("Q/Web")
 program_qsc_node = GetNode("Q/Programs")
 custom_prog_email_mappings = { "Q/Programs": ("esp-officers", blanche_espofficers_espexec),
@@ -106,6 +108,13 @@ for prog_node in list(program_qsc_node.children()) + [program_qsc_node]:
             # Grant bits to the website, if needed
             if not UserBit.UserHasPerms(user, web_qsc_node, admin_node):
                 ub, created = UserBit.objects.get_or_create(user=user, qsc=web_qsc_node, verb=admin_node, defaults = { 'enddate': datetime.now() + timedelta(365) })
+                if not created:
+                    ub.enddate = datetime.now() + timedelta(365)
+                    ub.save()
+            
+            # Grant Administrator UserRole (for the "make program happen" page)
+            if not UserBit.UserHasPerms(user, root_qsc_node, admin_role_node):
+                ub, created = UserBit.objects.get_or_create(user=user, qsc=root_qsc_node, verb=admin_role_node, defaults = { 'enddate': datetime.now() + timedelta(365) })
                 if not created:
                     ub.enddate = datetime.now() + timedelta(365)
                     ub.save()
