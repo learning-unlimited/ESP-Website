@@ -32,7 +32,6 @@ from django.db import models
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
-#from peak.api import security, binding
 from datetime import datetime, timedelta
 from esp.db.models import Q, qlist
 from esp.dblog.models import error
@@ -54,7 +53,6 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-            
 
 
 def user_get_key(user):
@@ -82,9 +80,11 @@ class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
     This user extends the auth.User of django"""
 
+    class Meta:
+        app_label = 'auth'
+        db_table = 'auth_user'
+
     objects = ESPUserManager()
-
-
     # this will allow a casting from User to ESPUser:
     #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
     def __init__(self, userObj, *args, **kwargs):
@@ -147,12 +147,11 @@ class ESPUser(User, AnonymousUser):
     def getLastProfile(self):
         if hasattr(self, '_reg_profile'):
             return self._reg_profile
-        
         from esp.program.models import RegistrationProfile
         self._reg_profile = RegistrationProfile.getLastProfile(self)
 
         return self._reg_profile
-        
+
     def getEditable(self, objType):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
 
@@ -185,11 +184,8 @@ class ESPUser(User, AnonymousUser):
 
         if type(user) == ESPUser:
             user = user.getOld()
-            
         logout(request)
-        
         user.backend = 'django.contrib.auth.backends.ModelBackend'
-        
         login(request, user)
 
     def get_old(self, request):
@@ -203,24 +199,18 @@ class ESPUser(User, AnonymousUser):
 
         retUrl   = request.session['user_morph']['retUrl']
         new_user = request.session['user_morph']['olduser']
-        
         del request.session['user_morph']
-        
         logout(request)
 
         if type(new_user) == ESPUser:
             old_user = new_user.getOld()
-            
         old_user.backend = 'django.contrib.auth.backends.ModelBackend'
-        
         login(request, old_user)
 
         return retUrl
-        
 
     def get_msg_vars(self, otheruser, key):
         """ This function will be called when rendering a message. """
-        
         if key == 'first_name':
             return otheruser.first_name
         elif key == 'last_name':
@@ -233,14 +223,12 @@ class ESPUser(User, AnonymousUser):
         elif key == 'username':
             return otheruser.username
         return ''
-    
+
     def getTaughtClasses(self, program = None):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
-        
         from esp.program.models import ClassSubject, Program # Need the Class object.
         all_classes = UserBit.find_by_anchor_perms(ClassSubject, self.getOld(), GetNode('V/Flags/Registration/Teacher'))
-        
         if program is None: # If we have no program specified
             return all_classes
         else:
@@ -248,7 +236,7 @@ class ESPUser(User, AnonymousUser):
                 error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
             else:
                 return all_classes.filter(parent_program = program)
-    
+
     def getTaughtSections(self, program = None):
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program))
@@ -256,7 +244,7 @@ class ESPUser(User, AnonymousUser):
         for c in classes:
             section_ids += [v['id'] for v in c.sections.all().values('id')]
         return ClassSection.objects.filter(id__in=section_ids)
-    
+
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
             If include_scheduled is given as False, we don't count time for already-scheduled classes. """
@@ -266,7 +254,7 @@ class ESPUser(User, AnonymousUser):
             if include_scheduled or (s.start_time() is None):
                 total_time = total_time + timedelta(hours=s.duration)
         return total_time
-            
+
     def getUserNum(self):
         """ Returns the "number" of a user, which is distinct from id.
             It's like the index if you search by lsat and first name."""
@@ -274,7 +262,6 @@ class ESPUser(User, AnonymousUser):
         retVal = self.cache['getUserNum']
 
         if retVal is not None: return retVal
-        
         users = User.objects.filter(last_name__iexact = self.last_name,
                                     first_name__iexact = self.first_name).order_by('id')
         i = 0
@@ -285,7 +272,6 @@ class ESPUser(User, AnonymousUser):
 
         retVal = (i and i or '')
         self.cache['getUserNum'] = retVal
-    
         return retVal
 
     @staticmethod
@@ -296,19 +282,17 @@ class ESPUser(User, AnonymousUser):
             num = int(num)
         except:
             raise ESPError(), 'Could not find user "%s %s"' % (first, last)
-            
         users = User.objects.filter(last_name__iexact = last,
                                     first_name__iexact = first).order_by('id')
         if len(users) <= num:
             raise ESPError(False), '"%s %s": Unknown User' % (first, last)
-        
         return ESPUser(users[num])
-        
+
     @staticmethod
     def getTypes():
         """ Get a list of the different roles an ESP user can have. By default there are four rols,
             but there can be more. (Returns ['Student','Teacher','Educator','Guardian']. """
-        
+
         return ['Student','Teacher','Educator','Guardian']
 
     @staticmethod
@@ -321,7 +305,7 @@ class ESPUser(User, AnonymousUser):
 
         if strType not in types:
             raise ESPError(), "Invalid type to find all of."
-                
+
         Q_useroftype      = Q(userbit__verb = GetNode('V/Flags/UserRole/'+strType)) &\
                             Q(userbit__qsc = GetNode('Q'))                          &\
                             Q_after_start                                  &\
@@ -345,15 +329,15 @@ class ESPUser(User, AnonymousUser):
         from esp.resources.models import Resource
         from esp.cal.models import Event
         from django.core.cache import cache
-        
+
         #   This is such a common operation that I think it should be cached.
         cache_key = self.availability_cache_key(program, ignore_classes)
         result = cache.get(cache_key)
         if result is not None:
             return result
-        
+
         res_list = [item['event'] for item in Resource.objects.filter(user=self).values('event')]
-        
+
         #   Subtract out the times that they are already teaching.
         other_classes = self.getTaughtSections(program)
 
@@ -362,12 +346,12 @@ class ESPUser(User, AnonymousUser):
         if ignore_classes:
             for lst in other_times:
                 result = result.exclude(id__in=lst)
-            
+
         #   Finally, convert from a query set down to a list for caching
         listed_result = list(result)
         cache.set(cache_key, listed_result)
         return listed_result
-    
+
     def clearAvailableTimes(self, program):
         """ Clear all resources indicating this teacher's availability for a program """
         from esp.resources.models import Resource
@@ -375,7 +359,6 @@ class ESPUser(User, AnonymousUser):
 
         cache_key = self.availability_cache_key(program)
         cache.delete(cache_key)
-        
         Resource.objects.filter(user=self, event__anchor=program.anchor).delete()
 
     def addAvailableTime(self, program, timeslot):
@@ -384,7 +367,6 @@ class ESPUser(User, AnonymousUser):
 
         cache_key = self.availability_cache_key(program)
         cache.delete(cache_key)
-        
         r = Resource()
         r.user = self
         r.event = timeslot
@@ -397,7 +379,7 @@ class ESPUser(User, AnonymousUser):
             return 'EnrolledClasses__%s' % program.id
         else:
             return 'EnrolledClasses__noprogram'
-    
+
     def clear_enrollment_cache(self, program):
         cache = UserBit.objects.cache(self)
         cache[self.enrollment_cache_key(program)] = None
@@ -426,7 +408,7 @@ class ESPUser(User, AnonymousUser):
             program_id = program
 
         cache = UserBit.objects.cache(self)
-        
+
         retVal = cache[self.enrollment_cache_key(program)]
 
         if retVal is not None:
@@ -437,7 +419,7 @@ class ESPUser(User, AnonymousUser):
         #if not program:
         Conf = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Confirmed'))
         Prel = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Preliminary'))
-        
+
         sections = (Conf | Prel).distinct()
         subject_ids = [s.parent_class.id for s in sections]
         retVal = ClassSubject.objects.filter(id__in=subject_ids)
@@ -477,7 +459,7 @@ class ESPUser(User, AnonymousUser):
 
         return UserBit.UserHasPerms(self, clsObj.anchor, verb_prelim) or \
                UserBit.UserHasPerms(self, clsObj.anchor, verb_confirm)
-        
+
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
@@ -486,7 +468,6 @@ class ESPUser(User, AnonymousUser):
 
     def hasFinancialAid(self, anchor):
         from esp.program.models import Program, FinancialAidRequest
-        
         progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
         apps = FinancialAidRequest.objects.filter(user=self, program__in=progs)
         for a in apps:
@@ -494,7 +475,6 @@ class ESPUser(User, AnonymousUser):
                 return True
         return False
 
-    
     def paymentStatus(self, anchor=None):
         """ Returns a tuple of (has_paid, status_str, line_items) to indicate
         the user's payment obligations to ESP:
@@ -505,28 +485,26 @@ class ESPUser(User, AnonymousUser):
         """
         from esp.accounting_docs.models import Document
         from esp.accounting_core.models import LineItem, Transaction
-        
+
         if anchor is None:
             anchor = DataTree.get_by_uri('Q/Programs')
-        
+
         receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable')
         realized_parent = DataTree.get_by_uri('Q/Accounts/Realized')
-        
+
         #   We have to check both complete and incomplete documents.
         docs = Document.objects.filter(user=self)
-        
+
         li_list = []
         for d in docs:
             li_list += list(d.txn.lineitem_set.all())
-            
+
         amt_charged = 0
         amt_expected = 0
         amt_paid = 0
-            
         #   Compute amount charged by looking at line items posted under the specified anchor.
         #   Compute amount expected by looking at line items posted to Accounts Receivable.
         #   Compute amount paid by looking at line items posted to Accounts Realized.
-        
         #   Exclude duplicate line items.  We may want to remove this soon, but it was
         #   a necessity for HSSP/Spark.   -Michael
         previous_li = []
@@ -543,7 +521,6 @@ class ESPUser(User, AnonymousUser):
                 amt_expected += li.amount
             if li.anchor in realized_parent:
                 amt_paid += li.amount
-            
         has_paid = False
         status = 'Unknown'
         if amt_charged == 0:
@@ -556,11 +533,8 @@ class ESPUser(User, AnonymousUser):
         else:
             status = 'Fully paid'
             has_paid = True
-            
         amt_owed = amt_charged - amt_paid
-            
         return (has_paid, status, amt_owed, li_list)
-        
 
     def isOnsite(self, program = None):
         verb = GetNode('V/Registration/OnSite')
@@ -573,28 +547,23 @@ class ESPUser(User, AnonymousUser):
 
     def recoverPassword(self):
         # generate the code, send the email.
-        
         import string
         import random
         from esp.users.models import PersistentQueryFilter
         from esp.db.models import Q
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
-        
-        
-        symbols = string.ascii_uppercase + string.digits 
+
+        symbols = string.ascii_uppercase + string.digits
         code = "".join([random.choice(symbols) for x in range(30)])
-        
+
         # get the filter object
         filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = self.id),
                                                          User,
                                                          'User %s' % self.username)
-        
         curuser = User.objects.get(id = self.id)
-        
         curuser.password = code
         curuser.save()
-			
         # create the variable modules
         variable_modules = {'user': ESPUser(curuser)}
 
@@ -627,31 +596,28 @@ class ESPUser(User, AnonymousUser):
         for x in self.userbit_set.all():
             x.delete()
         super(ESPUser, self).delete()
-        
-    
-    def isTeacher(self):
-        """Returns true if this user is a teacher"""
-        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Teacher'))
 
-    def isGuardian(self):
-        """Returns true if this user is a teacher"""
-        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Guardian'))
-
-    def isEducator(self):
-        """Returns true if this user is a teacher"""
-        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Educator'))
-
-    def isOfficer(self):
-        """Returns true if this user is an ESP super-user"""
-        return UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Administrator'))
-
-    def isStudent(self):
-        """Returns true if this user is a teacher"""
-        if hasattr(self, 'is_student'): return self.is_student
-
-        self.is_student = UserBit.UserHasPerms(self, GetNode('Q'), GetNode('V/Flags/UserRole/Student'))
-
-        return self.is_student
+    @classmethod
+    def create_membership_methods(cls):
+        """
+        Creates the methods such as isTeacher that determins whether
+        or not the user is a member of that user class.
+        """
+        user_classes = ('Teacher','Guardian','Educator','Officer','Student')
+        overrides = {'Officer': 'Administrator'}
+        for user_class in user_classes:
+            method_name = 'is%s' % user_class
+            bit_name = 'V/Flags/UserRole/%s' % overrides.get(user_class, user_class)
+            property_name = '_userclass_%s' % user_class.lower()
+            def _new_method(user):
+                if hasattr(user, property_name):
+                    return getattr(user, property_name)
+                setattr(user, property_name, UserBit.UserHasPerms(user, GetNode('Q'),
+                                                                  GetNode(bit_name)))
+                return getattr(user, property_name)
+            _new_method.__name__ = method_name
+            _new_method.__doc__ = "Returns ``True`` if the user is a %s and False otherwise." % user_class
+            setattr(cls, method_name, _new_method)
 
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
@@ -676,16 +642,12 @@ class ESPUser(User, AnonymousUser):
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
-
         return schoolyear
 
     def getGrade(self, program = None):
-
         if hasattr(self, '_grade'):
             return self._grade
-
         grade = 0
-        
         if self.isStudent():
             if program is None:
                 regProf = self.getLastProfile()
@@ -710,12 +672,8 @@ class ESPUser(User, AnonymousUser):
             yog        = int(yog)
         except:
             return 0
-        
         return schoolyear + 12 - yog
 
-    class Meta:
-        db_table = 'auth_user'
-    
     @staticmethod
     def YOGFromGrade(grade):
         schoolyear = ESPUser.current_schoolyear()
@@ -724,13 +682,14 @@ class ESPUser(User, AnonymousUser):
         except:
             return 0
 
-        return schoolyear + 12 - grade      
+        return schoolyear + 12 - grade
 
-    
+ESPUser.create_membership_methods()
+
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
-shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))    
-    
+shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
+
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
@@ -741,6 +700,10 @@ class StudentInfo(models.Model):
     studentrep_expl = models.TextField(blank=True, null=True)
     shirt_size = models.CharField(maxlength=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(maxlength=20, blank=True, choices=shirt_types, null=True)
+
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_studentinfo'
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -766,11 +729,10 @@ class StudentInfo(models.Model):
 
     def ajax_str(self):
         return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
-    
+
     def updateForm(self, form_dict):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
-        
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
@@ -780,20 +742,20 @@ class StudentInfo(models.Model):
         form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
                                                             qsc  = STUDREP_QSC,
                                                             verb = STUDREP_VERB)
-        return form_dict        
+        return form_dict
 
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
-        
+
         if regProfile.student_info is None:
             studentInfo = StudentInfo()
             studentInfo.user = curUser
         else:
             studentInfo = regProfile.student_info
-        
+
         studentInfo.graduation_year = new_data['graduation_year']
         studentInfo.school          = new_data['school']
         studentInfo.dob             = new_data['dob']
@@ -809,8 +771,8 @@ class StudentInfo(models.Model):
             t = loader.get_template('email/studentreprequest')
             msgtext = t.render({'user': curUser, 'info': studentInfo, 'prog': regProfile.program})
             send_mail(subj, msgtext, from_email, to_email, fail_silently = True)
-            
-            #   Add the user bit representing a student rep request.  
+
+            #   Add the user bit representing a student rep request.
             #   The membership coordinator has to make the 'real' student rep bit.
             UserBit.objects.get_or_create(user = curUser,
                                           verb = STUDREP_VERB,
@@ -820,15 +782,14 @@ class StudentInfo(models.Model):
             UserBit.objects.filter(user = curUser,
                                    verb = STUDREP_VERB,
                                    qsc  = STUDREP_QSC).delete()
-            
         return studentInfo
-    
+
     def __str__(self):
         username = "N/A"
         if self.user != None:
             username = self.user.username
         return 'ESP Student Info (%s) -- %s' % (username, str(self.school))
-            
+
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
 
@@ -841,7 +802,11 @@ class TeacherInfo(models.Model):
     bio = models.TextField(blank=True, null=True)
     shirt_size = models.CharField(maxlength=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(maxlength=20, blank=True, choices=shirt_types, null=True)
-    
+
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_teacherinfo'
+
     @classmethod
     def ajax_autocomplete(cls, data):
         names = data.strip().split(',')
@@ -865,7 +830,7 @@ class TeacherInfo(models.Model):
 
     def ajax_str(self):
         return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
-    
+
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.college
@@ -873,7 +838,7 @@ class TeacherInfo(models.Model):
         form_dict['shirt_size']      = self.shirt_size
         form_dict['shirt_type']      = self.shirt_type
         return form_dict
-    
+
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a TeacherInfo record """
@@ -882,16 +847,14 @@ class TeacherInfo(models.Model):
             teacherInfo.user = curUser
         else:
             teacherInfo = regProfile.teacher_info
-        
         teacherInfo.graduation_year = new_data['graduation_year']
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
         teacherInfo.shirt_size      = new_data['shirt_size']
         teacherInfo.shirt_type      = new_data['shirt_type']
-        
         teacherInfo.save()
         return teacherInfo
-                    
+
     def __str__(self):
         username = ""
         if self.user != None:
@@ -900,12 +863,16 @@ class TeacherInfo(models.Model):
 
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
-    
+
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
     year_finished = models.PositiveIntegerField(blank=True, null=True)
     num_kids = models.PositiveIntegerField(blank=True, null=True)
+
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_guardianinfo'
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -934,7 +901,7 @@ class GuardianInfo(models.Model):
         form_dict['year_finished'] = self.year_finished
         form_dict['num_kids']      = self.num_kids
         return form_dict
-    
+
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a GuardianInfo record """
@@ -943,18 +910,17 @@ class GuardianInfo(models.Model):
             guardianInfo.user = curUser
         else:
             guardianInfo = regProfile.guardian_info
-        
         guardianInfo.year_finished = new_data['year_finished']
         guardianInfo.num_kids      = new_data['num_kids']
         guardianInfo.save()
         return guardianInfo
-    
+
     def __str__(self):
         username = ""
         if self.user != None:
             username = self.user.username
         return 'ESP Guardian Info (%s)' % username
-    
+
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
 
@@ -966,7 +932,11 @@ class EducatorInfo(models.Model):
     grades_taught = models.CharField(maxlength=16,blank=True, null=True)
     school = models.CharField(maxlength=128,blank=True, null=True)
     position = models.CharField(maxlength=64,blank=True, null=True)
-    
+
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_educatorinfo'
+
     @classmethod
     def ajax_autocomplete(cls, data):
         names = data.strip().split(',')
@@ -978,7 +948,6 @@ class EducatorInfo(models.Model):
             first  = ','.join(names[1:])
             if len(first.strip()) > 0:
                 query_set = query_set.filter(user__first_name__istartswith = first.strip())
-                
         query_set = query_set[:10]
         values = query_set.values('user', 'position', 'school', 'id')
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'position', 'school', 'id')
@@ -990,14 +959,14 @@ class EducatorInfo(models.Model):
 
     def ajax_str(self):
         return "%s - %s at %s" % (ESPUser(self.user).ajax_str(), self.position, self.school)
-    
+
     def updateForm(self, form_dict):
         form_dict['subject_taught'] = self.subject_taught
         form_dict['grades_taught']  = self.grades_taught
         form_dict['school']         = self.school
-        form_dict['position']       = self.position        
+        form_dict['position']       = self.position
         return form_dict
-    
+
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a EducatorInfo record """
@@ -1006,21 +975,19 @@ class EducatorInfo(models.Model):
             educatorInfo.user = curUser
         else:
             educatorInfo = regProfile.educator_info
-        
         educatorInfo.subject_taught = new_data['subject_taught']
         educatorInfo.grades_taught  = new_data['grades_taught']
-        educatorInfo.position       = new_data['position']      
+        educatorInfo.position       = new_data['position']
         educatorInfo.school         = new_data['school']
         educatorInfo.save()
         return educatorInfo
-        
+
     def __str__(self):
         username = ""
         if self.user != None:
             username = self.user.username
         return 'ESP Educator Info (%s)' % username
 
-    
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
 
@@ -1030,12 +997,15 @@ class ZipCode(models.Model):
     latitude = models.FloatField(max_digits=10, decimal_places = 6)
     longitude = models.FloatField(max_digits=10, decimal_places = 6)
 
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_zipcode'
+
     def distance(self, other):
         """ Returns the distance from one point to another """
         import math
 
         earth_radius = 3963.1676 # From google...
-        
         lat1 = math.radians(self.latitude)
         lon1 = math.radians(self.longitude)
         lat2 = math.radians(other.latitude)
@@ -1052,7 +1022,7 @@ class ZipCode(models.Model):
                    earth_radius
 
         return distance
-    
+
     def close_zipcodes(self, distance):
         """ Get a list of zip codes less than or equal to
             distance from this zip code. """
@@ -1070,8 +1040,6 @@ class ZipCode(models.Model):
 
         if len(oldsearches) > 0:
             return oldsearches[0].zipcodes.split(',')
-                                             
-        
         all_zips = list(ZipCode.objects.exclude(id = self.id))
         winners  = [ self.zip_code ]
 
@@ -1082,7 +1050,6 @@ class ZipCode(models.Model):
                                     distance = distance,
                                     zipcodes = ','.join(winners))
         newsearch.save()
-        
         return winners
 
     def __str__(self):
@@ -1097,113 +1064,111 @@ class ZipCodeSearches(models.Model):
     distance = models.FloatField(max_digits = 15, decimal_places = 3)
     zipcodes = models.TextField()
 
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_zipcodesearches'
+
     def __str__(self):
         return '%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
 class ContactInfo(models.Model):
-	""" ESP-specific contact information for (possibly) a specific user """
-	user = AjaxForeignKey(User, blank=True, null=True, edit_inline = models.STACKED)
-	first_name = models.CharField(maxlength=64)
-	last_name = models.CharField(maxlength=64)        
-	e_mail = models.EmailField('E-mail address', blank=True, null=True)
-	phone_day = models.PhoneNumberField('Home phone',blank=True, null=True)
-	phone_cell = models.PhoneNumberField('Cell phone',blank=True, null=True, core=True)
-	phone_even = models.PhoneNumberField('Alternate phone',blank=True, null=True)
-	address_street = models.CharField('Street address',maxlength=100,blank=True, null=True, core=True)
-	address_city = models.CharField('City',maxlength=50,blank=True, null=True, core=True)
-	address_state = models.USStateField('State',blank=True, null=True, core=True)
-	address_zip = models.CharField('Zip code',maxlength=5,blank=True, null=True, core=True)
-        address_postal = models.TextField(blank=True,null=True)
-        undeliverable = models.BooleanField(default=False, core=True)
-        
-        def address(self):
-            return '%s, %s, %s %s' % \
-                   (self.address_street,
-                    self.address_city,
-                    self.address_state,
-                    self.address_zip)
-                    
+    """ ESP-specific contact information for (possibly) a specific user """
+    user = AjaxForeignKey(User, blank=True, null=True, edit_inline = models.STACKED)
+    first_name = models.CharField(maxlength=64)
+    last_name = models.CharField(maxlength=64)
+    e_mail = models.EmailField('E-mail address', blank=True, null=True)
+    phone_day = models.PhoneNumberField('Home phone',blank=True, null=True)
+    phone_cell = models.PhoneNumberField('Cell phone',blank=True, null=True, core=True)
+    phone_even = models.PhoneNumberField('Alternate phone',blank=True, null=True)
+    address_street = models.CharField('Street address',maxlength=100,blank=True, null=True, core=True)
+    address_city = models.CharField('City',maxlength=50,blank=True, null=True, core=True)
+    address_state = models.USStateField('State',blank=True, null=True, core=True)
+    address_zip = models.CharField('Zip code',maxlength=5,blank=True, null=True, core=True)
+    address_postal = models.TextField(blank=True,null=True)
+    undeliverable = models.BooleanField(default=False, core=True)
 
-        def items(self):
-            return self.__dict__.items()
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_contactinfo'
 
-        @classmethod
-        def ajax_autocomplete(cls, data):
-            names = data.strip().split(',')
-            last = names[0]
-    
-            query_set = cls.objects.filter(last_name__istartswith = last.strip())
-    
-            if len(names) > 1:
-                first  = ','.join(names[1:])
-                if len(first.strip()) > 0:
-                    query_set = query_set.filter(first_name__istartswith = first.strip())
-    
-            values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'e_mail', 'id')
-    
-            for value in values:
-                value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['e_mail'])
-            return values
-    
+    def address(self):
+        return '%s, %s, %s %s' % \
+            (self.address_street,
+             self.address_city,
+             self.address_state,
+             self.address_zip)
+
+    def items(self):
+        return self.__dict__.items()
+
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        names = data.strip().split(',')
+        last = names[0]
+        query_set = cls.objects.filter(last_name__istartswith = last.strip())
+        if len(names) > 1:
+            first  = ','.join(names[1:])
+            if len(first.strip()) > 0:
+                query_set = query_set.filter(first_name__istartswith = first.strip())
+        values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'e_mail', 'id')
+        for value in values:
+            value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['e_mail'])
+        return values
+
         def ajax_str(self):
             return "%s, %s (%s)" % (self.last_name, self.first_name, self.e_mail)
 
-        @staticmethod
-        def addOrUpdate(regProfile, new_data, contactInfo, prefix='', curUser=None):
-            """ adds or updates a ContactInfo record """
-            if contactInfo is None:
-                contactInfo = ContactInfo()
-            for i in contactInfo.__dict__.keys():
-                if i != 'user_id' and i != 'id' and new_data.has_key(prefix+i):
-                    contactInfo.__dict__[i] = new_data[prefix+i]
-            if curUser is not None:
-                contactInfo.user = curUser
-            contactInfo.save()
-            return contactInfo
+    @staticmethod
+    def addOrUpdate(regProfile, new_data, contactInfo, prefix='', curUser=None):
+        """ adds or updates a ContactInfo record """
+        if contactInfo is None:
+            contactInfo = ContactInfo()
+        for i in contactInfo.__dict__.keys():
+            if i != 'user_id' and i != 'id' and new_data.has_key(prefix+i):
+                contactInfo.__dict__[i] = new_data[prefix+i]
+        if curUser is not None:
+            contactInfo.user = curUser
+        contactInfo.save()
+        return contactInfo
 
-        def updateForm(self, form_data, prepend=''):
-            newkey = self.__dict__
-            for key, val in newkey.items():
-                if val and key != 'id':
-                    form_data[prepend+key] = str(val)
-            return form_data
+    def updateForm(self, form_data, prepend=''):
+        newkey = self.__dict__
+        for key, val in newkey.items():
+            if val and key != 'id':
+                form_data[prepend+key] = str(val)
+        return form_data
 
-        def save(self):
+    def save(self, *args, **kwargs):
+        if self.id != None:
+            try:
+                old_self = ContactInfo.objects.get(id = self.id)
+                if old_self.address_zip != self.address_zip or \
+                        old_self.address_street != self.address_street or \
+                        old_self.address_city != self.address_city or \
+                        old_self.address_state != self.address_state:
+                    self.address_postal = None
+                    self.undeliverable = False
+            except:
+                pass
+        if self.address_postal != None:
+            self.address_postal = str(self.address_postal)
 
-            
+        super(ContactInfo, self).save(*args, **kwargs)
 
-            if self.id != None:
-                try:
-                    old_self = ContactInfo.objects.get(id = self.id)
-                    if old_self.address_zip != self.address_zip or \
-                       old_self.address_street != self.address_street or \
-                       old_self.address_city != self.address_city or \
-                       old_self.address_state != self.address_state:
-                        self.address_postal = None
-                        self.undeliverable = False
-                except:
-                    pass
-            
-            if self.address_postal != None:
-                self.address_postal = str(self.address_postal)
+    def __str__(self):
+        username = ""
+        last_name, first_name = '', ''
+        if self.user != None:
+            username = self.user.username
+        if self.first_name is not None:
+            first_name = self.first_name
+        if self.last_name is not None:
+            last_name = self.last_name
+        return first_name + ' ' + last_name + ' (' + username + ')'
 
-            
-            models.Model.save(self)
-                
-	def __str__(self):
-            username = ""
-            last_name, first_name = '', ''
-            if self.user != None:
-                username = self.user.username
-            if self.first_name is not None:
-                first_name = self.first_name
-            if self.last_name is not None:
-                last_name = self.last_name
-            return first_name + ' ' + last_name + ' (' + username + ')'
-
-	class Admin:
-            search_fields = ['first_name','last_name','user__username']
+    class Admin:
+        search_fields = ['first_name','last_name','user__username']
 
 
 class K12School(models.Model):
@@ -1217,15 +1182,20 @@ class K12School(models.Model):
     contact_title = models.TextField(blank=True,null=True)
     name          = models.TextField(blank=True,null=True)
 
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_k12school'
+
     def __str__(self):
         if self.contact_id:
             return '"%s" in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
             return '"%s"' % self.name
-    
+
     class Admin:
         pass
+
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
@@ -1261,34 +1231,27 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrival (et al). """
-    
     item_model   = models.CharField(maxlength=256)            # A string representing the model, for instance User or Program
     q_filter     = models.TextField()                         # A string representing a query filter
     sha1_hash    = models.CharField(maxlength=256)            # A sha1 hash of the string representing the query filter
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
     useful_name  = models.CharField(maxlength=1024, blank=True, null=True) # A nice name to apply to this filter.
 
-
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_persistentqueryfilter'
 
     @staticmethod
     def create_from_Q(item_model, q_filter, description = ''):
         """ The main constructor, please call this. """
         import sha
-
         dumped_filter = pickle.dumps(q_filter)
-        
         foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                    q_filter = dumped_filter,
                                                                    sha1_hash = sha.new(dumped_filter).hexdigest())
-        
-        
         foo.useful_name = description
-
         foo.save()
-        
         return foo
-        
-        
 
     def get_Q(self):
         """ This will return the Q object that was passed into it. """
@@ -1307,7 +1270,6 @@ class PersistentQueryFilter(models.Model):
         """ This will actually return the list generated from the filter applied
             to the live database. You must supply the model. If the model is not matched,
             it will become an error. """
-
         if str(module) != str(self.item_model):
             raise ESPError(), 'The module given does not match that of the persistent entry.'
 
@@ -1320,13 +1282,8 @@ class PersistentQueryFilter(models.Model):
             id = int(id)
         except:
             assert False, 'The query filter id given is invalid.'
-
- 
         return PersistentQueryFilter.objects.get(id = id,
                                                  item_model = str(model))
-    
- 
-                
 
 
     @staticmethod
@@ -1335,14 +1292,10 @@ class PersistentQueryFilter(models.Model):
             or use an old one depending on whether it's been used. """
 
         import sha
-        
         try:
             qobject_string = pickle.dumps(QObject)
         except:
             qobject_string = ''
-
-
-        
         try:
             filterObj = PersistentQueryFilter.objects.get(sha1_hash = sha.new(qobject_string).hexdigest())#    pass
         except:
@@ -1355,10 +1308,14 @@ class PersistentQueryFilter(models.Model):
 
     def __str__(self):
         return str(self.useful_name)
-        
+
 
 class ESPUser_Profile(models.Model):
     user = AjaxForeignKey(User, unique=True)
+
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_espuser_profile'
 
     def prof(self):
         return ESPUser(self.user)
@@ -1377,21 +1334,18 @@ class DBList(object):
     totalnum = False # we dont' know how many there are.
     key      = ''
     QObject  = None
-    
-    
+
     def count(self, override = False):
         """ This is used to count how many objects wer are talking about.
             If override is true, it will not retrieve the number from cache
             or from this instance. If it's true, it will try.
         """
-        
         from esp.users.models import User
 
         cache_id = urlencode('DBListCount: %s' % (self.key))
 
         retVal   = cache.get(cache_id) # get the cached result
- 
-        if self.QObject: # if there is a q object we can just 
+        if self.QObject: # if there is a q object we can just
             if not self.totalnum:
                 if override:
                     self.totalnum = User.objects.filter(self.QObject).distinct().count()
@@ -1407,18 +1361,18 @@ class DBList(object):
             return self.totalnum
         else:
             return 0
-        
+
     def id(self):
         """ The id is the same as the key, it is client-specified. """
         return self.key
-    
+
     def __init__(self, **kwargs):
         self.__dict__ = kwargs
 
     def __cmp__(self, other):
         """ We are going to order by the size of our lists. """
         return cmp(self.count(), other.count())
-    
+
     def __str__(self):
         return self.key
 

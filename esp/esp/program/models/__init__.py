@@ -77,6 +77,10 @@ class ProgramModule(models.Model):
     # Must the user supply this ProgramModule with data in order to complete program registration?
     required = models.BooleanField()
 
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_programmodule'
+
     def getFriendlyName(self):
         """ Return a human-readable name that identifies this Program Module """
         return self.admin_title
@@ -150,6 +154,10 @@ class ArchiveClass(models.Model):
     student_ids = models.TextField()
     
     num_old_students = models.IntegerField(default=0)
+
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_archiveclass'
 
     #def __str__(self):
     #    return '"%s" taught by "%s"' % (self.title, self.teacher)
@@ -231,6 +239,10 @@ class Program(models.Model):
     class_size_max = models.IntegerField()
     program_size_max = models.IntegerField(null=True)
     program_modules = models.ManyToManyField(ProgramModule)
+
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_program'
 
     def checkitems_all_cached(self):
         """  The main Manage page requests checkitems.all() O(n) times in
@@ -786,6 +798,10 @@ class BusSchedule(models.Model):
     departs = models.DateTimeField()
     arrives = models.DateTimeField()
 
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_busschedule'
+
     class Admin:
         pass
 
@@ -798,6 +814,10 @@ class TeacherParticipationProfile(models.Model):
     unique_together = (('teacher', 'program'),)
     bus_schedule = models.ManyToManyField(BusSchedule)
     can_help = models.BooleanField()
+
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_teacherparticipationprofile'
 
     def __str__(self):
         return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
@@ -820,6 +840,10 @@ class SATPrepRegInfo(models.Model):
     heard_by = models.CharField(maxlength=128, blank=True, null=True)
     user = AjaxForeignKey(User)
     program = models.ForeignKey(Program)
+
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_satprepreginfo'
 
     def __str__(self):
         return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
@@ -846,6 +870,7 @@ class SATPrepRegInfo(models.Model):
         else:
             satPrep = satPrepList[0]
         return satPrep
+
     class Admin:
         pass
 
@@ -864,6 +889,10 @@ class RegistrationProfile(models.Model):
     last_ts = models.DateTimeField(default=datetime.now())
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True, null = True)
+
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_registrationprofile'
 
     @staticmethod
     def getLastProfile(user):
@@ -950,6 +979,10 @@ class TeacherBio(models.Model):
     picture_width  = models.IntegerField(blank=True, null=True)
     last_ts = models.DateTimeField(auto_now = True)    
 
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_teacherbio'
+
     class Admin:
         pass
 
@@ -1024,6 +1057,10 @@ class FinancialAidRequest(models.Model):
     amount_received = models.IntegerField(blank=True,null=True, verbose_name='Amount granted')
     amount_needed = models.IntegerField(blank=True,null=True, verbose_name='Amount due from student')
 
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_financialaidrequest'
+
     def __str__(self):
         """ Represent this as a string. """
         accepted_verb = GetNode('V/Flags/Registration/Accepted')
@@ -1082,7 +1119,11 @@ class JunctionStudentApp(models.Model):
     teacher_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
     director_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
     rejected       = models.BooleanField(default=False,editable=False)
-    
+
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_junctionstudentapp'    
+
     def __str__(self):
         return str(self.user)
 
