@@ -608,16 +608,20 @@ class ESPUser(User, AnonymousUser):
         for user_class in user_classes:
             method_name = 'is%s' % user_class
             bit_name = 'V/Flags/UserRole/%s' % overrides.get(user_class, user_class)
-            property_name = '_userclass_%s' % user_class.lower()
-            def _new_method(user):
-                if hasattr(user, property_name):
+            property_name = '_userclass_%s' % user_class
+            def method_gen(bit_name, property_name):
+                def _new_method(user):
+                    if not hasattr(user, property_name):
+                        setattr(user, property_name, UserBit.UserHasPerms(user, GetNode('Q'),
+                                                                          GetNode(bit_name)))
                     return getattr(user, property_name)
-                setattr(user, property_name, UserBit.UserHasPerms(user, GetNode('Q'),
-                                                                  GetNode(bit_name)))
-                return getattr(user, property_name)
-            _new_method.__name__ = method_name
-            _new_method.__doc__ = "Returns ``True`` if the user is a %s and False otherwise." % user_class
-            setattr(cls, method_name, _new_method)
+
+                _new_method.__name__ = method_name
+                _new_method.__doc__ = "Returns ``True`` if the user is a %s and False otherwise." % user_class
+
+                return _new_method
+
+            setattr(cls, method_name, method_gen(bit_name, property_name))
 
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
