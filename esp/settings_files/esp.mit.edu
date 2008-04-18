@@ -34,7 +34,7 @@ Email: web@esp.mit.edu
 ######################
 
 # root directory
-PROJECT_ROOT = '/esp/esp/'
+PROJECT_ROOT = '/esp/web/esp.mit.edu/'
 
 # log directory
 LOG_FILE="/var/log/django/esp_errlog"
@@ -107,6 +107,7 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'esp.middleware.scopecachemiddleware.ScopeCacheMiddleware',
     'django.middleware.http.SetRemoteAddrFromForwardedFor',
     'esp.queue.middleware.QueueMiddleware',
     'esp.middleware.FixIEMiddleware',
@@ -120,6 +121,7 @@ MIDDLEWARE_CLASSES = (
     'esp.middleware.ESPAuthMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',
+    'esp.middleware.PrettyErrorEmailMiddleware',
     'esp.middleware.StripWhitespaceMiddleware',
 )
 
@@ -164,7 +166,7 @@ INSTALLED_APPS = (
 
 CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
 
-
+CACHE_PREFIX="ESP"
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
