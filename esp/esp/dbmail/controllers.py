@@ -29,12 +29,11 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.lib.markdown import markdown
-from esp.workflow.models import Controller
 from esp.datatree.models import GetNode
 from esp.users.models import UserBit
 from esp.dbmail.models import MessageRequest, TextOfEmail, EmailRequest
 
-class EmailController(Controller):
+class EmailController(object):
     """ The workflow for a broadcast e-mail (distinct from e-mail sent to a specific user)
     
     The workflow works as follows:
