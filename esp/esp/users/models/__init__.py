@@ -612,8 +612,8 @@ class ESPUser(User, AnonymousUser):
             def method_gen(bit_name, property_name):
                 def _new_method(user):
                     if not hasattr(user, property_name):
-                        setattr(user, property_name, UserBit.UserHasPerms(user, GetNode('Q'),
-                                                                          GetNode(bit_name)))
+                        setattr(user, property_name, bool(UserBit.UserHasPerms(user, GetNode('Q'),
+                                                                          GetNode(bit_name))))
                     return getattr(user, property_name)
 
                 _new_method.__name__ = method_name
