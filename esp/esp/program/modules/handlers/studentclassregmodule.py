@@ -50,7 +50,7 @@ class StudentClassRegModule(ProgramModuleObj):
     def students(self, QObject = False):
         from django.db.models import Q as django_Q
 
-        Par = django_Q(userbit__qsc__parent=self.program.classes_node())
+        Par = django_Q(userbit__qsc__parent__parent=self.program.classes_node())
         Conf = django_Q(userbit__verb = GetNode('V/Flags/Registration/Confirmed'))
         Prel = django_Q(userbit__verb = GetNode('V/Flags/Registration/Preliminary'))
         Unexpired = django_Q(userbit__enddate__isnull=True) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
