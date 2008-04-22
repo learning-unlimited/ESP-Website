@@ -41,6 +41,7 @@ from esp.web.util.latex  import render_to_latex
 #from esp.money.models import LineItem, LineItemType
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
+from esp.middleware import ESPError
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
