@@ -63,7 +63,6 @@ class ClassManageForm(ManagementForm):
             cpl = ProgramCheckItem.objects.get(id=ci)
             cls.checklist_progress.add(cpl)
         cls.save()
-        
 
 class SectionManageForm(ManagementForm):
     """ Class section admin form.  This allows each section to be assigned a different time and room.

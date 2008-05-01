@@ -152,6 +152,7 @@ class ArchiveClass(models.Model):
     description = models.TextField()
     teacher_ids = models.CharField(maxlength=256, blank=True, null=True)
     student_ids = models.TextField()
+    original_id = models.IntegerField(blank=True, null=True)
     
     num_old_students = models.IntegerField(default=0)
 
@@ -175,8 +176,13 @@ class ArchiveClass(models.Model):
         return 0
     
     def heading(self):
+        if len(self.date) > 1:
+            year_display = self.year + ' (%s)' % self.date
+        else:
+            year_display = self.year
+            
         return ({'label': 'Teacher', 'value': self.teacher},
-            {'label': 'Year', 'value': self.year},
+            {'label': 'Year', 'value': year_display},
             {'label': 'Program', 'value': self.program},
             {'label': 'Category', 'value': self.category})
     
@@ -778,6 +784,16 @@ class Program(models.Model):
                     retVal = True
             cache.set(cache_key, retVal, 9999)
         return retVal
+    
+    def archive(self):
+        archived_classes = []
+        #   I think we should delete resources and user bits, but I'm afraid to.
+        #   So, just archive all of the classes.
+        for c in self.classes():
+            archived_classes.append(c.archive())
+            print 'Archived: %s' % c.title()
+        
+        return archived_classes
     
     class Admin:
         pass

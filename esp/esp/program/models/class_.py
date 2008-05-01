@@ -794,6 +794,7 @@ class ClassSubject(models.Model):
     #   Please don't use. :)
     status = models.IntegerField(default=0)   
     duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
+    meeting_times = models.ManyToManyField(Event, blank=True)
 
     def _get_meeting_times(self):
         timeslot_id_list = []
@@ -876,6 +877,10 @@ class ClassSubject(models.Model):
         for sec in self.sections.all():
             result += sec.students(use_cache=use_cache)
         return result
+        
+    def students_old(self):
+        v = DataTree.get_by_uri('V/Flags/Registration/Preliminary')
+        return list(UserBit.objects.bits_get_users(self.anchor, v, user_objs=True))
         
     def num_students(self):
         result = 0
@@ -1193,6 +1198,56 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
                 ub.expire()
 
+    def getArchiveClass(self):
+        from esp.program.models import ArchiveClass
+        
+        result = ArchiveClass.objects.filter(original_id=self.id)
+        if result.count() > 0:
+            return result[0]
+        
+        result = ArchiveClass()
+        date_dir = self.parent_program.anchor.name.split('_')
+        result.program = self.parent_program.anchor.parent.name
+        result.year = date_dir[0][:4]
+        if len(date_dir) > 1:
+            result.date = date_dir[1]
+        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.teachers()]
+        result.teacher = ' and '.join(teacher_strs)
+        result.category = self.category.category
+        result.title = self.title()
+        result.description = self.class_info
+        if self.prereqs and len(self.prereqs) > 0:
+            result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
+        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.teachers()]) + '|'
+        all_students = self.students() + self.students_old()
+        result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
+        result.original_id = self.id
+        
+        #   It's good to just keep everything in the archives since they are cheap.
+        result.save()
+        
+        return result
+        
+    def archive(self):
+        """ Archive a class to reduce the size of the database. """
+        from esp.resources.models import ResourceRequest, ResourceAssignment
+        
+        #   Ensure that the class has been saved in the archive.
+        archived_class = self.getArchiveClass()
+        
+        #   Delete user bits and resource stuff associated with the class.
+        #   (Currently leaving ResourceAssignments alone so that schedules can be viewed.)
+        UserBit.objects.filter(qsc=self.anchor).delete()
+        ResourceRequest.objects.filter(target_subj=self).delete()
+        #   ResourceAssignment.objects.filter(target_subj=self).delete()
+        for s in self.sections.all():
+            ResourceRequest.objects.filter(target=s).delete()
+            #   ResourceAssignment.objects.filter(target=s).delete()
+        
+        #   This function leaves the actual ClassSubject object, its ClassSections,
+        #   and the QSD pages alone.
+        return archived_class
+        
     def update_cache(self):
         self.teachers(use_cache = False)
 
