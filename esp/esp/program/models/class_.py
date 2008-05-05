@@ -50,9 +50,8 @@ from esp.datatree.models import DataTree, GetNode
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
-from esp.program.models import JunctionStudentApp
 
-__all__ = ['ClassSection', 'ClassSubject', 'JunctionAppReview', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
+__all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
 class ProgramCheckItem(models.Model):
     from esp.program.models import Program
@@ -1303,23 +1302,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     class Admin:
         pass
     
-class JunctionAppReview(models.Model):
-    cls = models.ForeignKey(ClassSubject)
-    junctionapp = models.ForeignKey(JunctionStudentApp)
-    student     = AjaxForeignKey(User)
-    score = models.IntegerField(blank=True,null=True)
-    create_ts = models.DateTimeField(default = datetime.datetime.now,
-                                     editable = False)
-
-    def __str__(self):
-        return "Review for %s in class %s" % (self.cls, self.student)
-    
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_junctionappreview'
-
-    class Admin:
-        pass
 
 class ClassImplication(models.Model):
     """ Indicates class prerequisites corequisites, and the like """

@@ -48,7 +48,6 @@ class StudentClassRegModuleInfo(models.Model):
     
     class Admin:
         pass
-    
 
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
@@ -68,6 +67,9 @@ class ClassRegModuleInfo(models.Model):
     teacher_class_noedit = models.DateTimeField(blank=True, null=True)
     
     session_counts       = models.CommaSeparatedIntegerField(maxlength=100, blank=True)
+    
+    num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True)
+    num_class_choices    = models.PositiveIntegerField(default=1, blank=True, null=True)
     
     #   An HTML color code for the program.  All classes will appear in some variant
     #   of this color in the catalog and registration pages.  If null, the default

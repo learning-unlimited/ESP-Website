@@ -36,7 +36,7 @@ from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from esp.db.models       import Q
 from django.template.loader import get_template
-from esp.program.models  import JunctionStudentApp
+from esp.program.models  import StudentApplication
 from django              import newforms as forms
 from django.contrib.auth.models import User
 
@@ -45,9 +45,9 @@ from django.contrib.auth.models import User
 class StudentJunctionAppModule(ProgramModuleObj):
 
     def students(self, QObject = False):
-        Q_students = Q(junctionstudentapp__program = self.program)
+        Q_students = Q(studentapplication__program = self.program)
 
-        Q_students_complete = Q(junctionstudentapp__done = True)
+        Q_students_complete = Q(studentapplication__done = True)
 
         if QObject:
             return {'studentapps_complete': Q_students & Q_students_complete,
@@ -63,43 +63,30 @@ class StudentJunctionAppModule(ProgramModuleObj):
                 'studentapps':          """Students who have started the student application."""}
     
     def isCompleted(self):
-        return self.user.junctionstudentapp_set.all().filter(program = self.program, done = True).count() > 0
+        return self.user.studentapplication_set.all().filter(program = self.program, done = True).count() > 0
 
     def deadline_met(self):
         return super(StudentClassRegModule, self).deadline_met('/Applications')
 
-    
     @needs_student
     @meets_deadline('/Applications')
     def application(self,request, tl, one, two, module, extra, prog):
-        """
-        Student can fill out application for a program, like Junction.
-        """
-        
-        app, created = JunctionStudentApp.objects.get_or_create(user = self.user,
-                                                                program = self.program)
-
-        Form = forms.form_for_model(JunctionStudentApp)
-        
+        app, created = StudentApplication.objects.get_or_create(user=self.user, program=self.program)
+        app.set_questions()
+        form = None
         if request.method == 'POST':
-            form = Form(request.POST, initial = app.__dict__)
-            if form.is_valid():
-                app.__dict__.update(form.clean_data)
-                if request.POST['submitform'].lower() == 'complete':
-                    app.done = True
-                    
-                if request.POST['submitform'].lower() == 'mark as unfinished':
-                    app.done = False
-                    
-                app.save()
-                return self.goToCore(tl)
-            
+            data = request.POST.copy()
+            forms = app.get_forms(data)
+            for form in forms:
+                if form.is_valid():
+                    form.target.update(form)
+            if request.POST['submitform'].lower() == 'complete':
+                app.done = True
+            if request.POST['submitform'].lower() == 'mark as unfinished':
+                app.done = False
+            app.save()
+            return self.goToCore(tl)
         else:
-            form = Form(initial = app.__dict__)
-
-
-        return render_to_response(self.baseDir()+'application.html',
-                                  request,
-                                  (self.program, tl),
-                                  {'form': form,'app':app})
-
+            forms = app.get_forms()
+        return render_to_response(self.baseDir()+'application.html', request, (self.program, tl), {'forms': forms, 'app': app})
+    

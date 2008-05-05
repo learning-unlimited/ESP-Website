@@ -78,11 +78,14 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         for student in students:
             student.added_class = student.userbit_set.filter(qsc__rangestart__gte=cls.anchor.rangestart, qsc__rangeend__gte=cls.anchor.rangeend)[0].startdate
             try:
-                student.app = student.junctionstudentapp_set.get(program = self.program)
+                student.app = student.studentapplication_set.get(program = self.program)
             except:
                 student.app = None
 
-            reviews = student.junctionappreview_set.filter(cls = cls)
+            if student.app:
+                reviews = student.app.reviews.all()
+            else:
+                reviews = []
 
             if len(reviews) > 0:
                 student.app_reviewed = reviews[0]

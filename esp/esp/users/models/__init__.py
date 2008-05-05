@@ -384,6 +384,13 @@ class ESPUser(User, AnonymousUser):
         cache = UserBit.objects.cache(self)
         cache[self.enrollment_cache_key(program)] = None
 
+    def getAppliedClasses(self, program=None, request=None):
+        from esp.program.models import ClassSubject
+        #   For now, just checks the subjects you've preregistered for.  But it should be changed
+        #   to check for subjects you've applied to, as in the following line:
+        #   return UserBit.find_by_anchor_perms(ClassSubject, self, DataTree.get_by_uri('V/Flags/Registration/Applied', create=True))
+        return self.getEnrolledClasses(program, request)
+       
     def getEnrolledClasses(self, program=None, request=None):
 
         if not hasattr(program, 'id'):

@@ -17,47 +17,54 @@
 <h1>{{ program.niceName }} application for {{ student.name }}</h1>
 
 <p>
-Application for {{ student.name }}. <br/>
-Grade: {{ student.getGrade }} <br />
-DOB:   {{ student.getLastProfile.student_info.dob|date:"M d, Y" }}<br />
-Added your class: {{ student.added_class|date:"m/d/Y @ h:i:s" }}
+Please review the student's biographical information and responses to our questions.  Then fill out and submit the review form below.  When you are done, you can <a href="/teach/{{ program.getUrlBase }}/review_students/{{class.id}}/">review the other students.</a>
 </p>
 
-<table class="application">
-<thead>
+<div id="program_form">
+<form action="{{ request.path }}" method="post" name="review">
+<table class="application" width="600">
 <tr>
-  <th>High school preparation</th>
-  <th>My Ideal Summer...</th>
-  <th>A difficult triumph</th>
+  <th colspan="2">Student Application for {{ student.name }}</th>
 </tr>
-</thead>
-<tbody>
 <tr>
-  <td>{{ student.app.class_prep }}</td>
-  <td>{{ student.app.ideal_summer}}</td>
-  <td>{{ student.app.difficulty }}</td>
+    <td width="25%">Grade:</td>
+    <td>{{ student.getGrade }}</td>
 </tr>
-</tbody>
+<tr>
+    <td>DOB:</td>
+    <td>{{ student.getLastProfile.student_info.dob|date:"M d, Y" }}</td>
+</tr>
+<tr>
+    <td>Added your class: </td>
+    <td>{{ student.added_class|date:"m/d/Y @ h:i:s" }}</td>
+</tr>
+{% for response in student.app.responses.all %}
+<tr>
+  <th><label>{{ response.question.question }}</label></th>
+  <td>{{ response.response }}</td>
+</tr>
+{% endfor %}
 </table>
 <br />
-<form action="{{ request.path }}" method="post" name="review">
+
 <input type="hidden" name="student" value="{{student.id}}" />
 <table>
-<thead>
   <tr>
     <th colspan="2">Application review for {{ student.name }}</th>
   </tr>
-</thead>
-<tbody>
 {{ form }}
 <tr>
  <th colspan="2" class="submit"> 
-  <input type="submit" value="Submit" name="submit" />
+  <input type="submit" class="fancybutton" value="Submit" name="submit" />
  </th>
 </tr>
-</tbody>
+
 </table>
 </form>
+</div>
 
+<p>
+<a href="/teach/{{ program.getUrlBase }}/teacherreg/">Click here</a> to return to the main teacher page.
+</p>
 
 {% endblock %}

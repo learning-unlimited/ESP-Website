@@ -5,8 +5,8 @@
 {% block subsection_name %}Student Applications{% endblock %}
 
 {% block stylesheets %}
-{{ block.super }}
-<link href="/media/styles/newforms.css" rel="stylesheet" type="text/css" />
+    {{ block.super }}
+    <link href="/media/styles/forms.css" rel="stylesheet" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
@@ -17,43 +17,53 @@
 
 <h2>Introduction</h2>
 <p>
-  To complete your application for {{ program.niceName }}, please fill out the following form. While you are working on it, you can <strong>Save Progress</strong> to keep your work while going to other things. Once you're completed, please let us know by clicking <strong>Complete</strong>.<br />
-Please note, all information is completely optional. However, the program may become selective (we have no good historical data on selectivity for you)&mdash;<em>thus please be thorough in describing best who you are</em>.
+    To complete your application for {{ program.niceName }}, please fill out the following form. While you are working on it, you can <strong>Save Progress</strong> to keep your work while going to other things. Once you're finished, please let us know by clicking <strong>Complete</strong>.
+</p>
 
-<br />
-<br />
-
-That being said, <strong>please ensure all responses contain fewer than 300 words</strong>.
+<p>   
+    Please note that everything on this page is completely optional. However, the program may become selective; please be thorough in describing yourself and addressing your teachers' questions.
 </p>
 
 <h2>Application Form</h2>
+<br />
 
+<div id="program_form">
+<center>
 <form action="{{ request.path }}" method="post" name="application_form">
-<table class="newform" id="appform">
+<table id="appform" width="600">
+{% for form in forms %}
 <tr>
- <th colspan="2" style="text-align: center;">
-    <input type="submit" name="submitform" value="Save Progress" />
-    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-    {% if app.done %}
-    <input type="submit" name="submitform" value="Mark as Unfinished" />
-    {% else %}
-    <input type="submit" name="submitform" value="Complete" />
-    {% endif %}
+ <th colspan="2">
+    {{ form.target.question.question }}
  </th>
 </tr>
- {{form}}
+<tr>
+ <td colspan="2">
+    {% if form.target.question.subject %}This question is being asked by the teachers of {{ form.target.question.subject }}.<br />{% endif %}
+    <b>Directions:</b> {{ form.target.question.directions }}
+ </td>
+</tr>
+{{ form }}
+<tr>
+ <td colspan="2">
+    &nbsp;
+ </td>
+</tr>
+{% endfor %}
 <tr>
  <th colspan="2" style="text-align: center;">
-    <input type="submit" name="submitform" value="Save Progress" />
+    <input class="fancybutton" type="submit" name="submitform" value="Save Progress" />
     &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
     {% if app.done %}
-    <input type="submit" name="submitform" value="Mark as Unfinished" />
+    <input class="fancybutton" type="submit" name="submitform" value="Mark as Unfinished" />
     {% else %}
-    <input type="submit" name="submitform" value="Complete" />
+    <input class="fancybutton" type="submit" name="submitform" value="Complete" />
     {% endif %}
  </th>
 </tr>
 </table>
 </form>
+</center>
+</div>
 
 {% endblock %}

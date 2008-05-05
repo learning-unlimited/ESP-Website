@@ -1106,44 +1106,5 @@ class FinancialAidRequest(models.Model):
     class Admin:
         pass
 
-class JunctionStudentApp(models.Model):
-    """
-    Student applications for Junction.
-    """
-
-    program = models.ForeignKey(Program, editable = False)
-    user    = AjaxForeignKey(User, editable = False)
-    class_prep = models.TextField(verbose_name = 'Your School Preparation',
-                      help_text = "Please describe your high school preparation. List the classes you've taken thus far.",
-                      blank=True,
-                      null=True)
-    
-    ideal_summer = models.TextField(verbose_name = 'My Ideal Summer...',
-                    help_text = 'Please write a short essay describing what your ideal summer would be.',
-                                    blank=True,null=True)
-
-    difficulty = models.TextField(verbose_name='A difficult triumph',
-                      help_text = 'Describe an experience where you had great difficulty in accomplishing something, whether or not it was a success.',
-                      blank=True,
-                      null=True)
-
-    classes = models.TextField(verbose_name='Please describe your understanding of the classes you chose and why you want to take them.',
-                      blank=True,
-                      null=True)
-
-    done = models.BooleanField(default=False,editable = False)
-    teacher_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
-    director_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
-    rejected       = models.BooleanField(default=False,editable=False)
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_junctionstudentapp'    
-
-    def __str__(self):
-        return str(self.user)
-
-    class Admin:
-        pass
-
 from esp.program.models.class_ import *
+from esp.program.models.app_ import *

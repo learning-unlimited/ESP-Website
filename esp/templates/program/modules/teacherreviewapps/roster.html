@@ -42,7 +42,7 @@ Back to teacher reg
 <tr>
   <th>Name</th>
   <th>Grade</th>
-  <th>Time Signed up for your class</th>
+  <th>Time signed up for your class</th>
   <th>Review Date/Time</th>
   <th>Review</th>
 </tr>
@@ -61,8 +61,8 @@ Back to teacher reg
     </td>
     <td>
   {% if student.app_reviewed %}
-    {{ student.app_reviewed.create_ts|date:"M/d/Y @ h:i:s" }}
-    (Score:{{student.app_reviewed.score}})
+    {{ student.app_reviewed.date|date:"M/d/Y @ h:i:s" }}
+    (Score: {{ student.app_reviewed.score }})
   {% else %}
     <strong>Not Reviewed</strong>
   {% endif %}

@@ -34,7 +34,7 @@ from esp.program.modules import module_ext
 from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
 from esp.users.models import ESPUser, UserBit, User
 from esp.web.util        import render_to_response
-from esp.program.models import ClassSubject, JunctionStudentApp, JunctionAppReview
+from esp.program.models import ClassSubject, StudentApplication, JunctionAppReview, StudentAppQuestion, StudentAppResponse, StudentAppReview
 from django.contrib.auth.decorators import login_required
 from esp.datatree.models import DataTree
 from django.http import HttpResponseRedirect
@@ -59,11 +59,14 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
         for student in students:
             student.added_class = student.userbit_set.filter(qsc = cls.anchor)[0].startdate
             try:
-                student.app = student.junctionstudentapp_set.get(program = self.program)
+                student.app = student.studentapplication_set.get(program = self.program)
             except:
                 student.app = None
 
-            reviews = student.junctionappreview_set.filter(cls = cls)
+            if student.app:
+                reviews = student.app.reviews.all()
+            else:
+                reviews = []
 
             if len(reviews) > 0:
                 student.app_reviewed = reviews[0]
@@ -79,12 +82,40 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
                                   {'class': cls,
                                    'students':students})
 
+    @meets_deadline()
+    @needs_teacher
+    def app_questions(self, request, tl, one, two, module, extra, prog):
+        """ Edit the subject-specific questions that students will respond to on
+        their applications. """
+        subjects = self.user.getTaughtClasses(prog)
+        clrmi = module_ext.ClassRegModuleInfo.objects.get(module__program=self.program)
+        question_list = []
+
+        #   Provide forms to modify existing questions, and also blank forms for new questions
+        #   up to the maximum number specified in ClassRegModuleInfo.
+        for s in subjects:
+            existing_questions = StudentAppQuestion.objects.filter(subject=s)
+            question_list += list(existing_questions)
+            if existing_questions.count() < clrmi.num_teacher_questions:
+                for i in range(0, clrmi.num_teacher_questions - existing_questions.count()):
+                    q = StudentAppQuestion(subject=s)
+                    q.save()
+                    question_list.append(q)
         
+        if request.method == 'POST':
+            data = request.POST.copy()
+            for q in question_list:
+                form = q.get_form(data)
+                if form.is_valid():
+                    q.update(form)
+            return self.goToCore(tl)
+            
+        context = {'clrmi': clrmi, 'prog': prog, 'questions': question_list}
+        return render_to_response(self.baseDir()+'questions.html', request, (prog, tl), context)
     
     @meets_deadline()
     @needs_teacher
     def review_student(self, request, tl, one, two, module, extra, prog):
-
         reg_node = request.get_node('V/Flags/Registration/Preliminary')
 
         try:
@@ -104,49 +135,43 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
         except ESPUser.DoesNotExist:
             raise ESPError(False), 'Cannot find student, %s' % student
 
-        if not UserBit.objects.UserHasPerms(user = student,
-                                            qsc  = cls.anchor,
-                                            verb = reg_node):
+        section_anchors = [s.anchor for s in cls.sections.all()]
+        not_registered = True
+        for s in section_anchors:
+            if UserBit.objects.UserHasPerms(user=student, qsc=s, verb=reg_node):
+                not_registered = False
+        if not_registered:
             raise ESPError(False), 'Student not a student of this class.'
 
         try:
-            student.app = student.junctionstudentapp_set.get(program = self.program)
+            student.app = student.studentapplication_set.get(program = self.program)
         except:
             student.app = None
             raise ESPError(False), 'Error: Student did not apply. Student is automatically rejected.'
 
         student.added_class = student.userbit_set.filter(qsc = cls.anchor)[0].startdate
 
-        reviews = student.junctionappreview_set.filter(cls = cls)
-
-        if len(reviews) > 0:
-            student.app_review = reviews[0]
+        reviews = student.app.reviews.all()
+        if reviews.filter(reviewer=self.user).count() > 0:
+            this_review = reviews.filter(reviewer=self.user).order_by('id')[0]
         else:
-            student.app_review = JunctionAppReview(cls=cls,
-                                                   student=student,
-                                                   junctionapp = student.app)
-
-
-        initial = {'rejected': student.app.rejected,
-                   'score':    student.app_review.score}
+            this_review = StudentAppReview(reviewer=self.user)
+            this_review.save()
+            student.app.reviews.add(form.target)
 
         if request.method == 'POST':
-            form = JunctionTeacherReview(request.POST, initial=initial)
-
+            data = request.POST.copy()
+            form = this_review.get_form(data)
             if form.is_valid():
-                student.app.rejected = form.clean_data['rejected']
-                student.app.save()
-                student.app_review.score = form.clean_data['score']
-                student.app_review.save()
-                return HttpResponseRedirect('/teach/%s/review_students/%s/' %\
-                                            (self.program.getUrlBase(),cls.id))
+                form.target.update(form)
         else:
-            form = JunctionTeacherReview(initial=initial)
+            form = this_review.get_form()
 
         return render_to_response(self.baseDir()+'review.html',
                                   request,
                                   (prog, tl),
                                   {'class': cls,
+                                  'program': prog,
                                    'student':student,
                                    'form': form})
 
