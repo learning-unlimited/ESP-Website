@@ -40,6 +40,16 @@ import datetime
 __all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication', 'JunctionStudentApp', 'JunctionAppReview']
 
 class BaseAppElement:
+    """ Base class for models that you would like to generate forms from.
+    Make this a subclass of the model and overload the two attributes:
+    -   _element_name: a slug-like name for the model to differentiate its 
+        form elements from other models
+    -   _field_names: the names of the fields you would like to show up
+        on the forms
+    Call get_form (optionally passing in a dictionary of initial data) to 
+    get a form object from an instance of your model.  Call update (passing
+    in a form that you got from get_form) to save the data from the form
+    to the instance.        """
     _element_name = ''
     _field_names = []
     
@@ -93,7 +103,7 @@ class StudentAppQuestion(BaseAppElement, models.Model):
     program = models.ForeignKey(Program, blank=True, null=True, editable = False)
     subject = models.ForeignKey(ClassSubject, blank=True, null=True, editable = False)
     question = models.TextField(help_text='The prompt that your students will see.')
-    directions = models.CharField(maxlength=256, help_text='Specify any additional notes (such as the length of response you desire) here.', blank=True, null=True)
+    directions = models.TextField(help_text='Specify any additional notes (such as the length of response you desire) here.', blank=True, null=True)
     
     def __str__(self):
         if self.subject is not None:
@@ -174,6 +184,7 @@ class StudentApplication(models.Model):
     
     def __init__(self, *args, **kwargs):
         super(StudentApplication, self).__init__(*args, **kwargs)
+        self.save()
         self.set_questions()
 
     def set_questions(self):
