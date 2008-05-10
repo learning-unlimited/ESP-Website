@@ -57,7 +57,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
         students = cls.students()
 
         for student in students:
-            student.added_class = student.userbit_set.filter(qsc = cls.anchor)[0].startdate
+            student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except:
@@ -149,7 +149,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
             student.app = None
             raise ESPError(False), 'Error: Student did not apply. Student is automatically rejected.'
 
-        student.added_class = student.userbit_set.filter(qsc = cls.anchor)[0].startdate
+        student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
 
         reviews = student.app.reviews.all()
         if reviews.filter(reviewer=self.user).count() > 0:
@@ -157,7 +157,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
         else:
             this_review = StudentAppReview(reviewer=self.user)
             this_review.save()
-            student.app.reviews.add(form.target)
+            student.app.reviews.add(this_review)
 
         if request.method == 'POST':
             data = request.POST.copy()
