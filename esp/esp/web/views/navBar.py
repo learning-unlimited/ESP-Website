@@ -143,7 +143,7 @@ def makeNavBar(user, node, section = ''):
             from esp.db.models import QSplit
             qsdTree = list(NavBarEntry.objects.filter(path = self.node, section__in=sections).order_by('sort_rank')) + list(NavBarEntry.objects.filter(path__parent = self.node, section__in=sections).order_by('sort_rank'))
 
-            if user is None or isinstance(user, AnonymousUser) or user.id is None:
+            if user is None or user.id is None or not user.is_authenticated():
                 has_edit_bits = False
                 qsdTreeList = [ {'entry': x, 'has_bits': False} for x in qsdTree ]
             else:
