@@ -144,7 +144,7 @@ class ProgramModule(models.Model):
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
     program = models.CharField(maxlength=256)
-    year = models.IntegerField()
+    year = models.CharField(maxlength=4)
     date = models.CharField(maxlength=128)
     category = models.CharField(maxlength=16)
     teacher = models.CharField(maxlength=1024)
@@ -641,7 +641,7 @@ class Program(models.Model):
         #   Filters down the floating resources to those that are not taken.
         return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot))
 
-    def getDurations(self, round=True):
+    def getDurations(self, round=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
         from esp.program.modules.module_ext import ClassRegModuleInfo
         
