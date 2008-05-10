@@ -33,6 +33,9 @@
     button at the bottom of the page. -->
     </p>
 
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentregheader" %}
+
     <center>
     <!--
     {% if not completedAll %}
