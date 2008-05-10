@@ -167,11 +167,13 @@ class ClassSection(models.Model):
     #   Some properties for traits that are actually traits of the ClassSubjects.
     def _get_parent_class(self):
         """ The many-to-many field should have only one ClassSubject per ClassSection. """
-        if self.cache['parent_class'] is not None:
-            return self.cache['parent_class']
+        cached_value = self.cache['parent_class']
+        if cached_value is not None:
+            return cached_value
         else:
-            self.cache['parent_class'] = ClassSubject.objects.get(sections=self)
-            return self.cache['parent_class']
+            fresh_value = ClassSubject.objects.get(sections=self)
+            self.cache['parent_class'] = fresh_value
+            return fresh_value
     parent_class = property(_get_parent_class)
     
     def _get_parent_program(self):
