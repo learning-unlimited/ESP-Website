@@ -263,9 +263,11 @@ class IsLessThanOtherField(object):
         self.other, self.error_message = other_field_name, error_message
 
     def __call__(self, field_data, all_data):
-        if float(field_data) > float(all_data[self.other]):
-            raise validators.ValidationError, self.error_message
-
+        try:
+            if float(field_data) > float(all_data[self.other]):
+                raise validators.ValidationError, self.error_message
+        except ValueError:
+            raise validators.ValidationError, "An error occurred checking this field against another field."
 
 class isClassSlugUnique(object):
     def __init__(self, program):
