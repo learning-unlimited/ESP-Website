@@ -475,9 +475,12 @@ class Program(models.Model):
         v = GetNode('V/Flags/Public')
         userbits = UserBit.objects.filter(verb = v, user = espuser,
                          qsc = self.anchor.tree_create(['Confirmation']))
+
+        userbits = userbits.filter(Q(enddate__isnull=True) | Q(enddate__gte=datetime.now()))
+
         if len(userbits) < 1:
             return False
-
+        
         return True
     
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
