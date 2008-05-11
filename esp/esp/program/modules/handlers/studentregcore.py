@@ -38,6 +38,7 @@ from esp.middleware   import ESPError
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItemType, EmptyTransactionException
 from decimal import Decimal
+from datetime import datetime
 
 import operator
 
@@ -119,8 +120,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context = module.prepare(context)
 	
 	if completedAll:
-            bit, created = UserBit.objects.get_or_create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
-            if bit.enddate != None:
+            bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
+            if bits.count() == 0:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
             raise ESPError(), "You must finish all the necessary steps first, then click on the Save button to finish registration."

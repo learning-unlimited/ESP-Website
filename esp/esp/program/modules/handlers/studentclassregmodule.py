@@ -159,6 +159,7 @@ class StudentClassRegModule(ProgramModuleObj):
         blocked_class = None
         cannotadd_error = ''
         for implication in ClassImplication.objects.filter(cls=cobj, parent__isnull=True):
+#            break;
             if implication.fails_implication(self.user):
                 for cls in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     #   Override size limits on subprogram classes (checkFull=False). -Michael P
@@ -185,6 +186,10 @@ class StudentClassRegModule(ProgramModuleObj):
         if error and not self.user.onsite_local:
             raise ESPError(False), error
         if section.preregister_student(self.user, self.user.onsite_local):
+            bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
+            if bits.count() == 0:
+                bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+
             return self.goToCore(tl) # go to the core view.
         else:
             raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'
@@ -348,17 +353,23 @@ class StudentClassRegModule(ProgramModuleObj):
 	v_registered = request.get_node('V/Flags/Registration/Preliminary')
 	v_auto = request.get_node('V/Flags/Registration/Preliminary/Automatic')
         
-        classes = self.user.getEnrolledClasses()
-        class_ids = [c.id for c in classes]
-        for cls in classes:
+        oldclasses = ClassSection.objects.filter(meeting_times=extra,
+                             classsubject__parent_program = self.program,
+                             anchor__userbit_qsc__verb = v_registered,
+                             anchor__userbit_qsc__user = self.user).distinct()
+        #classes = self.user.getEnrolledClasses()
+        class_ids = [c.id for c in oldclasses]
+        for cls in oldclasses:
             # Make sure deletion doesn't violate any class implications before proceeding
             for implication in ClassImplication.objects.filter(cls__in=class_ids, enforce=True, parent__isnull=True):
+#                break;
                 if implication.fails_implication(self.user, without_classes=set([cls.id])):
                     raise ESPError(False), 'This class is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url, implication.cls.parent_program.niceName())
             cls.unpreregister_student(self.user)
             
             # Undo auto-registrations of sections
             for implication in ClassImplication.objects.filter(cls=cls, enforce=True):
+#                break;
                 for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     if UserBit.objects.UserHasPerms(request.user, auto_class.anchor, v_auto):
                         auto_class.unpreregister_student(self.user)
@@ -380,6 +391,7 @@ class StudentClassRegModule(ProgramModuleObj):
         broken_implications = False
         already_enrolled = [c.id for c in self.user.getEnrolledClasses()]
         for implication in ClassImplication.objects.filter(cls__in=already_enrolled, enforce=True, parent__isnull=True):
+#            break;
             if implication.fails_implication(self.user):
                 broken_implications = True
         
@@ -425,6 +437,7 @@ class StudentClassRegModule(ProgramModuleObj):
         if not broken_implications:
             already_enrolled = [c.id for c in self.user.getEnrolledClasses()]
             for implication in ClassImplication.objects.filter(cls__in=already_enrolled, enforce=True, parent__isnull=True):
+#                break;
                 if implication.fails_implication(self.user):
                     newclass.unpreregister_student(self.user)
                     oldclass.preregister_student(self.user, overridefull=True, automatic=automatic)

@@ -64,7 +64,7 @@
     {% else %}
         {{ module.makeLink }}
     {% endif %}
-    {% if not module.module.required %} <em>(not required)</em> {% endif %}
+    {% if not module.module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
     </td>
     <td>{% if not module.useTemplate %}
     <a href="{{ module.get_full_path }}">
