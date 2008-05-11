@@ -120,6 +120,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 	
 	if completedAll:
             bit, created = UserBit.objects.get_or_create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+            if bit.enddate != None:
+                bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
             raise ESPError(), "You must finish all the necessary steps first, then click on the Save button to finish registration."
             
