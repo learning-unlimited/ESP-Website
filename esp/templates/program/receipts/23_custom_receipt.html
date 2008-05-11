@@ -25,6 +25,7 @@ We would like you to have a good idea of what you can expect from us and what we
 <ul>
 <li>Completed and signed <a href="http://esp.mit.edu/media/uploaded/08_02/hssp_liability_medical.pdf">HSSP liability and medical forms</a>
 <li>Signed <a href="http://esp.mit.edu/media/uploaded/08_02/student_agreement_sp08.pdf">student agreement</a>
+{% if owe_money %}<li>${{ balance|floatformat:2 }} check for "MIT ESP"{% endif %}
 </ul>
 </p>
 
@@ -38,6 +39,14 @@ User Information: <br />
 <li>User ID: {{ request.user.id }}</li>
 </ul>
 </p>
+
+<h3>Itemized Receipt</h3>
+<table>
+{% for payment in itemizedcosts %}
+<tr><td>{{ payment.text }}</td><td>{% if payment.transaction.complete %}PAID: {% endif %}${{ payment.negative_amount|floatformat:2 }}</td></tr>
+{% endfor %}
+<tr><td align="right"><b>Balance (amount still owed):</b></td><td>${{ balance|floatformat:2 }}</td></tr>
+</table>
 
 <br />
 <br />
