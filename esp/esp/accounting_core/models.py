@@ -60,6 +60,9 @@ class LineItemType(models.Model):
     finaid_amount = models.FloatField(max_digits=9, decimal_places=2, default=0.0) # amount after financial aid
     finaid_anchor = AjaxForeignKey(DataTree,null=True,related_name='accounting_finaiditemtype')
     
+    def negative_amount(self):
+        return -self.amount
+
     objects = LineItemTypeManager()
     
     def __str__(self):
@@ -80,6 +83,9 @@ class Balance(models.Model):
     timestamp = models.DateTimeField()
     amount = models.FloatField(max_digits=16, decimal_places=2)
     past = models.ForeignKey('self', null=True)
+
+    def negative_amount(self):
+        return -self.amount
 
     def __unicode__(self):
         return u'Balance for %s in %s as of %s: %14.02f' % (self.user, str(self.anchor), str(self.timestamp), self.amount)
@@ -251,6 +257,9 @@ class LineItem(models.Model):
     posted_to = models.ForeignKey(Balance, null=True)
     
     objects = LineItemManager()
+
+    def negative_amount(self):
+        return -(self.amount)
 
     def __str__(self):
         return "L-%u (T-%u): %.02f %s - %s, %s" % (self.id, self.transaction.id, self.amount, self.anchor.uri, self.user.username, self.text)

@@ -47,7 +47,7 @@
     <td>{{ f.form.cost }}</td>
 {% if select_qty %}    <td>{{ f.form.count }}</td>{% endif %}
     <td>{{ f.LineItem.text }} </td>
-    <td><i>${{ f.LineItem.amount|floatformat:2 }}</i></td>
+    <td><i>${{ f.LineItem.negative_amount|floatformat:2 }}</i></td>
 </tr>
 {% endfor %}
 <tr>
