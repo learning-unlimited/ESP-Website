@@ -1068,6 +1068,19 @@ class ClassSubject(models.Model):
                                verb = v).delete()
         return True
 
+    def conflicts(self, teacher):
+        from esp.users.models import ESPUser
+        user = ESPUser(teacher)
+        if user.getTaughtClasses().count() == 0:
+            return False
+        
+        for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
+            for section in cls.sections.all():
+                for time in section.meeting_times.all():
+                    for sec in self.sections.all():
+                        if sec.meeting_times.filter(id = time.id).count() > 0:
+                            return True
+
     def isAccepted(self):
         return self.status == 10
 
