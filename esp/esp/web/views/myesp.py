@@ -151,7 +151,7 @@ def myesp_home(request, module):
 	curUser = request.user
 	sub = GetNode('V/Subscribe')
 	ann = Entry.find_posts_by_perms(curUser, sub)
-	ann = [x.html() for x in ann]
+	ann = [x.html() for x in ann if x.highlight_expire == None or x.highlight_expire >= datetime.datetime.now()] # make only non-expired announcements appear
 	return render_to_response('display/battlescreen', request, GetNode('Q/Web/myesp'), {'announcements': ann})
 
 #	Format for battlescreens 			Michael P
