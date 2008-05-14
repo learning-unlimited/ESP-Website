@@ -67,7 +67,7 @@ class AnnouncementLink(models.Model):
             return UserBit.find_by_anchor_perms(AnnouncementLink,user,verb,qsc=qsc)
 
     def html(self):
-        return '<a href="%s">%s</a>' % (self.href, self.title)
+        return '<p><a href="%s">%s</a></p>' % (self.href, self.title)
 
     class Admin:
         pass
