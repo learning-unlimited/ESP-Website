@@ -58,6 +58,17 @@ class AnnouncementLink(models.Model):
     def makeTitle(self):
         return self.title
 
+    @staticmethod
+    def find_posts_by_perms(user, verb, qsc=None):
+        """ Fetch a list of relevant posts for a given user and verb """
+        if qsc==None:
+            return UserBit.find_by_anchor_perms(AnnouncementLink,user,verb)
+        else:
+            return UserBit.find_by_anchor_perms(AnnouncementLink,user,verb,qsc=qsc)
+
+    def html(self):
+        return '<a href="%s">%s</a>' % (self.href, self.title)
+
     class Admin:
         pass
 

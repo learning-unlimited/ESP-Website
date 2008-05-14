@@ -35,7 +35,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
 from esp.program.models import RegistrationProfile
 from esp.datatree.models import GetNode
-from esp.miniblog.models import Entry
+from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog, create_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSection, ClassSubject, ClassCategories
 from esp.dbmail.models import MessageRequest
@@ -51,6 +51,7 @@ from esp.users.manipulators import UserRegManipulator, UserPasswdManipulator, Us
 from esp.web.util.main import render_to_response
 from django import forms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
+from esp.db.models import Q
 
 
 
@@ -150,8 +151,11 @@ def myesp_home(request, module):
 	""" Draw the ESP home page """
 	curUser = request.user
 	sub = GetNode('V/Subscribe')
-	ann = Entry.find_posts_by_perms(curUser, sub)
-	ann = [x.html() for x in ann if x.highlight_expire == None or x.highlight_expire >= datetime.datetime.now()] # make only non-expired announcements appear
+	entries = Entry.find_posts_by_perms(curUser, sub)
+	annlinks = AnnouncementLink.find_posts_by_perms(curUser, sub)
+	entries = [x.html() for x in entries.filter(Q(highlight_expire__isnull=True) | Q(highlight_expire__gte=datetime.datetime.now()))]
+	annlinks = [x.html() for x in annlinks.filter(Q(highlight_expire__isnull=True) | Q(highlight_expire__gte=datetime.datetime.now()))]
+	ann = entries + annlinks
 	return render_to_response('display/battlescreen', request, GetNode('Q/Web/myesp'), {'announcements': ann})
 
 #	Format for battlescreens 			Michael P
