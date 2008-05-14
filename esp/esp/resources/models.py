@@ -134,7 +134,7 @@ class Resource(models.Model):
     name = models.CharField(maxlength=80)
     res_type = models.ForeignKey(ResourceType)
     num_students = models.IntegerField(blank=True, default=-1)
-    group_id = models.IntegerField(default=-1)
+    group_id = models.IntegerField(default=-1) # Default value of -1 means ungrouped, or at least so I'm assuming for now in grouped_resources(). -ageng 2008-05-13
     is_unique = models.BooleanField(default=False, null=True)
     user = AjaxForeignKey(User, null=True, blank=True)
     event = models.ForeignKey(Event)
@@ -188,6 +188,8 @@ class Resource(models.Model):
         return result
     
     def grouped_resources(self):
+        if self.group_id == -1:
+            return Resource.objects.filter(id=self.id)
         return Resource.objects.filter(group_id=self.group_id)
     
     def associated_resources(self):
@@ -260,11 +262,11 @@ class Resource(models.Model):
                 if len(asl) == 0:
                     sequence.append('Empty')
                 elif len(asl) == 1:
-                    sequence.append(asl[0].target.emailcode())
+                    sequence.append(asl[0].getTargetOrSubject().emailcode())
                 else:
                     init_str = 'Conflict: '
                     for ra in asl:
-                        init_str += ra.target.emailcode() + ' '
+                        init_str += ra.getTargetOrSubject().emailcode() + ' '
                     sequence.append(init_str)
             else:
                 sequence.append('N/A')
@@ -328,7 +330,13 @@ class ResourceAssignment(models.Model):
     target_subj = models.ForeignKey(ClassSubject, null=True)
     
     def __str__(self):
-        return 'Resource assignment for %s' % str(self.target)
+        return 'Resource assignment for %s' % str(self.getTargetOrSubject())
+    
+    def getTargetOrSubject(self):
+        """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """
+        if self.target is not None:
+            return self.target
+        return self.target_subj
     
     def resources(self):
         return Resource.objects.filter(group_id=self.resource.group_id)
