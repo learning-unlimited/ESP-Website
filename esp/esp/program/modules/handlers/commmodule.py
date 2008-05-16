@@ -40,7 +40,7 @@ from esp.db.models      import Q, QNot
 from django.template.defaultfilters import urlencode
 from django.template import Context, Template
 from esp.miniblog.models import Entry
-
+from esp.middleware import ESPError
 
 class CommModule(ProgramModuleObj):
     """ Want to email all ESP students within a 60 mile radius of NYC?
@@ -61,6 +61,41 @@ class CommModule(ProgramModuleObj):
 	return satPrep.id is not None
 
     @needs_admin
+    def commprev(self, request, tl, one, two, module, extra, prog):
+        from esp.users.models import PersistentQueryFilter
+
+        filterid, listcount, subject, body = [request.POST['filterid'],
+                                              request.POST['listcount'],
+                                              request.POST['subject'],
+                                              request.POST['body']    ]
+
+        if request.POST.has_key('from') and \
+           len(request.POST['from'].strip()) > 0:
+            fromemail = request.POST['from']
+        else:
+            fromemail = self.user.email
+
+        userlist = PersistentQueryFilter.getFilterFromID(filterid, User).getList(User)
+
+        try:
+            firstuser = userlist[0]
+        except:
+            raise ESPError(), "You seem to be trying to email 0 people!  Please go back, edit your search, and try again."
+
+        htmlbody = body.replace('\n', '<br />')
+        renderedtext = Template(htmlbody).render({'user': firstuser, 'program': self.program})
+
+        return render_to_response(self.baseDir()+'preview.html', request,
+                                  (prog, tl), {'filterid': filterid,
+                                               'listcount': listcount,
+                                               'subject': subject,
+                                               'from': fromemail,
+                                               'body': body,
+                                               'renderedtext': renderedtext})
+
+
+
+    @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
@@ -75,7 +110,7 @@ class CommModule(ProgramModuleObj):
            len(request.POST['from'].strip()) > 0:
             fromemail = request.POST['from']
         else:
-            fromemail = None
+            fromemail = self.user.email
 
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, User)
 
@@ -129,9 +164,25 @@ class CommModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                   (prog, tl), {'listcount': listcount,
-                                               'filterid' : filterObj.id})
+                                               'filterid': filterObj.id })
 
         #getFilterFromID(id, model)
+
+    @needs_admin
+    def maincomm2(self, request, tl, one, two, module, extra, prog):
+
+        filterid, listcount, fromemail, subject, body = [request.POST['filterid'],
+                                                         request.POST['listcount'],
+                                                         request.POST['from'],
+                                                         request.POST['subject'],
+                                                         request.POST['body']    ]
+
+        return render_to_response(self.baseDir()+'step2.html', request,
+                                  (prog, tl), {'listcount': listcount,
+                                               'filterid': filterid,
+                                               'from': fromemail,
+                                               'subject': subject,
+                                               'body': body})
 
     @needs_student
     def satprepinfo(self, request, tl, one, two, module, extra, prog):

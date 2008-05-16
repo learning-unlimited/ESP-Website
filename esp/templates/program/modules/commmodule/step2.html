@@ -38,7 +38,7 @@ There are <strong>{{listcount}}</strong> distinct users in your query. If you fe
 Please write your email/message now. Note that you can use <tt>{{ parameter }}</tt> to enter a parameter
 into the text of the message&mdash;the parameters are listed below.
 
-<form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="comm2">
+<form action="/manage/{{program.getUrlBase}}/commprev" method="post" name="comm2">
 <table border="0" cellspacing="0" width="100%">
 <tr>
   <td>
@@ -46,17 +46,17 @@ into the text of the message&mdash;the parameters are listed below.
   <strong>From Email:</strong><br />
   <small>(If blank: your email)</small>
   </label>
-  <input type="text" size="20" name="from" id="from" />
+  <input type="text" size="20" name="from" id="from" value="{{from}}" />
   <br />
   <label for="subject">
   <strong>Subject:</strong>
   </label>
-  <input type="text" size="30" name="subject" id="subject" />
+  <input type="text" size="30" name="subject" id="subject" value="{{subject}}" />
   <br /><br />
   <label for="body">
   <strong>Body:</strong>
   </label> <br />
-  <textarea cols="80" rows="20" name="body" id="body"></textarea>
+  <textarea cols="80" rows="20" name="body" id="body">{{body}}</textarea>
   <br />
 
   </td>
@@ -137,7 +137,8 @@ into the text of the message&mdash;the parameters are listed below.
 </tr>
 </table>
 
-<input type="submit" value="Send Message!" name="submitform" />
+<input type="submit" value="Go To Preview" name="submitform" />
+<input type="hidden" name="listcount" value="{{listcount}}" />
 <input type="hidden" name="filterid" value="{{filterid}}" />
 </form>
 {% endblock %}
