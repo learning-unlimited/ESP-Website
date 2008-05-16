@@ -5,7 +5,7 @@
 <tr>
     <td width="35%" valign="top"><b>{{ name }}</b></td>
     <td>
-        {% templatetag openvariable %} lst|favorite_classes:20 {% templatetag closevariable %}
+        {% templatetag openvariable %} lst|unpack_answers|favorite_classes:20 {% templatetag closevariable %}
     </td>
 </tr>
 </table>

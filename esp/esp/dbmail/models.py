@@ -346,7 +346,7 @@ class EmailRequest(models.Model):
     """ Each e-mail is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
     target = AjaxForeignKey(User)
     msgreq = models.ForeignKey(MessageRequest)
-    textofemail = models.ForeignKey(TextOfEmail, blank=True, null=True)
+    textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)
 
     def __str__(self):
         return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'

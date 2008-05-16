@@ -57,6 +57,11 @@ def uselist(input_str, lst):
     return t.render(c)
 
 @register.filter
+def unpack_answers(lst):
+    # Pulls out actual, unpickled answers from a list of Answer objects
+    return [x.answer for x in lst]
+
+@register.filter
 def tally(lst):
     #   Takes a list and returns a dictionary of entry: frequency
     d = {}
@@ -97,10 +102,22 @@ def stripempty(lst):
 def makelist(lst):
     #   Because I can't understand Django's built-in unordered_list -ageng
     if len(lst) == 0:
+        return 'No responses'
+    result = '<ul>\n'
+    for item in lst:
+        result += '<li>' + str(item) + '</li>' + '\n'
+    return result + '</ul>\n'
+
+@register.filter
+def list_answers(lst):
+    #   Takes a list of Answer objects and makes an unordered list, with special links!
+    newlist = [ item for item in lst if len(str(item.answer).strip()) > 0 ]
+
+    if len(newlist) == 0:
         return "No responses"
     result = ""
-    for item in lst:
-        result += "<li>" + str(item) + "</li>" + '\n'
+    for item in newlist:
+        result += '<li>' + str(item.answer) + '<a href="review_single?' + str(item.survey_response.id) + '" title="View this person&quot;s other responses">&raquo;</a></li>' + '\n'
     return result
 
 @register.filter
@@ -226,9 +243,30 @@ def histogram(answer_list, format='html'):
     if format == 'tex':
         return '\includegraphics[width=%fin]{%s}' % (image_width, file_name)
     elif format == 'html':
-        os.system('gs -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s%s.png %s' % (HISTOGRAM_DIR, file_base, file_name))
+        os.system('gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s%s.png %s' % (HISTOGRAM_DIR, file_base, file_name))
         return '<img src="%s.png" />' % ('/media/' + HISTOGRAM_PATH + file_base)
     
+@register.filter
+def list_classes(ans):
+    # If the answer is a list of classes, render a shiny list of their titles.
+    # If the answer is an ordinary list, prettify the list.
+    # Otherwise just spit the answer back out.
+    # Kind of inelegant, but I didn't want to make yet another set of templates.
+    if not isinstance(ans, list):
+        return ans
+    newlist = []
+    for key in ans:
+        try:
+            intkey = int(key)
+        except ValueError:
+            return makelist( ans ) # If we get a non-integer answer, quit early.
+        q = ClassSubject.objects.filter(id=intkey)
+        if q.count() == 1:
+            newlist.extend( [ c.emailcode() + ': ' + c.title() for c in q ] )
+        else:
+            newlist.append( key ) # If no class matches, spit out the raw answer.
+    return makelist( newlist )
+
 @register.filter
 def favorite_classes(answer_list, limit):
     result_header = '<ol>\n'
@@ -251,7 +289,7 @@ def favorite_classes(answer_list, limit):
     max_count = min(limit, len(key_list))
    
     for key in key_list[:max_count]:
-        cl = Class.objects.filter(id=key)
+        cl = ClassSubject.objects.filter(id=key)
         if cl.count() == 1:
             result_body += '<li>%s: %s (%d votes)\n' % (cl[0].emailcode(), cl[0].title(), class_dict[key])
 

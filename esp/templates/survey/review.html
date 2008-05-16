@@ -38,7 +38,7 @@
             <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
             <td>
                 {% if not q.answers|length_is:0 %}
-                    {{ q.answers|histogram:"html" }} 
+                    {{ q.answers|unpack_answers|histogram:"html" }} 
                 {% else %} 
                     There are no responses to this question.
                 {% endif %}
@@ -46,10 +46,10 @@
             <td>
                 <b>Statistics:</b>
                 <ul>
-                    <li>Number of responses: {{ q.answers|length }}/{{ s.num_participants }}
+                    <li>Number of responses: {{ q.answers|length }}/{{ s.num_participants }}</li>
                     {% if q.question.question_type.is_numeric %}
-                    <li>Average: {{ q.answers|average }}
-                    <li>Std. deviation: {{ q.answers|stdev }}
+                    <li>Average: {{ q.answers|unpack_answers|average }}</li>
+                    <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
                     {% endif %}
                 </ul>
             </td>
@@ -69,13 +69,13 @@
     </tr>
     </table>
     {% for q in c.questions %}
-        {% if q.question.question_type.is_numeric %}
+        {% if q.question.question_type.is_countable %}
         <table width="600">
         <tr>
             <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
             <td>
                 {% if not q.answers|length_is:0 %}
-                    {{ q.answers|histogram:"html" }} 
+                    {{ q.answers|unpack_answers|histogram:"html" }} 
                 {% else %} 
                     There are no responses to this question.
                 {% endif %}
@@ -83,10 +83,12 @@
             <td>
                 <b>Statistics:</b>
                 <ul>
-                    <li>Number of responses: {{ q.answers|length }}/{{ c.class.num_students }}
-                    <li>Average: {{ q.answers|average }}
-                    <li>Std. deviation: {{ q.answers|stdev }}
-                    <li>Average for all classes: {{ q.question.global_average }}
+                    <li>Number of responses: {{ q.answers|length }}/{{ c.class.num_students }}</li>
+                    {% if q.question.question_type.is_numeric %}
+                    <li>Average: {{ q.answers|unpack_answers|average }}</li>
+                    <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
+                    <li>Average for all classes: {{ q.question.global_average }}</li>
+                    {% endif %}
                 </ul>
             </td>
         </tr>

@@ -126,6 +126,15 @@ def get_survey_info(request, tl, program, instance):
     elif (tl == 'manage' and user.isAdmin(prog.anchor)):
         #   Meerp, no problem... I took care of it.   -Michael
         surveys = prog.getSurveys().select_related()
+        if request.REQUEST.has_key('teacher_id'):
+            t_id = int( request.REQUEST['teacher_id'] )
+            teachers = ESPUser.objects.filter(id=t_id)
+            if len(teachers) > 0:
+                user = teachers[0]
+                if user.isTeacher():
+                    surveys = prog.getSurveys().filter(category = 'learn').select_related()
+                else:
+                    user = ESPUser(request.user)
     else:
         raise ESPError(False), 'You need to be a teacher or administrator of this program to review survey responses.'
     
@@ -146,20 +155,20 @@ def display_survey(user, prog, surveys, request, tl, format):
     """ Wrapper doing the necessary work for the survey output. """
     perclass_data = []
     
-    if tl == 'teach':
+    if tl == 'teach' or ( tl == 'manage' and user.id is not request.user.id ):
         #   In the teach category, show only class-specific questions
         classes = user.getTaughtClasses(prog)
         perclass_questions = surveys[0].questions.filter(anchor__name="Classes", anchor__parent = prog.anchor).order_by('seq')
-        perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': [ x.answer for x in Answer.objects.filter(anchor=x.anchor, question=y) ] } for y in perclass_questions ] } for x in classes ]
+        perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': Answer.objects.filter(anchor=x.anchor, question=y) } for y in perclass_questions ] } for x in classes ]
         surveys = []
     elif tl == 'manage':
         #   In the manage category, pack the data in as extra attributes to the surveys
         surveys = list(surveys)
         for s in surveys:
             questions = s.questions.filter(anchor = prog.anchor).order_by('seq')
-            s.display_data = {'questions': [ { 'question': y, 'answers': [ x.answer for x in Answer.objects.filter(question=y) ] } for y in questions ]}
+            s.display_data = {'questions': [ { 'question': y, 'answers': Answer.objects.filter(question=y) } for y in questions ]}
             questions2 = s.questions.filter(anchor__parent = prog.anchor, question_type__is_numeric = True).order_by('seq')
-            s.display_data['questions'].extend([{ 'question': y, 'answers': [ x.answer for x in Answer.objects.filter(question=y) ] } for y in questions2])
+            s.display_data['questions'].extend([{ 'question': y, 'answers': Answer.objects.filter(question=y) } for y in questions2])
             
     #   Prune blank answers to textual questions
     for dict in perclass_data:
@@ -187,6 +196,32 @@ def survey_graphical(request, tl, program, instance):
     
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return display_survey(user, prog, surveys, request, tl,'tex')
+
+@login_required
+def survey_review_single(request, tl, program, instance):
+    """ View a single survey response. """
+    try:
+        prog = Program.by_prog_inst(program, instance)
+    except Program.DoesNotExist:
+        raise Http404
+    
+    user = ESPUser(request.user)
+    
+    if not (tl == 'manage' and user.isAdmin(prog.anchor)):
+        raise ESPError(False), 'You need to be an administrator of this program to review survey responses individually.'
+    
+    survey_response = None
+    ints = request.REQUEST.items()
+    if len(ints) == 1:
+        srs = SurveyResponse.objects.filter(id=ints[0][0])
+        if len(srs) == 1:
+            survey_response = srs[0]
+    if survey_response is None:
+        raise ESPError(False), 'Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.'
+    
+    context = {'user': user, 'program': prog, 'response': survey_response, 'answers': survey_response.answers.order_by('anchor', 'question') }
+    
+    return render_to_response('survey/review_single.html', request, prog.anchor, context)
 
 # To be replaced with something more useful, eventually.
 @login_required
