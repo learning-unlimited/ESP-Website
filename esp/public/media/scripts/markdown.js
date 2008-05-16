@@ -78,6 +78,9 @@ function addWikiFormattingToolbar(jq) {
   addButton("latex_math", "LaTeX Math Symbols", function() {
       encloseSelection("$$ ", " $$");
   });
+  addButton("upload", "Link to uploaded file", function() {
+      encloseSelection("[link](qsdmedia/", ")");
+  });
   
 //  textarea.parentNode.insertBefore(toolbar, textarea);
 }
