@@ -162,7 +162,7 @@ class SchedulingModule(ProgramModuleObj):
             if request.POST.has_key('sure') and request.POST['sure'] == 'True':
                 
                 #   Find all teachers who have not indicated their availability and do it for them.
-                unavailable_teachers = User.objects.filter(teacher_dict['class_approved']).exclude(teacher_dict['availability']).distinct()
+                unavailable_teachers = User.objects.filter(teacher_dict['class_approved'] | teacher_dict['class_proposed']).exclude(teacher_dict['availability']).distinct()
                 for t in unavailable_teachers:
                     teacher = ESPUser(t)
                     for ts in prog.getTimeSlots():
