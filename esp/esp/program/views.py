@@ -48,6 +48,7 @@ from esp.program.modules.base import needs_admin
 from esp.program.forms import ProgramCreationForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
+from esp.middleware import ESPError
 
 @login_required
 def updateClass(request, id):
@@ -55,7 +56,7 @@ def updateClass(request, id):
     try:
         manipulator = Class.ChangeManipulator(id)
     except Class.DoesNotExist:
-        raise Http404
+	raise Http404
 
     curUser = ESPUser(request.user)
     if not curUser.canEdit(Class.objects.get(id=id)):
@@ -142,6 +143,15 @@ def classTemplateEditor(request, program, session):
 @login_required
 def managepage(request, page):
     if page == 'newprogram':
+
+        template_prog = None
+
+	if 'template_prog' in request.GET:
+            try:
+                template_prog = Program.objects.get(id=int(request.GET["template_prog"])).__dict__
+                del template_prog["id"]
+            except:
+                raise ESPError(), "Error: Unknown default program ID '%s'" & request.GET["template_prog"]
     
         if 'checked' in request.GET:
             new_prog = Program(anchor=request.session['prog_form'].clean_data['anchor'])
@@ -171,9 +181,12 @@ def managepage(request, page):
                 
         else:
             #   Otherwise, the default view is a blank form.
-            form = ProgramCreationForm()
-        
-        return render_to_response('program/newprogram.html', request, request.get_node('Q/Programs/'), {'form': form})
+            if template_prog:
+                form = ProgramCreationForm(template_prog)
+            else:
+                form = ProgramCreationForm()
+
+        return render_to_response('program/newprogram.html', request, request.get_node('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('id')})
         
     if page == 'submit_transaction':
         #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction

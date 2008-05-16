@@ -47,10 +47,10 @@ LATEX_BG      = 'Transparent' #'white'
 mimes         = {'gif': 'image/gif',
                  'png': 'image/png'}
 
-commands = {'latex'  : 'openin_any=p latex',
-            'dvips'  : 'dvips',
-            'convert': 'convert',
-            'dvipng' : 'dvipng'}
+commands = {'latex'  : '/usr/texbin/latex',
+            'dvips'  : '/usr/texbin/dvips',
+            'convert': '/sw/bin/convert',
+            'dvipng' : '/usr/texbin/dvipng'}
 
 TMP      = '/tmp'
 

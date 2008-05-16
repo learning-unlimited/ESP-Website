@@ -69,13 +69,14 @@ class UserRegForm(forms.Form):
         # aseering 9/10/2007 -- Oh, MX records; yeah...
         #socket.gethostbyname(email_host)
 
-        import DNS
-        DNS.ParseResolvConf() # May or may not work on systems without a resolv.conf file
-        r = DNS.Request(qtype='mx')
-        res = r.req(email_host)
-
-        if len(res.answers) == 0:
-            raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
+	# -- aseering 3/5/2008: This copy of the site has to work offline; we can't resolve DNS stuffs
+        #import DNS
+        #DNS.ParseResolvConf() # May or may not work on systems without a resolv.conf file
+        #r = DNS.Request(qtype='mx')
+        #res = r.req(email_host)
+	#
+        #if len(res.answers) == 0:
+        #    raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
 
         return email
 

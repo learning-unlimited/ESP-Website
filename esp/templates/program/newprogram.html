@@ -33,6 +33,15 @@ Please enter the date ranges (bottom 3 rows) in one of the following formats:
 </ul>
 </p>
 
+<p>
+Use a past program as a template:
+<select name="program_choose" id="id_program_choose" onchange="window.location='?template_prog='+document.getElementById('id_program_choose').value">
+{% for program in programs %}
+<option value="{{ program.id }}">{{ program.niceName }}</option>
+{% endfor %}
+</select>
+</p>
+
 <div id="alumni_form">
   <form action="{{ request.path }}" method="post">
   <table class="contact" align="center" width="550">
