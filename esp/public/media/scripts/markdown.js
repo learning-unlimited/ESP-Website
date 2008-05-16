@@ -79,7 +79,10 @@ function addWikiFormattingToolbar(jq) {
       encloseSelection("$$ ", " $$");
   });
   addButton("upload", "Link to uploaded file", function() {
-      encloseSelection("[link](qsdmedia/", ")");
+      encloseSelection("[link](qsdmedia/", "file.ext)");
+  });
+  addButton("image", "![Alt text](qsdmedia/img.jpg)", function() {
+      encloseSelection("![Alt text](qsdmedia/", "img.ext)");
   });
   
 //  textarea.parentNode.insertBefore(toolbar, textarea);
