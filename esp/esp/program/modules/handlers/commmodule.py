@@ -75,6 +75,11 @@ class CommModule(ProgramModuleObj):
         else:
             fromemail = self.user.email
 
+        try:
+            filterid = int(filterid)
+        except:
+            raise ESPError(), "Corrupted POST data!  Please contact us at esp-webmasters@mit.edu and tell us how you got this error, and we'll look into it."
+
         userlist = PersistentQueryFilter.getFilterFromID(filterid, User).getList(User)
 
         try:
@@ -111,6 +116,11 @@ class CommModule(ProgramModuleObj):
             fromemail = request.POST['from']
         else:
             fromemail = self.user.email
+
+        try:
+            filterid = int(filterid)
+        except:
+            raise ESPError(), "Corrupted POST data!  Please contact us at esp-webmasters@mit.edu and tell us how you got this error, and we'll look into it."
 
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, User)
 
