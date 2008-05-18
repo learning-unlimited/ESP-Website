@@ -159,7 +159,7 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
         new_ub = UserBit()
         new_ub.verb = DataTree.get_by_uri(tup[0], create=True)
         new_ub.qsc = prog.anchor
-        new_ub.recursive = False
+        new_ub.recursive = True
         new_ub.startdate = tup[2]
         new_ub.enddate = tup[3]
         if (tup[1] is None) or (tup[1] == 0) or (tup[1] == '(all)'):
