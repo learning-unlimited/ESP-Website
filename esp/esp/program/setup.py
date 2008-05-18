@@ -29,9 +29,10 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.datatree.models import GetNode, DataTree
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser, User, UserBit
 from esp.program.Lists_ClassCategories import populate as populate_LCC
 from esp.program.models import Program, ProgramModule
+from esp.accounting_core.models import LineItemType
 #    from esp.program.Lists_EquipmentTypes import populate as populate_LET
 
 #   Note: this is an old function.  Please see prepare_program and commit_program below.
@@ -120,32 +121,32 @@ def prepare_program(program, form):
     for sub_node in ProgramTemplate:
         datatrees += [(program_node_name + sub_node, '')]
 
-    userbits += [('V/Flags/Public', 0, form.clean_data['publish_start'], form.clean_data['publish_end'])]
+    userbits += [('V/Flags/Public', '(all)', form.clean_data['publish_start'], form.clean_data['publish_end'])]
     
-    userbits += [('V/Deadline/Registration/Student', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
-    userbits += [('V/Deadline/Registration/Student/Applications', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
-    userbits += [('V/Deadline/Registration/Student/Catalog', 0, form.clean_data['student_reg_start'], None)]
-    userbits += [('V/Deadline/Registration/Student/Classes', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
-    userbits += [('V/Deadline/Registration/Student/Classes/OneClass', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
-    userbits += [('V/Deadline/Registration/Student/Confirm', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
-    userbits += [('V/Deadline/Registration/Student/ExtraCosts', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
-    userbits += [('V/Deadline/Registration/Student/MainPage', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
-    userbits += [('V/Deadline/Registration/Student/Payment', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Student', '(all)', form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Applications', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Catalog', 0, form.clean_data['student_reg_start'], None)]
+    #userbits += [('V/Deadline/Registration/Student/Classes', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Classes/OneClass', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Confirm', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
+    #userbits += [('V/Deadline/Registration/Student/ExtraCosts', 0, form.clean_data['student_reg_start'], form.clean_data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/MainPage', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Payment', 0, form.clean_data['student_reg_start'], form.clean_data['publish_end'])]
     
-    userbits += [('V/Deadline/Registration/Teacher', 0, form.clean_data['teacher_reg_start'], form.clean_data['teacher_reg_end'])]
-    userbits += [('V/Deadline/Registration/Teacher/Catalog', 0, form.clean_data['teacher_reg_start'], None)]
-    userbits += [('V/Deadline/Registration/Teacher/Classes', 0, form.clean_data['teacher_reg_start'], form.clean_data['teacher_reg_end'])]
-    userbits += [('V/Deadline/Registration/Teacher/Classes/View', 0, form.clean_data['teacher_reg_start'], form.clean_data['publish_end'])]
-    userbits += [('V/Deadline/Registration/Teacher/MainPage', 0, form.clean_data['teacher_reg_start'], form.clean_data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Teacher', '(all)', form.clean_data['teacher_reg_start'], form.clean_data['teacher_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Teacher/Catalog', 0, form.clean_data['teacher_reg_start'], None)]
+    #userbits += [('V/Deadline/Registration/Teacher/Classes', 0, form.clean_data['teacher_reg_start'], form.clean_data['teacher_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Teacher/Classes/View', 0, form.clean_data['teacher_reg_start'], form.clean_data['publish_end'])]
+    #userbits += [('V/Deadline/Registration/Teacher/MainPage', 0, form.clean_data['teacher_reg_start'], form.clean_data['publish_end'])]
     
     for director in form.clean_data['admins']:
-        userbits += [('V/Administer', director, None, None)]
+        userbits += [('V/Administer', ESPUser.objects.get(id=int(director)), None, None)]
         
     modules += [(str(ProgramModule.objects.get(id=i)), i) for i in form.clean_data['program_modules']]
        
     return datatrees, userbits, modules
 
-def commit_program(prog, datatrees, userbits, modules):
+def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
     #   This function implements the changes suggested by prepare_program, by actually
     #   creating the necessary datatrees and userbits.
     def gen_tree_node(tup):
@@ -161,8 +162,10 @@ def commit_program(prog, datatrees, userbits, modules):
         new_ub.recursive = False
         new_ub.startdate = tup[2]
         new_ub.enddate = tup[3]
-        if (tup[1] is None) or (tup[1] == 0):
+        if (tup[1] is None) or (tup[1] == 0) or (tup[1] == '(all)'):
             new_ub.user = None
+        elif type(tup[1]) in (User, ESPUser):
+            new_ub.user = tup[1]
         else:
             new_ub.user = ESPUser.objects.get(id=tup[1])        
         new_ub.save()
@@ -181,6 +184,14 @@ def commit_program(prog, datatrees, userbits, modules):
     
     for ub_tup in userbits:
         gen_userbit(ub_tup)
+
+    l = LineItemType()
+    l.text = prog.niceName() + " Admission"
+    l.amount = costs[0]
+    l.anchor = prog.anchor["LineItemTypes"]["Required"]
+    l.finaid_amount = costs[1]
+    l.finaid_anchor = prog.anchor["Accounts"]["FinancialAid"]
+    l.save()
         
     return prog
 
@@ -206,6 +217,8 @@ ProgramTemplate = (
     '/Announcements',
     '/Announcements/Teachers',
     '/Confirmation',
+    '/Accounts',
+    '/Accounts/FinancialAid',
     )
 
 VerbNodes = (

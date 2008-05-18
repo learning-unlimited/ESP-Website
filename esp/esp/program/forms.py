@@ -57,7 +57,9 @@ class ProgramCreationForm(forms.form_for_model(Program)):
         self.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
         self.base_fields['director_email'].line_group = -1
 
-	self.base_fields['anchor'] = forms.ChoiceField(choices = [('','')] + [(x.id, x.name) for x in DataTree.objects.filter(child_set__program__isnull=False).exclude(parent__name="Subprograms").distinct()], label = "Program Type")
+#	self.base_fields['anchor'] = forms.ModelChoiceField(choices = [('','')] + [(x.id, x.name) for x in DataTree.objects.filter(child_set__program__isnull=False).exclude(parent__name="Subprograms").distinct()], label = "Program Type")
+
+	self.base_fields['anchor'] = forms.ModelChoiceField(DataTree.objects.filter(child_set__program__isnull=False).exclude(parent__name="Subprograms").distinct(), label = "Program Type")
         
         self.base_fields['program_modules'] = forms.MultipleChoiceField(choices = make_id_tuple(ProgramModule.objects.all()), label = 'Program Modules')
         

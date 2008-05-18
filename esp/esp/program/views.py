@@ -49,6 +49,7 @@ from esp.program.forms import ProgramCreationForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
+from esp.accounting_core.models import LineItemType
 
 @login_required
 def updateClass(request, id):
@@ -147,19 +148,64 @@ def managepage(request, page):
         template_prog = None
 
 	if 'template_prog' in request.GET:
-            try:
-                template_prog = Program.objects.get(id=int(request.GET["template_prog"])).__dict__
-                del template_prog["id"]
-            except:
-                raise ESPError(), "Error: Unknown default program ID '%s'" & request.GET["template_prog"]
+            #try:
+            tprogram = Program.objects.get(id=int(request.GET["template_prog"]))
+
+            template_prog = {}
+            template_prog.update(tprogram.__dict__)
+            del template_prog["id"]
+            
+            template_prog["program_modules"] = [ x["id"] for x in tprogram.program_modules.all().values("id") ]
+            template_prog["term"] = tprogram.anchor.name
+            template_prog["term_friendly"] = tprogram.anchor.friendly_name
+            template_prog["anchor"] = tprogram.anchor.parent.id
+            
+            # aseering 5/18/2008 -- List everyone who was granted V/Administer on the specified program
+            template_prog["admins"] = [ x["id"] for x in User.objects.filter(userbit__verb=GetNode("V/Administer"), userbit__qsc=tprogram.anchor).values("id") ]
+
+            # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
+            #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
+            
+            program_visible_bits = list(UserBit.objects.bits_get_users(verb=GetNode("V/Flags/Public"), qsc=tprogram.anchor).filter(user__isnull=True).order_by("-startdate"))
+            if len(program_visible_bits) > 0:
+                newest_bit = program_visible_bits[0]
+                oldest_bit = program_visible_bits[-1]
     
+                template_prog["publish_start"] = oldest_bit.startdate
+                template_prog["publish_end"] = newest_bit.enddate
+
+            student_reg_bits = list(UserBit.objects.bits_get_users(verb=GetNode("V/Deadline/Registration/Student"), qsc=tprogram.anchor).filter(user__isnull=True).order_by("-startdate"))
+            if len(student_reg_bits) > 0:
+                newest_bit = student_reg_bits[0]
+                oldest_bit = student_reg_bits[-1]
+    
+                template_prog["student_reg_start"] = oldest_bit.startdate
+                template_prog["student_reg_end"] = newest_bit.enddate
+
+            teacher_reg_bits = list(UserBit.objects.bits_get_users(verb=GetNode("V/Deadline/Registration/Teacher"), qsc=tprogram.anchor).filter(user__isnull=True).order_by("-startdate"))
+            if len(teacher_reg_bits) > 0:
+                newest_bit = teacher_reg_bits[0]
+                oldest_bit = teacher_reg_bits[-1]
+    
+                template_prog["teacher_reg_start"] = oldest_bit.startdate
+                template_prog["teacher_reg_end"] = newest_bit.enddate
+
+            
+            line_items = LineItemType.objects.filter(anchor__name="Required", anchor__parent__parent=tprogram.anchor).values("amount", "finaid_amount")
+
+            template_prog["base_cost"] = int(-sum([ x["amount"] for x in line_items]))
+            template_prog["finaid_cost"] = int(-sum([ x["finaid_amount"] for x in line_items ]))
+
         if 'checked' in request.GET:
-            new_prog = Program(anchor=request.session['prog_form'].clean_data['anchor'])
+            # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
+            # Don't bother trying to fix the form; just re-set the anchor when we're done.
+            new_prog = Program(anchor=GetNode(request.session['prog_form'].clean_data['anchor'].uri + "/" + request.session['prog_form'].clean_data["term"]))
             new_prog = save_instance(request.session['prog_form'], new_prog)
+            new_prog.anchor = GetNode(request.session['prog_form'].clean_data['anchor'].uri + "/" + request.session['prog_form'].clean_data["term"])
             
-            commit_program(new_prog, request.session['datatrees'], request.session['userbits'], request.session['modules'])
+            commit_program(new_prog, request.session['datatrees'], request.session['userbits'], request.session['modules'], request.session['costs'])
             
-            manage_url = '/manage/' + new_prog.url() + '/main/'
+            manage_url = '/manage/' + new_prog.url() + '/resources'
             return HttpResponseRedirect(manage_url)
     
         #   If the form has been submitted, process it.
@@ -175,6 +221,7 @@ def managepage(request, page):
                 request.session['datatrees'] = datatrees
                 request.session['userbits'] = userbits
                 request.session['modules'] = modules
+                request.session['costs'] = ( form.clean_data['base_cost'], form.clean_data['finaid_cost'] )
               
                 return render_to_response('program/newprogram_review.html', request, request.get_node('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
             
@@ -186,7 +233,7 @@ def managepage(request, page):
             else:
                 form = ProgramCreationForm()
 
-        return render_to_response('program/newprogram.html', request, request.get_node('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('id')})
+        return render_to_response('program/newprogram.html', request, request.get_node('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('-id')})
         
     if page == 'submit_transaction':
         #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
