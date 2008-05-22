@@ -123,8 +123,8 @@ class StudentInfoManipulator(forms.Manipulator):
             HTMLDateField(field_name="dob", is_required=makeRequired),
             forms.CheckboxField(field_name="studentrep", is_required=False),
             forms.LargeTextField(field_name="studentrep_expl", is_required=False, rows=8, cols=45, validator_list=[studentrep_explained]),
-            forms.SelectField(field_name="shirt_size", is_required=True, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
-            forms.SelectField(field_name="shirt_type", is_required=True, choices=shirt_types, validator_list=[validators.isNotEmpty]),
+            forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
+            forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types, validator_list=[validators.isNotEmpty]),
             )
 
 
@@ -137,11 +137,11 @@ class TeacherInfoManipulator(forms.Manipulator):
         shirt_sizes = [('', '')] + list(shirt_sizes)
         shirt_types = [('', '')] + list(shirt_types)
         self.fields = (
-            forms.TextField(field_name="graduation_year", length=4, maxlength=4),
+            forms.IntegerField(field_name="graduation_year", length=4, maxlength=4),
             forms.TextField(field_name="school", length=48, maxlength=128),
             forms.TextField(field_name="major", length=30, maxlength=32),
-            forms.SelectField(field_name="shirt_size", is_required=True, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
-            forms.SelectField(field_name="shirt_type", is_required=True, choices=shirt_types, validator_list=[validators.isNotEmpty]),
+            forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
+            forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types, validator_list=[validators.isNotEmpty]),
             )
 
 class EducatorInfoManipulator(forms.Manipulator):

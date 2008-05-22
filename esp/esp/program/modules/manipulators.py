@@ -107,8 +107,8 @@ class TeacherClassRegManipulator(forms.Manipulator):
 
         grade_order = IsLessThanOtherField('grade_max', 'Minimum grade must be less than the maximum grade.')
         
-        location_choices = [    (True, "I will arrange my own space for this class (e.g. space in my laboratory).  I have explained this in 'Comments to Director' below."),
-                                (False, "I would like ESP to supply a classroom and/or other resources for my class.")]
+        location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Comments to Director' below."),
+                                (False, "I would like a classroom to be provided for my class.")]
                                 
         lateness_choices = [    (True, "Students may join this class up to 20 minutes after the official start time."),
                                 (False, "My class is not suited to late additions.")]                                
