@@ -72,7 +72,7 @@ class AdminVitals(ProgramModuleObj):
         for timeslot in timeslots:
             curTimeslot = {'slotname': timeslot.short_description}
             
-            curclasses = ClassSection.objects.filter(class__parent_program = self.program,
+            curclasses = ClassSection.objects.filter(classsubject__parent_program = self.program,
                                               meeting_times  = timeslot)
 
             curTimeslot['classcount'] = curclasses
