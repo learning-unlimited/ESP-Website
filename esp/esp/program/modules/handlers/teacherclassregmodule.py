@@ -481,9 +481,15 @@ class TeacherClassRegModule(ProgramModuleObj):
                 newclass.save()
                 
                 #   Give the class the appropriate number of sections as specified by the teacher.
-                section_list = []
-                for i in range(newclass.sections.count(), int(new_data['num_sections'])):
+                num_sections = int(new_data['num_sections'])
+                section_list = list( newclass.sections.all() )
+                for i in range(newclass.sections.count(), num_sections):
                     section_list.append(newclass.add_section(duration=new_duration))
+
+                # If the teacher wants to decrease the number of sections that they're teaching
+                if num_sections < len(section_list):
+                    for class_section in section_list[num_sections:]:
+                        class_section.delete()
 
                 # create classes in subprograms -- the work for this should probably be farmed out to another function
                 if newclass_isnew:
