@@ -103,10 +103,10 @@ def makelist(lst):
     #   Because I can't understand Django's built-in unordered_list -ageng
     if len(lst) == 0:
         return 'No responses'
-    result = '<ul>\n'
+    result = ''
     for item in lst:
         result += '<li>' + str(item) + '</li>' + '\n'
-    return result + '</ul>\n'
+    return result
 
 @register.filter
 def list_answers(lst):
@@ -259,13 +259,13 @@ def list_classes(ans):
         try:
             intkey = int(key)
         except ValueError:
-            return makelist( ans ) # If we get a non-integer answer, quit early.
+            return '<ul>\n' + makelist( ans ) + '</ul>\n' # If we get a non-integer answer, quit early.
         q = ClassSubject.objects.filter(id=intkey)
         if q.count() == 1:
             newlist.extend( [ c.emailcode() + ': ' + c.title() for c in q ] )
         else:
             newlist.append( key ) # If no class matches, spit out the raw answer.
-    return makelist( newlist )
+    return '<ul>\n' + makelist( newlist ) + '</ul>\n'
 
 @register.filter
 def favorite_classes(answer_list, limit):

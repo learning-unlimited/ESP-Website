@@ -36,7 +36,7 @@ from esp.datatree.models import GetNode
 from esp.db.models      import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
-from esp.survey.views   import survey_view, survey_review, survey_graphical
+from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single
 
 import operator
 
@@ -92,4 +92,6 @@ class SurveyModule(ProgramModuleObj, CoreModule):
             return survey_review(request, tl, one, two)
         elif extra == 'review_pdf':
             return survey_graphical(request, tl, one, two)
+        elif extra == 'review_single':
+            return survey_review_single(request, tl, one, two)
         

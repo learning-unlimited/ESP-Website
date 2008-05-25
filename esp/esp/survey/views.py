@@ -207,9 +207,6 @@ def survey_review_single(request, tl, program, instance):
     
     user = ESPUser(request.user)
     
-    if not (tl == 'manage' and user.isAdmin(prog.anchor)):
-        raise ESPError(False), 'You need to be an administrator of this program to review survey responses individually.'
-    
     survey_response = None
     ints = request.REQUEST.items()
     if len(ints) == 1:
@@ -219,7 +216,17 @@ def survey_review_single(request, tl, program, instance):
     if survey_response is None:
         raise ESPError(False), 'Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.'
     
-    context = {'user': user, 'program': prog, 'response': survey_response, 'answers': survey_response.answers.order_by('anchor', 'question') }
+    if tl == 'manage' and user.isAdmin(prog.anchor):
+        answers = survey_response.answers.order_by('anchor', 'question')
+        classes_only = False
+    elif tl == 'teach':
+        class_anchors = [x['anchor'] for x in user.getTaughtClasses().values('anchor')]
+        answers = survey_response.answers.filter(anchor__in=class_anchors).order_by('anchor', 'question')
+        classes_only = True
+    else:
+        raise ESPError(False), 'You need to be a teacher or administrator of this program to review survey responses.'
+    
+    context = {'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only }
     
     return render_to_response('survey/review_single.html', request, prog.anchor, context)
 
