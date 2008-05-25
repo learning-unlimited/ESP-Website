@@ -62,31 +62,34 @@ class QSDBulkMoveForm(forms.Form):
         orig_anchor = destination_path(qsd_list)
         
         #   For each QSD in the list:
-        for qsd in qsd_list:
-            uri_orig = qsd.path.get_uri()
+        for main_qsd in qsd_list:
+            uri_orig = main_qsd.path.get_uri()
             #   Find its URI relative to the original anchor
             uri_relative = uri_orig[(len(orig_anchor.get_uri())):]
             #   Add that URI to that of the new anchor
             dest_tree = DataTree.objects.get(id=self.clean_data['destination_path'])
             uri_new = dest_tree.get_uri() + uri_relative
             #   Set the path
-            qsd.path = DataTree.get_by_uri(uri_new, create=True)
+            other_qsds = QuasiStaticData.objects.filter(path=main_qsd.path, name=main_qsd.name)
+            for qsd in other_qsds:
+                #   Move them over
+                qsd.path = DataTree.get_by_uri(uri_new, create=True)
             
-            #   Now update the name if need be
-            if self.clean_data['alter_destinations']:
-                name_parts = qsd.name.split(':')
-                if len(name_parts) > 1:
-                    orig_section = name_parts[0]
-                    orig_name = name_parts[1]
-                else:
-                    orig_section = ''
-                    orig_name = name_parts[0]
+                #   Now update the name if need be
+                if self.clean_data['alter_destinations']:
+                    name_parts = qsd.name.split(':')
+                    if len(name_parts) > 1:
+                        orig_section = name_parts[0]
+                        orig_name = name_parts[1]
+                    else:
+                        orig_section = ''
+                        orig_name = name_parts[0]
+                        
+                    new_section = self.clean_data['destination_section']
                     
-                new_section = self.clean_data['destination_section']
-                
-                if len(new_section) > 0:
-                    qsd.name = new_section + ':' + orig_name
-                else:
-                    qsd.name = orig_name
-                    
-            qsd.save()
+                    if len(new_section) > 0:
+                        qsd.name = new_section + ':' + orig_name
+                    else:
+                        qsd.name = orig_name
+                        
+                qsd.save()
