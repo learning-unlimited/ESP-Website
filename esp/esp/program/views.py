@@ -31,6 +31,7 @@ Email: web@esp.mit.edu
 from esp.web.util import render_to_response
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
+from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import GetNode, DataTree
 from esp.miniblog.models import Entry
 from django.http import HttpResponseRedirect, HttpResponse, Http404
@@ -257,6 +258,76 @@ def managepage(request, page):
 
             return HttpResponseRedirect("http://%s/learn/%s/%s/confirmreg" % (request.META['HTTP_HOST'], one, two))
             
-        return render_to_response( 'accounting_docs/credit_rejected.html', request, GetNode('Q/Accounting/'), {} )
+        return render_to_response( 'accounting_docs/credit_rejected.html', request, GetNode('Q/Accounting'), {} )
+
+    #   QSD management
+    if page == 'pages':
+        if request.method == 'POST':
+            data = request.POST.copy()
+            if request.GET['cmd'] == 'bulk_move':
+                if data.has_key('confirm'):
+                    form = QSDBulkMoveForm(data)
+                    #   Handle submission of bulk move form
+                    if form.is_valid():
+                        form.save_data()
+                        return HttpResponseRedirect('/manage/pages')
+
+                #   Create and display the form
+                qsd_id_list = []
+                for key in data.keys():
+                    if key.startswith('check_'):
+                        qsd_id_list.append(int(key[6:]))
+                if len(qsd_id_list) > 0:
+                    form = QSDBulkMoveForm()
+                    qsd_list = QuasiStaticData.objects.filter(id__in=qsd_id_list)
+                    anchor = form.load_data(qsd_list)
+                    if anchor:
+                        return render_to_response('qsd/bulk_move.html', request, DataTree.get_by_uri('Q/Web'), {'common_anchor': anchor, 'qsd_list': qsd_list, 'form': form})
+            
+            qsd = QuasiStaticData.objects.get(id=request.GET['id'])
+            if request.GET['cmd'] == 'move':
+                #   Handle submission of move form
+                form = QSDMoveForm(data)
+                if form.is_valid():
+                    form.save_data()
+                else:
+                    return render_to_response('qsd/move.html', request, DataTree.get_by_uri('Q/Web'), {'qsd': qsd, 'form': form})
+            elif request.GET['cmd'] == 'delete':
+                #   Mark as inactive all QSD pages matching the one with ID request.GET['id']
+                if data['sure'] == 'True':
+                    all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+                    for q in all_qsds:
+                        q.disabled = True
+                        q.save()
+            return HttpResponseRedirect('/manage/pages')
+
+        elif request.GET.has_key('cmd'):
+            qsd = QuasiStaticData.objects.get(id=request.GET['id'])
+            if request.GET['cmd'] == 'delete':
+                #   Show confirmation of deletion
+                return render_to_response('qsd/delete_confirm.html', request, DataTree.get_by_uri('Q/Web'), {'qsd': qsd})
+            elif request.GET['cmd'] == 'undelete':
+                #   Make all the QSDs enabled and return to viewing the list
+                all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+                for q in all_qsds:
+                    q.disabled = False
+                    q.save()
+            elif request.GET['cmd'] == 'move':
+                #   Show move form
+                form = QSDMoveForm()
+                form.load_data(qsd)
+                return render_to_response('qsd/move.html', request, DataTree.get_by_uri('Q/Web'), {'qsd': qsd, 'form': form})
+                
+        #   Show QSD listing 
+        qsd_list = []
+        qsds = QuasiStaticData.objects.all().order_by('-create_date')
+        url_list = []
+        for qsd in qsds:
+            url = qsd.url()
+            if url not in url_list:
+                qsd_list.append(qsd)
+                url_list.append(url)
+        qsd_list.sort(key=lambda q: q.url())
+        return render_to_response('qsd/list.html', request, DataTree.get_by_uri('Q/Web'), {'qsd_list': qsd_list})
 
     raise Http404

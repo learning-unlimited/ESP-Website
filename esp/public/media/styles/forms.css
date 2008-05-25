@@ -95,6 +95,25 @@
 }
 /* end of fancy button */
 
+#divmaintext form a.abutton {
+   color: #000000;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   font-weight:bold;
+   border: #cccccc 1px solid;
+   background-color: #cccccc;
+   cursor: default;
+   padding: 2px 5px 2px 5px;
+   text-decoration: none;
+}
+
+#divmaintext form a.abutton:hover
+{
+   color:#0000cc;
+   border: #000000 1px solid;
+   background-color: #ccffcc;
+}
+
 
 /* LOGIN FORM */
 #login_form table {

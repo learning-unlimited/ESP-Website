@@ -1,6 +1,7 @@
 import md5
 from django import template
 from esp.datatree.models import DataTree
+from esp.users.models import UserBit
 from esp.web.util.template import cache_inclusion_tag, DISABLED
 from esp.qsd.models import QuasiStaticData
 from urllib import quote
@@ -20,11 +21,14 @@ def render_qsd(qsd):
     return {'qsdrec': qsd}
 
     
-def cache_inline_key(input_anchor, qsd):
-    return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s' % (input_anchor, qsd))
+def cache_inline_key(input_anchor, qsd, user=None):
+    if user:
+        return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s__%s' % (input_anchor, qsd, user.id))
+    else:
+        return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s' % (input_anchor, qsd))
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=cache_inline_key, cache_obj=DISABLED)
-def render_inline_qsd(input_anchor, qsd):
+def render_inline_qsd(input_anchor, qsd, user=None):
     
     if isinstance(input_anchor, basestring):
         try:
@@ -37,9 +41,12 @@ def render_inline_qsd(input_anchor, qsd):
     else:
         return {}
 
+    edit_bits = False
+    if user:
+        edit_bits = UserBit.UserHasPerms(user, anchor, DataTree.get_by_uri('V/Administer/Edit'))
     qsd_obj = anchor.quasistaticdata_set.filter(name=qsd).order_by('-id')
     if len(qsd_obj) == 0:
-        return {}
+        return {'edit_bits': edit_bits}
     qsd_obj = qsd_obj[0]
     
-    return {'qsdrec': qsd_obj}
+    return {'qsdrec': qsd_obj, 'edit_bits': edit_bits}

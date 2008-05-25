@@ -130,6 +130,8 @@ def qsd(request, branch, name, section, action):
     # Fetch the QSD object
     try:
         qsd_rec = QuasiStaticData.objects.get_by_path__name(branch, name)
+        if qsd_rec.disabled:
+            raise QuasiStaticData.DoesNotExist
 
     except QuasiStaticData.DoesNotExist:
         if have_edit:
@@ -253,3 +255,7 @@ def qsd(request, branch, name, section, action):
     
     # Operation Complete!
     assert False, 'Unexpected QSD operation'
+
+def ajax_qsd(request):
+    """ Ajax function for in-line QSD editing.  Not yet implemented. """
+    return 'Oooooobleck'

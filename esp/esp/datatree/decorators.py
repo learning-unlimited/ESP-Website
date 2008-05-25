@@ -42,13 +42,14 @@ section_redirect_keys = {
     'manage':  'Programs',
     'onsite':  'Programs',    
     'learn':   'Programs',
-    'program': 'Programs',
-    'help':    'ESP/Committees',
+    'programs':'Programs',
     None:      'Web',
     }
-
-
-
+    
+subsection_map = {
+    'programs': '',
+    }    
+    
 def branch_find(view_func):
     """
     A decorator to be used on a view.
@@ -67,7 +68,7 @@ def branch_find(view_func):
 
     def _new_func(request, url='index', subsection=None, filename=None, *args, **kwargs):
 
-
+        
         cache_key = 'qsdeditor_%s_%s_%s_%s' % (request.user.id,
                                                url, subsection, filename)
 
@@ -87,6 +88,10 @@ def branch_find(view_func):
 
         # the root of the datatree
         section = section_redirect_keys[subsection]
+        
+        #   Rewrite 'subsection' if we want to.
+        if subsection_map.has_key(subsection):
+            subsection = subsection_map[subsection]
         tree_root = 'Q/' + section
 
         tree_end = url.split('/')

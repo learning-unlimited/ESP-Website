@@ -193,6 +193,16 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
     l.finaid_anchor = prog.anchor["Accounts"]["FinancialAid"]
     l.save()
         
+    #   Create a userbit implication giving permanent registration access to the directors.
+    ubi = UserBitImplication()
+    ubi.qsc_original = prog.anchor
+    ubi.verb_original = DataTree.get_by_uri('V/Administer')
+    ubi.qsc_implied = prog.anchor
+    ubi.verb_implied = DataTree.get_by_uri('V/Deadline/Registration')
+    ubi.recursive = True
+    ubi.save()
+    ubi.apply()
+        
     return prog
 
 

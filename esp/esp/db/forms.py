@@ -171,11 +171,14 @@ class AjaxForeignKeyNewformField(newforms.IntegerField):
         else:
             raise NotImplementedError
         
-        self.label = label
         self.required = required
         self.help_text = help_text
         self.initial = initial
         self.widget.field_name = field_name
+        if label == '':
+            self.label = field_name
+        else:
+            self.label = label
 
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'

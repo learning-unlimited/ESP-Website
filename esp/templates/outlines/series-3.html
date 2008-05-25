@@ -1,30 +1,25 @@
 {% extends "elements/html" %}
 
-
 {% block javascript %}
-{{ block.super }}
-{% if request.user.is_authenticated %}
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/yahoo/yahoo-min.js"></script>
-
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/event/event-min.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/dom/dom-min.js"></script>
-
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/connection/connection-min.js"></script>
-
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/logger/logger-min.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/yui/dragdrop/dragdrop-debug.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/animation/animation-min.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/ddlist.js"></script>
-{% endif %}
+    {{ block.super }}
+    {% if request.user.is_authenticated %}
+        <script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/dom/dom-min.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script>
+        <script type="text/javascript" src="/media/scripts/json.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/event/event-min.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/logger/logger-min.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/scripts/yui/dragdrop/dragdrop-debug.js"></script>
+        <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
+    {% endif %}
 {% endblock %}
 
-
 {% block stylesheets %}
-
-
-<link rel="stylesheet" href="{{ media_url }}styles/print_basic.css" type="text/css" media="print" />
-<link rel="stylesheet" href="{{ media_url }}styles/level3.css" type="text/css" media="screen" />
-
+    <link rel="stylesheet" href="{{ media_url }}styles/print_basic.css" type="text/css" media="print" />
+    <link rel="stylesheet" href="{{ media_url }}styles/level3.css" type="text/css" media="screen" />
 {% endblock %}
 
 {% block body %}

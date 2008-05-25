@@ -29,19 +29,13 @@ Email: web@esp.mit.edu
 """
 from django.conf.urls.defaults import *
 from esp.program.models import ClassSubject
+from esp.datatree.decorators import section_redirect_keys
 from esp.qsd.views import qsd
 from esp.qsdmedia.views import qsdmedia
 from esp.settings import PROJECT_ROOT
 from esp.settings import MEDIA_ROOT
 
-#	This is some lookup for the redirector, to insert a certain string for the tree node 
-section_redirect_keys = {'teach': 'Programs',
-                         'learn': 'Programs',
-                         'program': 'Programs',
-                         'help': 'ESP/Committees',
-                         None: 'Web'}
-
-section_prefix_keys = {'teach': 'teach', 'learn': 'learn'}
+section_prefix_keys = {'teach': 'teach', 'learn': 'learn', 'programs': ''}
 
 # Static media
 urlpatterns = patterns('django.views.static',
@@ -51,6 +45,7 @@ urlpatterns = patterns('django.views.static',
 
 # admin stuff
 urlpatterns += patterns('',
+                     (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/', include('django.contrib.admin.urls')),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
@@ -83,9 +78,9 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('esp.qsd.views',
-                        (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/(?P<url>.*).html$', 'qsd'),
+                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/(?P<url>.*).html$', 'qsd'),
                         (r'^(?P<url>.*)\.html$', 'qsd'),
-                        (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', 'django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
+                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', 'django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
                         )
 
 # logging in and out

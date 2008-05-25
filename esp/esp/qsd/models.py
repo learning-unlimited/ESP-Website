@@ -76,11 +76,41 @@ class QuasiStaticData(models.Model):
         render_qsd_cache.delete(cache_key_func(self))
         retVal = super(QuasiStaticData, self).save(*args, **kwargs)
         QuasiStaticData.objects.obj_to_file(self)
+        
+        from django.core.cache import cache
+        cache_key = 'QSD_URL_%d' % self.id
+        cache.delete(cache_key)
+        
         return retVal
-    
-    
+
+    def url(self):
+        """ Get the relative URL of a page (i.e. /learn/Splash/eligibility.html) """
+        from django.core.cache import cache
+        cache_key = 'QSD_URL_%d' % self.id
+        result = cache.get(cache_key)
+        if result:
+            return result
+        
+        my_path = self.path
+        path_parts = self.path.get_uri().split('/')
+        program_top = DataTree.get_by_uri('Q/Programs')
+        web_top = DataTree.get_by_uri('Q/Web')
+        if (my_path.rangestart >= program_top.rangestart) and (my_path.rangeend <= program_top.rangeend):
+            name_parts = self.name.split(':')
+            if len(name_parts) > 1:
+                result =  '/' + name_parts[0] + '/' + '/'.join(path_parts[2:]) + '/' + name_parts[1] + '.html'
+            else:
+                result = '/programs/' + '/'.join(path_parts[2:]) + '/' + name_parts[0] + '.html'
+        elif (my_path.rangestart >= web_top.rangestart) and (my_path.rangeend <= web_top.rangeend):
+            result = '/' + '/'.join(path_parts[2:]) + '/' + self.name + '.html'
+        else:
+            result = '/' + '/'.join(path_parts[1:]) + '/' + self.name + '.html'
+        
+        cache.set(cache_key, result)
+        return result
+            
     def __str__(self):
-        return ( self.path.full_name() + ':' + self.name + '.html' )
+        return (self.path.full_name() + ':' + self.name + '.html' )
 
     class Admin:
         search_fields = ['title','name','keywords','description']

@@ -1,0 +1,57 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Static Page Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block subsection_name %}QSD{% endblock %}
+
+{% block content %}
+
+<h1>Confirm Deletion: "{{ qsd.title }}"</h1>
+
+<div id="program_form">
+
+<center>
+<table width="400">
+<tr>
+    <th colspan="2">Control Options</th>
+</tr>
+<tr>
+    <th colspan="2" class="small">Are you sure you would like to delete this page?
+    </td>
+</tr>
+
+<tr>
+    <td class="small">Title:</th>
+    <td>{{ qsd.title }}</td>
+</tr>
+<tr>
+    <td class="small">Path:</th>
+    <td>{{ qsd.url }}</td>
+</tr>
+
+<tr>
+    <td colspan="2" align="center">
+        <form method="post" action="{{ request.path }}?cmd=delete&id={{ qsd.id }}">
+        <input type="hidden" name="sure" value="False" />
+        <input class="fancybutton" type="submit" value="Return" />
+        </form>
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <form method="post" action="{{ request.path }}?cmd=delete&id={{ qsd.id }}">
+        <input type="hidden" name="sure" value="True" />
+        <input class="fancybutton" type="submit" value="Delete Page" />
+        </form>
+    </td>
+</table>
+
+</center>
+
+<br />
+
+</div>
+
+{% endblock %}

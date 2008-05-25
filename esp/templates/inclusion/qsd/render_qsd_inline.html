@@ -1,4 +1,32 @@
 {% load smartypants %}
 {% load markdown %}
-{{ qsdrec.content|markdown|smartypants|teximages }}
+
+<script language="javascript">
+
+
+</script>
+
+{% if qsdrec %}
+    {% if edit_bits %}
+        This is a quasi-static content.  Click here to edit the text.
+        <div id="inline_edit_{{ qsdrec.id }}">
+        <form method="POST" action="/admin/ajax_qsd">
+        <textarea name="qsd_content">
+            {{ qsdrec.content|markdown|smartypants|teximages }}
+        </textarea>
+        </form>
+        </div>
+    {% endif %}
+    <div id="inline_qsd_{{ qsdrec.id }}">
+        {{ qsdrec.content|markdown|smartypants|teximages }}
+    </div>
+
+{% else %}
+{% if edit_bits %}
+    This is a placeholder for quasi-static content that has not yet been added.  Click here to edit the text.
+        <div id="inline_qsd_new">
+            
+        </div>
+    {% endif %}
+{% endif %}
 <br />
