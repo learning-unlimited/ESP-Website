@@ -66,7 +66,7 @@ class ListGenModule(ProgramModuleObj):
 
         strtype = request.GET['type']
 
-        users = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
+        users = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct() ]
 
         users.sort()
         
