@@ -377,7 +377,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                                          'txtTeachers': txtTeachers,
                                                                                          'coteachers':  coteachers,
                                                                                          'conflicts':   conflictingusers})
-    @meets_deadline("/Classes")
+    @meets_deadline("/Classes/Edit")
     @needs_teacher
     def editclass(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(id = extra)
