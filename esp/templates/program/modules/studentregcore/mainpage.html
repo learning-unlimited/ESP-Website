@@ -34,7 +34,7 @@
     </p>
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentregheader" %}
+{% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
 
     <center>
     <!--
@@ -132,7 +132,7 @@ Please click <em>Confirm</em> below to confirm your registration into {{program.
 {% endif %}
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentregfooter" %}
+{% render_inline_qsd program.anchor "learn:studentregfooter" request.user %}
 
 {% if not request.user.onsite_local %}
     <center>

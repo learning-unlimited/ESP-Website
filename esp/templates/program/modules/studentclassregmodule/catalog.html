@@ -90,7 +90,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 </table>
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:catalog" %}
+{% render_inline_qsd program.anchor "learn:catalog" request.user %}
 
 </div>
 <div id="catalog">

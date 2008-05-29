@@ -257,5 +257,28 @@ def qsd(request, branch, name, section, action):
     assert False, 'Unexpected QSD operation'
 
 def ajax_qsd(request):
-    """ Ajax function for in-line QSD editing.  Not yet implemented. """
-    return 'Oooooobleck'
+    """ Ajax function for in-line QSD editing.  """
+    from django.utils import simplejson
+    from esp.lib.templatetags.markdown import markdown
+    from esp.web.templatetags.latex import teximages
+    from esp.web.templatetags.smartypants import smartypants
+
+    result = {}
+    post_dict = request.POST.copy()
+
+    if post_dict['cmd'] == "update":
+        qsd = QuasiStaticData.objects.get(id=post_dict['id'])
+        qsd.content = post_dict['data']
+        qsd.save()
+        result['status'] = 1
+        result['content'] = teximages(smartypants(markdown(qsd.content)))
+    if post_dict['cmd'] == "create":
+        qsd_path = DataTree.objects.get(id=post_dict['anchor'])
+        qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path)
+        qsd.content = post_dict['data']
+        qsd.save()
+        result['status'] = 1
+        result['content'] = teximages(smartypants(markdown(qsd.content)))
+        result['id'] = qsd.id
+    
+    return HttpResponse(simplejson.dumps(result))
