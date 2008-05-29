@@ -63,7 +63,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         return False
     
     def getNavBars(self):
-        if super(TeacherRegCore, self).deadline_met():
+        if super(TeacherRegCore, self).deadline_met("/MainPage"):
             return [{ 'link': '/teach/%s/teacherreg' % ( self.program.getUrlBase() ),
                       'text': '%s Teacher Registration' % ( self.program.niceSubName() ),
                       'section': 'teach'}]
