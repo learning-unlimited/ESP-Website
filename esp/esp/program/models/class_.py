@@ -797,6 +797,18 @@ class ClassSubject(models.Model):
     duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
 
+    def prettyDuration(self):
+        if self.sections.all().count() <= 0:
+            return "N/A"
+        else:
+            return self.sections.all()[0].prettyDuration()
+
+    def prettyrooms(self):
+        if self.sections.all().count() <= 0:
+            return "N/A"
+        else:
+            return self.sections.all()[0].prettyrooms()
+        
     def _get_meeting_times(self):
         timeslot_id_list = []
         for s in self.sections.all():

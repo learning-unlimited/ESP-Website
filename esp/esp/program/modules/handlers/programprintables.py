@@ -1136,7 +1136,7 @@ Student schedule for %s:
         write_cvs = csv.writer(response)
 
 #        write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Msg for Directors", "Prereqs", "Directors Notes", "Times", "Rooms"))
-        for cls in Class.objects.filter(parent_program=prog):
+        for cls in ClassSubject.objects.filter(parent_program=prog):
             write_cvs.writerow(
                 (cls.id,
                  ", ".join([t.name() for t in cls.teachers()]),
