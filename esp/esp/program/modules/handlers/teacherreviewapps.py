@@ -43,7 +43,7 @@ __all__ = ['TeacherReviewApps']
 
 class TeacherReviewApps(ProgramModuleObj, CoreModule):
 
-    @meets_deadline()
+    @meets_deadline("/AppReview")
     @needs_teacher
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
@@ -113,7 +113,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
         context = {'clrmi': clrmi, 'prog': prog, 'questions': question_list}
         return render_to_response(self.baseDir()+'questions.html', request, (prog, tl), context)
     
-    @meets_deadline()
+    @meets_deadline("/AppReview")
     @needs_teacher
     def review_student(self, request, tl, one, two, module, extra, prog):
         reg_node = request.get_node('V/Flags/Registration/Preliminary')
