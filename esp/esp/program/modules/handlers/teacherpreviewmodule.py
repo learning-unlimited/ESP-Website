@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj
 from esp.middleware              import ESPError
-from esp.program.models          import ClassSubject
+from esp.program.models          import ClassSubject, ClassSection
 from datetime                    import timedelta
 from esp.users.models            import ESPUser
 from esp.web.util        import render_to_response
@@ -50,7 +50,8 @@ class TeacherPreviewModule(ProgramModuleObj):
             scheditems = []
             for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
                 if cls.isAccepted():
-                    scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': cls})
+                    for section in cls.sections.all():
+                        scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': section})
             scheditems.sort()
             context['scheditems'] = scheditems
             return render_to_response(pmo.baseDir()+template_file, request, (prog, tl), context)
