@@ -1080,6 +1080,10 @@ class ClassSubject(models.Model):
                                verb = v).delete()
         return True
 
+    def getResourceRequests(self): # get all resource requests associated with this ClassSubject
+        from esp.resources.models import ResourceRequest
+        return ResourceRequest.objects.filter(target__classsubject=self)
+
     def conflicts(self, teacher):
         from esp.users.models import ESPUser
         user = ESPUser(teacher)

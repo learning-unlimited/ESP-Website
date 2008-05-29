@@ -632,8 +632,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             if newclass is not None:
                 new_data = newclass.__dict__
                 new_data['category'] = newclass.category.id
-                new_data['global_resources'] = [ req.res_type.id for req in ResourceRequest.objects.filter(target=newclass, res_type__program__isnull=True) ]
-                new_data['resources'] = [ req.res_type.id for req in ResourceRequest.objects.filter(target=newclass, res_type__program__isnull=False) ]
+                new_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
+                new_data['resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=False).distinct().values('res_type') ]
                 new_data['allow_lateness'] = newclass.allow_lateness
                 new_data['has_own_space'] = False
                 new_data['title'] = newclass.anchor.friendly_name
