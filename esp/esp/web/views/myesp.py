@@ -408,7 +408,23 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 			curUser.email     = new_data['e_mail']
 			curUser.save()
 			if responseuponCompletion == True:
-				return render_to_response('users/profile_complete.html', request, navnode, {})
+				# prepare the rendered page so it points them to open student/teacher reg's
+				ctxt = {}
+				if curUser.isStudent() or curUser.isTeacher():
+					userrole = {}
+					if curUser.isStudent():
+						userrole['name'] = 'Student'
+						userrole['base'] = 'learn'
+						userrole['reg'] = 'studentreg'
+					elif curUser.isTeacher():
+						userrole['name'] = 'Teacher'
+						userrole['base'] = 'teach'
+						userrole['reg'] = 'teacherreg'
+					ctxt['userrole'] = userrole
+					regverb = GetNode('V/Deadline/Registration/%s' % ctxt['userrole']['name'])
+					progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
+					ctxt['progs'] = progs
+				return render_to_response('users/profile_complete.html', request, navnode, ctxt)
 			else:
 				return True
 
