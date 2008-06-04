@@ -62,8 +62,7 @@ table.roster {
     <th class="smaller">Name</th>
     <th class="smaller">Grade</th>
     <th class="smaller">Date of registration</th>
-    <th class="smaller">Date of teacher review</th>
-    <th class="smaller">Score</th>
+    <th class="smaller">Existing reviews</th>
     <th class="smaller">Status</th>
     <th class="smaller">Review Options</th>
 </tr>
@@ -81,18 +80,13 @@ table.roster {
     {{student.added_class|date:"M d, Y" }}
     </td>
     <td>
-    {% if student.app_reviewed %}
-        {{ student.app_reviewed.create_ts|date:"M d, Y" }}
+    {% if student.app.reviews.all|length_is:0 %}
+        No reviews yet
     {% else %}
-        <strong>Not Reviewed</strong>
+        {% for review in student.app.reviews.all %}
+        <i>{{ review.reviewer.first_name }} {{ review.reviewer.last_name }}</i>: {% if review.score %}{{ review.score }} / 10{% else %}No score{% endif %} ({{ review.date|date:"m/d/Y" }}) {% if not forloop.last %}<br />{% endif %}
+        {% endfor %}
     {% endif %}
-    </td>
-    <td>
-        {% if student.app_reviewed %}
-            {{ student.app_reviewed.score }} / 10
-        {% else %}
-            N/A
-        {% endif %}
     </td>
     <td width="80">
         {{ student.status }}

@@ -37,7 +37,7 @@ from django import newforms as forms
 
 import datetime
 
-__all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication', 'JunctionStudentApp', 'JunctionAppReview']
+__all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication']
 
 class BaseAppElement:
     """ Base class for models that you would like to generate forms from.
@@ -152,7 +152,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     _field_names = ['score', 'comments', 'reject']
     
     def __str__(self):
-        return '%d by %s: %s...' % (self.score, self.reviewer.username, self.comments[:80])
+        return '%s by %s: %s...' % (self.score, self.reviewer.username, self.comments[:80])
 
     class Meta:
         app_label = 'program'
@@ -230,29 +230,6 @@ class StudentApplication(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_junctionstudentapp'    
-
-    class Admin:
-        pass
-
-#   Don't want this anymore... but we'll keep the data.  -Michael
-JunctionStudentApp = StudentApplication
-
-class JunctionAppReview(models.Model):
-    from esp.program.models import ClassSubject
-    
-    cls = models.ForeignKey(ClassSubject)
-    junctionapp = models.ForeignKey(JunctionStudentApp)
-    student     = AjaxForeignKey(User)
-    score = models.IntegerField(blank=True,null=True)
-    create_ts = models.DateTimeField(default = datetime.datetime.now,
-                                     editable = False)
-
-    def __str__(self):
-        return "Review for %s in class %s" % (self.cls, self.student)
-    
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_junctionappreview'
 
     class Admin:
         pass

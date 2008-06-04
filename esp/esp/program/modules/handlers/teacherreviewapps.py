@@ -34,7 +34,7 @@ from esp.program.modules import module_ext
 from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
 from esp.users.models import ESPUser, UserBit, User
 from esp.web.util        import render_to_response
-from esp.program.models import ClassSubject, StudentApplication, JunctionAppReview, StudentAppQuestion, StudentAppResponse, StudentAppReview
+from esp.program.models import ClassSubject, StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 from django.contrib.auth.decorators import login_required
 from esp.datatree.models import DataTree
 from django.http import HttpResponseRedirect

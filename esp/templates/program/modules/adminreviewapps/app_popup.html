@@ -8,28 +8,24 @@
 <body bgcolor="#FFFFFF">
 <div id="program_form">
 <br />
-<table class="roster" width="600" id="app-{{ student.id }}">
-    <tr>
-        <th>Student Application: {{ student.first_name }} {{ student.last_name }}</th>
-    </tr>
-    <tr>
-        <th class="smaller">High school preparation</th>
-    </tr>
-    <tr>
-        <td>{{ student.app.class_prep }}</td>
-    </tr>
-    <tr>
-        <th class="smaller">My Ideal Summer...</th>
-    </tr>
-    <tr>
-        <td>{{ student.app.ideal_summer}}</td>
-    </tr>
-    <tr>
-        <th class="smaller">A difficult triumph</th>
-    </tr>
-    <tr>
-        <td>{{ student.app.difficulty }}</td>
-    </tr>
+<table class="application" width="600">
+<tr>
+  <th colspan="2">Student Application for {{ student.name }}</th>
+</tr>
+<tr>
+    <td width="25%">Grade:</td>
+    <td>{{ student.getGrade }}</td>
+</tr>
+<tr>
+    <td>DOB:</td>
+    <td>{{ student.getLastProfile.student_info.dob|date:"M d, Y" }}</td>
+</tr>
+{% for response in student.app.responses.all %}
+<tr>
+  <th><label>{{ response.question.question }}</label></th>
+  <td>{{ response.response }}</td>
+</tr>
+{% endfor %}
 </table>
 </div>
 

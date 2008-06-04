@@ -35,7 +35,7 @@ from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from esp.db.models       import Q
 from django.template.loader import get_template
-from esp.program.models  import JunctionStudentApp
+from esp.program.models  import StudentApplication
 from django              import newforms as forms
 from django.contrib.auth.models import User
 from esp.accounting_docs.models import Document
