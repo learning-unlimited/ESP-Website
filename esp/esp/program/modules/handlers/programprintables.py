@@ -685,22 +685,19 @@ class ProgramPrintables(ProgramModuleObj):
         schedule = """
 Student schedule for %s:
 
- Time               | Class                                  | Room""" % student.name()
-
+ Time                   | Class                                  | Room\n""" % student.name()
+        schedule += '------------------------+----------------------------------------+-----------\n'
         
         classes = ProgramPrintables.get_student_classlist(program, student)
         
         for cls in classes:
             rooms = cls.prettyrooms()
             if len(rooms) == 0:
-                rooms = 'N/A'
+                rooms = ' N/A'
             else:
-                rooms = ", ".join(rooms)
+                rooms = ' ' + ", ".join(rooms)
                 
-            schedule += """
-%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
-               cls.title.ljust(40),
-               rooms)
+            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
                
         return schedule
 

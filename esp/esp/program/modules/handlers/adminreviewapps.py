@@ -76,7 +76,7 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         students = filter(lambda x: x.studentapplication_set.filter(program=self.program).count() > 0, students)
 
         for student in students:
-            student.added_class = student.userbit_set.filter(qsc__rangestart__gte=cls.anchor.rangestart, qsc__rangeend__gte=cls.anchor.rangeend)[0].startdate
+            student.added_class = student.userbit_set.filter(qsc__rangestart__gte=cls.anchor.rangestart, qsc__rangeend__lte=cls.anchor.rangeend)[0].startdate
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except:
