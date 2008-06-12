@@ -218,7 +218,7 @@ class ESPUser(User, AnonymousUser):
         elif key == 'name':
             return ESPUser(otheruser).name()
         elif key == 'recover_url':
-            return 'http://esp.mit.edu/myesp/recoveremail/?code=%s' % \
+            return 'myesp/recoveremail/?code=%s' % \
                          otheruser.password
         elif key == 'username':
             return otheruser.username
