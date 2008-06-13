@@ -560,6 +560,7 @@ class ESPUser(User, AnonymousUser):
         from esp.db.models import Q
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
+        from django.contrib.sites.models import Site
 
         symbols = string.ascii_uppercase + string.digits
         code = "".join([random.choice(symbols) for x in range(30)])
@@ -573,10 +574,11 @@ class ESPUser(User, AnonymousUser):
         curuser.save()
         # create the variable modules
         variable_modules = {'user': ESPUser(curuser)}
+        domainname = Site.objects.get(id=1).domain
 
 
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
-                                                      subject    = '[ESP] Your Password Recovery For esp.mit.edu',
+                                                      subject    = '[ESP] Your Password Recovery For '+domainname,
                                                       recipients = filterobj,
                                                       sender     = '"MIT Educational Studies Program" <esp@mit.edu>',
                                                       creator    = self,
