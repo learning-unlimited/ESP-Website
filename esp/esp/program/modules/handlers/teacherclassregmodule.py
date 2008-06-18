@@ -667,7 +667,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
 
     @needs_teacher
-    @meets_deadline('/Classes')    
+#    @meets_deadline('/Classes')    
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
         from esp.web.views.json import JsonResponse
