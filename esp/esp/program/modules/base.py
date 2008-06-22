@@ -446,7 +446,7 @@ def needs_teacher(method):
         
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-        if not moduleObj.user.isTeacher():
+        if not moduleObj.user.isTeacher() and not moduleObj.user.isAdmin(moduleObj.program):
             return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
         return method(moduleObj, request, *args, **kwargs)
 
@@ -486,7 +486,7 @@ def needs_student(method):
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if not moduleObj.user.isStudent():
+        if not moduleObj.user.isStudent() and not moduleObj.user.isAdmin(moduleObj.program):
             return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
 
