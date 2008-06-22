@@ -92,6 +92,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         except:
             invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
 
+        #   Why is get_complete false?
         receipt = Document.get_receipt(request.user, prog.anchor, [], get_complete=False)
 
 	context = {}

@@ -33,7 +33,7 @@ from esp.membership.models import AlumniInfo, AlumniContact, AlumniRSVP, AlumniM
 from esp.users.models import User, ESPUser, ContactInfo
 from esp.datatree.models import DataTree
 from esp.db.forms import AjaxForeignKeyNewformField
-from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class, save_instance
+from esp.utils.forms import CaptchaForm, CaptchaField, new_callback, grouped_as_table, add_fields_to_class, save_instance
 from esp.membership.models import rsvp_choices, guest_choices
 from django import newforms as forms
 
@@ -117,7 +117,7 @@ class AlumniLookupForm(forms.Form):
 
     as_table = grouped_as_table
 
-class AlumniInfoForm(forms.form_for_model(AlumniInfo, formfield_callback=new_callback(exclude=['contactinfo']))):
+class AlumniInfoForm(CaptchaForm, forms.form_for_model(AlumniInfo, formfield_callback=new_callback(exclude=['contactinfo']))):
     """
     This is an alumni contact form which is used to get information from alumni of ESP.
     """
@@ -137,7 +137,7 @@ anchor_choices = (  (DataTree.get_by_uri('Q/Programs/HSSP').id, 'HSSP'),
                     (DataTree.get_by_uri('Q/Programs').id, 'Other program'),
                     (None, 'Other'))
 
-class AlumniContactForm(forms.form_for_model(AlumniContact, formfield_callback=new_callback(exclude=['timestamp']))):
+class AlumniContactForm(CaptchaForm, forms.form_for_model(AlumniContact, formfield_callback=new_callback(exclude=['timestamp']))):
     """
     This is a form which allows alumni to submit a story, question or event relating to them.
     """
@@ -159,7 +159,7 @@ class AlumniContactForm(forms.form_for_model(AlumniContact, formfield_callback=n
             new_contact.participants.add(self.clean_data['participants'])
         return new_contact
 
-class AlumniMessageForm(forms.form_for_model(AlumniMessage, formfield_callback=new_callback(exclude=['seq','thread']))):
+class AlumniMessageForm(CaptchaForm, forms.form_for_model(AlumniMessage, formfield_callback=new_callback(exclude=['seq','thread']))):
     
     def __init__(self, thread=None, *args, **kwargs):
         #   define some stuff so that save_instance does everything to save the message

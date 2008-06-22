@@ -128,6 +128,7 @@
 </div>
 {% endif %}
 
+{% if not contact_form.errors and not info_form.errors %}
 <br />
 <p class="dspsection">
 <a href="javascript:void(0)" class="dsphead" onclick="expand_disp(this)">
@@ -135,6 +136,7 @@
 </a>
 
 <div class="dspcont">
+{% endif %}
 
 <p>
 If you have an account on the ESP web site, please use the box in the first row to locate it.  If you don't have an account, please enter in your contact information along with the second part of the form.
@@ -196,8 +198,10 @@ If you have an account on the ESP web site, please use the box in the first row 
 </form>
 </div>
 
+{% if not contact_form.errors and not info_form.errors %}
 </div>
 </p>
+{% endif %}
 
 </div>
 

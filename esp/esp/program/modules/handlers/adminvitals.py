@@ -81,8 +81,12 @@ class AdminVitals(ProgramModuleObj):
                 self.clslist = []
 
                 def count(self):
-                     lst = [x.num_students() for x in self.clslist]
-                     return reduce(operator.add, lst)
+                    lst = [x.num_students() for x in self.clslist]
+                    return reduce(operator.add, lst)
+
+                def max_count(self):
+                    lst = [x.capacity for x in self.clslist]
+                    return reduce(operator.add, lst)
 
                 def __init__(self, newclslist):
                     self.clslist = newclslist

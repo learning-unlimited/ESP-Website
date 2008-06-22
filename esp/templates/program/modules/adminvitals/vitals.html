@@ -51,7 +51,7 @@
 
 <tr>
   <th class="smaller">{{ timeslot.slotname }}</th>
-  <td>Students: {{ timeslot.studentcount.count }}<br />
+  <td>Students: {{ timeslot.studentcount.count }} / {{ timeslot.studentcount.max_count }}<br />
       Classes: {{ timeslot.classcount.count }}</td>
 </tr>
 {% endfor %}

@@ -160,7 +160,6 @@ class MessageRequest(models.Model):
         for user in users:
             user = ESPUser(user)
             newemailrequest = EmailRequest(target = user, msgreq = self)
-
             
             newtxt = TextOfEmail(send_to   = '%s <%s>' % (user.name(), user.email),
                                  send_from = send_from,

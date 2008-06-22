@@ -29,9 +29,48 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from django.newforms.forms import BoundField
+from django.newforms.forms import Form, Field, BoundField
 from django.newforms.util import ErrorList
 from django.utils.html import escape
+
+from esp.utils.widgets import CaptchaWidget
+
+
+class CaptchaField(Field):
+    """ A Captcha form element which evaluates to True or raises a validation
+    error depending on whether the user entered the correct text. """
+    widget = CaptchaWidget
+    detect_login = False
+    
+    def __init__(self, *args, **kwargs):
+        if 'detect_login' in kwargs:
+            self.detect_login = kwargs['detect_login']
+            del kwargs['detect_login']
+        if 'help_text' not in kwargs:
+            kwargs['help_text'] = 'If you have an ESP user account, you can log in to make this go away.'
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Prove you\'re human'
+            
+        local_request = kwargs['request']
+        del kwargs['request']
+        
+        super(CaptchaField, self).__init__(*args, **kwargs)
+        
+        self.widget.request = local_request
+        
+        
+class CaptchaForm(Form):
+    def __init__(self, *args, **kwargs):
+        local_request = None
+        if 'request' in kwargs:
+            local_request = kwargs['request']
+            del kwargs['request']
+            
+        super(CaptchaForm, self).__init__(*args, **kwargs)
+
+        if local_request and not local_request.user.is_authenticated():
+            self.fields['captcha'] = CaptchaField(request=local_request, required=True)
+
 
 def new_callback(exclude=None, include=None):
     """

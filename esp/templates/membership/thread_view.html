@@ -48,6 +48,8 @@ This thread was originally created on {{ thread.timestamp|date:"M. j, Y" }}.
     {% endfor %}
 {% endif %}
 
+{% load alumni %}
+
 <br />
 <div id="alumniform">
   <form action="{{ request.path }}" method="post">
@@ -71,7 +73,7 @@ This thread was originally created on {{ thread.timestamp|date:"M. j, Y" }}.
   {% endif %}
   </thead>
   <tbody>
-  {{ thread.get_reply_form }}
+  {{ request|alumni_reply_form:thread }}
   </tbody>
   <tbody>
     <tr> 

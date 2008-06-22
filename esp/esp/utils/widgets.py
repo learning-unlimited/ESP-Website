@@ -7,6 +7,8 @@ from django import newforms as forms
 import datetime
 import time
 
+from esp.utils import captcha
+
 # DATETIMEWIDGET
 calbtn = u"""<img src="%simages/calbutton.gif" alt="calendar" id="%s_btn" style="cursor: pointer; border: none;" title="Select date and time"
             onmouseover="this.style.background='#444444';" onmouseout="this.style.background=''" />
@@ -19,6 +21,25 @@ calbtn = u"""<img src="%simages/calbutton.gif" alt="calendar" id="%s_btn" style=
         showsTime      :    true
     });
 </script>"""
+
+class CaptchaWidget(forms.widgets.TextInput):
+    request = None
+    
+    def render(self, name, value, attrs=None):
+        if self.request:
+            return captcha.displayhtml(self.request, public_key=settings.RECAPTCHA_PUBLIC_KEY)
+        else:
+            raise ESPError(True), 'Captcha field initialized without request.  Please set the widget\'s request attribute.'
+    
+    def value_from_datadict(self, data, name):
+        challenge = data.get('recaptcha_challenge_field')
+        response = data.get('recaptcha_response_field')
+        captcha_response = captcha.submit(challenge, response, settings.RECAPTCHA_PRIVATE_KEY, self.request.META['REMOTE_ADDR'])
+
+        if captcha_response.is_valid:
+            return True
+        else:
+            return None
 
 class DateTimeWidget(forms.widgets.TextInput):
     dformat = '%Y-%m-%d %H:%M'

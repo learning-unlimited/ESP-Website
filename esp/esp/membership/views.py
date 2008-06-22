@@ -51,7 +51,7 @@ def alumnihome(request):
     context['links'] = QuasiStaticData.objects.filter(path=DataTree.get_by_uri('Q/Web/alumni'))
     context['threads'] = AlumniContact.objects.all()
     
-    return render_to_response('membership/alumnihome.html', request, request.get_node('Q/Web'), context)
+    return render_to_response('membership/alumnihome.html', request, request.get_node('Q/Web/alumni'), context)
 
 def thread(request, extra):
     
@@ -68,7 +68,7 @@ def thread(request, extra):
     if request.method == 'POST':
         #   Handle submission of replies.
         data = request.POST.copy()
-        form = AlumniMessageForm(thread, data)
+        form = AlumniMessageForm(thread, data, request=request)
         if form.is_valid():
             new_message = AlumniMessage()
             save_instance(form, new_message, commit=False)
@@ -87,7 +87,7 @@ def alumnicontact(request):
     """
     context = {}
     
-    context['form'] = AlumniContactForm()
+    context['form'] = AlumniContactForm(request=request)
     context['threads'] = AlumniContact.objects.all()
     
     if request.GET.has_key('success'):
@@ -95,7 +95,7 @@ def alumnicontact(request):
         
     if request.method == 'POST':
         data = request.POST.copy()
-        form = AlumniContactForm(data)
+        form = AlumniContactForm(data, request=request)
         if form.is_valid():
             new_contact = form.load_data()
             return HttpResponseRedirect('/alumni/thread/%d' % new_contact.id)
@@ -115,7 +115,7 @@ def alumnilookup(request):
     #   Usually, the default view is a blank form.
     context['contact_form'] = ContactInfoForm()
     context['lookup_form'] = AlumniLookupForm()
-    context['info_form'] = AlumniInfoForm()
+    context['info_form'] = AlumniInfoForm(request=request)
     
     #   If successful, display the appropriate message from the template.
     if request.GET.has_key('success'):
@@ -130,9 +130,9 @@ def alumnilookup(request):
         if method == 'submit':
             
             form1 = ContactInfoForm(data)
-            form2 = AlumniInfoForm(data)
+            form2 = AlumniInfoForm(data, request=request)
     
-            if form1.is_valid() and form2.is_valid():
+            if form2.is_valid() and form1.is_valid():
                 #   Save the information in the database
                 new_info = AlumniInfo()
                 
@@ -183,7 +183,7 @@ def alumnirsvp(request):
 
     #  If it's a success, return success page
     if 'success' in request.GET:
-        return render_to_response('membership/alumniform_success.html', request, request.get_node('Q/Web/about'), {})
+        return render_to_response('membership/alumniform_success.html', request, request.get_node('Q/Web/alumni'), {})
 
     #   If the form has been submitted, process it.
     if request.method == 'POST':

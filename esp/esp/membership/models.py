@@ -141,6 +141,9 @@ class AlumniMessage(models.Model):
         context = {'content': self.content, 'seq': self.seq, 'poster': self.poster}
         return loader.render_to_string(self.TEMPLATE_FILE, context)
     
+    class Admin:
+        pass
+    
 class AlumniContact(models.Model):
     #   An AlumniContact is like the start of a discussion thread consisting of AlumniMessages.
     participants = models.ManyToManyField(AlumniInfo, verbose_name='Select people to associate posting with')
@@ -152,14 +155,14 @@ class AlumniContact(models.Model):
     def __str__(self):
         return '%s (year: %s)' % (self.comment, self.year)
 
-    def get_reply_form(self):
+    def get_reply_form(self, request):
         from esp.membership.forms import AlumniMessageForm
         #   If the form is already there, don't mess with it.  
         #   Otherwise, come up with a blank one.
         if hasattr(self, 'reply_form'):
             return self.reply_form
         else:
-            self.reply_form = AlumniMessageForm(thread=self)
+            self.reply_form = AlumniMessageForm(thread=self, request=request)
             return self.reply_form
 
     def max_seq(self):
@@ -172,3 +175,6 @@ class AlumniContact(models.Model):
     def messages(self):
         qs = AlumniMessage.objects.filter(thread=self).order_by('seq')
         return list(qs)
+    
+    class Admin:
+        pass    

@@ -20,7 +20,7 @@ class AjaxForeignKeyFieldBase:
 
         old_init_val = init_val = data
 
-        if data:
+        if type(data) == int:
             objects = self.field.rel.to.objects.filter(pk = data)
             if objects.count() == 1:
                 obj = objects[0]
@@ -196,7 +196,10 @@ class AjaxForeignKeyNewformField(newforms.IntegerField):
             if match:
                 value = match.groups()[0]
             else:
-                raise validators.ValidationError, "Invalid text sent for key."
+                #   This is equivalent to a validation error but, now that we
+                #   trust the ForeignKey field to work normally, we don't need to
+                #   cause an error.
+                value = None
 
         return value
             
