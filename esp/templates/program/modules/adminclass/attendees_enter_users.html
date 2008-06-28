@@ -1,0 +1,26 @@
+{% extends "outlines/series-3.html" %}
+{% load subsection %}
+
+{% block title %}Select a Class{% endblock %}
+
+{% block keywords %}{% endblock %}
+{% block description %}{% endblock %}
+
+{% block subsection %}{% endblock %}
+
+{% block content %}
+
+<h1>Class Attendance Entry</h1>
+
+Enter attendance for {% if is_program %}{{ prog }}{% else %}{{ cls }}{% endif %}:
+
+<form action="" method="POST">
+<input type="hidden" name="class_id" value="{% if is_program %}program{% else %}{{ class_id }}{% endif %}" />
+<textarea name="attended" height="30">
+{% for stu in registered_students %}{{ stu.id }}
+{% endfor %}
+</textarea>
+<input type="submit" />
+</form>
+
+{% endblock %}
