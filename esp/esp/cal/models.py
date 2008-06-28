@@ -110,11 +110,11 @@ class Event(models.Model):
             end_minutes = ':%02d' % self.end.minute
             
         if self.start.hour >= 12 and self.end.hour >= 12:
-            return '%s %d%s to %d%s PM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
+            return '%d%s to %d%s PM' % ((self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
         elif self.start.hour < 12 and self.end.hour >= 12:
-            return '%s %d%s AM to %d%s PM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
+            return '%d%s AM to %d%s PM' % ((self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
         else:
-            return '%s %d%s to %d%s AM' % (day_list[self.start.weekday()], (self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
+            return '%d%s to %d%s AM' % ((self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
 
     def is_happening(self, time=datetime.now()):
         """ Return True if the specified time is between start and end """
