@@ -701,26 +701,30 @@ class ClassSection(models.Model):
     def update_cache(self):
         from esp.settings import CACHE_PREFIX
 
-        pclass = self.parent_class
-        from esp.program.templatetags.class_manage_row import cache_key as class_manage_row_cache_key
-        cache.delete(class_manage_row_cache_key(pclass, None)) # this cache_key doesn't actually care about the program, as classes can only be associated with one program.  If we ever change this, update this function call.
-        cache.delete(CACHE_PREFIX+class_manage_row_cache_key(pclass, None))
+        try: # if the section doesn't have a parent class yet, don't throw horrible errors
+            pclass = self.parent_class
+            from esp.program.templatetags.class_manage_row import cache_key as class_manage_row_cache_key
+            cache.delete(class_manage_row_cache_key(pclass, None)) # this cache_key doesn't actually care about the program, as classes can only be associated with one program.  If we ever change this, update this function call.
+            cache.delete(CACHE_PREFIX+class_manage_row_cache_key(pclass, None))
 
-        from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func, minimal_cache_key_func, current_cache_key_func, preview_cache_key_func
-        cache.delete(cache_key_func(pclass))
-        cache.delete(core_cache_key_func(pclass))
-        cache.delete(minimal_cache_key_func(pclass))
-        cache.delete(current_cache_key_func(pclass))
-        cache.delete(preview_cache_key_func(pclass))
+            from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func, minimal_cache_key_func, current_cache_key_func, preview_cache_key_func
+            cache.delete(cache_key_func(pclass))
+            cache.delete(core_cache_key_func(pclass))
+            cache.delete(minimal_cache_key_func(pclass))
+            cache.delete(current_cache_key_func(pclass))
+            cache.delete(preview_cache_key_func(pclass))
 
-        cache.delete(CACHE_PREFIX+cache_key_func(pclass))
-        cache.delete(CACHE_PREFIX+core_cache_key_func(pclass))
-        cache.delete(CACHE_PREFIX+minimal_cache_key_func(pclass))
-        cache.delete(CACHE_PREFIX+current_cache_key_func(pclass))
-        cache.delete(CACHE_PREFIX+preview_cache_key_func(pclass))
+            cache.delete(CACHE_PREFIX+cache_key_func(pclass))
+            cache.delete(CACHE_PREFIX+core_cache_key_func(pclass))
+            cache.delete(CACHE_PREFIX+minimal_cache_key_func(pclass))
+            cache.delete(CACHE_PREFIX+current_cache_key_func(pclass))
+            cache.delete(CACHE_PREFIX+preview_cache_key_func(pclass))
 
-        self.update_cache_students()
-        self.cache.update()
+            self.update_cache_students()
+            self.cache.update()
+
+        except:
+            pass
 
     def save(self):
         super(ClassSection, self).save()
