@@ -57,6 +57,16 @@ class NameTagModule(ProgramModuleObj):
         else:
             format = "pdf"
             
+        zipped_list = []
+
+        students = list(students)
+        
+        while students != []:
+            zipped_list.append(students[:3])
+            students = students[3:]
+
+        context['zipped_list'] = zipped_list
+            
         return render_to_latex(self.baseDir()+'stickers.tex', context, format)
 
     @needs_admin
