@@ -1,0 +1,38 @@
+{% extends "outlines/series-3.html" %}
+{% load subsection %}
+
+{% block title %}Set Deadlines{% endblock %}
+
+{% block keywords %}{% endblock %}
+{% block description %}{% endblock %}
+
+{% block subsection %}{% endblock %}
+
+{% block content %}
+
+<p><h1>Deadline Management</h1></p>
+
+<p>{% ifequal saved_successfully True %}<font color="red">Update saved.</font>{% endifequal %}</p>
+<p>{% ifequal saved_successfully False %}<font color="red">Some errors were found in your input.</font>  See below.{% endifequal %}</p>
+
+<form method="post" action="">
+{% for bit in userbit_forms %}
+<table border="2"><tr><td>
+<p>
+<h2>{{ bit.verb }}</h2> -- {% ifequal bit.verb.friendly_name "" %}(no description){% else %}{{ bit.verb.friendly_name }}{% endifequal %}
+<input type="checkbox" name="delete_bit_{{ bit.verb.id }}" />
+<label for="delete_bit_{{ bit.verb.id }}">Close This Deadline Now</label>
+<br />
+
+<table>
+{{ bit.ub_form.as_table }}
+</table>
+
+</p>
+</td></tr></table>
+{% endfor %}
+
+<input type="Submit" name="submit" value="Save" />
+</form>
+
+{% endblock %}

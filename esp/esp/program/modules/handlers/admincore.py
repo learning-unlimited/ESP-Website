@@ -32,6 +32,35 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
+from esp.datatree.models import GetNode
+from esp.users.models import UserBit
+from django import newforms as forms
+from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
+from esp.middleware import ESPError
+
+class UserBitForm( forms.form_for_model(UserBit) ):
+    def __init__(self, bit = None, *args, **kwargs):
+        from django import newforms as forms
+
+        if bit != None:
+            self.base_fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
+            self.base_fields['enddate'] = forms.DateTimeField(initial=bit.enddate, required=False)
+            self.base_fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput(), required=False)
+        else:
+            self.base_fields['startdate'] = forms.DateTimeField(required=False)
+            self.base_fields['enddate'] = forms.DateTimeField(required=False)
+
+        self.base_fields['user'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
+        self.base_fields['qsc'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
+        self.base_fields['verb'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
+        self.base_fields['startdate'].line_group = 1
+        self.base_fields['enddate'].line_group = 1
+        self.base_fields['recursive'] = forms.BooleanField(label = 'Covers deadlines beneath it ("Recursive")', required=False) # I consider this a bug, though it makes sense in context of the form protocol: Un-checked BooleanFields are marked as having not been filled out
+        self.base_fields['recursive'].line_group = 2
+            
+        super(UserBitForm, self).__init__(*args, **kwargs)
+        
+    as_table = grouped_as_table
 
 class AdminCore(ProgramModuleObj, CoreModule):
         
@@ -63,6 +92,93 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
+    @needs_admin
+    def deadline_management(self, request, tl, one, two, module, extra, prog):
+        """ View for controlling program deadlines (V/Deadline/Registration/*) """
+        deadline_verb = GetNode("V/Deadline/Registration")
+        
+        def add_tree_nodes_to_list(node):
+            retVal = []
+
+            for i in node.children():
+                retVal.append(i)
+                retVal += add_tree_nodes_to_list(i)
+
+            return retVal
+
+        def try_else(fn1, fn2):
+            try:
+                return fn1()
+            except:
+                return fn2()
+
+        def mux_bit_to_dict(bit):
+            return { 'startdate': bit.startdate, 'enddate': bit.enddate, 'recursive': bit.recursive }
+
+        from django import newforms as forms
+        
+        nodes = add_tree_nodes_to_list(deadline_verb)
+
+        saved_successfully = "not_saving"
+        
+        if request.method == "POST":
+            saved_successfully = False
+            
+            forms = [ { 'verb': v,
+                        'ub_form': UserBitForm(None, request.POST, prefix = "%d_"%v.id),
+                        'delete_status': request.POST.has_key("delete_bit_%d" % v.id) and request.POST['delete_bit_%d' % v.id] != ""
+                        }
+                      for v in nodes ]
+
+            print "test1"
+            
+            for form in forms:
+                # Get rid of any bits we're deleting
+                if form['delete_status']:
+                    for bit in UserBit.objects.filter(qsc=self.program_anchor_cached(),
+                                                      verb=v,
+                                                      user__isnull=True):
+                        bit.expire()
+                print "test2"
+                # Save any bits we're updating
+                if not form['delete_status'] and form['ub_form'].is_valid():
+                    bit = form['ub_form'].save(commit=False)
+                    bit.verb = form['verb']
+                    bit.qsc = self.program_anchor_cached()
+                    bit.user = None
+                    if UserBit.objects.filter(qsc=bit.qsc, verb=bit.verb, user__isnull=True).count() > 0:
+                        preexist_bit = UserBit.objects.filter(qsc=bit.qsc, verb=bit.verb, user__isnull=True)[0]
+                        preexist_bit.startdate = bit.startdate
+                        preexist_bit.enddate = bit.enddate
+                        preexist_bit.recursive = bit.recursive
+                        preexist_bit.save()
+                    else:
+                        bit.save()
+                    
+                    saved_successfully = True
+            print "test3"
+        else:
+            forms = [ { 'verb': v,
+                        'ub_form': try_else( lambda: UserBitForm( UserBit.objects.get(qsc=self.program_anchor_cached(),
+                                                                                      verb=v,
+                                                                                      user__isnull=True),
+                                                                  prefix = "%d_"%v.id ),
+                                             lambda: UserBitForm( prefix = "%d_"%v.id ) )
+                        }
+                      for v in nodes ]
+
+            for f in forms:
+                f['delete_status'] = ( UserBit.objects.filter( qsc=self.program_anchor_cached(),
+                                                               verb=f['verb'],
+                                                               user__isnull = True ).count() == 0 )
+        context= {}
+                
+        context['userbit_forms'] = forms
+        context['saved_successfully'] = saved_successfully
+        
+        return render_to_response(self.baseDir()+'deadlines.html', request, (prog, tl), context)        
+        
+        
     def isStep(self):
         return True
     
