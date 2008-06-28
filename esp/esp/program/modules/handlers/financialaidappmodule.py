@@ -153,7 +153,7 @@ This request can be (re)viewed at:
     str(app.reduced_lunch),
     str(app.household_income),
     str(app.student_prepare),
-    str(app.extra_explaination),
+    app.extra_explaination,
     SITE_INFO[1], # server hostname
     str(app.id)), 
                             'web@esp.mit.edu',
