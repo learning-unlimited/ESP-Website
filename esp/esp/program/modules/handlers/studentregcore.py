@@ -82,8 +82,16 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @needs_student
     @meets_grade
-    @meets_deadline("/Confirm")
     def confirmreg(self, request, tl, one, two, module, extra, prog):
+        if UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now())).count() > 0:
+            return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
+        return self.confirmreg_new(request, tl, one, two, module, extra, prog)
+    
+    @meets_deadline("/Confirm")
+    def confirmreg_new(self, request, tl, one, two, module, extra, prog):
+        return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=True)
+    
+    def confirmreg_forreal(self, request, tl, one, two, module, extra, prog, new_reg):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
         
@@ -121,8 +129,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context = module.prepare(context)
 	
 	if completedAll:
-            bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
-            if bits.count() == 0:
+            if new_reg:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
             raise ESPError(), "You must finish all the necessary steps first, then click on the Save button to finish registration."
