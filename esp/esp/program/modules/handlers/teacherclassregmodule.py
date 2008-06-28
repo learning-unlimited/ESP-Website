@@ -696,7 +696,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         users = user_dict.values()
 
         # Construct combo-box items
-        obj_list = [[user.last_name + ', ' + user.first_name + ' ('+user.username+')', user.id] for user in users]
+        obj_list = [["%s, %s (%s, id: %d)" % (user.last_name, user.first_name, user.username, user.id), user.id] for user in users]
 
         # Operation Complete!
         return JsonResponse(obj_list)
