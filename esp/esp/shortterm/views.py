@@ -13,7 +13,7 @@ def school_response_form(request):
         response = SchoolResponseForm(request.POST)
         if response.is_valid():
             data = response.save()
-            #data.send_mail()
+            data.send_mail()
             return HttpResponseRedirect("/school_response/thanks.html")
 
     else:
