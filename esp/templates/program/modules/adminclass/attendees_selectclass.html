@@ -16,8 +16,8 @@
 
 <ul>
 {% for cls in prog.class_sections %}
-<li><a href="?class_id={{cls.id}}">{{ cls }}</a></li>
-{% end %}
+<li><a href="?class_id={{cls.id}}">{{ cls }}</a>: {% ifequal cls.num_students 0 %}<font color="red">{% endifequal %}{{ cls.num_students }} student{{ cls.num_students|pluralize }}{% ifequal cls.num_students 0 %}</font>{% endifequal %}</li>
+{% endfor %}
 </ul>
 
 {% endblock %}

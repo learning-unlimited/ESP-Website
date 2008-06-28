@@ -12,15 +12,17 @@
 
 <h1>Class Attendance Entry</h1>
 
-Enter attendance for {% if is_program %}{{ prog }}{% else %}{{ cls }}{% endif %}:
+<p>Enter attendance for {% if is_program %}{{ prog }}{% else %}{{ cls }}{% endif %} (enter either usernames or user ID's, one per line):</p>
 
+<p>
 <form action="" method="POST">
 <input type="hidden" name="class_id" value="{% if is_program %}program{% else %}{{ class_id }}{% endif %}" />
-<textarea name="attended" height="30">
+<textarea name="ids_to_enter" rows="30" cols="15">
 {% for stu in registered_students %}{{ stu.id }}
 {% endfor %}
-</textarea>
-<input type="submit" />
+</textarea><br />
+<input type="submit" value="Save" />
 </form>
+</p>
 
 {% endblock %}

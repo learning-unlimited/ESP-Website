@@ -44,6 +44,8 @@ from django import newforms as forms
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.contrib.auth.decorators import login_required
+from esp.middleware import ESPError
+from esp.db.models import Q
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -147,7 +149,7 @@ class AdminClass(ProgramModuleObj):
             usernames = []
             ids = []
 
-            for id in request.POST['ids_to_enter']:
+            for id in request.POST['ids_to_enter'].split('\n'):
                 try: # We're going to accept both usernames and user ID's.
                      # Assume that valid integers are user ID's
                      # and things that aren't valid integers are usernames.
@@ -166,7 +168,7 @@ class AdminClass(ProgramModuleObj):
                 cls = ClassSection.objects.get(id = request.POST['class_id'])
                 already_registered_users = cls.students()
 
-            already_registered_ids = [ i.id for i in already_registered_students ]
+            already_registered_ids = [ i.id for i in already_registered_users ]
                                                
             new_attendees = ESPUser.objects.filter( Q_Users ).exclude( id__in = already_registered_ids ).distinct()
 
@@ -185,7 +187,7 @@ class AdminClass(ProgramModuleObj):
                     
             saved_record = True
         else:
-            if requset.GET.has_key('class_id'):
+            if request.GET.has_key('class_id'):
                 if request.GET['class_id'] == 'program':
                     is_program = True
                     registered_students = prog.students()['attended']
@@ -200,9 +202,9 @@ class AdminClass(ProgramModuleObj):
                             'registered_students': registered_students,
                             'class_id': request.GET['class_id'] }
                     
-                return render_to_response(self.basedir()+'attendees_enter_users.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'attendees_enter_users.html', request, (prog, tl), context)
 
-        return render_to_response(self.basedir()+'attendees_selectclass.html', request, (prog, tl), { 'saved_record': saved_record, 'prog': prog })
+        return render_to_response(self.baseDir()+'attendees_selectclass.html', request, (prog, tl), { 'saved_record': saved_record, 'prog': prog })
         
     @needs_admin
     def deletesection(self, request, tl, one, two, module, extra, prog):
