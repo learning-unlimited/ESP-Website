@@ -58,6 +58,19 @@ def get_user_list(request, listDict2, extra=''):
         listDict[key] = {'list': getQForUser(value['list']),
                          'description': value['description']}
 
+
+    if request.POST.has_key('submit_checklist') and \
+       request.POST['submit_checklist'] == 'true':
+
+        # If we're coming back after having checked off users from a checklist...
+        filterObj = PersistentQueryFilter.getFilterFromID(request.POST['extra'], User)
+        getUsers, found = get_user_checklist(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+        if found:
+            # want to make a PersistentQueryFilter out of this returned query
+            newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, User, 'Custom list')
+            return (newfilterObj, True)
+        else:
+            return (getUsers, False)
     
 
     if request.POST.has_key('submit_user_list') and \
@@ -124,6 +137,14 @@ def get_user_list(request, listDict2, extra=''):
             else:
                 return (getUser, False)
 
+        elif request.POST['submitform'] == 'I want a subset of this list':
+            getUsers, found = get_user_checklist(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+            if found:
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, User, 'Custom list')
+                return (newfilterObj, True)
+            else:
+                return (getUsers, False)
+
         return (filterObj, True) # We got the list, return it.
 
 
@@ -160,6 +181,32 @@ def get_user_list(request, listDict2, extra=''):
     arrLists.sort(reverse=True) 
 
     return (render_to_response('users/create_list.html', request, None, {'lists': arrLists}), False) # No, we didn't find it yet...
+
+
+def get_user_checklist(request, userList, extra=''):
+    """ Generate a checklist of users given an initial list of users to pick from.
+        Returns a tuple (userid_query or response, users found?)
+        The query that's returned contains the id's of just the users which are checked off. """
+
+    if request.POST.has_key('submit_checklist') and \
+       request.POST['submit_checklist'] == 'true':
+        UsersQ = Q(id=-1)
+
+        for key in request.POST.keys():
+            if 'userno' in key:
+                try:
+                    val = int(request.POST[key])
+                    UsersQ |= Q(id=val)
+                except:
+                    pass
+
+        return (UsersQ, True)
+        
+    context = {}
+    context['extra'] = extra
+    context['users'] = userList
+
+    return (render_to_response('users/userchecklist.html', request, None, context), False) # make the checklist
 
 
 def search_for_user(request, user_type='Any', extra='', returnList = False):
