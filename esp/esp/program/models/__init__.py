@@ -558,6 +558,9 @@ class Program(models.Model):
         
     def classes(self):
         return ClassSubject.objects.filter(parent_program = self).order_by('id')        
+
+    def class_sections(self):
+        return ClassSection.objects.filter(classsubject__parent_program = self).order_by('id')
     
     def class_ids_implied(self, use_cache=True):
         """ Returns the class ids implied by classes in this program. Returns [-1] for none so the cache doesn't keep getting hit. """
@@ -923,6 +926,18 @@ class RegistrationProfile(models.Model):
             regProf = regProfList[0]
         return regProf
 
+    def confirmStudentReg(self, user):
+        """ Confirm the specified user's registration in the program """
+        bits = UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
+        if bits.count() == 0:
+            bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+
+    def cancelStudentRegConfirmation(self, user):
+        """ Cancel the registration confirmation for the specified student """
+        raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
+        #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now())):
+        #    bit.expire()
+        
     def save(self):
         """ update the timestamp """
         self.last_ts = datetime.now()

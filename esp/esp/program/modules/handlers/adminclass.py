@@ -136,6 +136,75 @@ class AdminClass(ProgramModuleObj):
         return (render_to_response(self.baseDir()+'cannotfindclass.html', {}), False)
 
     @needs_admin
+    def attendees(self, request, tl, one, two, module, extra, prog):
+        """ Mark students as having attended the program, or as having registered for the specified class """
+        saved_record = False
+        
+        if request.method == 'POST':
+            if not( request.POST.has_key('class_id') and request.POST.has_key('ids_to_enter') ):
+                raise ESPError(), "Error: The server lost track of your data!  Please go back to the main page of this feature and try entering it again."
+
+            usernames = []
+            ids = []
+
+            for id in request.POST['ids_to_enter']:
+                try: # We're going to accept both usernames and user ID's.
+                     # Assume that valid integers are user ID's
+                     # and things that aren't valid integers are usernames.
+                    id_val = int(id)
+                    ids.append(id_val)
+                except ValueError:
+                    usernames.append( id.strip() )
+
+            Q_Users = Q(username__in = usernames) | Q(id__in = ids)
+                    
+            users = ESPUser.objects.filter( Q_Users )
+
+            if request.POST['class_id'] == 'program':
+                already_registered_users = prog.students()['attended']
+            else:
+                cls = ClassSection.objects.get(id = request.POST['class_id'])
+                already_registered_users = cls.students()
+
+            already_registered_ids = [ i.id for i in already_registered_students ]
+                                               
+            new_attendees = ESPUser.objects.filter( Q_Users ).exclude( id__in = already_registered_ids ).distinct()
+
+            no_longer_attending = ESPUser.objects.exclude( Q_Users ).filter( id__in = already_registered_ids ).distinct()
+
+            if request.POST['class_id'] == 'program':
+                for stu in no_longer_attending:
+                    prog.cancelStudentRegConfirmation(stu)
+                for stu in new_attendees:
+                    prog.confirmStudentReg(stu)
+            else:
+                for stu in no_longer_attending:
+                    cls.unpreregister_student(stu)
+                for stu in new_attendees:
+                    cls.preregister_student(stu, overridefull=True)
+                    
+            saved_record = True
+        else:
+            if requset.GET.has_key('class_id'):
+                if request.GET['class_id'] == 'program':
+                    is_program = True
+                    registered_students = prog.students()['attended']
+                else:
+                    is_program = False
+                    cls = ClassSection.objects.get(id = request.GET['class_id'])
+                    registered_students = cls.students()
+
+                context = { 'is_program': is_program,
+                            'prog': prog,
+                            'cls': cls,
+                            'registered_students': registered_students,
+                            'class_id': request.GET['class_id'] }
+                    
+                return render_to_response(self.basedir()+'attendees_enter_users.html', request, (prog, tl), context)
+
+        return render_to_response(self.basedir()+'attendees_selectclass.html', request, (prog, tl), { 'saved_record': saved_record, 'prog': prog })
+        
+    @needs_admin
     def deletesection(self, request, tl, one, two, module, extra, prog):
         """ A little function to remove the section specified in POST. """
         if request.method == 'POST':
