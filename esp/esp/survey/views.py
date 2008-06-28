@@ -203,8 +203,9 @@ def survey_review_single(request, tl, program, instance):
     try:
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
-        raise Http404
-    
+        #raise Http404
+        raise ESPError(), "Can't find the program %s/%s" % (program, instance)
+
     user = ESPUser(request.user)
     
     survey_response = None
