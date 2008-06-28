@@ -1,0 +1,32 @@
+\documentclass[letterpaper,10pt]{article}
+\usepackage{pstricks,tabularx,paralist}
+\usepackage{showexpl}
+\usepackage{breakurl}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage{pspicture}
+\usepackage{pst-barcode}
+\usepackage{longtable}
+\usepackage[left=.3in,top=.6in,right=.3in,bottom=.3in]{geometry}
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{longtable}{ccc}
+{% for student in students %}
+
+{% for timeslot in timeslots %}
+\begin{minipage}{2.625in}
+Registration for {{ timeslot.short_time }} \\
+{{ student.first_name }} {{ student.last_name }} (ID: {{ student.id }}) \\
+\begin{pspicture}(5,0.4in)
+\psbarcode[scalex=1,scaley=0.75]{0{{ student.id|stringformat:".10d" }}}{includetext height=0.5}{upca}
+\end{pspicture}
+\vspace{0.25in}
+\end{minipage}
+{% if not forloop.last %} & {% endif %}{% endfor %}{% if not forloop.last %} \\ {% endif %}
+
+{% endfor %}
+\end{longtable}
+
+\end{document}

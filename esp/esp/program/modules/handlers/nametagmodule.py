@@ -36,6 +36,7 @@ from esp.users.models import ESPUser, User
 from esp.db.models import Q
 from esp.users.views  import get_user_list
 from esp.middleware import ESPError
+from esp.web.util.latex import render_to_latex
 
 class NameTagModule(ProgramModuleObj):
     """ This module allows you to generate a bunch of IDs for everyone in the program. """
@@ -46,6 +47,17 @@ class NameTagModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, (prog, tl), context)
 
+    @needs_admin
+    def generatestickers(self, request, tl, one, two, module, extra, prog):
+        timeslots = prog.getTimeSlots()
+        students = prog.students()['confirmed']
+        context = {'timeslots': timeslots, 'students': students}
+        if request.GET.has_key("format"):
+            format = request.GET["format"]
+        else:
+            format = "pdf"
+            
+        return render_to_latex(self.baseDir()+'stickers.tex', context, format)
 
     @needs_admin
     def generatetags(self, request, tl, one, two, module, extra, prog):
@@ -61,8 +73,11 @@ class NameTagModule(ProgramModuleObj):
         
         if idtype == 'students':
             student_dict = self.program.students(QObjects = True)
-            students = User.objects.filter(student_dict['classreg'] | student_dict['confirmed']).distinct()
-            
+            if 'classreg' in student_dict:
+                students = User.objects.filter(student_dict['classreg'] | student_dict['confirmed']).distinct()
+            else:
+                students = User.objects.filter(student_dict['confirmed']).distinct()
+
             students = [ ESPUser(student) for student in
                          students ]
 
