@@ -9,6 +9,22 @@
 {% block subsection %}{% endblock %}
 
 {% block content %}
+<style type="text/css">
+#manage_form > table {
+border:0px none;
+width:100%;
+}
+#manage_form > table > tbody > tr > td {
+border:1px solid;
+padding:20px;
+}
+#manage_form > table h2 {
+color:#3366CC;
+}
+#manage_form table table td {
+padding-right:20px;
+}
+</style>
 
 <p><h1>Deadline Management</h1></p>
 
@@ -21,7 +37,7 @@
 <p>{% ifequal saved_successfully True %}<font color="red">Update saved.</font>{% endifequal %}</p>
 <p>{% ifequal saved_successfully False %}<font color="red">Some errors were found in your input.</font>  See below.{% endifequal %}</p>
 
-<form method="post" action="">
+<form method="post" action="" id="manage_form">
 {% for bit in userbit_forms %}
 <table border="2"><tr><td>
 <p>
