@@ -149,18 +149,23 @@ class AdminClass(ProgramModuleObj):
             usernames = []
             ids = []
 
-            for id in request.POST['ids_to_enter'].split('\n'):
+            for id in [ x for x in request.POST['ids_to_enter'].split('\n') if x.strip() != '' ]:
                 try: # We're going to accept both usernames and user ID's.
                      # Assume that valid integers are user ID's
                      # and things that aren't valid integers are usernames.
-                    id_val = int(id)
+                    if id[0] == '0':
+                        id_trimmed = id.strip()[:-1]
+                    else:
+                        id_trimmed = id
+                    
+                    id_val = int(id_trimmed)
                     ids.append(id_val)
                 except ValueError:
                     usernames.append( id.strip() )
-
+                    
             Q_Users = Q(username__in = usernames) | Q(id__in = ids)
                     
-            users = ESPUser.objects.filter( Q_Users )
+            users = User.objects.filter( Q_Users )
 
             if request.POST['class_id'] == 'program':
                 already_registered_users = prog.students()['attended']
@@ -170,9 +175,9 @@ class AdminClass(ProgramModuleObj):
 
             already_registered_ids = [ i.id for i in already_registered_users ]
                                                
-            new_attendees = ESPUser.objects.filter( Q_Users ).exclude( id__in = already_registered_ids ).distinct()
+            new_attendees = User.objects.filter( Q_Users ).exclude( id__in = already_registered_ids ).distinct()
 
-            no_longer_attending = ESPUser.objects.exclude( Q_Users ).filter( id__in = already_registered_ids ).distinct()
+            no_longer_attending = User.objects.exclude( Q_Users ).filter( id__in = already_registered_ids ).distinct()
 
             if request.POST['class_id'] == 'program':
                 for stu in no_longer_attending:
