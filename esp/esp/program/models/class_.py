@@ -994,6 +994,11 @@ class ClassSubject(models.Model):
         self.cache['teachers'] = retVal
         return retVal
 
+    def pretty_teachers(self, use_cache = True):
+        """ Return a prettified string listing of the class's teachers """
+
+        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers() ])
+        
     def isFull(self, timeslot=None, use_cache=True):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
