@@ -59,7 +59,7 @@ class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     from esp.program.models import Program
 
-    name = models.CharField(maxlength=40)                          #   Brief name
+    name = models.CharField(max_length=40)                          #   Brief name
     description = models.TextField()                                #   What is this resource?
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(blank=True, default=-1)  #   How important is this compared to other types?
@@ -131,7 +131,7 @@ class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
     res_type, attach to a user if necessary. """
     
-    name = models.CharField(maxlength=80)
+    name = models.CharField(max_length=80)
     res_type = models.ForeignKey(ResourceType)
     num_students = models.IntegerField(blank=True, default=-1)
     group_id = models.IntegerField(default=-1) # Default value of -1 means ungrouped, or at least so I'm assuming for now in grouped_resources(). -ageng 2008-05-13

@@ -49,8 +49,8 @@ guest_choices = (
     )
 
 class AlumniRSVP(models.Model):
-    name = models.CharField('Your name', maxlength=30)
-    attending = models.CharField('Are you coming?', choices=rsvp_choices, maxlength=10)
+    name = models.CharField('Your name', max_length=30)
+    attending = models.CharField('Are you coming?', choices=rsvp_choices, max_length=10)
     num_guests = models.IntegerField('Number of guests', choices=guest_choices)
     comments = models.TextField('Questions or comments', null=True)   
      
@@ -126,7 +126,7 @@ class AlumniInfo(models.Model):
     
 class AlumniMessage(models.Model):
     #   A simple thread posting.
-    poster = models.CharField('Who are you?', maxlength=128)
+    poster = models.CharField('Who are you?', max_length=128)
     thread = models.ForeignKey('AlumniContact')
     seq = models.IntegerField()
     content = models.TextField('Message')
@@ -150,7 +150,7 @@ class AlumniContact(models.Model):
     anchor = models.ForeignKey(DataTree, verbose_name='Program (if any) to associate posting with', null=True)
     year = models.IntegerField('Year[s]')
     timestamp = models.DateTimeField(default = datetime.datetime.now)
-    comment = models.CharField('Post title/note', maxlength=256, null=True)
+    comment = models.CharField('Post title/note', max_length=256, null=True)
 
     def __str__(self):
         return '%s (year: %s)' % (self.comment, self.year)

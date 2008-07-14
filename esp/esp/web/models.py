@@ -41,10 +41,10 @@ class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
     path = AjaxForeignKey(DataTree, related_name = 'navbar')
     sort_rank = models.IntegerField()
-    link = models.CharField(maxlength=256)
-    text = models.CharField(maxlength=64)
+    link = models.CharField(max_length=256)
+    text = models.CharField(max_length=64)
     indent = models.BooleanField()
-    section = models.CharField(maxlength=64,blank=True)
+    section = models.CharField(max_length=64,blank=True)
 
         
 

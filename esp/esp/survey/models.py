@@ -89,11 +89,11 @@ class ListField(object):
 
 class Survey(models.Model):
     """ A single survey. """
-    name = models.CharField(maxlength=255)
+    name = models.CharField(max_length=255)
     anchor = AjaxForeignKey(DataTree, related_name='surveys',
                             help_text="Usually the program.")
 
-    category = models.CharField(maxlength=32) # teach|learn|etc
+    category = models.CharField(max_length=32) # teach|learn|etc
     
     def __str__(self):
         return '%s (%s) for %s' % (self.name, self.category, str(self.anchor))
@@ -192,7 +192,7 @@ class QuestionType(models.Model):
         - Free Response long
     """
 
-    name = models.CharField(maxlength=255)
+    name = models.CharField(max_length=255)
     _param_names = models.TextField("Parameter names", blank=True,
                                     help_text="A pipe (|) delimited list of parameter names.")
     param_names = ListField('_param_names')
@@ -216,7 +216,7 @@ class QuestionType(models.Model):
 
 class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions")
-    name = models.CharField(maxlength=255)
+    name = models.CharField(max_length=255)
     question_type = models.ForeignKey(QuestionType)
     _param_values = models.TextField("Parameter values", blank=True,
                                      help_text="A pipe (|) delimited list of values.")

@@ -57,7 +57,7 @@ class ProgramCheckItem(models.Model):
     from esp.program.models import Program
     
     program = models.ForeignKey(Program, related_name='checkitems')
-    title   = models.CharField(maxlength=512)
+    title   = models.CharField(max_length=512)
     seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
                                           help_text = 'Lower is earlier')
 
@@ -1370,8 +1370,8 @@ class ClassImplication(models.Model):
     parent = models.ForeignKey('self', null=True, default=None) # parent classimplication
     is_prereq = models.BooleanField(default=True) # if not a prereq, it's a coreq
     enforce = models.BooleanField(default=True)
-    member_ids = models.CommaSeparatedIntegerField(maxlength=100, blank=True, null=False) # implied classes (get implied implications with classimplication_set instead)
-    operation = models.CharField(maxlength=4, choices = ( ('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One') ))
+    member_ids = models.CommaSeparatedIntegerField(max_length=100, blank=True, null=False) # implied classes (get implied implications with classimplication_set instead)
+    operation = models.CharField(max_length=4, choices = ( ('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One') ))
 
     def member_id_ints_get(self):
         return [ int(s) for s in self.member_ids.split(',') ]

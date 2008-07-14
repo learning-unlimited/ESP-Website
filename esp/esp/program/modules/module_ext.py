@@ -62,11 +62,11 @@ class ClassRegModuleInfo(models.Model):
     class_max_size       = models.IntegerField(blank=True, null=True)
     
     class_size_step      = models.IntegerField(blank=True, null=True)
-    director_email       = models.CharField(maxlength=64, blank=True, null=True)
-    class_durations      = models.CharField(maxlength=128, blank=True, null=True)
+    director_email       = models.CharField(max_length=64, blank=True, null=True)
+    class_durations      = models.CharField(max_length=128, blank=True, null=True)
     teacher_class_noedit = models.DateTimeField(blank=True, null=True)
     
-    session_counts       = models.CommaSeparatedIntegerField(maxlength=100, blank=True)
+    session_counts       = models.CommaSeparatedIntegerField(max_length=100, blank=True)
     
     num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True)
     num_class_choices    = models.PositiveIntegerField(default=1, blank=True, null=True)
@@ -74,7 +74,7 @@ class ClassRegModuleInfo(models.Model):
     #   An HTML color code for the program.  All classes will appear in some variant
     #   of this color in the catalog and registration pages.  If null, the default
     #   ESP colors will be used.
-    color_code           = models.CharField(maxlength=6, blank=True, null=True)
+    color_code           = models.CharField(max_length=6, blank=True, null=True)
 
     #   If this is true, teachers will be allowed to specify that students may
     #   come to their class late.
@@ -154,11 +154,11 @@ class SATPrepTeacherModuleInfo(models.Model):
 
     mitid    = models.PositiveIntegerField(blank=True, null=True)
 
-    subject  = models.CharField(maxlength=32, choices = SAT_SUBJECTS)
+    subject  = models.CharField(max_length=32, choices = SAT_SUBJECTS)
 
     user     = AjaxForeignKey(User,blank=True, null=True)
     program  = models.ForeignKey(Program,blank=True, null=True)
-    section  = models.CharField(maxlength=5)
+    section  = models.CharField(max_length=5)
    
     def __str__(self):
         return 'SATPrep Information for teacher %s in %s' % \

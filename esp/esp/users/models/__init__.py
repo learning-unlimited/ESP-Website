@@ -710,12 +710,12 @@ class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
-    school = models.CharField(maxlength=256,blank=True, null=True)
+    school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, null=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
-    shirt_size = models.CharField(maxlength=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(maxlength=20, blank=True, choices=shirt_types, null=True)
+    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
+    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
     class Meta:
         app_label = 'users'
@@ -813,11 +813,11 @@ class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
-    college = models.CharField(maxlength=128,blank=True, null=True)
-    major = models.CharField(maxlength=32,blank=True, null=True)
+    college = models.CharField(max_length=128,blank=True, null=True)
+    major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
-    shirt_size = models.CharField(maxlength=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(maxlength=20, blank=True, choices=shirt_types, null=True)
+    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
+    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
     class Meta:
         app_label = 'users'
@@ -944,10 +944,10 @@ class GuardianInfo(models.Model):
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
-    subject_taught = models.CharField(maxlength=64,blank=True, null=True)
-    grades_taught = models.CharField(maxlength=16,blank=True, null=True)
-    school = models.CharField(maxlength=128,blank=True, null=True)
-    position = models.CharField(maxlength=64,blank=True, null=True)
+    subject_taught = models.CharField(max_length=64,blank=True, null=True)
+    grades_taught = models.CharField(max_length=16,blank=True, null=True)
+    school = models.CharField(max_length=128,blank=True, null=True)
+    position = models.CharField(max_length=64,blank=True, null=True)
 
     class Meta:
         app_label = 'users'
@@ -1009,7 +1009,7 @@ class EducatorInfo(models.Model):
 
 class ZipCode(models.Model):
     """ Zip Code information """
-    zip_code = models.CharField(maxlength=5)
+    zip_code = models.CharField(max_length=5)
     latitude = models.DecimalField(max_digits=10, decimal_places = 6)
     longitude = models.DecimalField(max_digits=10, decimal_places = 6)
 
@@ -1091,16 +1091,16 @@ class ZipCodeSearches(models.Model):
 class ContactInfo(models.Model):
     """ ESP-specific contact information for (possibly) a specific user """
     user = AjaxForeignKey(User, blank=True, null=True, edit_inline = models.STACKED)
-    first_name = models.CharField(maxlength=64)
-    last_name = models.CharField(maxlength=64)
+    first_name = models.CharField(max_length=64)
+    last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('E-mail address', blank=True, null=True)
     phone_day = models.PhoneNumberField('Home phone',blank=True, null=True)
     phone_cell = models.PhoneNumberField('Cell phone',blank=True, null=True, core=True)
     phone_even = models.PhoneNumberField('Alternate phone',blank=True, null=True)
-    address_street = models.CharField('Street address',maxlength=100,blank=True, null=True, core=True)
-    address_city = models.CharField('City',maxlength=50,blank=True, null=True, core=True)
+    address_street = models.CharField('Street address',max_length=100,blank=True, null=True, core=True)
+    address_city = models.CharField('City',max_length=50,blank=True, null=True, core=True)
     address_state = models.USStateField('State',blank=True, null=True, core=True)
-    address_zip = models.CharField('Zip code',maxlength=5,blank=True, null=True, core=True)
+    address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True, core=True)
     address_postal = models.TextField(blank=True,null=True)
     undeliverable = models.BooleanField(default=False, core=True)
 
@@ -1194,7 +1194,7 @@ class K12School(models.Model):
     contact = AjaxForeignKey(ContactInfo, null=True,blank=True)
     school_type = models.TextField(blank=True,null=True)
     grades      = models.TextField(blank=True,null=True)
-    school_id   = models.CharField(maxlength=128,blank=True,null=True)
+    school_id   = models.CharField(max_length=128,blank=True,null=True)
     contact_title = models.TextField(blank=True,null=True)
     name          = models.TextField(blank=True,null=True)
 
@@ -1247,11 +1247,11 @@ def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrival (et al). """
-    item_model   = models.CharField(maxlength=256)            # A string representing the model, for instance User or Program
+    item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
     q_filter     = models.TextField()                         # A string representing a query filter
-    sha1_hash    = models.CharField(maxlength=256)            # A sha1 hash of the string representing the query filter
+    sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
-    useful_name  = models.CharField(maxlength=1024, blank=True, null=True) # A nice name to apply to this filter.
+    useful_name  = models.CharField(max_length=1024, blank=True, null=True) # A nice name to apply to this filter.
 
     class Meta:
         app_label = 'users'

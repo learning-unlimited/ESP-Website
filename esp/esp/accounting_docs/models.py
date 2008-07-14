@@ -48,8 +48,8 @@ class PurchaseOrder(models.Model):
     """ A purchase order available for invoicing in a given accounting ledger """
     anchor = AjaxForeignKey(DataTree)
     address = models.TextField()
-    fax = models.CharField(blank=True, maxlength=16)
-    phone = models.CharField(blank=True, maxlength=16)
+    fax = models.CharField(blank=True, max_length=16)
+    phone = models.CharField(blank=True, max_length=16)
     email = models.EmailField(blank=True)
     reference = models.TextField()
     rules = models.TextField()
@@ -87,7 +87,7 @@ class Document(models.Model):
     docs_next = models.ManyToManyField('self', symmetrical=False, related_name='docs_prev')
 
     # Document references
-    locator = models.CharField(maxlength=16, unique=True)
+    locator = models.CharField(max_length=16, unique=True)
     po = models.ForeignKey(PurchaseOrder, null=True)
     cc_ref = models.TextField(blank=True,default='')
 

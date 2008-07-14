@@ -43,10 +43,10 @@ import datetime
 
 class AnnouncementLink(models.Model):
     anchor = AjaxForeignKey(DataTree)
-    title = models.CharField(maxlength=256) 
+    title = models.CharField(max_length=256) 
     timestamp = models.DateTimeField(default=datetime.datetime.now, editable=False)
     highlight_expire = models.DateTimeField(blank=True,null=True, help_text="When this should stop being showcased.")
-    section = models.CharField(maxlength=32,blank=True,null=True, help_text="e.g. 'teach' or 'learn' or blank")
+    section = models.CharField(max_length=32,blank=True,null=True, help_text="e.g. 'teach' or 'learn' or blank")
     href = models.URLField(help_text="The URL the link should point to.")
 
     def __str__(self):
@@ -75,7 +75,7 @@ class AnnouncementLink(models.Model):
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     anchor = AjaxForeignKey(DataTree)
-    title = models.CharField(maxlength=256) # Plaintext; shouldn't contain HTML, for security reasons, though HTML will probably be passed through intact
+    title = models.CharField(max_length=256) # Plaintext; shouldn't contain HTML, for security reasons, though HTML will probably be passed through intact
     slug    = models.SlugField(prepopulate_from=('title',),
                                help_text="(will determine the URL)")
 
@@ -86,9 +86,9 @@ class Entry(models.Model):
     sent    = models.BooleanField(editable=False, default=False)
     email   = models.BooleanField(editable=False, default=False)
     fromuser = AjaxForeignKey(User, blank=True, null=True,editable=False)
-    fromemail = models.CharField(maxlength=80, blank=True, null=True, editable=False)
+    fromemail = models.CharField(max_length=80, blank=True, null=True, editable=False)
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
-    section = models.CharField(maxlength=32,blank=True,null=True,help_text="e.g. 'teach' or 'learn' or blank")
+    section = models.CharField(max_length=32,blank=True,null=True,help_text="e.g. 'teach' or 'learn' or blank")
 
     def __str__(self):
         if self.slug:
@@ -182,7 +182,7 @@ class Comment(models.Model):
     post_ts = models.DateTimeField(default=datetime.datetime.now,
                                    editable=False)
 
-    subject = models.CharField(maxlength=256)
+    subject = models.CharField(max_length=256)
 
     content = models.TextField(help_text="HTML not allowed.")
 

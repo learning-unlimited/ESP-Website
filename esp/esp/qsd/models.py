@@ -59,7 +59,7 @@ class QuasiStaticData(models.Model):
 
     path = AjaxForeignKey(DataTree)
     name = models.SlugField()
-    title = models.CharField(maxlength=256)
+    title = models.CharField(max_length=256)
     content = models.TextField()
 
     create_date = models.DateTimeField(default=datetime.now, editable=False)
@@ -144,7 +144,7 @@ class ESPQuotations(models.Model):
 
     content = models.TextField()
     display = models.BooleanField()
-    author  = models.CharField(maxlength=64)
+    author  = models.CharField(max_length=64)
     create_date = models.DateTimeField(default=datetime.now())
 
     @staticmethod

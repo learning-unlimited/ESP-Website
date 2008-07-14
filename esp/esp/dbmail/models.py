@@ -183,8 +183,8 @@ class MessageRequest(models.Model):
 
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
-    send_to = models.CharField(maxlength=1024)  # Valid email address, "Name" <foo@bar.com>
-    send_from = models.CharField(maxlength=1024) # Valid email address
+    send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
+    send_from = models.CharField(max_length=1024) # Valid email address
     subject = models.TextField() # E-mail subject; plain text
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)
@@ -239,7 +239,7 @@ class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
     messagerequest = models.ForeignKey(MessageRequest)
     pickled_provider = models.TextField() # Object which must have obj.get_message_var(key)
-    provider_name    = models.CharField(maxlength=128)
+    provider_name    = models.CharField(max_length=128)
     
     @staticmethod
     def createVar(msgrequest, name, obj):
@@ -362,20 +362,20 @@ class EmailList(models.Model):
     """
 
     regex = models.CharField(verbose_name='Regular Expression',
-            maxlength=512, help_text="(e.g. '^(.*)$' matches everything)")
+            max_length=512, help_text="(e.g. '^(.*)$' matches everything)")
 
     seq   = models.PositiveIntegerField(blank=True, verbose_name = 'Sequence',
                                         help_text="Smaller is earlier.")
 
-    handler = models.CharField(maxlength=128)
+    handler = models.CharField(max_length=128)
 
-    subject_prefix = models.CharField(maxlength=64,blank=True,null=True)
+    subject_prefix = models.CharField(max_length=64,blank=True,null=True)
 
     admin_hold = models.BooleanField(default=False)
 
     cc_all     = models.BooleanField(help_text="If true, the CC field will list everyone. Otherwise each email will be sent individually.", default=False)
 
-    from_email = models.CharField(help_text="If specified, the FROM header will be overwritten with this email.", blank=True, null=True, maxlength=512)
+    from_email = models.CharField(help_text="If specified, the FROM header will be overwritten with this email.", blank=True, null=True, max_length=512)
 
     description = models.TextField(blank=True,null=True)
 
@@ -405,9 +405,9 @@ class PlainRedirect(models.Model):
     A simple catch-all for mail redirection.
     """
 
-    original = models.CharField(maxlength=512)
+    original = models.CharField(max_length=512)
 
-    destination = models.CharField(maxlength=512)
+    destination = models.CharField(max_length=512)
 
     def __str__(self):
         return '%s --> %s'  % (self.original, self.destination)

@@ -120,14 +120,16 @@ class ProgramModuleObj(models.Model):
             return Q(id = -1)
         else:
             return Q(id__in = ids)
-    
-    def save(self):
-        """ I'm doing this because DJango doesn't know what object inheritance is..."""
-        if type(self) == ProgramModuleObj:
-            return super(ProgramModuleObj, self).save()
-        baseObj = ProgramModuleObj()
-        baseObj.__dict__ = self.__dict__
-        return baseObj.save()
+
+
+    # But it does know now...
+    #def save(self):
+    #    """ I'm doing this because DJango doesn't know what object inheritance is..."""
+    #    if type(self) == ProgramModuleObj:
+    #        return super(ProgramModuleObj, self).save()
+    #    baseObj = ProgramModuleObj()
+    #    baseObj.__dict__ = self.__dict__
+    #    return baseObj.save()
 
     @staticmethod
     def renderMyESP():

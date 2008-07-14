@@ -46,33 +46,33 @@ class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
     # Title for the link displayed for this Program Module in the Programs form
-    link_title = models.CharField(maxlength=64, blank=True, null=True)
+    link_title = models.CharField(max_length=64, blank=True, null=True)
 
     # Human-readable name for the Program Module
-    admin_title = models.CharField(maxlength=128)
+    admin_title = models.CharField(max_length=128)
 
     # Main view function associated with this Program Module
     #   Not all program modules have main calls!
-    main_call  = models.CharField(maxlength=32, blank=True, null=True)
+    main_call  = models.CharField(max_length=32, blank=True, null=True)
 
     # aseering 3-19-2007 -- ??; no idea what this is for
-    check_call = models.CharField(maxlength=32, blank=True, null=True)
+    check_call = models.CharField(max_length=32, blank=True, null=True)
 
     # One of teach/learn/etc.; What is this module typically used for?
-    module_type = models.CharField(maxlength=32)
+    module_type = models.CharField(max_length=32)
 
     # self.__name__, stored neatly in the database
-    handler    = models.CharField(maxlength=32)
+    handler    = models.CharField(max_length=32)
 
     # Sequence orderer.  When ProgramModules are listed on a page, order them
     # from smallest to largest 'seq' value
     seq = models.IntegerField()
 
     # Secondary view functions associated with this ProgramModule
-    aux_calls = models.CharField(maxlength=512, blank=True, null=True)
+    aux_calls = models.CharField(max_length=512, blank=True, null=True)
 
     # Summary view functions, that summarize data for all instances of this ProgramModule
-    summary_calls = models.CharField(maxlength=512, blank=True, null=True)
+    summary_calls = models.CharField(max_length=512, blank=True, null=True)
 
     # Must the user supply this ProgramModule with data in order to complete program registration?
     required = models.BooleanField()
@@ -143,14 +143,14 @@ class ProgramModule(models.Model):
     
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
-    program = models.CharField(maxlength=256)
-    year = models.CharField(maxlength=4)
-    date = models.CharField(maxlength=128)
-    category = models.CharField(maxlength=16)
-    teacher = models.CharField(maxlength=1024)
-    title = models.CharField(maxlength=1024)
+    program = models.CharField(max_length=256)
+    year = models.CharField(max_length=4)
+    date = models.CharField(max_length=128)
+    category = models.CharField(max_length=16)
+    teacher = models.CharField(max_length=1024)
+    title = models.CharField(max_length=1024)
     description = models.TextField()
-    teacher_ids = models.CharField(maxlength=256, blank=True, null=True)
+    teacher_ids = models.CharField(max_length=256, blank=True, null=True)
     student_ids = models.TextField()
     original_id = models.IntegerField(blank=True, null=True)
     
@@ -240,7 +240,7 @@ class Program(models.Model):
     anchor = AjaxForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
-    director_email = models.CharField(maxlength=64)
+    director_email = models.CharField(max_length=64)
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
     program_size_max = models.IntegerField(null=True)
@@ -816,7 +816,7 @@ class Program(models.Model):
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """
     program = models.ForeignKey(Program)
-    src_dst = models.CharField(maxlength=128)
+    src_dst = models.CharField(max_length=128)
     departs = models.DateTimeField()
     arrives = models.DateTimeField()
 
@@ -859,7 +859,7 @@ class SATPrepRegInfo(models.Model):
     prac_math_score = models.IntegerField(blank=True, null=True)
     prac_verb_score = models.IntegerField(blank=True, null=True)
     prac_writ_score = models.IntegerField(blank=True, null=True)    
-    heard_by = models.CharField(maxlength=128, blank=True, null=True)
+    heard_by = models.CharField(max_length=128, blank=True, null=True)
     user = AjaxForeignKey(User)
     program = models.ForeignKey(Program)
 
@@ -1007,7 +1007,7 @@ class TeacherBio(models.Model):
     program = models.ForeignKey(Program)
     user    = AjaxForeignKey(User)
     bio     = models.TextField(blank=True, null=True)
-    slugbio = models.CharField(maxlength=50, blank=True, null=True)
+    slugbio = models.CharField(max_length=50, blank=True, null=True)
     picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/",blank=True, null=True)
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
@@ -1078,7 +1078,7 @@ class FinancialAidRequest(models.Model):
     reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', null=True, blank=True)
 
     household_income = models.CharField(verbose_name = 'Approximately what is your household income (round to the nearest $10,000)?', null=True, blank=True,
-                        maxlength=12)
+                        max_length=12)
 
     extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this year', null=True, blank=True)
 

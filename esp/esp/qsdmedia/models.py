@@ -46,8 +46,8 @@ class Media(models.Model):
     target_file = models.FileField(upload_to=root_file_path) # Target media file
     size = models.IntegerField(blank=True, null=True, editable=False) # Size of the file, in bytes
     format = models.TextField(blank=True, null=True)  # Format string; should be human-readable (string format is currently unspecified)
-    mime_type = models.CharField(blank=True, null=True, maxlength=256, editable=False)
-    file_extension = models.TextField(blank=True, null=True, maxlength=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
+    mime_type = models.CharField(blank=True, null=True, max_length=256, editable=False)
+    file_extension = models.TextField(blank=True, null=True, max_length=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
 
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]

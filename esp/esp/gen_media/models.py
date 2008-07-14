@@ -59,8 +59,8 @@ class LatexImage(models.Model):
     content  = models.TextField()
     image    = models.FileField(upload_to = 'latex')
     dpi      = models.IntegerField(blank=True, null=True)
-    style    = models.CharField(maxlength=16, choices = (('INLINE','INLINE'),('DISPLAY','DISPLAY')))
-    filetype = models.CharField(maxlength=10)
+    style    = models.CharField(max_length=16, choices = (('INLINE','INLINE'),('DISPLAY','DISPLAY')))
+    filetype = models.CharField(max_length=10)
 
     def getImage(self):
         if not self.file_exists():

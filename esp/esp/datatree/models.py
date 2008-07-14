@@ -66,12 +66,12 @@ class DataTree(models.Model):
                       
 
     # some fields
-    name          = models.CharField(maxlength=64)
+    name          = models.CharField(max_length=64)
     friendly_name = models.TextField()
     parent        = AjaxForeignKey('self',blank=True,null=True, related_name='child_set')
     rangestart    = models.IntegerField(editable = False)
     rangeend      = models.IntegerField(editable = False)
-    uri           = models.CharField(editable = False, maxlength=1024)
+    uri           = models.CharField(editable = False, max_length=1024)
     #^ a charfield for indexing purposes
     uri_correct   = models.BooleanField(editable = False, default = False)
     lock_table    = models.IntegerField(editable = False, default = 0,
