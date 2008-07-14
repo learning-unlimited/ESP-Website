@@ -55,9 +55,9 @@ class LineItemTypeManager(ProcedureManager):
 class LineItemType(models.Model):
     """ A set of default values for a line item """
     text = models.TextField() # description of line item
-    amount = models.FloatField(help_text='This should be negative for student costs charged to a program.', max_digits=9, decimal_places=2, default=0.0) # default amount
+    amount = models.DecimalField(help_text='This should be negative for student costs charged to a program.', max_digits=9, decimal_places=2, default=0.0) # default amount
     anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitemtype',null=True) # account to post the line item
-    finaid_amount = models.FloatField(max_digits=9, decimal_places=2, default=0.0) # amount after financial aid
+    finaid_amount = models.DecimalField(max_digits=9, decimal_places=2, default=0.0) # amount after financial aid
     finaid_anchor = AjaxForeignKey(DataTree,null=True,related_name='accounting_finaiditemtype')
     
     def negative_amount(self):
@@ -81,7 +81,7 @@ class Balance(models.Model):
     anchor = AjaxForeignKey(DataTree, related_name='balance')
     user = AjaxForeignKey(User, related_name='balance')
     timestamp = models.DateTimeField()
-    amount = models.FloatField(max_digits=16, decimal_places=2)
+    amount = models.DecimalField(max_digits=16, decimal_places=2)
     past = models.ForeignKey('self', null=True)
 
     def negative_amount(self):
@@ -251,7 +251,7 @@ class LineItem(models.Model):
     transaction = models.ForeignKey(Transaction)
     user = AjaxForeignKey(User,related_name='accounting_lineitem')
     anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitem')
-    amount = models.FloatField(max_digits=9, decimal_places=2)
+    amount = models.DecimalField(max_digits=9, decimal_places=2)
     text = models.TextField()
     li_type = models.ForeignKey(LineItemType)
     posted_to = models.ForeignKey(Balance, null=True)

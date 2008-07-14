@@ -18,7 +18,7 @@
 {% for student in studentset %}
 \begin{minipage}{2.625in}
 Registration for {{ timeslot.short_time }} \\
-{{ student.first_name }} {{ student.last_name }} (ID: {{ student.id }}) \\
+{{ student.first_name }} {{ student.last_name }} ({{ student.username }}) \\
 \begin{pspicture}(5,0.4in)
 \psbarcode[scalex=1,scaley=0.75]{0{{ student.id|stringformat:".10d" }}}{includetext height=0.5}{upca}
 \end{pspicture}

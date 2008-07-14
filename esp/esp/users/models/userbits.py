@@ -88,7 +88,7 @@ class UserBitManager(ProcedureManager):
             global_key = self.get_global_key()
             user_key = '%s_user_%s' % (global_key, user_id)
 
-            return user_key
+            return str(user_key)
 
         def get_key_for_user(self):
             """

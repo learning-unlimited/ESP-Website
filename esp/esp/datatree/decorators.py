@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from esp.users.models    import GetNodeOrNoBits, PermissionDenied
-from esp.datatree.models import DataTree
+from esp.datatree.models import DataTree, GetNode
 from django.http import Http404
 from esp.web.util.main import render_to_response
 from django.core.cache import cache
@@ -80,7 +80,7 @@ def branch_find(view_func):
             return view_func(*((request,) + retVal + args), **kwargs)
 
         # function "constants"
-        READ_VERB = request.get_node('V/Flags/Public')
+        READ_VERB = GetNode('V/Flags/Public')
         DEFAULT_ACTION = 'read'
 
         if filename:

@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 """ This is the views portion of the users utility, which has some user-oriented views."""
 from esp.middleware   import ESPError
-from esp.db.models    import Q, QNot, QSplit, QRegex
+from esp.db.models    import Q
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User, ZipCode
 from esp.web.util     import render_to_response
 import pickle
@@ -82,7 +82,7 @@ def get_user_list(request, listDict2, extra=''):
         # map of operators that can be done on lists (appropriately, Q Objects)
         opmapping = {'and'  : operator.and_,
                      'or'   : operator.or_,
-                     'not'  : QNot,
+                     'not'  : (lambda x: ~x), # aseering 7/12/2008 -- Should with with Django SVN HEAD
                      'ident': (lambda x: x) # for completeness
                      }
 
@@ -265,9 +265,9 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                     filter_dict = {'%s__iregex' % field: request.GET[field]}
                     update = True
                     if request.GET.has_key('%s__not' % field):
-                        Q_exclude &= QRegex(**filter_dict)
+                        Q_exclude &= Q(**filter_dict)
                     else:
-                        Q_include &= QRegex(**filter_dict)
+                        Q_include &= Q(**filter_dict)
 
             if request.GET.has_key('zipcode') and request.GET.has_key('zipdistance') and \
                len(request.GET['zipcode'].strip()) > 0 and len(request.GET['zipdistance'].strip()) > 0:
@@ -338,10 +338,10 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                 if not hasattr(Q_include, 'old'):
                     Q_Filter = Q_include
                     if not hasattr(Q_exclude, 'old'):
-                        Q_Filter &= QNot(Q_exclude)
+                        Q_Filter &= ~Q_exclude
                 else:
                     if not hasattr(Q_exclude, 'old'):
-                        Q_Filter = QNot(Q_exclude)
+                        Q_Filter = ~Q_exclude
                 
 
                 return (Q_Filter, True)

@@ -1,5 +1,6 @@
 from django.conf import settings
-from django.db.models.query import QuerySet, GET_ITERATOR_CHUNK_SIZE, EmptyResultSet
+from django.db.models.query import QuerySet, EmptyResultSet
+from django.db.models.sql.query import GET_ITERATOR_CHUNK_SIZE
 from django.db.models.manager import Manager
 from django.db.models import Model
 from django.db import backend, connection, transaction

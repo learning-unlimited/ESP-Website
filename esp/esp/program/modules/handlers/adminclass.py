@@ -163,7 +163,12 @@ class AdminClass(ProgramModuleObj):
                 except ValueError:
                     usernames.append( id.strip() )
                     
-            Q_Users = Q(username__in = usernames) | Q(id__in = ids)
+            Q_Users = Q()
+            if usernames != []:
+                Q_Users |= Q(username__in = usernames)
+
+            if ids != []:
+                Q_Users |= Q(id__in = ids)
                     
             users = User.objects.filter( Q_Users )
 
@@ -175,9 +180,15 @@ class AdminClass(ProgramModuleObj):
 
             already_registered_ids = [ i.id for i in already_registered_users ]
                                                
-            new_attendees = User.objects.filter( Q_Users ).exclude( id__in = already_registered_ids ).distinct()
+            new_attendees = User.objects.filter( Q_Users )
+            if already_registered_ids != []:
+                new_attendees = new_attendees.exclude( id__in = already_registered_ids )
+            new_attendees = new_attendees.distinct()
 
-            no_longer_attending = User.objects.exclude( Q_Users ).filter( id__in = already_registered_ids ).distinct()
+            no_longer_attending = User.objects.filter( id__in = already_registered_ids )
+            if ids != [] or usernames != []:
+                no_longer_attending = no_longer_attending.exclude( Q_Users )
+            no_longer_attending = no_longer_attending.distinct()
 
             if request.POST['class_id'] == 'program':
                 for stu in no_longer_attending:

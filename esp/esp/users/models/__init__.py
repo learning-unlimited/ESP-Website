@@ -33,7 +33,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
 from datetime import datetime, timedelta
-from esp.db.models import Q, qlist
+from esp.db.models import Q
 from esp.dblog.models import error
 from django.db.models.query import QuerySet
 from django.core.cache import cache
@@ -83,7 +83,7 @@ class ESPUser(User, AnonymousUser):
     class Meta:
         app_label = 'auth'
         db_table = 'auth_user'
-
+        
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:
     #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
@@ -99,6 +99,9 @@ class ESPUser(User, AnonymousUser):
         else:
             models.Model.__init__(self, userObj, *args, **kwargs)
 
+        self._meta.pk.attname = "id"
+        self._meta.local_fields[0].column = "id"
+            
         self.other_user = False
         self.cache = ESPUser.objects.cache(self)
 
@@ -1007,8 +1010,8 @@ class EducatorInfo(models.Model):
 class ZipCode(models.Model):
     """ Zip Code information """
     zip_code = models.CharField(maxlength=5)
-    latitude = models.FloatField(max_digits=10, decimal_places = 6)
-    longitude = models.FloatField(max_digits=10, decimal_places = 6)
+    latitude = models.DecimalField(max_digits=10, decimal_places = 6)
+    longitude = models.DecimalField(max_digits=10, decimal_places = 6)
 
     class Meta:
         app_label = 'users'
@@ -1074,7 +1077,7 @@ class ZipCode(models.Model):
 
 class ZipCodeSearches(models.Model):
     zip_code = models.ForeignKey(ZipCode)
-    distance = models.FloatField(max_digits = 15, decimal_places = 3)
+    distance = models.DecimalField(max_digits = 15, decimal_places = 3)
     zipcodes = models.TextField()
 
     class Meta:

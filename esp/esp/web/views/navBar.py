@@ -140,7 +140,6 @@ def makeNavBar(user, node, section = ''):
                 navBarAssociatedPrograms[i.id] = Program.objects.filter(anchor__parent__navbar=i,
                                                                         anchor__name__icontains=i.text)
 
-            from esp.db.models import QSplit
             qsdTree = list(NavBarEntry.objects.filter(path = self.node, section__in=sections).order_by('sort_rank')) + list(NavBarEntry.objects.filter(path__parent = self.node, section__in=sections).order_by('sort_rank'))
 
             if user is None or user.id is None or not user.is_authenticated():

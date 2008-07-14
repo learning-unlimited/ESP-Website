@@ -86,7 +86,7 @@ class Transaction(models.Model):
     anchor = AjaxForeignKey(DataTree) # Region of ESP that receives the transaction
     payer = AjaxForeignKey(User, related_name="payer") # Source of the money
     fbo = AjaxForeignKey(User, related_name="fbo") # Payment is for the benefit of this user
-    amount = models.FloatField(max_digits=9, decimal_places=2) # Amount to be payed
+    amount = models.DecimalField(max_digits=9, decimal_places=2) # Amount to be payed
     line_item = models.TextField() # Description of the reason for this payment
     payment_type = models.ForeignKey(PaymentType) # Type of payment; ie. credit card, check, cash, etc.
 
@@ -111,9 +111,9 @@ class Transaction(models.Model):
     
 
 class LineItemType(models.Model):
-	value = models.FloatField(max_digits = 10, decimal_places = 2)
-	financial_aid_value = models.FloatField(max_digits=10, decimal_places=2)
-        onsite_value = models.FloatField(max_digits=10, decimal_places=2)
+	value = models.DecimalField(max_digits = 10, decimal_places = 2)
+	financial_aid_value = models.DecimalField(max_digits=10, decimal_places=2)
+        onsite_value = models.DecimalField(max_digits=10, decimal_places=2)
 	label = models.TextField()
 	anchor = AjaxForeignKey(DataTree)
 	optional = models.BooleanField(default=True)

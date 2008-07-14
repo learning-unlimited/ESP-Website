@@ -39,7 +39,7 @@ import django.core.mail
 
 from esp.datatree.models import DataTree, GetNode, StringToPerm, PermToString
 from esp.users.models import UserBit, PersistentQueryFilter, ESPUser
-from django.template import Template, VariableNode, TextNode, DebugVariableNode
+from django.template import Template, VariableNode, TextNode
 
 def send_mail(subject, message, from_email, recipient_list,
               fail_silently=False, *args, **kwargs):

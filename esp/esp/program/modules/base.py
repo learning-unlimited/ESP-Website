@@ -38,10 +38,13 @@ from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser
 from esp.web.util import render_to_response
 from django.http import HttpResponseRedirect, Http404
-from django.contrib.auth import LOGIN_URL, REDIRECT_FIELD_NAME
+from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.conf import settings
 from urllib import quote
 from esp.db.models import Q
 from django.core.cache import cache
+
+LOGIN_URL = settings.LOGIN_URL
 
 class CoreModule(object):
     """

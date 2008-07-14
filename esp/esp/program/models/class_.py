@@ -157,7 +157,7 @@ class ClassSection(models.Model):
     
     anchor = models.ForeignKey(DataTree)
     status = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted
-    duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
+    duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
 
@@ -819,7 +819,7 @@ class ClassSubject(models.Model):
     #   Backwards compatibility with Class database format.
     #   Please don't use. :)
     status = models.IntegerField(default=0)   
-    duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
+    duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
 
     def prettyDuration(self):
