@@ -1,6 +1,5 @@
 
 
-
 def tree_filter(kwargs):
     """
     Takes any input to filter and changes the
@@ -25,3 +24,6 @@ def tree_filter(kwargs):
             new_kwargs[key[:-5]+'rangeend__gte']   = node.rangeend
 
     return new_kwargs
+
+def tree_filter_kwargs(**kwargs):
+    return tree_filter(kwargs)

@@ -18,6 +18,9 @@ from esp.datatree.models import DataTree
 # Cache introspection
 from django.core.cache.backends.memcached import CacheClass as MemcachedClass
 
+# Parsing "__above" tree queries
+from esp.datatree.util import tree_filter_kwargs, tree_filter
+
 
 __all__ = ['UserBit','UserBitImplication']
 
@@ -145,8 +148,8 @@ class UserBitManager(ProcedureManager):
             return retVal
         else:
             
-            retVal = len(self.filter(Q(**{'user':user,
-                                          col_filter: node})).values('id')[:1]) > 0
+            retVal = bool(self.filter(**tree_filter({'user':user,
+                                                     col_filter: node})))
             self.cache(user)[cache_key] = retVal
 
         return retVal
@@ -255,7 +258,7 @@ class UserBitManager(ProcedureManager):
                 query = Model.objects.filter(anchor=q)
                 
             if qsc is not None:
-                query = query.filter(Q(anchor__below = qsc))
+                query = query.filter(Q(**tree_filter_kwargs(anchor__below = qsc)))
 
             if res == None:
                 res = query
@@ -592,9 +595,9 @@ class UserBitImplication(models.Model):
             Q_qsc  = Q(qsc_original  = userbit.qsc)
             Q_verb = Q(verb_original = userbit.verb)
         else:
-            Q_qsc  = Q(qsc_original__below = userbit.qsc)
+            Q_qsc  = Q(**tree_filter_kwargs(qsc_original__below = userbit.qsc))
 
-            Q_verb = Q(verb_original__below = userbit.verb)
+            Q_verb = Q(**tree_filter_kwargs(verb_original__below = userbit.verb))
 
         # if one of the two are null, the other one can match and it'd be fine.
         Q_match = (Q_qsc & Q_verb) | (Q_qsc_null & Q_verb) | (Q_qsc & Q_verb_null)
@@ -671,13 +674,13 @@ class UserBitImplication(models.Model):
         if self.qsc_original_id is None and self.verb_original_id is None:
             return
         if self.qsc_original_id is not None:
-            Q_qsc = (Q(qsc__above = self.qsc_original) &\
+            Q_qsc = (Q(**tree_filter_kwargs(qsc__above = self.qsc_original)) &\
                      Q(recursive       = True)) \
                      | \
                      Q(qsc = self.qsc_original_id)
             
         if self.verb_original_id is not None:
-            Q_verb = (Q(verb__above = self.verb_original) &\
+            Q_verb = (Q(**tree_filter_kwargs(verb__above = self.verb_original)) &\
                       Q(recursive       = True)) \
                       | \
                       Q(verb = self.verb_original_id)

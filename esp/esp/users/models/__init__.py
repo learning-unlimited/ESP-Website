@@ -83,6 +83,11 @@ class ESPUser(User, AnonymousUser):
     class Meta:
         app_label = 'auth'
         db_table = 'auth_user'
+
+        def __init__(self):
+            super(self, Meta).__init__()
+            self.pk.attname = "id"
+            self.local_fields[0].column = "id"
         
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:
