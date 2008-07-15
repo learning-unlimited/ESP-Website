@@ -450,6 +450,15 @@ class DataTree(models.Model):
     def __len__(self):
         return self.children().count()
 
+    def __nonzero__(self):
+        """
+        Django occasionally uses bool(model_object) internally, to determine whether an object was properly returned (if not, presumably model_object is null or something).
+        bool(a) calls __nonzero__ on a; if that doesn't exist, it calls __len__.
+        DataTree().__len__ (above) calls DataTree().children(), which executes a query, which calls DataTree().__len__..., creating an infinite loop.
+        So, creating this function to stop that.
+        """
+        return True
+
     values = children
 
     def keys(self):
