@@ -113,8 +113,8 @@ class QuerySetPrepared(QuerySet):
 
             counter = self._clone()
 
-            offset = counter._offset
-            limit = counter._limit
+            offset = counter.query.high_mark
+            limit = counter.query.low_mark
 
             
             cursor = connection.cursor()

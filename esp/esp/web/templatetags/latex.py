@@ -82,7 +82,7 @@ def texescape(value):
 @register.filter
 def teximages(value,dpi=150):
 
-    value = str(value).strip()
+    value = unicode(value).strip()
 
     strings = value.split('$$')
     style   = 'DISPLAY'

@@ -37,9 +37,9 @@ from esp.db.models       import Q
 from esp.users.models    import User
 from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
 
-class CreditCardModule(ProgramModuleObj):
+class CreditCardModule(ProgramModuleObj, module_ext.CreditCardModuleInfo):
     def extensions(self):
-        return [('creditCardInfo', module_ext.CreditCardModuleInfo)]
+        return []#('creditCardInfo', module_ext.CreditCardModuleInfo)]
 
     def cost(self, espuser, anchor):
         return '%s.00' % str(self.creditCardInfo.base_cost)

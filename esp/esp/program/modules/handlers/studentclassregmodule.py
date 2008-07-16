@@ -41,11 +41,11 @@ from esp.cal.models import Event
 from datetime import datetime
 
 # student class picker module
-class StudentClassRegModule(ProgramModuleObj):
+class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
 
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return [('classRegInfo', module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+        return []#('classRegInfo', module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
 
 
     def students(self, QObject = False):

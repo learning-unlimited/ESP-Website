@@ -109,9 +109,9 @@ class ClassManager(ProcedureManager):
         select = {'category_txt': 'program_classcategories.category',
                   'media_count': 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'}
 
-        where=['program_classcategories.id = program_class.category_id']
+        where=['"program_classcategories"."id" = "program_class"."category_id"']
 
-        tables=['program_classcategories']
+        tables=['"program_classcategories"']
         
         if force_all:
             classes = self.filter(parent_program = program)
@@ -130,7 +130,7 @@ class ClassManager(ProcedureManager):
 
         return classes.extra(select=select,
                              where=where,
-                             tables=tables).order_by('category').distinct()
+                             order_by=('category',)).extra(tables=tables).distinct()
 
     cache = ClassCacheHelper
 

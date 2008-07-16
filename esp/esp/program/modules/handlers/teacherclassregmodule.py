@@ -46,7 +46,7 @@ from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
 from datetime                    import timedelta
 
-class TeacherClassRegModule(ProgramModuleObj):
+class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
         StudentClassRegModule. Please be mindful of all the options of this module. """
@@ -54,7 +54,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return [('classRegInfo', module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+        return []#('classRegInfo', module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
 
 
     def prepare(self, context={}):
