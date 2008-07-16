@@ -103,9 +103,6 @@ class ESPUser(User, AnonymousUser):
 
         else:
             models.Model.__init__(self, userObj, *args, **kwargs)
-
-        self._meta.pk.attname = "id"
-        self._meta.local_fields[0].column = "id"
             
         self.other_user = False
         self.cache = ESPUser.objects.cache(self)
@@ -706,6 +703,11 @@ class ESPUser(User, AnonymousUser):
         return schoolyear + 12 - grade
 
 ESPUser.create_membership_methods()
+
+ESPUser._meta.pk.name = "id"
+ESPUser._meta.pk.attname = "id"
+ESPUser._meta.local_fields[0].column = "id"
+
 
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
