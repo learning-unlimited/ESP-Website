@@ -1,6 +1,6 @@
 from django.core import validators
 from django.db import models
-from django import oldforms, newforms
+from django import oldforms, forms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
 import re
@@ -138,7 +138,7 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 
         return css + html + javascript
     
-class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, newforms.Widget):
+class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.Widget):
     
     def __init__(self, attrs=None, *args, **kwargs):
         
@@ -155,8 +155,8 @@ class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, newforms.Widget):
         #   render function is provided by AjaxForeignKeyFieldBase
     
     
-class AjaxForeignKeyNewformField(newforms.IntegerField):
-    """ An Ajax autocompletion field that works like the other fields in django.newforms.
+class AjaxForeignKeyNewformField(forms.IntegerField):
+    """ An Ajax autocompletion field that works like the other fields in django.forms.
         You need to initialize it in one of two ways:
         -   [name] = AjaxForeignKeyNewformField(key_type=[model], field_name=[name])
         -   [name] = AjaxForeignKeyNewformField(field=[field])

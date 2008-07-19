@@ -33,7 +33,7 @@ from esp.program.modules         import module_ext
 from esp.program.models          import Program
 from esp.datatree.models         import DataTree, GetNode
 from esp.web.util                import render_to_response
-from django                      import newforms as forms
+from django                      import forms
 from esp.cal.models              import Event
 from django.core.cache           import cache
 from esp.db.models               import Q

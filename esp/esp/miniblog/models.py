@@ -37,6 +37,7 @@ from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User
 from esp.db.fields import AjaxForeignKey
 from django.core.cache import cache
+from django.contrib import admin
 import datetime
 
 # Create your models here.
@@ -69,14 +70,13 @@ class AnnouncementLink(models.Model):
     def html(self):
         return '<p><a href="%s">%s</a></p>' % (self.href, self.title)
 
-    class Admin:
-        pass
+admin.site.register(AnnouncementLink)
 
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     anchor = AjaxForeignKey(DataTree)
     title = models.CharField(max_length=256) # Plaintext; shouldn't contain HTML, for security reasons, though HTML will probably be passed through intact
-    slug    = models.SlugField(prepopulate_from=('title',),
+    slug    = models.SlugField(#prepopulate_from=('title',),
                                help_text="(will determine the URL)")
 
     timestamp = models.DateTimeField(default = datetime.datetime.now, editable=False)
@@ -112,12 +112,6 @@ class Entry(models.Model):
             return UserBit.find_by_anchor_perms(Entry,user,verb)
         else:
             return UserBit.find_by_anchor_perms(Entry,user,verb,qsc=qsc)
-
-    class Admin:
-        search_fields = ['content','title','anchor__uri']
-        js = (
-            '/media/scripts/admin_miniblog.js',
-            )
 
     @staticmethod
     def post( user_from, anchor, subject, content, email=False, user_email = ''):
@@ -172,7 +166,17 @@ class Entry(models.Model):
         unique_together = (('slug','anchor',),)
         verbose_name_plural = 'Entries'
         ordering = ['-timestamp']
-    
+
+
+class EntryAdmin(admin.ModelAdmin):
+    search_fields = ['content','title','anchor__uri']
+    class Media:
+        js = (
+            '/media/scripts/admin_miniblog.js',
+            )
+
+admin.site.register(Entry, EntryAdmin)
+
 
 class Comment(models.Model):
 
@@ -190,11 +194,11 @@ class Comment(models.Model):
         return 'Comment for %s by %s on %s' % (self.entry, self.author,
                                                self.post_ts.date())
     
-    class Admin:
-        search_fields = ['author__first_name','author__last_name',
-                         'subject','entry__title']
-
     class Meta:
         ordering = ['-post_ts']
-        
 
+class CommentAdmin(admin.ModelAdmin):
+    search_fields = ['author__first_name','author__last_name',
+                     'subject','entry__title']
+
+admin.site.register(Comment, CommentAdmin)

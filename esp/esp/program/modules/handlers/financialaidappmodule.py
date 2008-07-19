@@ -37,7 +37,7 @@ from esp.users.models    import ESPUser, UserBit, User
 from esp.db.models       import Q
 from django.template.loader import get_template
 from esp.program.models  import FinancialAidRequest
-from django              import newforms as forms
+from django              import forms
 
 
 # student class picker module

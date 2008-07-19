@@ -28,12 +28,15 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.conf.urls.defaults import *
+from django.contrib import admin
 from esp.program.models import ClassSubject
 from esp.datatree.decorators import section_redirect_keys
 from esp.qsd.views import qsd
 from esp.qsdmedia.views import qsdmedia
 from esp.settings import PROJECT_ROOT
 from esp.settings import MEDIA_ROOT
+
+admin.autodiscover()
 
 section_prefix_keys = {'teach': 'teach', 'learn': 'learn', 'programs': ''}
 
@@ -47,7 +50,7 @@ urlpatterns = patterns('django.views.static',
 urlpatterns += patterns('',
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
-                     (r'^admin/', include('django.contrib.admin.urls')),
+                     (r'^admin/(.*)', admin.site.root),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      (r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$','django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),

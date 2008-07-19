@@ -2,6 +2,7 @@
 from django.core.cache import cache
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
+from django.contrib import admin
 import datetime
 import random
 import string
@@ -526,10 +527,6 @@ class UserBit(models.Model):
         """ Returns False if there are no elements in queryset """
         return ( len(queryset.values('id')[:1]) > 0 )
 
-    class Admin:
-        search_fields = ['user__last_name','user__first_name',
-                         'qsc__uri','verb__uri']
-
     UserHasPerms   = classmethod(lambda cls,*args,**kwargs: cls.objects.UserHasPerms(*args,**kwargs))
     bits_get_qsc   = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_qsc(*args,**kwargs))
     bits_get_users = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_users(*args,**kwargs))
@@ -537,9 +534,11 @@ class UserBit(models.Model):
     find_by_anchor_perms = classmethod(lambda cls,*args,**kwargs: cls.objects.find_by_anchor_perms(*args,**kwargs))
 
 
+class UserBitAdmin(admin.ModelAdmin):
+    search_fields = ['user__last_name','user__first_name',
+                     'qsc__uri','verb__uri']
 
-
-
+admin.site.register(UserBit, UserBitAdmin)
 
 
 #######################################
@@ -718,6 +717,5 @@ class UserBitImplication(models.Model):
         for implication in UserBitImplication.objects.all():
             implication.apply()
     
-    class Admin:
-        pass
+admin.site.register(UserBitImplication)
 

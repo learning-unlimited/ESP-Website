@@ -1,4 +1,4 @@
-import django.newforms as forms
+import django.forms as forms
 from django.contrib.localflavor.usa.us_states import STATE_CHOICES
 
 

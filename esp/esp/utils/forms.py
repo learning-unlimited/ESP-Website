@@ -29,8 +29,8 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from django.newforms.forms import Form, Field, BoundField
-from django.newforms.util import ErrorList
+from django.forms.forms import Form, Field, BoundField
+from django.forms.util import ErrorList
 from django.utils.html import escape
 
 from esp.utils.widgets import CaptchaWidget
