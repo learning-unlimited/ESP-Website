@@ -12,7 +12,7 @@ class AjaxForeignKeyFieldBase:
     def render(self, *args, **kwargs):
         """
         Renders the actual ajax widget.
-        """
+        """            
         if len(args) == 1:
             data = args[0]
         else:
@@ -21,7 +21,10 @@ class AjaxForeignKeyFieldBase:
         old_init_val = init_val = data
 
         if type(data) == int:
-            objects = self.field.rel.to.objects.filter(pk = data)
+            if hasattr(self, "field"):
+                query_objects = self.field.rel.to.objects
+                
+            objects = query_objects.filter(pk = data)
             if objects.count() == 1:
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
@@ -32,8 +35,8 @@ class AjaxForeignKeyFieldBase:
         else:
             data = init_val = ''
 
-
-        fn = self.field_name
+        fn = str(self.field.name)
+        
         related_model = self.field.rel.to
         # espuser hack
         if related_model == User:
@@ -95,7 +98,7 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 //-->
 </script>""" % \
          (fn, addslashes(init_val),
-          fn, fn, fn, model_module, model_name, self.ajax_func,
+          fn, fn, fn, model_module, model_name, self.ajax_func or 'ajax_autocomplete',
           fn, fn, fn, fn, fn, fn, fn, fn, fn, fn, fn, fn, fn)
 
         css = """
@@ -139,21 +142,26 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
         return css + html + javascript
     
 class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.Widget):
+    choices = ()
     
-    def __init__(self, attrs=None, *args, **kwargs):
-        
+    def __init__(self, attrs=None, *args, **kwargs):    
         super(AjaxForeignKeyWidget, self).__init__(attrs, *args, **kwargs)
+
         if attrs.has_key('field'):
             self.field = attrs['field']
-            self.field_name = self.field.name
         elif attrs.has_key('type'):
             #   Anyone have a better hack here?
             self.field = models.ForeignKey(attrs['type'])
-            
+
+        self.field_name = self.field.name
+
         if attrs.has_key('width'):
             self.width = attrs['width']
-        #   render function is provided by AjaxForeignKeyFieldBase
-    
+
+        if attrs.has_key('ajax_func'):
+            self.ajax_func = attrs["ajax_func"]
+
+    #   render function is provided by AjaxForeignKeyFieldBase    
     
 class AjaxForeignKeyNewformField(forms.IntegerField):
     """ An Ajax autocompletion field that works like the other fields in django.forms.
@@ -162,28 +170,41 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         -   [name] = AjaxForeignKeyNewformField(field=[field])
             where [field] is the field in a model (i.e. ForeignKey) 
     """
-    def __init__(self, field_name='', field=None, key_type=None, required=False, label='', initial=None, widget=None, help_text='', ajax_func=None):
-        
-        if field:
-            self.widget = AjaxForeignKeyWidget(attrs={'field': field, 'width': 35})
-        elif key_type:
-            self.widget = AjaxForeignKeyWidget(attrs={'type': key_type, 'width': 35})
-        else:
-            raise NotImplementedError
-        
-        self.required = required
-        self.help_text = help_text
-        self.initial = initial
-        self.widget.field_name = field_name
-        if label == '':
-            self.label = field_name
-        else:
-            self.label = label
+    def __init__(self, field_name='', field=None, key_type=None, required=False, label='', initial=None, widget=None, help_text='', ajax_func=None, queryset=None, error_messages=None):
 
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'
         else:
             self.widget.ajax_func = ajax_func
+
+        if field:
+            self.widget = AjaxForeignKeyWidget(attrs={'field': field, 'width': 35, 'ajax_func': ajax_func})
+        elif key_type:
+            self.widget = AjaxForeignKeyWidget(attrs={'type': key_type, 'width': 35, 'ajax_func': ajax_func})
+        else:
+            raise NotImplementedException
+
+        if isinstance(self.widget, type):
+            self.widget = self.widget()
+
+        extra_attrs = self.widget_attrs(widget)
+        if extra_attrs:
+            widget.attrs.update(extra_attrs)
+
+        self.creation_counter = forms.Field.creation_counter
+        forms.Field.creation_counter += 1                                                        
+        
+        self.required = required
+        self.help_text = help_text
+        self.initial = initial
+        if field_name != '':
+            self.widget.field_name = field_name
+        if label == '':
+            self.label = field_name
+        else:
+            self.label = label
+        if field is not None: # Note: DO NOT use "!=" here!  It will get translated to field.__cmp__(None); field.__cmp__ assumes that its only argument is another field.
+            self.field = field
             
     def clean(self, value):
         if (value is None or value == '') and not self.required:
@@ -194,12 +215,15 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         except ValueError:
             match = get_id_re.match(value)
             if match:
-                value = match.groups()[0]
+                value = int(match.groups()[0])
             else:
                 #   This is equivalent to a validation error but, now that we
                 #   trust the ForeignKey field to work normally, we don't need to
                 #   cause an error.
                 value = None
+
+        if hasattr(self, "field"):
+            value = self.field.rel.to.objects.get(id=value)
 
         return value
             

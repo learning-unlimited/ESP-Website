@@ -17,6 +17,13 @@ class AjaxForeignKey(ForeignKey):
     def get_newform_field(self):
         return AjaxForeignKeyNewformField(field=self)
 
+    def formfield(self, **kwargs):
+        defaults = {'form_class': AjaxForeignKeyNewformField,
+                    'field': self}
+        
+        defaults.update(kwargs)
+        return super(AjaxForeignKey, self).formfield(**defaults)
+
     def get_manipulator_fields(self, *args, **kwargs):
         return [AjaxForeignKeyFormField(field_name = self.name,
                                         is_required = (not self.blank),
