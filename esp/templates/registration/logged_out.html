@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Come back soon"|subsection }}
+{% autoescape off %}{{ "Come back soon"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block content %}

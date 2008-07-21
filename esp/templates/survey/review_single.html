@@ -10,7 +10,7 @@
 
 {% load subsection %}
 {% block subsection %}
-    {{ "Survey"|subsection }}
+    {% autoescape off %}{{ "Survey"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block content %}

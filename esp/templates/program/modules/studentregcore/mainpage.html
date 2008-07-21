@@ -9,7 +9,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Student Registration"|subsection }}{% endblock %}
+{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
 
 {% block content %}
 <style type="text/css">

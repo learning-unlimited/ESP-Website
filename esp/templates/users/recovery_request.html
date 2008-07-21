@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Reset your password"|subsection }}
+{% autoescape off %}{{ "Reset your password"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block stylesheets %}

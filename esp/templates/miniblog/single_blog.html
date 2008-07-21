@@ -10,7 +10,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Blog"|subsection }}
+{% autoescape off %}{{ "Blog"|subsection }}{% endautoescape %}
 {% endblock %}
 
 

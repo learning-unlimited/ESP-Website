@@ -3,7 +3,7 @@
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
 {% load subsection %}
-{% block subsection %}{{ "Teacher Registration"|subsection }}
+{% block subsection %}{% autoescape off %}{{ "Teacher Registration"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block stylesheets %}

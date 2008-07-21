@@ -14,14 +14,14 @@
     <div class="qsd_header" onclick="qsd_inline_edit({{ qsdrec.id }});">This is quasi-static content.  Click here to edit the text; click outside the box to save changes.</div>
     <div class="qsd_edit_hidden" id="inline_edit_{{ qsdrec.id }}">
     <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.id }}" onblur="qsd_inline_upload({{ qsdrec.id }});" name="qsd_content" class="qsd_editor qsd_fullsize">
-        {{ qsdrec.content }}
+        {% autoescape off %}{{ qsdrec.content }}{% endautoescape %}
     </textarea>
     </div>
     <div class="qsd_view_visible" id="inline_qsd_{{ qsdrec.id }}">
-    {{ qsdrec.content|markdown|smartypants|teximages }}
+    {% autoescape off %}{{ qsdrec.content|markdown|smartypants|teximages }}{% endautoescape %}
     </div>
 {% else %}
-    {{ qsdrec.content|markdown|smartypants|teximages }}
+    {% autoescape off %}{{ qsdrec.content|markdown|smartypants|teximages }}{% endautoescape %}
 {% endif %}
 
 <br /><br />

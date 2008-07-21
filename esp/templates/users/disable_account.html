@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Account Management"|subsection }}
+{% autoescape off %}{{ "Account Management"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block stylesheets %}

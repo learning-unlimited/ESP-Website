@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "ESP Management"|subsection }}
+{% autoescape off %}{{ "ESP Management"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block subsection_name %}Welcome{% endblock %}

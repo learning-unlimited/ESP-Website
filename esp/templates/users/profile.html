@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Profile Editor"|subsection }}
+{% autoescape off %}{{ "Profile Editor"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block xtrajs %}
