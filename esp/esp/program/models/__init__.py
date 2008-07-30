@@ -192,7 +192,7 @@ class ArchiveClass(models.Model):
     def __str__(self):
         from django.template import loader, Context
         t = loader.get_template('models/ArchiveClass.html')
-        return t.render({'class': self})
+        return t.render(Context({'class': self}, autoescape=True))
         
     def num_students(self):
         if self.student_ids is not None:
