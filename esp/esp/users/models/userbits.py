@@ -201,11 +201,13 @@ class UserBitManager(ProcedureManager):
         if node_root:
             procedure_name += '_root'
 
-        if user is None:
-            user = -10
+        #Django accepts "None" for .filter(foo=None) now, and it does requre a user object rather than an integer
+        #if user is None:
+        #    user = -10
 
         if hasattr(user, 'id') and user.id is None:
-            user = -10
+            user = None
+        #    user = -10
 
         if node_root:
             userbits = self.filter_by_procedure(procedure_name, user, node, now, end_of_now, node_root)

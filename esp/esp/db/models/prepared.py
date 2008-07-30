@@ -58,8 +58,10 @@ class QuerySetPrepared(QuerySet):
 
         proc_name = self._proc_name
 
+        #assert False, self.query.as_sql()
         try:
-            select, sql, params = self._get_sql_clause()
+            #select, sql, params = self._get_sql_clause()
+            sql, params = self.query.as_sql()
         except EmptyResultSet:
             raise StopIteration
 
@@ -80,7 +82,7 @@ class QuerySetPrepared(QuerySet):
                                         proc_name,
                                         ', '.join('%s' for x in proc_params),
                                         where_clause),
-                        proc_params+params)
+                        proc_params+list(params))
 
         model_keys = [f.column for f in self.model._meta.fields]
 
@@ -232,7 +234,17 @@ class ProcedureManager(Manager):
         proc_query_set = QuerySetPrepared()
         proc_query_set.__dict__.update(query_set.__dict__)
 
-        new_params = [clean_param(param) for param in proc_params]
+        # Dirty ugly hack to deal with "None" arguments.
+        # If we don't do this, our procedure gets passed the string "None"
+        new_params = []
+        for param in proc_params:
+            if None not in (param, getattr(param, 'id', True)):
+                new_params.append(clean_param(param))
+            else:
+                new_params.append(-10)
+
+        # Here's the more-efficient Python 2.5 equivalent to the above for-loop:
+        #new_params = [(clean_param(param) if param != None and getattr(param, 'id', True) != None else -10) for param in proc_params]
 
         proc_query_set._proc_name   = proc_name
         proc_query_set._proc_params = new_params

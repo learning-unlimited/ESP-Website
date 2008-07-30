@@ -32,7 +32,7 @@ Email: web@esp.mit.edu
     ouside ESP.
     """
 
-from django import forms
+from django import oldforms as forms
 
 class ResizeImageUploadField(forms.ImageUploadField):
     """ This field will allow one to upload a file, and that image
