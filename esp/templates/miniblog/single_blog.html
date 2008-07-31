@@ -17,9 +17,9 @@
 {% block content %}
 
 {% load render_blog %}
-
+{% autoescape off %}
 {% render_blog entry %}
-
+{% endautoescape %}
 <div id="comment_spacing">&nbsp;</div>
 
 {% render_comments entry request form %}
