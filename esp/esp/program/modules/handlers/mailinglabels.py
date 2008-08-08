@@ -35,7 +35,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
-from django.db.models.query import QNot
 from esp.program.modules.forms.mailinglabels_schools import SchoolSelectForm
 from esp.program.modules.forms.mailinglabels_banzips import BanZipsForm
 import operator
@@ -118,7 +117,7 @@ class MailingLabels(ProgramModuleObj):
 
                         if len(grades_exclude) > 0:
                             Q_grade = reduce(operator.or_, [Q(k12school__grades__contains = grade) for grade in grades_exclude])
-                            Q_infos &= QNot(Q_grade)
+                            Q_infos &= ~Q_grade
 
                         f = PersistentQueryFilter.create_from_Q(ContactInfo, Q_infos, description="All ContactInfos for K12 schools with grades %s and %s miles from zipcode %s." % (form.clean_data['grades'], form.clean_data['proximity'], form.clean_data['zip_code']))
 
