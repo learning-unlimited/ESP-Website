@@ -456,14 +456,15 @@ class UserBit(models.Model):
         db_table = 'users_userbit'
 
     def __str__(self):
-
+        
+        
         def clean_node(node):
             if hasattr(node, 'uri'):
                 return node.uri
             return '?'
 
-        user = self.user
-        if user is None: user = 'Everyone'
+        user = self.user_id
+        if seif.user is None: user = 'Everyone'
 
         if self.recursive:
             recurse = ""
@@ -471,7 +472,7 @@ class UserBit(models.Model):
             recurse = " (non-recursive)"
         
         if self.startdate != None and self.enddate != None:
-            return 'GRANT %s ON %s TO %s <%s--%s>%s' % (clean_node(self.verb), clean_node(self.qsc),
+            return 'GRANT %s ON %s TO %s <%s--%s>%s' % (self.verb_id, self.qsc_id,
                                                         user, self.startdate, self.enddate, recurse)
         else:
             return 'GRANT %s ON %s TO %s%s' % (clean_node(self.verb), clean_node(self.qsc),
