@@ -34,7 +34,7 @@ from esp.datatree.models import GetNode, DataTree
 from esp.db.forms import AjaxForeignKeyFormField
 from esp.program.models import Program, ProgramModule
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
-from django import newforms as forms
+from django import forms
 
 def make_id_tuple(object_list):
     

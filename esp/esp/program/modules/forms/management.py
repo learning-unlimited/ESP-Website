@@ -1,5 +1,5 @@
 
-from django import newforms as forms
+from django import forms
 
 from esp.cal.models import Event
 from esp.resources.models import ResourceType, Resource

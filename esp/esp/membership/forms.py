@@ -35,7 +35,7 @@ from esp.datatree.models import DataTree
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.forms import CaptchaForm, CaptchaField, new_callback, grouped_as_table, add_fields_to_class, save_instance
 from esp.membership.models import rsvp_choices, guest_choices
-from django import newforms as forms
+from django import forms
 
 #   Modify the CharField class to support our formatting features.
 add_fields_to_class(forms.CharField, {'is_long': False, 'line_group': 0})

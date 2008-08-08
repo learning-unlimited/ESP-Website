@@ -1,4 +1,4 @@
-from django import newforms as forms
+from django import forms
 
 from esp.qsd.models import QuasiStaticData
 from esp.program.models import Program

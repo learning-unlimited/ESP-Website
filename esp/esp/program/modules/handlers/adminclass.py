@@ -40,7 +40,7 @@ from esp.web.util        import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm
 
 from django import oldforms
-from django import newforms as forms
+from django import forms
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.contrib.auth.decorators import login_required

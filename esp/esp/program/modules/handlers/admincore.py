@@ -34,13 +34,13 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.datatree.models import GetNode
 from esp.users.models import UserBit
-from django import newforms as forms
+from django import forms
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.middleware import ESPError
 
 class UserBitForm( forms.form_for_model(UserBit) ):
     def __init__(self, bit = None, *args, **kwargs):
-        from django import newforms as forms
+        from django import forms
 
         if bit != None:
             self.base_fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
@@ -115,7 +115,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         def mux_bit_to_dict(bit):
             return { 'startdate': bit.startdate, 'enddate': bit.enddate, 'recursive': bit.recursive }
 
-        from django import newforms as forms
+        from django import forms
         
         nodes = add_tree_nodes_to_list(deadline_verb)
 
