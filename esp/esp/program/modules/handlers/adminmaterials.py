@@ -41,7 +41,8 @@ class AdminMaterials(ProgramModuleObj):
     such as liability waivers and information sheets.
     """
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Manage Documents",
             "module_type": "manage",

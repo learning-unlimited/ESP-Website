@@ -42,7 +42,8 @@ from django.db        import models
 
 
 class SATPrepTeacherModule(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "SATPrep Information",
             "module_type": "teach",

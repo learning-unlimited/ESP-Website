@@ -41,7 +41,8 @@ from esp.program.models import SATPrepRegInfo
 
 
 class SATPrepTeacherInput(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "",
             "admin_title": "SATPrep Interface for Teachers (SATPrepTeacherInput)",

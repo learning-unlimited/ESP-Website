@@ -42,7 +42,8 @@ from django.http import HttpResponseRedirect
 __all__ = ['TeacherReviewApps']
 
 class TeacherReviewApps(ProgramModuleObj, CoreModule):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Junction Application Review",
             "module_type": "teach",

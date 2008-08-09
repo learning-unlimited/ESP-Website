@@ -55,7 +55,8 @@ class AdminClass(ProgramModuleObj):
         Options for this are available on the main manage page.
         """
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Manage Classes",
             "module_type": "manage",

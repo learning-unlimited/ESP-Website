@@ -42,7 +42,8 @@ from esp.program.modules.manipulators import OnSiteRegManipulator
 
 
 class OnsiteCore(ProgramModuleObj, CoreModule):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "onsite",
             "module_type": "onsite",

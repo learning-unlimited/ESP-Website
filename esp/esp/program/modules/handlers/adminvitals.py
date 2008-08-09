@@ -44,7 +44,8 @@ class AdminVitals(ProgramModuleObj):
     doc = """ This allows you to view the major numbers for your program on the main page.
         This will present itself below the options in a neat little table. """
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Program Vitals",
             "module_type": "manage",

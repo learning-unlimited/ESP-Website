@@ -47,7 +47,8 @@ from esp.datatree.models import DataTree
 class SATPrepAdminSchedule(ProgramModuleObj):
     """ This allows SATPrep directors to schedule their programs using
         an algorithm. """
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Schedule SATPrep",
             "module_type": "manage",

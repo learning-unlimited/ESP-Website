@@ -48,7 +48,8 @@ class CommModule(ProgramModuleObj):
     Do that and even more useful things in the communication panel.
     """
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Communications Panel",
             "module_type": "manage",

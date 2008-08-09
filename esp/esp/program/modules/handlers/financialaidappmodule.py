@@ -42,7 +42,8 @@ from django              import forms
 
 # student class picker module
 class FinancialAidAppModule(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Financial Aid Application",
             "module_type": "learn",

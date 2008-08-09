@@ -47,7 +47,8 @@ from datetime                    import timedelta
 class SchedulingModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Scheduling",
             "module_type": "manage",

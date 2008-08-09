@@ -44,7 +44,8 @@ class CheckListModule(ProgramModuleObj):
     If you want to manage those checklists that your program sees, come here.
     """
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "CheckList Management",
             "module_type": "manage",

@@ -45,7 +45,8 @@ class MailingLabels(ProgramModuleObj):
     """ This allows one to generate Mailing Labels for both schools and users. You have the option of either creating a file which can be sent to MIT mailing services or actually create printable files.
     """
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Generate Mailing Labels",
             "module_type": "manage",

@@ -42,7 +42,8 @@ from esp.program.modules.manipulators import OnSiteRegManipulator
 
 
 class SATPrepOnSiteRegister(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "SATPrep On-Site User Creation",
             "module_type": "onsite",

@@ -42,7 +42,8 @@ from datetime import datetime
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return [ {
             "link_title": "Sign up for Classes",
             "module_type": "learn",

@@ -37,7 +37,8 @@ from django.contrib.auth.decorators import login_required
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Update Your Profile",
             "module_type": "teach",

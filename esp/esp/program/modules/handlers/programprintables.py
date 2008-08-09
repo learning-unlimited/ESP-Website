@@ -46,7 +46,8 @@ from esp.middleware import ESPError
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
     Things from checklists to rosters to attendance sheets can be found here. """
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Program Printables",
             "module_type": "manage",

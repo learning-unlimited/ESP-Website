@@ -42,7 +42,8 @@ from esp.db.models    import Q
 from esp.money.models import LineItemType, RegisterLineItem, LineItem
 
 class OnsitePrintSchedules(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Automatically Print Schedules",
             "module_type": "onsite",

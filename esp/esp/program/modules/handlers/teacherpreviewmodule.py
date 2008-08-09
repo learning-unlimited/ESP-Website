@@ -39,7 +39,8 @@ class TeacherPreviewModule(ProgramModuleObj):
     """ This program module allows teachers to view classes already added to the program.
         And, for now, also some printables. """
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Preview Other Classes",
             "module_type": "teach",

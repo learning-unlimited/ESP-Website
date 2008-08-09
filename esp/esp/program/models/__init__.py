@@ -40,6 +40,7 @@ from esp.miniblog.models import Entry
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
+from django.contrib import admin
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -138,8 +139,8 @@ class ProgramModule(models.Model):
     def __str__(self):
         return 'Program Module "%s"' % self.admin_title
 
-    class Admin:
-        pass
+admin.site.register(ProgramModule)
+    
     
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
@@ -232,6 +233,8 @@ class ArchiveClass(models.Model):
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
         return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')
+
+admin.site.register(ArchiveClass)
     
     
 class Program(models.Model):
@@ -801,9 +804,6 @@ class Program(models.Model):
         
         return archived_classes
     
-    class Admin:
-        pass
-    
     @staticmethod
     def find_by_perms(user, verb):
         """ Fetch a list of relevant programs for a given user and verb """
@@ -813,6 +813,9 @@ class Program(models.Model):
     def by_prog_inst(cls, program, instance):
         return Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
 
+admin.site.register(Program)
+    
+    
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """
     program = models.ForeignKey(Program)
@@ -824,9 +827,7 @@ class BusSchedule(models.Model):
         app_label = 'program'
         db_table = 'program_busschedule'
 
-    class Admin:
-        pass
-
+admin.site.register(BusSchedule)
 
     
 class TeacherParticipationProfile(models.Model):
@@ -844,8 +845,7 @@ class TeacherParticipationProfile(models.Model):
     def __str__(self):
         return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
 
-    class Admin:
-        pass
+admin.site.register(TeacherParticipationProfile)
     
 
 class SATPrepRegInfo(models.Model):
@@ -893,8 +893,7 @@ class SATPrepRegInfo(models.Model):
             satPrep = satPrepList[0]
         return satPrep
 
-    class Admin:
-        pass
+admin.site.register(SATPrepRegInfo)
 
 
 class RegistrationProfile(models.Model):
@@ -998,8 +997,8 @@ class RegistrationProfile(models.Model):
         v = GetNode( 'V/Flags/Registration/Confirmed' )
         return UserBit.find_by_anchor_perms(ClassSection, self.user, v, self.program.anchor.tree_decode(['Classes']))
 
-    class Admin:
-        pass
+admin.site.register(RegistrationProfile)
+    
 
 class TeacherBio(models.Model):
     """ This is the biography of a teacher."""
@@ -1016,9 +1015,6 @@ class TeacherBio(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_teacherbio'
-
-    class Admin:
-        pass
 
     @staticmethod
     def getLastBio(user):
@@ -1064,6 +1060,9 @@ class TeacherBio(models.Model):
         else:
             lastBio = bios[0]
         return lastBio
+
+admin.site.register(TeacherBio)
+    
 
 class FinancialAidRequest(models.Model):
     """
@@ -1121,8 +1120,7 @@ class FinancialAidRequest(models.Model):
 
         return string
 
-    class Admin:
-        pass
+admin.site.register(FinancialAidRequest)
 
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *

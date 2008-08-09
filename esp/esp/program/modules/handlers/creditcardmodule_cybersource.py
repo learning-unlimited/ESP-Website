@@ -42,7 +42,8 @@ from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
 
 class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModuleInfo):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Credit Card Payment",
             "module_type": "learn",

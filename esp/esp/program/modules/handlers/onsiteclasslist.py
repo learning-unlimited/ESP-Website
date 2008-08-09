@@ -37,7 +37,8 @@ from esp.cal.models import Event
 from esp.datatree.models import GetNode
 
 class OnSiteClassList(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return [ {
             "link_title": "List of All Classes",
             "module_type": "onsite",

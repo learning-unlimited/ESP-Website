@@ -44,7 +44,8 @@ from esp.miniblog.models import Entry
 
 class ListGenModule(ProgramModuleObj):
     """ While far from complete, this will allow you to just generate a simple list of users matching a criteria (criteria very similar to the communications panel)."""
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Generate List of Users",
             "module_type": "manage",

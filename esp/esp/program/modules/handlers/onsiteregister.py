@@ -42,7 +42,8 @@ from esp.money.models   import Transaction
 
 
 class OnSiteRegister(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "New Student Registration",
             "module_type": "onsite",

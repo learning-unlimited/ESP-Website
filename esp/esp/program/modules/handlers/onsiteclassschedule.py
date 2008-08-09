@@ -37,7 +37,8 @@ from esp.datatree.models import GetNode
 from datetime         import datetime, timedelta
 
 class OnsiteClassSchedule(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Scheduling and Class Changes",
             "module_type": "onsite",

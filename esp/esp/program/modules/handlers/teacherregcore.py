@@ -36,7 +36,8 @@ from esp.miniblog.models import Entry
 from esp.datatree.models import GetNode
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Teacher Registration",
             "module_type": "teach",

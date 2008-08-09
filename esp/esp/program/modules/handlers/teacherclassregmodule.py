@@ -50,7 +50,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
         StudentClassRegModule. Please be mindful of all the options of this module. """
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Register Your Classes",
             "module_type": "teach",

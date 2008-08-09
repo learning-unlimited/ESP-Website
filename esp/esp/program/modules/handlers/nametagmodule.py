@@ -40,7 +40,8 @@ from esp.web.util.latex import render_to_latex
 
 class NameTagModule(ProgramModuleObj):
     """ This module allows you to generate a bunch of IDs for everyone in the program. """
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Generate Nametags",
             "module_type": "manage",

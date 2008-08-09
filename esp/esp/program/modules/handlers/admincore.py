@@ -64,7 +64,8 @@ class UserBitForm( forms.form_for_model(UserBit) ):
 
 class AdminCore(ProgramModuleObj, CoreModule):
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Program Dashboard",
             "module_type": "manage",

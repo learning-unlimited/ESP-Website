@@ -53,7 +53,8 @@ class MultiCostItem(forms.Form):
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
 
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "T-Shirts",
             "module_type": "learn",

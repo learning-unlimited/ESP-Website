@@ -42,7 +42,8 @@ from esp.db.models import Q
 __all__ = ['AdminReviewApps']
 
 class AdminReviewApps(ProgramModuleObj, CoreModule):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Application Review for Admin",
             "module_type": "manage",

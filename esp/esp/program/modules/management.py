@@ -29,25 +29,14 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call
-from django.http import HttpResponseRedirect
 
-class StudentRegConfirm(ProgramModuleObj, CoreModule):
-    """ Basically, a dirty hack to add a link to registration confirmation into the list of stuffs to do during reg """
-    @classmethod
-    def module_properties(cls):
-        return {
-            "link_title": "Confirm Registration",
-            "module_type": "learn",
-            "seq": 99999
-            }
-    
-    @main_call
-    def do_confirmreg(self, request, tl, one, two, module, extra, prog):
-        return HttpResponseRedirect("confirmreg")
+from django.dispatch import dispatcher
+from django.db.models import signals 
+from esp.program.modules import models as Modules
 
-    def isCompleted(self):
-        return self.program.isConfirmed(self.user)
+def post_syncdb(sender, app, **kwargs):
+    if app == datatree:
+        print "Installing esp.program.modules initial data..."
+        Modules.install()
 
-    def hideNotRequired(self):
-        return True
+signals.post_syncdb.connect(post_syncdb)

@@ -41,7 +41,8 @@ from esp.survey.views   import survey_view, survey_review, survey_graphical, sur
 import operator
 
 class SurveyManagement(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return [ {
             "link_title": "Surveys",
             "module_type": "manage",

@@ -38,7 +38,8 @@ from django.contrib.auth.models import User
 
 class AdminMorph(ProgramModuleObj):
     doc = """ User morphing allows the program director to morph into a constituent of their program. """
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Morph into User",
             "module_type": "manage",

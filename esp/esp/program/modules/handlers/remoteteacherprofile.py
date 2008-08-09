@@ -45,7 +45,8 @@ from esp.users.models            import ESPUser, User
 
 class RemoteTeacherProfile(ProgramModuleObj):
     """ This program module allows teachers to select how they are going to do things with respect to having a program far away. (i.e. do they need transportation, when do they need transportation, etc.)"""
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Edit your Program-Specific Teacher Information",
             "module_type": "teach",

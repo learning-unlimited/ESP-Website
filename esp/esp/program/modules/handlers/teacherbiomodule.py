@@ -37,7 +37,8 @@ from esp.db.models      import Q
 # reg profile module
 class TeacherBioModule(ProgramModuleObj):
     """ Module for teacher to edit their biography for each program. """
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Update your teacher biography",
             "module_type": "teach",

@@ -43,7 +43,8 @@ from datetime import datetime
 import operator
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "",
             "admin_title": "Core Student Reg (StudentRegCore)",

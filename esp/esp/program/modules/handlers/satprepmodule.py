@@ -41,7 +41,8 @@ from esp.db.models      import Q
 
 
 class SATPrepModule(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Program-specific Information",
             "module_type": "learn",

@@ -48,7 +48,8 @@ class ResourceModule(ProgramModuleObj):
     doc = """ Manage the resources used by a program.  This includes classrooms and LCD equipment.
     Also use this module to set up the time blocks for classes.
     """
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Manage Times and Rooms",
             "module_type": "manage",

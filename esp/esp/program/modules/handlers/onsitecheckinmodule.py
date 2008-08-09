@@ -46,7 +46,8 @@ from esp.money.models   import Transaction
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
-    def module_properties(self):
+    @classmethod
+    def module_properties(cls):
         return {
             "link_title": "Check-in (check students off for payments and forms)",
             "module_type": "onsite",
