@@ -203,7 +203,6 @@ else:
     """
 
     from django.conf import settings
-    from django.template.defaultfilters import smart_string as smart_str
     from email import Charset, Encoders
     from email.MIMEText import MIMEText
     from email.MIMEMultipart import MIMEMultipart
