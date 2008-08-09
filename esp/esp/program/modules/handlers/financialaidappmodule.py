@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.datatree.models import GetNode, DataTree
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
@@ -42,6 +42,12 @@ from django              import forms
 
 # student class picker module
 class FinancialAidAppModule(ProgramModuleObj):
+    def module_properties(self):
+        return {
+            "link_title": "Financial Aid Application",
+            "module_type": "learn",
+            "seq": 25
+            }
 
     def students(self, QObject = False):
         Q_students = Q(financialaidrequest__program = self.program)
@@ -64,6 +70,7 @@ class FinancialAidAppModule(ProgramModuleObj):
     def isCompleted(self):
         return self.user.financialaidrequest_set.all().filter(program = self.program, done = True).count() > 0
 
+    @main_call
     @needs_student
     @meets_deadline()
     def finaid(self,request, tl, one, two, module, extra, prog):
@@ -76,7 +83,8 @@ class FinancialAidAppModule(ProgramModuleObj):
                                   request,
                                   (self.program, tl),
                                   {})
-    
+
+    @aux_call
     @needs_student
     @meets_deadline()
     def finaid_app(self,request, tl, one, two, module, extra, prog):

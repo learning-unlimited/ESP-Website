@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.datatree.models import GetNode, DataTree
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
@@ -43,6 +43,13 @@ from django.contrib.auth.models import User
 
 # student class picker module
 class StudentJunctionAppModule(ProgramModuleObj):
+    def module_properties(self):
+        return {
+            "link_title": "Extra Application Info",
+            "module_type": "learn",
+            "seq": 10000,
+            "required": True
+            }
 
     def students(self, QObject = False):
         Q_students = Q(studentapplication__program = self.program)
@@ -68,6 +75,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
     def deadline_met(self):
         return super(StudentClassRegModule, self).deadline_met('/Applications')
 
+    @main_call
     @needs_student
     @meets_deadline('/Applications')
     def application(self,request, tl, one, two, module, extra, prog):

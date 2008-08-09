@@ -30,13 +30,24 @@ Email: web@esp.mit.edu
 """
 
 from datetime import datetime, timedelta
-from esp.program.modules.base import ProgramModuleObj, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection
 from esp.web.util import render_to_response
 from esp.cal.models import Event
 from esp.datatree.models import GetNode
 
 class OnSiteClassList(ProgramModuleObj):
+    def module_properties(self):
+        return [ {
+            "link_title": "List of All Classes",
+            "module_type": "onsite",
+            "seq": 31
+            }, {
+            "link_title": "List of Open Classes",
+            "module_type": "onsite",
+            "seq": 31,
+            "main_call": "classList"
+            } ]
 
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
@@ -85,6 +96,7 @@ class OnSiteClassList(ProgramModuleObj):
         
         return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), context)
 
+    @main_call
     @needs_onsite
     def allClassList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """

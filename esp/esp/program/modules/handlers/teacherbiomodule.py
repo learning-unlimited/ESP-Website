@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.web.views.myesp import profile_editor
 from esp.program.models import TeacherBio
 from esp.users.models   import ESPUser, User
@@ -37,6 +37,12 @@ from esp.db.models      import Q
 # reg profile module
 class TeacherBioModule(ProgramModuleObj):
     """ Module for teacher to edit their biography for each program. """
+    def module_properties(self):
+        return {
+            "link_title": "Update your teacher biography",
+            "module_type": "teach",
+            "seq": -111
+            }
 
     def teachers(self, QObject = False):
         if QObject:
@@ -48,6 +54,7 @@ class TeacherBioModule(ProgramModuleObj):
     def teacherDesc(self):
         return {'teacher_biographies': """Teachers who have completed the biography."""}
 
+    @main_call
     @needs_teacher
     def biography(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """

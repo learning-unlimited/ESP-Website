@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -43,7 +43,15 @@ class KeyDoesNotExist(Exception):
 class AdminVitals(ProgramModuleObj):
     doc = """ This allows you to view the major numbers for your program on the main page.
         This will present itself below the options in a neat little table. """
-        
+
+    def module_properties(self):
+        return {
+            "link_title": "Program Vitals",
+            "module_type": "manage",
+            "seq": -2,
+            "main_call": "vitals"
+            }
+    
     def prepare(self, context=None):
         import operator
 

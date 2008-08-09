@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 
 from esp.program.modules.module_ext import CreditCardModuleInfo
 from esp.program.modules.handlers.creditcardmodule import CreditCardModule
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -46,6 +46,12 @@ from esp.money.models   import Transaction
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
+    def module_properties(self):
+        return {
+            "link_title": "Check-in (check students off for payments and forms)",
+            "module_type": "onsite",
+            "seq": 1
+            }
 
     def updatePaid(self, paid=True):
         t = Transaction.objects.filter(fbo    = self.student,
@@ -132,6 +138,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
         
 
+    @main_call
     @needs_onsite
     def checkin(self, request, tl, one, two, module, extra, prog):
 

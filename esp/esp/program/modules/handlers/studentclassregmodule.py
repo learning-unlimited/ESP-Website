@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.datatree.models import GetNode, DataTree
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
 from esp.program.modules import module_ext
@@ -42,6 +42,21 @@ from datetime import datetime
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
+    def module_properties(self):
+        return [ {
+            "link_title": "Sign up for Classes",
+            "module_type": "learn",
+            "seq": 10,
+            "required": True,
+            "main_call": "classlist"
+            }, {
+            "link_title": "Sign up for Classes",
+            "admin_title": "Sign up for Classes, SoW (StudentClassRegModule)",
+            "module_type": "learn",
+            "seq": 10,
+            "required": True,
+            "main_call": "sowclass"
+            } ]
 
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
@@ -114,7 +129,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
 	return context
 
-        
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
     def addclass(self,request, tl, one, two, module, extra, prog):
@@ -195,7 +210,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         else:
             raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'
 
-
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')    
     def fillslot(self, request, tl, one, two, module, extra, prog):
@@ -240,6 +255,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
        
 
     # we can also ``changeslot'', with only minor modifications to the above code...
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')    
     def changeslot(self, request, tl, one, two, module, extra, prog):
@@ -319,6 +335,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     # This function gets called and branches off to the two above depending on the user's role
+    @aux_call
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
         
@@ -328,7 +345,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         else:
             return self.catalog_student(request, tl, one, two, module, extra, prog, timeslot)
     
-
+    @aux_call
     @needs_student
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.qsdmedia.models import Media
@@ -347,6 +364,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 	
         return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')    
     def clearslot(self, request, tl, one, two, module, extra, prog):
@@ -376,6 +394,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                         auto_class.unpreregister_student(self.user)
 	return self.goToCore(tl)
 
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
     def swapclass(self, request, tl, one, two, module, extra, prog):

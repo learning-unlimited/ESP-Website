@@ -36,6 +36,7 @@ from esp.users import models as UsersModel
 
 def post_syncdb(sender, app, **kwargs):
     if app == datatree:
+        print "Installing esp.users initial data..."
         UsersModel.install()
 
 signals.post_syncdb.connect(post_syncdb)

@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -47,9 +47,17 @@ from esp.datatree.models import DataTree
 class SATPrepAdminSchedule(ProgramModuleObj):
     """ This allows SATPrep directors to schedule their programs using
         an algorithm. """
+    def module_properties(self):
+        return {
+            "link_title": "Schedule SATPrep",
+            "module_type": "manage",
+            "seq": 1000
+            }
+    
     def extensions(self):
         return [('satprepInfo', module_ext.SATPrepAdminModuleInfo)]
 
+    @main_call
     @needs_admin
     def schedule_options(self, request, tl, one, two, module, extra, prog):
         """ This is a list of the two options required to schedule an
@@ -57,6 +65,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         
         return render_to_response(self.baseDir()+'options.html', request, (prog, tl), {})
 
+    @aux_call
     @needs_admin
     def create_rooms(self, request, tl, one, two, module, extra, prog):
         """ Step 1 of the diagnostic setup process. """
@@ -98,7 +107,8 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'room_setup.html', request, (prog, tl), context)
     
          
-         
+
+    @aux_call
     @needs_admin
     def diagnostic_sections(self, request, tl, one, two, module, extra, prog):
         """ Step 2 of the diagnostic setup process. """
@@ -170,6 +180,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'diagnostic_sections.html', request, (prog, tl), context)
 
 
+    @aux_call
     @needs_admin
     def enter_scores(self, request, tl, one, two, module, extra, prog):
         """ Allow bulk entry of scores from a spreadsheet.  This works for either the diagnostic or
@@ -260,6 +271,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'score_entry.html', request, (prog, tl), context)
 
 
+    @aux_call
     @needs_admin
     def satprep_schedulestud(self, request, tl, one, two, module, extra, prog):
         """ An interface for scheduling all the students, provided the classes have already
@@ -408,6 +420,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         return None
            
 
+    @aux_call
     @needs_admin
     def satprep_classgen(self, request, tl, one, two, module, extra, prog):
         """ This view will generate the classes for all the users. """
@@ -498,7 +511,8 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         
         dummy_anchor.delete()
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
-        
+
+    @aux_call
     def satprep_teachassign(self, request, tl, one, two, module, extra, prog):
         """ This will allow the program director to assign sections to teachers. """
         import string

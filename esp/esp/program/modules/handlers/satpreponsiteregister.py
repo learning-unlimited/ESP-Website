@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -42,7 +42,12 @@ from esp.program.modules.manipulators import OnSiteRegManipulator
 
 
 class SATPrepOnSiteRegister(ProgramModuleObj):
-
+    def module_properties(self):
+        return {
+            "link_title": "SATPrep On-Site User Creation",
+            "module_type": "onsite",
+            "seq": 10
+            }
 
     def createBit(self, extension):
         verb = GetNode('V/Flags/Registration/'+extension)
@@ -59,7 +64,8 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
         ub.recursive = False
         ub.save()
         return True
-    
+
+    @main_call
     @needs_onsite
     def satprep_create(self, request, tl, one, two, module, extra, prog):
         manipulator = OnSiteRegManipulator()

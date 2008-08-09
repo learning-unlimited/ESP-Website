@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -40,6 +40,14 @@ from esp.web.util.latex import render_to_latex
 
 class NameTagModule(ProgramModuleObj):
     """ This module allows you to generate a bunch of IDs for everyone in the program. """
+    def module_properties(self):
+        return {
+            "link_title": "Generate Nametags",
+            "module_type": "manage",
+            "seq": 100
+            }
+
+    @main_call
     @needs_admin
     def selectidoptions(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
@@ -47,6 +55,7 @@ class NameTagModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def generatestickers(self, request, tl, one, two, module, extra, prog):
         timeslots = prog.getTimeSlots()
@@ -69,6 +78,7 @@ class NameTagModule(ProgramModuleObj):
             
         return render_to_latex(self.baseDir()+'stickers.tex', context, format)
 
+    @aux_call
     @needs_admin
     def generatetags(self, request, tl, one, two, module, extra, prog):
         """ generate nametags """

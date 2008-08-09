@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext, manipulators
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassImplication
@@ -50,6 +50,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
         StudentClassRegModule. Please be mindful of all the options of this module. """
+    def module_properties(self):
+        return {
+            "link_title": "Register Your Classes",
+            "module_type": "teach",
+            "seq": 10,
+            "main_call": "listclasses"
+            }
 
     
     def extensions(self):
@@ -161,6 +168,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             
         return [(str(x.id), x.name) for x in res_types]
 
+    @aux_call
     @needs_teacher
     @meets_deadline("/Classes/View")
     def section_students(self, request, tl, one, two, module, extra, prog):
@@ -171,6 +179,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'section': section[0], 'cls': section[0].parent_class})
 
+    @aux_call
     @needs_teacher
     @meets_deadline("/Classes/View")
     def class_students(self, request, tl, one, two, module, extra, prog):
@@ -181,7 +190,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'cls': cls[0]})
         
-
+    @aux_call
     @needs_teacher
     @meets_deadline('/Classes')
     def deleteclass(self, request, tl, one, two, module, extra, prog):
@@ -195,7 +204,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         cls.delete()
         return self.goToCore(tl)
 
-
+    @aux_call
     @needs_teacher
     @meets_deadline("/Classes/View")
     def class_status(self, request, tl, one, two, module, extra, prog):
@@ -215,7 +224,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                   }
 
         return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
-	
+
+    @aux_call
     @needs_teacher
     @meets_deadline("/MainPage")
     def class_docs(self, request, tl, one, two, module, extra, prog):
@@ -267,6 +277,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 	
         return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_teacher
     @meets_deadline('/MainPage')
     def coteachers(self, request, tl, one, two, module, extra, prog): 
@@ -377,6 +388,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                                                                                          'txtTeachers': txtTeachers,
                                                                                          'coteachers':  coteachers,
                                                                                          'conflicts':   conflictingusers})
+
+    @aux_call
     @meets_deadline("/Classes/Edit")
     @needs_teacher
     def editclass(self, request, tl, one, two, module, extra, prog):
@@ -387,7 +400,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         return self.makeaclass(request, tl, one, two, module, extra, prog, cls)
 
-
+    @aux_call
     @meets_deadline('/Classes')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
@@ -666,6 +679,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 
+    @aux_call
     @needs_teacher
 #    @meets_deadline('/Classes')    
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):

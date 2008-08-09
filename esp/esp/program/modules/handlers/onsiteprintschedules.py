@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.http      import HttpResponse
 from esp.users.views  import search_for_user
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from datetime         import datetime
@@ -42,8 +42,14 @@ from esp.db.models    import Q
 from esp.money.models import LineItemType, RegisterLineItem, LineItem
 
 class OnsitePrintSchedules(ProgramModuleObj):
+    def module_properties(self):
+        return {
+            "link_title": "Automatically Print Schedules",
+            "module_type": "onsite",
+            "seq": 10000
+            }
 
-
+    @main_call
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "

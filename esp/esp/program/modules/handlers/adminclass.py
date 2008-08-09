@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
@@ -54,6 +54,14 @@ class AdminClass(ProgramModuleObj):
         Works best with student and teacher class modules, but they are not necessary.
         Options for this are available on the main manage page.
         """
+
+    def module_properties(self):
+        return {
+            "link_title": "Manage Classes",
+            "module_type": "manage",
+            "seq": 1,
+            "main_call": "listclasses"
+            }
         
     form_choice_types = ['status', 'room', 'progress', 'resources', 'times', 'min_grade', 'max_grade']
     def getFormChoices(self, field_str):
@@ -248,6 +256,7 @@ class AdminClass(ProgramModuleObj):
                     
         return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
 
+    @aux_call
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
         cls, found = self.getClass(request,extra)
@@ -288,6 +297,7 @@ class AdminClass(ProgramModuleObj):
         
         return render_to_response(self.baseDir()+'manageclass.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def approveclass(self, request, tl, one, two, module, extra, prog):
         cls, found = self.getClass(request, extra)
@@ -308,6 +318,7 @@ class AdminClass(ProgramModuleObj):
             return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)
 
+    @aux_call
     @needs_admin
     def proposeclass(self, request, tl, one, two, module, extra, prog):
         cls, found = self.getClass(request, extra)
@@ -329,6 +340,7 @@ class AdminClass(ProgramModuleObj):
             cls.checklist_progress.add(check)
             return True
 
+    @aux_call
     @needs_admin
     def alter_checkmark(self, request, *args, **kwargs):
         """
@@ -344,6 +356,7 @@ class AdminClass(ProgramModuleObj):
         else:
             return HttpResponse('Off');
 
+    @aux_call
     @needs_admin
     def changeoption(self, request,tl,one,two,module,extra,prog):
         check_id = request.GET['step']
@@ -369,6 +382,7 @@ class AdminClass(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def deleteclass(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(id = extra)
@@ -482,7 +496,8 @@ class AdminClass(ProgramModuleObj):
                                                                                          'txtTeachers': txtTeachers,
                                                                                          'coteachers':  coteachers,
                                                                                          'conflicts':   conflictingusers})
-    
+
+    @aux_call
     @needs_admin
     def editclass(self, request, tl, one, two, module, extra, prog):
         """ Hand over to the teacher class reg module so we only have this code in one place. """

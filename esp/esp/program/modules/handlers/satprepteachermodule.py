@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.program.manipulators import SATPrepTeacherInfoManipulator
@@ -42,6 +42,12 @@ from django.db        import models
 
 
 class SATPrepTeacherModule(ProgramModuleObj):
+    def module_properties(self):
+        return {
+            "link_title": "SATPrep Information",
+            "module_type": "teach",
+            "seq": 50
+            }
 
     def teachers(self,QObject = False):
         if QObject:
@@ -58,6 +64,7 @@ class SATPrepTeacherModule(ProgramModuleObj):
                                                        program = self.program).count() > 0
 
 
+    @main_call
     @needs_teacher
     def satprepinfo(self, request, tl, one, two, module, extra, prog):
         manipulator = SATPrepTeacherInfoManipulator(module_ext.SATPrepTeacherModuleInfo.subjects())

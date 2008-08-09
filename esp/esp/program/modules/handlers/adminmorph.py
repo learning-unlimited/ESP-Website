@@ -31,14 +31,21 @@ Email: web@esp.mit.edu
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
 from esp.db.models   import Q
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.web.util import render_to_response
 from django.contrib.auth.models import User
 
 class AdminMorph(ProgramModuleObj):
     doc = """ User morphing allows the program director to morph into a constituent of their program. """
+    def module_properties(self):
+        return {
+            "link_title": "Morph into User",
+            "module_type": "manage",
+            "seq": 34
+            }
 
+    @main_call
     @needs_admin
     def admin_morph(self, request, tl, one, two, module, extra, prog):
         """ This function will allow someone to morph into a user for testing purposes. """

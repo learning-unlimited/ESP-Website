@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_admin
+from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories
 from esp.datatree.models         import DataTree, GetNode
@@ -47,12 +47,20 @@ from datetime                    import timedelta
 class SchedulingModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
+    def module_properties(self):
+        return {
+            "link_title": "Scheduling",
+            "module_type": "manage",
+            "seq": 8
+            }
+    
     def prepare(self, context={}):
         if context is None: context = {}
         
         context['schedulingmodule'] = self 
         return context
 
+    @main_call
     @needs_admin
     def scheduling(self, request, tl, one, two, module, extra, prog):
         #   Renders the teacher availability page and handles submissions of said page.
@@ -153,7 +161,8 @@ class SchedulingModule(ProgramModuleObj):
 
         #   So far, this page shows you the same stuff no matter what you do.
         return render_to_response(self.baseDir()+'main.html', request, (prog, tl), context)
-    
+
+    @aux_call
     @needs_admin
     def force_availability(self, request, tl, one, two, module, extra, prog):
         teacher_dict = prog.teachers(QObjects=True)
@@ -179,6 +188,7 @@ class SchedulingModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'force_prompt.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def securityschedule(self, request, tl, one, two, module, extra, prog):
         """ Display a list of classes (by classroom) for each timeblock in a program """

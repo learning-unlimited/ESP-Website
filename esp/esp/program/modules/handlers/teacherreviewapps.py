@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, CoreModule
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, CoreModule, main_call, aux_call
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
@@ -42,7 +42,15 @@ from django.http import HttpResponseRedirect
 __all__ = ['TeacherReviewApps']
 
 class TeacherReviewApps(ProgramModuleObj, CoreModule):
+    def module_properties(self):
+        return {
+            "link_title": "Junction Application Review",
+            "module_type": "teach",
+            "seq": 1000,
+            "main_call": "teacherreviewapp"
+            }
 
+    @aux_call
     @meets_deadline("/AppReview")
     @needs_teacher
     def review_students(self, request, tl, one, two, module, extra, prog):
@@ -82,6 +90,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
                                   {'class': cls,
                                    'students':students})
 
+    @aux_call
     @meets_deadline()
     @needs_teacher
     def app_questions(self, request, tl, one, two, module, extra, prog):
@@ -112,7 +121,8 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
             
         context = {'clrmi': clrmi, 'prog': prog, 'questions': question_list}
         return render_to_response(self.baseDir()+'questions.html', request, (prog, tl), context)
-    
+
+    @aux_call
     @meets_deadline("/AppReview")
     @needs_teacher
     def review_student(self, request, tl, one, two, module, extra, prog):

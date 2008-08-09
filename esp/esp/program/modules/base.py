@@ -398,7 +398,64 @@ class ProgramModuleObj(models.Model):
     def extensions(self):
         return []
 
+    def module_properties(self):
+        """
+        Specify the properties of the ProgramModule row corresponding
+        to this table.
+        This function should return a dictionary with keys matching
+        the field names of the ProgramModule table, with at least
+        "link_title" and "module_type".
+        """
+        return None
 
+    def module_properties_autopopulated(self):
+        """
+        Return a dictionary of the ProgramModule properties of this class.
+        The dictionary will return the same dictionary as
+        self.module_properties(), with the following values added if their
+        corresponding keys don't already exist:
+        - "handler"
+        - "admin_title" (as "%(link_title)s (%(handler)s)")
+        - "seq" (as 200)
+        - "aux_calls" (based on @aux_calls decorators)
+        - "main_call" (based on the @main_call decorator)
+        """
+
+        props = self.module_properties()
+
+        
+        def update_props(props):
+            if not "handler" in props:
+                props["handler"] == self.__class__.__name__
+            if not "admin_title" in props:
+                props["admin_title"] = "%(link_title)s (%(handler)s)" % props
+            if not "seq" in props:
+                props["seq"] = 200
+
+            if not "aux_calls" in props:
+                NAME = 0
+                FN = 1
+                props["aux_calls"] = ",".join( [ x[NAME] for x in self.__dict__.items()
+                                                 if getattr(x[FN], "call_tag", None) == "Aux Call" ] )
+
+            if not "main_call" in props:
+                NAME = 0
+                FN = 1
+                mainCallList = [ x[NAME] for x in self.__dict__.items()
+                                 if getattr(x[FN], "call_tag", None) == "Aux Call" ]
+                assert len(mainCallList) <= 1, "Error: You can only have one Main Call per class!: (%s: %s)" % (self.__class__.__name__, ",".join(mainCallList))
+                props["main_call"] = ",".join(mainCallList)
+
+        if type(props) == dict:
+            props = [ props ]
+
+        for prop in props:
+            update_props(prop)
+            
+        return props
+                
+        
+            
     @classmethod
     def getSummary(cls):
         """
@@ -551,3 +608,19 @@ def meets_deadline(extension=''):
     return meets_deadline
 
 
+def main_call(func):
+    """
+    Tag decorator that flags 'func' as a 'Main Call' function for
+    a ProgramModuleObj.
+    Note that there must be no more than 1 Main Call per ProgramModuleObj.
+    """
+    func.call_tag = "Main Call"
+    return func
+
+def aux_call(func):
+    """
+    Tag decorator that flags 'func' as an 'Aux Call' function for
+    a ProgramModuleObj.
+    """
+    func.call_tag = "Aux Call"
+    return func

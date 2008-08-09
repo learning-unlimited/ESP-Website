@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 
 from esp.web.util.main import render_to_response
 from esp.users.models import PersistentQueryFilter, K12School, ContactInfo, ESPUser, User, ESPError, ZipCode
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
 from esp.program.modules import module_ext
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
@@ -45,6 +45,14 @@ class MailingLabels(ProgramModuleObj):
     """ This allows one to generate Mailing Labels for both schools and users. You have the option of either creating a file which can be sent to MIT mailing services or actually create printable files.
     """
 
+    def module_properties(self):
+        return {
+            "link_title": "Generate Mailing Labels",
+            "module_type": "manage",
+            "seq": 100
+            }
+
+    @aux_call
     @needs_admin
     def badzips(self, request, tl, one, two, module, extra, prog):
         """ This function will allow someone to enter zip codes to mark as undeliverable. """
@@ -66,6 +74,7 @@ class MailingLabels(ProgramModuleObj):
         return render_to_response(self.baseDir()+"mailinglabel_badzips.html", request, (prog, tl), {'form': form})
                 
 
+    @main_call
     @needs_admin
     def mailinglabel(self, request, tl, one, two, module, extra, prog):
         """ This function will allow someone to generate mailing labels. """

@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.program.manipulators import SATPrepInfoManipulator
@@ -41,6 +41,13 @@ from esp.db.models      import Q
 
 
 class SATPrepModule(ProgramModuleObj):
+    def module_properties(self):
+        return {
+            "link_title": "Program-specific Information",
+            "module_type": "learn",
+            "seq": 10,
+            "required": True
+            }
 
     def get_msg_vars(self, user, key):
         user = ESPUser(user)
@@ -122,7 +129,7 @@ class SATPrepModule(ProgramModuleObj):
 	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
 	return satPrep.id is not None
 
-
+    @main_call
     @needs_student
     def satprepinfo(self, request, tl, one, two, module, extra, prog):
 	manipulator = SATPrepInfoManipulator()

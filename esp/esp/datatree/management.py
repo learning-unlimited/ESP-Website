@@ -36,6 +36,7 @@ from esp.datatree import models as datatree
 
 def post_syncdb(sender, app, **kwargs):
     if app == datatree:
+        print "Installing esp.datatree initial data..."
         datatree.install()
 
 signals.post_syncdb.connect(post_syncdb)

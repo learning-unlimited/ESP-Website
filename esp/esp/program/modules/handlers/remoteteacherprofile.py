@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules         import module_ext, manipulators
 from esp.program.models          import Program
 from esp.datatree.models         import DataTree, GetNode
@@ -45,7 +45,12 @@ from esp.users.models            import ESPUser, User
 
 class RemoteTeacherProfile(ProgramModuleObj):
     """ This program module allows teachers to select how they are going to do things with respect to having a program far away. (i.e. do they need transportation, when do they need transportation, etc.)"""
-
+    def module_properties(self):
+        return {
+            "link_title": "Edit your Program-Specific Teacher Information",
+            "module_type": "teach",
+            "seq": 10
+            }
 
     def getTimes(self):
         times = self.program.getTimeSlots()
@@ -66,6 +71,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
         regProf, created = module_ext.RemoteProfile.objects.get_or_create(user = self.user, program = self.program)
         return not created
 
+    @main_call
     @meets_deadline()
     @needs_teacher
     def editremoteprofile(self, request, tl, one, two, module, extra, prog):

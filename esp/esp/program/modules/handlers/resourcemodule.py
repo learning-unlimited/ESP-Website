@@ -39,7 +39,7 @@ from esp.program.models import ClassSubject, ClassSection, Program
 from esp.users.models import UserBit, ESPUser
 from esp.middleware import ESPError
 
-from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
 from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, EquipmentForm
@@ -48,7 +48,14 @@ class ResourceModule(ProgramModuleObj):
     doc = """ Manage the resources used by a program.  This includes classrooms and LCD equipment.
     Also use this module to set up the time blocks for classes.
     """
-        
+    def module_properties(self):
+        return {
+            "link_title": "Manage Times and Rooms",
+            "module_type": "manage",
+            "seq": 10
+            }
+
+    @main_call
     def resources(self, request, tl, one, two, module, extra, prog):
 	context = {}
         

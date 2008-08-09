@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj
+from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call
 from esp.middleware              import ESPError
 from esp.program.models          import ClassSubject, ClassSection
 from datetime                    import timedelta
@@ -38,6 +38,14 @@ from esp.web.util        import render_to_response
 class TeacherPreviewModule(ProgramModuleObj):
     """ This program module allows teachers to view classes already added to the program.
         And, for now, also some printables. """
+
+    def module_properties(self):
+        return {
+            "link_title": "Preview Other Classes",
+            "module_type": "teach",
+            "seq": -10,
+            "main_call": "preview"
+            }
 
     def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedules.html'):
         #   Use the template defined in ProgramPrintables
@@ -57,10 +65,12 @@ class TeacherPreviewModule(ProgramModuleObj):
             return render_to_response(pmo.baseDir()+template_file, request, (prog, tl), context)
         else:
             raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.' 
-    
+
+    @aux_call
     def teacherschedule(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='teacherschedule.html')
 
+    @aux_call
     def classroster(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='classrosters.html')
 

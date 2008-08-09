@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.web.views.myesp import profile_editor
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser, User
@@ -37,6 +37,14 @@ from django.contrib.auth.decorators import login_required
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
+    def module_properties(self):
+        return {
+            "link_title": "Update Your Profile",
+            "module_type": "teach",
+            "seq": 1,
+            "check_call": "profile_check",
+            "required": True
+            }
 
     def students(self, QObject = False):
         if QObject:
@@ -57,7 +65,8 @@ class RegProfileModule(ProgramModuleObj):
 
     def teacherDesc(self):
         return {'teacher_profile': """Teachers who have completed the profile."""}
-    
+
+    @main_call
     @login_required
     def profile(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """

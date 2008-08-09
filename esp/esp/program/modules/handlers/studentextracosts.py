@@ -27,7 +27,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.datatree.models import GetNode, DataTree
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
@@ -52,6 +52,14 @@ class MultiCostItem(forms.Form):
 
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
+
+    def module_properties(self):
+        return {
+            "link_title": "T-Shirts",
+            "module_type": "learn",
+            "seq": 30
+            }
+    
     def get_invoice(self):
         return Document.get_invoice(self.user, self.program_anchor_cached(parent=True), [], dont_duplicate=True)
 
@@ -83,6 +91,7 @@ class StudentExtraCosts(ProgramModuleObj):
     def isCompleted(self):
         return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 or self.get_invoice().txn.lineitem_set.all().count() > 0 )
 
+    @main_call
     @needs_student
     @meets_deadline('/ExtraCosts')
     def extracosts(self,request, tl, one, two, module, extra, prog):
