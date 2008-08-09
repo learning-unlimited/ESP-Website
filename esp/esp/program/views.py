@@ -224,7 +224,7 @@ def managepage(request, page):
                 request.session['modules'] = modules
                 request.session['costs'] = ( form.clean_data['base_cost'], form.clean_data['finaid_cost'] )
               
-                return render_to_response('program/newprogram_review.html', request, request.get_node('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
+                return render_to_response('program/newprogram_review.html', request, GetNode('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
             
                 
         else:
@@ -234,7 +234,7 @@ def managepage(request, page):
             else:
                 form = ProgramCreationForm()
 
-        return render_to_response('program/newprogram.html', request, request.get_node('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('-id')})
+        return render_to_response('program/newprogram.html', request, GetNode('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('-id')})
         
     if page == 'submit_transaction':
         #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction

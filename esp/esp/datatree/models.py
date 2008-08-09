@@ -38,6 +38,7 @@ from django.db import transaction
 from django.core.cache import cache
 from esp.db.fields import AjaxForeignKey
 from esp.utils.memdb import mem_db
+from django.contrib import admin
 
 import exceptions
 
@@ -83,10 +84,6 @@ class DataTree(models.Model):
         unique_together = (("name", "parent"),)
         # ordering should be by rangestart
         ordering = ['rangestart','-rangeend']
-
-    class Admin:
-        search_fields = ['uri']
-        pass
 
     ########################
     # PARAMETER Functions  #
@@ -1115,6 +1112,10 @@ def PermToString(perm):
 #root = DataTree.root()
 #root.save()
 
+class DataTreeAdmin(admin.ModelAdmin):
+    search_fields = ['uri']
+
+admin.site.register(DataTree, DataTreeAdmin)
 
 
 def install():

@@ -34,6 +34,7 @@ from esp.lib.markdown import markdown
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from datetime import datetime
+from django.contrib import admin
 import md5
 
 from esp.db.fields import AjaxForeignKey
@@ -112,9 +113,6 @@ class QuasiStaticData(models.Model):
     def __str__(self):
         return (self.path.full_name() + ':' + self.name + '.html' )
 
-    class Admin:
-        search_fields = ['title','name','keywords','description']
-
     def html(self):
         return markdown(self.content)
 
@@ -138,7 +136,10 @@ class QuasiStaticData(models.Model):
         # Operation Complete!
         return qsd[0]
 
+class QuasiStaticDataAdmin(admin.ModelAdmin):
+    search_fields = ['title','name','keywords','description']
 
+    
 class ESPQuotations(models.Model):
     """ Quotation about ESP """
 
@@ -170,7 +171,6 @@ class ESPQuotations(models.Model):
     class Meta:
         verbose_name_plural = 'ESP Quotations'
 
-
-    class Admin:
-        pass
-
+    
+admin.site.register(QuasiStaticData, QuasiStaticDataAdmin)
+admin.site.register(ESPQuotations)

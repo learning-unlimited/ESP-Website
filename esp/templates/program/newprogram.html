@@ -56,7 +56,7 @@ Use a past program as a template:
     </tr>
   </thead>
   <tbody>
-  {{ form }}
+  {% autoescape off %}{{ form }}{% endautoescape %}
   </tbody>
   <tbody>
     <tr> 

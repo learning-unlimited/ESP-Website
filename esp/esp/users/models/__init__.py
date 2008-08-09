@@ -1402,3 +1402,26 @@ class DBList(object):
 
 
 
+def install():
+    """
+    Installs some initial useful UserBits.
+    This function should be idempotent: if run more than once consecutively,
+    subsequent runnings should have no effect on the db.
+    """    
+        
+    # Populate UserBits from the stored list in initial_userbits.py
+    from esp.users.initial_userbits import populateInitialUserBits
+    populateInitialUserBits()
+
+    if User.objects.count() == 1: # We just did a syncdb;
+                                  # the one account is the admin account
+        user = User.objects.all()[0]
+        AdminUserBits = ( { "user": user,
+                            "verb": GetNode("V/Administer"),
+                            "qsc": GetNode("Q") },
+                          { "user": user,
+                            "verb": GetNode("V/Flags/UserRole/Administrator"),
+                            "qsc": GetNode("Q"),
+                            "recursive": False } )
+
+        populateInitialUserBits(AdminUserBits)
