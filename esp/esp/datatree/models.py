@@ -906,8 +906,10 @@ class DataTree(models.Model):
                         self.rangestart, self.rangeend))
 
         if not commit_wait:
-            transaction.commit()
-
+            try:
+                transaction.commit()
+            except transaction.TransactionManagementError:
+                pass # We're not actually in a transaction; so don't bother
             
     @staticmethod
     def shift_many_ranges(baserange, amount, above_base = True, commit_wait = False):
@@ -1115,3 +1117,15 @@ def PermToString(perm):
 
 
 
+def install():
+    """
+    This function sets up the initial ROOT, Q, and V nodes in the datatree.
+    It's idempotent; ie., you can run it multiple times without harm.
+    """
+
+    root_node = DataTree.root()
+    root_node.get_by_uri('Q', create=True)
+    root_node.get_by_uri('V', create=True)
+    
+    from esp.datatree.tree_template import genTemplate
+    genTemplate()
