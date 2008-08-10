@@ -35,7 +35,7 @@ from django.db.models import signals
 from esp.users import models as UsersModel
 
 def post_syncdb(sender, app, **kwargs):
-    if app == datatree:
+    if app == UsersModel:
         print "Installing esp.users initial data..."
         UsersModel.install()
 

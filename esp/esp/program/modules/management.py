@@ -35,7 +35,7 @@ from django.db.models import signals
 from esp.program.modules import models as Modules
 
 def post_syncdb(sender, app, **kwargs):
-    if app == datatree:
+    if app == Modules:
         print "Installing esp.program.modules initial data..."
         Modules.install()
 
