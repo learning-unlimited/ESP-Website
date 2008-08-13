@@ -77,7 +77,7 @@ def myesp_passwd(request, module):
 		errors = {}
 		
 	return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
-						    'form':           forms.FormWrapper(manipulator, new_data, errors),
+						    'form':           oldforms.FormWrapper(manipulator, new_data, errors),
 											 'Success': False})
 
 
@@ -108,7 +108,7 @@ def myesp_passrecover(request, module):
 		errors = {}
 
 	return render_to_response('users/requestrecover.html', request, GetNode('Q/Web/myesp'),
-				  {'form': forms.FormWrapper(manipulator, new_data, errors)})
+				  {'form': oldforms.FormWrapper(manipulator, new_data, errors)})
 
 def myesp_passemailrecover(request, module):
 	new_data = request.POST.copy()
@@ -142,7 +142,7 @@ def myesp_passemailrecover(request, module):
 		errors = {}
 		
 	return render_to_response('users/emailrecover.html', request, GetNode('Q/Web/myesp'),
-				  {'form': forms.FormWrapper(manipulator, new_data, errors),
+				  {'form': oldforms.FormWrapper(manipulator, new_data, errors),
 				   'code': code,
 				   'Success': success})
 	
@@ -447,7 +447,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		new_data = regProf.updateForm(new_data, role)
 
 	context['request'] = request
-	context['form'] = forms.FormWrapper(manipulator, new_data, errors)
+	context['form'] = oldforms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response('users/profile.html', request, navnode, context)
 
 @login_required

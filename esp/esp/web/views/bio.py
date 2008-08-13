@@ -33,7 +33,7 @@ from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.web.util         import get_from_id, render_to_response
 from esp.datatree.models  import GetNode
-from django               import oldforms as forms
+from django               import oldforms
 from django.http          import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
@@ -105,7 +105,7 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
         new_data['bio']          = lastbio.bio
         new_data['picture_file'] = lastbio.picture
         
-    return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/myesp'), {'form':    forms.FormWrapper(manipulator, new_data, errors),
+    return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/myesp'), {'form':    oldforms.FormWrapper(manipulator, new_data, errors),
                                                    'user':    founduser,
                                                    'picture_file': lastbio.picture})
 

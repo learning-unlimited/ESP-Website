@@ -34,7 +34,7 @@ from esp.program.models          import Program
 from esp.datatree.models         import DataTree, GetNode
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
-from django                      import forms
+from django                      import oldforms
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
 from django.core.mail            import send_mail
@@ -114,7 +114,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
             new_data['volunteer_times'] = [x.id for x in profile.volunteer_times.all()]
             new_data.setlist('volunteer_times', [x.id for x in profile.volunteer_times.all()])
             #assert False, new_data
-        context['form'] = forms.FormWrapper(manipulator, new_data, errors)
+        context['form'] = oldforms.FormWrapper(manipulator, new_data, errors)
 
         return render_to_response(self.baseDir() + 'editprofile.html', request, (prog, tl), context)
 
