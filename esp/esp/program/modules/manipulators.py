@@ -368,6 +368,7 @@ class ClassSelectMeetingTimesField(CheckboxSelectMultipleField):
 
 
     def render(self, data):
+        from django.utils.safestring import mark_safe
         output = ['<ul%s>' % (self.ul_class and ' class="%s"' % self.ul_class or '')]
         str_data_list = map(str, data) # normalize to strings
         if self.cls is None:
@@ -390,5 +391,5 @@ class ClassSelectMeetingTimesField(CheckboxSelectMultipleField):
                 (self.get_id() + value, self.__class__.__name__, clsAvailable, self.field_name, value, checked_html,
                  clsAvailable, self.get_id() + value, choice))
         output.append('</ul>')
-        return '\n'.join(output)
+        return mark_safe('\n'.join(output))
 

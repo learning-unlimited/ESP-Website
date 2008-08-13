@@ -262,6 +262,7 @@ class HTMLDateField(forms.DateField):
 
     def render(self, data):
         from datetime import datetime
+        from django.utils.safestring import mark_safe
 
         if type(data) == str:
             try:
@@ -308,7 +309,7 @@ class HTMLDateField(forms.DateField):
         tmphtml = '<input type="hidden" name="%s" value="DATE" />' % (self.field_name)
         tmphtml += '\n\n'.join(ind_html)
         
-        return tmphtml
+        return mark_safe(tmphtml)
 
     def prepare(self, new_data):
         new_data[self.field_name] = new_data[self.field_name + '__year'] + '-' \
@@ -333,7 +334,7 @@ class DojoDatePickerField(forms.DateField):
             self.member_name = member_name
 
     def render(self, data):
-    
+        from django.utils.safestring import mark_safe
         max_length = ''
         if data is None or data == '':
             initdata = 'value="%s" ' % self.default
@@ -345,8 +346,9 @@ class DojoDatePickerField(forms.DateField):
         
         dojojs = '<script type="text/javascript">dojo.require("dojo.widget.DropdownDatePicker");dojo.require("dojo.widget.Button");</script>'
 
-        return dojojs + "\n" + '<input name="%s" id="%s" class="v%s%s" containerToggle="wipe" containerToggleDuration="300" dojoType="dropdowndatepicker" saveFormat="yyyy-MM-dd" displayFormat="yyyy-MM-dd" %slang="en-us" %s/>' % \
+        result_str = dojojs + "\n" + '<input name="%s" id="%s" class="v%s%s" containerToggle="wipe" containerToggleDuration="300" dojoType="dropdowndatepicker" saveFormat="yyyy-MM-dd" displayFormat="yyyy-MM-dd" %slang="en-us" %s/>' % \
                (self.field_name, self.get_id(), self.__class__.__name__, self.is_required and ' required' or '', initdata, max_length)
+        return mark_safe(result_str)
     
         
     
