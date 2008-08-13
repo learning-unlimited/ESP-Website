@@ -42,6 +42,8 @@ from esp.membership.models import AlumniInfo, AlumniRSVP, AlumniContact, AlumniM
 from esp.users.models import ContactInfo
 from esp.utils.forms import save_instance
 
+from esp.middleware import ESPError
+
 def alumnihome(request):
     """
     Main page for alumni.  Shows current discussions and all QSD pages in Q/Web/alumni.
@@ -69,12 +71,15 @@ def thread(request, extra):
         #   Handle submission of replies.
         data = request.POST.copy()
         form = AlumniMessageForm(thread, data, request=request)
-        if form.is_valid():
-            new_message = AlumniMessage()
-            save_instance(form, new_message, commit=False)
-            new_message.thread = thread
-            new_message.save()
-            return HttpResponseRedirect(request.path + '?success=1')
+        try:
+            if form.is_valid():
+                new_message = AlumniMessage()
+                save_instance(form, new_message, commit=False)
+                new_message.thread = thread
+                new_message.save()
+                return HttpResponseRedirect(request.path + '?success=1')
+        except UnicodeDecodeError:
+            raise ESPError(False), "You have entered a comment containing invalid international characters.  If you are entering international characters, please make sure your browser uses the Unicode UTF-8 text format to do so."
 
     return render_to_response('membership/thread_view.html', request, request.get_node('Q/Web/alumni'), context)
 

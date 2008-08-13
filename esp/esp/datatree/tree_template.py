@@ -120,8 +120,8 @@ def genTemplate():
     for n in node_list:
         n.expire_uri()
 
-    Q_node = DataTree.objects.get(uri__endswith='Q')
-    V_node = DataTree.objects.get(uri__endswith='V')
+    Q_node = DataTree.objects.get(uri='Q')
+    V_node = DataTree.objects.get(uri='V')
     Q_node.uri = 'Q'
     V_node.uri = 'V'
     for n in node_list:

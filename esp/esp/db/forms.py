@@ -141,7 +141,7 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 
         return css + html + javascript
     
-class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.Widget):
+class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
     choices = ()
     
     def __init__(self, attrs=None, *args, **kwargs):    

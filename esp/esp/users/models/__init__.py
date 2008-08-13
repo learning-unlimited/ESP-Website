@@ -48,6 +48,7 @@ from esp.users.models.userbits import UserBit
 from django.http import HttpRequest
 from django.template import loader
 from django.core.mail import send_mail
+from django.template import Context
 
 try:
     import cPickle as pickle
@@ -792,7 +793,7 @@ class StudentInfo(models.Model):
             to_email = ['esp-membership@mit.edu']
             from_email = 'ESP Profile Editor <regprofile@esp.mit.edu>'
             t = loader.get_template('email/studentreprequest')
-            msgtext = t.render({'user': curUser, 'info': studentInfo, 'prog': regProfile.program})
+            msgtext = t.render(Context({'user': curUser, 'info': studentInfo, 'prog': regProfile.program}))
             send_mail(subj, msgtext, from_email, to_email, fail_silently = True)
 
             #   Add the user bit representing a student rep request.

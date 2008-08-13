@@ -33,6 +33,17 @@ from esp.datatree.models import DataTree
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 
+from django.contrib import admin
+from esp.program.models import Program
+
+class DBReceipt(models.Model):
+    """ Per-program Receipt templates """
+    program = models.OneToOneField(Program)
+    receipt = models.TextField()
+
+admin.site.register(DBReceipt)
+
+
 class SATPrepAdminModuleInfo(models.Model):
     module        = models.ForeignKey(ProgramModuleObj)
     num_divisions = models.IntegerField(blank=True, null=True)

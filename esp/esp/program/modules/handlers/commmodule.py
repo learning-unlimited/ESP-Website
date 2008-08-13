@@ -96,7 +96,7 @@ class CommModule(ProgramModuleObj):
             raise ESPError(), "You seem to be trying to email 0 people!  Please go back, edit your search, and try again."
 
         htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
-        renderedtext = Template(htmlbody).render({'user': ESPUser(firstuser), 'program': self.program})
+        renderedtext = Template(htmlbody).render(Context({'user': ESPUser(firstuser), 'program': self.program}))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                   (prog, tl), {'filterid': filterid,

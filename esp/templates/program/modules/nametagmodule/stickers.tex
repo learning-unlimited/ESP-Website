@@ -7,7 +7,7 @@
 \usepackage{pst-barcode}
 \usepackage{breakurl}
 \usepackage{longtable}
-\usepackage[left=.3in,top=.6in,right=.3in,bottom=.3in]{geometry}
+\usepackage[left=.3in,top=.5in,right=.3in,bottom=.3in]{geometry}
 \pagestyle{empty}
 
 \begin{document}
@@ -22,7 +22,7 @@ Registration for {{ timeslot.short_time }} \\
 \begin{pspicture}(5,0.4in)
 \psbarcode[scalex=1,scaley=0.75]{0{{ student.id|stringformat:".10d" }}}{includetext height=0.5}{upca}
 \end{pspicture}
-\vspace{0.25in}
+\vspace{0.325in}
 \end{minipage}
 {% if not forloop.last %} & {% endif %}{% endfor %} \\
 

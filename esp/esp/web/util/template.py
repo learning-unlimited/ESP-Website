@@ -123,7 +123,7 @@ def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=999
                     else:
                         t = get_template(file_name)
                     self.nodelist = t.nodelist
-                retVal = self.nodelist.render(context_class(dict))
+                retVal = self.nodelist.render(context_class(dict, autoescape=context.autoescape))
                 if cache_key is not None:
                     if cache_dict_key is None:
                         cache_obj.set(cache_key, retVal, cache_time)

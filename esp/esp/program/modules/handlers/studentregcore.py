@@ -47,14 +47,6 @@ from django.http import HttpResponse
 from esp.lib.markdown import markdown
 import operator
 
-class DBReceipt(models.Model):
-    """ Per-program Receipt templates """
-    program = models.OneToOneField(Program)
-    receipt = models.TextField()
-
-admin.site.register(DBReceipt)
-    
-    
 class StudentRegCore(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
@@ -116,7 +108,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def confirmreg_forreal(self, request, tl, one, two, module, extra, prog, new_reg):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
-        
+        from esp.program.modules.module_ext import DBReceipt
+
+
         try:
             invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
         except:
