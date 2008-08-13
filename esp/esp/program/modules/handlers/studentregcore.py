@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.models  import Program
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser, User
 from esp.datatree.models import GetNode
@@ -39,9 +40,21 @@ from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItemType, EmptyTransactionException
 from decimal import Decimal
 from datetime import datetime
-
+from django.db import models
+from django.contrib import admin
+from django.template import Context, Template
+from django.http import HttpResponse
+from esp.lib.markdown import markdown
 import operator
 
+class DBReceipt(models.Model):
+    """ Per-program Receipt templates """
+    program = models.OneToOneField(Program)
+    receipt = models.TextField()
+
+admin.site.register(DBReceipt)
+    
+    
 class StudentRegCore(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
@@ -143,8 +156,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             raise ESPError(), "You must finish all the necessary steps first, then click on the Save button to finish registration."
             
-	receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
-	return render_to_response(receipt, request, (prog, tl), context)
+        try:
+            receipt_text = DBReceipt.objects.get(program=self.program).receipt
+            context["request"] = request
+            context["program"] = prog
+            return HttpResponse( markdown( Template(receipt_text).render( Context(context) ) ) )
+        except DBReceipt.DoesNotExist:
+            receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
+            return render_to_response(receipt, request, (prog, tl), context)
 
     @aux_call
     @needs_student
