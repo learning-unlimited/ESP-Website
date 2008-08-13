@@ -5,10 +5,10 @@ from django.core.mail import send_mail
 # Create your models here.
 
 class ResponseForm(models.Model):
-    contact_name = models.CharField(maxlength = 100)
-    position = models.CharField(maxlength = 100)
+    contact_name = models.CharField(max_length = 100)
+    position = models.CharField(max_length = 100)
     email = models.EmailField()
-    school = models.CharField(maxlength = 150)
+    school = models.CharField(max_length = 150)
     mailing_address = models.TextField()
     xeroxable_flier_for_summer_hssp = models.BooleanField()
     xeroxable_flier_for_junction = models.BooleanField()

@@ -222,5 +222,5 @@ class SubSectionImage(models.Model):
     def __str__(self):
         if not os.path.exists(self.image.path):
             self.create_image()
-        return '<img src="%s" alt="%s" border="0" title="%s" class="subsection" />' % (self.get_image_url(), self.text, self.text)
+        return '<img src="%s" alt="%s" border="0" title="%s" class="subsection" />' % (self.image.url, self.text, self.text)
         

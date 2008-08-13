@@ -43,15 +43,15 @@ class UserContactManipulator(forms.Manipulator):
         phone_validators = [OneOfSetAreFilled(['phone_day','phone_cell'])]
         self.makeRequired = makeRequired
         self.fields = (
-            forms.TextField(field_name="first_name", length=25, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="last_name", length=30, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
+            forms.TextField(field_name="first_name", length=25, max_length=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="last_name", length=30, max_length=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
             forms.EmailField(field_name="e_mail", is_required=makeRequired, length=25, validator_list=[validators.isNotEmpty]),
             ESPPhoneNumberField(field_name="phone_day", local_areacode='617', is_required=makeRequired),
             ESPPhoneNumberField(field_name="phone_cell", local_areacode='617'),
-            forms.TextField(field_name="address_street", length=40, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="address_city", length=20, maxlength=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="address_street", length=40, max_length=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="address_city", length=20, max_length=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             USStateSelectField(field_name="address_state", is_required=makeRequired),
-            forms.TextField(field_name="address_zip", length=5, maxlength=5, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="address_zip", length=5, max_length=5, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.HiddenField(field_name="address_postal",is_required=False),
         )
 
@@ -70,15 +70,15 @@ class EmergContactManipulator(forms.Manipulator):
             
         
         self.fields = (
-            forms.TextField(field_name="emerg_first_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="emerg_last_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
+            forms.TextField(field_name="emerg_first_name", length=15, max_length=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="emerg_last_name", length=15, max_length=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
             forms.EmailField(field_name="emerg_e_mail", is_required=False, length=25),
             ESPPhoneNumberField(field_name="emerg_phone_day", is_required=makeRequired, local_areacode='617'),
             ESPPhoneNumberField(field_name="emerg_phone_cell", local_areacode='617'),
-            forms.TextField(field_name="emerg_address_street", length=20, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="emerg_address_city", length=20, maxlength=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="emerg_address_street", length=20, max_length=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="emerg_address_city", length=20, max_length=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             USStateSelectField(field_name="emerg_address_state", is_required=makeRequired),
-            forms.TextField(field_name="emerg_address_zip", length=5, maxlength=5, is_required=makeRequired, validator_list=[validators.isNotEmpty])
+            forms.TextField(field_name="emerg_address_zip", length=5, max_length=5, is_required=makeRequired, validator_list=[validators.isNotEmpty])
         )
 
 class GuardContactManipulator(forms.Manipulator):
@@ -91,8 +91,8 @@ class GuardContactManipulator(forms.Manipulator):
             
         
         self.fields = (
-            forms.TextField(field_name="guard_first_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="guard_last_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="guard_first_name", length=15, max_length=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="guard_last_name", length=15, max_length=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.EmailField(field_name="guard_e_mail", is_required=False, length=25),
             ESPPhoneNumberField(field_name="guard_phone_day", is_required=makeRequired, local_areacode='617'),
             ESPPhoneNumberField(field_name="guard_phone_cell", local_areacode='617'),
@@ -119,7 +119,7 @@ class StudentInfoManipulator(forms.Manipulator):
         
         self.fields = (
             GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)]),
-            forms.TextField(field_name="school", length=24, maxlength=128),
+            forms.TextField(field_name="school", length=24, max_length=128),
             HTMLDateField(field_name="dob", is_required=makeRequired),
             forms.CheckboxField(field_name="studentrep", is_required=False),
             forms.LargeTextField(field_name="studentrep_expl", is_required=False, rows=8, cols=45, validator_list=[studentrep_explained]),
@@ -137,9 +137,9 @@ class TeacherInfoManipulator(forms.Manipulator):
         shirt_sizes = [('', '')] + list(shirt_sizes)
         shirt_types = [('', '')] + list(shirt_types)
         self.fields = (
-            forms.IntegerField(field_name="graduation_year", length=4, maxlength=4),
-            forms.TextField(field_name="school", length=48, maxlength=128),
-            forms.TextField(field_name="major", length=30, maxlength=32),
+            forms.IntegerField(field_name="graduation_year", length=4, max_length=4),
+            forms.TextField(field_name="school", length=48, max_length=128),
+            forms.TextField(field_name="major", length=30, max_length=32),
             forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
             forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types, validator_list=[validators.isNotEmpty]),
             )
@@ -148,18 +148,18 @@ class EducatorInfoManipulator(forms.Manipulator):
     """ Manipulator for Educator Info """
     def __init__(self, user = None):
         self.fields = (
-            forms.TextField(field_name="subject_taught", length=12, maxlength=64),
-            forms.TextField(field_name="grades_taught", length=10, maxlength=16),
-            forms.TextField(field_name="school", length=24, maxlength=128),
-            forms.TextField(field_name="position", length=10, maxlength=32)
+            forms.TextField(field_name="subject_taught", length=12, max_length=64),
+            forms.TextField(field_name="grades_taught", length=10, max_length=16),
+            forms.TextField(field_name="school", length=24, max_length=128),
+            forms.TextField(field_name="position", length=10, max_length=32)
             )
         
 class GuardianInfoManipulator(forms.Manipulator):
     """ Manipulator for Educator Info """
     def __init__(self, user = None):
         self.fields = (
-            forms.PositiveIntegerField(field_name="year_finished", length=4, maxlength=4),
-            forms.PositiveIntegerField(field_name="num_kids", length=3, maxlength=16)
+            forms.PositiveIntegerField(field_name="year_finished", length=4, max_length=4),
+            forms.PositiveIntegerField(field_name="num_kids", length=3, max_length=16)
             )
 
 class StudentProfileManipulator(forms.Manipulator):
@@ -322,10 +322,10 @@ class HTMLDateField(forms.DateField):
 
 class DojoDatePickerField(forms.DateField):
     """ A pretty dojo date picker field """
-    def __init__(self, field_name, length=10, maxlength=10, is_required=False, validator_list=None, member_name=None, default=''):
+    def __init__(self, field_name, length=10, max_length=10, is_required=False, validator_list=None, member_name=None, default=''):
         if validator_list is None: validator_list = []
         self.field_name = field_name
-        self.length, self.maxlength = length, maxlength
+        self.length, self.max_length = length, max_length
         self.is_required = is_required
         self.validator_list = [self.isValidDate] + validator_list
         self.default = default
@@ -334,19 +334,19 @@ class DojoDatePickerField(forms.DateField):
 
     def render(self, data):
     
-        maxlength = ''
+        max_length = ''
         if data is None or data == '':
             initdata = 'value="%s" ' % self.default
         else:
             initdata = 'value="%s" ' % data
             
-        if self.maxlength is not None:
-            maxlength = 'maxlength="%s" ' % self.maxlength
+        if self.max_length is not None:
+            max_length = 'max_length="%s" ' % self.max_length
         
         dojojs = '<script type="text/javascript">dojo.require("dojo.widget.DropdownDatePicker");dojo.require("dojo.widget.Button");</script>'
 
         return dojojs + "\n" + '<input name="%s" id="%s" class="v%s%s" containerToggle="wipe" containerToggleDuration="300" dojoType="dropdowndatepicker" saveFormat="yyyy-MM-dd" displayFormat="yyyy-MM-dd" %slang="en-us" %s/>' % \
-               (self.field_name, self.get_id(), self.__class__.__name__, self.is_required and ' required' or '', initdata, maxlength)
+               (self.field_name, self.get_id(), self.__class__.__name__, self.is_required and ' required' or '', initdata, max_length)
     
         
     
@@ -362,11 +362,11 @@ class ESPPhoneNumberField(forms.TextField):
     phone_re = re.compile(r'^\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*$')
     localphone_re = re.compile(r'^\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*$')
     
-    def __init__(self, field_name, is_required=False, validator_list=None, member_name = None, length=12, maxlength=14, local_areacode = None):
+    def __init__(self, field_name, is_required=False, validator_list=None, member_name = None, length=12, max_length=14, local_areacode = None):
         if validator_list is None:
             validator_list = []
         validator_list = validator_list + [self.isESPPhone]
-        blah = forms.TextField(field_name = field_name, validator_list = validator_list, member_name = member_name, is_required = is_required, length = length, maxlength = maxlength)
+        blah = forms.TextField(field_name = field_name, validator_list = validator_list, member_name = member_name, is_required = is_required, length = length, max_length = max_length)
         self.__dict__ = blah.__dict__
         self.__class__.areacode = local_areacode
 
@@ -406,29 +406,29 @@ def isValidSATScore(data, form):
 class SATPrepInfoManipulator(forms.Manipulator):
     def __init__(self):
         self.fields = (
-            forms.PositiveIntegerField(field_name="old_math_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="old_verb_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="old_writ_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.TextField(field_name="heard_by", length=24, maxlength=128)
+            forms.PositiveIntegerField(field_name="old_math_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="old_verb_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="old_writ_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.TextField(field_name="heard_by", length=24, max_length=128)
             )
 
 class SATPrepDiagManipulator(forms.Manipulator):
     def __init__(self):
         self.fields = (
-            forms.PositiveIntegerField(field_name="diag_math_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="diag_verb_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="diag_writ_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="prac_math_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="prac_verb_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="prac_writ_score", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="diag_math_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="diag_verb_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="diag_writ_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="prac_math_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="prac_verb_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="prac_writ_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
             )
         
 class SATPrepTeacherInfoManipulator(forms.Manipulator):
     def __init__(self, subjects):
         self.fields = (
-            forms.PositiveIntegerField(field_name="sat_math", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="sat_verb", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="sat_writ", length=3, maxlength=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="sat_math", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="sat_verb", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
+            forms.PositiveIntegerField(field_name="sat_writ", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
             forms.SelectField(field_name="subject", is_required=True, choices=subjects),
             forms.PositiveIntegerField(field_name="mitid", is_required=True)
             )

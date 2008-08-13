@@ -54,7 +54,7 @@ class DataTree(models.Model):
     rangeend = models.IntegerField(editable=False, default=1)
     parent = models.ForeignKey('self', null=True, blank=True)
     name = models.SlugField() # Node name; should be unique at any given level of the tree
-    friendly_name = models.CharField(maxlength=256,blank=True)
+    friendly_name = models.CharField(max_length=256,blank=True)
 
     def tree_decode(self, tree_nodenames):
         """ Given a list of nodes leading from the current node to a direct descendant, return that descendant """

@@ -42,11 +42,11 @@ class UserRegManipulator(forms.Manipulator):
                  ('Educator','K-12 Educator')]
 
         self.fields = (
-            forms.TextField(field_name="username", length=12, maxlength=12,validator_list=[self.isUniqueUserName,validators.isNotEmpty],is_required=True),
-            forms.TextField(field_name="first_name", length=12, maxlength=32,is_required=True, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="last_name", length=12, maxlength=32,is_required=True, validator_list=[validators.isNotEmpty]),
-            forms.PasswordField(field_name="password", length=12, maxlength=32,is_required=True, validator_list=[validators.isNotEmpty]),
-            forms.PasswordField(field_name="password_confirm", length=12, maxlength=32,validator_list=confirm_validators,is_required=True),
+            forms.TextField(field_name="username", length=12, max_length=12,validator_list=[self.isUniqueUserName,validators.isNotEmpty],is_required=True),
+            forms.TextField(field_name="first_name", length=12, max_length=32,is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="last_name", length=12, max_length=32,is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.PasswordField(field_name="password", length=12, max_length=32,is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.PasswordField(field_name="password_confirm", length=12, max_length=32,validator_list=confirm_validators,is_required=True),
             forms.RadioSelectField(field_name='role',choices=roles,is_required=True),
             forms.EmailField(field_name="email",length=15, is_required=True)
             )
@@ -58,26 +58,26 @@ class UserRegManipulator(forms.Manipulator):
 class UserPasswdManipulator(forms.Manipulator):
     def __init__(self, user):
         self.fields = (
-            forms.TextField(field_name="username", length=12, maxlength=12, is_required=True, validator_list=[IsEqualTo(user.username)]),
-            forms.PasswordField(field_name="password", length=12, maxlength=32, is_required = True, validator_list=[UserPassCorrect]),
-            forms.PasswordField(field_name="newpasswd", length=12, maxlength=32, is_required = True),
-            forms.PasswordField(field_name="newpasswdconfirm", length=12, maxlength=32, is_required = True,validator_list = [
+            forms.TextField(field_name="username", length=12, max_length=12, is_required=True, validator_list=[IsEqualTo(user.username)]),
+            forms.PasswordField(field_name="password", length=12, max_length=32, is_required = True, validator_list=[UserPassCorrect]),
+            forms.PasswordField(field_name="newpasswd", length=12, max_length=32, is_required = True),
+            forms.PasswordField(field_name="newpasswdconfirm", length=12, max_length=32, is_required = True,validator_list = [
                                 validators.AlwaysMatchesOtherField('newpasswd', 'The new password and confirm password must be equal.')]))            
 
 class UserRecoverForm(forms.Manipulator):
     def __init__(self):
         self.fields = (
-            forms.TextField(field_name="username", length=12, maxlength=12, is_required=True, validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="last_name",    length=50, maxlength=60, is_required=True, validator_list=[IsValidEmailUserName])
+            forms.TextField(field_name="username", length=12, max_length=12, is_required=True, validator_list=[validators.isNotEmpty]),
+            forms.TextField(field_name="last_name",    length=50, max_length=60, is_required=True, validator_list=[IsValidEmailUserName])
             )
 
 class SetPasswordForm(forms.Manipulator):
     def __init__(self):
         self.fields = (
-            forms.TextField(field_name="username", length=12, maxlength=12, is_required=True, validator_list=[validators.isNotEmpty,IsValidCode]),
-            forms.PasswordField(field_name="newpasswd", length=12, maxlength=32, is_required = True),
+            forms.TextField(field_name="username", length=12, max_length=12, is_required=True, validator_list=[validators.isNotEmpty,IsValidCode]),
+            forms.PasswordField(field_name="newpasswd", length=12, max_length=32, is_required = True),
             forms.TextField(field_name="code", is_required=True),
-            forms.PasswordField(field_name="newpasswdconfirm", length=12, maxlength=32, is_required = True,validator_list = [
+            forms.PasswordField(field_name="newpasswdconfirm", length=12, max_length=32, is_required = True,validator_list = [
                                 validators.AlwaysMatchesOtherField('newpasswd', 'The new password and confirm password must be equal.')])
             )
 
