@@ -61,7 +61,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return []#('classRegInfo', module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+        return []#(., module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
 
 
     def students(self, QObject = False):
@@ -169,7 +169,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         cobj = ClassSubject.objects.get(id=classid)
         section = ClassSection.objects.get(id=sectionid)
-        error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
+        error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False)
         
         # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
         auto_classes = []
@@ -439,7 +439,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         # Checking if we can register for the new class
         newclass = ClassSubject.objects.filter(id=classid)[0]
-        error = newclass.cannotAdd(self.user, self.classRegInfo.enforce_max, use_cache=False)
+        error = newclass.cannotAdd(self.user, self.enforce_max, use_cache=False)
         if error and not self.user.onsite_local:
             # Undo by re-registering the old class. Theoretically "overridefull" is okay, since they were already registered for oldclass anyway.
             oldclass.preregister_student(self.user, overridefull=True, automatic=automatic)

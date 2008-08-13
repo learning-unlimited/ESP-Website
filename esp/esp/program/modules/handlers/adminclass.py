@@ -481,12 +481,12 @@ class AdminClass(ProgramModuleObj):
 
                 # add self back...
                 cls.makeTeacher(self.user)
-                cls.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
+                cls.makeAdmin(self.user, self.teacher_class_noedit)
 
                 # add bits for all new (and old) coteachers
                 for teacher in coteachers:
                     cls.makeTeacher(teacher)
-                    cls.makeAdmin(teacher, self.classRegInfo.teacher_class_noedit)                    
+                    cls.makeAdmin(teacher, self.teacher_class_noedit)                    
                 
                 return self.goToCore(tl)
 

@@ -62,7 +62,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return []#('classRegInfo', module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+        return []#(., module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
 
 
     def prepare(self, context={}):
@@ -369,7 +369,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
                 # add self back...
                 cls.makeTeacher(self.user)
-                cls.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
+                cls.makeAdmin(self.user, self.teacher_class_noedit)
                 cls.subscribe(self.user)
                 self.program.teacherSubscribe(self.user)                
 
@@ -378,7 +378,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     self.program.teacherSubscribe(teacher)
                     cls.makeTeacher(teacher)
                     cls.subscribe(teacher)
-                    cls.makeAdmin(teacher, self.classRegInfo.teacher_class_noedit)                    
+                    cls.makeAdmin(teacher, self.teacher_class_noedit)                    
                 cls.update_cache()
                 return self.goToCore(tl)
 
@@ -626,7 +626,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # add userbits
                 if newclass_isnew:
                     newclass.makeTeacher(self.user)
-                    newclass.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
+                    newclass.makeAdmin(self.user, self.teacher_class_noedit)
                     newclass.subscribe(self.user)
                     self.program.teacherSubscribe(self.user)
                     newclass.propose()
