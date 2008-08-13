@@ -99,7 +99,9 @@ class FinancialAidAppModule(ProgramModuleObj):
         app, created = FinancialAidRequest.objects.get_or_create(user = self.user,
                                                                 program = self.program)
 
-        Form = forms.form_for_model(FinancialAidRequest)
+        class Form(forms.ModelForm):
+            class Meta:
+                model = FinancialAidRequest
       
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)

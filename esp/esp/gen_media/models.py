@@ -116,7 +116,7 @@ class LatexImage(models.Model):
 
         f = open('%s.%s' % (fullpath, self.filetype))
 
-        self.save_image_file('%s.%s' % (self.image, self.filetype), f.read(), save=False)
+        self.image.save('%s.%s' % (self.image, self.filetype), f.read(), save=False)
 
         f.close()
         
@@ -136,13 +136,13 @@ class LatexImage(models.Model):
 
     def __str__(self):
         return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' % \
-               (self.get_image_url(), self.content, self.content)
+               (self.image.url, self.content, self.content)
         
 
     def file_exists(self):
         if not self.image:
             return False
-        return os.path.exists(self.get_image_filename())
+        return os.path.exists(self.image.path)
 
     class Admin:
         pass
@@ -209,7 +209,7 @@ class SubSectionImage(models.Model):
 
         self.image = file_name
 
-        self.save_image_file(file_name, c.getvalue(), save=False)
+        self.image.save(file_name, c.getvalue(), save=False)
 
         del c
 
@@ -220,7 +220,7 @@ class SubSectionImage(models.Model):
         models.Model.save(self, *args, **kwargs)
 
     def __str__(self):
-        if not os.path.exists(self.get_image_filename()):
+        if not os.path.exists(self.image.path):
             self.create_image()
         return '<img src="%s" alt="%s" border="0" title="%s" class="subsection" />' % (self.get_image_url(), self.text, self.text)
         

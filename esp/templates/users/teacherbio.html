@@ -68,7 +68,9 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
   {% if classes|length_is:0 %}
    None found.
   {% else %}
+  {% autoescape off %}
   {{ classes|join:"<br /><br />" }}
+  {% endautoescape %}
   {% endif %}
   <br />  <br />  <br />  <br />
 

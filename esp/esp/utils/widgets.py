@@ -31,7 +31,7 @@ class CaptchaWidget(forms.widgets.TextInput):
         else:
             raise ESPError(True), 'Captcha field initialized without request.  Please set the widget\'s request attribute.'
     
-    def value_from_datadict(self, data, name):
+    def value_from_datadict(self, data, files, name):
         challenge = data.get('recaptcha_challenge_field')
         response = data.get('recaptcha_response_field')
         captcha_response = captcha.submit(challenge, response, settings.RECAPTCHA_PRIVATE_KEY, self.request.META['REMOTE_ADDR'])
@@ -64,7 +64,7 @@ class DateTimeWidget(forms.widgets.TextInput):
         a = u'<input%s />%s' % (forms.util.flatatt(final_attrs), cal)
         return a
 
-    def value_from_datadict(self, data, name):
+    def value_from_datadict(self, data, files, name):
         dtf = forms.fields.DEFAULT_DATETIME_INPUT_FORMATS
         empty_values = forms.fields.EMPTY_VALUES
 

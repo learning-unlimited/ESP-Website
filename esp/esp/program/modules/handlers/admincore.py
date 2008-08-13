@@ -38,9 +38,10 @@ from django import forms
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.middleware import ESPError
 
-class UserBitForm( forms.form_for_model(UserBit) ):
+
+
+class UserBitForm(forms.ModelForm):
     def __init__(self, bit = None, *args, **kwargs):
-        from django import forms
 
         if bit != None:
             self.base_fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
@@ -61,6 +62,9 @@ class UserBitForm( forms.form_for_model(UserBit) ):
         super(UserBitForm, self).__init__(*args, **kwargs)
         
     as_table = grouped_as_table
+    
+    class Meta:
+        model = UserBit
 
 class AdminCore(ProgramModuleObj, CoreModule):
 

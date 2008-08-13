@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.calendar.models import Event
 from esp.web.util import render_to_response
 from django.http import Http404, HttpResponse, HttpResponseRedirect
-from django import forms
+from django import oldforms
 import icalendar
 
 
@@ -61,7 +61,7 @@ def createevent(request):
         else:
                 errors = POSTdata = {}
 
-        form = forms.FormWrapper(manipulator, POSTdata, errors)
+        form = oldforms.FormWrapper(manipulator, POSTdata, errors)
 	return render_to_response('events/create_update', request, GetNode('Q/Web'), {'form': form } )
 
 
@@ -94,7 +94,7 @@ def updateevent(request, id=None):
         else:
                 errors = POSTdata = {}
 
-        form = forms.FormWrapper(manipulator, POSTdata, errors)
+        form = oldforms.FormWrapper(manipulator, POSTdata, errors)
 	return render_to_response('events/create_update', request, GetNode('Q/Web'), {'form': form } )
 
 

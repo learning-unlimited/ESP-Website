@@ -165,14 +165,14 @@ class TeacherClassRegManipulator(forms.Manipulator):
 
             )
 
-        if module.classRegInfo.set_prereqs:
+        if module.set_prereqs:
             self.fields += (forms.LargeTextField(field_name='prereqs', is_required=False),)
-        if module.classRegInfo.allow_lateness:
+        if module.allow_lateness:
             self.fields += (forms.RadioSelectField(field_name='allow_lateness', is_required=True, choices=lateness_choices),)
                                  
         # Select viable times?
-        if module.classRegInfo.display_times:
-            if module.classRegInfo.times_selectmultiple:
+        if module.display_times:
+            if module.times_selectmultiple:
                 self.fields = self.fields + (CheckboxSelectMultipleField(field_name="viable_times", \
                                              choices=module.getTimes()),)
             else:
@@ -180,15 +180,15 @@ class TeacherClassRegManipulator(forms.Manipulator):
                                               choices=module.getTimes()),)
         
         # ...or show duration selection?
-        if not module.classRegInfo.display_times or module.classRegInfo.times_selectmultiple:
+        if not module.display_times or module.times_selectmultiple:
             self.fields = self.fields + (forms.SelectField(field_name="duration", \
                                                            is_required=True, \
                                                            choices=[("", "")] + sorted(module.getDurations()), \
                                                            validator_list=[validators.isNotEmpty]),)
         
         # Ask for number of sessions to run?
-        if module.classRegInfo.session_counts:
-            session_count_choices = module.classRegInfo.session_counts_ints
+        if module.session_counts:
+            session_count_choices = module.session_counts_ints
             session_count_choices = zip(session_count_choices, session_count_choices)
             self.fields = self.fields + (forms.SelectField(field_name='session_count', \
                                                         is_required=True, \
@@ -342,6 +342,7 @@ class CheckboxSelectMultipleField(forms.SelectMultipleField):
         pass
 
     def render(self, data):
+        from django.utils.safestring import mark_safe
         output = ['<ul%s>' % (self.ul_class and ' class="%s"' % self.ul_class or '')]
         str_data_list = map(str, data) # normalize to strings
 
@@ -354,7 +355,7 @@ class CheckboxSelectMultipleField(forms.SelectMultipleField):
                 (self.get_id() + value, self.__class__.__name__, self.field_name, value, checked_html,
                 self.get_id() + value, choice))
         output.append('</ul>')
-        return '\n'.join(output)
+        return mark_safe('\n'.join(output))
 
 class ClassSelectMeetingTimesField(CheckboxSelectMultipleField):
     requires_data_list = True

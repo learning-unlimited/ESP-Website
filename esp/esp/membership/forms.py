@@ -41,7 +41,7 @@ from django import forms
 add_fields_to_class(forms.CharField, {'is_long': False, 'line_group': 0})
 
 
-class AlumniRSVPForm(forms.form_for_model(AlumniRSVP, formfield_callback=new_callback())):
+class AlumniRSVPForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         
@@ -63,8 +63,11 @@ class AlumniRSVPForm(forms.form_for_model(AlumniRSVP, formfield_callback=new_cal
 
     # use field grouping
     as_table = grouped_as_table
+    
+    class Meta:
+        model = AlumniRSVP
 
-class ContactInfoForm(forms.form_for_model(ContactInfo, formfield_callback=new_callback(exclude=['phone_cell', 'phone_even', 'phone_day', 'user', 'address_postal', 'undeliverable']))):
+class ContactInfoForm(forms.ModelForm):
     """
     This represents a standard pretty contact info form that can be used in a multitude of places.
     """
@@ -98,6 +101,10 @@ class ContactInfoForm(forms.form_for_model(ContactInfo, formfield_callback=new_c
 
     # use field grouping
     as_table = grouped_as_table
+    
+    class Meta:
+        model = ContactInfo
+        exclude = ['phone_cell', 'phone_even', 'phone_day', 'user', 'address_postal', 'undeliverable']
 
 class AlumniLookupForm(forms.Form):
     """
@@ -117,7 +124,7 @@ class AlumniLookupForm(forms.Form):
 
     as_table = grouped_as_table
 
-class AlumniInfoForm(CaptchaForm, forms.form_for_model(AlumniInfo, formfield_callback=new_callback(exclude=['contactinfo']))):
+class AlumniInfoForm(CaptchaForm, forms.ModelForm): 
     """
     This is an alumni contact form which is used to get information from alumni of ESP.
     """
@@ -129,6 +136,10 @@ class AlumniInfoForm(CaptchaForm, forms.form_for_model(AlumniInfo, formfield_cal
 
     # use field grouping
     as_table = grouped_as_table
+    
+    class Meta:
+        model = AlumniInfo
+        exclude = ['contactinfo']
 
 anchor_choices = (  (DataTree.get_by_uri('Q/Programs/HSSP').id, 'HSSP'),
                     (DataTree.get_by_uri('Q/Programs/Splash').id, 'Splash'),
@@ -137,7 +148,7 @@ anchor_choices = (  (DataTree.get_by_uri('Q/Programs/HSSP').id, 'HSSP'),
                     (DataTree.get_by_uri('Q/Programs').id, 'Other program'),
                     (None, 'Other'))
 
-class AlumniContactForm(CaptchaForm, forms.form_for_model(AlumniContact, formfield_callback=new_callback(exclude=['timestamp']))):
+class AlumniContactForm(CaptchaForm, forms.ModelForm):
     """
     This is a form which allows alumni to submit a story, question or event relating to them.
     """
@@ -158,8 +169,12 @@ class AlumniContactForm(CaptchaForm, forms.form_for_model(AlumniContact, formfie
         if self.clean_data['participants']:
             new_contact.participants.add(self.clean_data['participants'])
         return new_contact
+        
+    class Meta:
+        model = AlumniContact
+        exclude = ['timestamp']
 
-class AlumniMessageForm(CaptchaForm, forms.form_for_model(AlumniMessage, formfield_callback=new_callback(exclude=['seq','thread']))):
+class AlumniMessageForm(CaptchaForm, forms.ModelForm):
     
     def __init__(self, thread=None, *args, **kwargs):
         #   define some stuff so that save_instance does everything to save the message
@@ -170,3 +185,6 @@ class AlumniMessageForm(CaptchaForm, forms.form_for_model(AlumniMessage, formfie
         self.base_fields['content'] = forms.CharField(widget=forms.Textarea(attrs={'rows': 10, 'cols': 40}), label='Message')        
         super(AlumniMessageForm, self).__init__(*args, **kwargs)
 
+    class Meta:
+         model = AlumniMessage
+         exclude = ['seq', 'thread']

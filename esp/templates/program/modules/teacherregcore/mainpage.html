@@ -48,7 +48,7 @@ We appreciate your interest!  If you have any questions, please <a href="mailto:
   <td>{% if module.useTemplate %}
     {{ module.module.link_title }} <em>(below)</em>
    {% else %}
-    {{ module.makeLink }}
+    {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
    {% endif %}
   </td>
   <td>

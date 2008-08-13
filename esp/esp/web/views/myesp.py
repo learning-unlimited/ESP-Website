@@ -49,7 +49,7 @@ from esp.middleware import ESPError
 from esp.web.models import NavBarEntry
 from esp.users.manipulators import UserRegManipulator, UserPasswdManipulator, UserRecoverForm, SetPasswordForm
 from esp.web.util.main import render_to_response
-from django import forms
+from django import oldforms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
 from esp.db.models import Q
 

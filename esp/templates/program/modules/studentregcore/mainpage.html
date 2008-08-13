@@ -62,7 +62,7 @@
         {{ module.module.link_title }} 
         </a> <em>(below)</em>
     {% else %}
-        {{ module.makeLink }}
+        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
     {% endif %}
     {% if not module.module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
     </td>

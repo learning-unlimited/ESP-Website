@@ -254,7 +254,7 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 {% miniblog_for_user request.user as announcements 4 %}
 {% for announce in announcements.announcementList %}
        <li> <a href="{{ announce.get_absolute_url }}" title="{{ announce.makeTitle }}">
-                {{ announce.makeTitle|truncatewords:6 }}
+                {{ announce.makeTitle }}
        </a></li>
 {% endfor %}
      </ul>

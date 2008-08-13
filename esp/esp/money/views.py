@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.money.models import Transaction
 from esp.web.util import render_to_response
 from django.http import Http404, HttpResponse, HttpResponseRedirect
-from django import forms
+from django import oldforms
 
 def create_reimbursement(request):
     manipulator = Transaction.AddManipulator()
@@ -65,6 +65,6 @@ def create_reimbursement(request):
     else:
         errors = pyPOST = {}
 
-    form = forms.FormWrapper(manipulator, pyPOST, errors)
+    form = oldforms.FormWrapper(manipulator, pyPOST, errors)
     return render_to_response('money/reimbursement_request.html', { 'form': form } )
 

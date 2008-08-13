@@ -257,7 +257,7 @@ class ESPUser(User, AnonymousUser):
         total_time = timedelta()
         for s in user_sections:
             if include_scheduled or (s.start_time() is None):
-                total_time = total_time + timedelta(hours=s.duration)
+                total_time = total_time + timedelta(hours=float(s.duration))
         return total_time
 
     def getUserNum(self):

@@ -37,7 +37,6 @@ from esp.datatree.models import GetNode
 from esp.users.models    import ESPUser, User
 from esp.users.views import search_for_user, get_user_list
 from django.http import HttpResponseRedirect
-from django import forms
 from esp.program.models import SATPrepRegInfo, ClassSubject, ClassCategories
 from esp.cal.models import Event
 from esp.resources.models import Resource, ResourceType

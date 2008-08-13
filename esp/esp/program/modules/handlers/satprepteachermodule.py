@@ -32,7 +32,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.program.manipulators import SATPrepTeacherInfoManipulator
-from django import forms
+from django import oldforms
 from esp.program.models import Program
 from esp.users.models   import ESPUser, User
 from esp.db.models import Q
@@ -103,7 +103,7 @@ class SATPrepTeacherModule(ProgramModuleObj):
 		
 		errors = {}
 
-	form = forms.FormWrapper(manipulator, new_data, errors)
+	form = oldforms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response(self.baseDir()+'satprep_info.html', request, (prog, tl), {'form':form})
 
 

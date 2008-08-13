@@ -41,7 +41,7 @@ def make_id_tuple(object_list):
     
     return tuple([(o.id, str(o)) for o in object_list])
 
-class ProgramCreationForm(forms.form_for_model(Program)):
+class ProgramCreationForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         self.base_fields['term'] = forms.CharField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
@@ -97,4 +97,6 @@ class ProgramCreationForm(forms.form_for_model(Program)):
     # use field grouping
     as_table = grouped_as_table
 
-
+    class Meta:
+        model = Program
+        

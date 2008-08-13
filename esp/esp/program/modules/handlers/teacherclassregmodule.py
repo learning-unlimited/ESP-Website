@@ -35,7 +35,7 @@ from esp.program.models          import Program, ClassSubject, ClassSection, Cla
 from esp.datatree.models         import DataTree, GetNode
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
-from django                      import forms
+from django                      import oldforms
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
 from django.core.mail            import send_mail
@@ -125,11 +125,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def getClassSizes(self):
         min_size, max_size, class_size_step = (0, 200, 10)
 
-        if self.classRegInfo.class_max_size:
-            max_size = self.classRegInfo.class_max_size
+        if self.class_max_size:
+            max_size = self.class_max_size
             
-        if self.classRegInfo.class_size_step:
-            class_size_step = self.classRegInfo.class_size_step
+        if self.class_size_step:
+            class_size_step = self.class_size_step
 
         ret_range = range(0, 23) + [30, 35, 40, 150]
         ret_range = filter(lambda x: ((x >= min_size) and (x <= max_size)), ret_range)
@@ -452,7 +452,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 else:
                     if new_data['message_for_directors'] == newclass.message_for_directors:
                         newclass_newmessage = False
-                    newclass_oldtime = timedelta(hours=newclass.default_section().duration)
+                    newclass_oldtime = timedelta(hours=float(newclass.default_section().duration))
 
                 for k, v in new_data.items():
                     if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
@@ -656,7 +656,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         context['one'] = one
         context['two'] = two
-        context['form'] = forms.FormWrapper(manipulator, new_data, errors)
+        context['form'] = oldforms.FormWrapper(manipulator, new_data, errors)
         
         if newclass is None:
             context['addoredit'] = 'Add'

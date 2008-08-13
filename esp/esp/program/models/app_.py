@@ -61,7 +61,10 @@ class BaseAppElement:
             return None
             
         form_prefix = '%s_%d' % (self._element_name, self.id)
-        form_class = forms.models.form_for_model(self.__class__)
+        
+        class form_class(forms.ModelForm):
+            class Meta:
+                model = self.__class__
         
         #   Enlarge text fields to a reasonable size (dangit Django).
         for field in self._field_names:

@@ -52,7 +52,7 @@ class ResizeImageUploadField(forms.ImageUploadField):
             from PIL import Image
             from cStringIO import StringIO
             try:
-                content = new_data[self.field_name]['content']
+                content = new_data[self.field_name].read()
             except:
                 return new_data
 
@@ -68,6 +68,17 @@ class ResizeImageUploadField(forms.ImageUploadField):
                 picturefile.close()
             except:
                 return new_data
-            new_data[self.field_name]['content'] = content
+            """
+            #   I don't think we are supposed to do this.  But I couldn't get StringIO to work.  -Michael
+            class stupidstring:
+                def __init__(self, content):
+                    self._str = content
+                def read(self):
+                    return self._str
+            new_data[self.field_name].file = stupidstring(content)
+            """
+            new_data[self.field_name].file = StringIO()
+            new_data[self.field_name].file.write(content)
+            # """
         return new_data
 

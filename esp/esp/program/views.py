@@ -37,7 +37,7 @@ from esp.miniblog.models import Entry
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits
 from esp.program.models import ClassSubject
-from django import forms
+from django import oldforms
 
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.auth.decorators import login_required
@@ -89,7 +89,7 @@ def updateClass(request, id):
         errors = {}
         new_data = orig_class.__dict__
 
-    form = forms.FormWrapper(manipulator, new_data, errors)
+    form = oldforms.FormWrapper(manipulator, new_data, errors)
     return render_to_response('program/class_form.html', request, orig_class.parent_program, {'form': form, 'class': orig_class, 'edit': True, 'orig_class': orig_class })
 
 
