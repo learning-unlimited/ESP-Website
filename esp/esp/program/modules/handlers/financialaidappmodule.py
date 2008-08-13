@@ -106,7 +106,7 @@ class FinancialAidAppModule(ProgramModuleObj):
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
             if form.is_valid():
-                app.__dict__.update(form.clean_data)
+                app.__dict__.update(form.cleaned_data)
                
                 if not request.POST.has_key('submitform') or request.POST['submitform'].lower() == 'complete':
                     app.done = True

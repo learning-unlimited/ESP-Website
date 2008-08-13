@@ -87,8 +87,8 @@ class ResourceModule(ProgramModuleObj):
                     #   add/edit timeslot
                     form = TimeslotForm(data)
                     if form.is_valid():
-                        if form.clean_data['id'] is not None:
-                            new_timeslot = Event.objects.get(id=form.clean_data['id'])
+                        if form.cleaned_data['id'] is not None:
+                            new_timeslot = Event.objects.get(id=form.cleaned_data['id'])
                         else:
                             new_timeslot = Event()
                             
@@ -122,8 +122,8 @@ class ResourceModule(ProgramModuleObj):
                     form = ResourceTypeForm(data)
 
                     if form.is_valid():
-                        if form.clean_data['id'] is not None:
-                            new_restype = ResourceType.objects.get(id=form.clean_data['id'])
+                        if form.cleaned_data['id'] is not None:
+                            new_restype = ResourceType.objects.get(id=form.cleaned_data['id'])
                         else:
                             new_restype = ResourceType()
                             

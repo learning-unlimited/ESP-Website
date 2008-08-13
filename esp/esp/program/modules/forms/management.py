@@ -54,12 +54,12 @@ class ClassManageForm(ManagementForm):
         return self.initial
          
     def save_data(self, cls):
-        cls.status = self.clean_data['status']
-        cls.grade_min = self.clean_data['min_grade']
-        cls.grade_max = self.clean_data['max_grade']
-        cls.directors_notes = self.clean_data['notes']
+        cls.status = self.cleaned_data['status']
+        cls.grade_min = self.cleaned_data['min_grade']
+        cls.grade_max = self.cleaned_data['max_grade']
+        cls.directors_notes = self.cleaned_data['notes']
         cls.checklist_progress.clear()
-        for ci in self.clean_data['progress']:
+        for ci in self.cleaned_data['progress']:
             cpl = ProgramCheckItem.objects.get(id=ci)
             cls.checklist_progress.add(cpl)
         cls.save()
@@ -98,25 +98,25 @@ class SectionManageForm(ManagementForm):
         return self.initial
 
     def save_data(self, sec):
-        sec.status = self.clean_data['status']
+        sec.status = self.cleaned_data['status']
         sec.meeting_times.clear()
-        for mi in self.clean_data['times']:
+        for mi in self.cleaned_data['times']:
             ts = Event.objects.get(id=mi)
             ct = ResourceType.get_or_create('Classroom')
             sec.meeting_times.add(ts)
-            cr = Resource.objects.filter(res_type__id=ct.id, event__id=ts.id, name__in=self.clean_data['room'])
+            cr = Resource.objects.filter(res_type__id=ct.id, event__id=ts.id, name__in=self.cleaned_data['room'])
             for c in cr:
                 c.assign_to_section(sec, override=True)
-        rooms = Resource.objects.filter(name__in=self.clean_data['room'])
+        rooms = Resource.objects.filter(name__in=self.cleaned_data['room'])
         if rooms.count() > 0:
             sec.classroomassignments().delete()
             for r in rooms:
                 sec.assign_room(r)
         sec.checklist_progress.clear()
-        for ci in self.clean_data['progress']:
+        for ci in self.cleaned_data['progress']:
             cpl = ProgramCheckItem.objects.get(id=ci)
             sec.checklist_progress.add(cpl)
-        for r in self.clean_data['resources']:
+        for r in self.cleaned_data['resources']:
             for ts in sec.meeting_times.all():
                 sec.parent_program.getFloatingResources(timeslot=ts, queryset=True).filter(name=r)[0].assign_to_section(sec)
         sec.save()

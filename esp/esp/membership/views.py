@@ -152,7 +152,7 @@ def alumnilookup(request):
         
                 msgtext = t.render({'contact_form': form1, 'main_form': form2})
                         
-                send_mail(SUBJECT_PREPEND + ' '+ form1.clean_data['first_name'] + ' ' + form1.clean_data['last_name'],
+                send_mail(SUBJECT_PREPEND + ' '+ form1.cleaned_data['first_name'] + ' ' + form1.cleaned_data['last_name'],
                         msgtext, from_email, to_email, fail_silently = True)
         
                 return HttpResponseRedirect(request.path + '?success=1')
@@ -165,7 +165,7 @@ def alumnilookup(request):
             form = AlumniLookupForm(data)
             if form.is_valid():
                 #   Find the user requested.
-                alumni_list = AlumniInfo.lookup(form.clean_data)
+                alumni_list = AlumniInfo.lookup(form.cleaned_data)
                 #   Populate the context for the page with links to enter more information.
                 context['lookup_performed'] = True
                 context['lookup_list'] = list(alumni_list)
@@ -204,7 +204,7 @@ def alumnirsvp(request):
     
             msgtext = t.render({'form': form})
                     
-            send_mail(SUBJECT_PREPEND + ' '+ form.clean_data['name'], msgtext, from_email, to_email, fail_silently = True)
+            send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['name'], msgtext, from_email, to_email, fail_silently = True)
     
             return HttpResponseRedirect(request.path + '?success=1')
 

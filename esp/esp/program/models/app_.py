@@ -90,8 +90,8 @@ class BaseAppElement:
     def update(self, form):
         self.date = datetime.datetime.now()
         for field_name in self._field_names:
-            if form.clean_data.has_key(field_name):
-                setattr(self, field_name, form.clean_data[field_name])
+            if form.cleaned_data.has_key(field_name):
+                setattr(self, field_name, form.cleaned_data[field_name])
         self.save()
 
 class StudentAppQuestion(BaseAppElement, models.Model):

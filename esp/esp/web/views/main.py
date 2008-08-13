@@ -185,29 +185,29 @@ def contact(request, section='esp'):
 			
 			to_email = []
 
-			if len(form.clean_data['sender'].strip()) == 0:
+			if len(form.cleaned_data['sender'].strip()) == 0:
 				email = 'esp@mit.edu'
 			else:
-				email = form.clean_data['sender']
+				email = form.cleaned_data['sender']
                 
-			if form.clean_data['cc_myself']:
+			if form.cleaned_data['cc_myself']:
 				to_email.append(email)
 
 
 			try:
-				to_email.append(email_addresses[form.clean_data['topic'].lower()])
+				to_email.append(email_addresses[form.cleaned_data['topic'].lower()])
 			except KeyError:
 				to_email.append(fallback_address)
 
-			if len(form.clean_data['name'].strip()) > 0:
-				email = '%s <%s>' % (form.clean_data['name'], email)
+			if len(form.cleaned_data['name'].strip()) > 0:
+				email = '%s <%s>' % (form.cleaned_data['name'], email)
 
 
 			t = loader.get_template('email/comment')
 
 			msgtext = t.render({'form': form})
 				
-			send_mail(SUBJECT_PREPEND + ' '+ form.clean_data['subject'],
+			send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
 				  msgtext,
 				  email, to_email, fail_silently = True)
 

@@ -75,19 +75,19 @@ class AdminMaterials(ProgramModuleObj):
                 form.set_choices(new_choices)
                 
                 if form.is_valid():
-                    media = Media(friendly_name = form.clean_data['title'], anchor = DataTree.objects.get(id = form.clean_data['target_obj']))
+                    media = Media(friendly_name = form.cleaned_data['title'], anchor = DataTree.objects.get(id = form.cleaned_data['target_obj']))
 	            
 		    #	Append the class code on the filename if necessary
-		    target_id = int(form.clean_data['target_obj'])
+		    target_id = int(form.cleaned_data['target_obj'])
 	            if target_id != prog.anchor.id:
-                        new_target_filename = ClassSubject.objects.get(anchor__id = target_id).emailcode() + '_' + form.clean_data['uploadedfile']['filename']
+                        new_target_filename = ClassSubject.objects.get(anchor__id = target_id).emailcode() + '_' + form.cleaned_data['uploadedfile']['filename']
                     else:
-                        new_target_filename =  form.clean_data['uploadedfile']['filename']
+                        new_target_filename =  form.cleaned_data['uploadedfile']['filename']
 
-                    media.save_target_file_file(new_target_filename, form.clean_data['uploadedfile']['content'])
-                    media.mime_type = form.clean_data['uploadedfile']['content-type']
-	            media.size = len(form.clean_data['uploadedfile']['content'])
-	            extension_list = form.clean_data['uploadedfile']['filename'].split('.')
+                    media.save_target_file_file(new_target_filename, form.cleaned_data['uploadedfile']['content'])
+                    media.mime_type = form.cleaned_data['uploadedfile']['content-type']
+	            media.size = len(form.cleaned_data['uploadedfile']['content'])
+	            extension_list = form.cleaned_data['uploadedfile']['filename'].split('.')
 	            extension_list.reverse()
 	            media.file_extension = extension_list[0]
 	            media.format = ''

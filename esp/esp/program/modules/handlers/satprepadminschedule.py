@@ -203,14 +203,14 @@ class SATPrepAdminSchedule(ProgramModuleObj):
             form = ScoreUploadForm(data)
             
             if form.is_valid():
-                prefix = form.clean_data['test'] + '_'
+                prefix = form.cleaned_data['test'] + '_'
                 
                 #   Check that at least one of the input methods is being used.
                 #   Copy over the content from the text box, then the file.
-                if len(form.clean_data['text']) > 3:
-                    content = form.clean_data['text']
-                elif form.clean_data['file'].has_key('content'):
-                    content = form.clean_data['file']['content']
+                if len(form.cleaned_data['text']) > 3:
+                    content = form.cleaned_data['text']
+                elif form.cleaned_data['file'].has_key('content'):
+                    content = form.cleaned_data['file']['content']
                 else:
                     return ESPError(False), 'You need to upload a file or enter score information in the box.  Please go back and do so.'
                 

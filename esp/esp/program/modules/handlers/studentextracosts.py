@@ -119,16 +119,16 @@ class StudentExtraCosts(ProgramModuleObj):
                                [ { 'LineItemType': x, 
                                    'CostChoice': MultiCostItem(request.POST, prefix="%s_" % x.id) }
                                  for x in multicosts_list ] \
-                               if x['CostChoice'].is_valid() and x['CostChoice'].clean_data.has_key('cost') ]
+                               if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ]
 
             for i in costs_db:
                 if not i['CostChoice'].is_valid():
                     raise ESPError("A non-required boolean is invalid in the Cost module")               
 
-                if i['CostChoice'].clean_data['cost']:
-                    if i['CostChoice'].clean_data.has_key('count'):
+                if i['CostChoice'].cleaned_data['cost']:
+                    if i['CostChoice'].cleaned_data.has_key('count'):
                         try:
-                            count = int(i['CostChoice'].clean_data['count'])
+                            count = int(i['CostChoice'].cleaned_data['count'])
                         except ValueError:
                             raise ESPError(True), "Error: Invalid cost value"
                     else:

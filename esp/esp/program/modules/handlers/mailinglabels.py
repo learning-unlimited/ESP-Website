@@ -60,7 +60,7 @@ class MailingLabels(ProgramModuleObj):
         if request.method=="POST":
             form = BanZipsForm(request.POST)
             if form.is_valid():
-                zips = form.clean_data['zips'].strip().splitlines()
+                zips = form.cleaned_data['zips'].strip().splitlines()
                 for zipc in zips:
                     if len(zipc.strip()) < 10:
                         continue
@@ -104,22 +104,22 @@ class MailingLabels(ProgramModuleObj):
                     form = SchoolSelectForm(request.POST)
                     if form.is_valid():
                         try:
-                            zipc = ZipCode.objects.get(zip_code = form.clean_data['zip_code'])
+                            zipc = ZipCode.objects.get(zip_code = form.cleaned_data['zip_code'])
                         except:
-                            raise ESPError(False), 'Please enter a valid US zipcode. "%s" is not valid.' % form.clean_data['zip_code']
+                            raise ESPError(False), 'Please enter a valid US zipcode. "%s" is not valid.' % form.cleaned_data['zip_code']
 
-                        zipcodes = zipc.close_zipcodes(form.clean_data['proximity'])
+                        zipcodes = zipc.close_zipcodes(form.cleaned_data['proximity'])
 
-                        combine = form.clean_data['combine_addresses']
+                        combine = form.cleaned_data['combine_addresses']
                         
                         Q_infos = Q(k12school__id__isnull = False,
                                     address_zip__in = zipcodes)
 
-                        grades = form.clean_data['grades'].strip().split(',')
-                        if len(form.clean_data['grades_exclude'].strip()) == 0:
+                        grades = form.cleaned_data['grades'].strip().split(',')
+                        if len(form.cleaned_data['grades_exclude'].strip()) == 0:
                             grades_exclude = []
                         else:
-                            grades_exclude = form.clean_data['grades_exclude'].strip().split(',')
+                            grades_exclude = form.cleaned_data['grades_exclude'].strip().split(',')
                         
                         if len(grades) > 0:
                             Q_grade = reduce(operator.or_, [Q(k12school__grades__contains = grade) for grade in grades])
@@ -129,7 +129,7 @@ class MailingLabels(ProgramModuleObj):
                             Q_grade = reduce(operator.or_, [Q(k12school__grades__contains = grade) for grade in grades_exclude])
                             Q_infos &= ~Q_grade
 
-                        f = PersistentQueryFilter.create_from_Q(ContactInfo, Q_infos, description="All ContactInfos for K12 schools with grades %s and %s miles from zipcode %s." % (form.clean_data['grades'], form.clean_data['proximity'], form.clean_data['zip_code']))
+                        f = PersistentQueryFilter.create_from_Q(ContactInfo, Q_infos, description="All ContactInfos for K12 schools with grades %s and %s miles from zipcode %s." % (form.cleaned_data['grades'], form.cleaned_data['proximity'], form.cleaned_data['zip_code']))
 
                         num_schools = ContactInfo.objects.filter(Q_infos).distinct().count()
 

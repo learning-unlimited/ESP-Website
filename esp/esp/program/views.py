@@ -200,9 +200,9 @@ def managepage(request, page):
         if 'checked' in request.GET:
             # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
             # Don't bother trying to fix the form; just re-set the anchor when we're done.
-            new_prog = Program(anchor=GetNode(request.session['prog_form'].clean_data['anchor'].uri + "/" + request.session['prog_form'].clean_data["term"]))
+            new_prog = Program(anchor=GetNode(request.session['prog_form'].cleaned_data['anchor'].uri + "/" + request.session['prog_form'].cleaned_data["term"]))
             new_prog = save_instance(request.session['prog_form'], new_prog)
-            new_prog.anchor = GetNode(request.session['prog_form'].clean_data['anchor'].uri + "/" + request.session['prog_form'].clean_data["term"])
+            new_prog.anchor = GetNode(request.session['prog_form'].cleaned_data['anchor'].uri + "/" + request.session['prog_form'].cleaned_data["term"])
             
             commit_program(new_prog, request.session['datatrees'], request.session['userbits'], request.session['modules'], request.session['costs'])
             
@@ -215,14 +215,14 @@ def managepage(request, page):
             form = ProgramCreationForm(data)
     
             if form.is_valid():
-                temp_prog = Program(anchor=form.clean_data['anchor'])
+                temp_prog = Program(anchor=form.cleaned_data['anchor'])
                 temp_prog = save_instance(form, temp_prog, commit=False)
                 datatrees, userbits, modules = prepare_program(temp_prog, form)
                 request.session['prog_form'] = form
                 request.session['datatrees'] = datatrees
                 request.session['userbits'] = userbits
                 request.session['modules'] = modules
-                request.session['costs'] = ( form.clean_data['base_cost'], form.clean_data['finaid_cost'] )
+                request.session['costs'] = ( form.cleaned_data['base_cost'], form.cleaned_data['finaid_cost'] )
               
                 return render_to_response('program/newprogram_review.html', request, GetNode('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
             

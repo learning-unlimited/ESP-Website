@@ -18,12 +18,12 @@ class QSDMoveForm(forms.Form):
         
     def save_data(self):
         #   Find all matching QSDs
-        main_qsd = QuasiStaticData.objects.get(id=self.clean_data['id'])
+        main_qsd = QuasiStaticData.objects.get(id=self.cleaned_data['id'])
         other_qsds = QuasiStaticData.objects.filter(path=main_qsd.path, name=main_qsd.name)
         for qsd in other_qsds:
             #   Move them over
-            qsd.path = DataTree.objects.get(id=self.clean_data['destination_path'])
-            qsd.name = self.clean_data['destination_name']
+            qsd.path = DataTree.objects.get(id=self.cleaned_data['destination_path'])
+            qsd.name = self.cleaned_data['destination_name']
             qsd.save()
 
 def destination_path(qsd_list):
@@ -58,7 +58,7 @@ class QSDBulkMoveForm(forms.Form):
             return False
         
     def save_data(self):
-        qsd_list = QuasiStaticData.objects.filter(id__in=[int(x) for x in self.clean_data['id_list'].split(',')])
+        qsd_list = QuasiStaticData.objects.filter(id__in=[int(x) for x in self.cleaned_data['id_list'].split(',')])
         orig_anchor = destination_path(qsd_list)
         
         #   For each QSD in the list:
@@ -67,7 +67,7 @@ class QSDBulkMoveForm(forms.Form):
             #   Find its URI relative to the original anchor
             uri_relative = uri_orig[(len(orig_anchor.get_uri())):]
             #   Add that URI to that of the new anchor
-            dest_tree = DataTree.objects.get(id=self.clean_data['destination_path'])
+            dest_tree = DataTree.objects.get(id=self.cleaned_data['destination_path'])
             uri_new = dest_tree.get_uri() + uri_relative
             #   Set the path
             other_qsds = QuasiStaticData.objects.filter(path=main_qsd.path, name=main_qsd.name)
@@ -76,7 +76,7 @@ class QSDBulkMoveForm(forms.Form):
                 qsd.path = DataTree.get_by_uri(uri_new, create=True)
             
                 #   Now update the name if need be
-                if self.clean_data['alter_destinations']:
+                if self.cleaned_data['alter_destinations']:
                     name_parts = qsd.name.split(':')
                     if len(name_parts) > 1:
                         orig_section = name_parts[0]
@@ -85,7 +85,7 @@ class QSDBulkMoveForm(forms.Form):
                         orig_section = ''
                         orig_name = name_parts[0]
                         
-                    new_section = self.clean_data['destination_section']
+                    new_section = self.cleaned_data['destination_section']
                     
                     if len(new_section) > 0:
                         qsd.name = new_section + ':' + orig_name

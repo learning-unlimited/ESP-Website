@@ -89,9 +89,9 @@ class ContactInfoForm(forms.ModelForm):
             self.base_fields[key].required = False
 
     def load_user(self):
-        if self.clean_data.has_key('alt_user'):
+        if self.cleaned_data.has_key('alt_user'):
             try:
-                u = User.objects.get(id=self.clean_data['alt_user'])
+                u = User.objects.get(id=self.cleaned_data['alt_user'])
                 return ESPUser(u).getLastProfile().contact_user
             except:
                 pass
@@ -164,10 +164,10 @@ class AlumniContactForm(CaptchaForm, forms.ModelForm):
         #   Can't remove people... yet
         new_contact = AlumniContact()
         save_instance(self, new_contact, commit=False)
-        new_contact.anchor_id = int(self.clean_data['anchor'])
+        new_contact.anchor_id = int(self.cleaned_data['anchor'])
         new_contact.save()
-        if self.clean_data['participants']:
-            new_contact.participants.add(self.clean_data['participants'])
+        if self.cleaned_data['participants']:
+            new_contact.participants.add(self.cleaned_data['participants'])
         return new_contact
         
     class Meta:

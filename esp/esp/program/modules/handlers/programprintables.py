@@ -633,7 +633,7 @@ class ProgramPrintables(ProgramModuleObj):
                 if transactions.count() == 0:
                     transaction = Transaction()
                     try:
-                        transaction.amount = float(form.clean_data['txn_amount'])
+                        transaction.amount = float(form.cleaned_data['txn_amount'])
                     except:
                         raise ESPError(False), 'No transaction was found, and you did not specify a valid refund amount.  Please enter a dollar amout such as "20.00" and try again.'
                 else:
@@ -642,10 +642,10 @@ class ProgramPrintables(ProgramModuleObj):
                 context = {'user': user, 'transaction': transaction}
                 context['program'] = prog
 
-                context['payer_name'] = form.clean_data['payer_name']
-                context['payer_address'] = form.clean_data['payer_address']                
-                context['omars_number'] = form.clean_data['omars_number']
-                context['credit_card_num'] = form.clean_data['credit_card_num']
+                context['payer_name'] = form.cleaned_data['payer_name']
+                context['payer_address'] = form.cleaned_data['payer_address']                
+                context['omars_number'] = form.cleaned_data['omars_number']
+                context['credit_card_num'] = form.cleaned_data['credit_card_num']
                 context['amount'] = '%.02f' % (float(transaction.amount))
 
                 if extra:

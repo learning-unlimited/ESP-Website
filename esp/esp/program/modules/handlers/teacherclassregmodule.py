@@ -259,13 +259,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 		
                 
                 if form.is_valid():
-                    media = Media(friendly_name = form.clean_data['title'], anchor = target_class.anchor)
+                    media = Media(friendly_name = form.cleaned_data['title'], anchor = target_class.anchor)
 	            #	Append the class code on the filename
-	            new_target_filename = target_class.emailcode() + '_' + form.clean_data['uploadedfile']['filename']
-                    media.save_target_file_file(new_target_filename, form.clean_data['uploadedfile']['content'])
-                    media.mime_type = form.clean_data['uploadedfile']['content-type']
-	            media.size = len(form.clean_data['uploadedfile']['content'])
-	            extension_list = form.clean_data['uploadedfile']['filename'].split('.')
+	            new_target_filename = target_class.emailcode() + '_' + form.cleaned_data['uploadedfile']['filename']
+                    media.save_target_file_file(new_target_filename, form.cleaned_data['uploadedfile']['content'])
+                    media.mime_type = form.cleaned_data['uploadedfile']['content-type']
+	            media.size = len(form.cleaned_data['uploadedfile']['content'])
+	            extension_list = form.cleaned_data['uploadedfile']['filename'].split('.')
 	            extension_list.reverse()
 	            media.file_extension = extension_list[0]
 	            media.format = ''

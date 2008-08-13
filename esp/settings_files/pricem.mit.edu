@@ -77,6 +77,7 @@ INSTALLED_APPS = (
     'esp.web',
     'esp.program',
     'esp.program.modules',
+    'esp.program.modules.handlers',
     'esp.datatree',
     'esp.dbmail',
     'esp.cal',
