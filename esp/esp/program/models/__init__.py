@@ -267,16 +267,20 @@ class Program(models.Model):
         return val
 
     def _get_type_url(self, type):
-        if hasattr(self, '_type_url'):
-            if type in self._type_url:
-                return self._type_url[type]
-        else:
-            self._type_url = {}
+        def _really_get_type_url(self):
+            if hasattr(self, '_type_url'):
+                if type in self._type_url:
+                    return self._type_url[type]
+            else:
+                self._type_url = {}
 
-        self._type_url[type] = '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[-2:]))
+            self._type_url[type] = '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[-2:]))
 
-        return self._type_url[type]
+            return self._type_url[type]
 
+        return property(_really_get_type_url)
+        
+    
     def __init__(self, *args, **kwargs):
         retVal = super(Program, self).__init__(*args, **kwargs)
         
