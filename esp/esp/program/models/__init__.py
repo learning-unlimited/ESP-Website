@@ -236,6 +236,23 @@ class ArchiveClass(models.Model):
 
 admin.site.register(ArchiveClass)
     
+
+def _get_type_url(type):
+    def _really_get_type_url(self):
+        if hasattr(self, '_type_url'):
+            if type in self._type_url:
+                return self._type_url[type]
+        else:
+            self._type_url = {}
+
+        self._type_url[type] = '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[-2:]))
+
+        return self._type_url[type]
+
+    return _really_get_type_url
+        
+    
+
     
 class Program(models.Model):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
@@ -266,30 +283,11 @@ class Program(models.Model):
         
         return val
 
-    
-    def _get_type_url(self, type):
-        def _really_get_type_url(self):
-            if hasattr(self, '_type_url'):
-                if type in self._type_url:
-                    return self._type_url[type]
-            else:
-                self._type_url = {}
+    get_teach_url = _get_type_url("teach")
+    get_learn_url = _get_type_url("learn")
+    get_manage_url = _get_type_url("manage")
+    get_onsite_url = _get_type_url("onsite")
 
-            self._type_url[type] = '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[-2:]))
-
-            return self._type_url[type]
-
-        return _really_get_type_url
-        
-    
-    def __init__(self, *args, **kwargs):
-        retVal = super(Program, self).__init__(*args, **kwargs)
-        
-        for type in ['teach','learn','manage','onsite']:
-            setattr(self, 'get_%s_url' % type, self._get_type_url(type))
-    
-        return retVal
-    
     def save(self):
         
         retVal = super(Program, self).save()
