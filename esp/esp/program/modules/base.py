@@ -43,6 +43,7 @@ from django.conf import settings
 from urllib import quote
 from esp.db.models import Q
 from django.core.cache import cache
+from django.contrib import admin
 
 LOGIN_URL = settings.LOGIN_URL
 
@@ -78,9 +79,6 @@ class ProgramModuleObj(models.Model):
 
     def __str__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
-
-    class Admin:
-        pass
 
     def all_views(self):
         if self.module and self.module.aux_calls:
@@ -482,6 +480,10 @@ class ProgramModuleObj(models.Model):
         This is a stub, to be overridden by subclasses.
         """
         return context
+
+
+admin.site.register(ProgramModuleObj)
+
 
 # will check and depending on the value of tl
 # will use .isTeacher or .isStudent()
