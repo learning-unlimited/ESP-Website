@@ -266,6 +266,7 @@ class Program(models.Model):
         
         return val
 
+    
     def _get_type_url(self, type):
         def _really_get_type_url(self):
             if hasattr(self, '_type_url'):
@@ -278,7 +279,7 @@ class Program(models.Model):
 
             return self._type_url[type]
 
-        return property(_really_get_type_url)
+        return _really_get_type_url
         
     
     def __init__(self, *args, **kwargs):
@@ -286,9 +287,9 @@ class Program(models.Model):
         
         for type in ['teach','learn','manage','onsite']:
             setattr(self, 'get_%s_url' % type, self._get_type_url(type))
-
+    
         return retVal
-
+    
     def save(self):
         
         retVal = super(Program, self).save()

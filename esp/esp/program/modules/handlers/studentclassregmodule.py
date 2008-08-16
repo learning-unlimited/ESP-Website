@@ -196,9 +196,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     for cls in auto_classes:
                         cls.unpreregister_student(self.user)
                     if blocked_class is not None:
-                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url, blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
+                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
                     else:
-                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url, prog.niceName(), cannotadd_error)
+                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url(), prog.niceName(), cannotadd_error)
                     
         if error and not self.user.onsite_local:
             raise ESPError(False), error
@@ -229,7 +229,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         ts = ts[0]
 
-        prereg_url = self.program.get_learn_url + 'addclass/'
+        prereg_url = self.program.get_learn_url() + 'addclass/'
         user_grade = user.getGrade()
         user.updateOnsite(request)
         is_onsite = user.isOnsite(self.program)
@@ -264,7 +264,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         from esp.cal.models import Event
         
         user = ESPUser(request.user) 
-        prereg_url = self.program.get_learn_url + 'swapclass/' + extra
+        prereg_url = self.program.get_learn_url() + 'swapclass/' + extra
         user_grade = user.getGrade()
         is_onsite = user.isOnsite(self.program)
 
@@ -384,7 +384,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             for implication in ClassImplication.objects.filter(cls__in=class_ids, enforce=True, parent__isnull=True):
 #                break;
                 if implication.fails_implication(self.user, without_classes=set([cls.id])):
-                    raise ESPError(False), 'This class is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url, implication.cls.parent_program.niceName())
+                    raise ESPError(False), 'This class is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url(), implication.cls.parent_program.niceName())
             cls.unpreregister_student(self.user)
             
             # Undo auto-registrations of sections
@@ -462,7 +462,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 if implication.fails_implication(self.user):
                     newclass.unpreregister_student(self.user)
                     oldclass.preregister_student(self.user, overridefull=True, automatic=automatic)
-                    raise ESPError(False), 'The class you intended to remove is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url, implication.cls.parent_program.niceName())
+                    raise ESPError(False), 'The class you intended to remove is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url(), implication.cls.parent_program.niceName())
         
         return self.goToCore(tl)
 
