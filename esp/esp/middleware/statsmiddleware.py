@@ -58,7 +58,10 @@ class StatsMiddleware(object):
             # get number of db queries before we do anything
             n = len(connection.queries)
 
-        totTime = time() - request.start_time
+        try:
+            totTime = time() - request.start_time
+        except AttributeError:
+            totTime = -1
 
         stats = {
             'totTime': totTime,

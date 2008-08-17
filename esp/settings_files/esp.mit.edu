@@ -162,6 +162,8 @@ INSTALLED_APPS = (
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
+#    'django_evolution',
+    'django_command_extensions',
 )
 
 
@@ -187,3 +189,5 @@ USE_I18N = False
 AUTH_PROFILE_MODULE='users.ESPUser_Profile'
 
 SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
+
+FORCE_SCRIPT_NAME = ''

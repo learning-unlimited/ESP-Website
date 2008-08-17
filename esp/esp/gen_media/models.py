@@ -33,6 +33,7 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 from esp.users.models import User
 from esp.middleware   import ESPError
+from django.core.files import File
 import os
 import datetime
 import cStringIO as StringIO
@@ -208,13 +209,26 @@ class SubSectionImage(models.Model):
 
         file_name = md5.new(font_string).hexdigest()
 
-        file_name = '%s/%s.%s' %\
-                      (self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)
+        file_name = '%s/%s/%s.%s' %\
+                      (settings.MEDIA_ROOT, self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)
+
 
         c = StringIO.StringIO()
-        im.save(c, IMAGE_TYPE)
 
-        self.image = file_name
+        #f = open(file_name, "wb")
+        #self.image = File(f)
+        im.save(c, IMAGE_TYPE)
+        #f.close()
+
+        #f = open(file_name, "rb")
+        
+        #self.image.open("wb")
+        self.image = File( open(file_name, "wb") )
+        #self.image.open("wb")
+        self.image.write(c)
+        self.image.close()
+        #self.image.save(file_name, f, save=False)
+        #f.close()
         self.image.save(file_name, ContentFile(c.getvalue()), save=False)
 
         del c
@@ -228,5 +242,5 @@ class SubSectionImage(models.Model):
     def __str__(self):
         if not os.path.exists(self.image.path):
             self.create_image()
-        return '<img src="%s" alt="%s" border="0" title="%s" class="subsection" />' % (self.image.url, self.text, self.text)
+        return '<img src="%s" alt="%s" border="0" title="%s" class="subsection" />' % (str(self.image.url), self.text, self.text)
         

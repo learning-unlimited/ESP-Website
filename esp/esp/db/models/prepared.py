@@ -25,6 +25,7 @@ else:
     db_mysql = False
 
 class QuerySetPrepared(QuerySet):
+    _iter = None
     """A QuerySet that represents the resultset of
     a procedure -- either through MySQL's CALL
     or PostgreSQL's stored functions.
@@ -48,6 +49,7 @@ class QuerySetPrepared(QuerySet):
         self._proc_params = ()
         self._proc_name = ''
         super(QuerySetPrepared, self).__init__(*args, **kwargs)
+
     
     def iterator(self):
         """ Like the Django iterator except is used for calling stored
