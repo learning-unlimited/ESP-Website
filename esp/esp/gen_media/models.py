@@ -29,6 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db   import models
+from django.core.files.base import ContentFile
 from django.conf import settings
 from esp.users.models import User
 from esp.middleware   import ESPError
@@ -63,21 +64,24 @@ class LatexImage(models.Model):
     filetype = models.CharField(max_length=10)
 
     def getImage(self):
-        if not self.file_exists():
-            self.genImage()
-        return str(self)
+        if self.genImage():
+            return str(self)
+        else:
+            return self.content.strip('$')
 
     def genImage(self):
 
         if self.file_exists():
-            return False
-        
-        if not self.image:
-            self.image = get_rand_file_base()
+            return True
+
+        image_path = self.image and self.image.path or ''
+
+        if not image_path:
+            image_path = get_rand_file_base()
             self.filetype = IMAGE_TYPE
         else:
-            self.image = os.path.basename(self.image)
-            self.image = self.image[:self.image.rindex('.')]
+            image_path = os.path.basename(image_path)
+            image_path = image_path[:image_path.rindex('.')]
 
         if self.style == 'INLINE':
             style = '$'
@@ -91,7 +95,7 @@ class LatexImage(models.Model):
               r""" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}""" % \
               (style, self.content, style)
 
-        fullpath = TMP+'/'+self.image
+        fullpath = os.path.join(TMP, image_path)
 
         tex_file = open(fullpath + '.tex', 'w')
         tex_file.write(tex)
@@ -103,7 +107,7 @@ class LatexImage(models.Model):
             cur_dpi = self.dpi
 
         os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
-                  (TMP, commands['latex'], self.image))
+                  (TMP, commands['latex'], image_path))
 
         os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi > /dev/null' % \
                   (commands['dvipng'], LATEX_BG, cur_dpi, fullpath, fullpath))
@@ -112,11 +116,14 @@ class LatexImage(models.Model):
             os.system( '%s %s.png %s.%s %> /dev/null' % \
                        (commands['convert'], fullpath, fullpath, self.filetype))
 
-        old_filename = self.image
+        old_filename = image_path
 
-        f = open('%s.%s' % (fullpath, self.filetype))
+        try:
+            f = open('%s.%s' % (fullpath, self.filetype))
+        except IOError:
+            return False
 
-        self.image.save('%s.%s' % (self.image, self.filetype), f.read(), save=False)
+        self.image.save('%s.%s' % (image_path, self.filetype), f.read(), save=False)
 
         f.close()
         
@@ -208,8 +215,7 @@ class SubSectionImage(models.Model):
         im.save(c, IMAGE_TYPE)
 
         self.image = file_name
-
-        self.image.save(file_name, c.getvalue(), save=False)
+        self.image.save(file_name, ContentFile(c.getvalue()), save=False)
 
         del c
 

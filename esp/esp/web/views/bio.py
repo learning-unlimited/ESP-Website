@@ -28,6 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+from django.core.files.base import ContentFile
 
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
@@ -37,6 +38,7 @@ from django               import oldforms
 from django.http          import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
+
 
 @login_required
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False):
@@ -89,13 +91,18 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
             progbio.save()
             # save the image
             if new_data.has_key('picture'):
-                progbio.picture.save(new_data['picture'].name, new_data['picture'].read())
+                try:
+                    new_data['picture'].seek(0)
+                    progbio.picture.save(new_data['picture'].name, ContentFile(new_data['picture'].read()))
+                except:
+                    errors = {'picture': ("Invalid image.",)}
             else:
                 progbio.picture = lastbio.picture
                 progbio.save()
-            if external:
-                return True
-            return HttpResponseRedirect(progbio.url())
+            if not errors:
+                if external:
+                    return True
+                return HttpResponseRedirect(progbio.url())
         
     else:
         errors = {}

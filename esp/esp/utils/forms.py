@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from django.forms.forms import Form, Field, BoundField
+from django import forms
 from django.forms.util import ErrorList
 from django.utils.html import escape
 
@@ -71,6 +72,18 @@ class CaptchaForm(Form):
         if local_request and not local_request.user.is_authenticated():
             self.fields['captcha'] = CaptchaField(request=local_request, required=True)
 
+class CaptchaModelForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        local_request = None
+        if 'request' in kwargs:
+            local_request = kwargs['request']
+            del kwargs['request']
+
+        forms.ModelForm.__init__(self, *args, **kwargs)
+
+        if local_request and not local_request.user.is_authenticated():
+            self.fields['captcha'] = CaptchaField(request=local_request, required=True)
+    
 
 def new_callback(exclude=None, include=None):
     """

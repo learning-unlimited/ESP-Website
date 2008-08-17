@@ -34,6 +34,8 @@ Email: web@esp.mit.edu
 """
 
 from django.db import models
+from django.utils.safestring import mark_safe
+
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser
 from esp.web.util import render_to_response
@@ -339,11 +341,13 @@ class ProgramModuleObj(models.Model):
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
-            return '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                   (self.get_full_path(), self.module.link_title, self.module.link_title)
-
-        return '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
+            link = u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+                (self.get_full_path(), self.module.link_title, self.module.link_title)
+        else:
+            link = u'<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
                (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
+
+        return mark_safe(link)
 
 
     @classmethod

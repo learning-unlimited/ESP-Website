@@ -33,6 +33,7 @@ Email: web@esp.mit.edu
     """
 
 from django import oldforms as forms
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 class ResizeImageUploadField(forms.ImageUploadField):
     """ This field will allow one to upload a file, and that image
@@ -51,34 +52,30 @@ class ResizeImageUploadField(forms.ImageUploadField):
         if self.size is not None:
             from PIL import Image
             from cStringIO import StringIO
-            try:
-                content = new_data[self.field_name].read()
-            except:
-                return new_data
-
             
             try:
-                picturefile = StringIO()
-                im = Image.open(StringIO(content))
-                im.thumbnail(self.size, Image.ANTIALIAS)
-
-                im.save(picturefile, im.format)
-                content = picturefile.getvalue()
-                
-                picturefile.close()
-            except:
+                file = new_data[self.field_name]
+            except KeyError:
                 return new_data
-            """
-            #   I don't think we are supposed to do this.  But I couldn't get StringIO to work.  -Michael
-            class stupidstring:
-                def __init__(self, content):
-                    self._str = content
-                def read(self):
-                    return self._str
-            new_data[self.field_name].file = stupidstring(content)
-            """
-            new_data[self.field_name].file = StringIO()
-            new_data[self.field_name].file.write(content)
-            # """
+
+            picturefile = StringIO()
+            if hasattr(file, 'temporary_file_path'):
+                file = file.temporary_file_path()
+            else:
+                file = StringIO(file.read())
+
+            try:
+                im = Image.open(file)
+                im.thumbnail(self.size, Image.ANTIALIAS)
+                im.save(picturefile, im.format)
+            except IOError:
+                return new_data
+
+            picturefile.seek(0)
+            new_data[self.field_name] = SimpleUploadedFile(
+                name=new_data[self.field_name].name,
+                content=picturefile.getvalue(),
+                )
+
         return new_data
 

@@ -74,8 +74,9 @@ def thread(request, extra):
         try:
             if form.is_valid():
                 new_message = AlumniMessage()
-                save_instance(form, new_message, commit=False)
                 new_message.thread = thread
+                del form.cleaned_data['thread']
+                save_instance(form, new_message, commit=False)
                 new_message.save()
                 return HttpResponseRedirect(request.path + '?success=1')
         except UnicodeDecodeError:
