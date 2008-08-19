@@ -112,6 +112,7 @@ def teximages(value,dpi=150):
             value += '$$' + strings[i]
         
     return value
+teximages.is_safe = True
 
 
 

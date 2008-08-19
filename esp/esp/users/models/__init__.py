@@ -1280,7 +1280,7 @@ class PersistentQueryFilter(models.Model):
     def get_Q(self):
         """ This will return the Q object that was passed into it. """
         try:
-            QObj = pickle.loads(self.q_filter)
+            QObj = pickle.loads(str(self.q_filter))
         except:
             raise ESPError(), 'Invalid Q object stored in database.'
 

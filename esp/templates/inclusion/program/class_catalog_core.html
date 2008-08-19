@@ -16,7 +16,9 @@
      </tr>
      <tr>
        <td colspan="3" class="info">
+        {% autoescape off %}
          {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
+        {% endautoescape %}
        {% if class.prereqs %}
        <br /><br />
        <em>*Prerequisites*</em>

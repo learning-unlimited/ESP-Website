@@ -22,9 +22,11 @@
         </td>
     {% endfor %}
 </tr>
+{% autoescape off %}
 {% for room in prog.groupedClassrooms %}
     {% scheduling_matrix_row room prog %}
 {% endfor %}
+{% endautoescape %}
 </table>
 
 <br />

@@ -1,3 +1,4 @@
+{% autoescape off %}
     <tr>
         <th class="small"><a class="tooltip">{{ room_name }}
             <span><b>Size:</b> {{ room_num_students }}<br />
@@ -6,3 +7,4 @@
         </th>
         {% for elt in room_sequence %}{{ elt }}{% endfor %}
     </tr>
+{% endautoescape %}

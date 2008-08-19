@@ -49,10 +49,12 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
 
     if context_dict is None: context_dict = {}
 
+    #   This is a hack to satisfy Django's requirement that the 'extends' tag come first.
+    #   So, if you make a template, put the 'extends' tag in the first line.
+    #   Especially if it's for Latex. :)
     src = loader.find_template_source(filepath)[0]
-
-    src = '{% load latex %}\n' + src
-
+    src_lines = src.lstrip('\n').split('\n')
+    src = src_lines[0] + '\n{% load latex %}' + '\n'.join(src_lines[1:])
     context = Context(context_dict)
 
     context['MEDIA_ROOT'] = settings.MEDIA_ROOT
@@ -61,7 +63,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     t = Template(src)
 
     rendered_source = t.render(context)
-
+    
     return gen_latex(rendered_source, filetype)
     
 
