@@ -51,7 +51,7 @@ def qsdmedia(request, branch, section, url_name, url_verb, base_url):
     # aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Flags/Public on this node
     have_view = UserBit.UserHasPerms( request.user, media_rec.anchor, GetNode('V/Flags/Public') )
     if have_view:
-        return HttpResponseRedirect(media_rec.get_target_file_url())
+        return HttpResponseRedirect(media_rec.target_file.url)
     else:
         raise Http404
 

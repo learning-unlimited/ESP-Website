@@ -31,6 +31,7 @@ Email: web@esp.mit.edu
 from django.db   import models
 from django.core.files.base import ContentFile
 from django.conf import settings
+from django.core.files.storage import default_storage
 from esp.users.models import User
 from esp.middleware   import ESPError
 from django.core.files import File
@@ -73,16 +74,14 @@ class LatexImage(models.Model):
     def genImage(self):
 
         if self.file_exists():
-            return True
-
-        image_path = self.image and self.image.path or ''
-
-        if not image_path:
-            image_path = get_rand_file_base()
+            return False
+        
+        if not self.image:
+            file_base = get_rand_file_base()
             self.filetype = IMAGE_TYPE
+            self.image = TEXIMAGE_BASE + '/' + file_base + '.' + self.filetype
         else:
-            image_path = os.path.basename(image_path)
-            image_path = image_path[:image_path.rindex('.')]
+            file_base = os.path.basename(self.image.path)
 
         if self.style == 'INLINE':
             style = '$'
@@ -96,7 +95,8 @@ class LatexImage(models.Model):
               r""" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}""" % \
               (style, self.content, style)
 
-        fullpath = os.path.join(TMP, image_path)
+        #   Now a relative path to the area Django will let you access.
+        fullpath = TMP + '/' + file_base
 
         tex_file = open(fullpath + '.tex', 'w')
         tex_file.write(tex)
@@ -108,7 +108,7 @@ class LatexImage(models.Model):
             cur_dpi = self.dpi
 
         os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
-                  (TMP, commands['latex'], image_path))
+                  (TMP, commands['latex'], fullpath))
 
         os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi > /dev/null' % \
                   (commands['dvipng'], LATEX_BG, cur_dpi, fullpath, fullpath))
@@ -116,19 +116,6 @@ class LatexImage(models.Model):
         if self.filetype.lower() != 'png':
             os.system( '%s %s.png %s.%s %> /dev/null' % \
                        (commands['convert'], fullpath, fullpath, self.filetype))
-
-        old_filename = image_path
-
-        try:
-            f = open('%s.%s' % (fullpath, self.filetype))
-        except IOError:
-            return False
-
-        self.image.save('%s.%s' % (image_path, self.filetype), f.read(), save=False)
-
-        f.close()
-        
-        #os.system('rm -f %s/%s*' % (TMP, old_filename))
 
         self.save(super=True)
         
@@ -146,7 +133,6 @@ class LatexImage(models.Model):
         return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' % \
                (self.image.url, self.content, self.content)
         
-
     def file_exists(self):
         if not self.image:
             return False
@@ -212,26 +198,16 @@ class SubSectionImage(models.Model):
         file_name = '%s/%s/%s.%s' %\
                       (settings.MEDIA_ROOT, self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)
 
+        file = default_storage.open(file_name, 'wb')
+        im.save(file, IMAGE_TYPE) 
+        file.close()
 
-        c = StringIO.StringIO()
-
-        #f = open(file_name, "wb")
-        #self.image = File(f)
-        im.save(c, IMAGE_TYPE)
-        #f.close()
-
-        #f = open(file_name, "rb")
-        
-        #self.image.open("wb")
         self.image = File( open(file_name, "wb") )
-        #self.image.open("wb")
         self.image.write(c)
         self.image.close()
-        #self.image.save(file_name, f, save=False)
-        #f.close()
-        self.image.save(file_name, ContentFile(c.getvalue()), save=False)
 
-        del c
+        self.image.save(file_name, ContentFile(c.getvalue()), save=False)
+        models.Model.save(self)
 
         self.width, self.height = dim
 

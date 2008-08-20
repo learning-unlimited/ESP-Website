@@ -264,7 +264,7 @@ class HTMLDateField(forms.DateField):
         from datetime import datetime
         from django.utils.safestring import mark_safe
 
-        if type(data) == str:
+        if type(data) in (str, unicode):
             try:
                 year, month, day = data.split('-')
             except:

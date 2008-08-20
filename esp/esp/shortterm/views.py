@@ -6,7 +6,7 @@ from django.http import HttpResponseRedirect
 from esp.web.util.main import render_to_response
 
 
-class SchoolResponseForm(forms.ModelForm)
+class SchoolResponseForm(forms.ModelForm):
     class Meta:
         model = ResponseForm
 

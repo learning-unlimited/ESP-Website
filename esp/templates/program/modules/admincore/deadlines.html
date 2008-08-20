@@ -39,6 +39,7 @@ padding-right:20px;
 
 <form method="post" action="" id="manage_form">
 {% for bit in userbit_forms %}
+{% autoescape off %}
 <table border="2"><tr><td>
 <p>
 <h2>{{ bit.verb }}</h2> -- {% ifequal bit.verb.friendly_name "" %}(no description){% else %}{{ bit.verb.friendly_name }}{% endifequal %}
@@ -50,7 +51,7 @@ padding-right:20px;
 </tr>
 {{ bit.ub_form.as_table }}
 </table>
-
+{% endautoescape %}
 </p>
 </td></tr></table>
 {% endfor %}

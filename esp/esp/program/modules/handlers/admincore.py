@@ -41,18 +41,21 @@ from esp.middleware import ESPError
 
 
 class UserBitForm(forms.ModelForm):
-    def __init__(self, bit = None, *args, **kwargs):
+    def __init__(self, module = None, bit = None, *args, **kwargs):
 
         if bit != None:
             self.base_fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
             self.base_fields['enddate'] = forms.DateTimeField(initial=bit.enddate, required=False)
             self.base_fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput(), required=False)
-        else:
+            self.base_fields['qsc'] = forms.IntegerField(initial=bit.qsc, widget=forms.HiddenInput())
+        elif module != None:
             self.base_fields['startdate'] = forms.DateTimeField(required=False)
             self.base_fields['enddate'] = forms.DateTimeField(required=False)
+            self.base_fields['qsc'] = forms.IntegerField(initial=module.program_anchor_cached(), widget=forms.HiddenInput(), required=False)
+        else:
+            raise ESPError(False), 'Improperly configured UserBit form.  Please contact the webmasters.'
 
         self.base_fields['user'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
-        self.base_fields['qsc'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
         self.base_fields['verb'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
         self.base_fields['startdate'].line_group = 1
         self.base_fields['enddate'].line_group = 1
@@ -140,7 +143,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             saved_successfully = False
             
             forms = [ { 'verb': v,
-                        'ub_form': UserBitForm(None, request.POST, prefix = "%d_"%v.id),
+                        'ub_form': UserBitForm(self, None, request.POST, prefix = "%d_"%v.id),
                         'delete_status': request.POST.has_key("delete_bit_%d" % v.id) and request.POST['delete_bit_%d' % v.id] != ""
                         }
                       for v in nodes ]
@@ -174,11 +177,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
             print "test3"
         else:
             forms = [ { 'verb': v,
-                        'ub_form': try_else( lambda: UserBitForm( UserBit.objects.get(qsc=self.program_anchor_cached(),
+                        'ub_form': try_else( lambda: UserBitForm(self, UserBit.objects.get(qsc=self.program_anchor_cached(),
                                                                                       verb=v,
                                                                                       user__isnull=True),
                                                                   prefix = "%d_"%v.id ),
-                                             lambda: UserBitForm( prefix = "%d_"%v.id ) )
+                                             lambda: UserBitForm(self, None, prefix = "%d_"%v.id ) )
                         }
                       for v in nodes ]
 
