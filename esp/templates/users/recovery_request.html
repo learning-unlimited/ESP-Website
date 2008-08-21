@@ -46,7 +46,7 @@ title="Contact Form">contact us</a>.
 </tr>
 {% endif %}
 
-{{ form }}
+{% autoescape off %}{{ form }}{% endautoescape %}
 <tr>
   <td colspan="2">
    <em>Can't remember either? <a href="/contact/contact/esp-web/">Drop us a line</a> and we'll <br /> be sure to set your accounts straight.</em>
