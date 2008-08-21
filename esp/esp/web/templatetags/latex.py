@@ -33,6 +33,7 @@ Email: web@esp.mit.edu
 from django import template
 from esp.gen_media.models import LatexImage
 from django.http import HttpResponse
+from django.utils.encoding import force_unicode
 register = template.Library()
 
 @register.filter
@@ -82,7 +83,7 @@ def texescape(value):
 @register.filter
 def teximages(value,dpi=150):
 
-    value = unicode(value).strip()
+    value = force_unicode(value, errors='replace').strip()
 
     strings = value.split('$$')
     style   = 'DISPLAY'
