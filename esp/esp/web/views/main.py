@@ -205,7 +205,7 @@ def contact(request, section='esp'):
 
 			t = loader.get_template('email/comment')
 
-			msgtext = t.render({'form': form})
+			msgtext = t.render(Context({'form': form}))
 				
 			send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
 				  msgtext,
