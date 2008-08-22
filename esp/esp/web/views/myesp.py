@@ -397,7 +397,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 			elif role == 'teacher':
 				regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
 			elif role == 'guardian':
-				regProf.teacher_info = GuardianInfo.addOrUpdate(curUser, regProf, new_data)
+				regProf.guardian_info = GuardianInfo.addOrUpdate(curUser, regProf, new_data)
 			elif role == 'educator':
 				regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
 			blah = regProf.__dict__
