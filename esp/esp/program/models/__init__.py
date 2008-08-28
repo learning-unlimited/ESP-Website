@@ -137,7 +137,7 @@ class ProgramModule(models.Model):
             return self.msg
     
     def __str__(self):
-        return 'Program Module "%s"' % self.admin_title
+        return 'Program Module: %s' % self.admin_title
 
 admin.site.register(ProgramModule)
     

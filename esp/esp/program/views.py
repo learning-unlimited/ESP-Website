@@ -52,6 +52,8 @@ from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType
 
+import pickle
+
 @login_required
 def updateClass(request, id):
     """ An update-class form """
@@ -200,13 +202,14 @@ def managepage(request, page):
         if 'checked' in request.GET:
             # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
             # Don't bother trying to fix the form; just re-set the anchor when we're done.
-            pcf = ProgramCreationForm(request.session['prog_form_raw'])
+            context = pickle.loads(request.session['context_str'])
+            pcf = ProgramCreationForm(context['prog_form_raw'])
             if pcf.is_valid():
                 new_prog = Program(anchor=GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"]))
                 new_prog = save_instance(pcf, new_prog)
                 new_prog.anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
                 
-                commit_program(new_prog, request.session['datatrees'], request.session['userbits'], request.session['modules'], request.session['costs'])
+                commit_program(new_prog, context['datatrees'], context['userbits'], context['modules'], context['costs'])
                 
                 manage_url = '/manage/' + new_prog.url() + '/resources'
                 return HttpResponseRedirect(manage_url)
@@ -225,15 +228,12 @@ def managepage(request, page):
                 datatrees, userbits, modules = prepare_program(temp_prog, form)
                 #   Save the form's raw data instead of the form itself, or its clean data.
                 #   Unpacking of the data happens at the next step.
-                request.session['prog_form_raw'] = form.data
-                request.session['datatrees'] = datatrees
-                request.session['userbits'] = userbits
-                request.session['modules'] = modules
-                request.session['costs'] = ( form.cleaned_data['base_cost'], form.cleaned_data['finaid_cost'] )
+
+                context_pickled = pickle.dumps({'prog_form_raw': form.data, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules, 'costs': ( form.cleaned_data['base_cost'], form.cleaned_data['finaid_cost'] )})
+                request.session['context_str'] = context_pickled
                 
                 return render_to_response('program/newprogram_review.html', request, GetNode('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
             
-                
         else:
             #   Otherwise, the default view is a blank form.
             if template_prog:

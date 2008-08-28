@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.datatree.models import GetNode, DataTree
 from esp.users.models import ESPUser, User, UserBit
+from esp.users.models.userbits import UserBitImplication
 from esp.program.Lists_ClassCategories import populate as populate_LCC
 from esp.program.models import Program, ProgramModule
 from esp.accounting_core.models import LineItemType
