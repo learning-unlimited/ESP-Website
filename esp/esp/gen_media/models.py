@@ -74,7 +74,7 @@ class LatexImage(models.Model):
     def genImage(self):
 
         if self.file_exists():
-            return False
+            return True
         
         if not self.image:
             file_base = get_rand_file_base()
@@ -195,18 +195,16 @@ class SubSectionImage(models.Model):
 
         file_name = md5.new(font_string).hexdigest()
 
-        file_name = '%s/%s/%s.%s' %\
+        full_file_name = '%s/%s/%s.%s' %\
                       (settings.MEDIA_ROOT, self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)
+        part_file_name = '%s/%s.%s' % (self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)
 
-        file = default_storage.open(file_name, 'wb')
+        file = default_storage.open(full_file_name, 'wb')
         im.save(file, IMAGE_TYPE) 
         file.close()
 
-        self.image = File( open(file_name, "wb") )
-        self.image.write(c)
-        self.image.close()
-
-        self.image.save(file_name, ContentFile(c.getvalue()), save=False)
+        self.image = part_file_name
+        
         models.Model.save(self)
 
         self.width, self.height = dim

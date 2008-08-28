@@ -213,7 +213,7 @@ def archive_classes(request, category, options, sortorder = None):
     else:
         headings = [item.__dict__[sortorder[0]] for item in results[res_range['start']:res_range['end']]]
     
-    context['headings'] = list(set([str(h) for h in headings]))
+    context['headings'] = list(set([unicode(h) for h in headings]))
     context['headings'].sort()
     
     #    Fill in context some more

@@ -221,10 +221,12 @@ class ClassSection(models.Model):
         if self.num_students() > 0 and not adminoverride:
             return False
         
-        if self.anchor:
-            self.anchor.delete(True)
+        self.getResourceRequests().delete()
+        self.getResourceAssignments().delete()
         self.meeting_times.clear()
         self.checklist_progress.clear()
+        if self.anchor:
+            self.anchor.delete(True)
         
         super(ClassSection, self).delete()
 

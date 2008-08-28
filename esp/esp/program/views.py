@@ -200,14 +200,19 @@ def managepage(request, page):
         if 'checked' in request.GET:
             # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
             # Don't bother trying to fix the form; just re-set the anchor when we're done.
-            new_prog = Program(anchor=GetNode(request.session['prog_form'].cleaned_data['anchor'].uri + "/" + request.session['prog_form'].cleaned_data["term"]))
-            new_prog = save_instance(request.session['prog_form'], new_prog)
-            new_prog.anchor = GetNode(request.session['prog_form'].cleaned_data['anchor'].uri + "/" + request.session['prog_form'].cleaned_data["term"])
-            
-            commit_program(new_prog, request.session['datatrees'], request.session['userbits'], request.session['modules'], request.session['costs'])
-            
-            manage_url = '/manage/' + new_prog.url() + '/resources'
-            return HttpResponseRedirect(manage_url)
+            pcf = ProgramCreationForm(request.session['prog_form_raw'])
+            if pcf.is_valid():
+                new_prog = Program(anchor=GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"]))
+                new_prog = save_instance(pcf, new_prog)
+                new_prog.anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
+                
+                commit_program(new_prog, request.session['datatrees'], request.session['userbits'], request.session['modules'], request.session['costs'])
+                
+                manage_url = '/manage/' + new_prog.url() + '/resources'
+                return HttpResponseRedirect(manage_url)
+            else:
+                raise ESPError(False), "Improper form data submitted."
+              
     
         #   If the form has been submitted, process it.
         if request.method == 'POST':
@@ -218,12 +223,14 @@ def managepage(request, page):
                 temp_prog = Program(anchor=form.cleaned_data['anchor'])
                 temp_prog = save_instance(form, temp_prog, commit=False)
                 datatrees, userbits, modules = prepare_program(temp_prog, form)
-                request.session['prog_form'] = form
+                #   Save the form's raw data instead of the form itself, or its clean data.
+                #   Unpacking of the data happens at the next step.
+                request.session['prog_form_raw'] = form.data
                 request.session['datatrees'] = datatrees
                 request.session['userbits'] = userbits
                 request.session['modules'] = modules
                 request.session['costs'] = ( form.cleaned_data['base_cost'], form.cleaned_data['finaid_cost'] )
-              
+                
                 return render_to_response('program/newprogram_review.html', request, GetNode('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
             
                 

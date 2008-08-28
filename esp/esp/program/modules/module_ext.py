@@ -103,8 +103,9 @@ class ClassRegModuleInfo(models.Model):
     def __str__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
     
-    class Admin:
-        pass
+class CRMIAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(ClassRegModuleInfo, CRMIAdmin)
     
 
 class CreditCardModuleInfo(models.Model):

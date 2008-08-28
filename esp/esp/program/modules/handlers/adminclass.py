@@ -235,7 +235,7 @@ class AdminClass(ProgramModuleObj):
     def deletesection(self, request, tl, one, two, module, extra, prog):
         """ A little function to remove the section specified in POST. """
         if request.method == 'POST':
-            if request.has_key('sure') and request.POST['sure'] == 'True':
+            if request.POST.has_key('sure') and request.POST['sure'] == 'True':
                 try:
                     s = ClassSection.objects.get(id=int(request.GET['sec_id']))
                     s.delete()

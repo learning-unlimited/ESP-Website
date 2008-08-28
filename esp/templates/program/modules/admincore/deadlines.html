@@ -49,7 +49,9 @@ padding-right:20px;
 <th><label for="delete_bit_{{ bit.verb.id }}">Close This Deadline Now:</label></th>
 <td align="left"><input type="checkbox" name="delete_bit_{{ bit.verb.id }}" /></td>
 </tr>
+{% autoescape off %}
 {{ bit.ub_form.as_table }}
+{% endautoescape %}
 </table>
 {% endautoescape %}
 </p>

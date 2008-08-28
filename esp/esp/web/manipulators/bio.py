@@ -40,6 +40,6 @@ class TeacherBioManipulator(forms.Manipulator):
         self.fields = (
             forms.TextField(field_name="slugbio", length=50, max_length=50),
             forms.LargeTextField(field_name="bio", rows=20, cols=60),
-            ResizeImageUploadField(field_name="picture", size=(300,300))
+            ResizeImageUploadField(field_name="picture", is_required=False, size=(300,300))
         )
 

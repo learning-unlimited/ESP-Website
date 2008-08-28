@@ -32,8 +32,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.datatree.models import GetNode
-from esp.users.models import UserBit
+from esp.datatree.models import DataTree, GetNode
+from esp.users.models import User, UserBit
 from django import forms
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.middleware import ESPError
@@ -41,22 +41,21 @@ from esp.middleware import ESPError
 
 
 class UserBitForm(forms.ModelForm):
-    def __init__(self, module = None, bit = None, *args, **kwargs):
+    def __init__(self, bit = None, *args, **kwargs):
 
         if bit != None:
             self.base_fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
             self.base_fields['enddate'] = forms.DateTimeField(initial=bit.enddate, required=False)
-            self.base_fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput(), required=False)
-            self.base_fields['qsc'] = forms.IntegerField(initial=bit.qsc, widget=forms.HiddenInput())
-        elif module != None:
+            self.base_fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput())
+            self.base_fields['qsc'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.qsc.id, widget=forms.HiddenInput())
+            self.base_fields['verb'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.verb.id, widget=forms.HiddenInput())
+        else:
             self.base_fields['startdate'] = forms.DateTimeField(required=False)
             self.base_fields['enddate'] = forms.DateTimeField(required=False)
-            self.base_fields['qsc'] = forms.IntegerField(initial=module.program_anchor_cached(), widget=forms.HiddenInput(), required=False)
-        else:
-            raise ESPError(False), 'Improperly configured UserBit form.  Please contact the webmasters.'
+            self.base_fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
 
-        self.base_fields['user'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
-        self.base_fields['verb'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
+        self.base_fields['user'] = forms.ModelChoiceField(queryset=User.objects.all(), widget=forms.HiddenInput(), required=False)
+        
         self.base_fields['startdate'].line_group = 1
         self.base_fields['enddate'].line_group = 1
         self.base_fields['recursive'] = forms.BooleanField(label = 'Covers deadlines beneath it ("Recursive")', required=False) # I consider this a bug, though it makes sense in context of the form protocol: Un-checked BooleanFields are marked as having not been filled out
@@ -143,7 +142,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             saved_successfully = False
             
             forms = [ { 'verb': v,
-                        'ub_form': UserBitForm(self, None, request.POST, prefix = "%d_"%v.id),
+                        'ub_form': UserBitForm(None, request.POST, prefix = "%d_"%v.id),
                         'delete_status': request.POST.has_key("delete_bit_%d" % v.id) and request.POST['delete_bit_%d' % v.id] != ""
                         }
                       for v in nodes ]
@@ -177,11 +176,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
             print "test3"
         else:
             forms = [ { 'verb': v,
-                        'ub_form': try_else( lambda: UserBitForm(self, UserBit.objects.get(qsc=self.program_anchor_cached(),
+                        'ub_form': try_else( lambda: UserBitForm( UserBit.objects.get(qsc=self.program_anchor_cached(),
                                                                                       verb=v,
                                                                                       user__isnull=True),
                                                                   prefix = "%d_"%v.id ),
-                                             lambda: UserBitForm(self, None, prefix = "%d_"%v.id ) )
+                                             lambda: UserBitForm( prefix = "%d_"%v.id ) )
                         }
                       for v in nodes ]
 

@@ -61,9 +61,12 @@ class ResizeImageUploadField(forms.ImageUploadField):
             picturefile = StringIO()
             if hasattr(file, 'temporary_file_path'):
                 file = file.temporary_file_path()
-            else:
+            #   Check that there was indeed something submitted.  Otherwise give up.
+            elif hasattr(file, 'read'):
                 file = StringIO(file.read())
-
+            else:
+                return new_data
+            
             try:
                 im = Image.open(file)
                 im.thumbnail(self.size, Image.ANTIALIAS)

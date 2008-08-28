@@ -105,7 +105,7 @@ If you have any questions regarding the program, <br /> please email the
      </td>
    </tr>
 
-    {% if teacherclsmodule.classRegInfo.allow_coteach %}
+    {% if teacherclsmodule.allow_coteach %}
     <tr>
     <td class="clsleft"><b>Coteachers: </b></td>
     <td class="clsmiddle" colspan="4">{% for t in cls.teachers %}{% ifnotequal t request.user %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>

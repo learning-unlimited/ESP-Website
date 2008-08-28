@@ -95,7 +95,9 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
                     new_data['picture'].seek(0)
                     progbio.picture.save(new_data['picture'].name, ContentFile(new_data['picture'].read()))
                 except:
-                    errors = {'picture': ("Invalid image.",)}
+                    #   If you run into a problem processing the image, just ignore it.
+                    progbio.picture = lastbio.picture
+                    progbio.save()
             else:
                 progbio.picture = lastbio.picture
                 progbio.save()

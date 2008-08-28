@@ -29,6 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
+from django.contrib import admin
 from esp.datatree.models import DataTree, GetNode
 from esp.settings import MEDIA_ROOT
 from esp.db.fields import AjaxForeignKey
@@ -55,9 +56,6 @@ class Media(models.Model):
     def __str__(self):
         return str(self.friendly_name)
 
-    class Admin:
-        pass
-    
     @staticmethod
     def find_by_url_parts(parts, filename):
         """ Fetch a QSD record by its url parts """
@@ -77,6 +75,10 @@ class Media(models.Model):
         
         # Operation Complete!
         return media[0]
+    
+class MediaAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(Media, MediaAdmin)
 
 
 class Video(models.Model):
