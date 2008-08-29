@@ -75,11 +75,10 @@ class Media(models.Model):
         
         # Operation Complete!
         return media[0]
-    
+
 class MediaAdmin(admin.ModelAdmin):
     pass
 admin.site.register(Media, MediaAdmin)
-
 
 class Video(models.Model):
     """ Video media object

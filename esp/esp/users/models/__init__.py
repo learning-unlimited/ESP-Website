@@ -1050,9 +1050,9 @@ class ZipCode(models.Model):
     def close_zipcodes(self, distance):
         """ Get a list of zip codes less than or equal to
             distance from this zip code. """
-
+        from decimal import Decimal
         try:
-            distance = float(distance)
+            distance = Decimal(str(distance))
         except:
             raise ESPError(), '%s should be a valid number!' % distance
 

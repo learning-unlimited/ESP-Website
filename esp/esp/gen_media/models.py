@@ -32,6 +32,8 @@ from django.db   import models
 from django.core.files.base import ContentFile
 from django.conf import settings
 from django.core.files.storage import default_storage
+from django.core.files.storage import FileSystemStorage
+
 from esp.users.models import User
 from esp.middleware   import ESPError
 from django.core.files import File
@@ -41,8 +43,8 @@ import cStringIO as StringIO
 import md5
 from PIL import Image, ImageFont, ImageDraw, ImageFilter
 
-TEXIMAGE_BASE = settings.MEDIA_ROOT+'latex'
-TEXIMAGE_URL  = '/media/uploaded/latex'
+TEXIMAGE_BASE = settings.MEDIA_ROOT + 'latex/'
+TEXIMAGE_URL  = settings.MEDIA_URL + 'latex/'
 IMAGE_TYPE    = 'png'
 LATEX_DPI     = 150
 LATEX_BG      = 'Transparent' #'white'
@@ -79,8 +81,8 @@ class LatexImage(models.Model):
         if not self.image:
             file_base = get_rand_file_base()
             self.filetype = IMAGE_TYPE
-            self.image = TEXIMAGE_BASE + '/' + file_base + '.' + self.filetype
         else:
+            #   Get the filename without its extension
             file_base = os.path.basename(self.image.path)
 
         if self.style == 'INLINE':
@@ -95,10 +97,9 @@ class LatexImage(models.Model):
               r""" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}""" % \
               (style, self.content, style)
 
-        #   Now a relative path to the area Django will let you access.
-        fullpath = TMP + '/' + file_base
-
-        tex_file = open(fullpath + '.tex', 'w')
+        tmppath = TMP + '/' + file_base
+    
+        tex_file = open(tmppath + '.tex', 'w')
         tex_file.write(tex)
         tex_file.close()
 
@@ -108,15 +109,24 @@ class LatexImage(models.Model):
             cur_dpi = self.dpi
 
         os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
-                  (TMP, commands['latex'], fullpath))
+                  (TMP, commands['latex'], tmppath))
 
         os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi > /dev/null' % \
-                  (commands['dvipng'], LATEX_BG, cur_dpi, fullpath, fullpath))
+                  (commands['dvipng'], LATEX_BG, cur_dpi, TEXIMAGE_BASE + file_base, tmppath))
 
         if self.filetype.lower() != 'png':
             os.system( '%s %s.png %s.%s %> /dev/null' % \
-                       (commands['convert'], fullpath, fullpath, self.filetype))
-
+                       (commands['convert'], TEXIMAGE_BASE + file_base, TEXIMAGE_BASE + file_base, self.filetype))
+        
+        #   Read the image file data
+        img_file = open(TEXIMAGE_BASE + file_base + '.' + self.filetype)
+        
+        #   Save it to a Django file
+        fs = FileSystemStorage(location=TEXIMAGE_BASE, base_url=TEXIMAGE_URL)
+        self.image = fs.save('latex/' + file_base + '.' + self.filetype, File(img_file))
+    
+        img_file.close()
+        
         self.save(super=True)
         
         return True

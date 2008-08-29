@@ -59,6 +59,7 @@ class ClassManageForm(ManagementForm):
         cls.grade_max = self.cleaned_data['max_grade']
         cls.directors_notes = self.cleaned_data['notes']
         cls.checklist_progress.clear()
+
         if cls.duration:
             from decimal import Decimal
             cls.duration = Decimal(str(cls.duration))

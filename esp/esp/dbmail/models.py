@@ -43,7 +43,7 @@ from django.template import Template, VariableNode, TextNode
 
 def send_mail(subject, message, from_email, recipient_list,
               fail_silently=False, *args, **kwargs):
-    if type(recipient_list) == str:
+    if type(recipient_list) == str or type(recipient_list) == unicode:
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
@@ -257,7 +257,7 @@ class MessageVars(models.Model):
     def getDict(self, user):
         import pickle
         #try:
-        provider = pickle.loads(self.pickled_provider)
+        provider = pickle.loads(str(self.pickled_provider))
         #except:
         #    raise ESPError(), 'Coule not load variable provider object!'
 
@@ -271,7 +271,7 @@ class MessageVars(models.Model):
         import pickle
 
         try:
-            provider = pickle.loads(self.pickled_provider)
+            provider = pickle.loads(str(self.pickled_provider))
         except:
             raise ESPError(), 'Could not load variable provider object!'
 
@@ -283,13 +283,14 @@ class MessageVars(models.Model):
     @staticmethod
     def getContext(msgrequest, user):
         """ Get a context-like dictionary for template rendering. """
+        from django.template import Context
 
         context = {}
         msgvars = msgrequest.messagevars_set.all()
         
         for msgvar in msgvars:
             context.update(msgvar.getDict(user))
-        return context
+        return Context(context)
 
     @staticmethod
     def createMessageVars(msgrequest, var_dict):

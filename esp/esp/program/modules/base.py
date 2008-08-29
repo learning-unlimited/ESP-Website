@@ -190,6 +190,7 @@ class ProgramModuleObj(models.Model):
             moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog)
             moduleobj = module.getPythonClass()()
             if len(moduleobjs) == 0:
+                moduleobj = ProgramModuleObj()
                 moduleobj.module = module
                 moduleobj.program = prog
                 moduleobj.seq = module.seq
