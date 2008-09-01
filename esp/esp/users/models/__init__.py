@@ -390,88 +390,92 @@ class ESPUser(User, AnonymousUser):
         cache = UserBit.objects.cache(self)
         cache[self.enrollment_cache_key(program)] = None
 
-    def getAppliedClasses(self, program=None, request=None):
+    def getClasses(self, program=None, verbs=None):
         from esp.program.models import ClassSubject
-        #   For now, just checks the subjects you've preregistered for.  But it should be changed
-        #   to check for subjects you've applied to, as in the following line:
-        #   return UserBit.find_by_anchor_perms(ClassSubject, self, DataTree.get_by_uri('V/Flags/Registration/Applied', create=True))
-        return self.getEnrolledClasses(program, request)
+        csl = self.getSections(program, verbs)
+        pc_ids = [c.parent_class.id for c in csl]
+        return ClassSubject.objects.filter(id__in=pc_ids)
+    
+    def getAppliedClasses(self, program=None):
+        return self.getClasses(program, verbs=['/Applied'])
        
     def getEnrolledClasses(self, program=None, request=None):
+        """ A new version of getEnrolledClasses that accepts arbitrary registration
+        verbs.  If it's too slow we can implement caching like in previous SVN
+        revisions. """
+        return self.getClasses(program, verbs=['/Enrolled'])
 
-        if not hasattr(program, 'id'):
-            program_id = program
+    def getSections(self, program=None, verbs=None):
+        """ Since enrollment is not the only way to tie a student to a ClassSection,
+        here's a slightly more general function for finding who belongs where. """
+        from esp.program.models import ClassSection
+        
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        if not program:
+            qsc_base = DataTree.get_by_uri('Q')
         else:
-            program_id = program.id
-
-        request_key = '%s%s' % (self.id, program_id)
-
-        if hasattr(request, '_enrolled_classes'):
-            if request_key in request._enrolled_classes:
-                return request._enrolled_classes[request_key]
+            qsc_base = program.anchor
+        
+        if not verbs:
+            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.rangestart, qsc__rangeend__lte=qsc_base.rangeend, verb__rangestart__gte=verb_base.rangestart, verb__rangeend__lte=verb_base.rangeend, user=self)
         else:
-            if isinstance(request, HttpRequest):
-                request._enrolled_classes = {}
+            verb_uris = ['V/Flags/Registration' + verb_str for verb_str in verbs]
+            verb_ids = [v['id'] for v in DataTree.objects.filter(uri__in=verb_uris).values('id')]
+            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.rangestart, qsc__rangeend__lte=qsc_base.rangeend, verb__id__in=verb_ids, user=self)
+            
+        ubl = ubl.filter(Q(enddate__gte=datetime.now()) | Q(enddate__isnull=True))
+        
+        cs_anchor_ids = [u['qsc'] for u in ubl.values('qsc')]
+        csl = ClassSection.objects.filter(anchor__id__in=cs_anchor_ids) 
 
-        from esp.program.models import ClassSubject, ClassSection
-
-        if hasattr(program,'id'):
-            program_id = program.id
-        else:
-            program_id = program
-
-        cache = UserBit.objects.cache(self)
-
-        retVal = cache[self.enrollment_cache_key(program)]
-
-        if retVal is not None:
-            if isinstance(request, HttpRequest):
-                request._enrolled_classes[request_key] = retVal
-            return retVal
-
-        #if not program:
-        Conf = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Confirmed'))
-        Prel = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Preliminary'))
-
-        sections = (Conf | Prel).distinct()
-        subject_ids = [s.parent_class.id for s in sections]
-        retVal = ClassSubject.objects.filter(id__in=subject_ids)
-        #else:
-        if program:
-            #retVal = Class.objects.filter_by_procedure('class__get_enrolled', self, program)
-            retVal = retVal.filter(parent_program=program)
-
-        list(retVal)
-
-        cache[self.enrollment_cache_key(program)] = retVal
-
-        if isinstance(request, HttpRequest):
-            request._enrolled_classes[request_key] = retVal
-
-        return retVal
+        return csl
 
     def getEnrolledSections(self, program=None):
-        from esp.program.models import ClassSection
-        Conf = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Confirmed'))
-        Prel = UserBit.find_by_anchor_perms(ClassSection, self, GetNode('V/Flags/Registration/Preliminary'))
-        sections = list((Conf | Prel).distinct())
-        if program is not None:
-            return [s for s in sections if s.parent_class.parent_program == program]
-        else:
-            return sections
+        return self.getSections(program, verbs=['/Enrolled'])
+
+    def getRegistrationPriority(self, timeslots):
+        """ Finds the highest available priority level for this user across the supplied timeslots. """
+        from esp.program.models import Program, RegistrationProfile
+        
+        if len(timeslots) < 1:
+            return 1
+        
+        prog = Program.objects.get(anchor=timeslots[0].anchor)
+        prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
+        
+        priority_dict = {}
+        for t in timeslots:
+            priority_dict[t.id] = []
+            
+        for sec in prereg_sections:
+            cv = sec.getRegVerbs(self)
+            smt = sec.meeting_times.all()
+            for t in smt:
+                if t.id in priority_dict:
+                    for v in cv:
+                        if v.parent.name == 'Priority':
+                            priority_dict[t.id].append(int(v.name))
+        #   Now priority_dict is a dictionary where the keys are timeslot IDs and the values
+        #   are lists of taken priority levels.  Merge those and find the lowest positive
+        #   integer not in that list.
+        all_priorities = []
+        for key in priority_dict:
+            all_priorities += priority_dict[key]
+            
+        priority = 1
+        while priority in all_priorities:
+            priority += 1
+
+        return priority
 
     def isEnrolledInClass(self, clsObj, request=None):
-
+        verb_str = 'V/Flags/Registration/Enrolled'
         if request:
-            verb_confirm = request.get_node('V/Flags/Registration/Confirmed')
-            verb_prelim  = request.get_node('V/Flags/Registration/Preliminary')
+            verb = request.get_node(verb_str)
         else:
-            verb_confirm = GetNode('V/Flags/Registration/Confirmed')
-            verb_prelim  = GetNode('V/Flags/Registration/Preliminary')
+            verb = GetNode(verb_str)
 
-
-        return UserBit.UserHasPerms(self, clsObj.anchor, verb_prelim) or \
-               UserBit.UserHasPerms(self, clsObj.anchor, verb_confirm)
+        return UserBit.UserHasPerms(self, clsObj.anchor, verb)
 
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
@@ -1054,7 +1058,7 @@ class ZipCode(models.Model):
         try:
             distance = Decimal(str(distance))
         except:
-            raise ESPError(), '%s should be a valid number!' % distance
+            raise ESPError(), '%s should be a valid decimal number!' % distance
 
         if distance < 0:
             distance *= -1

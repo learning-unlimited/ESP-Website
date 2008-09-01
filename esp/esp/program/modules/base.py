@@ -190,7 +190,9 @@ class ProgramModuleObj(models.Model):
             moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog)
             moduleobj = module.getPythonClass()()
             if len(moduleobjs) == 0:
+                #   Deal with the fact that our database is not set up with a table for every program module.
                 moduleobj = ProgramModuleObj()
+
                 moduleobj.module = module
                 moduleobj.program = prog
                 moduleobj.seq = module.seq

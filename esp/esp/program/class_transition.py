@@ -6,6 +6,9 @@ from esp.users.models import UserBit
 from esp.resources.models import ResourceAssignment
 
 def move_data(subject, section):
+    """ This function will only operate on classes created on a code base
+    before SVN revision 1475 (when ClassSections were introduced). """
+    
     prereg_verb = DataTree.get_by_uri('V/Flags/Registration/Preliminary')
     
     #   Move over userbits

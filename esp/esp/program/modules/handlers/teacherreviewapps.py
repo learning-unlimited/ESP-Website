@@ -127,7 +127,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
     @meets_deadline("/AppReview")
     @needs_teacher
     def review_student(self, request, tl, one, two, module, extra, prog):
-        reg_node = request.get_node('V/Flags/Registration/Preliminary')
+        reg_node = request.get_node('V/Flags/Registration/Applied')
 
         try:
             cls = ClassSubject.objects.get(id = extra)

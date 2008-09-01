@@ -573,14 +573,15 @@ class ClassSection(models.Model):
                 if self.meeting_times.filter(id = time.id).count() > 0:
                     return True
 
-    def students(self, use_cache=True):
+    def students(self, use_cache=True, verbs = ['/Enrolled']):
         retVal = self.cache['students']
         if retVal is not None and use_cache:
             return retVal
 
-        v = GetNode( 'V/Flags/Registration/Preliminary' )
-
-        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
+        retVal = User.objects.none()
+        for verb_str in verbs:
+            v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
+            retVal = retVal | UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
         
         list(retVal)
 
@@ -588,8 +589,8 @@ class ClassSection(models.Model):
         return retVal
     
     def clearStudents(self):
-        """ Remove all of the students that pre-registered for the section. """
-        reg_verb = DataTree.get_by_uri('V/Flags/Registration/Preliminary')
+        """ Remove all of the students that enrolled in the section. """
+        reg_verb = DataTree.get_by_uri('V/Flags/Registration/Enrolled')
         for u in self.anchor.userbit_qsc.filter(verb=reg_verb):
             u.expire()
     
@@ -621,7 +622,7 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def num_students(self, use_cache=True):
+    def num_students(self, use_cache=True, verbs=['/Enrolled']):
         retVal = self.cache['num_students']
         if retVal is not None and use_cache:
             return retVal
@@ -633,9 +634,11 @@ class ClassSection(models.Model):
                 self.cache['num_students'] = retVal
                 return retVal
 
-        v = GetNode( 'V/Flags/Registration/Preliminary' )
-
-        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True).count()
+        qs = User.objects.none()
+        for verb_str in verbs:
+            v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
+            qs = qs | UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
+        retVal = qs.count()
 
         self.cache['num_students'] = retVal
         return retVal            
@@ -732,11 +735,18 @@ class ClassSection(models.Model):
         super(ClassSection, self).save()
         self.update_cache()
 
+    def getRegBits(self, user):
+        return UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+    
+    def getRegVerbs(self, user):
+        """ Get the list of verbs that a student has within this class's anchor. """
+        return [u.verb for u in self.getRegBits(user)]
+
     def unpreregister_student(self, user):
 
-        prereg_verbs = [ GetNode('V/Flags/Registration/Preliminary'), GetNode('V/Flags/Registration/Preliminary/Automatic') ]
+        prereg_verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
-        for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__in=prereg_verbs):
+        for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__rangestart__gte=prereg_verb_base.rangestart, verb__rangeend__lte=prereg_verb_base.rangeend):
             if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
                 ub.expire()
         
@@ -747,10 +757,17 @@ class ClassSection(models.Model):
         self.cache['students'] = students
         self.update_cache_students()
 
-    def preregister_student(self, user, overridefull=False, automatic=False):
-
-        prereg_verb = GetNode( 'V/Flags/Registration/Preliminary' )
-        auto_verb = GetNode( 'V/Flags/Registration/Preliminary/Automatic' )
+    def preregister_student(self, user, overridefull=False, automatic=False, priority=1):
+        
+        scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+    
+        prereg_verb_base = scrmi.signup_verb
+        if scrmi.use_priority:
+            prereg_verb = DataTree.get_by_uri(prereg_verb_base.uri + '/%d' % priority, create=True)
+        else:
+            prereg_verb = prereg_verb_base
+            
+        auto_verb = DataTree.get_by_uri(prereg_verb.uri + '/Automatic', create=True)
         
         if overridefull or not self.isFull():
             #    Then, create the userbit denoting preregistration for this class.
@@ -764,11 +781,12 @@ class ClassSection(models.Model):
                                                   verb = auto_verb, startdate = datetime.datetime.now(), recursive = False)
             
             # update the students cache
-            students = list(self.students())
-            students.append(ESPUser(user))
-            self.cache['students'] = students
-            
-            self.update_cache_students()
+            if prereg_verb_base.name == 'Enrolled':
+                students = list(self.students())
+                students.append(ESPUser(user))
+                self.cache['students'] = students
+                self.update_cache_students()
+                
             return True
         else:
             #    Pre-registration failed because the class is full.
@@ -912,20 +930,16 @@ class ClassSubject(models.Model):
             collapsed_times += s.friendly_times()
         return collapsed_times
         
-    def students(self, use_cache=True):
+    def students(self, use_cache=True, verbs=['/Enrolled']):
         result = []
         for sec in self.sections.all():
-            result += sec.students(use_cache=use_cache)
+            result += sec.students(use_cache=use_cache, verbs=verbs)
         return result
         
-    def students_old(self):
-        v = DataTree.get_by_uri('V/Flags/Registration/Preliminary')
-        return list(UserBit.objects.bits_get_users(self.anchor, v, user_objs=True))
-        
-    def num_students(self):
+    def num_students(self, use_cache=True, verbs=['/Enrolled']):
         result = 0
         for sec in self.sections.all():
-            result += sec.num_students()
+            result += sec.num_students(use_cache, verbs)
         return result
         
     def emailcode(self):
@@ -1039,12 +1053,8 @@ class ClassSubject(models.Model):
 
         if request:
             verb_override = request.get_node('V/Flags/Registration/GradeOverride')
-            verb_conf = request.get_node('V/Flags/Registration/Confirmed')
-            verb_prelim = request.get_node('V/Flags/Registration/Preliminary')
         else:
             verb_override = GetNode('V/Flags/Registration/GradeOverride')
-            verb_conf = GetNode('V/Flags/Registration/Confirmed')
-            verb_prelim = GetNode('V/Flags/Registration/Preliminary')            
 
         if user.getGrade() < self.grade_min or \
                user.getGrade() > self.grade_max:
@@ -1224,6 +1234,13 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             tmpnode = tmpnode.parent
         return "/".join(urllist)
 
+    def getRegBits(self, user):
+        return UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+    
+    def getRegVerbs(self, user):
+        """ Get the list of verbs that a student has within this class's anchor. """
+        return [u.verb for u in self.getRegBits(user)]
+
     def preregister_student(self, user, overridefull=False, automatic=False):
         """ Register the student for the least full section of the class
         that fits into their schedule. """
@@ -1249,16 +1266,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def unpreregister_student(self, user):
         """ Find the student's registration for the class and expire it. 
         Also update the cache on each of the sections.  """
-        
-        prereg_verbs = [ GetNode('V/Flags/Registration/Preliminary'), GetNode('V/Flags/Registration/Preliminary/Automatic') ]
-        section_anchors = [s['anchor'] for s in self.sections.all().values('anchor')]
-
-        for ub in UserBit.objects.filter(user=user, qsc__in=section_anchors, verb__in=prereg_verbs):
-            sections = self.sections.filter(anchor=ub.qsc)
-            for s in sections:
-                s.update_cache_students()
-            if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
-                ub.expire()
+        for s in self.sections.all():
+            s.unpreregister_student(user)
 
     def getArchiveClass(self):
         from esp.program.models import ArchiveClass

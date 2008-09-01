@@ -274,7 +274,7 @@ class UserBitManager(ProcedureManager):
         if res == None:
             retVal = Model.objects.none().distinct()
 
-        self.cache(user)[user_cache_key] = retVal
+        self.cache(user)[user_cache_key] = list(retVal)
 
 	# Operation Complete!
 	return retVal

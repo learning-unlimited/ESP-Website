@@ -52,13 +52,21 @@ class SATPrepAdminModuleInfo(models.Model):
         pass
 
 class StudentClassRegModuleInfo(models.Model):
+    """ Define what happens when students add classes to their schedule at registration. """
+    
     module               = models.ForeignKey(ProgramModuleObj)
     enforce_max          = models.BooleanField(default=True)
+    
+    signup_verb          = AjaxForeignKey(DataTree)
+    use_priority         = models.BooleanField(default=False)
+    priority_limit       = models.IntegerField(default=3)
+    
     def __str__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
     
-    class Admin:
-        pass
+class SCRMIAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(StudentClassRegModuleInfo, SCRMIAdmin)
 
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)

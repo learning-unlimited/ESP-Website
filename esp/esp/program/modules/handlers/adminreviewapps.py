@@ -147,7 +147,7 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def view_app(self, request, tl, one, two, module, extra, prog):
-        reg_node = request.get_node('V/Flags/Registration/Preliminary')
+        reg_node = request.get_node('V/Flags/Registration/Applied')
         try:
             cls = ClassSubject.objects.get(id = extra)
             section = cls.default_section()

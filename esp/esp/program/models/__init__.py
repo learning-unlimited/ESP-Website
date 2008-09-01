@@ -762,6 +762,19 @@ class Program(models.Model):
                 module.setUser(user)
         return modules
     
+    def getModuleExtension(self, ext_name_or_cls):
+        """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
+        This avoids actually looking up the program module first. """
+        
+        ext_cls = None
+        if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
+            mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
+            ext_cls = getattr(mod, ext_name_or_cls)
+        else:
+            ext_cls = ext_name_or_cls
+            
+        return ext_cls.objects.filter(module__program__id=self.id)[0]
+    
     def getColor(self):
         cache_key = 'PROGRAM__COLOR_%s' % self.id
         retVal = cache.get(cache_key)
@@ -995,12 +1008,10 @@ class RegistrationProfile(models.Model):
     
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self):
-        v = GetNode( 'V/Flags/Registration/Preliminary' )
-        return UserBit.find_by_anchor_perms(ClassSection, self.user, v, self.program.anchor.tree_decode(['Classes']))
+        return ESPUser(self.user).getSections(program=self.program)
     
     def registered_classes(self):
-        v = GetNode( 'V/Flags/Registration/Confirmed' )
-        return UserBit.find_by_anchor_perms(ClassSection, self.user, v, self.program.anchor.tree_decode(['Classes']))
+        return ESPUser(self.user).getEnrolledSections(program=self.program)
 
 admin.site.register(RegistrationProfile)
     
