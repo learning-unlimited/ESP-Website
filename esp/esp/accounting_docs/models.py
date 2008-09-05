@@ -120,7 +120,7 @@ class Document(models.Model):
     @staticmethod
     def get_DOCTYPE(user, anchor, li_types=[], dont_duplicate=False, finaid=None, get_complete=False, doctype=None):
         """ Create an "empty shopping cart" for a particular user in a particular
-        anchor (i.e. program). """
+        anchor (i.e. program). Or find the cart when they already have one. """
         
         if finaid is None:
             finaid = ESPUser(user).hasFinancialAid(anchor)

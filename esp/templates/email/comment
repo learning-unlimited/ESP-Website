@@ -1,12 +1,12 @@
 Someone filled a form out on the web site:
 
-Name: {{ form.clean_data.name }}
-I am a: {{ form.clean_data.person_type }}
-How did you hear about us?: {{ form.clean_data.hear_about }}
-Topic of interest: {{ form.clean_data.topic }}
+Name: {{ form.cleaned_data.name }}
+I am a: {{ form.cleaned_data.person_type }}
+How did you hear about us?: {{ form.cleaned_data.hear_about }}
+Topic of interest: {{ form.cleaned_data.topic }}
 
-Subject: {{ form.clean_data.subject }}
+Subject: {{ form.cleaned_data.subject }}
 
 Message:
 
-{{ form.clean_data.message }}
+{{ form.cleaned_data.message }}

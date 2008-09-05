@@ -194,16 +194,16 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         cannotadd_error = ''
 
         for implication in ClassImplication.objects.filter(cls=cobj, parent__isnull=True):
-#            break;
             if implication.fails_implication(self.user):
                 for cls in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     #   Override size limits on subprogram classes (checkFull=False). -Michael P
-                    if cls.cannotAdd(self.user, checkFull=False, use_cache=False):
+                    sec = cls.default_section()
+                    if sec.cannotAdd(self.user, checkFull=False, use_cache=False):
                         blocked_class = cls
-                        cannotadd_error = cls.cannotAdd(self.user, checkFull=False, use_cache=False)
+                        cannotadd_error = sec.cannotAdd(self.user, checkFull=False, use_cache=False)
                     else:
-                        if cls.preregister_student(self.user, overridefull=True, automatic=True, priority=priority):
-                            auto_classes.append(cls)
+                        if sec.preregister_student(self.user, overridefull=True, automatic=True, priority=priority):
+                            auto_classes.append(sec)
                             if implication.operation != 'AND':
                                 break
                         else:
@@ -211,8 +211,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     if (blocked_class is not None) and implication.operation == 'AND':
                         break
                 if implication.fails_implication(self.user):
-                    for cls in auto_classes:
-                        cls.unpreregister_student(self.user)
+                    for sec in auto_classes:
+                        sec.unpreregister_student(self.user)
                     if blocked_class is not None:
                         raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
                     else:

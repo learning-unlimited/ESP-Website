@@ -234,7 +234,10 @@ class ESPUser(User, AnonymousUser):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         from esp.program.models import ClassSubject, Program # Need the Class object.
-        all_classes = UserBit.find_by_anchor_perms(ClassSubject, self.getOld(), GetNode('V/Flags/Registration/Teacher'))
+        
+        #   Why is it that we had a find_by_anchor_perms function again?
+        tr_node = DataTree.get_by_uri('V/Flags/Registration/Teacher')
+        all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id).distinct()
         if program is None: # If we have no program specified
             return all_classes
         else:
@@ -1164,7 +1167,7 @@ class ContactInfo(models.Model):
         newkey = self.__dict__
         for key, val in newkey.items():
             if val and key != 'id':
-                form_data[prepend+key] = str(val)
+                form_data[prepend+key] = val
         return form_data
 
     def save(self, *args, **kwargs):

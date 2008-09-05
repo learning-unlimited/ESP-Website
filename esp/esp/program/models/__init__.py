@@ -762,7 +762,7 @@ class Program(models.Model):
                 module.setUser(user)
         return modules
     
-    def getModuleExtension(self, ext_name_or_cls):
+    def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
         This avoids actually looking up the program module first. """
         
@@ -773,7 +773,15 @@ class Program(models.Model):
         else:
             ext_cls = ext_name_or_cls
             
-        return ext_cls.objects.filter(module__program__id=self.id)[0]
+        if module_id:
+            extension, unused = ext_cls.objects.get_or_create(module__id=module_id)
+        else:
+            try:
+                extension = ext_cls.objects.filter(module__program__id=self.id)[0]
+            except:
+                extension = None
+                
+        return extension
     
     def getColor(self):
         cache_key = 'PROGRAM__COLOR_%s' % self.id
@@ -1109,6 +1117,54 @@ class FinancialAidRequest(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_financialaidrequest'
+
+    def save(self):
+        """ If possible, find the student's invoice and update it to reflect the 
+        financial aid that has been granted. """
+        
+        #   By default, the amount received is 0.  If this is the case, don't do
+        #   any extra work.
+        models.Model.save(self)
+        if (not self.amount_received) or (self.amount_received <= 0):
+            return
+        
+        from esp.accounting_docs.models import Document
+        from esp.accounting_core.models import LineItemType
+        from decimal import Decimal
+        
+        #   Take the 'root' program for the tree anchors.
+        pp = self.program.getParentProgram()
+        if pp:
+            anchor = pp.anchor
+        else:
+            anchor = self.program.anchor
+
+        inv = Document.get_invoice(self.user, anchor)
+        txn = inv.txn
+        
+        funding_node = anchor['Accounts']
+        
+        #   Find the amount we're charging the student for the program and ensure
+        #   that we don't award more financial aid than charges.
+        charges = txn.lineitem_set.filter(anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, anchor__parent__name='LineItemTypes')
+        chg_amt = 0
+        for li in charges:
+            chg_amt += li.amount
+        if self.amount_received > (-chg_amt):
+            self.amount_received = -chg_amt
+        
+        #   Reverse all financial aid awards and add a new line item for this one.
+        finaids = txn.lineitem_set.filter(anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, anchor__parent__name='Accounts')
+        rev_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid Reversal',anchor=funding_node['FinancialAid'])
+        fwd_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid',anchor=funding_node['FinancialAid'])
+        for li in finaids:
+            if li.amount != 0:
+                txn.add_item(self.user, rev_li_type, amount=-(li.amount))
+        txn.add_item(self.user, fwd_li_type, amount=Decimal(str(self.amount_received)))
+        
+        assert False, '\n'.join([str(s) for s in txn.lineitem_set.all()])
+        
+        
 
     def __str__(self):
         """ Represent this as a string. """

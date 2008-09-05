@@ -186,7 +186,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
 	    context = {}
             modules = prog.getModules(self.user, 'learn')
-
 	    context['completedAll'] = True
             for module in modules:
                 if not module.isCompleted() and module.required:

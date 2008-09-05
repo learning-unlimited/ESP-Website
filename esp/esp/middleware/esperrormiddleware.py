@@ -60,6 +60,10 @@ class ESPErrorMiddleware(object):
     False in the settings.py. Otherwise, it doesn't do any of that.
     """
 
+    #   I've encountered a problem here where crazy Unicode characters
+    #   in the user name, e-mail, first and last names raise a
+    #   UnicodeEncodeError in Python's cookie code.  Does anyone else
+    #   have this problem?              -Michael
     def process_response(self, request, response):
         user = getattr(request, '_cached_user', -1)
         if user == -1:

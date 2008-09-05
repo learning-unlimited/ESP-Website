@@ -60,7 +60,7 @@ class ProgramModuleObj(models.Model):
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
     required = models.BooleanField()
-
+        
     def program_anchor_cached(self, parent=False):
         """ We reference "self.program.anchor" quite often.  Getting it requires two DB lookups.  So, cache it. """
         CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__%d,%d" % ((parent and 1 or 0), self.id)
@@ -120,16 +120,6 @@ class ProgramModuleObj(models.Model):
             return Q(id = -1)
         else:
             return Q(id__in = ids)
-
-
-    # But it does know now...
-    #def save(self):
-    #    """ I'm doing this because DJango doesn't know what object inheritance is..."""
-    #    if type(self) == ProgramModuleObj:
-    #        return super(ProgramModuleObj, self).save()
-    #    baseObj = ProgramModuleObj()
-    #    baseObj.__dict__ = self.__dict__
-    #    return baseObj.save()
 
     @staticmethod
     def renderMyESP():
@@ -280,17 +270,18 @@ class ProgramModuleObj(models.Model):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
 
     def fixExtensions(self):
+        """ Find module extensions that this program module inherits from, and 
+        incorporate those into its attributes. """
         
-        for x in self.extensions():
-            k, obj = x
-            newobj = obj.objects.filter(module = self)
-            if len(newobj) == 0 or len(newobj) > 1:
-                self.__dict__[k] = obj()
-                self.__dict__[k].module = self
-                self.__dict__[k].save()
-            else:
-                self.__dict__[k] = newobj[0]
-
+        old_id = self.id
+        old_module = self.module
+        if self.program:
+            for x in self._meta.parents:
+                if x != ProgramModuleObj:
+                    new_dict = self.program.getModuleExtension(x, module_id=old_id).__dict__
+                    self.__dict__.update(new_dict)
+            self.id = old_id
+            self.module = old_module
 
     def deadline_met(self, extension=''):
     

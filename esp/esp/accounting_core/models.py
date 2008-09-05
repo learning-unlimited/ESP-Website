@@ -36,6 +36,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
 
 from datetime import datetime
+from decimal import Decimal
 
 class AccountingException(Exception):
     pass
@@ -55,9 +56,9 @@ class LineItemTypeManager(ProcedureManager):
 class LineItemType(models.Model):
     """ A set of default values for a line item """
     text = models.TextField() # description of line item
-    amount = models.DecimalField(help_text='This should be negative for student costs charged to a program.', max_digits=9, decimal_places=2, default=0.0) # default amount
+    amount = models.DecimalField(help_text='This should be negative for student costs charged to a program.', max_digits=9, decimal_places=2, default=Decimal('0.0')) # default amount
     anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitemtype',null=True) # account to post the line item
-    finaid_amount = models.DecimalField(max_digits=9, decimal_places=2, default=0.0) # amount after financial aid
+    finaid_amount = models.DecimalField(max_digits=9, decimal_places=2, default=Decimal('0.0')) # amount after financial aid
     finaid_anchor = AjaxForeignKey(DataTree,null=True,related_name='accounting_finaiditemtype')
     
     def negative_amount(self):
@@ -224,7 +225,7 @@ class Transaction(models.Model):
         if self.complete: raise CompletedTransactionException
 
         balance = self.get_balance()
-        li_type, unused = LineItemType.objects.get_or_create(text='Balance Posting', defaults={'amount': 0.0, 'anchor': GetNode("Q"), 'finaid_amount': 0.0, 'finaid_anchor': GetNode("Q") })
+        li_type, unused = LineItemType.objects.get_or_create(text='Balance Posting', defaults={'amount': Decimal('0.0'), 'anchor': GetNode("Q"), 'finaid_amount': Decimal('0.0'), 'finaid_anchor': GetNode("Q") })
 
         li = LineItem()
         li.transaction = self
@@ -264,5 +265,3 @@ class LineItem(models.Model):
     def __str__(self):
         return "L-%u (T-%u): %.02f %s - %s, %s" % (self.id, self.transaction.id, self.amount, self.anchor.uri, self.user.username, self.text)
 
-    class Admin:
-        pass
