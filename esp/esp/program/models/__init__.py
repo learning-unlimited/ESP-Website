@@ -774,7 +774,10 @@ class Program(models.Model):
             ext_cls = ext_name_or_cls
             
         if module_id:
-            extension, unused = ext_cls.objects.get_or_create(module__id=module_id)
+            try:
+                extension = ext_cls.objects.filter(module__id=module_id)[0]
+            except:
+                extension, unused = ext_cls.objects.get_or_create(module__id=module_id)
         else:
             try:
                 extension = ext_cls.objects.filter(module__program__id=self.id)[0]
@@ -782,7 +785,7 @@ class Program(models.Model):
                 extension = None
                 
         return extension
-    
+
     def getColor(self):
         cache_key = 'PROGRAM__COLOR_%s' % self.id
         retVal = cache.get(cache_key)
