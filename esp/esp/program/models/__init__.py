@@ -1165,8 +1165,6 @@ class FinancialAidRequest(models.Model):
                 txn.add_item(self.user, rev_li_type, amount=-(li.amount))
         txn.add_item(self.user, fwd_li_type, amount=Decimal(str(self.amount_received)))
         
-        assert False, '\n'.join([str(s) for s in txn.lineitem_set.all()])
-        
         
 
     def __str__(self):
