@@ -154,7 +154,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             receipt_text = DBReceipt.objects.get(program=self.program).receipt
             context["request"] = request
             context["program"] = prog
-            return HttpResponse( markdown( Template(receipt_text).render( Context(context) ) ) )
+            return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
         except DBReceipt.DoesNotExist:
             receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
             return render_to_response(receipt, request, (prog, tl), context)

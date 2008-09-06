@@ -59,7 +59,7 @@ except ImportError:
 def user_get_key(user):
     """ Returns the key of the user, regardless of anything about the user object. """
     if user is None or type(user) == AnonymousUser or \
-         (type(user) != User and type(user) != ESPUser) or \
+        (type(user) != User and type(user) != ESPUser) or \
          user.id is None:
         return 'None'
     else:
@@ -237,7 +237,7 @@ class ESPUser(User, AnonymousUser):
         
         #   Why is it that we had a find_by_anchor_perms function again?
         tr_node = DataTree.get_by_uri('V/Flags/Registration/Teacher')
-        all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id).distinct()
+        all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
         if program is None: # If we have no program specified
             return all_classes
         else:
@@ -1105,7 +1105,7 @@ class ZipCodeSearches(models.Model):
 
 class ContactInfo(models.Model):
     """ ESP-specific contact information for (possibly) a specific user """
-    user = AjaxForeignKey(User, blank=True, null=True, edit_inline = models.STACKED)
+    user = AjaxForeignKey(User, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('E-mail address', blank=True, null=True)

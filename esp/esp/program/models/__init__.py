@@ -777,7 +777,9 @@ class Program(models.Model):
             try:
                 extension = ext_cls.objects.filter(module__id=module_id)[0]
             except:
-                extension, unused = ext_cls.objects.get_or_create(module__id=module_id)
+                extension = ext_cls()
+                extension.module_id = module_id
+                extension.save()
         else:
             try:
                 extension = ext_cls.objects.filter(module__program__id=self.id)[0]
@@ -1182,8 +1184,8 @@ class FinancialAidRequest(models.Model):
             explanation = explanation[:40] + "..."
 
 
-        string = "%s for %s (%s, %s) %s"%\
-                 (ESPUser(self.user).name(), self.program.niceName(), self.household_income, explanation, reducedlunch)
+        string = "%s (%s@esp.mit.edu) for %s (%s, %s) %s"%\
+                 (ESPUser(self.user).name(), self.user.username, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
             string = "Finished: [" + string + "]"

@@ -35,6 +35,7 @@ from datetime import datetime
 from esp.lib.markdown import markdown
 from esp.db.fields import AjaxForeignKey
 
+from django.contrib import admin
 import django.core.mail
 
 from esp.datatree.models import DataTree, GetNode, StringToPerm, PermToString
@@ -333,13 +334,12 @@ class MessageVars(models.Model):
         else:
             return result
 
-    class Admin:
-        pass
-
     class Meta:
         verbose_name_plural = 'Message Variables'
 
-
+class MessageVarsAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(MessageVars, MessageVarsAdmin)
 
 
 class EmailRequest(models.Model):
@@ -380,9 +380,6 @@ class EmailList(models.Model):
 
     description = models.TextField(blank=True,null=True)
 
-    class Admin:
-        pass
-
     class Meta:
         ordering=('seq',)
 
@@ -399,7 +396,10 @@ class EmailList(models.Model):
 
     def __str__(self):
         return '%s (%s)' % (self.description, self.regex)
-    
+
+class EmailListAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(EmailList, EmailListAdmin)
     
 class PlainRedirect(models.Model):
     """
@@ -413,8 +413,9 @@ class PlainRedirect(models.Model):
     def __str__(self):
         return '%s --> %s'  % (self.original, self.destination)
 
-    class Admin:
-        pass
-
     class Meta:
         ordering=('original',)
+
+class PlainRedirectAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(PlainRedirect, PlainRedirectAdmin)

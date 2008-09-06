@@ -573,7 +573,7 @@ class ClassSection(models.Model):
                 if self.meeting_times.filter(id = time.id).count() > 0:
                     return True
 
-    def students(self, use_cache=True, verbs = ['/Enrolled']):
+    def students(self, use_cache=True, verbs = ['/Enrolled','/Preliminary','/Preregistered']):
         retVal = self.cache['students']
         if retVal is not None and use_cache:
             return retVal
@@ -581,8 +581,9 @@ class ClassSection(models.Model):
         retVal = User.objects.none()
         for verb_str in verbs:
             v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            retVal = retVal | UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
-        
+            new_qs = User.objects.filter(userbit__verb=v, userbit__qsc=self.anchor) 
+            retVal = retVal | new_qs
+            
         list(retVal)
 
         self.cache['students'] = retVal
@@ -622,7 +623,7 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def num_students(self, use_cache=True, verbs=['/Enrolled']):
+    def num_students(self, use_cache=True, verbs=['/Enrolled','/Preliminary','/Preregistered']):
         retVal = self.cache['num_students']
         if retVal is not None and use_cache:
             return retVal
@@ -634,10 +635,13 @@ class ClassSection(models.Model):
                 self.cache['num_students'] = retVal
                 return retVal
 
+
         qs = User.objects.none()
         for verb_str in verbs:
             v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            qs = qs | UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
+            new_qs = User.objects.filter(userbit__verb=v, userbit__qsc=self.anchor) 
+            qs = qs | new_qs
+        
         retVal = qs.count()
 
         self.cache['num_students'] = retVal
