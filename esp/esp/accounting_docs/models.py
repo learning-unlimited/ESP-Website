@@ -144,7 +144,7 @@ class Document(models.Model):
             doc = qs[0]
             for lit in li_types:
                 if not dont_duplicate or doc.txn.lineitem_set.filter(li_type=lit).count() == 0:
-                    doc.txn.add_item(user, lit, finaid)
+                    doc.txn.add_item(user, lit, finaid, anchor=anchor)
             return doc
         elif qs.count() < 1 and get_complete:
             raise MultipleDocumentError, 'Found no complete documents with the requested properties'
@@ -155,11 +155,11 @@ class Document(models.Model):
             for lit in li_types:
                 if not dont_duplicate or new_tx.lineitem_set.filter(li_type=lit).count() == 0:
                     if qs.count() == 0:
-                        new_tx.add_item(user, lit, finaid)
+                        new_tx.add_item(user, lit, finaid, anchor=anchor)
                     else:
                         #   If there's already an appropriate transaction but we're making a new one
                         if qs[0].txn.lineitem_set.filter(li_type=lit).count() == 0:
-                            new_tx.add_item(user, lit, finaid)
+                            new_tx.add_item(user, lit, finaid, anchor=anchor)
 
             new_doc = Document()
             new_doc.txn = new_tx
