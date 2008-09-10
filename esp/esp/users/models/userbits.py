@@ -463,7 +463,7 @@ class UserBit(models.Model):
                 return node.uri
             return '?'
 
-        user = self.user_id
+        user = self.user_username
         if self.user is None: user = 'Everyone'
 
         if self.recursive:
@@ -472,7 +472,7 @@ class UserBit(models.Model):
             recurse = " (non-recursive)"
         
         if self.startdate != None and self.enddate != None:
-            return 'GRANT %s ON %s TO %s <%s--%s>%s' % (self.verb_id, self.qsc_id,
+            return 'GRANT %s ON %s TO %s <%s--%s>%s' % (clean_node(self.verb), clean_node(self.qsc),
                                                         user, self.startdate, self.enddate, recurse)
         else:
             return 'GRANT %s ON %s TO %s%s' % (clean_node(self.verb), clean_node(self.qsc),
