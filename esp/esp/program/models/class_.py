@@ -50,6 +50,7 @@ from esp.datatree.models import DataTree, GetNode
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
+from esp.utils.property import PropertyDict
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
@@ -573,6 +574,19 @@ class ClassSection(models.Model):
                 if self.meeting_times.filter(id = time.id).count() > 0:
                     return True
 
+    def students_dict(self):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        result = {}
+        userbits = UserBit.objects.filter(qsc=self.anchor, verb__rangestart__gte=verb_base.rangestart, verb__rangeend__lte=verb_base.rangeend)
+        for u in userbits:
+            bit_str = u.verb.uri[uri_start:]
+            if bit_str not in result:
+                result[bit_str] = [ESPUser(u.user)]
+            else:
+                result[bit_str].append(ESPUser(u.user))
+        return PropertyDict(result)
+
     def students(self, use_cache=True, verbs = ['/Enrolled','/Preliminary','/Preregistered']):
         retVal = self.cache['students']
         if retVal is not None and use_cache:
@@ -933,6 +947,12 @@ class ClassSubject(models.Model):
         for s in self.sections.all():
             collapsed_times += s.friendly_times()
         return collapsed_times
+        
+    def students_dict(self):
+        result = PropertyDict({})
+        for sec in self.sections.all():
+            result.merge(sec.students_dict())
+        return result
         
     def students(self, use_cache=True, verbs=['/Enrolled']):
         result = []

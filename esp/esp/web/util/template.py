@@ -137,3 +137,4 @@ def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=999
         register.tag(func.__name__, compile_func)
         return func
     return dec
+
