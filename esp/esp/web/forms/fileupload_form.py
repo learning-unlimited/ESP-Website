@@ -34,12 +34,12 @@ from django.utils.translation import gettext_lazy as _
 
 class FileUploadForm(forms.Form):
     title = forms.CharField(widget = forms.TextInput({'size': 50}))
-    uploadedfile = forms.Field(widget = forms.FileInput, label = 'Upload File')
+    uploadedfile = forms.FileField(label = 'Upload File')
 
 class FileUploadForm_Admin(forms.Form):
     title = forms.CharField(widget = forms.TextInput({'size': 50}))
     target_obj = forms.ChoiceField()
-    uploadedfile = forms.Field(widget = forms.FileInput, label = 'Upload File')
+    uploadedfile = forms.FileField(label = 'Upload File')
 
     def set_choices(self, new_choices):
         self.fields['target_obj'] = forms.ChoiceField(choices = new_choices)

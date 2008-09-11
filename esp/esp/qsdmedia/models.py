@@ -30,9 +30,12 @@ Email: web@esp.mit.edu
 """
 from django.db import models
 from django.contrib import admin
+from django.core.files import File
+
 from esp.datatree.models import DataTree, GetNode
-from esp.settings import MEDIA_ROOT
+from esp.settings import MEDIA_ROOT, MEDIA_URL
 from esp.db.fields import AjaxForeignKey
+from time import strftime
 
 
 # Create your models here.
@@ -52,6 +55,22 @@ class Media(models.Model):
 
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]
+
+    def handle_file(self, file, filename, save=True):
+        new_target_filename = '%s%s/%s' % (MEDIA_ROOT, strftime(root_file_path), filename)
+        dest_file = open(str(new_target_filename), 'wb')
+        for chunk in file.chunks():
+            dest_file.write(chunk)
+        dest_file.close()
+        self.target_file = File(dest_file)
+        self.target_file._name = '%s%s/%s' % (MEDIA_URL, strftime(root_file_path), filename)
+        self.mime_type = file.content_type
+        self.size = file.size
+        extension_list = file.name.split('.')
+        extension_list.reverse()
+        self.file_extension = extension_list[0]
+        if save:
+            self.save()
 
     def __str__(self):
         return str(self.friendly_name)

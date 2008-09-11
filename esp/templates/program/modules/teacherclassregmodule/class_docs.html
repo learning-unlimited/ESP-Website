@@ -46,7 +46,7 @@ We would like you, as a teacher, to upload all documents and other materials rel
 	{% endif %}
 	{% for doc in cls.anchor.media_set.all %}
 	<tr>
-		<td class="clsmiddle"><a href="/media/{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
+		<td class="clsmiddle"><a href="{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
 			<form method="post" action="./{{ cls.id }}">
 				<input type="hidden" name="docid" value="{{ doc.id }}">

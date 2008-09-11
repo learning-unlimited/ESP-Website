@@ -232,7 +232,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm    
         from esp.qsdmedia.models import Media
-	    
+
         clsid = 0
         if request.POST.has_key('clsid'):
             clsid = request.POST['clsid']
@@ -242,10 +242,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
-	
+        
         target_class = classes[0]
         context_form = FileUploadForm()
-	
+    
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
                 docid = request.POST['docid']
@@ -253,29 +253,23 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 media.delete()
             	
             elif request.POST['command'] == 'add':
-                data = request.POST.copy()
-                data.update(request.FILES)
-                form = FileUploadForm(data)
-		
-                
+                form = FileUploadForm(request.POST, request.FILES)
+
                 if form.is_valid():
                     media = Media(friendly_name = form.cleaned_data['title'], anchor = target_class.anchor)
-	            #	Append the class code on the filename
-	            new_target_filename = target_class.emailcode() + '_' + form.cleaned_data['uploadedfile']['filename']
-                    media.save_target_file_file(new_target_filename, form.cleaned_data['uploadedfile']['content'])
-                    media.mime_type = form.cleaned_data['uploadedfile']['content-type']
-	            media.size = len(form.cleaned_data['uploadedfile']['content'])
-	            extension_list = form.cleaned_data['uploadedfile']['filename'].split('.')
-	            extension_list.reverse()
-	            media.file_extension = extension_list[0]
-	            media.format = ''
-		    
+                    ufile = form.cleaned_data['uploadedfile']
+                    
+                    #	Append the class code on the filename
+                    desired_filename = '%s_%s' % (target_class.emailcode(), ufile.name)
+                    media.handle_file(ufile, desired_filename)
+                    
+                    media.format = ''
                     media.save()
-	        else:
-	            context_form = form
-	
+                else:
+                    context_form = form
+        
         context = {'cls': target_class, 'uploadform': context_form, 'module': self}
-	
+    
         return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
     @aux_call
