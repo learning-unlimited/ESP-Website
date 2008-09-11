@@ -89,7 +89,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                 'studentrep': User.objects.filter(Q_studentrep).distinct()}
 
     def studentDesc(self):
-        return {'confirmed': """Students who have clicked on the `Confirm Pre-Registraiton' button.""",
+        return {'confirmed': """Students who have clicked on the `Confirm Pre-Registration' button.""",
                 'attended' : """Students who attended %s""" % self.program.niceName(),
                 'studentrep': """All Student Representatives of ESP"""}
 
