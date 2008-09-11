@@ -463,8 +463,10 @@ class UserBit(models.Model):
                 return node.uri
             return '?'
 
-        user = self.user_username
-        if self.user is None: user = 'Everyone'
+        if self.user is None:
+            user = 'Everyone'
+        else:
+            user = self.user.username
 
         if self.recursive:
             recurse = ""
