@@ -33,6 +33,7 @@ import time
 
 # django Util
 from django.db import models
+from django.contrib import admin
 from django.core.cache import cache
 
 # ESP Util
@@ -578,7 +579,7 @@ class ClassSection(models.Model):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.uri)
         result = {}
-        userbits = UserBit.objects.filter(qsc=self.anchor, verb__rangestart__gte=verb_base.rangestart, verb__rangeend__lte=verb_base.rangeend)
+        userbits = UserBit.objects.filter(qsc=self.anchor, verb__rangestart__gte=verb_base.rangestart, verb__rangeend__lte=verb_base.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True))
         for u in userbits:
             bit_str = u.verb.uri[uri_start:]
             if bit_str not in result:
@@ -587,10 +588,24 @@ class ClassSection(models.Model):
                 result[bit_str].append(ESPUser(u.user))
         return PropertyDict(result)
 
-    def students(self, use_cache=True, verbs = ['/Enrolled','/Preliminary','/Preregistered']):
-        retVal = self.cache['students']
-        if retVal is not None and use_cache:
-            return retVal
+    def students_prereg(self, use_cache=True):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        all_registration_verbs = DataTree.objects.filter(rangestart__gt=verb_base.rangestart, rangeend__lt=verb_base.rangeend)
+        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        
+        return self.students(use_cache, verbs=verb_list)
+
+    def students(self, use_cache=True, verbs = ['/Enrolled']):
+        if len(verbs) == 1 and verbs[0] == '/Enrolled':
+            defaults = True
+        else:
+            defaults = False
+            
+        if defaults:
+            retVal = self.cache['students']
+            if retVal is not None and use_cache:
+                return retVal
 
         retVal = User.objects.none()
         for verb_str in verbs:
@@ -598,9 +613,11 @@ class ClassSection(models.Model):
             new_qs = User.objects.filter(userbit__verb=v, userbit__qsc=self.anchor) 
             retVal = retVal | new_qs
             
-        list(retVal)
+        retVal = [ESPUser(u) for u in retVal]
 
-        self.cache['students'] = retVal
+        if defaults:
+            self.cache['students'] = retVal
+            
         return retVal
     
     def clearStudents(self):
@@ -637,17 +654,32 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def num_students(self, use_cache=True, verbs=['/Enrolled','/Preliminary','/Preregistered']):
-        retVal = self.cache['num_students']
-        if retVal is not None and use_cache:
-            return retVal
+    def num_students_prereg(self, use_cache=True):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        all_registration_verbs = DataTree.objects.filter(rangestart__gt=verb_base.rangestart, rangeend__lt=verb_base.rangeend)
+        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        
+        return self.num_students(use_cache, verbs=verb_list)
 
-        if use_cache:
-            retValCache = self.cache['students']
-            if retValCache != None:
-                retVal = len(retValCache)
-                self.cache['num_students'] = retVal
+    def num_students(self, use_cache=True, verbs=['/Enrolled']):
+        #   Only cache the result for the default setting.
+        if len(verbs) == 1 and verbs[0] == '/Enrolled':
+            defaults = True
+        else:
+            defaults = False
+            
+        if defaults:
+            retVal = self.cache['num_students']
+            if retVal is not None and use_cache:
                 return retVal
+    
+            if use_cache:
+                retValCache = self.cache['students']
+                if retValCache != None:
+                    retVal = len(retValCache)
+                    self.cache['num_students'] = retVal
+                    return retVal
 
 
         qs = User.objects.none()
@@ -658,7 +690,9 @@ class ClassSection(models.Model):
         
         retVal = qs.count()
 
-        self.cache['num_students'] = retVal
+        if defaults:
+            self.cache['num_students'] = retVal
+            
         return retVal            
 
     def room_capacity(self):
@@ -754,7 +788,8 @@ class ClassSection(models.Model):
         self.update_cache()
 
     def getRegBits(self, user):
-        return UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        result = UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        return result
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """
@@ -826,8 +861,11 @@ class ClassSection(models.Model):
         db_table = 'program_classsection'
         app_label = 'program'
         
-    class Admin:
-        pass
+
+class SectionAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(ClassSection, SectionAdmin)
+
 
 class ClassSubject(models.Model):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
@@ -1395,9 +1433,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         db_table = 'program_class'
         app_label = 'program'
         
-    class Admin:
-        pass
-    
+class SubjectAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(ClassSubject, SubjectAdmin)
+
 
 class ClassImplication(models.Model):
     """ Indicates class prerequisites corequisites, and the like """

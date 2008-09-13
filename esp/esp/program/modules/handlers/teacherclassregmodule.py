@@ -178,7 +178,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if section.count() != 1:
             raise ESPError(False), 'Could not find that class section; please contact the webmasters.'
 
-        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'section': section[0], 'cls': section[0].parent_class})
+        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'section': section[0], 'cls': section[0]})
 
     @aux_call
     @needs_teacher
@@ -190,6 +190,78 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             raise ESPError(False), 'Could not find that class subject; please contact the webmasters.'
 
         return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'cls': cls[0]})
+        
+        
+    @aux_call
+    @needs_teacher
+    @meets_deadline("/Classes/View")
+    def select_students(self, request, tl, one, two, module, extra, prog):
+        from esp.users.models import UserBit
+        #   Get preregistered and enrolled students
+        try:
+            sec = ClassSection.objects.filter(id=extra)[0]
+        except:
+            raise ESPError(False), 'Class section not found.  If you came from a link on our site, please notify the webmasters.'
+        
+        students_list = sec.students_prereg()
+        
+        if request.method == 'POST':
+            #   Handle form submission
+            #   result_strs = []
+            data = request.POST.copy()
+            sections_dict = {}
+            for key in data:
+                key_dir = key.split('_')
+                if key_dir[0] == 'regstatus' and len(key_dir) == 3:
+                    student_id = int(key_dir[1])
+                    sec_id = int(key_dir[2])
+                    if sec_id not in sections_dict:
+                        sections_dict[sec_id] = [{'id':student_id, 'status': data[key]}]
+                    else:
+                        sections_dict[sec_id].append({'id':student_id, 'status': data[key]})
+            
+            for sec_id in sections_dict:
+                sec = ClassSection.objects.get(id=sec_id)
+                sec.cache['students'] = None
+                sec.cache['num_students'] = None
+                for item in sections_dict[sec_id]:
+                    student = ESPUser(User.objects.get(id=item['id']))
+                    ignore = False
+                    value = item['status']
+                    if value == 'enroll':
+                        verb_name = 'Enrolled'
+                    elif value == 'reject':
+                        verb_name = 'Rejected'
+                    else:
+                        ignore = True
+                        
+                    if not ignore:
+                        verb = DataTree.get_by_uri('V/Flags/Registration/' + verb_name, create=True)
+                        other_bits = sec.getRegBits(student).filter(verb__name__in=['Enrolled', 'Rejected'])
+                        for bit in other_bits:
+                            bit.expire()
+                            #   result_strs.append('Expired: %s' % bit)
+                        new_bit = UserBit(user=student, verb=verb, qsc=sec.anchor)
+                        new_bit.save()
+                        #   result_strs.append('Created: %s' % new_bit)
+                        
+        #   Jazz up this information a little
+
+        for student in students_list:
+            uri_base = 'V/Flags/Registration/'
+            uri_start = len(uri_base)
+            bits = sec.getRegBits(student)
+            student.bits = [bit.verb.uri[uri_start:] for bit in bits]
+            prereg_bits = bits.exclude(verb__name__in=['Enrolled', 'Rejected'])
+            if prereg_bits.count() != 0:
+                student.added_class = prereg_bits[0].startdate
+            if bits.filter(verb__name='Enrolled').count() > 0:
+                student.enrolled = True
+            elif bits.filter(verb__name='Rejected').count() > 0:
+                student.rejected = True
+
+        return render_to_response(self.baseDir()+'select_students.html', request, (prog, tl), {'prog': prog, 'sec': sec, 'students_list': students_list})
+
         
     @aux_call
     @needs_teacher

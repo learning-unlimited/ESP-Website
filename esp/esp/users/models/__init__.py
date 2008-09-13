@@ -159,7 +159,9 @@ class ESPUser(User, AnonymousUser):
         return self._reg_profile
 
     def getEditable(self, objType):
-        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
+        ubs = UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
+        id_list = [ub.id for ub in ubs]
+        return objType.objects.filter(id__in=id_list)
 
     def canEdit(self, object):
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())

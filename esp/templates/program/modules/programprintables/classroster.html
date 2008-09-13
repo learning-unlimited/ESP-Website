@@ -2,7 +2,7 @@
 <div style="page-break-after: always;">&nbsp;</div>
 <div class="classroster">
   <div class="classtitle">{{ sec }}</div>
-
+  {% autoescape off %}
   <table align="center" cellspacing="0" cellpadding="0">
   <tr>
    <td>
@@ -40,6 +40,7 @@ Students Email: <tt>{{ sec.emailcode }}-students@esp.mit.edu</tt>
     </tr>
     {% endfor %}
   </table>
+  {% endautoescape %}
 </div>
 
 <br />
