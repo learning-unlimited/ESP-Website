@@ -1,10 +1,6 @@
 <!-- Begin Educator Info Portion -->
 
 <tr>
- <th colspan="2">Educator Information</th>
-</tr>
-
-<tr>
  <td><label for="id_position">Position: <br /> <small>(e.g. teacher,principal)</small></label></td>
  <td>{{ form.position }} {% if form.position.errors %}
    <br /><span class="form_error">{{ form.position.errors|join:", " }}</span>
@@ -32,8 +28,8 @@
 
 <tr>
  <td><label for="id_college">School Name:</label></td>
- <td>{{ form.school }} {% if form.school.errors %}
-   <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
+ <td>{{ form.college }} {% if form.college.errors %}
+   <br /><span class="form_error">{{ form.college.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

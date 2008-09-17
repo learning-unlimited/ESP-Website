@@ -145,7 +145,7 @@ function testCreditCard() {
 
 <!-- Defaults -->
 <input type="hidden" name="BillingCountry" value="840" />
-<input type="hidden" name="ChargeAmount" value="{{ itemizedcosttotal|floatformat:2 }}" />
+<input type="hidden" name="ChargeAmount" value="{{ module.cost }}" />
 <input type="hidden" name="ReturnLink" value="http://{{request.META.SERVER_NAME}}/learn/{{program.getUrlBase}}/studentreg" />
 <input type="hidden" name="ReturnLinkLabel" value="Student Registration for {{program.niceName }}"  />
 
@@ -273,17 +273,8 @@ is sent over the internet using secure HTTPS.</strong>
 
 <tr>
 <td><b>TOTAL CHARGE</b></td>
-<td><tt style="border: 1px solid black; padding: 1px 20px 1px 1px; font-size: 140%" width="0px">${{ itemizedcosttotal|floatformat:2 }}</tt></td>
+<td><tt style="border: 1px solid black; padding: 1px 20px 1px 1px; font-size: 140%" width="0px">${{ module.cost }}</tt></td>
 </tr>
-
-</table>
-
-<h3>Itemized Price List</h3>
-<table>
-{% for payment in itemizedcosts %}
-<tr><td>{{ payment.type.label }}</td><td>{% if payment.transaction %}PAID{% else %}${% if financial_aid %}{{ payment.type.financial_aid_value|floatformat:2}}{% else %}{{ payment.type.value|floatformat:2 }}{% endif %}{% endif %}</td></tr>
-{% endfor %}
-<tr><td align="right"><b>Total:</b></td><td>${{ itemizedcosttotal|floatformat:2 }}</td></tr>
 
 </table>
 

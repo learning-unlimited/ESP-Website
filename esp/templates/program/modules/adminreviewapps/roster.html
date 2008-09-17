@@ -22,49 +22,29 @@ table.roster {
   border-collapse: collapse;
 }
 </style>
-    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
-{% block xtrajs %}
-    {{ block.super }}
-
-    <script type="text/javascript">
-    <!--
-    function popup(mylink, windowname)
-    {
-        if (! window.focus)return true;
-        var href;
-        if (typeof(mylink) == 'string')
-            href=mylink;
-        else
-            href=mylink.href;
-        window.open(href, windowname, 'width=650,height=500,scrollbars=yes');
-        return false;
-    }
-    //-->
-    </script>
-{% endblock %}
 
 {% block content %}
 
 <h1>Junction application reviews</h1>
 <br />
 <p>
-<a href="/manage/{{ program.getUrlBase }}/dashboard">Back to the program dashboard</a> <br />
+<a href="/teach/{{ program.getUrlBase }}/teacherreg">
+Back to teacher reg
+</a>
 </p>
-<br />
+<br /><br />
 <h2>Class roster for &quot;{{class}}&quot;</h2>
 <br />
-<div id="program_form">
 <table class="roster">
 <thead>
 <tr>
-    <th class="smaller">Name</th>
-    <th class="smaller">Grade</th>
-    <th class="smaller">Date of registration</th>
-    <th class="smaller">Existing reviews</th>
-    <th class="smaller">Status</th>
-    <th class="smaller">Review Options</th>
+  <th>Name</th>
+  <th>Grade</th>
+  <th>Time Signed up for your class</th>
+  <th>Review Date/Time</th>
+  <th>Review</th>
 </tr>
 </thead>
 <tbody>
@@ -77,33 +57,26 @@ table.roster {
    {{ student.getGrade }}
     </td>
     <td>
-    {{student.added_class|date:"M d, Y" }}
+    {{student.added_class|date:"M/d/Y @ h:i:s" }}
     </td>
     <td>
-    {% if student.app.reviews.all|length_is:0 %}
-        No reviews yet
-    {% else %}
-        {% for review in student.app.reviews.all %}
-        <i>{{ review.reviewer.first_name }} {{ review.reviewer.last_name }}</i>: {% if review.score %}{{ review.score }} / 10{% else %}No score{% endif %} ({{ review.date|date:"m/d/Y" }}) {% if not forloop.last %}<br />{% endif %}
-        {% endfor %}
-    {% endif %}
-    </td>
-    <td width="80">
-        {{ student.status }}
-    </td>
-    <td width="200">
-    <a target="new" href="/manage/{{ program.getUrlBase }}/view_app/{{ class.id }}?student={{ student.id }}" onClick="return popup(this, 'notes')">View App</a>&nbsp;&nbsp;&nbsp;&nbsp;
-    <a class="button" href="/manage/{{ program.getUrlBase }}/accept_student/{{ class.id }}?student={{ student.id }}&cls={{ class.id }}">Accept</a> &nbsp;
-    <a class="button" href="/manage/{{ program.getUrlBase }}/reject_student/{{ class.id }}?student={{ student.id }}&cls={{ class.id }}">Reject</a> 
+  {% if student.app_reviewed %}
+    {{ student.app_reviewed.create_ts|date:"M/d/Y @ h:i:s" }}
+    (Score:{{student.app_reviewed.score}})
+  {% else %}
+    <strong>Not Reviewed</strong>
+  {% endif %}
+    <td>
+
+    <a href="/manage/{{program.getUrlBase}}/accept_student/{{class.id}}/?student={{ student.id }}&cls={{ class.id }}">Accept Student</a>
+
     </td>
   </tr>
+
+
 {% endfor %}
 </tbody>
 </table>
 
-</div>
-
-<br />
-{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}

@@ -1,18 +1,19 @@
 {% extends "outlines/letter_base.tex" %}
 
+
 {% block maincontent %}
 {{ block.super }}
 
-{\huge Refund Request for {\bf {{ program.niceName|texescape }} }} \\
+{\huge Refund Receipt for {\bf {{ program.niceName|texescape }} }} \\
 
 {\large Please sign below and send this via mail or fax to:} \\
 
 \begin{boxedminipage}{2.75in}
 \begin{center}
 \texttt{Student Activities Finance Office \\
-ATTN: Catherine Hursh \\
-84 Massachusetts Ave \\
-Room W20-549 \\
+ATTN: Laurie Ward \\
+77 Massachusetts Ave \\
+W20-549 \\
 Cambridge, MA 02139 \\
 FAX: 617-253-8391 }
 \end{center}
@@ -32,25 +33,23 @@ Student Address: &\texttt{ {{user.getLastProfile.contact_user.address_street|tex
 Transaction Type: &\texttt{ {{transaction.payment_type|texescape }} } \\
 Transaction Amount: &\texttt{ \${{ amount }} } \\
 Transaction ID: &\texttt{ {{ transaction.id|texescape }} } \\
-Transaction Date: &\texttt{ {{ transaction.update_ts|date:"F d, Y" }} }\\
+Transaction Date: &\texttt{ {{ transaction.update_ts|date:"F nS, Y" }} }\\
 Payer's Name: &\texttt{ {{ payer_name|texescape }} } \\
 Payer's Address: &{\large \texttt{ {\bf {{ payer_address|texescape }}}} } \\
-OMARS Transaction Number: &\texttt{ {{ omars_number|texescape }} } \\
-\vspace{.1in} \\
-Credit Card Number: &\rule{2in}{0.25pt} \hspace{.5in} Expiration date: \rule{.8in}{0.25pt}\\
+Credit Card #: & \texttt{ \rule{3.5in}} \\
 \end{tabular}
-\vspace{.4in}
+\vspace{.5in}
 \\
 
 By printing and/or sending this document, MIT Educational Studies Program
 voids the transaction above. \\
 \\
-By signing below, I, \underline{ {{ payer_name|texescape }} }, assert that I have paid ESP \${{ amount }} on {{ transaction.update_ts|date:"F d, Y" }} and that the credit card I used is under the address (bolded) above.
+By signing below, I, \underline{ {{ payer_name|texescape }} }, assert that I have paid ESP \${{ amount }} on {{ transaction.update_ts|date:"F nS, Y" }} and that the credit card I used is under the address (bolded) above.
 
-\vspace{.6in}
+\vspace{1in}
 \rule{4.5in}{0.25pt} \\
 {{ payer_name|texescape }}\\
-\vspace{1.5in}\\
+\vspace{1.75in}\\
 {\small If there are any questions, please contact \texttt{esp-treasurer@mit.edu}.}
 
 {% endblock %}

@@ -15,7 +15,11 @@
 \begin{document}
 
 \begin{center}
-  \includegraphics{% templatetag openbrace %}{{ MEDIA_ROOT }}latex_media/letterhead.eps}
+ {% ifequal file_type "pdf" %}
+  \includegraphics{% templatetag openbrace %}{{ MEDIA_ROOT }}latex_media/letterhead.pdf}
+ {% else %}
+  \includegraphics{% templatetag openbrace %}{{ MEDIA_ROOT}}latex_media/letterhead.eps}
+ {% endifequal %}
 \end{center}
 
 \vspace{.1in}
@@ -28,9 +32,7 @@
 
 {% endblock %}
 
+
 \end{minipage}
 \end{center}
-{% block additionalcontent %}
-
-{% endblock %}
 \end{document}

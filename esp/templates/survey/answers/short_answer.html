@@ -1,9 +1,0 @@
-<!-- Responses for Question Type: Short Text -->
-{% templatetag openblock %} load survey {% templatetag closeblock %}
-{% load survey %}
-<table width="600">
-<tr>
-    <td width="35%" valign="top"><b>{{ name }}</b></td>
-    <td><ul>{% templatetag openvariable %} lst|list_answers {% templatetag closevariable %}</ul></td>
-</tr>
-</table>

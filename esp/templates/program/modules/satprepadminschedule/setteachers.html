@@ -1,4 +1,3 @@
-
 {% extends "outlines/series-3.html" %}
 
 {% block title %}{{program.niceName}} Schedule{% endblock %}
@@ -6,27 +5,36 @@
 {% block subsection_name %}Scheduling Options{% endblock %}
 
 {% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{{block.super}}
+<style type="text/css">
+#divmaintext table, #divmaintext th, #divmaintext td { border: 1px solid black; border-collapse: collapse; }
+</style>
+
 {% endblock %}
 
 {% block content %}
+<br />
+<br />
 
+<br /><br />
 <h1>
-    Scheduling {{ program.niceName }}
+Scheduling {{program.niceName}}
 </h1>
 
 <br />
-<h2>Set Teacher Sections</h2>
+<br />
+<h2>
+Set Teacher Sections
+</h2>
 
 <br />
 
-<p>
-Please assign each teacher to the appropriate section below:
+<p style="text-align: center">
+Please set the teacher sections below:
 </p>
 
-<div id="program_form">
-<form action="{{ request.path }}" method="post" name="teachersections">
+<form action="{{request.path}}" method="post" name="teachersections" >
+
 <table cellspacing="0" cellpadding="2" width="300" >
 <thead>
 <tr>
@@ -40,7 +48,7 @@ Please assign each teacher to the appropriate section below:
 {% ifchanged %}
 <tr>
   <th colspan="3">
-   Teachers for {{ user.satprepmodule.get_subject_display }}
+   SUBJECT: {{user.satprepmodule.get_subject_display}}
   </th>
 </tr>
 {% endifchanged %}
@@ -55,7 +63,7 @@ Please assign each teacher to the appropriate section below:
 </tr>
 {% endfor %}
 <tr>
-  <th colspan="3"><input class="fancybutton" type="submit" value="Save Teacher Sections" /></th>
+  <th colspan="3"><input type="submit" value="Save Teacher Sections" /></th>
 </tr>
 </tbody>
 
@@ -64,14 +72,4 @@ Please assign each teacher to the appropriate section below:
 <input type="hidden" name="teacher_section_form" value="true" />
 
 </form>
-</div>
-
-<br />
-<h3>Next Steps</h3>
-<ol>
-    <li><a href="/manage/{{ program.getUrlBase }}/satprep_classgen" title="Generate Classes">Generate the Classes</a></li>
-    <li><a href="/manage/{{ program.getUrlBase }}/schedule_options" title="Schedule Options">Back to SAT Prep Administration</a></li>
-    <li><a href="/manage/{{ program.getUrlBase }}/main">Back to main program management page</a></li>
-</ol>
-
 {% endblock %}

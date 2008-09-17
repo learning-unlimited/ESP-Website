@@ -1,36 +1,4 @@
 {% load smartypants %}
 {% load markdown %}
-
-{% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
-{% endblock %}
-
-<script type="text/javascript" src="/media/scripts/json.js"></script>
-<script type="text/javascript" src="/media/scripts/qsd.js"></script>
-
-{% if qsdrec %}
-    {% if edit_bits %}
-        <div class="qsd_header" onclick="qsd_inline_edit({{ qsdrec.id }});">This is quasi-static content.  Click here to edit the text; click outside the box to save changes.</div>
-        <div class="qsd_edit_hidden" id="inline_edit_{{ qsdrec.id }}">
-        <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.id }}" onblur="qsd_inline_upload({{ qsdrec.id }});" name="qsd_content" class="qsd_editor">
-            {{ qsdrec.content }}
-        </textarea>
-        </div>
-        <div class="qsd_view_visible" id="inline_qsd_{{ qsdrec.id }}">
-        {{ qsdrec.content|markdown|smartypants|teximages }}
-        </div>
-    {% else %}
-        {{ qsdrec.content|markdown|smartypants|teximages }}
-    {% endif %}
-{% else %}
-{% if edit_bits %}
-    <div class="qsd_header" onclick="qsd_inline_edit('{{ qsdname }}');">This is a placeholder for quasi-static content that has not yet been added.  Click here to edit the text; click outside the box to save changes.</div>
-        <div class="qsd_edit_hidden" id="inline_edit_{{ qsdname }}">
-        <textarea rows="8" cols="80" id="qsd_content_{{ qsdname }}" onblur="qsd_inline_create('{{ qsdname }}', {{ anchor_id }});" name="qsd_content" class="qsd_editor qsd_halfsize"></textarea>
-        </div>
-        <div class="qsd_view_visible" id="inline_qsd_{{ qsdname }}">
-        </div>
-    {% endif %}
-{% endif %}
+{{ qsdrec.content|markdown|smartypants|teximages }}
 <br />

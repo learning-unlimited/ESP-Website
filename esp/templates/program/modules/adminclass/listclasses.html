@@ -7,7 +7,7 @@
 /* <![CDATA[ */
 
 function deleteClass() {
-    if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
+    if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students.')) {
        return true;
     }
     return false;
@@ -18,7 +18,7 @@ function assignRoom(clsid){
 }
 
 var checks = {
-{% for check in program.checkitems_all_cached %}
+{% for check in program.checkitems.all %}
      "{{ check.id|addslashes }}": "{{check.title|addslashes}}",
 {% endfor %}
 };
@@ -257,7 +257,6 @@ function manage_class(clsid) {
 
 <hr />
 
-<center>
 <br />
 <div class="info">If you need to email a class, students, or teachers, just use its code!<br />
 For instance, if the code is M100:<br />
@@ -266,14 +265,11 @@ For instance, if the code is M100:<br />
 and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
 </div>
 <br />
-</center>
-
-<p>To update class attendees, please go <a href="attendees">here</a>.</p>
 
 <div id="battlescreen">
 <table cellpadding="4px" cellspacing="0" align="center">
   <tr>
-    <th colspan="9">
+    <th colspan="8">
        Manage the classes of {{program.niceName}}
     </th>
   </tr>
@@ -283,14 +279,14 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
     <td class="clsleft classname">
       <em>(None available)</em>
     </td>
-{% for check in program.checkitems_all_cached %}<td>&nbsp;</td>{% endfor %}
+{% for check in program.checkitems.all %}<td>&nbsp;</td>{% endfor %}
    </tr>
   {% endif %}
-
 {% load class_manage_row %}
   {% for cls in classes %}
   <tr id="{{cls.id}}-row">
    {% render_class_row cls program %}
+
    </tr>
    {% endfor %}
 
@@ -298,7 +294,7 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
 </div>
 
 <div id="classmanager">
-<div class="hd"><!--Please enter your information--></div>
+<div class="hd">Please enter your information</div>
   <div class="bd">
     <form method="POST" action="../assets/post.php">
     </form>

@@ -1,14 +1,9 @@
 
 <p>
 Below is your class schedule for {{ program.niceName }}.  Please use the links in the right-hand column to select classes to fill each time slot.  You may also
-<a target="_blank" href='/learn/{{one}}/{{two}}/catalog'>
+<a target="_blank" href='/learn/{{one}}/{{two}}/catalog/'>
 open a full catalog in a separate window
 </a>.
-</p>
-
-<p>  <b>Please note</b>: Your classes are saved immediately
-when you click the "Add this Class!" button.  You do not need to confirm or save your entire
-registration to save your spot in classes. 
 </p>
 
 {% if not module.deadline_met %}
@@ -18,9 +13,6 @@ Note: Student registration is no longer open. Please use this page to view your 
 <br />
 {% endif %}
 
-<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-
-<div id="program_form">
  <table cellpadding="3" style="width: 600px; margin: auto" border=1>
 <tr>
 <th colspan="3">
@@ -28,22 +20,16 @@ Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{reque
 </th>
 </tr>
 {% for timeslot in timeslots %}
-{% ifchanged timeslot.0.start.day %}
-<tr><th class="small" colspan="3" height="3" style="text-align: center;">{{ timeslot.0.pretty_date }}</th></tr>
-{% endifchanged %}
-{% ifchanged timeslot.2 %}
-<tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
-{% endifchanged %}
-<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.short_description }} </td>
+
+<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.friendly_name }} </td>
 	{% if timeslot.1 %}
 	<td>{{timeslot.1.title}} 
         {% if request.user.onsite_local %}
         ({{timeslot.1.prettyrooms|join:", " }})
         {% endif %}</td>
 {% if module.deadline_met %}
-        <td width='25%' align='center'>
+        <td width='20%' align='center'>
 	<a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[remove]</a>
-	{% if timeslot.3 %}<a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}">[change section]</a>{% endif %}
 	</td>
 {% endif %}
 	{% else %}
@@ -58,5 +44,4 @@ Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{reque
 
 {% endfor %}
 </table> 
-</div>
 <br/>

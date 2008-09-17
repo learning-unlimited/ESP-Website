@@ -6,7 +6,7 @@
       class="approved"
       {% else %}
       class="unapproved"
-      {% endif %}>{{ cls.title|stringformat:".40s" }}{% if cls.title|stringformat:".40s"|length_is:40 and not cls.title|length_is:40 %}...{% endif %}</span>
+      {% endif %}> {{ cls|truncatewords:6 }}</span>
       </span>
     </td>
     <td class="clsleft classname" style="font-size: 60%; font-style: italic;">
@@ -16,11 +16,6 @@
     </td>
 
 
-    <td class="clsmiddle">
-       <form method="post" action="/manage/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
-         <input class="button" type="submit" value="Delete" />
-       </form>
-    </td>
     <td class="clsmiddle">
        <form method="post" action="/teach/{{ program.url }}/editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
@@ -36,7 +31,7 @@
 
 {% load class_checkmarks %}
 {# checklist ... #}
-{% for check in program.checkitems_all_cached %}
+{% for check in program.checkitems.all %}
     <td class="class_checkitem">
      <a href="/manage/{{program.getUrlBase}}/changeoption/{{cls.id}}?step={{check.id}}"
         onclick="clickCheckMark({{cls.id}},{{check.id}},'{{cls.id}}-{{check.id}}'); return false;" >

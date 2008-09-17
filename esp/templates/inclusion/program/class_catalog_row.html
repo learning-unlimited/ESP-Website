@@ -1,3 +1,19 @@
 {% if show_class %}
-    {% include "inclusion/program/class_row_fragment.html" %}
+    <tr>
+        <td>
+            <b>{{ class.emailcode }}: {{ class.title|truncatewords:5|escape }}</b>
+        </td>
+        <td>
+            {{ class.friendly_times|join:", " }}
+        </td>
+        <td>
+            {{ class.grade_min }}--{{ class.grade_max }}
+        </td>
+        <td>
+            {{ class.num_students }}/{{ class.class_size_max }}
+        </td>
+	<td>
+	    {% for classroom in class.classroomassignments %}{{ classroom.room.name }} {% endfor %}
+	</td>
+    </tr>
 {% endif %}

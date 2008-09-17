@@ -1,10 +1,6 @@
 <!-- Begin Guardian Info Portion -->
 
 <tr>
- <th colspan="2">Guardian Information</th>
-</tr>
-
-<tr>
  <td><label for="id_year_finished">Est. year finished with ESP<br /> (if applicable):</label></td>
  <td>{{ form.year_finished }} {% if form.year_finished.errors %}
    <br /><span class="form_error">{{ form.year_finished.errors|join:", " }}</span>

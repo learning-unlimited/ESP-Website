@@ -1,12 +1,17 @@
-<center>
+<style type="text/css">
+#vitals table, #vitals th, #vitals td { 
+     border: 1px solid black; border-collapse: collapse;
+}
+#vitals th { text-align: right; }
+</style>
 
-<div id="program_form">
+<hr />
+<h2 style="text-align: center">Program Vitals</h2>
+<br />
+<div id="vitals">
 <table style="border: 1px solid black; border-collapse: collapse;">
 <tr>
-  <th colspan="2" align="center">Program Vitals</th>
-</tr>
-<tr>
-  <th class="smaller">Useful Links</th>
+  <th>Useful Links</th>
   <td>
       <a href="/learn/{{program.getUrlBase}}/studentreg">Student Reg</a><br />
       <a href="/learn/{{program.getUrlBase}}/catalog">Catalog</a><br />
@@ -14,91 +19,48 @@
   </td>
 </tr>
 <tr>
-  <th class="smaller">Total # of Students</th>
+  <th>Total # of Students</th>
   <td>{% for value in vitals.studentnum %}
-       <strong>{{ value.0 }}</strong> &ndash; {{value.1.count}}
+       <strong>{{ value.0 }}</strong> &ndash; {{value.1|length}}
       {% if not forloop.last %}<br />{% endif %}
       {% endfor %}
   </td>
 </tr>
 
 <tr>
-  <th class="smaller">Total # of Teachers</th>
+  <th>Total # of Teachers</th>
   <td{% for value in vitals.teachernum %}
-       <strong>{{ value.0 }}</strong> &ndash; {{value.1.count}}
+       <strong>{{ value.0 }}</strong> &ndash; {{value.1|length}}
       {% if not forloop.last %}<br />{% endif %}
       {% endfor %}
   </td>
 </tr>
 
 <tr>
-  <th class="smaller">Total # of Classes</th>
-  <td>{{ vitals.classtotal.count }}</td>
+  <th>Total # of Classes</th>
+  <td>{{ vitals.classtotal }}</td>
 </tr>
 <tr>
-  <th class="smaller">Total # of Classes <span style="color: #00C;">Unreviewed</span></th>
-  <td>{{ vitals.classunreviewed.count }}</td>
+  <th>Total # of Classes <span style="color: #00C;">Unreviewed</span></th>
+  <td>{{ vitals.classunreviewed }}</td>
 </tr>
 <tr>
-  <th class="smaller">Total # of Classes <span style="color: #0C0;">Approved</span></th>
-  <td>{{ vitals.classapproved.count }}</td>
+  <th>Total # of Classes <span style="color: #0C0;">Approved</span></th>
+  <td>{{ vitals.classapproved }}</td>
 </tr>
 <tr>
-  <th class="smaller">Total # of Classes <span style="color: #C00;">Rejected</span></th>
-  <td>{{ vitals.classrejected.count }}</td>
+  <th>Total # of Classes <span style="color: #C00;">Rejected</span></th>
+  <td>{{ vitals.classrejected }}</td>
 </tr>
 {% for timeslot in vitals.timeslots %}
 
 <tr>
-  <th class="smaller">{{ timeslot.slotname }}</th>
-  <td>Students: {{ timeslot.studentcount.count }} / {{ timeslot.studentcount.max_count }}<br />
-      Classes: {{ timeslot.classcount.count }}</td>
+  <th>{{ timeslot.slotname }}</th>
+  <td>Students: {{ timeslot.studentcount }}<br />
+      Classes: {{ timeslot.classcount }}</td>
 </tr>
 {% endfor %}
 </table>
 
+
 </div>
-
-<!-- T-Shirt Estimates -->
-<hr />
-<h2 style="text-align: center">T-Shirt Estimates</h2>
-<br />
-<div id="program_form">
-<table>
-
-<tr><th colspan="{{ shirt_sizes|length|add:1 }}">Students registered for at least one class</th></tr>
-<tr>
-    <td></td>
-    {% for shirt_size in shirt_sizes %}
-        <th class="smaller">{{ shirt_size.1 }}</th>
-    {% endfor %}
-</tr>
-{% for type in shirts.students %}
-<tr>
-    <th class="smaller">{{ type.type }}</th>
-    {% for count in type.distribution %}
-        <td>{{ count }}</td>
-    {% endfor %}
-</tr>
-{% endfor %}
-
-<tr><th colspan="{{ shirt_sizes|length|add:1 }}">Teachers teaching at least one class</th></tr>
-<tr>
-    <td></td>
-    {% for shirt_size in shirt_sizes %}
-        <th class="smaller">{{ shirt_size.1 }}</th>
-    {% endfor %}
-</tr>
-{% for type in shirts.teachers %}
-<tr>
-    <th class="smaller">{{ type.type }}</th>
-    {% for count in type.distribution %}
-        <td>{{ count }}</td>
-    {% endfor %}
-</tr>
-{% endfor %}
-
-</table>
-</div>
-
-</center>

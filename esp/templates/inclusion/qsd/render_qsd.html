@@ -1,29 +1,7 @@
 {% load smartypants %}
 {% load markdown %}
 {% load latex %}
-
-{% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
-{% endblock %}
-
-<script type="text/javascript" src="/media/scripts/json.js"></script>
-<script type="text/javascript" src="/media/scripts/qsd.js"></script>
-
-{% if edit_bits %}
-    <div class="qsd_header" onclick="qsd_inline_edit({{ qsdrec.id }});">This is quasi-static content.  Click here to edit the text; click outside the box to save changes.</div>
-    <div class="qsd_edit_hidden" id="inline_edit_{{ qsdrec.id }}">
-    <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.id }}" onblur="qsd_inline_upload({{ qsdrec.id }});" name="qsd_content" class="qsd_editor qsd_fullsize">
-        {{ qsdrec.content }}
-    </textarea>
-    </div>
-    <div class="qsd_view_visible" id="inline_qsd_{{ qsdrec.id }}">
-    {{ qsdrec.content|markdown|smartypants|teximages }}
-    </div>
-{% else %}
-    {{ qsdrec.content|markdown|smartypants|teximages }}
-{% endif %}
-
+{{ qsdrec.content|markdown|smartypants|teximages }}
 <br /><br />
 <div id="divmainqsddatetimestamp">
   <p class="attribution">Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date|date:"N d, Y \a\t h:i a" }}</p>

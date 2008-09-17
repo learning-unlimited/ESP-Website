@@ -1,9 +1,6 @@
-{% for sec in item.cls.sections.all %} 
-<div style="page-break-after: always;">&nbsp;</div>
 <div class="classroster">
-  <div class="classtitle">Attendance for <br />
-  {{ sec }}
-
+  <div class="classtitle">Attendence for <br />
+  {{ item.cls.title }}
   <br />
     {% now "M j, Y" %}
 </div>
@@ -11,18 +8,18 @@
   <table align="center" cellspacing="0" cellpadding="0">
   <tr>
    <td>
-      <b>Time:</b>  <div class="blocks">{{ sec.friendly_times|join:"<br />" }}</div>
+      <b>Time:</b>  <div class="blocks">{{ item.cls.friendly_times|join:"<br />" }}</div>
    </td>
    <td>
-      <b>Room:</b> <div class="classroom">{{ sec.prettyrooms|join:"<br />" }}</div>
+      <b>Room:</b> <div class="classroom">{{ item.cls.prettyrooms|join:"<br />" }}</div>
    </td>
   </tr>
   </table>
   <br />
   <div class="teachername"><span>Teacher:  {{ item.teacher.name }}</span></div>
   <br />
-  <div class="teachername">Class E-mail: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-class@esp.mit.edu</tt><br />
-Students E-mail: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@esp.mit.edu</tt>
+  <div class="teachername">Class E-mail: &nbsp; &nbsp; <tt>{{item.cls.emailcode}}-class@esp.mit.edu</tt><br />
+Students E-mail: &nbsp; &nbsp; <tt>{{item.cls.emailcode}}-students@esp.mit.edu</tt>
   </div>
   <br />
   <br />
@@ -36,7 +33,7 @@ Students E-mail: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@esp.mit.edu</tt>
       <th>Student ID</th>
       <th>Student Name</th>
       <th>Grade</th>
-    </tr>{% for student in sec.students %}
+    </tr>{% for student in item.cls.students %}
     <tr>
       <td align="right">{{ forloop.counter }}</td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
@@ -82,8 +79,4 @@ Students E-mail: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@esp.mit.edu</tt>
       </th>
     </tr>
   </table>
-
 </div>
-
-<br />
-{% endfor %}

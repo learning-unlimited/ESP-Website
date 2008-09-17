@@ -1,18 +1,21 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}{{ program.niceName }} Schedule{% endblock %}
+{% block title %}{{program.niceName}} Schedule{% endblock %}
 
 {% block subsection_name %}Scheduling Options{% endblock %}
 
 {% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{{block.super}}
+
 {% endblock %}
 
 {% block content %}
-<div id="divmaintext">
+<br />
+<br />
+
+<br /><br />
 <h1>
-Scheduling {{ program.niceName }}
+Scheduling {{program.niceName}}
 </h1>
 
 <h2>
@@ -20,30 +23,14 @@ Generate New Classes
 </h2>
 
 <p style="text-align: center">
-This is a magic button to schedule all of the students into their remaining SAT Prep classes!<br />
+Press the button below to schedule all of the students into their remaining classes!<br />
 </p>
 
-<div id="program_form">
-<form method="post" action="{{ request.path }}" name="confirm">
-<table>
-<tr>
-    <th>Section Assignments for {{ program.niceName }}</th>
-</tr>
-<tr>
-    <td>
-        <div class="info">You will be asked to get a list of users.  Please select which group of users you feel need to be scheduled (that is, all who attended, or have scores, or have a confirmed registration).  Also, please be patient after submitting the user list, since these operations may take several minutes.</div>
-    </td>
-</tr>
-<tr>
-    <td>
-        <input type="submit" class="fancybutton" value="Select and schedule students" />
-        <input type="hidden" name="schedule_confirm" value="true" />
-    </td>
-</tr>
-</table>
-</form>
-</div>
+<div class="info">NOTE: You will be asked to get a list of users. Please select which group of users you feel need to be scheduled (that is, all who attended? All who have tests, etc...)</div>
 
-</div>
+<form method="post" action="{{request.path}}" name="confirm">
+<input type="submit" value="Schedule those students!!" />
+<input type="hidden" name="schedule_confirm" value="true" />
+</form>
 
 {% endblock %}

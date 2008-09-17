@@ -1,9 +1,5 @@
 <!-- Begin Student Info Portion -->
 <tr>
- <th colspan="2">Student Information</th>
-</tr>
-
-<tr>
  <td><label for="id_dob">D.O.B.:</label></td>
  <td>{{ form.dob }} {% if form.dob.errors %}
    <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
@@ -32,45 +28,9 @@
 </tr>
 
 <tr>
- <td>
-<label for="id_studentrep">I want to be an <a href="/getinvolved/studentreps.html">ESP Student Rep</a>:</label></td>
- <td>
-   {{ form.studentrep }} 
-{% if form.studentrep.errors %}
+ <td><label for="id_studentrep">I want to be an ESP Student Rep:</label></td>
+ <td>{{ form.studentrep }} {% if form.studentrep.errors %}
    <br /><span class="form_error">{{ form.studentrep.errors|join:", " }}</span>
-   {% endif %}
-</td></tr>
-<tr><td><i>For new student reps:</i></td>
-<td>Please enter a short explanation of why you would <br />
-like to be a student representative and any ideas you <br />
-may have for ESP.  Our membership coordinator will <br />
-contact you soon! <br />
-{{ form.studentrep_expl }}
-{% if form.studentrep_expl.errors %}
-   <br /><span class="form_error">{{ form.studentrep_expl.errors|join:", " }}</span>
-{% endif %}
- </td>
-</tr>
-
-
-<tr>
- <td colspan="2"><p>
-    <div class="info">T-shirts are available at some ESP programs. When you reserve a t-shirt, this is the shirt size and type that will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!</div>
- </p></td>
-</tr>
-
-<tr>
- <td><label for="id_shirt_size">Shirt size:</label></td>
- <td>{{ form.shirt_size }} {% if form.shirt_size.errors %}
-   <br /><span class="form_error">{{ form.shirt_size.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
-<tr>
- <td><label for="id_shirt_type">Shirt type:</label></td>
- <td>{{ form.shirt_type }} {% if form.shirt_type.errors %}
-   <br /><span class="form_error">{{ form.shirt_type.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

@@ -26,6 +26,7 @@ body { font-family: georgia; }
 <body>
 {% for item in scheditems %}
 {% if not forloop.first %}
+<div style="page-break-after: always;">&nbsp;</div>
 {% endif %}
 {% include "program/modules/programprintables/classattend.html" %}
 {% endfor %}

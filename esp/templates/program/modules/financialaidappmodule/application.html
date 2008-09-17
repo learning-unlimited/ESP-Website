@@ -64,7 +64,7 @@
 
 <h2>Introduction</h2>
 <p>Financial limitations should not prevent anyone from participating in ESP programs.  If this program is difficult for you and your family to afford, please apply for financial aid and we will do our best to accomodate you.  ESP offers both partial and complete scholarships, depending on need.  We will take a look at your situation and notify you of our decision before the start of the program.</p>
-<p>Please complete this form to request financial aid for {{ program.niceName }}.  You can always <strong>Save Progress</strong> to keep your work and return to this page at any time to continue filling it out.  Once you're finished, please let us know by clicking <strong>Complete</strong>.  If you've finished filling out the form, but you discover that information on the form is inaccurate or you wish to cancel the application, click <strong>Mark as Incomplete</strong>.</p>
+<p>Please complete this form to request financial aid for {{ program.niceName }}.  You can always <strong>Save Progress</strong> to keep your work and return to this page at any time to continue filling it out.  Once you're finished, please let us know by clicking <strong>Complete</strong>.</p>
 <p>All information is completely optional.  However, the better we can understand your current need, the easier it is for us to grant financial aid when necessary (and determine an appropriate amount).</p>
 
 <form action="{{ request.path }}" method="post" name="application_form">
@@ -74,31 +74,27 @@
 <font size="3">Financial Aid Request: {{ request.user.get_full_name }}</font>
 </th>
 </tr>
-<tr>
-    <td width="30%">Do you qualify for free or reduced lunch at your school?</td>
-    <td>{{ form.reduced_lunch }}</td>
-</tr>
-<tr>
-    <td width="30%">What is your annual household income (round to the nearest $1,000)?</td>
-    <td>{{ form.household_income }}</td>
-</tr>
-<tr>
-    <td width="30%">Please describe your family's financial situation:</td>
-    <td>{{ form.extra_explaination }}</td>
-</tr>
-<tr>
-    <td width="30%">Did anyone other than the student fill out any part of this form?</td>
-    <td>{{ form.student_prepare }}</td>
-</tr>
 <tr style="border: 1px solid #CCCCCC">
  <th colspan="2" style="text-align: center;">
+    <input type="submit" class="button" name="submitform" value="Save Progress" />
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
     {% if app.done %}
-    <input type="submit" class="button" name="submitform" value="Mark as Incomplete" />
+    <input type="submit" class="button" name="submitform" value="Mark as Unfinished" />
     {% else %}
     <input type="submit" class="button" name="submitform" value="Complete" />
     {% endif %}
-    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+ </th>
+</tr>
+ {{ form }}
+<tr style="border: 1px solid #CCCCCC">
+ <th colspan="2" style="text-align: center;">
     <input type="submit" class="button" name="submitform" value="Save Progress" />
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    {% if app.done %}
+    <input type="submit" class="button" name="submitform" value="Mark as Unfinished" />
+    {% else %}
+    <input type="submit" class="button" name="submitform" value="Complete" />
+    {% endif %}
  </th>
 </tr>
 </table>

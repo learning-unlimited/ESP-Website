@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Student Schedules{% if onsiteregform %}{% else %} for {{program.niceName}}{% endif %}</title>
+<title>Student Schedules for {{program.niceName}}</title>
 <style type="text/css" media="print,screen">
 body { font-family: georgia; margin: 0; font-size: 12px;}
 .title { text-align: center; font-size: 12pt; font-family: georgia; }
@@ -11,7 +11,7 @@ body { font-family: georgia; margin: 0; font-size: 12px;}
 .facts td { text-align: left; font-size: 12pt;}
 .facts td.paid { border: 1px solid black; text-align: center;
                  }
-.title { padding: 0.5in 0 0 0; }
+.title { padding: 1in 0 0 0; }
 .schedule {border: 1px solid black; }
 .schedule td { border: 1px solid black; }
 .schedule th { border: 1px solid black; vertical-align: top; }
@@ -26,24 +26,6 @@ td.newday { border-width: 2px 1px 0 1px;}
 
 </head>
 <body>
-{% if onsiteregform %}
-<h1><center>{{ program.niceName }} On-Site Registration Form</center></h1>
-<p />
-<div align="center">
-<table>
-<tr><th>Name:</th><td>__________________________________________________</td></tr>
-<tr><th>E-Mail:</th><td>__________________________________________________</td></tr>
-<tr><th>Grade Level:</th><td>__________________________________________________</td></tr>
-<tr><th>High School:</th><td>__________________________________________________</td></tr>
-</table>
-</div>
-<br />
-<br />
-
-<h2><center>Please turn in this form, along with a <b>signed waiver</b>, to the New Registrations desk.</center></h2>
-
-<p />
-{% endif %}
 {% for student in students %}
 {% if not forloop.first %}
   </table> 

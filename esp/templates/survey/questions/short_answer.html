@@ -1,8 +1,0 @@
-<!-- Question Type: Short Text -->
-{% load survey %}
-<table width="600">
-<tr>
-    <td width="35%"><b>{{ name }}</b></td>
-    <td><input type="text" size="{{ input_length }}" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}"/></td>
-</tr>
-</table>

@@ -1,19 +1,16 @@
 <!-- Begin Teacher Info Portion -->
 
 <tr>
- <th colspan="2">Teacher Information</th>
-</tr>
-
-<tr>
- <td><label for="id_school">School/Employer:</label></td>
- <td>{{ form.school }} {% if form.school.errors %}
-   <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
+ <td><label for="id_dob">D.O.B.:</label></td>
+ <td>{{ form.dob }} {% if form.dob.errors %}
+   <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
    {% endif %}
+<small> Example 1994/02/29</small> 
  </td>
 </tr>
 
 <tr>
- <td><label for="id_school">Graduation Year:</label><br /><div style="font-size: 0.8em">(Enter 'G' if you're a graduate student)</div></td>
+ <td><label for="id_graduation_year">Year of college graduation:<br /><small>(if applicable)</small></label></td>
  <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
    {% endif %}
@@ -21,31 +18,17 @@
 </tr>
 
 <tr>
- <td><label for="id_major">Major/Department:</label></td>
+ <td><label for="id_school">School Name:</label></td>
+ <td>{{ form.school }} {% if form.school.errors %}
+   <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_major">Major:</label></td>
  <td>{{ form.major }} {% if form.major.errors %}
    <br /><span class="form_error">{{ form.major.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
-<tr>
- <td colspan="2"><p>
-    <div class="info"><b>Shirts for teachers!</b> If you teach for ESP, you're entitled to at least a free T-shirt (along with all of the free food).  If you would like a shirt, please enter your preferred size and shape below.  This information is optional.
- </p></td>
-</tr>
-
-<tr>
- <td><label for="id_shirt_size">Shirt size:</label></td>
- <td>{{ form.shirt_size }} {% if form.shirt_size.errors %}
-   <br /><span class="form_error">{{ form.shirt_size.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
-<tr>
- <td><label for="id_shirt_type">Shirt type:</label></td>
- <td>{{ form.shirt_type }} {% if form.shirt_type.errors %}
-   <br /><span class="form_error">{{ form.shirt_type.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

@@ -6,113 +6,80 @@
 {% block xtrajs %}
 {% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
-{% endblock %}
-
 {% block content %}
 
-<h2>Edit your profile for {{ program.niceName }}!</h2>
-<br />  
+<h1>Edit your profile for {{ program.niceName }}!</h1>
+
 <p>
-Please fill out the form below to help us better organize {{ program.niceName }}.
+Please fill out the field below to tell us information regarding your overall involvement with {{program.niceName}}.
 </p>
 
 <br />
 
-<form action="{{request.path}}" name="profileform" method="post">
-<div id="catalog">
-<table align="center" width="500">
-<tr>
-    <th colspan="2" align="center">Additional Teacher Profile Information</th>
-</tr>
-<tr>
-    <td colspan="2">Please check the appropriate boxes and click "Save" at the bottom to return to teacher registration.</td>
-</tr>
 {% if form.has_errors %}
-<tr>
-    <td colspan="2">
-    <h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
-    </td>
-</tr>
+<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
 {% endif %}
-<tr>
-    <td width="65%">
-    <label for="id_volunteer" class="header">
-    I am willing to volunteer:
-    </label>
-    </td>
-    <td>
-    {{ form.volunteer }} 
-    {% if form.volunteer.errors %}
-    <br />
-    <span class="form_error">{{ form.volunteer.errors|join:", " }}</span>
-    {% endif %}
-    </td>
-</tr>
 
-<tr>
-    <td>
-    <label class="header">
-    Times I can Volunteer:
-    </label>
-    </td>
-    <td>
-    <br />
-    {{form.volunteer_times}}
-    
-    {% if form.volunteer_times.errors %}
-    <br /><span class="form_error">{{ form.volunteer_times.errors|join:", " }}</span><br />
-    {% endif %}
-    </td>
-</tr>
+<form action="{{request.path}}" name="profileform" method="post">
 
-<tr>
-    <td>
-    <label for="id_need_bus" class="header">
-    I require transportation to <br />
-    {{program.niceName}} (I am not at MIT and cannot provide my own):
-    </label>
-    </td>
-    <td>
-    {{ form.need_bus }} 
-    {% if form.need_bus.errors %}
-    <br />
-    <span class="form_error">{{ form.need_bus.errors|join:", " }}</span>
-    {% endif %}
-    </td>
-</tr>
+<label for="id_volunteer" class="header">
+I am willing to volunteer *:
+</label>
+{{ form.volunteer }} 
+{% if form.volunteer.errors %}
+<br />
+<span class="form_error">{{ form.volunteer.errors|join:", " }}</span>
+{% endif %}
+<br />
+<br />
+
+<label class="header">
+Times I can Volunteer (check all that apply, please list times you might be teaching as well) *:
+</label>
+<br />
+{{form.volunteer_times}}
+
+{% if form.volunteer_times.errors %}
+   <br /><span class="form_error">{{ form.volunteer_times.errors|join:", " }}</span><br />
+{% endif %}
+
+<br />
+
+<label for="id_need_bus" class="header">
+I require transportation to <br />
+&quot;{{program.niceName}}&quot; (I cannot provide my own) *:
+</label>
+{{ form.need_bus }} 
+{% if form.need_bus.errors %}
+<br />
+<span class="form_error">{{ form.need_bus.errors|join:", " }}</span>
+{% endif %}
+<br />
+<br />
 
 {% comment %}
 <!-- FOR BUS SCHEDULE -->
-<tr>
-    <td>
-    {% if form.viable_times %}
-    <label class="header">
-    Acceptable Course Times (check all that apply) *:
-    </label>
-    </td>
-    <td>
-    {% if form.viable_times.errors %}
-    <br /><span class="form_error">{{ form.viable_times.errors|join:", " }}</span><br />
-    {% endif %}
-    {{ form.viable_times }}
-    {% endif %}
-    </td>
-</tr>
+{% if form.viable_times %}
+<label class="header">
+Acceptable Course Times (check all that apply) *:
+</label>
+<br />
+{% if form.viable_times.errors %}
+   <br /><span class="form_error">{{ form.viable_times.errors|join:", " }}</span><br />
+{% endif %}
+{{ form.viable_times }}
+
+<br />
+<br />
+{% endif %}
 {% endcomment %}
 
-<tr>
-    <td colspan="2" align="center">
-    <input class="button" type="submit" value="Save your profile information!" />
-    <input class="button" type="button"
-    onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
-    </td>
-</tr>
+<input class="button" type="submit" value="Save your profile information!" />
+<input class="button" type="button"
+  onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
 
-</table>
-</div>
-</form>
+</center>
+
+</form></div>
 
 {% endblock %}

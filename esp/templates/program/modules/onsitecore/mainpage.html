@@ -25,6 +25,11 @@ Please select from the option below to continue.
 <strong>Your Options:</strong>
 <ul>
 
+{% if core_admin %}
+  <li><a href="/manage/{{program.getUrlBase }}/main" title="Manage {{program.niceName}}!">
+      Manage {{program.niceName}}!</a>
+  </li>
+{% endif %}
 {% for module in modules %}
 {% if module.isStep %}
   {% if not module.useTemplate %}
@@ -34,13 +39,6 @@ Please select from the option below to continue.
   {% endif %}
 {% endif %}
 {% endfor %}
-
-{% if core_admin %}
-  <li><a href="/manage/{{program.getUrlBase }}/main" title="Manage {{program.niceName}}!">
-      Manage {{program.niceName}}!</a>
-  </li>
-{% endif %}
-
 </ul>
 
 

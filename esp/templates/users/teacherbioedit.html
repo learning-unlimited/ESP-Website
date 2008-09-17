@@ -4,11 +4,6 @@
 
 {% block subsection_name %}Teacher Biography{% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-{% endblock %}
-
 {% block content %}
 
 <style type="text/css">
@@ -22,26 +17,24 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 #divmaintext table td { vertical-align: top; }
 
 </style>
-
-<h1>Edit Teacher Biography: {{ user.name }}</h1>
+<br /><br />
+<h1>Teacher Biography - Edit Bio of {{ user.name }}</h1>
 
 
 <p>
-Please complete the form below to update your biography.  We'd appreciate a picture if you have one!  (You can upload a JPG, GIF or PNG file in the box at the bottom of the form.)
+Please complete the form to update your biography:
 </p>
 
 {% if form.has_errors %}
 <h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
 {% endif %}
 
-<div id="program_form">
+
 <form enctype="multipart/form-data" action="{{request.path}}" method="post">
 <table cellpadding="2" align="center" border="0">
 
-<tr><th colspan="2">Your Teacher Biography</th></tr>
-
 <tr>
- <td><label for="id_slugbio">Description of you in 50 characters or less:<br />
+ <td><label for="id_slugbio">Description of you in 10 words or less:<br />
        <small>(e.g. "MIT sophomore studying Architecture." or "Lifelong teacher of mathematics at the highschool level.")</small></label></td>
  <td>{{ form.slugbio }} {% if form.slugbio.errors %}
    <br /><span class="form_error">{{ form.slugbio.errors|join:", " }}</span>
@@ -64,7 +57,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
        <small>(if available)</small></label></td>
  <td>{{ form.picture }}<br />
      {% if picture_file %}
-     <img src="/media/{{ picture_file}}" title="Your current photo." alt="Your current photo" />
+     <img src="/media/uploaded/{{ picture_file}}" title="Your current photo." alt="Your current photo" />
      {% endif %}
      {% if form.picture.errors %}
    <br /><span class="form_error">{{ form.picture.errors|join:", " }}</span>
@@ -72,15 +65,14 @@ Please complete the form below to update your biography.  We'd appreciate a pict
  </td>
 </tr>
 
-<tr><td colspan="2" align="center">
-<input type="hidden" name="bio_submitted" value="true" />
-<input class="button" type='submit' value='Save your Biography' />
-</td></tr>
-
 </table>
+<br />
+<input type="hidden" name="bio_submitted" value="true" />
+<center><input type='submit' value='Save your Biography' /></center>
 
 <br />
 </form>
+
 </div>
 
 {% endblock %}

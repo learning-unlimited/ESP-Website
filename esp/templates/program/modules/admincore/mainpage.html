@@ -15,12 +15,6 @@ function updateDocs(docs) {
 //-->
 </script>
 {% endblock %}
-
-{% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-{% endblock %}
-
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
@@ -31,12 +25,55 @@ function updateDocs(docs) {
 {{ program.mainteacherreg }}
 
 <br /><br />
-<h1>Admin Dashboard for {{program.niceName}} </h1>
+<h1>Admin Portal for {{program.niceName}} </h1>
 
-<p><a href="deadline_management">Edit Program Deadlines</a></p>
+<p style="text-align: center">
+Welcome to the Administrative Portal for {{program.niceName }}.<br />
+If you need any assistance, please email <tt>web@esp.mit.edu</tt>.
+</p>
 
-{% include "program/modules/admincore/returnlink.html" %}
 
+
+<center>
+<strong>Your options:</strong>
+<br />
+<table border="0">
+<tr>
+ <td>
+<ul>
+
+
+<li><a href="/onsite/{{program.getUrlBase}}/main">
+     Go To On-Site Page
+    </a>
+</li>
+
+{% for module in modules %}
+
+
+{% if module.isStep %}
+  {% if not module.useTemplate %}
+    <li>{{ module.makeLink }}</li>
+  {% else %}
+    <li><span onmouseover="updateDocs('{{module.docs|linebreaks|addslashes}}');"><em>{{ module.module.link_title }} (below)</em></span></li>
+  {% endif %}
+{% endif %}
+{% endfor %}
+</ul>
+</td>
+<td style="vertical-align: top;">
+<div class="helpbox">
+<h4><span>Help</span></h4>
+<div id="adminhelp">
+Please select an option to the left to continue, or look down below to select further options.
+</div>
+</td>
+</tr>
+</table>
+
+<br />
+<br />
+<br />
 {% for module in modules %}
 {% if module.useTemplate %}
 <br />

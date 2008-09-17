@@ -2,7 +2,20 @@
     {% if class.isFull %}
     {% else %}
     
-    {% include "inclusion/program/class_row_fragment.html" %}
+    <tr>
+        <td>
+            <b>{{ class.emailcode }}: {{ class.title|truncatewords:5|escape }}</b>
+        </td>
+        <td>
+            {{ class.friendly_times|join:", " }}
+        </td>
+        <td>
+            {{ class.grade_min }}--{{ class.grade_max }}
+        </td>
+        <td>
+            {{ class.num_students }}/{{ class.class_size_max }}
+        </td>
+    </tr>
     
     {% endif %}
 {% endif %}
