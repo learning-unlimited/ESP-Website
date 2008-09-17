@@ -423,7 +423,12 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 					ctxt['userrole'] = userrole
 					regverb = GetNode('V/Deadline/Registration/%s' % ctxt['userrole']['name'])
 					progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
+					nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 					ctxt['progs'] = progs
+					ctxt['nextreg'] = list(nextreg)
+					# A hack, to make times render in Chicago time...
+					for b in ctxt['nextreg']:
+						b.startdate -= datetime.timedelta(0,3600)
 				return render_to_response('users/profile_complete.html', request, navnode, ctxt)
 			else:
 				return True
@@ -436,7 +441,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 		if regProf.id is None:
 			regProf = RegistrationProfile.getLastProfile(curUser)
-		new_data = {}
+		new_data = {'address_state': 'IL', 'emerg_address_state': 'IL'}
 		if curUser.isStudent():
 			new_data['studentrep'] = (UserBit.objects.filter(user = curUser,
 									 verb = STUDREP_VERB,

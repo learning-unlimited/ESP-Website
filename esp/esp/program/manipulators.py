@@ -74,6 +74,7 @@ class EmergContactManipulator(forms.Manipulator):
             forms.TextField(field_name="emerg_last_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
             forms.EmailField(field_name="emerg_e_mail", is_required=False, length=25),
             ESPPhoneNumberField(field_name="emerg_phone_day", is_required=makeRequired, local_areacode='617'),
+            ESPPhoneNumberField(field_name="emerg_phone_even", local_areacode='617'),
             ESPPhoneNumberField(field_name="emerg_phone_cell", local_areacode='617'),
             forms.TextField(field_name="emerg_address_street", length=20, maxlength=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="emerg_address_city", length=20, maxlength=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
@@ -95,6 +96,7 @@ class GuardContactManipulator(forms.Manipulator):
             forms.TextField(field_name="guard_last_name", length=15, maxlength=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.EmailField(field_name="guard_e_mail", is_required=False, length=25),
             ESPPhoneNumberField(field_name="guard_phone_day", is_required=makeRequired, local_areacode='617'),
+            ESPPhoneNumberField(field_name="guard_phone_even", local_areacode='617'),
             ESPPhoneNumberField(field_name="guard_phone_cell", local_areacode='617'),
             )
 
@@ -114,15 +116,16 @@ class StudentInfoManipulator(forms.Manipulator):
         shirt_sizes = [('', '')] + list(shirt_sizes)
         shirt_types = [('', '')] + list(shirt_types)
         
-        studentrep_explained = NonEmptyIfOtherChecked('studentrep', 'Please enter an explanation above.')
-        studentrep_explained.always_test = True # because validators normally aren't run if a field is blank
+        #   studentrep_explained = NonEmptyIfOtherChecked('studentrep', 'Please enter an explanation above.')
+        #   studentrep_explained.always_test = True # because validators normally aren't run if a field is blank
         
         self.fields = (
-            GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)]),
+            GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(9,13)]),
             forms.TextField(field_name="school", length=24, maxlength=128),
             HTMLDateField(field_name="dob", is_required=makeRequired),
             forms.CheckboxField(field_name="studentrep", is_required=False),
-            forms.LargeTextField(field_name="studentrep_expl", is_required=False, rows=8, cols=45, validator_list=[studentrep_explained]),
+            forms.TextField(field_name="heard_about", length=40, maxlength=128),
+            #forms.LargeTextField(field_name="studentrep_expl", is_required=False, rows=8, cols=45, validator_list=[studentrep_explained]),
             forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
             forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types, validator_list=[validators.isNotEmpty]),
             )

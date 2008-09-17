@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys
-sys.path += ['/esp/web/esp.mit.edu/']
+sys.path += ['/esp/web/uchicago-splash.mit.edu/']
 
 import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'

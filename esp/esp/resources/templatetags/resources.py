@@ -50,7 +50,7 @@ def matrix_td(status_str):
     else:
         tdcolor = '#CCFFDD'
         
-    return '<td style="background-color: %s">%s</td>' % (tdcolor, status_str)
+    return '<td class="black" style="background-color: %s">%s</td>' % (tdcolor, status_str)
     
         
 @register.filter

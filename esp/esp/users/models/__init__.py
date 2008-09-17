@@ -710,6 +710,7 @@ class StudentInfo(models.Model):
     school = models.CharField(maxlength=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, null=True, default = False)
+    #   For U.Chicago, studentrep_expl stores "How did you hear about Splash?"
     studentrep_expl = models.TextField(blank=True, null=True)
     shirt_size = models.CharField(maxlength=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(maxlength=20, blank=True, choices=shirt_types, null=True)
@@ -751,10 +752,10 @@ class StudentInfo(models.Model):
         form_dict['dob']             = self.dob
         form_dict['shirt_size']      = self.shirt_size
         form_dict['shirt_type']      = self.shirt_type
-        form_dict['studentrep_expl'] = self.studentrep_expl
-        form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
-                                                            qsc  = STUDREP_QSC,
-                                                            verb = STUDREP_VERB)
+        form_dict['heard_about'] = self.studentrep_expl
+        # form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
+        #                                                    qsc  = STUDREP_QSC,
+        #                                                    verb = STUDREP_VERB)
         return form_dict
 
     @staticmethod
@@ -774,8 +775,9 @@ class StudentInfo(models.Model):
         studentInfo.dob             = new_data['dob']
         studentInfo.shirt_size      = new_data['shirt_size']
         studentInfo.shirt_type      = new_data['shirt_type']
-        studentInfo.studentrep_expl = new_data['studentrep_expl']
+        studentInfo.studentrep_expl = new_data['heard_about']
         studentInfo.save()
+        """
         if new_data['studentrep']:
             #   E-mail membership notifying them of the student rep request.
             subj = '[ESP Membership] Student Rep Request: ' + curUser.first_name + ' ' + curUser.last_name
@@ -795,6 +797,7 @@ class StudentInfo(models.Model):
             UserBit.objects.filter(user = curUser,
                                    verb = STUDREP_VERB,
                                    qsc  = STUDREP_QSC).delete()
+        """
         return studentInfo
 
     def __str__(self):

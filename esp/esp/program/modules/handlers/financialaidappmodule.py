@@ -91,6 +91,9 @@ class FinancialAidAppModule(ProgramModuleObj):
                                                                 program = self.program)
 
         Form = forms.form_for_model(FinancialAidRequest)
+        exclude_fields = ['approved', 'amount_received', 'amount_needed', 'reviewed']
+        for f in exclude_fields:
+            del Form.base_fields[f]
       
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)

@@ -131,8 +131,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 	if completedAll:
             if new_reg:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
-        else:
-            raise ESPError(), "You must finish all the necessary steps first, then click on the Save button to finish registration."
+        #else:
+        #    raise ESPError(), "You must finish all the necessary steps first, then click on the Save button to finish registration."
             
 	receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
 	return render_to_response(receipt, request, (prog, tl), context)

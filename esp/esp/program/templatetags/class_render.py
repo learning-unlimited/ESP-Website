@@ -29,6 +29,25 @@ def preview_cache_key_func(cls, user=None, prereg_url=None, filter=False, reques
         return 'CLASS_PREVIEW__%s' % cls.id
     return None
 
+def get_smallest_section(cls, timeslot=None):
+    if timeslot:
+        sections = cls.sections.filter(meeting_times=timeslot)
+    else:
+        sections = cls.sections.all()
+
+    if sections.count() > 0:
+        min_count = 9999
+        min_index = -1
+        for i in range(0, sections.count()):
+            q = sections[i].num_students() 
+            if q < min_count:
+                min_index = i
+                min_count = q
+        section = sections[min_index]
+    else:
+        section = None
+
+    return section
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func)
 def render_class_core(cls):
@@ -49,6 +68,7 @@ def render_class_core(cls):
         colorstring = ' background-color:#' + colorstring + ';'
     
     return {'class': cls,
+            'section': get_smallest_section(cls, timeslot=None), 
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
             'show_enrollment': show_enrollment }
@@ -62,14 +82,8 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
     
     show_class =  (not filter) or (not errormsg)
     
-    section = None
-    if timeslot is not None:
-        sections = cls.sections.filter(meeting_times=timeslot)
-        if sections.count() > 0:
-            section = sections[0]
-    
     return {'class':      cls,
-            'section':    section,
+            'section':    get_smallest_section(cls, timeslot),
             'user':       user,
             'prereg_url': prereg_url,
             'errormsg':   errormsg,

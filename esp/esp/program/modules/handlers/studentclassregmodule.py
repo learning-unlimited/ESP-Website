@@ -67,9 +67,15 @@ class StudentClassRegModule(ProgramModuleObj):
     
     def isCompleted(self):
         self.user = ESPUser(self.user)
-        if len(self.user.getEnrolledClasses(self.program)) == 0:
-            return False
-        return (len(self.user.getEnrolledClasses(self.program)) > 0)
+        cls_list = self.user.getEnrolledSections(self.program)
+        ts_list = []
+        for c in cls_list:
+            ts_list += list(c.meeting_times.all())
+        missing_timeslots = 0
+        for t in self.program.getTimeSlots():
+            if t not in ts_list:
+                return False
+        return True
 
     def deadline_met(self):
         #tmpModule = ProgramModuleObj()
@@ -80,7 +86,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     def prepare(self, context={}):
 	regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-	timeslots = list(self.program.getTimeSlots().order_by('id'))
+	timeslots = list(self.program.getTimeSlots().order_by('start'))
 	classList = regProf.preregistered_classes()
 
         prevTimeSlot = None
@@ -350,32 +356,65 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Classes/OneClass')    
     def clearslot(self, request, tl, one, two, module, extra, prog):
-	""" Clear the specified timeslot from a student registration and go back to the same page """
-	v_registered = request.get_node('V/Flags/Registration/Preliminary')
-	v_auto = request.get_node('V/Flags/Registration/Preliminary/Automatic')
+        """ Clear the specified timeslot from a student registration and go back to the same page """
+        v_registered = request.get_node('V/Flags/Registration/Preliminary')
+        v_auto = request.get_node('V/Flags/Registration/Preliminary/Automatic')
+        parent_program = self.program.getParentProgram()
         
-        oldclasses = ClassSection.objects.filter(meeting_times=extra,
-                             classsubject__parent_program = self.program,
-                             anchor__userbit_qsc__verb = v_registered,
-                             anchor__userbit_qsc__user = self.user).distinct()
-        #classes = self.user.getEnrolledClasses()
-        class_ids = [c.id for c in oldclasses]
-        for cls in oldclasses:
+        oldsections = set( [ s for s in ClassSection.objects.filter(meeting_times=extra, classsubject__parent_program = self.program)
+                             if UserBit.objects.UserHasPerms(request.user, s.anchor, v_registered) ] )
+        old_sids = set( [ s.id for s in oldsections ] )
+        cruftsections = set()
+        cyclesections = set()
+        
+        enrolled_sections = [s for s in self.user.getEnrolledSections(self.program)]
+        if parent_program:
+            enrolled_sections += [s for s in self.user.getEnrolledSections(parent_program)]
+        enrolled_cids = set([s.parent_class.id for s in enrolled_sections if s.id not in old_sids])
+        dropped_cids = set( [s.parent_class.id for s in oldsections if s.parent_class.id not in enrolled_cids] )
+        
+        # Check the implications for dropped subjects to see if we can clear out any cruft
+        implied_cids = set()
+        for implication in ClassImplication.objects.filter(cls__id__in=dropped_cids, enforce=True, parent__isnull=True):
+            implied_cids |= set( implication.member_id_ints )
+        
+        for sec in ClassSection.objects.filter(classsubject__id__in=implied_cids):
+            foundcycle = False
+            if not UserBit.objects.UserHasPerms(request.user, sec.anchor, v_registered):
+                continue
+            for implication in sec.parent_class.classimplication_set.filter(enforce=True):
+                if dropped_cids & set(implication.member_id_ints):
+                    cyclesections.add(sec)
+                    foundcycle = True
+                    break
+            if foundcycle:
+                continue
+            if UserBit.objects.UserHasPerms(request.user, sec.anchor, v_auto):
+                cruftsections.add(sec)
+        
+        cycle_sids = set( [ s.id for s in oldsections|cyclesections ] )
+        enrolled_cids = set( [s.parent_class.id for s in enrolled_sections if s.id not in cycle_sids] )
+        dropped_cids = set( [s.parent_class.id for s in (oldsections|cyclesections) if s.parent_class.id not in enrolled_cids] )
+        relevant_imps = ClassImplication.objects.filter(cls__id__in=enrolled_cids, enforce=True, parent__isnull=True)
+        
+        for sec in oldsections|cyclesections:
             # Make sure deletion doesn't violate any class implications before proceeding
-            for implication in ClassImplication.objects.filter(cls__in=class_ids, enforce=True, parent__isnull=True):
-#                break;
-                if implication.fails_implication(self.user, without_classes=set([cls.id])):
+            for implication in relevant_imps:
+                if implication.fails_implication(self.user, without_classes=dropped_cids):
                     raise ESPError(False), 'This class is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url, implication.cls.parent_program.niceName())
-            cls.unpreregister_student(self.user)
-            
-            # Undo auto-registrations of sections
-            for implication in ClassImplication.objects.filter(cls=cls, enforce=True):
-#                break;
-                for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
-                    if UserBit.objects.UserHasPerms(request.user, auto_class.anchor, v_auto):
-                        auto_class.unpreregister_student(self.user)
-	return self.goToCore(tl)
-
+            sec.unpreregister_student(self.user)
+        
+        # Undo auto-registrations of sections
+        for sec in cruftsections:
+            cruftsafe = True
+            for implication in relevant_imps:
+                if implication.fails_implication(self.user, without_classes=dropped_cids):
+                    cruftsafe = False
+            if cruftsafe:
+                sec.unpreregister_student(self.user)
+        
+        return self.goToCore(tl)
+    
     @needs_student
     @meets_deadline('/Classes/OneClass')
     def swapclass(self, request, tl, one, two, module, extra, prog):

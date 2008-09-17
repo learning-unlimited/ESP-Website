@@ -86,7 +86,18 @@ class RegProfileModule(ProgramModuleObj):
 	return response
 
     def isCompleted(self):
-        regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-        return regProf.id is not None
+	reg_prof = RegistrationProfile.getLastForProgram(self.user, self.program)
+	if reg_prof.id is not None:
+	    return True
+
+	test_prof = RegistrationProfile.getLastProfile(self.user)
+	if test_prof.id is not None:
+	    regProf = test_prof
+	    regProf.id = None
+	    regProf.program = self.program 
+	    regProf.save()
+	    return True
+	else:
+            return False
 
 

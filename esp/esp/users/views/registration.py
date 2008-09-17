@@ -77,6 +77,7 @@ def user_registration(request):
 
             login(request, user)
 
+            #return HttpResponseRedirect('/')
             return HttpResponseRedirect('/myesp/profile/')
     else:
         form = UserRegForm()
