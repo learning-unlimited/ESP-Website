@@ -1,6 +1,10 @@
 <!-- Begin Student Info Portion -->
 <tr>
- <td><label for="id_dob">D.O.B.:</label></td>
+ <th colspan="2">Student Information</th>
+</tr>
+
+<tr>
+ <td><label for="id_dob">Date of Birth:</label></td>
  <td>{{ form.dob }} {% if form.dob.errors %}
    <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
    {% endif %}
@@ -10,7 +14,7 @@
 
 <tr>
  <td><label for="id_graduation_year">Your Grade:<br />
-<em>(As of September 15, 
+<em>(As of September 4, 
       <strong>{{request.user.currentSchoolYear}}</strong>)
       </em></label></td>
  <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
@@ -28,11 +32,12 @@
 </tr>
 
 <tr>
- <td><label for="id_studentrep">I want to be an ESP Student Rep:</label></td>
- <td>{{ form.studentrep }} {% if form.studentrep.errors %}
-   <br /><span class="form_error">{{ form.studentrep.errors|join:", " }}</span>
+ <td><label for="id_studentrep">I heard about Splash from: </label></td>
+ <td>{{ form.heard_about }} {% if form.heard_about.errors %}
+   <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
+
 
 <!-- End Student Info Portion -->

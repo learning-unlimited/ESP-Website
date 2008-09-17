@@ -12,10 +12,35 @@
 Your profile has now been successfully completed.
 </p>
 
+{% if userrole %}
+<p>
+{% if progs %}
+  Continue on to:<br />
+  {% for prog in progs %}
+  <span style="font-weight: bold;">
+   <a href="/{{userrole.base}}/{{prog.getUrlBase}}/{{userrole.reg}}">{{userrole.name}} Registration for {{prog.niceName}}</a>
+  </span>
+  <br />
+  {% endfor %}
+{% endif %}
+{% for bit in nextreg %}
+  Registration for <span style="font-weight: bold;">{{ bit.qsc.parent.friendly_name }} {{ bit.qsc.friendly_name }}</span> will be available
+  <span style="font-weight: bold;">{{ bit.startdate|date:"F j, Y \a\t P" }}</span>.
+  <br />
+{% endfor %}
+
+{% endif %}
+<br />
+<br />
+</p>
+
 <div class="note">
 <strong>Note:</strong> Registering for an account <u>does not</u> register you for a program.<br />
-Please head over to our <a href="/teach/index.html" title="Teach a class!">Teach</a> or 
-<a href="/learn/index.html" title="Take a Class!">Learn</a> section to join a program.
+{% if progs %}
+  Please follow the above link to join a program.
+{% else %}
+  Please sign back in anytime after the above date with the username you just created to register for the program.
+{% endif %}
 </div>
 
 

@@ -1,6 +1,10 @@
 <!-- Begin Educator Info Portion -->
 
 <tr>
+ <th colspan="2">Educator Information</th>
+</tr>
+
+<tr>
  <td><label for="id_position">Position: <br /> <small>(e.g. teacher,principal)</small></label></td>
  <td>{{ form.position }} {% if form.position.errors %}
    <br /><span class="form_error">{{ form.position.errors|join:", " }}</span>

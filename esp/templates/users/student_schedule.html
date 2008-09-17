@@ -1,9 +1,8 @@
 
 <p>
-Below is your class schedule for {{ program.niceName }}.  Please use the links in the right-hand column to select classes to fill each time slot.  You may also
-<a target="_blank" href='/learn/{{one}}/{{two}}/catalog/'>
-open a full catalog in a separate window
-</a>.
+Below is your class schedule for {{ program.niceName }}.  Keep in mind that some classes fill more than one class block,
+so some blocks will be filled in automatically as you pick classes.  Please use the links in the right-hand column to select classes to fill each time slot. Click
+<a target="_blank" href='/learn/{{one}}/{{two}}/catalog/'>here</a> to view a list of all the classes offered, in a separate window.
 </p>
 
 {% if not module.deadline_met %}
@@ -21,7 +20,7 @@ Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{reque
 </tr>
 {% for timeslot in timeslots %}
 
-<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.friendly_name }} </td>
+<tr><td width="25%" valign="top" align="center"> {{ timeslot.0.short_description }} </td>
 	{% if timeslot.1 %}
 	<td>{{timeslot.1.title}} 
         {% if request.user.onsite_local %}

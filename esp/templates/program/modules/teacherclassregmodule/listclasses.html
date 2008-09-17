@@ -58,12 +58,12 @@ If you have any questions regarding the program, <br /> please email the
       </span>
     </td>
     <td class="clsmiddle">
-       <form method="post" action="./deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
+       <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
          <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
        </form>
     </td>
     <td class="clsmiddle">
-       <form method="post" action="./editclass/{{cls.id }}">
+       <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
 {% if module.deadline_met %}
          <input class="button" type="submit" value="Edit">
@@ -120,8 +120,11 @@ If you have any questions regarding the program, <br /> please email the
    {% if module.deadline_met %}
    <tr>
    <td colspan="4">
+It's past the deadline to add new classes for Splash! 2008, so we can't necessarily accommodate classes
+submitted after September 1st, but we'll try. Click
      <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
-       Add a new class for {{ program.niceName }}!
+ here </a> to submit a new class, and we'll let you know right away whether we can accommodate it.
+<!--       Add a new class for {{ program.niceName }}! -->
      </a>
    </td>
    </tr>

@@ -1,5 +1,9 @@
 <!-- User ContactInfo -->
 <tr>
+ <th colspan="2">Your Contact Information</th>
+</tr>
+
+<tr>
  <td><label for="id_first_name">First Name:</label></td>
  <td>{{ form.address_postal }}
  {{ form.first_name }} {% if form.first_name.errors %}
@@ -24,7 +28,7 @@
 </div>
 </td>
 </tr>
-
+{{ form.errors|join:", " }}
 <tr>
  <td><label for="id_e_mail">Email:</label></td>
  <td>{{ form.e_mail }} {% if form.e_mail.errors %}
@@ -53,7 +57,7 @@
                         <small><i>city</i></small>
                    </label></td>
  <td>
- <table border="0" cellspacing="0" cellpadding="0" width="100%">
+ <table class="plain" border="0" cellspacing="0" cellpadding="0" width="100%">
  <tr>
  
  <td>
@@ -82,22 +86,14 @@
 </tr>
 
 <tr>
- <td><label>Phone:</label></td>
+ <td><label>Phone numbers:</label></td>
  <td>&nbsp;</td>
 </tr>
 
 <tr>
- <td align='right'><small><i><label for="id_phone_day">day</label></i></small></td>
+ <td align='right'><small><i><label for="id_phone_day">home</label></i></small></td>
  <td>{{ form.phone_day }} {% if form.phone_day.errors %}
    <br /><span class="form_error">{{ form.phone_day.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
-<tr>
- <td align='right'><small><i><label for="id_phone_even">evening</label></i></small></td>
- <td>{{ form.phone_even }} {% if form.phone_even.errors %}
-   <br /><span class="form_error">{{ form.phone_even.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -109,4 +105,5 @@
    {% endif %}
  </td>
 </tr>
+
 <!-- End User ContactInfo -->

@@ -1,0 +1,55 @@
+{% extends "elements/receipt.html" %}
+
+{% block title %}Pre-Registration Receipt for {{program.niceName}}{% endblock %}
+
+{% block subsection_name %} {% endblock %}
+
+{% block body %}
+<p>Thank you for registering for {{program.niceName}} at the University of Chicago!</p>
+
+<p>Your class selection has been saved. You can come back and change your class selection later, up until Thursday, September 27th. And you might want to check back from time to time, since we'll be adding a few more classes over the next few weeks. You can also, pending room in classes, switch during morning check-in on Saturday, September 29th, but we encourage you not to do that if you can help it, as it makes more work for us.</p>
+
+<p>You must show up to Splash check-in between 9 and 9:15 on Saturday, September 29th to confirm your registration. Check-in will be held in Ida Noyes Hall at the University of Chicago, which is located on the corner of 59th Street and Woodlawn Avenue (enter on 59th). More information, including a map and directions will come in a later email.</p>
+
+<p>While Splash Chicago is a free program, we ask that you show up if you're registered. If something comes up and you find out you can no longer attend, please let us know so we can release the spots in the courses to someone who can.</p>
+
+<p>To attend Splash Chicago, you will need to sign some release and medical liability forms, which will be up online later in the month, and also available at check-in on the 29th.</p>
+
+<p>So, to sum up, please bring the following to check-in on the 29th:
+<ul>
+<li>Identification
+<li>This receipt
+<li>Completed and signed liability and medical forms
+</ul>
+</p>
+
+<p>We look forward to seeing you at Splash! If you have any questions, please email Luke Joyner, Splash Director, at lukejoy AT uchicago DOT edu. Have a fun September! </p>
+
+<br />
+<hr size="1" color="#000000" />
+<p>
+User Information: <br />
+<ul>
+<li>Username: {{ request.user.username }}</li>
+<li>Full Name: {{ request.user.first_name }} {{ request.user.last_name }}</li>
+<li>User ID: {{ request.user.id }}</li>
+</ul>
+</p>
+<br />
+<table cellpadding="3" style="width: 5.5in; margin: auto; border: 1px solid black; border-collapse: collapse;" border=1>
+<tr>
+  <th colspan="2">Class Schedule for {{ request.user.first_name }} {{ request.user.last_name }}</th>
+</tr>
+{% for timeslot in timeslots %}
+<tr>
+  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.friendly_name }} </td>
+  <td>
+	{% if timeslot.1 %}
+	{{timeslot.1.title}}{% else %} <em>Nothing Selected</em> {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+<br />
+{% endblock %}

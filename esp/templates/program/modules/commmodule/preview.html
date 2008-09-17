@@ -1,0 +1,77 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Communications Portal{% endblock %}
+
+{% block subsection_name %}Communications Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+<!--
+
+//-->
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+<style type="text/css">
+.listtable, .listtable th, .listtable td{ border: 1px solid #999; border-collapse: collapse;}
+#divmaintext .unchosen { background-color: #CCC; }
+#divmaintext .chosen { background-color: #FFF; }
+#divmaintext td.notchooser { cursor: pointer }
+#finalsentence { border: 1px solid black; width: 550px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Communications Portal</h1>
+<br />
+<h2>Preview</h2>
+
+<br />
+<p>
+Here is a preview of what the email you sent will look like for the first user in the list of
+users to whom you are sending this email.
+<br />
+</p>
+<br />
+
+<p>
+<strong>From:</strong> {{ from }}
+<br />
+</p>
+
+<p>
+<strong>Subject:</strong> {{ subject }}
+<br />
+</p>
+
+<br />
+<p>
+<strong>Email body:</strong>
+<br />
+{{ renderedtext }}
+<br />
+</p>
+
+<br />
+<br />
+<form action="/manage/{{program.getUrlBase}}/maincomm2" method="post" name="mainback">
+<input type="hidden" name="filterid" value="{{filterid}}" />
+<input type="hidden" name="from" value="{{from}}" />
+<input type="hidden" name="subject" value="{{subject}}" />
+<input type="hidden" name="body" value="{{body}}" />
+<input type="hidden" name="listcount" value="{{listcount}}" />
+<input type="submit" value="Edit Your Email" id="submitform" />
+</form>
+<form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="mainback">
+<input type="hidden" name="filterid" value="{{filterid}}" />
+<input type="hidden" name="from" value="{{from}}" />
+<input type="hidden" name="subject" value="{{subject}}" />
+<input type="hidden" name="body" value="{{body}}" />
+<input type="submit" value="Send Message!" id="submitform" />
+</form>
+
+{% endblock %}

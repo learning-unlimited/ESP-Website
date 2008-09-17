@@ -38,26 +38,26 @@
 
 <tr>
   <th>Total # of Classes</th>
-  <td>{{ vitals.classtotal }}</td>
+  <td>{{ vitals.classtotal.count }}</td>
 </tr>
 <tr>
   <th>Total # of Classes <span style="color: #00C;">Unreviewed</span></th>
-  <td>{{ vitals.classunreviewed }}</td>
+  <td>{{ vitals.classunreviewed.count }}</td>
 </tr>
 <tr>
   <th>Total # of Classes <span style="color: #0C0;">Approved</span></th>
-  <td>{{ vitals.classapproved }}</td>
+  <td>{{ vitals.classapproved.count }}</td>
 </tr>
 <tr>
   <th>Total # of Classes <span style="color: #C00;">Rejected</span></th>
-  <td>{{ vitals.classrejected }}</td>
+  <td>{{ vitals.classrejected.count }}</td>
 </tr>
 {% for timeslot in vitals.timeslots %}
 
 <tr>
   <th>{{ timeslot.slotname }}</th>
   <td>Students: {{ timeslot.studentcount }}<br />
-      Classes: {{ timeslot.classcount }}</td>
+      Classes: {{ timeslot.classcount.count }}</td>
 </tr>
 {% endfor %}
 </table>

@@ -2,6 +2,24 @@
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript">
+<!--
+function submit_check()
+{
+    if (confirm('Your registration is incomplete, perhaps because you have not registered for an activity during each time block.  Please review each of the above steps.  Are sure that all of the above informa\
+tion is correct?'))
+    {
+        return true;
+    }
+    return false;
+}
+
+-->
+</script>
+{% endblock %}
+
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
@@ -14,19 +32,26 @@
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
+h1.catalog {color: #c6def7}
 </style>
 <br /><br />
-<h1>Student registration for {{program.niceName}} </h1>
+<h1 class="catalog">Student registration for {{program.niceName}} </h1>
+
+<p>
+  Please complete the following steps to register for {{program.niceName}}.
+  When each step is completed, the corresponding box in the right-hand column will
+  be &#8220;checked off&#8221;.
+</p>
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentreg" %}
-<div id="catalog">
+{% render_inline_qsd program.anchor "learn:studentregheader" %}
+
 <p>
-  Please complete the following steps to pre-register for {{program.niceName}}.
-  When each step is completed, the corresponding box in the right-hand column will
-  be &#8220;checked off&#8221;. After finishing all the steps, click the &#8220;save&#8221;
-  button at the bottom of the page.
+  After finishing all the steps, click the &#8220;{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}&#8221;
+  button at the bottom of the page, and you'll be good to go.
 </p>
+
+<div id="catalog">
 
 <center><div class="note">
 <b>Parents:</b> You should not be at this page!  Please let your kids choose their classes and fill out the registration forms.
@@ -60,8 +85,8 @@
 {% endif %}
 {% endfor %}
  <tr>
-  <td><a href="#confirmreg" title="Confirm Pre-Registration">
-        Confirm Pre-Registration</a> <em>(below)</em>
+  <td><a href="#confirmreg" title="Confirm Registration">
+        Confirm Registration</a> <em>(below)</em>
   </td>
   <td>
    <a href="#confirmreg">
@@ -72,6 +97,8 @@
 </table>
 
 <br />
+{% render_inline_qsd program.anchor "learn:studentreg" %}
+
 {% for module in modules %}
 {% if module.useTemplate %}
 <a name="module-{{module.id}}"></a>
@@ -103,8 +130,8 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 
 <a name="confirmreg"></a>
 
-<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-<input class="button" type="submit" value="{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}" {% if not completedAll %}disabled{% endif %}/></form>
+<form action="/learn/{{one}}/{{two}}/confirmreg" {% if not completedAll %}onsubmit="return submit_check();"{% endif %} method="post">
+<input class="button" type="submit" value="Save!{% if not completedAll %} (incomplete){% endif %}"/></form>
 {% if isConfirmed %}
  | 
 <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
@@ -114,8 +141,10 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 </center>
 
 <br />
+{% render_inline_qsd program.anchor "learn:studentregfooter" %}
+
 <p>
-  Thanks for pre-registering!  You can come back and change any of the above information until 2 days before {{program.niceName}} begins.  If you have any questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
+  Thanks for registering!  You can come back and change any of the above information until 2 days before {{program.niceName}} begins.  If you have any questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
 </p>
 
 {% endblock %}

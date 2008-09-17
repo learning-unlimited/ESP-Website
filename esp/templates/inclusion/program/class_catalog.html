@@ -18,7 +18,7 @@
        </th>
      </tr>
      <tr>
-       <td colspan="3" class="info" {% if errormsg %}style="background: #eee;"{% endif %}>
+       <td colspan="3" class="info" {% if errormsg %}style="background: #333;"{% endif %}>
          {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
        {% if class.prereqs %}
        <br /><br />
@@ -29,19 +29,20 @@
        {% endif %}
        </td>
      </tr>
-    <tr {% if errormsg %}style="background: #eee;"{% endif %}>
-      <td style="width: 50%;" valign="top" {% if errormsg %}style="background: #eee;"{% endif %}>
+    <tr {% if errormsg %}style="background: #333;"{% endif %}>
+      <td style="width: 50%;" valign="top" {% if errormsg %}style="background: #333;"{% endif %}>
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
 	  {{ class.friendly_times|join:"<br />" }}
         <br />
       </td>
  
-      <td style="width: 50%;" colspan="2" {% if errormsg %}style="background: #eee;"{% endif %}>
-         <strong>Grades:</strong>
-           {{ class.grade_min }}--{{ class.grade_max }} <br />
-         <strong>Enrollment:</strong>
-           {{ class.num_students }} (max {{ class.class_size_max }})
+      <td style="width: 50%;" colspan="2" {% if errormsg %}style="background: #333;"{% endif %}>
+         <strong>Enrollment:{% if isfull %}<font color="#990000">Class is full!</font></strong>{% else %}</strong><br />  {% for sec in class.sections.all %}
+            Section {{ sec.index }}: {% if sec.isfull % }<font color = #990000">Section is full!</font>{% else %} {{ sec.num_students }} (max {{ class.class_size_max }}) 
+        {% endif %}
+        {% endfor %}
+        {% endif %}
       </td>
     </tr>
     {% if class.media_count %}

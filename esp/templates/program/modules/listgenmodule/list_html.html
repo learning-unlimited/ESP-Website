@@ -40,6 +40,8 @@ body { font-family: georgia; }
    <th>Address</th>
    <th>Email</th>
    <th>ID#</th>
+   <th>School</th>
+   <th>Found out about Splash from...</th>
 </tr>
 {% for user in users %}
 <tr>
@@ -48,6 +50,8 @@ body { font-family: georgia; }
    <td>{% if user.getLastProfile.contact_user.address %}{{ user.getLastProfile.contact_user.address}}{% else %}N/A{% endif %}</td>
    <td>{{ user.email }}</td>
    <td><strong>{{user.id}}</strong></td>
+   <td>{% if user.getLastProfile.student_info.school %}{{ user.getLastProfile.student_info.school }}{% else %}N/A{% endif %}</td>
+   <td>{% if user.getLastProfile.student_info.studentrep_expl %}{{ user.getLastProfile.student_info.studentrep_expl }}{% else %}N/A{% endif %}</td>
 </tr>
  {% endfor %}
 </table>

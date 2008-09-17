@@ -13,6 +13,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <style type="text/css">
 
 .required { border: 2px solid black; }
@@ -28,15 +29,15 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 {% block content %}
 <h1>Your Profile Information</h1>
-<p>Please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
+<p>First, please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue on to picking your classes.</p>
 
 <p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
 
 {% if form.has_errors %}
-<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
+<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2><br />
 {% endif %}
 
-
+<div id="program_form">
 <form action="{{request.path}}" method="post">
 <input type="hidden" name="profile_page" value="true" />
 <input type="hidden" name="current_role" value="{{ profiletype }}" />
@@ -52,7 +53,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 {% ifequal profiletype "teacher" %}
   {% include "users/profiles/teacherinfo.html" %}
-  {% include "users/profiles/emergencycontact.html" %}
+{% comment %}  {% include "users/profiles/emergencycontact.html" %} {% endcomment %}
 {% endifequal %}
 
 {% ifequal profiletype "educator" %}
@@ -66,9 +67,10 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 </table>
 
 <br />
-<center><input type="submit" value="Update your Information!" /></center>
+<center><input type="submit" name="submitform" class="button" value="Update your Information!" /></center>
 
 <br />
 </form>
+</div>
 
 {% endblock %}
