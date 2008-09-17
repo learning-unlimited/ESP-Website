@@ -1,5 +1,5 @@
 #catalog table {
-   border: 1px solid #CCC;
+   border: 1px solid #666;
    border-width: 1px;
    border-collapse: collapse;
 }
@@ -8,8 +8,8 @@
    font-family: Arial, sans-serif;
    padding: 5px;
    font-size: 15px;
-   background-color: #c6def7;
-   color: #000;
+   background-color: #000000;
+   color: #c6def7;
 }
 
 #catalog th.materials {
@@ -17,16 +17,16 @@
    padding: 5px;
    font-size: 12px;
    font-weight: normal;
-   background-color: #c6def7;
-   color: #000;
+   background-color: #000000;
+   color: #c6def7;
 }
 
 #catalog td {
    font-family: serif;
    padding: 5px;
    font-size: 14px;
-   background-color: #ffffff;
-   color: #000;
+   background-color: #333333;
+   color: #ffffff;
 }
 
 .doclist {
@@ -75,7 +75,7 @@ p.category {
 
 #divmaintext h1 {
   font-size: 22pt;
-  color: black;
+  color: white;
   font-family: arial;
   text-align: center;
   width: 100%;

@@ -1,0 +1,69 @@
+{% extends "elements/receipt.html" %}
+
+{% block title %}Pre-Registration Receipt for {{program.niceName}}{% endblock %}
+
+{% block subsection_name %} {% endblock %}
+
+{% block body %}
+
+<i>Please read this receipt, then print it out if you can, and bring it with you when you come to Splash.</i>
+
+<p>
+<b>Thank you for registering for Splash! 2008 at the University of Chicago!</b>
+Your class selection has been saved. You can come back and change your class selection at any time, up until Thursday, October 2nd, though some classes might fill up between now and then.
+</p>
+
+<p>
+Please also remember to print out <a href="http://uchicago-splash.mit.edu/media/uploaded/08_09/waiver.pdf">a waiver</a>, have it signed, and bring it with you to the program on October 4th.
+</p>
+
+<p>
+You must show up to Splash check-in between 9:30 and 10 AM on Saturday, October 4th to confirm your registration. You should plan to arrive at the Harper building at the University of Chicago, which is located at 1116 E. 59th street, halfway between Ellis Ave. and University Ave. (The day will end, at 4 PM, in the same place.) A map, with directions, can be found on our home page, or by clicking <a href="http://uchicago-splash.mit.edu/media/uploaded/08_08/map__.pdf">here</a>. NOTE THAT THIS IS NOT THE SAME EXACT LOCATION AS LAST YEAR.
+</p>
+
+<p>
+While Splash Chicago is a free program, we ask that you commit to showing up if you're registered. If something comes up and you find out you can no longer attend, please let us know so we can release the spots in the courses to someone who can.
+</p>
+
+<p>
+So, to sum up, please bring the following to check-in on the 4th of October, between 9:30 AM and 10 AM:
+<ul>
+<li>Any sort of Identification that has your name on it
+<li>This receipt
+<li>Completed and signed waiver form
+</ul>
+</p>
+
+<p>
+We look forward to seeing you at Splash! If you have any questions, please email Luke Joyner, Splash Co-Director, at <a href="mailto:lukejoy@uchicago.edu">lukejoy@uchicago.edu</a>. Have a fun September!
+</p>
+
+
+<br />
+<hr size="1" color="#000000" />
+<p>
+User Information: <br />
+<ul>
+<li>Username: {{ request.user.username }}</li>
+<li>Full Name: {{ request.user.first_name }} {{ request.user.last_name }}</li>
+<li>User ID: {{ request.user.id }}</li>
+</ul>
+</p>
+<br />
+<table cellpadding="3" style="width: 5.5in; margin: auto; border: 1px solid black; border-collapse: collapse;" border=1>
+<tr>
+  <th colspan="2">Class Schedule for {{ request.user.first_name }} {{ request.user.last_name }}</th>
+</tr>
+{% for timeslot in timeslots %}
+<tr>
+  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.short_description }} </td>
+  <td>
+	{% if timeslot.1 %}
+	{{timeslot.1.title}}{% else %} <em>Nothing Selected</em> {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+
+<br />
+{% endblock %}

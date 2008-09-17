@@ -6,8 +6,11 @@
 /* GENERAL */
 
 html, body {
-  background-color: #e8f0f7;
+  background-color: #000000;
   margin: 0px;
+  font-family:heletica;
+  color:#EEEEEE;
+  font-size:10pt;
 }
 /* for div containing skip links and other content that should never be seen by visual browsers */
 .offscreen {
@@ -20,17 +23,17 @@ html, body {
 /* default link characteristics */
 a,
 a:link {
-  color: #3366cc;
+  color: #99BBEE;
   text-decoration: none;
 }
 a:visited {
-  color: #993399;
+  color: #99BBEE;
   text-decoration: none;
 }
 a:active,
 a:hover {
-  color: #3366cc;
-  text-decoration: underline;
+  color:#EEEE22;
+  text-decoration: none;
 }
 
 
@@ -43,7 +46,8 @@ form {
 
 
 .paper {
-  background-color: #ffffff;
+  background-color: #303030;
+  color:#ffffff;
 }
 .rightalign {
   text-align: right;
@@ -52,50 +56,11 @@ form {
 
 /* BACKGROUNDS AT TOP OF PAGE */
 
-#divbkg1 {
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: 100%;
-  height: 152px;
-  background-repeat: no-repeat;
-  z-index: 4;
-}
-#divbkg2 {
-  position: absolute;
-  left: 0px;
-  top: 152px;
-  width: 199px;
-  height: 400px;
-  background-repeat: no-repeat;
-  z-index: 4;
-}
-#divbkg3 {
-  position: absolute;
-  left: 199px;
-  top: 152px;
-  width: 603px;
-  height: 85px;
-  background-repeat: no-repeat;
-  z-index: 4;
-}
-#divbkg4 {
-  position: absolute;
-  left: 199px;
-  top: 237px;
-  width: 88px;
-  height: 315px;
-  background-repeat: no-repeat;
-  z-index: 4;
-}
-
-
-
 /* SITE TITLE */
 
 #divtitle {
   position: absolute;
-  left: 163px;
+  left: 10px;
   top: 24px;
   z-index: 6;
 }
@@ -107,64 +72,9 @@ form {
 #divnavh {
   position: absolute;
   left: 0px;
-  top: 84px;
+  top: 0px;
   z-index: 10;
 }
-#divnav0 {
-  position: absolute;
-  left: 107px;
-  top: 84px;
-  z-index: 10;
-}
-#divnav1 {
-  position: absolute;
-  left: 201px;
-  top: 84px;
-  z-index: 10;
-}
-#divnav2 {
-  position: absolute;
-  left: 297px;
-  top: 84px;
-  z-index: 10;
-}
-#divnav3 {
-  position: absolute;
-  left: 396px;
-  top: 83px;
-  z-index: 10;
-}
-#divnav4 {
-  position: absolute;
-  left: 496px;
-  top: 83px;
-  z-index: 10;
-}
-#divnav5 {
-  position: absolute;
-  left: 589px;
-  top: 83px;
-  z-index: 10;
-}
-#divnav6 {
-  position: absolute;
-  left: 690px;
-  top: 83px;
-  z-index: 10;
-}
-#divnav7 {
-  position: absolute;
-  left: 790px;
-  top: 83px;
-  z-index: 10;
-}
-#divnav8 {
-  position: absolute;
-  left: 220px;
-  top: 155px;
-  z-index: 10;
-}
-
 
 
 /* SECTION NAME */
@@ -172,7 +82,7 @@ form {
 #divsectionname {
   position: absolute;
   left: 82px;
-  top: 164px;
+  top: 5px;
   z-index: 6;
 }
 
@@ -184,7 +94,7 @@ form {
   width: 199px;
   position: absolute;
   left: 0px;
-  top: 223px;
+  top: 80px;
   z-index: 10;
   margin: 10px 0 0 0;
   border-collapse: collapse;
@@ -199,11 +109,10 @@ form {
   padding: 6px 20px 5px 15px;
 /*  padding: 0;*/
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.75em;
-/*  color: #3366cc;*/
-  color: black;
+  font-size: 1.0em;
   line-height: 133%;
   margin: 0px;
+  color:#EEEEEE;
 }
 /* outdent 'bullet' in secondary nav */
 .divsecondarynavlink .bullet {
@@ -222,7 +131,7 @@ form {
   font-weight: bold;
   display: block;
 /*  color: #3366cc; */
-  color: black;
+  color: #EEEEEE;
   width: 100%;
   text-decoration: none;
 }
@@ -246,14 +155,14 @@ form {
 #secondarynav .indent {
   padding-top: 0px;
   background-image: none;
-  font-size: 55%;
+  font-size: 75%;
   padding-left: 30px;
 }
 
 #secondarynav a:visited {
   font-weight: bold;
 /*  color: #993399; */
-  color: #333;
+  color: #AAA;
   text-decoration: none;
 }
 #secondarynav a:active,
@@ -261,7 +170,7 @@ form {
 #secondarynav a:focus {
   font-weight: bold;
 /*  color: #3366cc; */
-  color: #999;
+  color: #FFF;
   text-decoration: underline;
 }
 
@@ -297,9 +206,10 @@ form {
 #divlogin {
   position: absolute;
   left: 380px;
-  top: 160px;
+  top: 10px;
   z-index: 8;
   width: 360px;
+  color: #FFFFFF;
 }
 
 #divlogout {
@@ -315,7 +225,7 @@ form {
 
   font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: .85em;
-  color: #000000;
+  color: #EEEEEE;
   line-height: 100%;
   margin: 0px;
   white-space: nowrap;
@@ -323,7 +233,7 @@ form {
 #divlogout p {
   font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
-  color: #000000;
+  color: #EEEEEE;
   line-height: 100%;
   margin: 0px;
   white-space: nowrap;
@@ -383,7 +293,7 @@ form {
   position: relative;
   left: 10px;
   text-decoration: underline;
-  color: #F00;
+  color: #EEEEEE;
 }
 
 /* MAIN CONTENT AREA */
@@ -392,8 +302,9 @@ form {
 #divmain {
   position: absolute;
   left: 0px;
-  top: 152px;
+  top: 60px;
   z-index: 2;
+  color: #EEEEEE;
 }
 
 /* struts for main table */
@@ -401,7 +312,7 @@ form {
   height: 152px;
 }
 #maintable div.row2 {
-  height: 85px;
+  height: 16px;
 }
 #maintable div.row3 {
   height: 370px;
@@ -413,7 +324,7 @@ form {
   width: 199px;
 }
 #maintable div.col2 {
-  width: 88px;
+  width: 0px;
 }
 #maintable div.col3 {
   width: 485px;
@@ -435,54 +346,45 @@ form {
 #divmainqsddatetimestamp {
   font-size: 0.90em;
 }
-#divmaintext p {
+#divmaintext p, #divmaintext li {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.83em;
+  font-size: 1.0em;
   line-height: 160%;
-  color: #000000;
+  color: #EEEEEE;
   margin-top: 0px;
 }
-
-#divmaintext li {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.8em;
-  line-height: 140%;
-  color: #000000;
-  margin-top: 0px;
-}
-
 #divmaintext pre {
-  font-size: .9em;
+  font-size: 1.1em;
 }
 #divmaintext h1 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: .92em;
+  font-size: 1.3em;
   font-weight: bold;
   color: #3366cc;
   margin-top: 0px;
 }
 #divmaintext h2 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: .9em;
+  font-size: 1.2em;
   font-weight: bold;
-  color: #000000;
+  color: #B0F0F0;
   margin-top: 0px;
   margin-bottom: 0px;
 }
 #divmaintext h3 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: .85em;
+  font-size: 1.1em;
   font-weight: bold;
-  color: #000000;
+  color: #EEEEEE;
   margin-top: 0px;
   margin-bottom: 0px;
 }
 #divmaintext h4 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.75em;
+  font-size: 1.05em;
   font-weight: bold;
   font-style: italic;
-  color: #000000;
+  color: #EEEEEE;
   margin-top: 0px;
   margin-bottom: 0px;
 }
@@ -517,16 +419,16 @@ form {
   text-align: left;
   vertical-align: top;
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.75em;
+  font-size: 1.0em;
   font-weight: bold;
-  color: #000000;
+  color: #EEEEEE;
   white-space: nowrap;
 }
 #divmaintext form table td input.textfield,
 #divmaintext form table td textarea {
   font-family: Arial, Lucida, Helvetica, sans-serif;
   width: 100%;
-  color: #000000;
+  color: #EEEEEE;
 }*/
 /*#divmaintext form table td textarea {
   height: 6.0em;
@@ -687,30 +589,20 @@ table.plaintable th {
 
 /* prettier forms */
 #divmaintext th { padding-top: 10px; }
-#divmaintext th.small { font-size: .8em }
 #divmaintext label.header { font-weight: bold; }
 #divmaintext select, input[type=text], input[type=file], input[type=password], textarea { border: 1px solid #b7b7b7; }
 #divmaintext select.required, input[type=text].required, input[type=password].required, input[type=file].required, textarea.required { border: 1px solid #FFb7b7; }
 #divmaintext select:focus, input[type=text]:focus, input[type=password]:focus, textarea:focus { border: 1px solid black; }
 #divmaintext select:focus.required, input[type=text]:focus.required, input[type=password]:focus.required, textarea:focus.required { border: 1px solid #F00; }
 .form_error { font-size: 80%; font-style: italic; color: #C00; }
-
-
-
+.dojoComboBoxOptions { color: #333; }
+.dojoComboBoxItemHighlight { color: #eee; }
 
 /* pretty form stuff */
 
-div.code {
-    border: 1px;
-    border-color: #999999;
-    font-family: Courier New, Monospace;
-    font-size: 12px;
-    margin: 10px;
-}
-
 div.note, div.info, div.errormsg, div.question { 
   text-align: left;
-  font-size: .8em;
+  font-size: 1.0em;
   font-style: italic;
   font-family: arial;
   padding: 5px 0px 5px 38px;
@@ -720,16 +612,16 @@ div.note, div.info, div.errormsg, div.question {
   width: 450px;
 }
 div.note {
-  background: #DDD url('/media/images/note.gif') no-repeat 4px 50%;
+  background: #555 url('/media/images/note.gif') no-repeat 4px 50%;
 }
 div.info {
-  background: #DDD url('/media/images/information.gif') no-repeat 4px 10%;
+  background: #555 url('/media/images/information.gif') no-repeat 4px 10%;
 }
 div.errormsg {
-  background: #DDD url('/media/images/error.gif') no-repeat 4px 50%;
+  background: #555 url('/media/images/error.gif') no-repeat 4px 50%;
 }
 div.question {
-  background: #DDD url('/media/images/questionmark.gif') no-repeat 4px 50%;
+  background: #555 url('/media/images/questionmark.gif') no-repeat 4px 50%;
 }
 
 .monospace {

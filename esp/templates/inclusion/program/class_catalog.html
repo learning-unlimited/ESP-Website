@@ -39,8 +39,8 @@
  
       <td style="width: 50%;" colspan="2" {% if errormsg %}style="background: #333;"{% endif %}>
          <strong>Enrollment:{% if isfull %}<font color="#990000">Class is full!</font></strong>{% else %}</strong><br />  {% for sec in class.sections.all %}
-            Section {{ sec.index }}: {% if sec.isfull % }<font color = #990000">Section is full!</font>{% else %} {{ sec.num_students }} (max {{ class.class_size_max }}) 
-        {% endif %}
+            Section {{ sec.index }}: {% if sec.isfull %}<font color = "#990000">Section is full!</font>{% else %} {{ sec.num_students }} (max {{ class.class_size_max }}) 
+        {% endif %} <br />
         {% endfor %}
         {% endif %}
       </td>

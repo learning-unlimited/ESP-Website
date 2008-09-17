@@ -121,7 +121,7 @@ color: #006600;
 }
 
 #battlescreen table {
-   background-color: #FFE;
+   background-color: #554;
    border: 2px solid #99F;
    border-width: 0 2px 6px 2px;
 }
@@ -156,6 +156,16 @@ color: #006600;
 #battlescreen a {
    background: transparent;
    text-decoration: underline;
+}
+
+#divmaintext a:visited {
+   color:#FF44FF;
+   text-decoration:underline;
+}
+
+#divmaintext a:link {
+   color:#4444FF;
+   text-decoration:underline;
 }
 
 #battlescreen a.addclass {
