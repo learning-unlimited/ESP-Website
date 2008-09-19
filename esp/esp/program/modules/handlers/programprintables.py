@@ -670,7 +670,7 @@ class ProgramPrintables(ProgramModuleObj):
         
         # get list of valid classes
         classes = [ cls for cls in student.getEnrolledClasses()]
-
+        assert False
         # add taugtht classes
         classes += [ cls for cls in student.getTaughtClasses()  ]
             

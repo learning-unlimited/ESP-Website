@@ -61,7 +61,7 @@ class OnSiteRegister(ProgramModuleObj):
             trans = Transaction(anchor = self.program_anchor_cached(),
                                 fbo    = self.student,
                                 payer  = self.student,
-                                amount = 30.00,
+                                amount = "30.00",
                                 line_item = 'Onsite payment for %s' % self.program.niceName(),
                                 executed = True,
                                 payment_type_id = 6

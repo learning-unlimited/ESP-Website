@@ -1146,12 +1146,12 @@ class FinancialAidRequest(models.Model):
 
         inv = Document.get_invoice(self.user, anchor)
         txn = inv.txn
-        
         funding_node = anchor['Accounts']
-        
+       
         #   Find the amount we're charging the student for the program and ensure
         #   that we don't award more financial aid than charges.
         charges = txn.lineitem_set.filter(anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, anchor__parent__name='LineItemTypes')
+       
         chg_amt = 0
         for li in charges:
             chg_amt += li.amount

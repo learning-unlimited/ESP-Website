@@ -613,7 +613,7 @@ class ClassSection(models.Model):
             new_qs = User.objects.filter(userbit__verb=v, userbit__qsc=self.anchor) 
             retVal = retVal | new_qs
             
-        retVal = [ESPUser(u) for u in retVal]
+        retVal = [ESPUser(u) for u in retVal.distinct()]
 
         if defaults:
             self.cache['students'] = retVal

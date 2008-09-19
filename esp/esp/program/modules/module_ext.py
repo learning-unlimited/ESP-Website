@@ -40,6 +40,9 @@ class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     program = models.OneToOneField(Program)
     receipt = models.TextField()
+    
+    def __unicode__(self):
+        return 'Registration receipt for %s' % self.program
 
 admin.site.register(DBReceipt)
 

@@ -40,7 +40,7 @@ register = template.Library()
 def texescape(value):
     """ This will escape a string according to the rules of LaTeX """
 
-    value = str(value).strip()
+    value = unicode(value).strip()
 
     special_backslash = '!**ABCDEF**!' # something unlikely to be repeated
 

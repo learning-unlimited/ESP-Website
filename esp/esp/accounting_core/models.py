@@ -28,6 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+from django.contrib import admin
 from django.db import models, transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
@@ -71,8 +72,9 @@ class LineItemType(models.Model):
         else: url = 'NULL'
         return "LineItemType: %s (%.02f or %.02f for %s)" % (self.text, self.amount, self.finaid_amount, url)
 
-    class Admin:
-        pass
+class LITAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(LineItemType, LITAdmin)
 
 class Balance(models.Model):
     """ A posted balance for an account.  This serves the purpose of keeping
@@ -200,9 +202,9 @@ class Transaction(models.Model):
                 fa_li.amount = finaid_amount
                 fa_li.user = user
                 if anchor:
-                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', anchor=anchor, defaults={'amount': 0.0, 'anchor': GetNode("Q"), 'finaid_amount': 0.0, 'finaid_anchor': GetNode("Q") })
+                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', anchor=anchor, defaults={'amount': Decimal('0.0'), 'anchor': GetNode("Q"), 'finaid_amount': Decimal('0.0'), 'finaid_anchor': GetNode("Q") })
                 else:
-                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', defaults={'amount': 0.0, 'anchor': GetNode("Q"), 'finaid_amount': 0.0, 'finaid_anchor': GetNode("Q") })
+                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', defaults={'amount': Decimal('0.0'), 'anchor': GetNode("Q"), 'finaid_amount': Decimal('0.0'), 'finaid_anchor': GetNode("Q") })
                 fa_li.text = fa_li.li_type.text
                 fa_li.save()
 
@@ -244,6 +246,11 @@ class Transaction(models.Model):
 
         return li
 
+class TXNAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(Transaction, TXNAdmin)
+
+
 class LineItemManager(ProcedureManager):
     def forProgram(self, program):
         """ Get all LineItems (currently including optional ones) whose types are anchored in the given program. """
@@ -268,3 +275,6 @@ class LineItem(models.Model):
     def __str__(self):
         return "L-%u (T-%u): %.02f %s - %s, %s" % (self.id, self.transaction.id, self.amount, self.anchor.uri, self.user.username, self.text)
 
+class LIAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(LineItem, LIAdmin)

@@ -79,7 +79,7 @@ def gen_latex(texcode, type='pdf'):
 
     # write to the LaTeX file
     texfile   = open(file_base+'.tex', 'w')
-    texfile.write(texcode)
+    texfile.write(texcode.encode('utf-8'))
     texfile.close()
     
 
