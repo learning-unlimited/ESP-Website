@@ -210,7 +210,7 @@ class QuestionType(models.Model):
 
     def __str__(self):
         return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
-
+admin.site.register(QuestionType)
 
 
 class Question(models.Model):
@@ -370,3 +370,4 @@ class Answer(models.Model):
 
     def __str__(self):
         return "Answer for question #%d: %s" % (self.question.id, self.value)
+admin.site.register(Answer)
