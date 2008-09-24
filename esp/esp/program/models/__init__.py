@@ -901,6 +901,7 @@ class SATPrepRegInfo(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_satprepreginfo'
+        verbose_name = 'SATPrep Registation Info'
 
     def __str__(self):
         return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
@@ -928,7 +929,12 @@ class SATPrepRegInfo(models.Model):
             satPrep = satPrepList[0]
         return satPrep
 
-admin.site.register(SATPrepRegInfo)
+class SATPrepRegInfoAdmin(admin.ModelAdmin):
+    list_display = ('user', 'program')
+    #list_filter = ('program',)
+    search_fields = ['user']
+    pass
+admin.site.register(SATPrepRegInfo, SATPrepRegInfoAdmin)
 
 
 class RegistrationProfile(models.Model):

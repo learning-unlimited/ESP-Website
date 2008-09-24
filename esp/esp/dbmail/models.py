@@ -418,5 +418,6 @@ class PlainRedirect(models.Model):
         ordering=('original',)
 
 class PlainRedirectAdmin(admin.ModelAdmin):
+    list_display = ('original', 'destination')
     pass
 admin.site.register(PlainRedirect, PlainRedirectAdmin)
