@@ -76,6 +76,7 @@ admin.site.register(ProgramCheckItem, ProgramCheckItemAdmin)
 
 class SectionAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'friendly_times', 'status', 'duration')
+    list_display_links = ('title',)
     list_filter = ['status']
     pass
 admin.site.register(ClassSection, SectionAdmin)
@@ -83,6 +84,7 @@ admin.site.register(ClassSection, SectionAdmin)
 
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'parent_program', 'category')
+    list_display_links = ('title',)
     search_fields = ['class_info', 'anchor__friendly_name']
 admin.site.register(ClassSubject, SubjectAdmin)
 
