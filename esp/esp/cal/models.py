@@ -87,6 +87,9 @@ class Event(models.Model):
     #    container_series = models.ForeignKey(Series, blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
 
+    def title(self):
+	return self.anchor.uri
+
     def duration(self):
         return self.end - self.start
     
@@ -207,7 +210,11 @@ class Event(models.Model):
         except:
             return 0
         
-admin.site.register(Event)
+class EventAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'short_description', 'event_type')
+    list_filter = ('start', 'end')
+    pass
+admin.site.register(Event, EventAdmin)
 
 
 class EmailReminder(models.Model):

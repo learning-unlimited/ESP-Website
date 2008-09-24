@@ -1030,7 +1030,10 @@ class RegistrationProfile(models.Model):
     def registered_classes(self):
         return ESPUser(self.user).getEnrolledSections(program=self.program)
 
-admin.site.register(RegistrationProfile)
+class RegistrationProfileAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'contact_user', 'program')
+    pass
+admin.site.register(RegistrationProfile, RegistrationProfileAdmin)
     
 
 class TeacherBio(models.Model):

@@ -75,13 +75,14 @@ class ProgramCheckItem(models.Model):
     def __str__(self):
         return '%s for "%s"' % (self.title, str(self.program).strip())
 
-    class Admin:
-        pass
-
     class Meta:
         ordering = ('seq',)
         app_label = 'program'
         db_table = 'program_programcheckitem'
+
+class ProgramCheckItemAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'program')
+admin.site.register(ProgramCheckItem, ProgramCheckItemAdmin)
 
 
 class ClassCacheHelper(GenericCacheHelper):
@@ -863,7 +864,7 @@ class ClassSection(models.Model):
         
 
 class SectionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'status', 'duration')
+    list_display = ('id', 'title', 'friendly_times', 'status', 'duration')
     list_filter = ['status']
     pass
 admin.site.register(ClassSection, SectionAdmin)
@@ -1437,7 +1438,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'parent_program', 'category')
-    search_fields = ['class_info'] # it would be nice to search by title, but it's not in the db
+    search_fields = ['class_info', 'anchor__friendly_name']
 admin.site.register(ClassSubject, SubjectAdmin)
 
 
