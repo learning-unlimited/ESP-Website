@@ -37,7 +37,6 @@ from esp.miniblog.models import Entry
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits
 from esp.program.models import ClassSubject
-from django import oldforms
 
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.auth.decorators import login_required
@@ -53,47 +52,6 @@ from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType
 
 import pickle
-
-@login_required
-def updateClass(request, id):
-    """ An update-class form """
-    try:
-        manipulator = Class.ChangeManipulator(id)
-    except Class.DoesNotExist:
-	raise Http404
-
-    curUser = ESPUser(request.user)
-    if not curUser.canEdit(Class.objects.get(id=id)):
-        raise Http404
-	
-    orig_class = manipulator.original_object
-
-    #errors = None
-
-    if request.POST:
-        new_data = request.POST.copy()
-        # We're not letting users change these.  Admins only, and only via the Admin interface.
-        assert False, (new_data['anchor'], str(orig_class.anchor.id))
-        
-        new_data['anchor'] = str(orig_class.anchor.id)
-        new_data['parent_program'] = str(orig_class.parent_program.id)
-
-
-        errors = manipulator.get_validation_errors(new_data)
-
-        if not errors:
-            manipulator.do_html2python(new_data)
-
-            manipulator.save(new_data)
-
-            return HttpResponseRedirect(".")
-    else:
-        errors = {}
-        new_data = orig_class.__dict__
-
-    form = oldforms.FormWrapper(manipulator, new_data, errors)
-    return render_to_response('program/class_form.html', request, orig_class.parent_program, {'form': form, 'class': orig_class, 'edit': True, 'orig_class': orig_class })
-
 
 #def courseCatalogue(request, one, two):
 #    """ aseering 9-1-2006 : This function appears to not be used by anything; esp.web.program contains its equivalent.
