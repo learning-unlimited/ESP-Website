@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,5 +28,12 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.web.manipulators.bio import *
 
+from django import forms
+from django.utils.translation import gettext_lazy as _
+from esp.web.forms import ResizeImageField
+
+class BioEditForm(forms.Form):
+    slugbio = forms.CharField(required = False, max_length = 50, widget = forms.TextInput({'size': 50}))
+    bio = forms.CharField(required = False, widget = forms.Textarea({'rows':20, 'cols':60}))
+    picture = ResizeImageField(required = False, size = (300,300))

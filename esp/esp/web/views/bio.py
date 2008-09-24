@@ -34,7 +34,7 @@ from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.web.util         import get_from_id, render_to_response
 from esp.datatree.models  import GetNode
-from django               import oldforms
+from django               import forms
 from django.http          import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
@@ -43,7 +43,7 @@ from esp.middleware       import ESPError
 @login_required
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False):
     """ Edits a teacher bio """
-    from esp.web.manipulators import TeacherBioManipulator
+    from esp.web.forms.bioedit_form import BioEditForm
     
     if tl == '':
         founduser = ESPUser(request.user)
@@ -63,21 +63,11 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
     lastbio      = TeacherBio.getLastBio(founduser)
         
     
-    manipulator = TeacherBioManipulator()
-
-    
-
     # if we submitted a newly edited bio...
     if request.method == 'POST' and request.POST.has_key('bio_submitted'):
-        new_data = request.POST.copy()
-        new_data.update(request.FILES) # Add any files that exist
+        form = BioEditForm(request.POST, request.FILES)
 
-        manipulator.prepare(new_data) # make any form changes
-
-        
-        errors = manipulator.get_validation_errors(new_data)
-
-        if not errors:
+        if form.is_valid():
             if foundprogram is not None:
                 # get the last bio for this program.
                 progbio = TeacherBio.getLastForProgram(founduser, foundprogram)
@@ -85,15 +75,16 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
                 progbio = lastbio
 
             # the slug bio and bio
-            progbio.slugbio  = new_data['slugbio']
-            progbio.bio      = new_data['bio']
+            progbio.slugbio  = form.cleaned_data['slugbio']
+            progbio.bio      = form.cleaned_data['bio']
             
             progbio.save()
             # save the image
-            if new_data.has_key('picture'):
+            if form.cleaned_data['picture'] is not None:
                 try:
-                    new_data['picture'].seek(0)
-                    progbio.picture.save(new_data['picture'].name, ContentFile(new_data['picture'].read()))
+                    picture = form.cleaned_data['picture']
+                    picture.seek(0)
+                    progbio.picture.save(picture.name, ContentFile(picture.read()))
                 except:
                     #   If you run into a problem processing the image, just ignore it.
                     progbio.picture = lastbio.picture
@@ -101,20 +92,15 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
             else:
                 progbio.picture = lastbio.picture
                 progbio.save()
-            if not errors:
-                if external:
-                    return True
-                return HttpResponseRedirect(progbio.url())
+            if external:
+                return True
+            return HttpResponseRedirect(progbio.url())
         
     else:
-        errors = {}
-        new_data = {}
-
-        new_data['slugbio']      = lastbio.slugbio
-        new_data['bio']          = lastbio.bio
-        new_data['picture_file'] = lastbio.picture
+        formdata = {'slugbio': lastbio.slugbio, 'bio': lastbio.bio, 'picture': lastbio.picture}
+        form = BioEditForm(formdata)
         
-    return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/myesp'), {'form':    oldforms.FormWrapper(manipulator, new_data, errors),
+    return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/myesp'), {'form':    form,
                                                    'user':    founduser,
                                                    'picture_file': lastbio.picture})
 

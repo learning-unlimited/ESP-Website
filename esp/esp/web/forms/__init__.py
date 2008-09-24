@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -32,31 +32,29 @@ Email: web@esp.mit.edu
     ouside ESP.
     """
 
-from django import oldforms as forms
+from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-class ResizeImageUploadField(forms.ImageUploadField):
+class ResizeImageField(forms.ImageField):
     """ This field will allow one to upload a file, and that image
     to have a size to be resized to. """
 
-    def __init__(self, size=None, *args, **kwargs):
+    def __init__(self, size=None, **kwargs):
         """ Give this a tuple size, like (128,128), and the image
             will be resized so that it is no larger than that box, but
             its aspect ratio is preserved. """
         
-        forms.ImageUploadField.__init__(self, *args, **kwargs)
+        forms.ImageField.__init__(self, **kwargs)
         self.size = size
         
-    def prepare(self, new_data):
+    def clean(self, file, initial=None):
         """ gets the image and resizes it """
-        if self.size is not None:
+        file = super(forms.ImageField, self).clean(file, initial)
+        if file and self.size is not None:
             from PIL import Image
             from cStringIO import StringIO
             
-            try:
-                file = new_data[self.field_name]
-            except KeyError:
-                return new_data
+            filename = file.name
 
             picturefile = StringIO()
             if hasattr(file, 'temporary_file_path'):
@@ -65,20 +63,19 @@ class ResizeImageUploadField(forms.ImageUploadField):
             elif hasattr(file, 'read'):
                 file = StringIO(file.read())
             else:
-                return new_data
+                raise forms.ValidationError('Image unreadable.')
             
             try:
                 im = Image.open(file)
                 im.thumbnail(self.size, Image.ANTIALIAS)
                 im.save(picturefile, im.format)
             except IOError:
-                return new_data
+                raise forms.ValidationError('Image resize failed.')
 
             picturefile.seek(0)
-            new_data[self.field_name] = SimpleUploadedFile(
-                name=new_data[self.field_name].name,
+            file = SimpleUploadedFile(
+                name=filename,
                 content=picturefile.getvalue(),
                 )
-
-        return new_data
+        return file
 
