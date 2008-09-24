@@ -398,6 +398,7 @@ class EmailList(models.Model):
         return '%s (%s)' % (self.description, self.regex)
 
 class EmailListAdmin(admin.ModelAdmin):
+    list_display = ('description', 'regex')
     pass
 admin.site.register(EmailList, EmailListAdmin)
     

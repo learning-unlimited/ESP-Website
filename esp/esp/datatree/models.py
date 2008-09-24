@@ -1113,6 +1113,7 @@ def PermToString(perm):
 #root.save()
 
 class DataTreeAdmin(admin.ModelAdmin):
+    list_display = ('uri',)
     search_fields = ['uri']
 
 admin.site.register(DataTree, DataTreeAdmin)
