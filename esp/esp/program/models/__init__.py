@@ -1090,7 +1090,11 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
-admin.site.register(TeacherBio)
+class TeacherBioAdmin(admin.ModelAdmin):
+    list_display = ('user', 'program', 'slugbio')
+    search_fields = ['slugbio', 'bio']
+
+admin.site.register(TeacherBio, TeacherBioAdmin)
     
 
 class FinancialAidRequest(models.Model):
