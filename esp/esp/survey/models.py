@@ -35,7 +35,6 @@ import datetime
 from django.db import models
 from django.template import loader
 from django.core.cache import cache
-from django.contrib import admin
 
 try:
     import cPickle as pickle
@@ -113,10 +112,6 @@ class Survey(models.Model):
         else:
             return 0
         
-class SurveyAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(Survey, SurveyAdmin)
-
 class SurveyResponse(models.Model):
     """ A single survey taken by a person. """
     time_filled = models.DateTimeField(default=datetime.datetime.now)
@@ -179,10 +174,6 @@ class SurveyResponse(models.Model):
         return "Survey for %s filled out at %s" % (self.survey.anchor,
                                                    self.time_filled)
                                                    
-class SurveyResponseAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(SurveyResponse, SurveyResponseAdmin)
-    
     
 class QuestionType(models.Model):
     """ A type of question.
@@ -210,7 +201,6 @@ class QuestionType(models.Model):
 
     def __str__(self):
         return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
-admin.site.register(QuestionType)
 
 
 class Question(models.Model):
@@ -335,10 +325,6 @@ class Question(models.Model):
     class Meta:
         ordering = ['seq']
         
-class QuestionAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(Question, QuestionAdmin)
-
 class Answer(models.Model):
     """ An answer for a single question for a single survey response. """
 
@@ -370,4 +356,3 @@ class Answer(models.Model):
 
     def __str__(self):
         return "Answer for question #%d: %s" % (self.question.id, self.value)
-admin.site.register(Answer)

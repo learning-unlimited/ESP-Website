@@ -35,7 +35,6 @@ from datetime import datetime
 from esp.lib.markdown import markdown
 from esp.db.fields import AjaxForeignKey
 
-from django.contrib import admin
 import django.core.mail
 
 from esp.datatree.models import DataTree, GetNode, StringToPerm, PermToString
@@ -337,10 +336,6 @@ class MessageVars(models.Model):
     class Meta:
         verbose_name_plural = 'Message Variables'
 
-class MessageVarsAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(MessageVars, MessageVarsAdmin)
-
 
 class EmailRequest(models.Model):
     """ Each e-mail is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
@@ -397,11 +392,6 @@ class EmailList(models.Model):
     def __str__(self):
         return '%s (%s)' % (self.description, self.regex)
 
-class EmailListAdmin(admin.ModelAdmin):
-    list_display = ('description', 'regex')
-    pass
-admin.site.register(EmailList, EmailListAdmin)
-    
 class PlainRedirect(models.Model):
     """
     A simple catch-all for mail redirection.
@@ -416,8 +406,3 @@ class PlainRedirect(models.Model):
 
     class Meta:
         ordering=('original',)
-
-class PlainRedirectAdmin(admin.ModelAdmin):
-    list_display = ('original', 'destination')
-    pass
-admin.site.register(PlainRedirect, PlainRedirectAdmin)

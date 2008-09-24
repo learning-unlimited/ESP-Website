@@ -40,7 +40,6 @@ from esp.miniblog.models import Entry
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
-from django.contrib import admin
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -138,8 +137,6 @@ class ProgramModule(models.Model):
     
     def __str__(self):
         return 'Program Module: %s' % self.admin_title
-
-admin.site.register(ProgramModule)
     
     
 class ArchiveClass(models.Model):
@@ -160,6 +157,7 @@ class ArchiveClass(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_archiveclass'
+        verbose_name_plural = 'archive classes'
 
     #def __str__(self):
     #    return '"%s" taught by "%s"' % (self.title, self.teacher)
@@ -235,13 +233,6 @@ class ArchiveClass(models.Model):
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
         return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')
-
-class ArchiveClassAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
-    search_fields = ['description', 'title', 'program', 'teacher', 'category']
-    pass
-admin.site.register(ArchiveClass, ArchiveClassAdmin)
-    
 
 def _get_type_url(type):
     def _really_get_type_url(self):
@@ -848,8 +839,6 @@ class Program(models.Model):
     def by_prog_inst(cls, program, instance):
         return Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
 
-admin.site.register(Program)
-    
     
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """
@@ -861,8 +850,6 @@ class BusSchedule(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_busschedule'
-
-admin.site.register(BusSchedule)
 
     
 class TeacherParticipationProfile(models.Model):
@@ -879,8 +866,6 @@ class TeacherParticipationProfile(models.Model):
 
     def __str__(self):
         return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
-
-admin.site.register(TeacherParticipationProfile)
     
 
 class SATPrepRegInfo(models.Model):
@@ -928,13 +913,6 @@ class SATPrepRegInfo(models.Model):
         else:
             satPrep = satPrepList[0]
         return satPrep
-
-class SATPrepRegInfoAdmin(admin.ModelAdmin):
-    list_display = ('user', 'program')
-    #list_filter = ('program',)
-    search_fields = ['user']
-    pass
-admin.site.register(SATPrepRegInfo, SATPrepRegInfoAdmin)
 
 
 class RegistrationProfile(models.Model):
@@ -1036,11 +1014,6 @@ class RegistrationProfile(models.Model):
     def registered_classes(self):
         return ESPUser(self.user).getEnrolledSections(program=self.program)
 
-class RegistrationProfileAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'contact_user', 'program')
-    pass
-admin.site.register(RegistrationProfile, RegistrationProfileAdmin)
-    
 
 class TeacherBio(models.Model):
     """ This is the biography of a teacher."""
@@ -1103,12 +1076,6 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
-class TeacherBioAdmin(admin.ModelAdmin):
-    list_display = ('user', 'program', 'slugbio')
-    search_fields = ['slugbio', 'bio']
-
-admin.site.register(TeacherBio, TeacherBioAdmin)
-    
 
 class FinancialAidRequest(models.Model):
     """
@@ -1211,8 +1178,6 @@ class FinancialAidRequest(models.Model):
             string += " (REVIEWED)"
 
         return string
-
-admin.site.register(FinancialAidRequest)
 
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *

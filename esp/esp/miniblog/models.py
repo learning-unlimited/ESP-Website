@@ -37,7 +37,6 @@ from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User
 from esp.db.fields import AjaxForeignKey
 from django.core.cache import cache
-from django.contrib import admin
 import datetime
 
 # Create your models here.
@@ -69,8 +68,6 @@ class AnnouncementLink(models.Model):
 
     def html(self):
         return '<p><a href="%s">%s</a></p>' % (self.href, self.title)
-
-admin.site.register(AnnouncementLink)
 
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
@@ -168,15 +165,6 @@ class Entry(models.Model):
         ordering = ['-timestamp']
 
 
-class EntryAdmin(admin.ModelAdmin):
-    search_fields = ['content','title','anchor__uri']
-    class Media:
-        js = (
-            '/media/scripts/admin_miniblog.js',
-            )
-
-admin.site.register(Entry, EntryAdmin)
-
 
 class Comment(models.Model):
 
@@ -196,9 +184,3 @@ class Comment(models.Model):
     
     class Meta:
         ordering = ['-post_ts']
-
-class CommentAdmin(admin.ModelAdmin):
-    search_fields = ['author__first_name','author__last_name',
-                     'subject','entry__title']
-
-admin.site.register(Comment, CommentAdmin)

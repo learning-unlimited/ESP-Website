@@ -29,7 +29,6 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from django.contrib import admin
 from django.core.files import File
 
 from esp.datatree.models import DataTree, GetNode
@@ -94,10 +93,6 @@ class Media(models.Model):
         
         # Operation Complete!
         return media[0]
-
-class MediaAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(Media, MediaAdmin)
 
 class Video(models.Model):
     """ Video media object

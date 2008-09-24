@@ -33,7 +33,6 @@ import time
 
 # django Util
 from django.db import models
-from django.contrib import admin
 from django.core.cache import cache
 
 # ESP Util
@@ -79,10 +78,6 @@ class ProgramCheckItem(models.Model):
         ordering = ('seq',)
         app_label = 'program'
         db_table = 'program_programcheckitem'
-
-class ProgramCheckItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'program')
-admin.site.register(ProgramCheckItem, ProgramCheckItemAdmin)
 
 
 class ClassCacheHelper(GenericCacheHelper):
@@ -863,12 +858,6 @@ class ClassSection(models.Model):
         app_label = 'program'
         
 
-class SectionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'friendly_times', 'status', 'duration')
-    list_filter = ['status']
-    pass
-admin.site.register(ClassSection, SectionAdmin)
-
 
 class ClassSubject(models.Model):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
@@ -1436,11 +1425,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         db_table = 'program_class'
         app_label = 'program'
         
-class SubjectAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'parent_program', 'category')
-    search_fields = ['class_info', 'anchor__friendly_name']
-admin.site.register(ClassSubject, SubjectAdmin)
-
 
 class ClassImplication(models.Model):
     """ Indicates class prerequisites corequisites, and the like """

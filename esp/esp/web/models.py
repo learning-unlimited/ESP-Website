@@ -35,7 +35,6 @@ from esp.users.models import UserBit
 from esp.db.fields import AjaxForeignKey
 from esp.db.models import Q
 from esp.datatree.util import tree_filter_kwargs
-from django.contrib import admin
         
 # Create your models here.
 
@@ -91,4 +90,3 @@ class NavBarEntry(models.Model):
         # Find the valid entries
         return NavBarEntry.objects.filter(**tree_filter_kwargs(path__above = branch)).order_by('sort_rank')
 
-admin.site.register(NavBarEntry)

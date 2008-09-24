@@ -33,7 +33,6 @@ from esp.datatree.models import DataTree
 from esp.dbmail.models import MessageRequest
 from datetime import datetime, timedelta
 from esp.db.fields import AjaxForeignKey
-from django.contrib import admin
 
 # Create your models here.
 
@@ -43,8 +42,6 @@ class EventType(models.Model):
 
     def __str__(self):
         return str(self.description)
-
-admin.site.register(EventType)
 
 
 class Series(models.Model):
@@ -69,8 +66,6 @@ class Series(models.Model):
 
     class Meta:
         verbose_name_plural = 'Series'
-
-admin.site.register(Series)
 
 
 class Event(models.Model):
@@ -210,13 +205,6 @@ class Event(models.Model):
         except:
             return 0
         
-class EventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'short_description', 'event_type')
-    list_filter = ('start', 'end')
-    pass
-admin.site.register(Event, EventAdmin)
-
-
 class EmailReminder(models.Model):
     """ A reminder, associated with an Event, that is to be sent by e-mail """
     event = models.ForeignKey(Event)
@@ -226,8 +214,4 @@ class EmailReminder(models.Model):
 
     def __str__(self):
         return str(self.event) + ': ' + str(self.email)
-
-admin.site.register(EmailReminder)
-
-
 

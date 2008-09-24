@@ -45,7 +45,6 @@ from django.conf import settings
 from urllib import quote
 from esp.db.models import Q
 from django.core.cache import cache
-from django.contrib import admin
 
 LOGIN_URL = settings.LOGIN_URL
 
@@ -479,8 +478,6 @@ class ProgramModuleObj(models.Model):
         """
         return context
 
-
-admin.site.register(ProgramModuleObj)
 
 
 # will check and depending on the value of tl

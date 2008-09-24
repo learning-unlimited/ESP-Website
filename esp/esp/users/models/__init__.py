@@ -31,8 +31,6 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
-from django.contrib.auth.admin import UserAdmin
-from django.contrib import admin
 from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
 from datetime import datetime, timedelta
 from esp.db.models import Q
@@ -713,16 +711,6 @@ class ESPUser(User, AnonymousUser):
             return 0
 
         return schoolyear + 12 - grade
-
-"""
-class UserBitInlineAdmin(admin.TabularInline):
-    model = UserBit
-    pass
-class ESPUserAdmin(UserAdmin):
-    inlines = [UserBitInlineAdmin]
-    pass
-admin.site.register(ESPUser, ESPUserAdmin)
-"""
 
 
 ESPUser.create_membership_methods()

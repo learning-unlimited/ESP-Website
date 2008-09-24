@@ -38,7 +38,6 @@ from django.db import transaction
 from django.core.cache import cache
 from esp.db.fields import AjaxForeignKey
 from esp.utils.memdb import mem_db
-from django.contrib import admin
 
 import exceptions
 
@@ -1111,12 +1110,6 @@ def PermToString(perm):
 
 #root = DataTree.root()
 #root.save()
-
-class DataTreeAdmin(admin.ModelAdmin):
-    list_display = ('uri',)
-    search_fields = ['uri']
-
-admin.site.register(DataTree, DataTreeAdmin)
 
 
 def install():

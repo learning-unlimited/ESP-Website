@@ -2,7 +2,6 @@
 from django.core.cache import cache
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
-from django.contrib import admin
 import datetime
 import random
 import string
@@ -539,13 +538,6 @@ class UserBit(models.Model):
     find_by_anchor_perms = classmethod(lambda cls,*args,**kwargs: cls.objects.find_by_anchor_perms(*args,**kwargs))
 
 
-class UserBitAdmin(admin.ModelAdmin):
-    search_fields = ['user__last_name','user__first_name',
-                     'qsc__uri','verb__uri']
-
-admin.site.register(UserBit, UserBitAdmin)
-
-
 #######################################
 # UserBitImplications do scary things #
 #######################################
@@ -721,6 +713,4 @@ class UserBitImplication(models.Model):
         """
         for implication in UserBitImplication.objects.all():
             implication.apply()
-    
-admin.site.register(UserBitImplication)
 

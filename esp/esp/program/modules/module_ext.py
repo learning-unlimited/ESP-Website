@@ -33,7 +33,6 @@ from esp.datatree.models import DataTree
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 
-from django.contrib import admin
 from esp.program.models import Program
 
 class DBReceipt(models.Model):
@@ -43,8 +42,6 @@ class DBReceipt(models.Model):
     
     def __unicode__(self):
         return 'Registration receipt for %s' % self.program
-
-admin.site.register(DBReceipt)
 
 
 class SATPrepAdminModuleInfo(models.Model):
@@ -67,10 +64,6 @@ class StudentClassRegModuleInfo(models.Model):
     def __str__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
     
-class SCRMIAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(StudentClassRegModuleInfo, SCRMIAdmin)
-
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, null=True)
@@ -113,10 +106,6 @@ class ClassRegModuleInfo(models.Model):
     class_durations_any = models.BooleanField(blank=True, null=True)
     def __str__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
-    
-class CRMIAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(ClassRegModuleInfo, CRMIAdmin)
     
 
 class CreditCardModuleInfo(models.Model):

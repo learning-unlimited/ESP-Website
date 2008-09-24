@@ -28,7 +28,6 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from django.contrib import admin
 from django.db import models, transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
@@ -71,10 +70,6 @@ class LineItemType(models.Model):
         if self.anchor: url = self.anchor.get_uri()
         else: url = 'NULL'
         return "LineItemType: %s (%.02f or %.02f for %s)" % (self.text, self.amount, self.finaid_amount, url)
-
-class LITAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(LineItemType, LITAdmin)
 
 class Balance(models.Model):
     """ A posted balance for an account.  This serves the purpose of keeping
@@ -246,10 +241,6 @@ class Transaction(models.Model):
 
         return li
 
-class TXNAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(Transaction, TXNAdmin)
-
 
 class LineItemManager(ProcedureManager):
     def forProgram(self, program):
@@ -274,7 +265,3 @@ class LineItem(models.Model):
 
     def __str__(self):
         return "L-%u (T-%u): %.02f %s - %s, %s" % (self.id, self.transaction.id, self.amount, self.anchor.uri, self.user.username, self.text)
-
-class LIAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(LineItem, LIAdmin)
