@@ -236,7 +236,11 @@ class ArchiveClass(models.Model):
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
         return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')
 
-admin.site.register(ArchiveClass)
+class ArchiveClassAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
+    search_fields = ['description', 'title', 'program', 'teacher', 'category']
+    pass
+admin.site.register(ArchiveClass, ArchiveClassAdmin)
     
 
 def _get_type_url(type):

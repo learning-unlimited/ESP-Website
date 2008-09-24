@@ -863,6 +863,8 @@ class ClassSection(models.Model):
         
 
 class SectionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'status', 'duration')
+    list_filter = ['status']
     pass
 admin.site.register(ClassSection, SectionAdmin)
 
@@ -1434,7 +1436,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         app_label = 'program'
         
 class SubjectAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'title', 'parent_program', 'category')
+    search_fields = ['class_info'] # it would be nice to search by title, but it's not in the db
 admin.site.register(ClassSubject, SubjectAdmin)
 
 
