@@ -39,7 +39,6 @@ from esp.cal.models              import Event
 from esp.web.util        import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm
 
-from django import oldforms
 from django import forms
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict

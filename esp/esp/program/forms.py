@@ -100,23 +100,3 @@ class ProgramCreationForm(forms.ModelForm):
     class Meta:
         model = Program
         
-
-from esp.program.modules.module_ext import SATPrepTeacherModuleInfo
-class SATPrepTeacherInfoForm(forms.ModelForm):
-    sat_math = forms.IntegerField(min_value = 200, max_value = 800, required = False, widget = forms.TextInput({'size':3, 'maxlength':3}),
-	    error_messages={'min_value':'The lowest SAT score is %s.', 'max_value':'The highest SAT score is %s.'})
-    sat_verb = forms.IntegerField(min_value = 200, max_value = 800, required = False, widget = forms.TextInput({'size':3, 'maxlength':3}),
-	    error_messages={'min_value':'The lowest SAT score is %s.', 'max_value':'The highest SAT score is %s.'})
-    sat_writ = forms.IntegerField(min_value = 200, max_value = 800, required = False, widget = forms.TextInput({'size':3, 'maxlength':3}),
-	    error_messages={'min_value':'The lowest SAT score is %s.', 'max_value':'The highest SAT score is %s.'})
-    mitid = forms.RegexField(regex = r'[0-9]{9}', max_length = 9, widget = forms.TextInput({'size':10, 'class':'required'}),
-	    error_messages={'invalid':'Not a valid MIT id.'})
-
-    def __init__(self, subjects=None, *args, **kwargs):
-	self.base_fields['subject'] = forms.ChoiceField(choices = subjects, required = True, widget = forms.Select({'size':1, 'class':'required'}))
-	super(SATPrepTeacherInfoForm, self).__init__(*args, **kwargs)
-
-    class Meta:
-	model = SATPrepTeacherModuleInfo
-	fields = ('sat_math', 'sat_verb', 'sat_writ', 'mitid', 'subject')
-
