@@ -1123,15 +1123,16 @@ class ClassSubject(models.Model):
 
         if user.isEnrolledInClass(self, request):
             return 'You are already signed up for this class!'
-
+        
+        res = False
         # check to see if there's a conflict with each section of the subject
         for section in self.sections.all():
             res = section.cannotAdd(user, checkFull, request, use_cache)
-            if res:
+            if not res: # if any *can* be added, then return False--we can add this class
                 return res
 
-        # this user *can* add this class!
-        return False
+        # res can't have ever been False--so we must have an error. Pass it along.
+        return res
 
     def makeTeacher(self, user):
         v = GetNode('V/Flags/Registration/Teacher')
@@ -1490,9 +1491,9 @@ class ClassImplication(models.Model):
 
     def fails_implication(self, student, already_seen_implications=set(), without_classes=set()):
         """ Returns either False, or the ClassImplication that fails (may be self, may be a subimplication) """
-        class_set = ClassSubject.objects.filter(id__in=self.member_id_ints).exclude(id__in=without_classes)
-
-        class_valid_iterator = [ (student in c.students()) for c in class_set ]
+        class_set = ClassSubject.objects.filter(id__in=self.member_id_ints)
+        
+        class_valid_iterator = [ (student in c.students(False) and c.id not in without_classes) for c in class_set ]
         subimplication_valid_iterator = [ (not i.fails_implication(student, already_seen_implications, without_classes)) for i in self.classimplication_set.all() ]
         
         if not ClassImplication._ops[self.operation](class_valid_iterator + subimplication_valid_iterator):
