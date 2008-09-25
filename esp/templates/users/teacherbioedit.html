@@ -30,8 +30,8 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 Please complete the form below to update your biography.  We'd appreciate a picture if you have one!  (You can upload a JPG, GIF or PNG file in the box at the bottom of the form.)
 </p>
 
-{% if form.has_errors %}
-<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
+{% if not form.is_valid %}
+<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.<h2>
 {% endif %}
 
 <div id="program_form">
