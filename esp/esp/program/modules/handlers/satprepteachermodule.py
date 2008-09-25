@@ -31,8 +31,8 @@ Email: web@esp.mit.edu
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
-from esp.program.manipulators import SATPrepTeacherInfoManipulator
-from django import oldforms
+from esp.program.forms import SATPrepTeacherInfoForm
+from django import forms
 from esp.program.models import Program
 from esp.users.models   import ESPUser, User
 from esp.db.models import Q
@@ -68,42 +68,29 @@ class SATPrepTeacherModule(ProgramModuleObj):
     @main_call
     @needs_teacher
     def satprepinfo(self, request, tl, one, two, module, extra, prog):
-        manipulator = SATPrepTeacherInfoManipulator(module_ext.SATPrepTeacherModuleInfo.subjects())
+        subject_list = module_ext.SATPrepTeacherModuleInfo.subjects()
         
-	new_data = {}
+	moduleinfos = module_ext.SATPrepTeacherModuleInfo.objects.filter(user = self.user,
+		program = self.program)
+
 	if request.method == 'POST':
-		new_data = request.POST.copy()
-		
-		errors = manipulator.get_validation_errors(new_data)
-		
-		if not errors:
-                    manipulator.do_html2python(new_data)
-                    moduleinfos = module_ext.SATPrepTeacherModuleInfo.objects.filter(user = self.user,
-                                                                                     program = self.program)
-                    if len(moduleinfos) == 0:
-                        new_reginfo = module_ext.SATPrepTeacherModuleInfo()
-                        new_reginfo.user = self.user
-                        new_reginfo.program = self.program
-                    else:
-                        new_reginfo = moduleinfos[0]
-
-                    for k in new_data.keys():
-                        new_reginfo.__dict__[k] = new_data[k]
-
-                    new_reginfo.save()
-                
-                    return self.goToCore(tl)
+	    if len(moduleinfos) == 0:
+		form = SATPrepTeacherInfoForm(subject_list, request.POST)
+		if form.is_valid():
+		    info = form.save(commit = False)
+		    info.user = self.user
+		    info.program = self.program
+		    info.save()
+		    return self.goToCore(tl)
+	    else:
+		form = SATPrepTeacherInfoForm(subject_list, request.POST, instance = moduleinfos[0])
+		if form.is_valid():
+		    form.save()
+		    return self.goToCore(tl)
 	else:
-                moduleinfos = module_ext.SATPrepTeacherModuleInfo.objects.filter(user = self.user,
-                                                                                 program = self.program)
-                if len(moduleinfos) == 0:
-                    new_data = {}
-                else:
-                    new_data = moduleinfos[0].__dict__
-		
-		errors = {}
+	    if len(moduleinfos) == 0:
+		form = SATPrepTeacherInfoForm(subject_list)
+	    else:
+		form = SATPrepTeacherInfoForm(subject_list, instance = moduleinfos[0])
 
-	form = oldforms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response(self.baseDir()+'satprep_info.html', request, (prog, tl), {'form':form})
-
-

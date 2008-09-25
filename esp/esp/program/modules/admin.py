@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from django.contrib import admin
-from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo
+from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, SATPrepTeacherModuleInfo
 from esp.program.modules.base import ProgramModuleObj
 
 admin.site.register(DBReceipt)
@@ -45,3 +45,4 @@ admin.site.register(ClassRegModuleInfo, CRMIAdmin)
 
 admin.site.register(ProgramModuleObj)
 
+admin.site.register(SATPrepTeacherModuleInfo)
