@@ -32,7 +32,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.web.views.myesp import profile_editor
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser, User
-from esp.db.models import Q
+from django.db.models.query import Q
 from django.contrib.auth.decorators import login_required
 
 # reg profile module

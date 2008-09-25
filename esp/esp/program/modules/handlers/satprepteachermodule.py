@@ -35,7 +35,7 @@ from esp.program.modules.forms.satprep import SATPrepTeacherInfoForm
 from django import forms
 from esp.program.models import Program
 from esp.users.models   import ESPUser, User
-from esp.db.models import Q
+from django.db.models.query import Q
 from django.db        import models
 
 

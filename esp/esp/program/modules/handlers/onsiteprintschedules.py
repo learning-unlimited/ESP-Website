@@ -38,7 +38,7 @@ from esp.web.util     import render_to_response
 from esp.datatree.models import GetNode
 from esp.users.models import UserBit
 from datetime         import datetime
-from esp.db.models    import Q
+from django.db.models.query   import Q
 from esp.money.models import LineItemType, RegisterLineItem, LineItem
 
 class OnsitePrintSchedules(ProgramModuleObj):

@@ -43,7 +43,7 @@ from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
 from urllib import quote
-from esp.db.models import Q
+from django.db.models.query import Q
 from django.core.cache import cache
 
 LOGIN_URL = settings.LOGIN_URL

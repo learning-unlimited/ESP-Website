@@ -36,7 +36,7 @@ from esp.web.util                import render_to_response
 from django                      import forms
 from esp.cal.models              import Event
 from django.core.cache           import cache
-from esp.db.models               import Q
+from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, Resource
 from datetime                    import timedelta

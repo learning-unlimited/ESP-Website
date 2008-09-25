@@ -36,7 +36,7 @@ from django import oldforms
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser
 from django.contrib.auth.models import User
-from esp.db.models      import Q
+from django.db.models.query     import Q
 
 
 

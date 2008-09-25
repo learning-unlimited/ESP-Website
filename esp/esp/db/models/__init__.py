@@ -28,11 +28,3 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-""" ESP's own implementation of the Q objects as spelled out by django. """
-
-
-# This file used to contain a bunch of Q-object magic.
-# However, functionally-equivalent magic has now been added to Django SVN HEAD.
-# So, this file is basically a shim, until we get around to replacing all the import's that use it.
-from django.db.models.query import Q
-

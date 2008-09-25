@@ -41,7 +41,7 @@ from esp.cal.models              import Event
 from django.core.mail            import send_mail
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
-from esp.db.models               import Q
+from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
 from datetime                    import timedelta

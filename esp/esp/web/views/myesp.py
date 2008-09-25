@@ -51,7 +51,7 @@ from esp.users.manipulators import UserRegManipulator, UserPasswdManipulator, Us
 from esp.web.util.main import render_to_response
 from django import oldforms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
-from esp.db.models import Q
+from django.db.models.query import Q
 
 
 
@@ -85,7 +85,7 @@ def myesp_passrecover(request, module):
 	""" Recover the password for a user """
 	from esp.users.models import PersistentQueryFilter
 	from django.template import loader
-	from esp.db.models import Q
+	from django.db.models.query import Q
 	
 	new_data = request.POST.copy()
 	manipulator = UserRecoverForm()

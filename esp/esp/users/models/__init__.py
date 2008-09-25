@@ -33,7 +33,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
 from datetime import datetime, timedelta
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.dblog.models import error
 from django.db.models.query import QuerySet
 from django.core.cache import cache
@@ -572,7 +572,7 @@ class ESPUser(User, AnonymousUser):
         import string
         import random
         from esp.users.models import PersistentQueryFilter
-        from esp.db.models import Q
+        from django.db.models.query import Q
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
         from django.contrib.sites.models import Site

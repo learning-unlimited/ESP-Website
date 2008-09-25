@@ -34,7 +34,7 @@ from esp.program.models  import Program
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser, User
 from esp.datatree.models import GetNode
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.middleware   import ESPError
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItemType, EmptyTransactionException

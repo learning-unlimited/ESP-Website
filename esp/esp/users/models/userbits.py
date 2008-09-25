@@ -8,7 +8,7 @@ import string
 
 
 # esp dependencies
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 

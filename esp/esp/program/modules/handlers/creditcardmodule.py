@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
-from esp.db.models       import Q
+from django.db.models.query       import Q
 from esp.users.models    import User
 from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
 

@@ -38,7 +38,7 @@ from esp.program.models import ClassSubject, StudentApplication, StudentAppRevie
 from django.contrib.auth.decorators import login_required
 from esp.datatree.models import DataTree, GetNode
 from django.http import HttpResponseRedirect
-from esp.db.models import Q
+from django.db.models.query import Q
 
 __all__ = ['AdminReviewApps']
 

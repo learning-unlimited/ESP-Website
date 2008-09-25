@@ -36,7 +36,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError_Log
 
 from django.db import models
-from esp.db.models import Q
+from django.db.models.query import Q
 import pickle
 
 ########################################

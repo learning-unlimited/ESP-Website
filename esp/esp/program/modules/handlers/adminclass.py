@@ -44,7 +44,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.contrib.auth.decorators import login_required
 from esp.middleware import ESPError
-from esp.db.models import Q
+from django.db.models.query import Q
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -517,7 +517,7 @@ class AdminClass(ProgramModuleObj):
         limit = 10
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
-        from esp.db.models import Q
+        from django.db.models.query import Q
 
         # Initialize anchors for identifying teachers
         q = GetNode( 'Q' )

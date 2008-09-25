@@ -36,7 +36,7 @@ from django import oldforms
 from django.core.cache import cache
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser, User
-from esp.db.models      import Q
+from django.db.models.query   import Q
 from django.template.defaultfilters import urlencode
 from django.template import Context, Template
 from esp.miniblog.models import Entry

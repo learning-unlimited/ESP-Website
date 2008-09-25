@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models import ESPUser, User
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.users.views  import get_user_list
 from esp.middleware import ESPError
 from esp.web.util.latex import render_to_latex

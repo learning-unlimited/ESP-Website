@@ -34,7 +34,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
-from esp.db.models       import Q
+from django.db.models.query       import Q
 from django.template.loader import get_template
 from esp.program.models  import FinancialAidRequest
 from django              import forms

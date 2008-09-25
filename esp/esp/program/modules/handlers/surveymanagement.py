@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser, User
 from esp.datatree.models import GetNode
-from esp.db.models      import Q
+from django.db.models.query   import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
 from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single, top_classes

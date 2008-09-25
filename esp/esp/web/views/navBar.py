@@ -39,7 +39,7 @@ from esp.middleware.esperrormiddleware import ESPError
 from esp.program.models import Program
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
-from esp.db.models import Q
+from django.db.models.query import Q
 
 EDIT_VERB_STRING = 'V/Administer/Edit/QSD'
 

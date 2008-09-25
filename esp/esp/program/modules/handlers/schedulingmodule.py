@@ -37,7 +37,7 @@ from django                      import forms
 from django.http                 import HttpResponseRedirect
 from esp.cal.models              import Event
 from django.core.cache           import cache
-from esp.db.models               import Q
+from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.middleware              import ESPError
 from esp.resources.models        import ResourceRequest, ResourceType, Resource, ResourceAssignment

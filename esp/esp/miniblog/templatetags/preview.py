@@ -2,7 +2,7 @@ from django import template
 from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import DataTree
 from esp.users.models import UserBit
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.miniblog.models import Entry, AnnouncementLink
 from django.core.cache import cache
 import re

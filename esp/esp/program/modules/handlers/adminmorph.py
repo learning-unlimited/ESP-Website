@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
-from esp.db.models   import Q
+from django.db.models.query   import Q
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.web.util import render_to_response

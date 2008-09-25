@@ -3,7 +3,7 @@ from esp.users.forms.password_reset import PasswordResetForm,NewPasswordSetForm
 from django.contrib.auth.models import User
 from django.template import loader
 from django.http import HttpResponseRedirect
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.users.models import PersistentQueryFilter, ESPUser
 from esp.web.util.main import render_to_response
 from esp.users.decorators import anonymous_only

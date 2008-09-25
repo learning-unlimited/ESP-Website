@@ -34,7 +34,7 @@ from esp.program.models  import Program, ProgramCheckItem
 from esp.web.util        import render_to_response
 from esp.datatree.models import DataTree
 from django.contrib.auth.decorators import login_required
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.datatree.models import GetNode
 from esp.users.models import ESPUser, User
 from django.http import HttpResponseRedirect

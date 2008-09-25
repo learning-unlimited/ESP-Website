@@ -226,7 +226,7 @@ class ArchiveClass(models.Model):
     @staticmethod
     def getForUser(user):
         """ Get a list of archive classes for a specific user. """
-        from esp.db.models import Q
+        from django.db.models.query import Q
         Q_ClassTeacher = Q(teacher__icontains = (user.first_name + ' ' + user.last_name)) |\
                Q(teacher_ids__icontains = ('|%s|' % user.id))
         Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
