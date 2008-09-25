@@ -33,10 +33,10 @@ import time
 
 # django Util
 from django.db import models
+from django.db.models.query import Q
 from django.core.cache import cache
 
 # ESP Util
-from esp.db.models import Q
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.db.cache import GenericCacheHelper
@@ -678,10 +678,14 @@ class ClassSection(models.Model):
                     return retVal
 
 
-        qs = User.objects.none()
+        qs = UserBit.objects.none()
         for verb_str in verbs:
             v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            new_qs = User.objects.filter(userbit__verb=v, userbit__qsc=self.anchor) 
+            # NOTE: This assumes that no user can be both Enrolled and Rejected
+            # from the same class. Otherwise, this is pretty silly.
+            new_qs = UserBit.objects.filter(qsc=self.anchor, verb=v)
+            new_qs = new_qs.filter(Q(enddate__gte=datetime.datetime.now())
+                    | Q(enddate__isnull=True))
             qs = qs | new_qs
         
         retVal = qs.count()

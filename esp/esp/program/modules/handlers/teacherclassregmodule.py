@@ -238,11 +238,16 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     if not ignore:
                         verb = DataTree.get_by_uri('V/Flags/Registration/' + verb_name, create=True)
                         other_bits = sec.getRegBits(student).filter(verb__name__in=['Enrolled', 'Rejected'])
+                        found = False
                         for bit in other_bits:
-                            bit.expire()
+                            if not found and bit.verb == verb:
+                                found = True
+                            else:
+                                bit.expire()
                             #   result_strs.append('Expired: %s' % bit)
-                        new_bit = UserBit(user=student, verb=verb, qsc=sec.anchor)
-                        new_bit.save()
+                        if not found:
+                            new_bit = UserBit(user=student, verb=verb, qsc=sec.anchor)
+                            new_bit.save()
                         #   result_strs.append('Created: %s' % new_bit)
                         
         #   Jazz up this information a little
