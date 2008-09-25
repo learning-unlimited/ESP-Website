@@ -33,7 +33,7 @@ from django.db.models import Q
 from django.contrib.auth.models import User
 from esp.datatree.models import DataTree, GetNode
 from esp.db.fields import AjaxForeignKey
-from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem, EmptyTransactionException
+from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem, EmptyTransactionException, CompletedTransactionException
 from esp.accounting_docs.checksum import Checksum
 from esp.users.models import ESPUser
 from datetime import datetime
@@ -191,7 +191,9 @@ class Document(models.Model):
     def receive_creditcard(user, loc, amt, cc_id):
         """ Call this function when a successful credit card payment is received. """
         old_doc = Document.get_by_locator(loc)
-
+        if old_doc.txn.complete:
+            raise CompletedTransactionException
+        
         new_tx = Transaction.begin(old_doc.anchor, 'Credit card payment')
         li_type, unused = LineItemType.objects.get_or_create(text='Credit Card Payment',anchor=GetNode("Q/Accounts/Receivable/OnSite"))
         new_tx.add_item(user, li_type, amount=-amt)

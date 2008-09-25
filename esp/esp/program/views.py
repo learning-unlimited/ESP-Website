@@ -213,9 +213,9 @@ def managepage(request, page):
                 post_id = request.POST['requestID']
                 
                 document = Document.receive_creditcard(request.user, post_locator, post_amount, post_id)
-                
+            except CompletedTransactionException:
+                raise
             except:
-                from esp.middleware import ESPError
                 raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:esp-webmasters@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
 
             one = document.anchor.parent.name
