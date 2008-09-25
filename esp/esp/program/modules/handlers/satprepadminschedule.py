@@ -209,10 +209,11 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                 #   Copy over the content from the text box, then the file.
                 if len(form.cleaned_data['text']) > 3:
                     content = form.cleaned_data['text']
-                elif form.cleaned_data['file'].has_key('content'):
+                elif form.cleaned_data['file'] and form.cleaned_data['file'].has_key('content'):
                     content = form.cleaned_data['file']['content']
                 else:
-                    return ESPError(False), 'You need to upload a file or enter score information in the box.  Please go back and do so.'
+                    from esp.middleware import ESPError
+                    raise ESPError(False), 'You need to upload a file or enter score information in the box.  Please go back and do so.'
                 
                 lines = content.split('\n')
                 error_lines = []
