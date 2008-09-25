@@ -36,7 +36,10 @@ from esp.program.models import TeacherBio, FinancialAidRequest
 
 from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject
 
-admin.site.register(ProgramModule)
+class ProgramModuleAdmin(admin.ModelAdmin):
+    list_display = ('link_title', 'admin_title', 'handler', 'main_call')
+    search_fields = ['link_title', 'admin_title', 'handler', 'main_call']
+admin.site.register(ProgramModule, ProgramModuleAdmin)
     
 class ArchiveClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')

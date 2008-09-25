@@ -43,6 +43,9 @@ class CRMIAdmin(admin.ModelAdmin):
     pass
 admin.site.register(ClassRegModuleInfo, CRMIAdmin)
 
-admin.site.register(ProgramModuleObj)
+class ProgramModelObjAdmin(admin.ModelAdmin):
+    list_display = ('program', 'module')
+    pass
+admin.site.register(ProgramModuleObj, ProgramModelObjAdmin)
 
 admin.site.register(SATPrepTeacherModuleInfo)
