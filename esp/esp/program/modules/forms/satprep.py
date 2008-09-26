@@ -59,9 +59,7 @@ class SATPrepInfoForm(forms.ModelForm):
 class OnSiteRegForm(forms.Form):
     first_name = forms.CharField(max_length=64, widget=forms.TextInput({'size':20, 'class':'required'}))
     last_name = forms.CharField(max_length=64, widget=forms.TextInput({'size':30, 'class':'required'}))
-    # TODO: A less stupid email regex?
-    email = forms.RegexField(regex = r'[^ ]+@[^ ]+', max_length=64, widget = forms.TextInput({'size':20, 'class':'required'}),
-	    error_messages={'invalid':'Not a valid email address.'})
+    email = forms.EmailField(max_length=64, widget = forms.TextInput({'size':20, 'class':'required'}))
 
     old_math_score = SATScoreField(required = False)
     old_verb_score = SATScoreField(required = False)
