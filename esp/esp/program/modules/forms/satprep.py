@@ -44,3 +44,14 @@ class SATPrepDiagForm(forms.ModelForm):
 	from esp.program.models import SATPrepRegInfo
 	model = SATPrepRegInfo
 	fields = ('diag_math_score', 'diag_verb_score', 'diag_writ_score', 'prac_math_score', 'prac_verb_score', 'prac_writ_score')
+
+class SATPrepInfoForm(forms.ModelForm):
+    old_math_score = SATScoreField(required = False)
+    old_verb_score = SATScoreField(required = False)
+    old_writ_score = SATScoreField(required = False)
+
+    heard_by = forms.CharField(max_length = 128, required = False, widget = forms.TextInput({'size':24}))
+    class Meta:
+	from esp.program.models import SATPrepRegInfo
+	model = SATPrepRegInfo
+	fields = ('old_math_score', 'old_verb_score', 'old_writ_score', 'heard_by')

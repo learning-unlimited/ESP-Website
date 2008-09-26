@@ -397,19 +397,3 @@ def isValidSATSectionScore(data, form):
     data = int(data)
     if data < 200 or data > 800:
         raise validators.ValidationError, '"%s" not a valid SAT score.' % data
-
-def isValidSATScore(data, form):
-    data = int(data)
-    if data < 600 or data > 2400:
-        raise validators.ValidationError, '"%s" not a valid SAT score.' % data        
-
-
-
-class SATPrepInfoManipulator(forms.Manipulator):
-    def __init__(self):
-        self.fields = (
-            forms.PositiveIntegerField(field_name="old_math_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="old_verb_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="old_writ_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
-            forms.TextField(field_name="heard_by", length=24, max_length=128)
-            )

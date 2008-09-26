@@ -59,15 +59,17 @@ class SATPrepTeacherInput(ProgramModuleObj):
             return response
         user = response
         
-        reginfo = SATPrepRegInfo.getLastForProgram(user, prog)
         if request.method == 'POST':
-            form = SATPrepDiagForm(request.POST, instance = reginfo)
+            form = SATPrepDiagForm(request.POST)
 
             if form.is_valid():
+                reginfo = SATPrepRegInfo.getLastForProgram(user, prog)
+                form.instance = reginfo
                 form.save()
 
                 return self.goToCore(tl)
         else:
+            reginfo = SATPrepRegInfo.getLastForProgram(user, prog)
             form = SATPrepDiagForm(instance = reginfo)
 
         return render_to_response(self.baseDir()+'satprep_diag.html', request, (prog, tl), {'form':form,
