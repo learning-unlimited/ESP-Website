@@ -55,16 +55,3 @@ class SATPrepInfoForm(forms.ModelForm):
 	from esp.program.models import SATPrepRegInfo
 	model = SATPrepRegInfo
 	fields = ('old_math_score', 'old_verb_score', 'old_writ_score', 'heard_by')
-
-class OnSiteRegForm(forms.Form):
-    first_name = forms.CharField(max_length=64, widget=forms.TextInput({'size':20, 'class':'required'}))
-    last_name = forms.CharField(max_length=64, widget=forms.TextInput({'size':30, 'class':'required'}))
-    email = forms.EmailField(max_length=64, widget = forms.TextInput({'size':20, 'class':'required'}))
-
-    old_math_score = SATScoreField(required = False)
-    old_verb_score = SATScoreField(required = False)
-    old_writ_score = SATScoreField(required = False)
-
-    paid = forms.BooleanField(required = False)
-    medical = forms.BooleanField(required = False)
-    liability = forms.BooleanField(required = False)

@@ -34,10 +34,9 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User, ContactInfo, StudentInfo
 from esp.datatree.models import GetNode
-from django              import oldforms
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
-from esp.program.modules.manipulators import OnSiteNormalRegManipulator
+from esp.program.modules.forms.onsite import OnSiteRegForm
 from esp.money.models   import Transaction
 
 
@@ -91,15 +90,11 @@ class OnSiteRegister(ProgramModuleObj):
     @main_call
     @needs_onsite
     def onsite_create(self, request, tl, one, two, module, extra, prog):
-        manipulator = OnSiteNormalRegManipulator()
-	new_data = {}
 	if request.method == 'POST':
-            new_data = request.POST.copy()
+	    form = OnSiteRegForm(request.POST)
             
-            errors = manipulator.get_validation_errors(new_data)
-            
-            if not errors:
-                manipulator.do_html2python(new_data)
+	    if form.is_valid():
+		new_data = form.cleaned_data
                 username = base_uname = (new_data['first_name'][0]+ \
                                          new_data['last_name']).lower()
                 if User.objects.filter(username = username).count() > 0:
@@ -164,18 +159,9 @@ class OnSiteRegister(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'student': new_user, 'retUrl': '/onsite/%s/schedule_students?extra=285&op=usersearch&userid=%s' % \
                                                                                                    (self.program.getUrlBase(), new_user.id)})
 
-
-
-                            
-
-        
         else:
-            new_data = {}
-            errors = {}
+	    form = OnSiteRegForm()
 
-	form = oldforms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form})
         
  
-
-

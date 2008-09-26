@@ -36,7 +36,7 @@ from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
-from esp.program.modules.forms.satprep import OnSiteRegForm
+from esp.program.modules.forms.onsite import OnSiteSATPrepRegForm
 
 
 
@@ -69,7 +69,7 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
     @needs_onsite
     def satprep_create(self, request, tl, one, two, module, extra, prog):
 	if request.method == 'POST':
-            form = OnSiteRegForm(request.POST)
+            form = OnSiteSATPrepRegForm(request.POST)
             
             if form.is_valid():
                 new_data = form.cleaned_data
@@ -130,7 +130,7 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'user': new_user})
         
         else:
-            form = OnSiteRegForm()
+            form = OnSiteSATPrepRegForm()
 
 	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form})
         

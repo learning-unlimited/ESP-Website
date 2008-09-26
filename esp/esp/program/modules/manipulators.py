@@ -34,35 +34,6 @@ import re
 from esp.datatree.models import DataTree
 from esp.program.models import ClassCategories, ClassSubject, ClassSection
 
-class OnSiteNormalRegManipulator(forms.Manipulator):
-    def __init__(self):
-        self.fields = (
-            forms.TextField(field_name="first_name", \
-                            length=20, \
-                            max_length=64, \
-                            is_required=True, \
-                            validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="last_name", \
-                            length=30, \
-                            max_length=64, \
-                            is_required=True, \
-                            validator_list=[validators.isNotEmpty]),
-            forms.EmailField(field_name="email", \
-                            length=20, \
-                            max_length=64, \
-                            is_required=True, \
-                            validator_list=[validators.isNotEmpty]),
-            forms.SelectField(field_name="grade", \
-                              is_required=True, \
-                              choices=zip(range(7, 13), range(7, 13))),
-            forms.CheckboxField(field_name="paid"),
-            forms.CheckboxField(field_name="medical"),
-            forms.CheckboxField(field_name="liability")
-            
-            )
-        
-            
-            
             
 class TeacherClassRegManipulator(forms.Manipulator):
     """Manipulator for A class registration """
