@@ -31,6 +31,7 @@ Email: web@esp.mit.edu
 
 from django.contrib import admin
 from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, SATPrepTeacherModuleInfo, SATPrepAdminModuleInfo
+from esp.program.modules.module_ext import RemoteProfile
 from esp.program.modules.base import ProgramModuleObj
 
 admin.site.register(DBReceipt)
@@ -51,3 +52,7 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
 admin.site.register(ProgramModuleObj, ProgramModelObjAdmin)
 
 admin.site.register(SATPrepTeacherModuleInfo)
+
+class RemoteProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'program', 'volunteer', 'need_bus')
+admin.site.register(RemoteProfile, RemoteProfileAdmin)
