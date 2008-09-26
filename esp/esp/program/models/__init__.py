@@ -886,7 +886,7 @@ class SATPrepRegInfo(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_satprepreginfo'
-        verbose_name = 'SATPrep Registation Info'
+        verbose_name = 'SATPrep Registration Info'
 
     def __str__(self):
         return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
