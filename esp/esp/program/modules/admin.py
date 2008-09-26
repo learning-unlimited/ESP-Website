@@ -30,10 +30,12 @@ Email: web@esp.mit.edu
 """
 
 from django.contrib import admin
-from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, SATPrepTeacherModuleInfo
+from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, SATPrepTeacherModuleInfo, SATPrepAdminModuleInfo
 from esp.program.modules.base import ProgramModuleObj
 
 admin.site.register(DBReceipt)
+
+admin.site.register(SATPrepAdminModuleInfo)
 
 class SCRMIAdmin(admin.ModelAdmin):
     pass

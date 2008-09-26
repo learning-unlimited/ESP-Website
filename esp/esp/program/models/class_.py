@@ -1021,6 +1021,9 @@ class ClassSubject(models.Model):
             return "%s: (none)" % self.id
 
     def delete(self, adminoverride = False):
+        from esp.qsdmedia.models import Media
+        
+        anchor = self.anchor
         if self.num_students() > 0 and not adminoverride:
             return False
         
@@ -1033,12 +1036,16 @@ class ClassSubject(models.Model):
             sec.delete()
         self.sections.clear()
         
-        if self.anchor:
-            self.anchor.delete(True)
-            
+        #   Remove indirect dependencies
+        Media.objects.filter(anchor__rangestart__gte=self.anchor.rangestart, anchor__rangeend__lte=self.anchor.rangeend).delete()
+        UserBit.objects.filter(qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).delete()
+        
         self.checklist_progress.clear()
         
         super(ClassSubject, self).delete()
+        
+        if anchor:
+            anchor.delete(True)
         
     def cache_time(self):
         return 99999

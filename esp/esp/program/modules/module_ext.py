@@ -48,6 +48,9 @@ class SATPrepAdminModuleInfo(models.Model):
     module        = models.ForeignKey(ProgramModuleObj)
     num_divisions = models.IntegerField(blank=True, null=True)
     
+    def __unicode__(self):
+        return 'SATPrep admin settings for %s' % self.module.program
+    
     class Admin:
         pass
 
@@ -154,9 +157,10 @@ class SATPrepTeacherModuleInfo(models.Model):
         )
         
     SUBJECT_DICT = {'M': 'Math', 'V': 'Verbal', 'W': 'Writing'}
-    #   This is the unanimous decision of the ESP office, as of 11:30pm Friday Feb 22, 2008.
+    #   This is the unanimous decision of the ESP office, as of 11:30pm Thursday Sep 25, 2008.
     #   Old category labels are kept commented below.   -Michael P
-    SECTION_DICT = {'A': 'Helium', 'B': 'Neon', 'C': 'Argon', 'D': 'Krypton', 'E': 'Xenon', 'F': 'Radon'}
+    SECTION_DICT = {'A': 'Libra', 'B': 'Scorpio', 'C': 'Sagittarius', 'D': 'Capricorn', 'E': 'Aquarius', 'F': 'Pisces'}
+    #   SECTION_DICT = {'A': 'Helium', 'B': 'Neon', 'C': 'Argon', 'D': 'Krypton', 'E': 'Xenon', 'F': 'Radon'}
     #   SECTION_DICT = {'A': 'Mercury', 'B': 'Venus', 'C': 'Mars', 'D': 'Jupiter', 'E': 'Saturn', 'F': 'Neptune'}
     #   SECTION_DICT = {'A': 'Red', 'B': 'Orange', 'C': 'Yellow', 'D': 'Green', 'E': 'Blue', 'F': 'Violet'}
 

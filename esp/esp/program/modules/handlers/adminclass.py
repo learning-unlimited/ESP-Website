@@ -389,6 +389,7 @@ class AdminClass(ProgramModuleObj):
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
+
         cls.delete(True)
         return self.goToCore(tl)
 

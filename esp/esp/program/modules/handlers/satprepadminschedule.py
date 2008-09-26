@@ -43,7 +43,7 @@ from esp.resources.models import Resource, ResourceType
 from esp.datatree.models import DataTree
 
 
-class SATPrepAdminSchedule(ProgramModuleObj):
+class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
     """ This allows SATPrep directors to schedule their programs using
         an algorithm. """
     @classmethod
@@ -318,7 +318,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         if not request.method == 'POST' and not request.POST.has_key('schedule_confirm'):
             return render_to_response(self.baseDir()+'schedule_confirm.html', request, (prog, tl), {})
 
-        num_divisions = self.satprepInfo.num_divisions
+        num_divisions = self.num_divisions
 
         filterObj, found = get_user_list(request, self.program.getLists(True))
         if not found:
@@ -585,8 +585,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
 
         retList.sort(sorter)
                 
-            
-        sections = list(string.ascii_uppercase[:self.satprepInfo.num_divisions])
+        sections = list(string.ascii_uppercase[:self.num_divisions])
 
         context = {'users': retList, 'sections': sections }
 
