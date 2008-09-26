@@ -37,7 +37,6 @@ from esp.datatree.models import GetNode
 from django              import forms
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
-from esp.program.modules.manipulators import OnSiteRegManipulator
 
 
 

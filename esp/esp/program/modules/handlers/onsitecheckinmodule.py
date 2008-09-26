@@ -41,7 +41,6 @@ from django              import forms
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
 from esp.users.views    import search_for_user
-from esp.program.modules.manipulators import OnSiteRegManipulator
 from esp.money.models   import Transaction
 
 

@@ -55,3 +55,18 @@ class SATPrepInfoForm(forms.ModelForm):
 	from esp.program.models import SATPrepRegInfo
 	model = SATPrepRegInfo
 	fields = ('old_math_score', 'old_verb_score', 'old_writ_score', 'heard_by')
+
+class OnSiteRegForm(forms.Form):
+    first_name = forms.CharField(max_length=64, widget=forms.TextInput({'size':20, 'class':'required'}))
+    last_name = forms.CharField(max_length=64, widget=forms.TextInput({'size':30, 'class':'required'}))
+    # TODO: A less stupid email regex?
+    email = forms.RegexField(regex = r'[^ ]+@[^ ]+', max_length=64, widget = forms.TextInput({'size':20, 'class':'required'}),
+	    error_messages={'invalid':'Not a valid email address.'})
+
+    old_math_score = SATScoreField(required = False)
+    old_verb_score = SATScoreField(required = False)
+    old_writ_score = SATScoreField(required = False)
+
+    paid = forms.BooleanField(required = False)
+    medical = forms.BooleanField(required = False)
+    liability = forms.BooleanField(required = False)

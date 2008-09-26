@@ -33,34 +33,6 @@ from django.core import validators
 import re
 from esp.datatree.models import DataTree
 from esp.program.models import ClassCategories, ClassSubject, ClassSection
-from esp.program.manipulators import isValidSATSectionScore
-
-class OnSiteRegManipulator(forms.Manipulator):
-    def __init__(self):
-        self.fields = (
-            forms.TextField(field_name="first_name", \
-                            length=20, \
-                            max_length=64, \
-                            is_required=True, \
-                            validator_list=[validators.isNotEmpty]),
-            forms.TextField(field_name="last_name", \
-                            length=30, \
-                            max_length=64, \
-                            is_required=True, \
-                            validator_list=[validators.isNotEmpty]),
-            forms.EmailField(field_name="email", \
-                            length=20, \
-                            max_length=64, \
-                            is_required=True, \
-                            validator_list=[validators.isNotEmpty]),
-            forms.PositiveIntegerField(field_name="old_math_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="old_verb_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
-            forms.PositiveIntegerField(field_name="old_writ_score", length=3, max_length=3, validator_list=[isValidSATSectionScore]),
-            forms.CheckboxField(field_name="paid"),
-            forms.CheckboxField(field_name="medical"),
-            forms.CheckboxField(field_name="liability")
-            
-            )
 
 class OnSiteNormalRegManipulator(forms.Manipulator):
     def __init__(self):

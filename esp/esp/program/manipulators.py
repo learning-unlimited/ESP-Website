@@ -391,9 +391,3 @@ class ESPPhoneNumberField(forms.TextField):
                 newnumber = ESPPhoneNumberField.areacode + '-' + "".join(numbers[:3]) + '-' + "".join(numbers[3:])
         return newnumber
     html2python = staticmethod(html2python)
-
-
-def isValidSATSectionScore(data, form):
-    data = int(data)
-    if data < 200 or data > 800:
-        raise validators.ValidationError, '"%s" not a valid SAT score.' % data
