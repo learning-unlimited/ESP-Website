@@ -54,7 +54,7 @@ admin.site.register(TeacherParticipationProfile)
 class SATPrepRegInfoAdmin(admin.ModelAdmin):
     list_display = ('user', 'program')
     #list_filter = ('program',)
-    search_fields = ['user']
+    search_fields = ['user__username']
     pass
 admin.site.register(SATPrepRegInfo, SATPrepRegInfoAdmin)
 
@@ -65,7 +65,7 @@ admin.site.register(RegistrationProfile, RegistrationProfileAdmin)
     
 class TeacherBioAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'slugbio')
-    search_fields = ['slugbio', 'bio']
+    search_fields = ['user__username', 'slugbio', 'bio']
 
 admin.site.register(TeacherBio, TeacherBioAdmin)
     
