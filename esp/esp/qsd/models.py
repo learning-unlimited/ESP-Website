@@ -41,10 +41,13 @@ from esp.db.file_db import *
 
 class QSDManager(FileDBManager):
     def get_by_path__name(self, path, name):
-        # IF you change this, update qsd/templatetags/render_qsd.py's cache_key function
-        # Otherwise, the wrong cache path will be invalidated
-        cache_id = md5.new('%s-%s' % (path.uri, name)).hexdigest()
-        retVal = self.get_by_id(cache_id)
+        # This writes to file_db, and caches the *data retrieval*
+        # It exists because the kernel filesystem caches are possibly better
+        # for retrieving large (>=4KB) data chunks than PostgreSQL
+        # See Mike Axiak's email to esp-webmasters@mit.edu on 2008-09-27 (around 12:35)
+        # No user ID --- this caches simple DB access, so user-invariant
+        file_id = qsd_cache_key(path, name, None)
+        retVal = self.get_by_id(file_id)
         if retVal is not None:
             return retVal
         try:
@@ -79,7 +82,7 @@ class QuasiStaticData(models.Model):
         
         In particular, IF you change this, update qsd/models.py's QSDManager class
         Otherwise, the cache *may* be used wrong elsewhere."""
-        return md5.new('%s-%s' % (self.path.uri, self.name)).hexdigest()
+        return qsd_cache_key(self.path, self.name, None) # DB access cache --- user invariant
 
     def copy(self,):
         """Returns a copy of the current QSD.
@@ -106,10 +109,15 @@ class QuasiStaticData(models.Model):
         self.author = request.user
         self.create_date = datetime.now()
 
-    def save(self, *args, **kwargs):
-        # Invalidate the file cache
+    def save(self, user=None, *args, **kwargs):
+        # Invalidate the file cache of the render_qsd template tag
         from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func, render_qsd_cache
         render_qsd_cache.delete(cache_key_func(self))
+
+        # Invalidate per user cache entry --- really, we should do this for
+        # all users, but just this one is easy and almost as good
+        render_qsd_cache.delete(cache_key_func(self, user))
+
         retVal = super(QuasiStaticData, self).save(*args, **kwargs)
         QuasiStaticData.objects.obj_to_file(self)
         
@@ -157,22 +165,32 @@ class QuasiStaticData(models.Model):
         """ Fetch a QSD record by its url parts """
         # Extract the last part
         filename = parts.pop()
-
+        
         # Find the branch
         try:
             branch = base.tree_decode( parts )
         except DataTree.NoSuchNodeException:
             raise QuasiStaticData.DoesNotExist
-
+        
         # Find the record
         qsd = QuasiStaticData.objects.filter( path = branch, name = filename )
         if len(qsd) < 1:
             raise QuasiStaticData.DoesNotExist
-
+        
         # Operation Complete!
         return qsd[0]
 
-    
+def qsd_cache_key(path, name, user=None,):
+    # IF you change this, update qsd/models.py's QSDManager class
+    # Otherwise, the wrong cache path will be invalidated
+    # Also, make sure the qsd/models.py's get_file_id method
+    # is also updated. Otherwise, other things might break.
+    if user and user.is_authenticated():
+        return md5.new('%s-%s-%s' % (path.uri, name, user.id)).hexdigest()
+    else:
+        return md5.new('%s-%s' % (path.uri, name)).hexdigest()
+
+
 class ESPQuotations(models.Model):
     """ Quotation about ESP """
 

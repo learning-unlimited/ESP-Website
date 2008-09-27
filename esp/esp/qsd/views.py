@@ -163,6 +163,10 @@ def qsd(request, branch, name, section, action):
         if not have_read:
             raise Http403, 'You do not have permission to read this page.'
 
+        # This caching code is commented out
+        # My guess (Alex Dehnert, speaking as somebody who started work
+        # on ESP after this had happened) is that this was commented out
+        # when the render_qsd template tag started getting cached
         #cached_html = cache.get('quasistaticdata_html:' + cache_id)
         #if cached_html == None:
         cached_html = qsd_rec.html()
@@ -193,7 +197,7 @@ def qsd(request, branch, name, section, action):
         qsd_rec_new.title = request.POST['title']
         qsd_rec_new.description = request.POST['description']
         qsd_rec_new.keywords    = request.POST['keywords']
-        qsd_rec_new.save()
+        qsd_rec_new.save(user=request.user)
 
         qsd_rec = qsd_rec_new
 
@@ -274,7 +278,7 @@ def ajax_qsd(request):
         qsd = qsdold.copy()
         qsd.content = post_dict['data']
         qsd.load_cur_user_time(request, )
-        qsd.save()
+        qsd.save(user=request.user,)
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
         result['id'] = qsd.id
@@ -283,7 +287,7 @@ def ajax_qsd(request):
         qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path)
         qsd.content = post_dict['data']
         qsd.author = request.user
-        qsd.save()
+        qsd.save(user=request.user,)
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
         result['id'] = qsd.id
