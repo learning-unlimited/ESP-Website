@@ -158,4 +158,4 @@ urlpatterns += patterns('esp.web.views.navBar',
 
 urlpatterns += patterns('esp.program.views',
                     (r'^manage/([-A-Za-z0-9_ ]+)/?', 'managepage'),
-                    )                    
+                    )
