@@ -81,72 +81,6 @@ def myesp_passwd(request, module):
                                                     'Success': False})
 
 
-def myesp_passrecover(request, module):
-	""" Recover the password for a user """
-	from esp.users.models import PersistentQueryFilter
-	from django.template import loader
-	from django.db.models.query import Q
-	
-	new_data = request.POST.copy()
-	manipulator = UserRecoverForm()
-	
-	
-	if request.method == 'POST' and request.POST.has_key('prelim'):
-		errors = manipulator.get_validation_errors(new_data)
-		if not errors:
-			try:
-				user = User.objects.get(username = new_data['username'])
-			except:
-				raise ESPError(), 'Could not find user %s.' % new_data['username']
-
-			user = ESPUser(user)
-			user.recoverPassword()
-
-			return render_to_response('users/requestrecover.html', request, GetNode('Q/Web/myesp'),{'Success': True})
-
-	else:
-		errors = {}
-
-	return render_to_response('users/requestrecover.html', request, GetNode('Q/Web/myesp'),
-				  {'form': oldforms.FormWrapper(manipulator, new_data, errors)})
-
-def myesp_passemailrecover(request, module):
-	new_data = request.POST.copy()
-	manipulator = SetPasswordForm()
-
-	success = False
-	code = ''
-
-	if request.GET.has_key('code'):
-		code = request.GET['code']
-	if request.POST.has_key('code'):
-		code = request.POST['code']
-	
-	numusers = User.objects.filter(password = code).count()
-	if numusers == 0:
-		code = False
-	
-      	
-	
-	if request.method == 'POST':
-		errors = manipulator.get_validation_errors(new_data)
-		if not errors:
-			user = User.objects.get(username = new_data['username'].lower())
-			user.set_password(new_data['newpasswd'])
-			user.save()
-			auth_user = authenticate(username = new_data['username'].lower(), password = new_data['newpasswd'])
-			login(request, auth_user)
-			success = True
-			
-	else:
-		errors = {}
-		
-	return render_to_response('users/emailrecover.html', request, GetNode('Q/Web/myesp'),
-				  {'form': oldforms.FormWrapper(manipulator, new_data, errors),
-				   'code': code,
-				   'Success': success})
-	
-
 def myesp_home(request, module):
 	""" Draw the ESP home page """
 	curUser = request.user
@@ -480,8 +414,6 @@ myesp_handlers = {
 		   'switchback': myesp_switchback,
 		   'onsite': myesp_onsite,
 		   'passwd': myesp_passwd,
-		   'passwdrecover': myesp_passrecover,
-		   'recoveremail': myesp_passemailrecover,
 		   'student': myesp_battlescreen_student,
 		   'teacher': myesp_battlescreen_teacher,
 		   'admin': myesp_battlescreen_admin,
