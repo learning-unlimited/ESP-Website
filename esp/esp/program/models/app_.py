@@ -108,7 +108,7 @@ class StudentAppQuestion(BaseAppElement, models.Model):
     question = models.TextField(help_text='The prompt that your students will see.')
     directions = models.TextField(help_text='Specify any additional notes (such as the length of response you desire) here.', blank=True, null=True)
     
-    def __str__(self):
+    def __unicode__(self):
         if self.subject is not None:
             return '%s (%s)' % (self.question[:80], self.subject.title())
         else:
@@ -130,7 +130,7 @@ class StudentAppResponse(BaseAppElement, models.Model):
     _element_name = 'response'
     _field_names = ['response', 'complete']
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Response to %s: %s...' % (self.question.question, self.response[:80])
     
     class Meta:
@@ -154,7 +154,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     _element_name = 'review'
     _field_names = ['score', 'comments', 'reject']
     
-    def __str__(self):
+    def __unicode__(self):
         return '%s by %s: %s...' % (self.score, self.reviewer.username, self.comments[:80])
 
     class Meta:
@@ -182,7 +182,7 @@ class StudentApplication(models.Model):
     director_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
     rejected       = models.BooleanField(default=False,editable=False)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.user)
     
     def __init__(self, *args, **kwargs):

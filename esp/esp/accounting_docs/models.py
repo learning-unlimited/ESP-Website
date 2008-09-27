@@ -105,7 +105,7 @@ class Document(models.Model):
             
         return u"%s for %s on %s%s" % (choices_dict[self.doctype], str(self.user), str(self.anchor), complete_str)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(unicode(self))
     
     def set_default_locator(self):

@@ -139,7 +139,7 @@ class LatexImage(models.Model):
         super(LatexImage,self).save(*args, **kwargs)
         
 
-    def __str__(self):
+    def __unicode__(self):
         return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' % \
                (self.image.url, self.content, self.content)
         
@@ -223,7 +223,7 @@ class SubSectionImage(models.Model):
         self.create_image()
         models.Model.save(self, *args, **kwargs)
 
-    def __str__(self):
+    def __unicode__(self):
         if not os.path.exists(self.image.path):
             self.create_image()
         return '<img src="%s" alt="%s" border="0" title="%s" class="subsection" />' % (str(self.image.url), self.text, self.text)

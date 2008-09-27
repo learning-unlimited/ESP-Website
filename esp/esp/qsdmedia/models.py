@@ -71,7 +71,7 @@ class Media(models.Model):
         if save:
             self.save()
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.friendly_name)
 
     @staticmethod
@@ -110,7 +110,7 @@ class Video(models.Model):
 
     duration = models.IntegerField(blank=True, null=True) # length of the video, in seconds; this may become some sort of duration field at some point
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.media)
 
     class Admin:
@@ -129,7 +129,7 @@ class Picture(models.Model):
     x_resolution = models.IntegerField(blank=True, null=True) # Horizontal width of the Picture, in pixels
     y_resolution = models.IntegerField(blank=True, null=True) # Vertical height of the Picture, in pixels
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.media)
 
     class Admin:
@@ -139,7 +139,7 @@ class PaperType(models.Model):
     """ A list of possible types of papers.  Each conference will typically have a set of types of papers that it accepts. """
     type_description = models.TextField(blank=True, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.type_description)
     
     class Admin:
@@ -157,7 +157,7 @@ class Paper(models.Model):
 
     media = models.ForeignKey(Media, unique=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.media)
 
     class Admin:

@@ -325,7 +325,7 @@ class DataTree(models.Model):
         return self.parent_id == None and self.name == DataTree.ROOT_NAME
         
     
-    def __str__(self):
+    def __unicode__(self):
         return '%s (%s--%s)' % (self.get_uri(),
                                 self.rangestart,
                                 self.rangeend)
@@ -1013,7 +1013,7 @@ class DataTree(models.Model):
             self.anchor = anchor
             self.remainder = remainder
 
-        def __str__(self):
+        def __unicode__(self):
             return "Node not found: " + repr(self.remainder[0])
 
                                                         

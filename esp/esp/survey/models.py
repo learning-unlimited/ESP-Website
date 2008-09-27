@@ -94,7 +94,7 @@ class Survey(models.Model):
 
     category = models.CharField(max_length=32) # teach|learn|etc
     
-    def __str__(self):
+    def __unicode__(self):
         return '%s (%s) for %s' % (self.name, self.category, str(self.anchor))
     
     def num_participants(self):
@@ -170,7 +170,7 @@ class SurveyResponse(models.Model):
 
         return answers
     
-    def __str__(self):
+    def __unicode__(self):
         return "Survey for %s filled out at %s" % (self.survey.anchor,
                                                    self.time_filled)
                                                    
@@ -199,7 +199,7 @@ class QuestionType(models.Model):
     def answers_template_file(self):
         return 'survey/answers/%s.html' % self.name.replace(' ', '_').lower()
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
 
 
@@ -224,7 +224,7 @@ class Question(models.Model):
 
         return params
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s, %d: "%s" (%s)' % (self.survey.name, self.seq, self.name, self.question_type.name)
 
     def get_value(self, data_dict):
@@ -354,5 +354,5 @@ class Answer(models.Model):
     class Admin:
         pass
 
-    def __str__(self):
+    def __unicode__(self):
         return "Answer for question #%d: %s" % (self.question.id, self.value)

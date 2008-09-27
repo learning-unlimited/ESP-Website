@@ -250,7 +250,7 @@ else:
     # Cache the hostname, but do it lazily: socket.getfqdn() can take a couple of
     # seconds, which slows down the restart of the server.
     class CachedDnsName(object):
-        def __str__(self):
+        def __unicode__(self):
             return self.get_fqdn()
 
         def get_fqdn(self):

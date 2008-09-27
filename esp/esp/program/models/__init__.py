@@ -132,10 +132,10 @@ class ProgramModule(models.Model):
         def __init__(self, msg):
             self.msg = msg
 
-        def __str__(self):
+        def __unicode__(self):
             return self.msg
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Program Module: %s' % self.admin_title
     
     
@@ -159,7 +159,7 @@ class ArchiveClass(models.Model):
         db_table = 'program_archiveclass'
         verbose_name_plural = 'archive classes'
 
-    #def __str__(self):
+    #def __unicode__(self):
     #    return '"%s" taught by "%s"' % (self.title, self.teacher)
 
     def __cmp__(self, other):
@@ -295,7 +295,7 @@ class Program(models.Model):
         str_array = self.anchor.tree_encode()
         return '/'.join(str_array[-2:])
     
-    def __str__(self):
+    def __unicode__(self):
         return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
 
     def parent(self):
@@ -864,7 +864,7 @@ class TeacherParticipationProfile(models.Model):
         app_label = 'program'
         db_table = 'program_teacherparticipationprofile'
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
     
 
@@ -888,7 +888,7 @@ class SATPrepRegInfo(models.Model):
         db_table = 'program_satprepreginfo'
         verbose_name = 'SATPrep Registration Info'
 
-    def __str__(self):
+    def __unicode__(self):
         return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
     def updateForm(self, new_data):
         for i in self.__dict__.keys():
@@ -983,7 +983,7 @@ class RegistrationProfile(models.Model):
             regProf = regProfList[0]
         return regProf
             
-    def __str__(self):
+    def __unicode__(self):
         if self.program is None:
             return '<Registration for '+str(self.user)+'>'
         if self.user is not None:
@@ -1153,7 +1153,7 @@ class FinancialAidRequest(models.Model):
         
         
 
-    def __str__(self):
+    def __unicode__(self):
         """ Represent this as a string. """
         accepted_verb = GetNode('V/Flags/Registration/Accepted')
         if self.reduced_lunch:

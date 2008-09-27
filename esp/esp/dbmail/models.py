@@ -91,7 +91,7 @@ class MessageRequest(models.Model):
     email_all = models.BooleanField(default=True) # do we just want to create an emailrequest for each user?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.subject)
 
     @staticmethod
@@ -190,7 +190,7 @@ class TextOfEmail(models.Model):
     sent = models.DateTimeField(blank=True, null=True)
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.subject) + ' <' + str(self.send_to) + '>'
 
     def send(self):
@@ -343,7 +343,7 @@ class EmailRequest(models.Model):
     msgreq = models.ForeignKey(MessageRequest)
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'
 
     class Admin:
@@ -389,7 +389,7 @@ class EmailList(models.Model):
 
         super(EmailList, self).save(*args, **kwargs)
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s (%s)' % (self.description, self.regex)
 
 class PlainRedirect(models.Model):
@@ -401,7 +401,7 @@ class PlainRedirect(models.Model):
 
     destination = models.CharField(max_length=512)
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s --> %s'  % (self.original, self.destination)
 
     class Meta:

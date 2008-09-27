@@ -66,7 +66,7 @@ class LineItemType(models.Model):
 
     objects = LineItemTypeManager()
     
-    def __str__(self):
+    def __unicode__(self):
         if self.anchor: url = self.anchor.get_uri()
         else: url = 'NULL'
         return "LineItemType: %s (%.02f or %.02f for %s)" % (self.text, self.amount, self.finaid_amount, url)
@@ -153,7 +153,7 @@ class Transaction(models.Model):
     text = models.TextField()
     complete = models.BooleanField(default=False)
 
-    def __str__(self):
+    def __unicode__(self):
         if self.complete: completion = ''
         else: completion = ' (INCOMPLETE)'
         return "T-%u (%s): %s" % (self.id, str(self.timestamp), self.text + completion)
@@ -263,5 +263,5 @@ class LineItem(models.Model):
     def negative_amount(self):
         return -(self.amount)
 
-    def __str__(self):
+    def __unicode__(self):
         return "L-%u (T-%u): %.02f %s - %s, %s" % (self.id, self.transaction.id, self.amount, self.anchor.uri, self.user.username, self.text)

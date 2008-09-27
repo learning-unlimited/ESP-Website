@@ -107,7 +107,7 @@ class ResourceType(models.Model):
     def global_types():
         return ResourceType.objects.filter(program__isnull=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
     
     class Admin:
@@ -121,7 +121,7 @@ class ResourceRequest(models.Model):
     target_subj = models.ForeignKey(ClassSubject, null=True)
     res_type = models.ForeignKey(ResourceType)
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Resource request of %s for %s' % (str(self.res_type), self.target.emailcode())
 
     class Admin:
@@ -139,7 +139,7 @@ class Resource(models.Model):
     user = AjaxForeignKey(User, null=True, blank=True)
     event = models.ForeignKey(Event)
     
-    def __str__(self):
+    def __unicode__(self):
         if self.user is not None:
             return 'For %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
         else:
@@ -329,7 +329,7 @@ class ResourceAssignment(models.Model):
     target = models.ForeignKey(ClassSection, null=True)
     target_subj = models.ForeignKey(ClassSubject, null=True)
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Resource assignment for %s' % str(self.getTargetOrSubject())
     
     def getTargetOrSubject(self):

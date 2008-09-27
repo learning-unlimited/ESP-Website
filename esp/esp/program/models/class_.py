@@ -71,7 +71,7 @@ class ProgramCheckItem(models.Model):
                 self.seq = 0
         super(ProgramCheckItem, self).save(*args, **kwargs)
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s for "%s"' % (self.title, str(self.program).strip())
 
     class Meta:
@@ -205,7 +205,7 @@ class ClassSection(models.Model):
         super(ClassSection, self).__init__(*args, **kwargs)
         self.cache = SectionCacheHelper(self)
 
-    def __str__(self):
+    def __unicode__(self):
         pc = self.parent_class
         return '%s: %s' % (self.emailcode(), pc.title())
 
@@ -1014,7 +1014,7 @@ class ClassSubject(models.Model):
     def got_qsd(self):
         return QuasiStaticData.objects.filter(path = self.anchor).values('id').count() > 0
         
-    def __str__(self):
+    def __unicode__(self):
         if self.title() is not None:
             return "%s: %s" % (self.id, self.title())
         else:
@@ -1463,7 +1463,7 @@ class ClassImplication(models.Model):
     class Admin:
         pass
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Implications for %s' % self.cls
     
     def _and(lst):
@@ -1525,7 +1525,7 @@ class ClassCategories(models.Model):
         app_label = 'program'
         db_table = 'program_classcategories'
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.category)
         
         

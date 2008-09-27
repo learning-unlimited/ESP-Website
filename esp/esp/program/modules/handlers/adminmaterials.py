@@ -57,7 +57,7 @@ class AdminMaterials(ProgramModuleObj):
         from esp.datatree.models import DataTree
             
         context_form = FileUploadForm_Admin()
-        new_choices = [(a.anchor.id, a.emailcode() + ': ' + str(a)) for a in prog.classes()]
+        new_choices = [(a.anchor.id, a.emailcode() + ': ' + unicode(a)) for a in prog.classes()]
         new_choices.append((prog.anchor.id,'Document pertains to program'))
         new_choices.reverse()
         context_form.set_choices(new_choices)

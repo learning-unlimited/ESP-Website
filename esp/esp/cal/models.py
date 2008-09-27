@@ -40,7 +40,7 @@ class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.description)
 
 
@@ -49,7 +49,7 @@ class Series(models.Model):
     description = models.TextField()
     target = AjaxForeignKey(DataTree) # location for this Series in the datatree
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.description)
 
     def is_happening(self, time=datetime.now()):
@@ -94,7 +94,7 @@ class Event(models.Model):
         minutes = int(dur.seconds / 60) - hours * 60
         return '%d hr %d min' % (hours, minutes)
     
-    def __str__(self):
+    def __unicode__(self):
         return self.start.strftime('%a %b %d: %I %p') + ' to ' + self.end.strftime('%I %p')
 
     def short_time(self):
@@ -212,6 +212,6 @@ class EmailReminder(models.Model):
     date_to_send = models.DateTimeField()
     sent = models.BooleanField(default=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.event) + ': ' + str(self.email)
 

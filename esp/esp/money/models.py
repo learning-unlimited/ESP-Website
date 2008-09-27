@@ -74,7 +74,7 @@ class PaymentType(models.Model):
     """ A list of payment methods: Check, Credit Card, etc. """
     description = models.TextField() # Description, ie. "Check", "Credit Card", etc.
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.description)
 
     class Admin:
@@ -103,7 +103,7 @@ class Transaction(models.Model):
 	else:
 		return '$%02.2f' % self.amount
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.line_item) + ': $' + str(self.amount) + ' <' + str(self.fbo) + '>'
 
     class Admin:
@@ -123,7 +123,7 @@ class LineItemType(models.Model):
 	def forAnchor(cls, anchor):
 		return cls.objects.filter(anchor=anchor)
 
-	def __str__(self):
+	def __unicode__(self):
 		return str(self.label) + " : " + str(self.value) + "/" + str(self.financial_aid_value) + " (for %s)" % self.anchor
 
 	class Admin:
@@ -177,7 +177,7 @@ class LineItem(models.Model):
 		return my_costs_sum
 
 
-	def __str__(self):
+	def __unicode__(self):
 		return "%s : %s" % (str(self.user), str(self.type))
 	
 	class Admin:

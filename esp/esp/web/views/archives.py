@@ -50,7 +50,7 @@ class ArchiveFilter(object):
         self.category = str(category)
         self.options  = str(options)
     
-    def __str__(self):
+    def __unicode__(self):
         return '%s, %s' % (self.category, self.options)
 
 def compute_range(postvars, num_records):

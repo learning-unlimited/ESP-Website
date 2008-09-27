@@ -49,7 +49,7 @@ class AnnouncementLink(models.Model):
     section = models.CharField(max_length=32,blank=True,null=True, help_text="e.g. 'teach' or 'learn' or blank")
     href = models.URLField(help_text="The URL the link should point to.")
 
-    def __str__(self):
+    def __unicode__(self):
         return "%s (links to %s)" % (self.title, self.href)
 
     def get_absolute_url(self):
@@ -87,7 +87,7 @@ class Entry(models.Model):
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
     section = models.CharField(max_length=32,blank=True,null=True,help_text="e.g. 'teach' or 'learn' or blank")
 
-    def __str__(self):
+    def __unicode__(self):
         if self.slug:
             return "%s (%s)" % (self.slug, self.anchor.uri)
         else:
@@ -178,7 +178,7 @@ class Comment(models.Model):
 
     content = models.TextField(help_text="HTML not allowed.")
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Comment for %s by %s on %s' % (self.entry, self.author,
                                                self.post_ts.date())
     

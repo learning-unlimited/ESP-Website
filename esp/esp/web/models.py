@@ -50,7 +50,7 @@ class NavBarEntry(models.Model):
     def can_edit(self, user):
         return UserBit.UserHasPerms(user, self.path, GetNode('V/Administer/Edit/QSD'))
     
-    def __str__(self):
+    def __unicode__(self):
         return self.path.full_name() + ':' + self.section + ':' + str(self.sort_rank) + ' (' + self.text + ') ' + '[' + self.link + ']' 
 
     def makeTitle(self):

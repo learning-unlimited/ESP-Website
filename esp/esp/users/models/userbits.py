@@ -454,7 +454,7 @@ class UserBit(models.Model):
         app_label = 'users'
         db_table = 'users_userbit'
 
-    def __str__(self):
+    def __unicode__(self):
         
         
         def clean_node(node):
@@ -561,7 +561,7 @@ class UserBitImplication(models.Model):
         db_table = 'users_userbitimplication'
 
 
-    def __str__(self):
+    def __unicode__(self):
         var = {}
         for k in ['verb_original_id', 'qsc_original_id',
                   'verb_implied_id',  'qsc_implied_id' ]:

@@ -818,7 +818,7 @@ class StudentInfo(models.Model):
                                    qsc  = STUDREP_QSC).delete()
         return studentInfo
 
-    def __str__(self):
+    def __unicode__(self):
         username = "N/A"
         if self.user != None:
             username = self.user.username
@@ -889,7 +889,7 @@ class TeacherInfo(models.Model):
         teacherInfo.save()
         return teacherInfo
 
-    def __str__(self):
+    def __unicode__(self):
         username = ""
         if self.user != None:
             username = self.user.username
@@ -949,7 +949,7 @@ class GuardianInfo(models.Model):
         guardianInfo.save()
         return guardianInfo
 
-    def __str__(self):
+    def __unicode__(self):
         username = ""
         if self.user != None:
             username = self.user.username
@@ -1016,7 +1016,7 @@ class EducatorInfo(models.Model):
         educatorInfo.save()
         return educatorInfo
 
-    def __str__(self):
+    def __unicode__(self):
         username = ""
         if self.user != None:
             username = self.user.username
@@ -1086,7 +1086,7 @@ class ZipCode(models.Model):
         newsearch.save()
         return winners
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s (%s, %s)' % (self.zip_code,
                                 self.longitude,
                                 self.latitude)
@@ -1102,7 +1102,7 @@ class ZipCodeSearches(models.Model):
         app_label = 'users'
         db_table = 'users_zipcodesearches'
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
@@ -1190,7 +1190,7 @@ class ContactInfo(models.Model):
 
         super(ContactInfo, self).save(*args, **kwargs)
 
-    def __str__(self):
+    def __unicode__(self):
         username = ""
         last_name, first_name = '', ''
         if self.user != None:
@@ -1220,7 +1220,7 @@ class K12School(models.Model):
         app_label = 'users'
         db_table = 'users_k12school'
 
-    def __str__(self):
+    def __unicode__(self):
         if self.contact_id:
             return '"%s" in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
@@ -1340,7 +1340,7 @@ class PersistentQueryFilter(models.Model):
 
         return filterObj
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.useful_name)
 
 
@@ -1357,7 +1357,7 @@ class ESPUser_Profile(models.Model):
     class Admin:
         pass
 
-    def __str__(self):
+    def __unicode__(self):
         return "ESPUser_Profile for user: %s" % str(self.user)
 
 
@@ -1407,7 +1407,7 @@ class DBList(object):
         """ We are going to order by the size of our lists. """
         return cmp(self.count(), other.count())
 
-    def __str__(self):
+    def __unicode__(self):
         return self.key
 
 

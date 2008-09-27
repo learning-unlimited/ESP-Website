@@ -78,7 +78,7 @@ class ProgramModuleObj(models.Model):
             return self.doc
         return self.module.link_title
 
-    def __str__(self):
+    def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
     def all_views(self):

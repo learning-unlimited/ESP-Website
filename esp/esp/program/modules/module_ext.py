@@ -64,7 +64,7 @@ class StudentClassRegModuleInfo(models.Model):
     use_priority         = models.BooleanField(default=False)
     priority_limit       = models.IntegerField(default=3)
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
     
 class ClassRegModuleInfo(models.Model):
@@ -107,7 +107,7 @@ class ClassRegModuleInfo(models.Model):
     session_counts_ints = property( session_counts_ints_get, session_counts_ints_set )
     
     class_durations_any = models.BooleanField(blank=True, null=True)
-    def __str__(self):
+    def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
     
 
@@ -115,7 +115,7 @@ class CreditCardModuleInfo(models.Model):
     module = models.ForeignKey(ProgramModuleObj)
     base_cost        = models.IntegerField(blank=True, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Credit Card Ext. for %s' % str(self.module)
 
     class Admin:
@@ -138,7 +138,7 @@ class RemoteProfile(models.Model):
                                              blank=True)
 
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Remote participation info for teacher %s in %s' % \
                  (str(self.user), str(self.program))      
 
@@ -176,7 +176,7 @@ class SATPrepTeacherModuleInfo(models.Model):
     program  = models.ForeignKey(Program,blank=True, null=True)
     section  = models.CharField(max_length=5)
    
-    def __str__(self):
+    def __unicode__(self):
         return 'SATPrep Information for teacher %s in %s' % \
                  (str(self.user), str(self.program))
 

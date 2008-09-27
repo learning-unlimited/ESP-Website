@@ -109,7 +109,7 @@ class QuasiStaticData(models.Model):
         cache.set(cache_key, result)
         return result
             
-    def __str__(self):
+    def __unicode__(self):
         return (self.path.full_name() + ':' + self.name + '.html' )
 
     def html(self):
