@@ -55,15 +55,6 @@ class UserRegManipulator(forms.Manipulator):
         if ESPUser.isUserNameTaken(field_data):
             raise validators.ValidationError, 'Username "'+field_data+'" already in use. Please use another one.'
 
-class UserPasswdManipulator(forms.Manipulator):
-    def __init__(self, user):
-        self.fields = (
-            forms.TextField(field_name="username", length=12, max_length=12, is_required=True, validator_list=[IsEqualTo(user.username)]),
-            forms.PasswordField(field_name="password", length=12, max_length=32, is_required = True, validator_list=[UserPassCorrect]),
-            forms.PasswordField(field_name="newpasswd", length=12, max_length=32, is_required = True),
-            forms.PasswordField(field_name="newpasswdconfirm", length=12, max_length=32, is_required = True,validator_list = [
-                                validators.AlwaysMatchesOtherField('newpasswd', 'The new password and confirm password must be equal.')]))            
-
 class UserRecoverForm(forms.Manipulator):
     def __init__(self):
         self.fields = (

@@ -3,7 +3,7 @@
 from django import forms
 from django.contrib.auth.models import User
 
-__all__ = ['PasswordResetForm','NewPasswordSetForm']
+__all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
 
 class PasswordResetForm(forms.Form):
 
@@ -107,11 +107,33 @@ class NewPasswordSetForm(forms.Form):
     
 
     def clean_password_confirm(self):
-        new_passwd= self.cleaned_data['password_confirm'].strip()
+        new_passwd = self.cleaned_data['password_confirm'].strip()
 
         if not self.cleaned_data.has_key('password'):
             raise forms.ValidationError('Invalid password; confirmation failed')
 
         if self.cleaned_data['password'] != new_passwd:
+            raise forms.ValidationError('Password and confirmation are not equal.')
+        return new_passwd
+
+class UserPasswdForm(forms.Form):
+    password = forms.CharField(max_length=32, widget=forms.PasswordInput())
+    newpasswd = forms.CharField(max_length=32, widget=forms.PasswordInput())
+    newpasswdconfirm = forms.CharField(max_length=32, widget=forms.PasswordInput())
+
+    def __init__(self, *args, **kwargs):
+        for k,v in self.base_fields.items():
+            if v.required:
+                v.widget.attrs['class'] = 'required'
+            v.widget.attrs['size'] = 12
+        forms.Form.__init__(self, *args, **kwargs)
+
+    def clean_newpasswdconfirm(self):
+        new_passwd = self.cleaned_data['newpasswdconfirm'].strip()
+
+        if not self.cleaned_data.has_key('newpasswd'):
+            raise forms.ValidationError('Invalid password; confirmation failed')
+
+        if self.cleaned_data['newpasswd'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
         return new_passwd

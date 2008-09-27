@@ -47,7 +47,8 @@ import datetime
 from django.contrib.auth.models import User
 from esp.middleware import ESPError
 from esp.web.models import NavBarEntry
-from esp.users.manipulators import UserRegManipulator, UserPasswdManipulator, UserRecoverForm, SetPasswordForm
+from esp.users.manipulators import UserRegManipulator, UserRecoverForm, SetPasswordForm
+from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
 from django import oldforms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
@@ -57,28 +58,27 @@ from django.db.models.query import Q
 
 @login_required
 def myesp_passwd(request, module):
-	""" Change password """
-	if request.user.username == 'onsite':
-		raise ESPError(), "Sorry, you're not allowed to change the password of this user. It's special."
-	new_data = request.POST.copy()
-	manipulator = UserPasswdManipulator(request.user)
-	if request.method == "POST":
-		errors = manipulator.get_validation_errors(new_data)
-		if not errors:
-			manipulator.do_html2python(new_data)
-			user = authenticate(username=new_data['username'].lower(),
-					    password=new_data['password'])
-			
-			user.set_password(new_data['newpasswd'])
-			user.save()
-			login(request, user)
-			return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Success': True})
-	else:
-		errors = {}
-		
-	return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
-						    'form':           oldforms.FormWrapper(manipulator, new_data, errors),
-											 'Success': False})
+        """ Change password """
+        if request.user.username == 'onsite':
+                raise ESPError(False), "Sorry, you're not allowed to change the password of this user. It's special."
+
+        if request.method == "POST":
+                form = UserPasswdForm(request.POST)
+                if form.is_valid():
+                        new_data = form.cleaned_data
+                        user = authenticate(username=request.user.username,
+                                            password=new_data['password'])
+                        
+                        user.set_password(new_data['newpasswd'])
+                        user.save()
+                        login(request, user)
+                        return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Success': True})
+        else:
+                form = UserPasswdForm()
+                
+        return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
+                                                    'form': form,
+                                                    'Success': False})
 
 
 def myesp_passrecover(request, module):
