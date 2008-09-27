@@ -1200,7 +1200,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.status = -20
         self.save()
             
-    def clearStudents():
+    def clearStudents(self):
         for sec in self.sections.all():
             sec.clearStudents()
             
