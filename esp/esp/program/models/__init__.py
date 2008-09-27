@@ -890,19 +890,7 @@ class SATPrepRegInfo(models.Model):
 
     def __unicode__(self):
         return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
-    def updateForm(self, new_data):
-        for i in self.__dict__.keys():
-            if i != 'user_id' and i != 'id' and i != 'program_id':
-                new_data[i] = self.__dict__[i]
-        return new_data
-
     
-    def addOrUpdate(self, new_data, curUser, program):
-        for i in self.__dict__.keys():
-            if i != 'user_id' and i != 'id' and i != 'program_id' and new_data.has_key(i):
-                self.__dict__[i] = new_data[i]
-        self.save()
-
     @staticmethod
     def getLastForProgram(user, program):
         satPrepList = SATPrepRegInfo.objects.filter(user=user,program=program).order_by('-id')

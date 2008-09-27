@@ -47,7 +47,6 @@ import datetime
 from django.contrib.auth.models import User
 from esp.middleware import ESPError
 from esp.web.models import NavBarEntry
-from esp.users.manipulators import UserRegManipulator, UserRecoverForm, SetPasswordForm
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
 from django import oldforms
