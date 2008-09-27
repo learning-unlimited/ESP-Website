@@ -13,10 +13,14 @@ register = template.Library()
 render_qsd_cache = FileCache(4, 'render_qsd')
 
 def cache_key(qsd, user=None):
+    # IF you change this, update qsd/models.py's QSDManager class
+    # Otherwise, the wrong cache path will be invalidated
+    # Also, make sure the qsd/models.py's get_file_id method
+    # is also updated. Otherwise, other things might break.
     if user:
-        return md5.new('%s_%s_%s' % (qsd.path.uri, qsd.name, user.id)).hexdigest()
+        return md5.new('%s-%s-%s' % (qsd.path.uri, qsd.name, user.id)).hexdigest()
     else:
-        return md5.new('%s_%s' % (qsd.path.uri, qsd.name)).hexdigest()
+        return md5.new('%s-%s' % (qsd.path.uri, qsd.name)).hexdigest()
 
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=render_qsd_cache, cache_time=86400)

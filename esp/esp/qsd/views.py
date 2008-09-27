@@ -109,7 +109,7 @@ def qsd(request, branch, name, section, action):
     EDIT_VERB = 'V/Administer/Edit/QSD'
 
     # Pages are global per-user (not unique per-user)
-    cache_id = '%s:%s' % (branch.id, name)
+    cache_id = '%s_%s' % (branch.id, name)
 
     if action == 'read':
         base_url = request.path[:-5]
@@ -182,6 +182,9 @@ def qsd(request, branch, name, section, action):
         if not have_edit:
             raise Http403, "Sorry, you do not have permission to edit this page."
         
+        # Arguably, this should retrieve the DB object, use the .copy()
+        # method, and then update it. Doing it this way saves a DB call
+        # (and requires me to make fewer changes).
         qsd_rec_new = QuasiStaticData()
         qsd_rec_new.path = branch
         qsd_rec_new.name = name
@@ -267,15 +270,19 @@ def ajax_qsd(request):
     post_dict = request.POST.copy()
 
     if post_dict['cmd'] == "update":
-        qsd = QuasiStaticData.objects.get(id=post_dict['id'])
+        qsdold = QuasiStaticData.objects.get(id=post_dict['id'])
+        qsd = qsdold.copy()
         qsd.content = post_dict['data']
+        qsd.load_cur_user_time(request, )
         qsd.save()
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
+        result['id'] = qsd.id
     if post_dict['cmd'] == "create":
         qsd_path = DataTree.objects.get(id=post_dict['anchor'])
         qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path)
         qsd.content = post_dict['data']
+        qsd.author = request.user
         qsd.save()
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))

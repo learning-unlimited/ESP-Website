@@ -41,8 +41,10 @@ from esp.db.file_db import *
 
 class QSDManager(FileDBManager):
     def get_by_path__name(self, path, name):
-        file_id = md5.new(path.uri + '-' + name).hexdigest()
-        retVal = self.get_by_id(file_id)
+        # IF you change this, update qsd/templatetags/render_qsd.py's cache_key function
+        # Otherwise, the wrong cache path will be invalidated
+        cache_id = md5.new('%s-%s' % (path.uri, name)).hexdigest()
+        retVal = self.get_by_id(cache_id)
         if retVal is not None:
             return retVal
         try:
@@ -69,14 +71,49 @@ class QuasiStaticData(models.Model):
     description = models.TextField(blank=True, null=True)
 
     def get_file_id(self):
-        return md5.new(self.path.uri + '-' + self.name).hexdigest()
+        """Get the file_id of the object.
+
+        This is used by the FileDBManager as a cache key, so be careful when updating.
+        Changes here *may* cause caching to break in annoying ways elsewhere. We
+        recommend grepping through any related files for "cache".
+        
+        In particular, IF you change this, update qsd/models.py's QSDManager class
+        Otherwise, the cache *may* be used wrong elsewhere."""
+        return md5.new('%s-%s' % (self.path.uri, self.name)).hexdigest()
+
+    def copy(self,):
+        """Returns a copy of the current QSD.
+
+        This could be used for versioning QSDs, for example. It will not be
+        saved to the DB until .save is called.
+        
+        Note that this method maintains the author and created date.
+        Client code should probably reset the author to request.user
+        and date to datetime.now (possibly with load_cur_user_time)"""
+        qsd_new = QuasiStaticData()
+        qsd_new.path    = self.path
+        qsd_new.name    = self.name
+        qsd_new.author  = self.author
+        qsd_new.content = self.content
+        qsd_new.title   = self.title
+        qsd_new.description  = self.description
+        qsd_new.keywords     = self.keywords
+        qsd_new.disabled     = self.disabled
+        qsd_new.create_date  = self.create_date
+        return qsd_new
+
+    def load_cur_user_time(self, request, ):
+        self.author = request.user
+        self.create_date = datetime.now()
 
     def save(self, *args, **kwargs):
+        # Invalidate the file cache
         from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func, render_qsd_cache
         render_qsd_cache.delete(cache_key_func(self))
         retVal = super(QuasiStaticData, self).save(*args, **kwargs)
         QuasiStaticData.objects.obj_to_file(self)
         
+        # Invalidate the memory / Django cache
         from django.core.cache import cache
         cache_key = 'QSD_URL_%d' % self.id
         cache.delete(cache_key)
