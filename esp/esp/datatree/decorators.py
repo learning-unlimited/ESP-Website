@@ -68,16 +68,15 @@ def branch_find(view_func):
 
     def _new_func(request, url='index', subsection=None, filename=None, *args, **kwargs):
 
-        
+        # Cache which tree node corresponds to this URL
         cache_key = 'qsdeditor_%s_%s_%s_%s' % (request.user.id,
                                                url, subsection, filename)
-
         cache_key = cache_key.replace(' ', '')
-
         retVal = cache.get(cache_key)
-
         if retVal is not None:
             return view_func(*((request,) + retVal + args), **kwargs)
+
+        # If we didn't find it in the cache, keep looking
 
         # function "constants"
         READ_VERB = GetNode('V/Flags/Public')
