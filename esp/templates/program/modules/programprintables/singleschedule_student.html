@@ -42,7 +42,7 @@
 
 <div class="description">Here is your class schedule!<br />
 For help finding your classrooms, please consult the directions and maps in your guidebook.<br />
-If you have any questions, please go to the program office.
+If you have any questions or would like to switch classes, please go to the program office.
 </div>
 {% endif %}
 <div style="height: 0.5in;">&nbsp;</div>
@@ -61,10 +61,12 @@ If you have any questions, please go to the program office.
      <th>Class</th>
      {% if onsiteregform %}{% else %}<th>Teacher(s)</th>{% endif %}
    </tr>{% for cls in student.classes %}
+   {% autoescape off %}
    <tr>
      <td>{{ cls.friendly_times|join:"<br />" }}</td>
      <td>{% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</td>
      <td>{{ cls.title }}</td>
      {% if onsiteregform %}{% else %}<td>{{ cls.parent_class.getTeacherNames|join:", " }}</td>{% endif %}
    </tr>
+   {% endautoescape %}
 {% endfor %}

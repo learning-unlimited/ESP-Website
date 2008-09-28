@@ -181,7 +181,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
 
 
     @aux_call
-    @needs_admin
+    @login_required
     def enter_scores(self, request, tl, one, two, module, extra, prog):
         """ Allow bulk entry of scores from a spreadsheet.  This works for either the diagnostic or
         practice exams. """

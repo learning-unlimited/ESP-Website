@@ -669,8 +669,8 @@ class ProgramPrintables(ProgramModuleObj):
     def get_student_classlist(program, student):
         
         # get list of valid classes
-        classes = [ cls for cls in student.getEnrolledClasses()]
-        assert False
+        classes = [ cls for cls in student.getEnrolledSections()]
+        
         # add taugtht classes
         classes += [ cls for cls in student.getTaughtClasses()  ]
             
@@ -723,7 +723,7 @@ Student schedule for %s:
             else:
                 rooms = ' ' + ", ".join(rooms)
                 
-            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title).ljust(40), rooms)
                
         return schedule
 
@@ -835,6 +835,7 @@ Student schedule for %s:
                                    'cls' : cls})
 
         context['scheditems'] = scheditems
+        
         return render_to_response(self.baseDir()+'flatstudentschedule.html', request, (prog, tl), context)
 
     @aux_call
