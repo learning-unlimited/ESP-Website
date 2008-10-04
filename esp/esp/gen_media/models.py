@@ -100,7 +100,7 @@ class LatexImage(models.Model):
         tmppath = TMP + '/' + file_base
     
         tex_file = open(tmppath + '.tex', 'w')
-        tex_file.write(tex)
+        tex_file.write(tex.encode('utf-8'))
         tex_file.close()
 
         if self.dpi is None:

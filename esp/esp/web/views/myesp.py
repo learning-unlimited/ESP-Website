@@ -247,16 +247,16 @@ def edit_profile(request, module):
 	dummyProgram = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
 	
 	if curUser.isStudent():
-		return profile_editor(request, None, True, 'Student')
+		return profile_editor(request, None, True, 'student')
 	
 	elif curUser.isTeacher():
-		return profile_editor(request, None, True, 'Teacher')
+		return profile_editor(request, None, True, 'teacher')
 	
 	elif curUser.isGuardian():
-		return profile_editor(request, None, True, 'Guardian')
+		return profile_editor(request, None, True, 'guardian')
 	
 	elif curUser.isEducator():
-		return profile_editor(request, None, True, 'Educator')	
+		return profile_editor(request, None, True, 'educator')	
 
 	else:
 		return profile_editor(request, None, True, '')
@@ -277,7 +277,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		navnode = prog
 		
 	curUser = request.user
-	role = role.lower();
 	context = {'logged_in': request.user.is_authenticated() }
 	context['user'] = request.user
 	

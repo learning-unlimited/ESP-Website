@@ -238,7 +238,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                     try:
                         id_num = int(entry[0])
                         student = User.objects.get(id=id_num)
-                        entry.pop(0)
+                        del entry[0]
                     except ValueError:
                         student = prog.students()['confirmed'].filter(first_name__icontains=entry[1], last_name__icontains=entry[0])
                         if student.count() != 1:
@@ -247,7 +247,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                             error_reasons.append('Found %d matching students in program.' % student.count())
                         else:
                             student = student[0]
-                            entry = entry[2:] # pop entries
+			    del entry[0:2]
                     except User.DoesNotExist:
                         error_flag = True
                         error_lines.append(line)
