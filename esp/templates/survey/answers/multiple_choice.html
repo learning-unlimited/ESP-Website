@@ -4,6 +4,6 @@
 <table width="600">
 <tr>
     <td width="35%" valign="top"><b>{{ name }}</b></td>
-    <td><ul>{% templatetag openvariable %} lst|list_answers {% templatetag closevariable %}</ul></td>
+    <td><ul>{% templatetag openvariable %} lst|stripempty|makelist {% templatetag closevariable %}</ul></td>
 </tr>
 </table>

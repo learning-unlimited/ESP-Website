@@ -5,7 +5,7 @@ register = template.Library()
 
 
 def cache_key(klass, program):
-    return "CLASS_MANAGE_ROW__%d" % klass.id
+    return "CLASS_MANAGE_ROW__%d" % int(klass.id)
 
 
 @cache_inclusion_tag(register, 'inclusion/program/class_manage_row.html',  cache_key_func=cache_key)

@@ -40,14 +40,14 @@ class UserContactManipulator(forms.Manipulator):
         else:
             makeRequired = False
             
-        phone_validators = [OneOfSetAreFilled(['phone_day','phone_cell'])]
+        #  phone_validators = [OneOfSetAreFilled(['phone_day','phone_cell'])]
         self.makeRequired = makeRequired
         self.fields = (
             forms.TextField(field_name="first_name", length=25, max_length=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="last_name", length=30, max_length=64, is_required=makeRequired, validator_list=[validators.isNotEmpty]),            
             forms.EmailField(field_name="e_mail", is_required=makeRequired, length=25, validator_list=[validators.isNotEmpty]),
-            ESPPhoneNumberField(field_name="phone_day", local_areacode='617', is_required=makeRequired),
-            ESPPhoneNumberField(field_name="phone_cell", local_areacode='617'),
+            ESPPhoneNumberField(field_name="phone_day", local_areacode='617', is_required=False),
+            ESPPhoneNumberField(field_name="phone_cell", local_areacode='617', is_required=makeRequired),
             forms.TextField(field_name="address_street", length=40, max_length=100, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             forms.TextField(field_name="address_city", length=20, max_length=50, is_required=makeRequired, validator_list=[validators.isNotEmpty]),
             USStateSelectField(field_name="address_state", is_required=makeRequired),
@@ -137,11 +137,11 @@ class TeacherInfoManipulator(forms.Manipulator):
         shirt_sizes = [('', '')] + list(shirt_sizes)
         shirt_types = [('', '')] + list(shirt_types)
         self.fields = (
-            forms.IntegerField(field_name="graduation_year", length=4, max_length=4),
+            forms.TextField(field_name="graduation_year", length=4, max_length=4),
             forms.TextField(field_name="school", length=48, max_length=128),
             forms.TextField(field_name="major", length=30, max_length=32),
             forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
-            forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types, validator_list=[validators.isNotEmpty]),
+            # forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types, validator_list=[validators.isNotEmpty]),
             )
 
 class EducatorInfoManipulator(forms.Manipulator):
@@ -334,8 +334,8 @@ class DojoDatePickerField(forms.DateField):
             self.member_name = member_name
 
     def render(self, data):
-        from django.utils.safestring import mark_safe
         max_length = ''
+        from django.utils.safestring import mark_safe
         if data is None or data == '':
             initdata = 'value="%s" ' % self.default
         else:
@@ -349,7 +349,6 @@ class DojoDatePickerField(forms.DateField):
         result_str = dojojs + "\n" + '<input name="%s" id="%s" class="v%s%s" containerToggle="wipe" containerToggleDuration="300" dojoType="dropdowndatepicker" saveFormat="yyyy-MM-dd" displayFormat="yyyy-MM-dd" %slang="en-us" %s/>' % \
                (self.field_name, self.get_id(), self.__class__.__name__, self.is_required and ' required' or '', initdata, max_length)
         return mark_safe(result_str)
-    
         
     
 class USStateSelectField(forms.SelectField):

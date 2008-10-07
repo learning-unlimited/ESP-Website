@@ -43,7 +43,8 @@ def miniblog_for_user(parser, token):
             # Now we check the cache
             self.cache_key = 'miniblog_%s_%s' % (self.user.id, limit)
 
-            retVal = cache.get(self.cache_key)
+            #retVal = cache.get(self.cache_key)
+            retVal = None
 
             if retVal is not None:
                 context[self.var_name] = retVal

@@ -348,14 +348,14 @@ form {
 
 #divfooter {
   position: absolute;
-  left: 71px;
+  left: 30px;
   top: 548px;
   z-index: 6;
 }
 
 #divfooter p {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.65em;
+  font-size: 0.75em;
   color: #000000;
   line-height: 135%;
   margin: 0px;
@@ -367,18 +367,20 @@ form {
 }
 #divfootercol1 {
   position: relative;
-  width: 77px;
-  padding-right: 10px;
+  width: 250px;
+  padding-left: 0px;
+  padding-right: 0px;
 }
 #divfootercol2 {
   position: relative;
-  width: 141px;
-  padding-right: 10px;
+  width: 300px;
+  padding-left: 0px;
+  padding-right: 00px;
 }
 #divfootercol3 {
   position: relative;
-  width: 241px;
-  padding-right: 10px;
+  width: 200px;
+  padding-right: 00px;
 }
 #divfootercol4 {
   position: relative;

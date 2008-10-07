@@ -586,7 +586,7 @@ class DataTree(models.Model):
             node = DataTree.objects.get(uri = uri,
                                     uri_correct = True)
             return node
-        except:
+        except DataTree.DoesNotExist:
             pass
         
         if uri == '':

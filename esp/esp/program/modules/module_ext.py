@@ -64,9 +64,9 @@ class StudentClassRegModuleInfo(models.Model):
     def __str__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
     
-class SCRMIAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(StudentClassRegModuleInfo, SCRMIAdmin)
+#class SCRMIAdmin(admin.ModelAdmin):
+#    pass
+#admin.site.register(StudentClassRegModuleInfo, SCRMIAdmin)
 
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
@@ -111,9 +111,9 @@ class ClassRegModuleInfo(models.Model):
     def __str__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
     
-class CRMIAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(ClassRegModuleInfo, CRMIAdmin)
+#class CRMIAdmin(admin.ModelAdmin):
+#    pass
+#admin.site.register(ClassRegModuleInfo, CRMIAdmin)
     
 
 class CreditCardModuleInfo(models.Model):

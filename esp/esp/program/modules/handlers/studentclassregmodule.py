@@ -96,7 +96,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @needs_student
     def prepare(self, context={}):
 	regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-	timeslots = list(self.program.getTimeSlots().order_by('id'))
+	timeslots = list(self.program.getTimeSlots().exclude(event_type__description = 'HiddenEvent').order_by('id'))
 	classList = regProf.preregistered_classes()
 
         prevTimeSlot = None
@@ -119,16 +119,29 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     timeslot_dict[mt['id']].append(section_dict)
                 else:
                     timeslot_dict[mt['id']] = [section_dict]
+        has12to1 = False
+        has1to2 = False
+        if 15 in timeslot_dict:
+          has12to1 = True
+        if 16 in timeslot_dict:
+          has1to2 = True
+
         for timeslot in timeslots:
             if prevTimeSlot != None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
 
+            islunch = False
+            if (timeslot.id == 15) and has1to2:
+                islunch = True
+            if (timeslot.id == 16) and has12to1:
+                islunch = True
+
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user.getRegistrationPriority([timeslot])))
+                schedule.append((timeslot, cls_list, blockCount + 1, user.getRegistrationPriority([timeslot]), islunch))
             else:
-                schedule.append((timeslot, [], blockCount + 1, user.getRegistrationPriority([timeslot])))
+                schedule.append((timeslot, [], blockCount + 1, user.getRegistrationPriority([timeslot]), islunch))
 
             prevTimeSlot = timeslot
                 

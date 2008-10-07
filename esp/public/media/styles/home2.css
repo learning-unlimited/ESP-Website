@@ -349,26 +349,20 @@ form {
 #divfooter td {
   vertical-align: top;
 }
-#divfootercol1 {
+#divfootercol1 { 
+  position: relative;   
+  width: 250px;
+  padding-left: 0px;
+  padding-right: 0px; 
+}                
+#divfootercol2 {             
   position: relative;
-  width: 77px;
-  padding-right: 10px;
-}
-#divfootercol2 {
-  position: relative;
-  width: 141px;
-  padding-right: 10px;
-}
+  width: 280px;
+  padding-left: 0px;          
+  padding-right: 00px;
+}                 
 #divfootercol3 {
   position: relative;
-  width: 241px;
-  padding-right: 10px;
-}
-#divfootercol4 {
-  position: relative;
-  padding-right: 4px;
-}
-#divfootercol5 {
-  position: absolute;
-  top: -8px;
+  width: 200px;
+  padding-right: 00px;
 }

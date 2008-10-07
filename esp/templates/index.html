@@ -57,7 +57,7 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 
 <!-- intro -->
 <div id="divintro">
-  <img src="/media/images/home/intro.gif" width="187" height="100" border="0" alt="Through an extensive offering of academic and nonacademic classes, the MIT Educational Studies Program (ESP) provides a unique, affordable educational experience for motivated middle and high school students." title="" /></div>
+  <img src="/media/images/stanford_label.gif" width="187" height="100" border="0" alt="Through an extensive offering of academic and nonacademic classes, the Stanford Educational Studies Program (ESP) provides a unique, affordable educational experience for motivated middle and high school students." title="" /></div>
 
 
 <div id="divnav0">
@@ -103,7 +103,7 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 
 
 <div id="divnav6">
-<a href="/about/contact.html" onmouseover="MM_swapImage('contactinfo','','/media/images/home/nav/contactinfo_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<a href="/contact/contact/" onmouseover="MM_swapImage('contactinfo','','/media/images/home/nav/contactinfo_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/home/nav/contactinfo.gif" border="0" alt="Contact Info" title="" name="contactinfo" id="contactinfo" />
 </a>
 </div>
@@ -122,48 +122,12 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 </div>
 {% endif %}
 
-
-<!-- extra link hit areas -->
-<div id="divxlink1">
- <a href="/about/photos.html" onmouseover="MM_showHideLayers('divxlink1ro','','show')" onmouseout="MM_showHideLayers('divxlink1ro','','hide')"><img
-     src="/media/images/spacer.gif" width="26" height="147" border="0" alt="Check out our photo album!" title="" /></a></div>
-<div id="divxlink2">
-  <a href="/learn/Delve/index.html" onmouseover="MM_showHideLayers('divxlink2ro','','show')" onmouseout="MM_showHideLayers('divxlink2ro','','hide')"><img
-     src="/media/images/spacer.gif" width="45" height="39" border="0" alt="Check out Delve!" title="" /></a></div>
-<div id="divxlink3">
-  <a href="/learn/HSSP/index.html" onmouseover="MM_showHideLayers('divxlink3ro','','show')" onmouseout="MM_showHideLayers('divxlink3ro','','hide')"><img
-     src="/media/images/spacer.gif" width="45" height="25" border="0" alt="Check out HSSP!" title="" /></a></div>
-<div id="divxlink4">
-  <a href="/learn/Splash/index.html" onmouseover="MM_showHideLayers('divxlink4ro','','show')" onmouseout="MM_showHideLayers('divxlink4ro','','hide')"><img
-     src="/media/images/spacer.gif" width="44" height="26" border="0" alt="Check out Splash!" title="" /></a></div>
-<div id="divxlink5">
-  <a href="/learn/SATprep/index.html" onmouseover="MM_showHideLayers('divxlink5ro','','show')" onmouseout="MM_showHideLayers('divxlink5ro','','hide')"><img
-     src="/media/images/spacer.gif" width="42" height="24" border="0" alt="Check out SAT preparation program!" title="" /></a></div>
-
-<!-- extra link mouseovers -->
-<div id="divxlink1ro">
-  <img src="/media/images/home/photoalbum_ro.gif" width="83" height="81" alt="" title="" /></div>
-<div id="divxlink2ro">
-  <img src="/media/images/home/delve_ro.gif" width="62" height="37" alt="" title="" /></div>
-<div id="divxlink3ro">
-  <img src="/media/images/home/hssp_ro.gif" width="60" height="37" alt="" title="" /></div>
-<div id="divxlink4ro">
-  <img src="/media/images/home/splash_ro.gif" width="62" height="41" alt="" title="" /></div>
-<div id="divxlink5ro">
-  <img src="/media/images/home/satp_ro.gif" width="95" height="43" alt="" title="" /></div>
-
 {% block search %}
 <!-- search -->
 <div id="divsearch">
-  <form name="searchform" id="searchform" method="get" action="http://search.mit.edu/search">
-  	 <input type='hidden' name='site' value='mit' />
-	 <input type='hidden' name='client' value='mit' />
-	 <input type='hidden' name='proxystylesheet'
-	        value='http://esp.mit.edu/media/google/google-esp.xsl' />
-	 <input type='hidden' name='output' value='xml_no_dtd' />
+  <form name="searchform" id="searchform" method="get" action="http://www.google.com/search">
 	 <input type='hidden' name='as_dt' value='i' />
-	 <input type='hidden' name='as_sitesearch' value='esp.mit.edu' />
-
+	 <input type='hidden' name='as_sitesearch' value='{{ request.META.HTTP_HOST }}' />
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
       <tr>
 						<td><div class="divformcol1"><label for="q"><span style="text-decoration:underline;">S</span>earch:</label></div></td>
@@ -176,33 +140,6 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 {% endblock %}
 
 {% block login %}
-<!-- quicklinks -->
-<div id="divquicklinks">
-  <form name="quicklinkform" id="quicklinkform" method="get" action="{{request.path}}" onsubmit="return false;">
-    <table border="0" cellpadding="0" cellspacing="0" summary=" ">
-      <tr>
-        <td><div class="divformcol1">&nbsp;</div></td>
-        <td><div class="divformcol2">
-
-          <!-- select name="quicklinks" id="quicklinks" class="selectbox" onchange="MM_jumpMenu('parent',this,0)" -->
-          <select name="quicklinks" id="quicklinks" class="selectbox" accesskey="q" onfocus="touchForm();">
-            <option value="#">Quick Links</option>
-            <option value="/learn/HSSP/index.html">HSSP</option>
-            <option value="/learn/Splash/index.html">Splash</option>
-            <option value="/learn/SATPrep/index.html">SATPrep</option>
-            <option value="/learn/ProveIt/index.html">ProveIt</option>
-            <option value="/learn/Delve/index.html">Delve</option>
-            <option value="/learn/Junction/index.html">Junction</option>
-            <option value="/learn/SplashOnWheels/index.html">Splash On Wheels</option>
-          </select>
-        </div></td>
-        <td><div class="divformcol3"><input type="image" name="goquick" id="goquick" src="/media/images/home/go.gif" class="gobutton" alt="Go" onclick="MM_jumpMenuGo('quicklinks','parent',0)" /></div></td>
-      </tr>
-    </table>
-  </form>
-</div>
-
-
 
 <!-- login -->
 {% if not request.user.is_authenticated %}
@@ -277,32 +214,6 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 
 
 <!-- footer -->
-<div id="divfooter">
-  <table border="0" cellpadding="0" cellspacing="0" summary=" ">
-    <tr>
-      <td><!-- mit logo -->
-        <div id="divfootercol1">
-          <a href="http://web.mit.edu/" accesskey="m"><img src="/media/images/mit.gif" width="42" height="24" border="0" alt="MIT home" title="MIT home" /></a></div>
-      </td>
-      <td><!-- mit -->
-        <div id="divfootercol2">
-          <p>Massachusetts<br />Institute<br />of Technology</p></div>
-      </td>
-      <td><!-- address -->
-        <div id="divfootercol3">
-          <p>84 Massachusetts Avenue,<br />
-          Room W20-467, Cambridge, MA 02139<br />
-          Tel: 617-253-4882</p></div>
-      </td>
-      <td><!-- email -->
-        <div id="divfootercol4">
-          <p><a href="mailto:esp@mit.edu">ESP's Email</a></p></div>
-      </td>
-      <td><!-- email bubble -->
-        <div id="divfootercol5">
-          <img src="/media/images/emailbubble.gif" width="25" height="21" border="0" alt="" /></div>
-      </td>
-    </tr>
-  </table>
-</div>
+{% include "outlines/footer.html" %}
+
 {% endblock %}

@@ -246,7 +246,7 @@ form {
 #secondarynav .indent {
   padding-top: 0px;
   background-image: none;
-  font-size: 55%;
+  font-size: 65%;
   padding-left: 30px;
 }
 
@@ -615,13 +615,14 @@ form {
 /* FOOTER */
 
 #divfooter {
-  width: 772px;
+  width: 100%;
   height: 100px;
   background-image: url(/media/images/bandaid3.gif);
   background-repeat: no-repeat;
 }
 #divfooter table {
-  margin: 30px 0px 20px 170px;
+  width: 100%;
+  margin: 30px 0px 20px 30px;
 }
 #divfooter p {
   font-family: Arial, Lucida, Helvetica, sans-serif;
@@ -635,29 +636,24 @@ form {
 #divfooter td {
   vertical-align: top;
 }
-#divfootercol1 {
+#divfootercol1 { 
+  position: relative;   
+  width: 252px;
+  padding-left: 0px;
+  padding-right: 0px; 
+}                
+#divfootercol2 {             
   position: relative;
-  width: 77px;
-  padding-right: 10px;
-}
-#divfootercol2 {
-  position: relative;
-  width: 141px;
-  padding-right: 10px;
-}
+  width: 300px;
+  padding-left: 0px;          
+  padding-right: 0px;
+}                 
 #divfootercol3 {
   position: relative;
-  width: 241px;
-  padding-right: 10px;
+  width: 200px;
+  padding-right: 00px;
 }
-#divfootercol4 {
-  position: relative;
-  padding-right: 6px;
-}
-#divfootercol5 {
-  position: relative;
-  top: -8px;
-}
+
 
 table.pdoxtable {
 	border: 1px solid black;
@@ -687,7 +683,6 @@ table.plaintable th {
 
 /* prettier forms */
 #divmaintext th { padding-top: 10px; }
-#divmaintext th.small { font-size: .8em }
 #divmaintext label.header { font-weight: bold; }
 #divmaintext select, input[type=text], input[type=file], input[type=password], textarea { border: 1px solid #b7b7b7; }
 #divmaintext select.required, input[type=text].required, input[type=password].required, input[type=file].required, textarea.required { border: 1px solid #FFb7b7; }
@@ -699,14 +694,6 @@ table.plaintable th {
 
 
 /* pretty form stuff */
-
-div.code {
-    border: 1px;
-    border-color: #999999;
-    font-family: Courier New, Monospace;
-    font-size: 12px;
-    margin: 10px;
-}
 
 div.note, div.info, div.errormsg, div.question { 
   text-align: left;

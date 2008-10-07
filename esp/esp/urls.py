@@ -53,7 +53,10 @@ urlpatterns += patterns('',
                      (r'^admin/(.*)', admin.site.root),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      (r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
+                     (r'^[Ss][Pp][Ll][Aa][Ss][Hh]08/?$', 'django.views.generic.simple.redirect_to', {'url': '/flyer.pdf'}),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$','django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
+                     (r'^flyer.pdf$','django.views.generic.simple.redirect_to', {'url':'/media/uploaded/08_03/student_flyer.pdf'} ),
+                     (r'^splash-fall08/?$','django.views.generic.simple.redirect_to', {'url':'/media/uploaded/08_03/student_flyer.pdf'} ),
                         )
 
 urlpatterns += patterns('esp.shortterm.views',

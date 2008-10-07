@@ -79,17 +79,13 @@
 {% block search %}
 <!-- search -->
 <div id="divsearch">
-  <form id="searchform" method="get" action="http://search.mit.edu/search">
+  <form id="searchform" method="get" action="http://www.google.com/search">
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
       <tr>
 	<td width="100%"><div class="divformcol1">&nbsp;</div></td>
 	<td class="rightalign">
-	 <input type='hidden' name='site' value='mit' />
-	 <input type='hidden' name='client' value='mit' />
-	 <input type='hidden' name='proxystylesheet' value='mit' />
-	 <input type='hidden' name='output' value='xml_no_dtd' />
 	 <input type='hidden' name='as_dt' value='i' />
-	 <input type='hidden' name='as_sitesearch' value='esp.mit.edu' />
+	 <input type='hidden' name='as_sitesearch' value='{{ request.META.HTTP_HOST }}' />
          <div class="divformcol3"><label for="q">Search:</label></div>
         </td>
 				<td><div class="divformcol4"><input style="border: 2px solid black;" type="text" name="q" id="q" size="8" value="" maxlength="255" class="inputbox" accesskey="s" /></div></td>
@@ -203,34 +199,8 @@ Welcome, {{ request.user.first_name }}!
       <td colspan="3" align="left" valign="top">
 		<!-- footer -->
 
-<div id="divfooter">
-  <table border="0" cellpadding="0" cellspacing="0" summary=" ">
-    <tr>
-      <td><!-- mit logo -->
-        <div id="divfootercol1">
-          <a href="http://web.mit.edu/" accesskey="m"><img src="{{ media_url }}images/mit.gif" width="42" height="24" border="0" alt="MIT home" title="MIT home" /></a></div>
-      </td>
-      <td><!-- mit -->
-        <div id="divfootercol2">
-          <p>Massachusetts<br />Institute<br />of Technology</p></div>
-      </td>
-      <td><!-- address -->
-        <div id="divfootercol3">
-          <p>84 Massachusetts Avenue,<br />
-          Room W20-467, Cambridge, MA 02139<br />
-          Tel: 617-253-4882</p></div>
-      </td>
-      <td><!-- email -->
-        <div id="divfootercol4">
-          <p><a href="/contact/contact/">Contact ESP</a></p></div>
-      </td>
-      <td><!-- email bubble -->
-        <div id="divfootercol5">
-          <img src="{{ media_url }}images/emailbubble.gif" width="25" height="21" border="0" alt="" /></div>
-      </td>
-    </tr>
-  </table>
-</div>      </td>
+        {% include "outlines/footer.html" %}
+</td>
       <td><div id="divquote{% if randquote %}large{% else %}none{% endif %}bot"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
       <td><div class="row4 col5"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr>

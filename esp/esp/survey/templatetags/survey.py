@@ -277,11 +277,14 @@ def favorite_classes(answer_list, limit):
     
     for a in answer_list:
         for i in a:
-            ind = int(i)
-            if class_dict.has_key(ind):
-                class_dict[ind] += 1
-            else:
-                class_dict[ind] = 1
+            try:
+                ind = int(i)
+                if class_dict.has_key(ind):
+                    class_dict[ind] += 1
+                else:
+                    class_dict[ind] = 1
+            except ValueError:
+                pass
                
     key_list = class_dict.keys()
     key_list.sort(key=lambda x: -class_dict[x])

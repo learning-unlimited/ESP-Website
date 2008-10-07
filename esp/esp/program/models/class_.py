@@ -33,10 +33,10 @@ import time
 
 # django Util
 from django.db import models
+from django.db.models.query import Q
 from django.core.cache import cache
 
 # ESP Util
-from esp.db.models import Q
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.db.cache import GenericCacheHelper
@@ -73,9 +73,6 @@ class ProgramCheckItem(models.Model):
 
     def __str__(self):
         return '%s for "%s"' % (self.title, str(self.program).strip())
-
-    class Admin:
-        pass
 
     class Meta:
         ordering = ('seq',)
@@ -578,7 +575,7 @@ class ClassSection(models.Model):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.uri)
         result = {}
-        userbits = UserBit.objects.filter(qsc=self.anchor, verb__rangestart__gte=verb_base.rangestart, verb__rangeend__lte=verb_base.rangeend)
+        userbits = UserBit.objects.filter(qsc=self.anchor, verb__rangestart__gte=verb_base.rangestart, verb__rangeend__lte=verb_base.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True))
         for u in userbits:
             bit_str = u.verb.uri[uri_start:]
             if bit_str not in result:
@@ -587,10 +584,24 @@ class ClassSection(models.Model):
                 result[bit_str].append(ESPUser(u.user))
         return PropertyDict(result)
 
-    def students(self, use_cache=True, verbs = ['/Enrolled','/Preliminary','/Preregistered']):
-        retVal = self.cache['students']
-        if retVal is not None and use_cache:
-            return retVal
+    def students_prereg(self, use_cache=True):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        all_registration_verbs = DataTree.objects.filter(rangestart__gt=verb_base.rangestart, rangeend__lt=verb_base.rangeend)
+        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        
+        return self.students(use_cache, verbs=verb_list)
+
+    def students(self, use_cache=True, verbs = ['/Enrolled']):
+        if len(verbs) == 1 and verbs[0] == '/Enrolled':
+            defaults = True
+        else:
+            defaults = False
+            
+        if defaults:
+            retVal = self.cache['students']
+            if retVal is not None and use_cache:
+                return retVal
 
         retVal = User.objects.none()
         for verb_str in verbs:
@@ -598,9 +609,11 @@ class ClassSection(models.Model):
             new_qs = User.objects.filter(userbit__verb=v, userbit__qsc=self.anchor) 
             retVal = retVal | new_qs
             
-        list(retVal)
+        retVal = [ESPUser(u) for u in retVal.distinct()]
 
-        self.cache['students'] = retVal
+        if defaults:
+            self.cache['students'] = retVal
+            
         return retVal
     
     def clearStudents(self):
@@ -637,28 +650,49 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def num_students(self, use_cache=True, verbs=['/Enrolled','/Preliminary','/Preregistered']):
-        retVal = self.cache['num_students']
-        if retVal is not None and use_cache:
-            return retVal
+    def num_students_prereg(self, use_cache=True):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        all_registration_verbs = DataTree.objects.filter(rangestart__gt=verb_base.rangestart, rangeend__lt=verb_base.rangeend)
+        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        
+        return self.num_students(use_cache, verbs=verb_list)
 
-        if use_cache:
-            retValCache = self.cache['students']
-            if retValCache != None:
-                retVal = len(retValCache)
-                self.cache['num_students'] = retVal
+    def num_students(self, use_cache=True, verbs=['/Enrolled']):
+        #   Only cache the result for the default setting.
+        if len(verbs) == 1 and verbs[0] == '/Enrolled':
+            defaults = True
+        else:
+            defaults = False
+            
+        if defaults:
+            retVal = self.cache['num_students']
+            if retVal is not None and use_cache:
                 return retVal
+    
+            if use_cache:
+                retValCache = self.cache['students']
+                if retValCache != None:
+                    retVal = len(retValCache)
+                    self.cache['num_students'] = retVal
+                    return retVal
 
 
-        qs = User.objects.none()
+        qs = UserBit.objects.none()
         for verb_str in verbs:
             v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            new_qs = User.objects.filter(userbit__verb=v, userbit__qsc=self.anchor) 
+            # NOTE: This assumes that no user can be both Enrolled and Rejected
+            # from the same class. Otherwise, this is pretty silly.
+            new_qs = UserBit.objects.filter(qsc=self.anchor, verb=v)
+            new_qs = new_qs.filter(Q(enddate__gte=datetime.datetime.now())
+                    | Q(enddate__isnull=True))
             qs = qs | new_qs
         
         retVal = qs.count()
 
-        self.cache['num_students'] = retVal
+        if defaults:
+            self.cache['num_students'] = retVal
+            
         return retVal            
 
     def room_capacity(self):
@@ -754,7 +788,8 @@ class ClassSection(models.Model):
         self.update_cache()
 
     def getRegBits(self, user):
-        return UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        result = UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        return result
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """
@@ -826,8 +861,7 @@ class ClassSection(models.Model):
         db_table = 'program_classsection'
         app_label = 'program'
         
-    class Admin:
-        pass
+
 
 class ClassSubject(models.Model):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
@@ -987,6 +1021,9 @@ class ClassSubject(models.Model):
             return "%s: (none)" % self.id
 
     def delete(self, adminoverride = False):
+        from esp.qsdmedia.models import Media
+        
+        anchor = self.anchor
         if self.num_students() > 0 and not adminoverride:
             return False
         
@@ -999,12 +1036,16 @@ class ClassSubject(models.Model):
             sec.delete()
         self.sections.clear()
         
-        if self.anchor:
-            self.anchor.delete(True)
-            
+        #   Remove indirect dependencies
+        Media.objects.filter(anchor__rangestart__gte=self.anchor.rangestart, anchor__rangeend__lte=self.anchor.rangeend).delete()
+        UserBit.objects.filter(qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).delete()
+        
         self.checklist_progress.clear()
         
         super(ClassSubject, self).delete()
+        
+        if anchor:
+            anchor.delete(True)
         
     def cache_time(self):
         return 99999
@@ -1093,15 +1134,16 @@ class ClassSubject(models.Model):
 
         if user.isEnrolledInClass(self, request):
             return 'You are already signed up for this class!'
-
+        
+        res = False
         # check to see if there's a conflict with each section of the subject
         for section in self.sections.all():
             res = section.cannotAdd(user, checkFull, request, use_cache)
-            if res:
+            if not res: # if any *can* be added, then return False--we can add this class
                 return res
 
-        # this user *can* add this class!
-        return False
+        # res can't have ever been False--so we must have an error. Pass it along.
+        return res
 
     def makeTeacher(self, user):
         v = GetNode('V/Flags/Registration/Teacher')
@@ -1395,9 +1437,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         db_table = 'program_class'
         app_label = 'program'
         
-    class Admin:
-        pass
-    
 
 class ClassImplication(models.Model):
     """ Indicates class prerequisites corequisites, and the like """
@@ -1463,9 +1502,9 @@ class ClassImplication(models.Model):
 
     def fails_implication(self, student, already_seen_implications=set(), without_classes=set()):
         """ Returns either False, or the ClassImplication that fails (may be self, may be a subimplication) """
-        class_set = ClassSubject.objects.filter(id__in=self.member_id_ints).exclude(id__in=without_classes)
-
-        class_valid_iterator = [ (student in c.students()) for c in class_set ]
+        class_set = ClassSubject.objects.filter(id__in=self.member_id_ints)
+        
+        class_valid_iterator = [ (student in c.students(False) and c.id not in without_classes) for c in class_set ]
         subimplication_valid_iterator = [ (not i.fails_implication(student, already_seen_implications, without_classes)) for i in self.classimplication_set.all() ]
         
         if not ClassImplication._ops[self.operation](class_valid_iterator + subimplication_valid_iterator):

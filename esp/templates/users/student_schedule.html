@@ -3,8 +3,10 @@
 Below is your class schedule for {{ program.niceName }}.  Please use the links in the right-hand column to select classes to fill each time slot.  You may also <a target="_blank" href='/learn/{{one}}/{{two}}/catalog'> open a full catalog in a separate window</a>.
 </p>
 
-<p>  <b>Please note</b>: Your classes are saved immediately when you click the "Add this Class!" button.  You do not need to confirm or save your entire registration to save your spot in classes. 
-</p>
+<p>Your classes are saved immediately when you click the "Add this Class!" button.  You do not need to confirm or save your entire registration 
+to save your spot in classes.</p>
+
+<p><b>Please note:</b> You must take a one hour lunch break, either from 12 to 1 PM, or from 1 to 2 PM.</p>
 
 {% if not module.deadline_met %}
     <center>
@@ -35,12 +37,15 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
         <td width="25%" valign="top" align="center"> {{ timeslot.0.short_description }}</td>
         
         <td style="vertical-align: top !important;">
+      {% if timeslot.4 %}
+        <i>Lunch</i>
+      {% else %}
         {% for cls in timeslot.1 %}
             {% if not cls.section.verbs|length_is:0 %}
-                <i>{% for v in cls.section.verbs %} {{ v.friendly_name }}{% endfor %}:</i>
+                <i><!--{% for v in cls.section.verbs %} {{ v.friendly_name }}{% endfor %}:--></i> <!-- not sure what this does, but it doesn't currently work... -->
             {% endif %}
 
-            {{ cls.section.title }} 
+            {{ cls.section.title }}
             
             {% if request.user.onsite_local %}
                 ({{ cls.section.prettyrooms|join:", " }})
@@ -50,34 +55,34 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
         {% if timeslot.1|length_is:0 %}
             Nothing Selected
         {% endif %}
+      {% endif %}
         </td>
         
         {% if not timeslot.1|length_is:0 %}
-            {% if module.deadline_met %}
-            <td width='25%' align='center' style="vertical-align: top !important;">
-            {% for cls in timeslot.1 %}
-                <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a>
-                {% if cls.changeable %}
-                    <a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[change section]</a>
-                {% endif %}
-                <br />
-            {% endfor %}
-            {% if timeslot.3 %}
-                <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
-                <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
-            {% endif %}
-            </td>
-            {% endif %}
+          {% if module.deadline_met %}
+          <td width='25%' align='center' style="vertical-align: top !important;">
+          {% if timeslot.3 %}
+              <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[remove]</a>
+          {% else %}
+              <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
+          {% endif %}
+          </td>
+          {% endif %}
         {% else %}
+          <td width='20%' align='center'>
+          {% if timeslot.4 %}
+              -
+          {% else %}
             {% if module.deadline_met %}
-                <td width='20%' align='center'>
                 <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
-                </td>
             {% endif %}	
+          {% endif %}
+          </td>
         {% endif %}
     </tr>
 
 {% endfor %}
+
 </table> 
 </div>
 <br/>

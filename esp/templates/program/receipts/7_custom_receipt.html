@@ -7,17 +7,17 @@
 {% block body %}
 <br>
 <p>
-Your class selection for {{program.niceName}} has been saved. You can come back and change your class selections later, up until 2 days before {{one}} begins.
+Your class selection for {{program.niceName}} has been saved!
 </p>
+For faster registration on the day of Splash, please print and have your parents read and sign the <a target="_blank" href="/media/splashwaiver.pdf">Splash Liability form</a>.
+<br/>
+<br/>
+
+You can come back and change your class selections later, up until 2 days before {{one}} begins.
 
 <p>
-Please note, this does not <em>guarantee</em> you are enrolled for any class.
-You <u>must</u> show up to HSSP on the registration day (March 3rd) to complete your registration.<br />
-<br />
-Also note: Please check back if you can to see if anymore classes get added! Some teachers do not register their classes until later, so you may see some after you have preregistered. You are welcome to come back and change your class selection.
-<br />
-<br />
-In addition, the <strong>medical and liability forms</strong> must be filled out and signed by a guardian. They are available at <a href="/media/uploaded/07_02/hssp_forms.pdf">http://esp.mit.edu/media/uploaded/07_02/hssp_forms.pdf</a>.
+Please note, that pre-registering does not <em>guarantee</em> you are enrolled for these classes.
+You <u>must</u> show up to register on the day of Splash (Saturday, April 5th) to complete and confirm your registration.<br />
 <br />
 
 <p>
@@ -35,10 +35,17 @@ User Information: <br />
 </tr>
 {% for timeslot in timeslots %}
 <tr>
-  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.friendly_name }} </td>
+  <td width="25%" class="timeslot" align="center"> {{ timeslot.0.short_description }} </td>
   <td>
-	{% if timeslot.1 %}
-	{{timeslot.1.title}}{% else %} <em>Nothing Selected</em> {% endif %}
+        {% if timeslot.4 %}
+        <em>Lunch</em>
+        {% else %}
+	  {% if timeslot.1 %}
+	    {{timeslot.1.title}}
+          {% else %}
+            <em>Nothing Selected</em> 
+          {% endif %}
+        {% endif %}
   </td>
 </tr>
 {% endfor %}
@@ -52,8 +59,11 @@ User Information: <br />
 <br />
 <pre>
 Please Note: Class selections are subject to change up
-until and on the day of the event. MIT Educational Studies
-Program cannot guarantee the successful fruition of a
-proposed class.
+until and on the day of the event. Stanford ESP
+cannot guarantee that every proposed class will be held.
 </pre>
+
+
+<h3><a href="/learn/index.html">Return to Splash information</a></h3>
+
 {% endblock %}

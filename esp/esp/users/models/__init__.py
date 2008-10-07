@@ -224,8 +224,10 @@ class ESPUser(User, AnonymousUser):
         elif key == 'name':
             return ESPUser(otheruser).name()
         elif key == 'recover_url':
-            return 'myesp/recoveremail/?code=%s' % \
+            return 'http://www.stanfordesp.org/myesp/recoveremail/?code=%s' % \
                          otheruser.password
+        elif key == 'recover_query':
+            return "?code=%s" % otheruser.password
         elif key == 'username':
             return otheruser.username
         return ''
@@ -827,7 +829,7 @@ class StudentInfo(models.Model):
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
-    graduation_year = models.PositiveIntegerField(blank=True, null=True)
+    graduation_year = models.CharField(max_length=4, blank=True, null=True)
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -882,7 +884,7 @@ class TeacherInfo(models.Model):
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
         teacherInfo.shirt_size      = new_data['shirt_size']
-        teacherInfo.shirt_type      = new_data['shirt_type']
+        #teacherInfo.shirt_type      = new_data['shirt_type']
         teacherInfo.save()
         return teacherInfo
 

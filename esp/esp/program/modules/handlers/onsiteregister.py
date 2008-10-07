@@ -70,8 +70,8 @@ class OnSiteRegister(ProgramModuleObj):
             
 
     def createBit(self, extension):
-        if extension == 'Paid':
-            self.updatePaid(True)
+        #if extension == 'Paid':
+        #    self.updatePaid(True)
             
         verb = GetNode('V/Flags/Registration/'+extension)
         ub = UserBit.objects.filter(user = self.student,

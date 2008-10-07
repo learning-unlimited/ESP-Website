@@ -22,6 +22,6 @@
 {% endautoescape %}
 <div id="comment_spacing">&nbsp;</div>
 
-{% render_comments entry request form %}
+{% comment %} {% render_comments entry request form %} {% endcomment %}
 
 {% endblock %}

@@ -215,14 +215,14 @@ def contact(request, section='esp'):
 
         
 	else:
-		initial = {}
+		initial = {'topic': 'stanford'}
 		if request.user.is_authenticated():
 			initial['sender'] = request.user.email
 			initial['name']   = request.user.first_name + ' '+request.user.last_name
-		
+		"""
 		if section != '':
 			initial['topic'] = section.lower()
-
+		"""
 		form = ContactForm(initial = initial)
 			
 	return render_to_response('contact.html', request, GetNode('Q/Web/about'),

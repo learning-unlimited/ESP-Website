@@ -41,16 +41,22 @@ color: #006600;
    border: #cccccc 1px solid;
    background-color: #cccccc;
    cursor: default;
-   padding: 2px 5px 2px 5px;
+   padding: 1px 3px 1px 3px;
    text-decoration: none;
 }
-
 #battlescreen a.abutton:hover
 {
    color:#0000cc;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   font-weight:bold;
+   padding: 1px 3px 1px 3px;
    border: #000000 1px solid;
    background-color: #ccffcc;
+   text-decoration: none;
+   cursor: default;
 }
+
 
 #battlescreen input.button
 {
@@ -61,26 +67,21 @@ color: #006600;
    border: #cccccc 1px solid;
    background-color: #cccccc;
 }
-
 #battlescreen input.button:hover
 {
    color:#0000cc;
+   font-family:Arial,helvetica,sans-serif;
+   font-size:12px;
+   font-weight:bold;
    border: #000000 1px solid;
    background-color: #ccffcc;
 }
-
 #battlescreen input.button:disabled
 {
    color: #666;
    font-weight:normal;
    border: black 1px solid;
    background-color: #DFD;
-}
-
-#battlescreen .bordertop2
-{
-    border: black 1px solid;
-    border-width: 1px 0 0 0;
 }
 
 #battlescreen select
@@ -97,8 +98,8 @@ color: #006600;
    font-family:Arial,helvetica,sans-serif;
    font-size:12px;
    border-width: 1px;
-   border-color: #000000;
-   background-color: #ffffff;
+   border-color: 000000;
+   background-color: ffffff;
 }
 
 #archives table.innertable

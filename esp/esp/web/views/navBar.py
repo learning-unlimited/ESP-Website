@@ -116,7 +116,7 @@ def makeNavBar(user, node, section = ''):
             user = ESPUser(self.user)
             node = self.node
             sections = [self.section, '']
-            
+
             #   Show all applicable navbars for the type of user that is currently logged in.
             #   This is disabled for the program sections, where we have lots of teach- or learn-
             #   specific nav bars that are visible to all.
@@ -295,13 +295,15 @@ def navBarNew(request, navbar, node, section):
     try:
         url = request.POST['url']
 
+        if section == 'None':
+            section = None
         entry = NavBarEntry()
         entry.path = child_node
         entry.sort_rank = new_sort_rank
         entry.link = url
         entry.text = request.POST['text']
         entry.indent = request.POST['indent']
-        entry.section = section
+        entry.section = section and section or ''
 
         entry.save()
         
