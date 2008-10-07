@@ -193,8 +193,6 @@ class ArchiveClass(models.Model):
         t = loader.get_template('models/ArchiveClass.html')
         return t.render(Context({'class': self}, autoescape=True))
 
-    __str__ = __unicode__
-
     def num_students(self):
         if self.student_ids is not None:
             return len(self.student_ids.strip('|').split('|')) + self.num_old_students
