@@ -131,8 +131,9 @@ color: #EEEE22;
       </tr>
       <tr>
         <td colspan="3"><div class="divformcol1"><a href="/myesp/loginhelp.html">Login Help</a>
-	|
-        <a href="/myesp/register">Join Splash! Chicago</a></span></div></td>
+	<!-- (Temporarily disabled since student reg. closed) |
+        <a href="/myesp/register">Join Splash! Chicago</a> -->
+      </span></div></td>
       </tr>
     </table>
   </form>
@@ -143,7 +144,8 @@ color: #EEEE22;
 <div id="divlogout">
   <p>
     Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
-    (<a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage.html">Manage your account</a>) <span id="spanlogouticon"><img src="/media/images/home/logouticon.gif" width="23" height="23" alt="" /></span>
+    (<a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage.html">Manage your account</a>) <br /> <a href="/learn/Splash/2008/studentreg">Review your Splash! registration</a>
+<!-- <span id="spanlogouticon"><img src="/media/images/home/logouticon.gif" width="23" height="23" alt="" /></span> -->
   </p>
 </div>
 {% endif %}
