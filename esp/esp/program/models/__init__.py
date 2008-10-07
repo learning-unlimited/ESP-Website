@@ -1042,15 +1042,13 @@ class TeacherBio(models.Model):
 
     def url(self):
         from esp.users.models import ESPUser    
-        return '/teach/teachers/%s/%s%s/bio.html' % \
-               (self.user.last_name, self.user.first_name, ESPUser(self.user).getUserNum())
+        return '/teach/teachers/%s/bio.html' % self.user.username
 
 
 
     def edit_url(self):
         from esp.users.models import ESPUser    
-        return '/teach/teachers/%s/%s%s/bio.edit.html' % \
-               (self.user.last_name, self.user.first_name, ESPUser(self.user).getUserNum())
+        return '/teach/teachers/%s/bio.edit.html' % self.user.username
 
     @staticmethod
     def getLastForProgram(user, program):

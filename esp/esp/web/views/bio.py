@@ -41,14 +41,17 @@ from esp.middleware       import ESPError
 
 
 @login_required
-def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False):
+def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
     """ Edits a teacher bio """
     from esp.web.forms.bioedit_form import BioEditForm
     
     if tl == '':
         founduser = ESPUser(request.user)
     else:
-        founduser = ESPUser.getUserFromNum(first, last, usernum)
+	if username != '':
+            founduser = ESPUser.objects.get(username=username)
+        else:
+            founduser = ESPUser.getUserFromNum(first, last, usernum)
 
     if not founduser.isTeacher():
         raise ESPError(False), '%s is not a teacher of ESP.' % \
@@ -107,10 +110,13 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
     
     
 
-def bio(request, tl, last, first, usernum = 0):
+def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
     """ Displays a teacher bio """
 
-    founduser = ESPUser.getUserFromNum(first, last, usernum)
+    if username != '':
+	founduser = ESPUser.objects.get(username=username)
+    else:
+        founduser = ESPUser.getUserFromNum(first, last, usernum)
 
     if not founduser.isTeacher():
         raise ESPError(False), '%s is not a teacher of ESP.' % \

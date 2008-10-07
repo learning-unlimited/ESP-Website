@@ -71,9 +71,11 @@ urlpatterns += patterns('django.views.generic',
 urlpatterns += patterns('esp.web.views.bio',
 
                         # bios
-                        (r'^(teach|learn)/teachers/([-A-Za-z0-9_ \.]+)/([-A-Za-z_ \.]+)([0-9]*)/bio.html$', 'bio'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ \.]+)/(?P<first>[-A-Za-z_ \.]+)(?P<usernum>[0-9]*)/bio.html$', 'bio'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.html$', 'bio'),
                         (r'^myesp/teacherbio/?$', 'bio_edit'),
-                        (r'^(teach|learn)/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z_ ]+)([0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ ]+)/(?P<first>[-A-Za-z_ ]+)(?P<usernum>[0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.edit.html/?(.*)$', 'bio_edit'),
                         )
 
 urlpatterns += patterns('',
