@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -104,9 +104,6 @@ class Document(models.Model):
         choices_dict = dict(self.TYPE_CHOICES)
             
         return u"%s for %s on %s%s" % (choices_dict[self.doctype], str(self.user), str(self.anchor), complete_str)
-
-    def __unicode__(self):
-        return str(unicode(self))
     
     def set_default_locator(self):
         self.locator = Document._checksum.calculate(str(self.id))
