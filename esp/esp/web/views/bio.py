@@ -39,11 +39,9 @@ from django.http          import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
 
-
 @login_required
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
-    """ Edits a teacher bio """
-    from esp.web.forms.bioedit_form import BioEditForm
+    """ Edits a teacher bio, given user and program identification information """
     
     if tl == '':
         founduser = ESPUser(request.user)
@@ -52,6 +50,14 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
             founduser = ESPUser.objects.get(username=username)
         else:
             founduser = ESPUser.getUserFromNum(first, last, usernum)
+    
+    foundprogram = get_from_id(progid, Program, 'program', False)
+
+    return bio_edit_user_program(request, founduser, foundprogram, external)
+
+@login_required
+def bio_edit_user_program(request, founduser, foundprogram, external=False):
+    """ Edits a teacher bio, given user and program """
 
     if not founduser.isTeacher():
         raise ESPError(False), '%s is not a teacher of ESP.' % \
@@ -60,13 +66,11 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
     if request.user.id != founduser.id and request.user.is_staff != True:
         raise ESPError(False), 'You are not authorized to edit this biography.'
         
-    
-    foundprogram = get_from_id(progid, Program, 'program', False)
-
     lastbio      = TeacherBio.getLastBio(founduser)
         
     
     # if we submitted a newly edited bio...
+    from esp.web.forms.bioedit_form import BioEditForm
     if request.method == 'POST' and request.POST.has_key('bio_submitted'):
         form = BioEditForm(request.POST, request.FILES)
 
@@ -117,6 +121,11 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
 	founduser = ESPUser.objects.get(username=username)
     else:
         founduser = ESPUser.getUserFromNum(first, last, usernum)
+
+    return bio_user(request, founduser)
+
+def bio_user(request, founduser):
+    """ Display a teacher bio for a given user """
 
     if not founduser.isTeacher():
         raise ESPError(False), '%s is not a teacher of ESP.' % \

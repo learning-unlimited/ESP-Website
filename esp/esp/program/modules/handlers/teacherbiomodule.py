@@ -58,8 +58,8 @@ class TeacherBioModule(ProgramModuleObj):
     @needs_teacher
     def biography(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
-        from esp.web.views.bio import bio_edit
-        result = bio_edit(request, tl, '', '', 0, self.program.id, True, self.user.username)
+        from esp.web.views.bio import bio_edit_user_program
+        result = bio_edit_user_program(request, self.user, self.program, external=True)
 
         if result is not True:
             return result
