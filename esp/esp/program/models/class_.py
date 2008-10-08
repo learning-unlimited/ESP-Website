@@ -4,7 +4,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -302,7 +302,7 @@ class ClassSection(models.Model):
             
     def already_passed(self):
         start_time = self.start_time()
-	if start_time is None:
+        if start_time is None:
             return True
         if time.time() - time.mktime(start_time.start.timetuple()) > 600:
             return True
@@ -551,8 +551,14 @@ class ClassSection(models.Model):
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         
+        scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        if scrmi.use_priority:
+            verbs = ['/Enrolled']
+        else:
+            verbs = ['/' + scrmi.signup_verb.name]
+        
         # check to see if there's a conflict:
-        for sec in user.getEnrolledSections(self.parent_program):
+        for sec in user.getSections(self.parent_program, verbs=verbs):
             for time in sec.meeting_times.all():
                 if len(self.meeting_times.filter(id = time.id)) > 0:
                     return 'This section conflicts with your schedule!'

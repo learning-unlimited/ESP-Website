@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -95,9 +95,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     
     @needs_student
     def prepare(self, context={}):
-	regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-	timeslots = list(self.program.getTimeSlots().order_by('id'))
-	classList = regProf.preregistered_classes()
+        regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
+        timeslots = list(self.program.getTimeSlots().order_by('id'))
+        classList = regProf.preregistered_classes()
 
         prevTimeSlot = None
         blockCount = 0
@@ -135,7 +135,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
         
-	return context
+        return context
 
     @aux_call
     @needs_student
@@ -144,6 +144,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         """ Preregister a student for the specified class, then return to the studentreg page """
         
         reg_verb = GetNode('V/Deadline/Registration/Student/Classes')
+        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
         
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(self.user, "onsite_local"):
@@ -184,7 +185,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         cobj = ClassSubject.objects.get(id=classid)
         section = ClassSection.objects.get(id=sectionid)
-        error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False)
+        if not scrmi.use_priority:
+            error = section.cannotAdd(self.user,self.enforce_max,use_cache=False)
+        if scrmi.use_priority or not error:
+            error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False)
         
         priority = self.user.getRegistrationPriority(section.meeting_times.all())
 
@@ -382,17 +386,17 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         target_class = classes[0]
 
         context = {'cls': target_class, 'module': self}
-	
+        
         return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')    
     def clearslot(self, request, tl, one, two, module, extra, prog):
-	""" Clear the specified timeslot from a student registration and go back to the same page """
+        """ Clear the specified timeslot from a student registration and go back to the same page """
         
         #   The registration verb can be anything under this.
-	v_registered_base = request.get_node('V/Flags/Registration')
+        v_registered_base = request.get_node('V/Flags/Registration')
         
         #   This query just gets worse and worse.   -Michael
         oldclasses = ClassSection.objects.filter(meeting_times=extra,
@@ -419,7 +423,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     auto_class.unpreregister_student(self.user)
                         
-	return self.goToCore(tl)
+        return self.goToCore(tl)
 
     @aux_call
     @needs_student
