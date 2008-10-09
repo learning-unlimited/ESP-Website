@@ -34,7 +34,7 @@ Email: web@esp.mit.edu
 ######################
 
 # root directory
-PROJECT_ROOT = '/esp/web/esp.mit.edu/'
+PROJECT_ROOT = '/esp/web/esp.mit.edu/esp'
 
 # log directory
 LOG_FILE="/var/log/django/esp_errlog"
