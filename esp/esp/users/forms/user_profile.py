@@ -48,7 +48,6 @@ class UserContactForm(forms.Form):
 	self.base_fields['address_state'] = forms.ChoiceField(choices=zip(_states,_states), required=self.makeRequired)
 	self.base_fields['address_zip'] = forms.CharField(max_length=5, required=self.makeRequired)
 	self.base_fields['address_zip'].widget.attrs['size'] = 5
-	#forms.HiddenField(field_name="address_postal",is_required=False), # ???
 
 	forms.Form.__init__(self, user, *args, **kwargs)
 
@@ -64,7 +63,6 @@ class EmergContactForm(forms.Form):
     def __init__(self, user = None, *args, **kwargs):
 	# Copy entries
 	leech = UserContactForm(user, *args, **kwargs)
-	#del leech.base_fields['address_postal']
 	for k,v in leech.base_fields.iteritems():
 	    self.base_fields['emerg_'+k] = v
 	self.makeRequired = leech.makeRequired
@@ -78,7 +76,6 @@ class GuardContactForm(forms.Form):
 	del leech.base_fields['address_street']
 	del leech.base_fields['address_city']
 	del leech.base_fields['address_zip']
-	#del leech.base_fields['address_postal']
 	for k,v in leech.base_fields.iteritems():
 	    self.base_fields['guard_'+k] = v
 	self.makeRequired = leech.makeRequired
