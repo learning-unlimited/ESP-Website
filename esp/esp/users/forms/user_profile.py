@@ -6,6 +6,7 @@ _localphone_re = re.compile(r'^\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)
 _states = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada']
 
 class PhoneNumberField(forms.RegexField):
+    """ Field for phone number. If area code not given, local_areacode is used instead. """
     def __init__(self, length=12, max_length=14, local_areacode = None, *args, **kwargs):
 	forms.RegexField.__init__(self, regex=_phone_re, max_length=14, *args, **kwargs)
 	self.widget.attrs['size'] = length
@@ -28,6 +29,7 @@ class PhoneNumberField(forms.RegexField):
 
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(forms.Form):
+    """ Base for contact form """
     def __init__(self, user = None, *args, **kwargs):
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
             self.makeRequired = True
@@ -55,11 +57,13 @@ class UserContactForm(forms.Form):
     ###phone_validators = [OneOfSetAreFilled(['phone_day','phone_cell'])]
 
 class TeacherContactForm(UserContactForm):
+    """ Contact form for teachers """
     def __init__(self, user = None, *args, **kwargs):
 	UserContactForm.__init__(self, user, *args, **kwargs)
 	self.base_fields['phone_cell'].required = self.makeRequired
     
 class EmergContactForm(forms.Form):
+    """ Contact form for emergency contacts """
     def __init__(self, user = None, *args, **kwargs):
 	# Copy entries
 	leech = UserContactForm(user, *args, **kwargs)
@@ -70,6 +74,7 @@ class EmergContactForm(forms.Form):
 	forms.Form.__init__(self, user, *args, **kwargs)
 
 class GuardContactForm(forms.Form):
+    """ Contact form for guardians """
     def __init__(self, user = None, *args, **kwargs):
 	# Copy entries
 	leech = UserContactForm(user, *args, **kwargs)
@@ -83,6 +88,7 @@ class GuardContactForm(forms.Form):
 	forms.Form.__init__(self, user, *args, **kwargs)
 
 class StudentInfoForm(forms.Form):
+    """ Extra student-specific information """
     def __init__(self, user = None, *args, **kwargs):
         from esp.users.models import ESPUser
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
@@ -94,26 +100,33 @@ class StudentInfoForm(forms.Form):
         from esp.users.models import shirt_sizes, shirt_types
 
 class TeacherInfoForm(forms.Form):
+    """ Extra teacher-specific information """
     def __init__(self, user = None, *args, **kwargs):
 	pass
 
 class EducatorInfoForm(forms.Form):
+    """ Extra educator-specific information """
     def __init__(self, user = None, *args, **kwargs):
 	pass
 
 class GuardianInfoForm(forms.Form):
+    """ Extra guardian-specific information """
     def __init__(self, user = None, *args, **kwargs):
 	pass
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
+    """ Form for student profiles """
     def __init__(self, user = None, *args, **kwargs):
 	pass
 class TeacherProfileForm(TeacherContactForm, TeacherInfoForm):
+    """ Form for student profiles """
     def __init__(self, user = None, *args, **kwargs):
 	pass
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
+    """ Form for guardian profiles """
     def __init__(self, user = None, *args, **kwargs):
 	pass
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
+    """ Form for educator profiles """
     def __init__(self, user = None, *args, **kwargs):
 	pass
