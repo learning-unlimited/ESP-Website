@@ -32,37 +32,40 @@ class PhoneNumberField(forms.RegexField):
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(forms.Form):
     """ Base for contact form """
+
+    first_name = forms.CharField(max_length=64)
+    last_name = forms.CharField(max_length=64)
+    e_mail = forms.EmailField()
+    phone_day = PhoneNumberField(local_areacode='617')
+    phone_cell = PhoneNumberField(local_areacode='617', required=False)
+    address_street = forms.CharField(max_length=100)
+    address_city = forms.CharField(max_length=50)
+    address_state = forms.ChoiceField(choices=zip(_states,_states))
+    address_zip = forms.CharField(max_length=5)
+
     def __init__(self, user = None, *args, **kwargs):
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
             self.makeRequired = True
         else:
             self.makeRequired = False
-	self.base_fields['first_name'] = forms.CharField(max_length=64, required=self.makeRequired)
+        # set a few things...
 	self.base_fields['first_name'].widget.attrs['size'] = 25
-	self.base_fields['last_name'] = forms.CharField(max_length=64, required=self.makeRequired)
 	self.base_fields['last_name'].widget.attrs['size'] = 30
-	self.base_fields['e_mail'] = forms.EmailField(required=self.makeRequired)
 	self.base_fields['e_mail'].widget.attrs['size'] = 25
-	self.base_fields['phone_day'] = PhoneNumberField(local_areacode='617', required=self.makeRequired)
-	self.base_fields['phone_cell'] = PhoneNumberField(local_areacode='617', required=False)
-	self.base_fields['address_street'] = forms.CharField(max_length=100, required=self.makeRequired)
 	self.base_fields['address_street'].widget.attrs['size'] = 40
-	self.base_fields['address_city'] = forms.CharField(max_length=50, required=self.makeRequired)
 	self.base_fields['address_city'].widget.attrs['size'] = 20
-	self.base_fields['address_state'] = forms.ChoiceField(choices=zip(_states,_states), required=self.makeRequired)
-	self.base_fields['address_zip'] = forms.CharField(max_length=5, required=self.makeRequired)
 	self.base_fields['address_zip'].widget.attrs['size'] = 5
 
-	forms.Form.__init__(self, user, *args, **kwargs)
-
-    ####
-    ###phone_validators = [OneOfSetAreFilled(['phone_day','phone_cell'])]
+        # GAH!
+        for field in self.base_fields.iteritems():
+            if field.required:
+                field.required = makeRequired
 
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
     def __init__(self, user = None, *args, **kwargs):
+	self.base_fields['phone_cell'].required = True
 	UserContactForm.__init__(self, user, *args, **kwargs)
-	self.base_fields['phone_cell'].required = self.makeRequired
     
 class EmergContactForm(forms.Form):
     """ Contact form for emergency contacts """
