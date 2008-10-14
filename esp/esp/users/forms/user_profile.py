@@ -68,6 +68,10 @@ class UserContactForm(forms.Form):
 
 	forms.Form.__init__(self, user, *args, **kwargs)
 
+    def clean_phone_cell(self):
+        if not self.clean_data.has_key('phone_day') and not self.clean_data.has_key('phone_cell'):
+            raise ValidationError("Please provide either a day phone or cell phone.")
+
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
     def __init__(self, user = None, *args, **kwargs):
