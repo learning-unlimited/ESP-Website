@@ -105,6 +105,11 @@ class GuardContactForm(forms.Form):
 
 class StudentInfoForm(forms.Form):
     """ Extra student-specific information """
+    from esp.users.models import ESPUser
+
+    graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
+    school = forms.CharField(max_length=128)
+
     def __init__(self, user = None, *args, **kwargs):
         from esp.users.models import ESPUser
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
@@ -118,6 +123,9 @@ class StudentInfoForm(forms.Form):
 
         shirt_sizes = [('', '')] + list(shirt_sizes)
         shirt_types = [('', '')] + list(shirt_types)
+
+        # Set widget length
+        self.base_fields['school'].widget.attrs['size'] = 24
 
         #studentrep_explained = NonEmptyIfOtherChecked('studentrep', 'Please enter an explanation above.')
         #studentrep_explained.always_test = True # because validators normally aren't run if a field is blank
