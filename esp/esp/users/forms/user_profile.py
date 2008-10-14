@@ -10,24 +10,24 @@ _states = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 
 class PhoneNumberField(forms.RegexField):
     """ Field for phone number. If area code not given, local_areacode is used instead. """
     def __init__(self, length=12, max_length=14, local_areacode = None, *args, **kwargs):
-	forms.RegexField.__init__(self, regex=_phone_re, max_length=14, *args, **kwargs)
-	self.widget.attrs['size'] = length
-	self.areacode = local_areacode
+        forms.RegexField.__init__(self, regex=_phone_re, max_length=14, *args, **kwargs)
+        self.widget.attrs['size'] = length
+        self.areacode = local_areacode
 
     def clean(self, value):
-	m = _phone_re.match(value)
-	if m:
-	    numbers = m.groups()
+        m = _phone_re.match(value)
+        if m:
+            numbers = m.groups()
             value = "".join(numbers[:3]) + '-' + "".join(numbers[3:6]) + '-' + "".join(numbers[6:])
-	    return value
+            return value
 
-	if self.areacode is not None:
-	    m = _localphone_re.match(value)
-	    if m:
-		numbers = m.groups()
+        if self.areacode is not None:
+            m = _localphone_re.match(value)
+            if m:
+                numbers = m.groups()
                 value = self.areacode + '-' + "".join(numbers[:3]) + '-' + "".join(numbers[3:])
-		return value
-	raise forms.ValidationError('Phone numbers must be a valid US number. "%s" is invalid.' % value)
+                return value
+        raise forms.ValidationError('Phone numbers must be a valid US number. "%s" is invalid.' % value)
 
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(forms.Form):
@@ -49,12 +49,12 @@ class UserContactForm(forms.Form):
         else:
             self.makeRequired = False
         # set a few things...
-	self.base_fields['first_name'].widget.attrs['size'] = 25
-	self.base_fields['last_name'].widget.attrs['size'] = 30
-	self.base_fields['e_mail'].widget.attrs['size'] = 25
-	self.base_fields['address_street'].widget.attrs['size'] = 40
-	self.base_fields['address_city'].widget.attrs['size'] = 20
-	self.base_fields['address_zip'].widget.attrs['size'] = 5
+        self.base_fields['first_name'].widget.attrs['size'] = 25
+        self.base_fields['last_name'].widget.attrs['size'] = 30
+        self.base_fields['e_mail'].widget.attrs['size'] = 25
+        self.base_fields['address_street'].widget.attrs['size'] = 40
+        self.base_fields['address_city'].widget.attrs['size'] = 20
+        self.base_fields['address_zip'].widget.attrs['size'] = 5
 
         # GAH!
         for field in self.base_fields.iteritems():
@@ -66,7 +66,7 @@ class UserContactForm(forms.Form):
             if field.required:
                 field.widget.attrs['class'] = 'required'
 
-	forms.Form.__init__(self, user, *args, **kwargs)
+        forms.Form.__init__(self, user, *args, **kwargs)
 
     def clean_phone_cell(self):
         if not self.clean_data.has_key('phone_day') and not self.clean_data.has_key('phone_cell'):
@@ -75,33 +75,33 @@ class UserContactForm(forms.Form):
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
     def __init__(self, user = None, *args, **kwargs):
-	self.base_fields['phone_cell'].required = True
-	UserContactForm.__init__(self, user, *args, **kwargs)
+        self.base_fields['phone_cell'].required = True
+        UserContactForm.__init__(self, user, *args, **kwargs)
     
 class EmergContactForm(forms.Form):
     """ Contact form for emergency contacts """
     def __init__(self, user = None, *args, **kwargs):
-	# Copy entries
-	leech = UserContactForm(user, *args, **kwargs)
-	for k,v in leech.base_fields.iteritems():
-	    self.base_fields['emerg_'+k] = v
-	self.makeRequired = leech.makeRequired
+        # Copy entries
+        leech = UserContactForm(user, *args, **kwargs)
+        for k,v in leech.base_fields.iteritems():
+            self.base_fields['emerg_'+k] = v
+        self.makeRequired = leech.makeRequired
 
-	forms.Form.__init__(self, user, *args, **kwargs)
+        forms.Form.__init__(self, user, *args, **kwargs)
 
 class GuardContactForm(forms.Form):
     """ Contact form for guardians """
     def __init__(self, user = None, *args, **kwargs):
-	# Copy entries
-	leech = UserContactForm(user, *args, **kwargs)
-	del leech.base_fields['address_street']
-	del leech.base_fields['address_city']
-	del leech.base_fields['address_zip']
-	for k,v in leech.base_fields.iteritems():
-	    self.base_fields['guard_'+k] = v
-	self.makeRequired = leech.makeRequired
+        # Copy entries
+        leech = UserContactForm(user, *args, **kwargs)
+        del leech.base_fields['address_street']
+        del leech.base_fields['address_city']
+        del leech.base_fields['address_zip']
+        for k,v in leech.base_fields.iteritems():
+            self.base_fields['guard_'+k] = v
+        self.makeRequired = leech.makeRequired
 
-	forms.Form.__init__(self, user, *args, **kwargs)
+        forms.Form.__init__(self, user, *args, **kwargs)
 
 class StudentInfoForm(forms.Form):
     """ Extra student-specific information """
@@ -111,7 +111,7 @@ class StudentInfoForm(forms.Form):
             makeRequired = True
         else:
             makeRequired = False
-	
+
         import datetime
         from esp.users.models import shirt_sizes, shirt_types
         cur_year = datetime.date.today().year
@@ -135,31 +135,31 @@ class StudentInfoForm(forms.Form):
 class TeacherInfoForm(forms.Form):
     """ Extra teacher-specific information """
     def __init__(self, user = None, *args, **kwargs):
-	pass
+        pass
 
 class EducatorInfoForm(forms.Form):
     """ Extra educator-specific information """
     def __init__(self, user = None, *args, **kwargs):
-	pass
+        pass
 
 class GuardianInfoForm(forms.Form):
     """ Extra guardian-specific information """
     def __init__(self, user = None, *args, **kwargs):
-	pass
+        pass
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
     def __init__(self, user = None, *args, **kwargs):
-	pass
+        pass
 class TeacherProfileForm(TeacherContactForm, TeacherInfoForm):
     """ Form for student profiles """
     def __init__(self, user = None, *args, **kwargs):
-	pass
+        pass
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
     def __init__(self, user = None, *args, **kwargs):
-	pass
+        pass
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
     def __init__(self, user = None, *args, **kwargs):
-	pass
+        pass
