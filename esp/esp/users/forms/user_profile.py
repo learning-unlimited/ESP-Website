@@ -61,6 +61,13 @@ class UserContactForm(forms.Form):
             if field.required:
                 field.required = makeRequired
 
+        # Restore oldforms thing
+        for field in self.base_fields.iteritems():
+            if field.required:
+                field.widget.attrs['class'] = 'required'
+
+	forms.Form.__init__(self, user, *args, **kwargs)
+
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
     def __init__(self, user = None, *args, **kwargs):
