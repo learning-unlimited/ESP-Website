@@ -166,8 +166,11 @@ class TeacherInfoForm(forms.Form):
 
 class EducatorInfoForm(forms.Form):
     """ Extra educator-specific information """
-    def __init__(self, user = None, *args, **kwargs):
-        pass
+
+    subject_taught = SizedCharField(length=12, max_length=64, required=False)
+    grades_taught = SizedCharField(length=10, max_length=16, required=False)
+    school = SizedCharField(length=24, max_length=128, required=False)
+    position = SizedCharField(length=10, max_length=32, required=False)
 
 class GuardianInfoForm(forms.Form):
     """ Extra guardian-specific information """
