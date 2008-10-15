@@ -78,8 +78,8 @@ class UserContactForm(forms.Form):
 
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
+    phone_cell = PhoneNumberField(local_areacode='617')
     def __init__(self, *args, **kwargs):
-        self.base_fields['phone_cell'].required = True
         super(TeacherContactForm, self).__init__(self, *args, **kwargs)
     
 class EmergContactForm(forms.Form):
@@ -147,7 +147,7 @@ class StudentInfoForm(forms.Form):
 
     def clean_studentrep_expl(self):
         # TODO: run if blank?
-        if self.cleaned_data['studentrep'] and not self.has_key['studentrep_expl']:
+        if self.cleaned_data['studentrep'] and not self.cleaned_data.has_key('studentrep_expl'):
             raise ValidationError("Please enter an explanation above.")
 
 
