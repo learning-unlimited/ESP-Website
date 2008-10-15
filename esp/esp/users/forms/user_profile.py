@@ -174,8 +174,14 @@ class EducatorInfoForm(forms.Form):
 
 class GuardianInfoForm(forms.Form):
     """ Extra guardian-specific information """
+
+    year_finished = forms.IntegerField(max_length=4, min_value=1, required=False)
+    num_kids = forms.IntegerField(max_length=16, min_value=1, required=False)
+
     def __init__(self, user = None, *args, **kwargs):
-        pass
+        self.base_fields['year_finished'].widget.attrs['size'] = 4
+        self.base_fields['num_kids'].widget.attrs['size'] = 3
+        forms.Form.__init__(self, user, *args, **kwargs)
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
