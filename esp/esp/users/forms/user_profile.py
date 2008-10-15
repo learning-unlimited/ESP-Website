@@ -106,9 +106,15 @@ class GuardContactForm(forms.Form):
 class StudentInfoForm(forms.Form):
     """ Extra student-specific information """
     from esp.users.models import ESPUser
+    from esp.users.models import shirt_sizes, shirt_types
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     school = forms.CharField(max_length=128)
+    dob = None #FIXME!!!!
+    studentrep = forms.BooleanField(required=False)
+    studentrep_expl = forms.CharField(required=False)
+    shirt_size = forms.SelectField(choices=([('','')]+list(shirt_sizes)), required=False)
+    shirt_type = forms.SelectField(choices=([('','')]+list(shirt_types)), required=False)
 
     def __init__(self, user = None, *args, **kwargs):
         from esp.users.models import ESPUser
@@ -117,28 +123,30 @@ class StudentInfoForm(forms.Form):
         else:
             makeRequired = False
 
-        import datetime
-        from esp.users.models import shirt_sizes, shirt_types
-        cur_year = datetime.date.today().year
-
         shirt_sizes = [('', '')] + list(shirt_sizes)
         shirt_types = [('', '')] + list(shirt_types)
 
-        # Set widget length
+        # Set widget stuff
         self.base_fields['school'].widget.attrs['size'] = 24
+        self.base_fields['studentrep_expl'].widget = forms.Textarea()
+        self.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
+        self.base_fields['studentrep_expl'].widget.attrs['cols'] = 45
 
-        #studentrep_explained = NonEmptyIfOtherChecked('studentrep', 'Please enter an explanation above.')
-        #studentrep_explained.always_test = True # because validators normally aren't run if a field is blank
-        #
-        #self.fields = (
-            #GraduationYearField(field_name="graduation_year", is_required=makeRequired, choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)]),
-            #forms.TextField(field_name="school", length=24, max_length=128),
-            #HTMLDateField(field_name="dob", is_required=makeRequired),
-            #forms.CheckboxField(field_name="studentrep", is_required=False),
-            #forms.LargeTextField(field_name="studentrep_expl", is_required=False, rows=8, cols=45, validator_list=[studentrep_explained]),
-            #forms.SelectField(field_name="shirt_size", is_required=False, choices=shirt_sizes, validator_list=[validators.isNotEmpty]),
-            #forms.SelectField(field_name="shirt_type", is_required=False, choices=shirt_types, validator_list=[validators.isNotEmpty]),
-            #)
+        # GAH!
+        for field in self.base_fields.iteritems():
+            if field.required:
+                field.required = makeRequired
+
+        # Restore oldforms thing
+        for field in self.base_fields.iteritems():
+            if field.required:
+                field.widget.attrs['class'] = 'required'
+
+    def clean_studentrep_expl(self):
+        # TODO: run if blank?
+        if self.clean_data['studentrep'] and not self.has_key['studentrep_expl']:
+            raise ValidationError("Please enter an explanation above.")
+
 
 class TeacherInfoForm(forms.Form):
     """ Extra teacher-specific information """
