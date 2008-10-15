@@ -49,8 +49,6 @@ from esp.middleware import ESPError
 from esp.web.models import NavBarEntry
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
-from django import oldforms
-from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
 from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm
 from django.db.models.query import Q
 
@@ -284,11 +282,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 	curUser = ESPUser(curUser)
 	curUser.updateOnsite(request)
 	
-	manipulator = {'': UserContactManipulator(curUser),
-		       'student': StudentProfileManipulator(curUser),
-		       'teacher': TeacherProfileManipulator(curUser),
-		       'guardian': GuardianProfileManipulator(curUser),
-		       'educator': EducatorProfileManipulator(curUser)}[role]
 	form = {'': UserContactForm(curUser),
 		       'student': StudentProfileForm(curUser),
 		       'teacher': TeacherProfileForm(curUser),
@@ -298,17 +291,15 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
 	if request.method == 'POST' and request.POST.has_key('profile_page'):
                 form.data = request.POST
-		new_data = request.POST.copy()
-		manipulator.prepare(new_data)
-		errors = manipulator.get_validation_errors(new_data)
 		
+                ## TODO: RESTORE THIS
 		# Don't suddenly demand an explanation from people who are already student reps
-		if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
-			if errors.has_key('studentrep_expl'):
-				del errors['studentrep_expl']
+		#if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
+			#if errors.has_key('studentrep_expl'):
+				#del errors['studentrep_expl']
 		
                 if form.is_valid():
-			manipulator.do_html2python(new_data)
+                        new_data = form.cleaned_data
 
 			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 
@@ -368,7 +359,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 				return True
 
 	else:
-		errors = {}
 		if prog_input is None:
 			regProf = RegistrationProfile.getLastProfile(curUser)
 		else:
@@ -385,8 +375,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		new_data['e_mail']     = curUser.email
 		new_data = regProf.updateForm(new_data, role)
 
+                form.data = new_data
+
 	context['request'] = request
-	context['form'] = oldforms.FormWrapper(manipulator, new_data, errors)
+	context['form'] = form
 	return render_to_response('users/profile.html', request, navnode, context)
 
 @login_required
