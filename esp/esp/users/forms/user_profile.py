@@ -186,16 +186,26 @@ class GuardianInfoForm(forms.Form):
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
     def __init__(self, user = None, *args, **kwargs):
-        pass
+        UserContactForm.__init__(self, user, *args, **kwargs)
+        EmergContactForm.__init__(self, user, *args, **kwargs)
+        GuardContactForm.__init__(self, user, *args, **kwargs)
+        StudentInfoForm.__init__(self, user, *args, **kwargs)
+
 class TeacherProfileForm(TeacherContactForm, TeacherInfoForm):
     """ Form for student profiles """
     def __init__(self, user = None, *args, **kwargs):
-        pass
+        TeacherContactForm.__init__(self, user, *args, **kwargs)
+        TeacherInfoForm.__init__(self, user, *args, **kwargs)
+
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
     def __init__(self, user = None, *args, **kwargs):
-        pass
+        UserContactForm.__init__(self, user, *args, **kwargs)
+        GuardContactForm.__init__(self, user, *args, **kwargs)
+
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
     def __init__(self, user = None, *args, **kwargs):
-        pass
+        UserContactForm.__init__(self, user, *args, **kwargs)
+        EducatorContactForm.__init__(self, user, *args, **kwargs)
+
