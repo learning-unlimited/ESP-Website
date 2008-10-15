@@ -35,6 +35,9 @@ class PhoneNumberField(forms.RegexField):
                 return value
         raise forms.ValidationError('Phone numbers must be a valid US number. "%s" is invalid.' % value)
 
+#### NOTE: Python super() does weird things (it's the next in the MRO, not a superclass).
+#### DO NOT OMIT IT if overriding __init__() when subclassing these forms
+
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(forms.Form):
     """ Base for contact form """
@@ -67,7 +70,7 @@ class UserContactForm(forms.Form):
             if field.required:
                 field.widget.attrs['class'] = 'required'
 
-        forms.Form.__init__(self, user, *args, **kwargs)
+        super(UserContactForm, self).__init__(self, user=user, *args, **kwargs)
 
     def clean_phone_cell(self):
         if not self.clean_data.has_key('phone_day') and not self.clean_data.has_key('phone_cell'):
@@ -75,24 +78,24 @@ class UserContactForm(forms.Form):
 
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
-    def __init__(self, user = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.base_fields['phone_cell'].required = True
-        UserContactForm.__init__(self, user, *args, **kwargs)
+        super(TeacherContactForm, self).__init__(self, *args, **kwargs)
     
 class EmergContactForm(forms.Form):
     """ Contact form for emergency contacts """
-    def __init__(self, user = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs): # TODO: do I need to explicitly list user as argument?
         # Copy entries
-        leech = UserContactForm(user, *args, **kwargs)
+        leech = UserContactForm(*args, **kwargs)
         for k,v in leech.base_fields.iteritems():
             self.base_fields['emerg_'+k] = v
         self.makeRequired = leech.makeRequired
 
-        forms.Form.__init__(self, user, *args, **kwargs)
+        super(EmergContactForm, self).__init__(self, *args, **kwargs)
 
 class GuardContactForm(forms.Form):
     """ Contact form for guardians """
-    def __init__(self, user = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         # Copy entries
         leech = UserContactForm(user, *args, **kwargs)
         del leech.base_fields['address_street']
@@ -102,7 +105,7 @@ class GuardContactForm(forms.Form):
             self.base_fields['guard_'+k] = v
         self.makeRequired = leech.makeRequired
 
-        forms.Form.__init__(self, user, *args, **kwargs)
+        super(GuardContactForm, self).__init__(self, *args, **kwargs)
 
 class StudentInfoForm(forms.Form):
     """ Extra student-specific information """
@@ -143,6 +146,8 @@ class StudentInfoForm(forms.Form):
             if field.required:
                 field.widget.attrs['class'] = 'required'
 
+        super(StudentInfoForm, self).__init__(user=user, *args, **kwargs)
+
     def clean_studentrep_expl(self):
         # TODO: run if blank?
         if self.clean_data['studentrep'] and not self.has_key['studentrep_expl']:
@@ -160,9 +165,9 @@ class TeacherInfoForm(forms.Form):
     shirt_size = forms.SelectField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.SelectField(choices=([('','')]+list(shirt_types)), required=False)
 
-    def __init__(self, user = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.base_fields['graduation_year'].widget.attrs['size'] = 4
-        forms.Form.__init__(self, user, *args, **kwargs)
+        super(TeacherInfoForm, self).__init__(*args, **kwargs)
 
 class EducatorInfoForm(forms.Form):
     """ Extra educator-specific information """
@@ -178,34 +183,20 @@ class GuardianInfoForm(forms.Form):
     year_finished = forms.IntegerField(max_length=4, min_value=1, required=False)
     num_kids = forms.IntegerField(max_length=16, min_value=1, required=False)
 
-    def __init__(self, user = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.base_fields['year_finished'].widget.attrs['size'] = 4
         self.base_fields['num_kids'].widget.attrs['size'] = 3
-        forms.Form.__init__(self, user, *args, **kwargs)
+        super(GuardianInfoForm, self).__init__(*args, **kwargs)
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
-    def __init__(self, user = None, *args, **kwargs):
-        UserContactForm.__init__(self, user, *args, **kwargs)
-        EmergContactForm.__init__(self, user, *args, **kwargs)
-        GuardContactForm.__init__(self, user, *args, **kwargs)
-        StudentInfoForm.__init__(self, user, *args, **kwargs)
 
 class TeacherProfileForm(TeacherContactForm, TeacherInfoForm):
     """ Form for student profiles """
-    def __init__(self, user = None, *args, **kwargs):
-        TeacherContactForm.__init__(self, user, *args, **kwargs)
-        TeacherInfoForm.__init__(self, user, *args, **kwargs)
 
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
-    def __init__(self, user = None, *args, **kwargs):
-        UserContactForm.__init__(self, user, *args, **kwargs)
-        GuardContactForm.__init__(self, user, *args, **kwargs)
 
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
-    def __init__(self, user = None, *args, **kwargs):
-        UserContactForm.__init__(self, user, *args, **kwargs)
-        EducatorContactForm.__init__(self, user, *args, **kwargs)
 
