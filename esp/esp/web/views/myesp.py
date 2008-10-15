@@ -51,6 +51,7 @@ from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
 from django import oldforms
 from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
+from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm
 from django.db.models.query import Q
 
 
@@ -288,9 +289,15 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		       'teacher': TeacherProfileManipulator(curUser),
 		       'guardian': GuardianProfileManipulator(curUser),
 		       'educator': EducatorProfileManipulator(curUser)}[role]
+	form = {'': UserContactForm(curUser),
+		       'student': StudentProfileForm(curUser),
+		       'teacher': TeacherProfileForm(curUser),
+		       'guardian': GuardianProfileForm(curUser),
+		       'educator': EducatorProfileForm(curUser)}[role]
 	context['profiletype'] = role
 
 	if request.method == 'POST' and request.POST.has_key('profile_page'):
+                form.data = request.POST
 		new_data = request.POST.copy()
 		manipulator.prepare(new_data)
 		errors = manipulator.get_validation_errors(new_data)
@@ -300,7 +307,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 			if errors.has_key('studentrep_expl'):
 				del errors['studentrep_expl']
 		
-		if not errors:
+                if form.is_valid():
 			manipulator.do_html2python(new_data)
 
 			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
