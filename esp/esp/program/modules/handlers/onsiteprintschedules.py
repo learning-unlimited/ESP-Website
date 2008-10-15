@@ -66,16 +66,11 @@ class OnsitePrintSchedules(ProgramModuleObj):
 
         verb  = GetNode(verb_path)
         qsc   = self.program_anchor_cached().tree_create(['Schedule'])
-        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = datetime.now())
-        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = datetime.now())
 
         Q_qsc  = Q(qsc  = qsc.id)
         Q_verb = Q(verb__in = [ verb.id ] + list( verb.children() ) )
         
-        ubits = UserBit.objects.filter(Q_qsc & \
-                                       Q_verb & \
-                                       Q_after_start & \
-                                       Q_before_end).order_by('startdate')
+        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')
         
         for ubit in ubits:
             ubit.enddate = datetime.now()
