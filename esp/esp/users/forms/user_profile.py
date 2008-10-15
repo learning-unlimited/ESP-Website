@@ -61,19 +61,19 @@ class UserContactForm(forms.Form):
         self.base_fields['e_mail'].widget.attrs['size'] = 25
 
         # GAH!
-        for field in self.base_fields.iteritems():
+        for field in self.base_fields.itervalues():
             if field.required:
-                field.required = makeRequired
+                field.required = self.makeRequired
 
         # Restore oldforms thing
-        for field in self.base_fields.iteritems():
+        for field in self.base_fields.itervalues():
             if field.required:
                 field.widget.attrs['class'] = 'required'
 
-        super(UserContactForm, self).__init__(self, user=user, *args, **kwargs)
+        super(UserContactForm, self).__init__(self, *args, **kwargs)
 
     def clean_phone_cell(self):
-        if not self.clean_data.has_key('phone_day') and not self.clean_data.has_key('phone_cell'):
+        if not self.cleaned_data.has_key('phone_day') and not self.cleaned_data.has_key('phone_cell'):
             raise ValidationError("Please provide either a day phone or cell phone.")
 
 class TeacherContactForm(UserContactForm):
@@ -97,7 +97,7 @@ class GuardContactForm(forms.Form):
     """ Contact form for guardians """
     def __init__(self, *args, **kwargs):
         # Copy entries
-        leech = UserContactForm(user, *args, **kwargs)
+        leech = UserContactForm(*args, **kwargs)
         del leech.base_fields['address_street']
         del leech.base_fields['address_city']
         del leech.base_fields['address_zip']
@@ -117,8 +117,8 @@ class StudentInfoForm(forms.Form):
     dob = None #FIXME!!!!
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
-    shirt_size = forms.SelectField(choices=([('','')]+list(shirt_sizes)), required=False)
-    shirt_type = forms.SelectField(choices=([('','')]+list(shirt_types)), required=False)
+    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
+    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
 
     def __init__(self, user = None, *args, **kwargs):
         from esp.users.models import ESPUser
@@ -127,9 +127,6 @@ class StudentInfoForm(forms.Form):
         else:
             makeRequired = False
 
-        shirt_sizes = [('', '')] + list(shirt_sizes)
-        shirt_types = [('', '')] + list(shirt_types)
-
         # Set widget stuff
         self.base_fields['school'].widget.attrs['size'] = 24
         self.base_fields['studentrep_expl'].widget = forms.Textarea()
@@ -137,20 +134,20 @@ class StudentInfoForm(forms.Form):
         self.base_fields['studentrep_expl'].widget.attrs['cols'] = 45
 
         # GAH!
-        for field in self.base_fields.iteritems():
+        for field in self.base_fields.itervalues():
             if field.required:
                 field.required = makeRequired
 
         # Restore oldforms thing
-        for field in self.base_fields.iteritems():
+        for field in self.base_fields.itervalues():
             if field.required:
                 field.widget.attrs['class'] = 'required'
 
-        super(StudentInfoForm, self).__init__(user=user, *args, **kwargs)
+        super(StudentInfoForm, self).__init__(*args, **kwargs)
 
     def clean_studentrep_expl(self):
         # TODO: run if blank?
-        if self.clean_data['studentrep'] and not self.has_key['studentrep_expl']:
+        if self.cleaned_data['studentrep'] and not self.has_key['studentrep_expl']:
             raise ValidationError("Please enter an explanation above.")
 
 
@@ -159,14 +156,15 @@ class TeacherInfoForm(forms.Form):
 
     from esp.users.models import shirt_sizes, shirt_types
 
-    graduation_year = forms.IntegerField(max_length=4, required=False)
+    graduation_year = forms.IntegerField(required=False)
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
-    shirt_size = forms.SelectField(choices=([('','')]+list(shirt_sizes)), required=False)
-    shirt_type = forms.SelectField(choices=([('','')]+list(shirt_types)), required=False)
+    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
+    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
 
     def __init__(self, *args, **kwargs):
         self.base_fields['graduation_year'].widget.attrs['size'] = 4
+        self.base_fields['graduation_year'].widget.attrs['maxlength'] = 4
         super(TeacherInfoForm, self).__init__(*args, **kwargs)
 
 class EducatorInfoForm(forms.Form):
@@ -180,12 +178,14 @@ class EducatorInfoForm(forms.Form):
 class GuardianInfoForm(forms.Form):
     """ Extra guardian-specific information """
 
-    year_finished = forms.IntegerField(max_length=4, min_value=1, required=False)
-    num_kids = forms.IntegerField(max_length=16, min_value=1, required=False)
+    year_finished = forms.IntegerField(min_value=1, required=False)
+    num_kids = forms.IntegerField(min_value=1, required=False)
 
     def __init__(self, *args, **kwargs):
         self.base_fields['year_finished'].widget.attrs['size'] = 4
+        self.base_fields['year_finished'].widget.attrs['maxlength'] = 4
         self.base_fields['num_kids'].widget.attrs['size'] = 3
+        self.base_fields['num_kids'].widget.attrs['maxlength'] = 16
         super(GuardianInfoForm, self).__init__(*args, **kwargs)
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
