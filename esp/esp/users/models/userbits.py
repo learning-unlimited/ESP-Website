@@ -540,6 +540,11 @@ class UserBit(models.Model):
         q = q & (Q(**{prefix+'enddate__isnull': True}) | Q(**{prefix+'enddate__gte': when}))
         return q
 
+    @staticmethod
+    def valid_objects(when=datetime.datetime.now()):
+        """ Returns a QuerySet consisting of unexpired UserBits (at time when) """
+        return UserBit.objects.filter(UserBit.not_expired(when))
+
     UserHasPerms   = classmethod(lambda cls,*args,**kwargs: cls.objects.UserHasPerms(*args,**kwargs))
     bits_get_qsc   = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_qsc(*args,**kwargs))
     bits_get_users = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_users(*args,**kwargs))
