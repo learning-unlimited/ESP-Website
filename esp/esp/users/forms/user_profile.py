@@ -98,11 +98,11 @@ class GuardContactForm(forms.Form):
     def __init__(self, *args, **kwargs):
         # Copy entries
         leech = UserContactForm(*args, **kwargs)
-        del leech.base_fields['address_street']
-        del leech.base_fields['address_city']
-        del leech.base_fields['address_zip']
         for k,v in leech.base_fields.iteritems():
             self.base_fields['guard_'+k] = v
+        del self.base_fields['guard_address_street']
+        del self.base_fields['guard_address_city']
+        del self.base_fields['guard_address_zip']
         self.makeRequired = leech.makeRequired
 
         super(GuardContactForm, self).__init__(self, *args, **kwargs)
