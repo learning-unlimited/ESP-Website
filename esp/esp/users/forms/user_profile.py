@@ -106,6 +106,7 @@ class GuardContactForm(forms.Form):
         del self.base_fields['guard_address_zip']
         del self.base_fields['guard_address_postal']
         self.makeRequired = leech.makeRequired
+        self.base_fields['guard_e_mail'].required = False
 
         super(GuardContactForm, self).__init__(self, *args, **kwargs)
 
