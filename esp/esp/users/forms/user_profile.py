@@ -115,7 +115,7 @@ class StudentInfoForm(forms.Form):
     from esp.users.models import shirt_sizes, shirt_types
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
-    school = forms.CharField(max_length=128)
+    school = forms.CharField(max_length=128, required=False)
     dob = None #FIXME!!!!
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
