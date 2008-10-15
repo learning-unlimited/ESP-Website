@@ -150,8 +150,20 @@ class StudentInfoForm(forms.Form):
 
 class TeacherInfoForm(forms.Form):
     """ Extra teacher-specific information """
+
+    from esp.users.models import shirt_sizes, shirt_types
+
+    graduation_year = forms.IntegerField(max_length=4, required=False)
+    school = forms.CharField(max_length=128, required=False)
+    major = forms.CharField(max_length=32, required=False)
+    shirt_size = forms.SelectField(choices=([('','')]+list(shirt_sizes)), required=False)
+    shirt_type = forms.SelectField(choices=([('','')]+list(shirt_types)), required=False)
+
     def __init__(self, user = None, *args, **kwargs):
-        pass
+        self.base_fields['graduation_year'].widget.attrs['size'] = 4
+        self.base_fields['school'].widget.attrs['size'] = 24
+        self.base_fields['major'].widget.attrs['size'] = 30
+        forms.Form.__init__(self, user, *args, **kwargs)
 
 class EducatorInfoForm(forms.Form):
     """ Extra educator-specific information """
