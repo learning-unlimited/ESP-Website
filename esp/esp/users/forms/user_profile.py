@@ -7,6 +7,12 @@ _phone_re = re.compile(r'^\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\
 _localphone_re = re.compile(r'^\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*$')
 _states = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada']
 
+class SizedCharField(forms.CharField):
+    """ Just like CharField, but you can set the width of the text widget. """
+    def __init__(self, length=None, *args, **kwargs):
+        forms.CharField.__init__(self, *args, **kwargs)
+        self.widget.attrs['size'] = length
+
 class PhoneNumberField(forms.RegexField):
     """ Field for phone number. If area code not given, local_areacode is used instead. """
     def __init__(self, length=12, max_length=14, local_areacode = None, *args, **kwargs):
@@ -33,15 +39,15 @@ class PhoneNumberField(forms.RegexField):
 class UserContactForm(forms.Form):
     """ Base for contact form """
 
-    first_name = forms.CharField(max_length=64)
-    last_name = forms.CharField(max_length=64)
+    first_name = SizedCharField(length=25, max_length=64)
+    last_name = SizedCharField(length=30, max_length=64)
     e_mail = forms.EmailField()
     phone_day = PhoneNumberField(local_areacode='617')
     phone_cell = PhoneNumberField(local_areacode='617', required=False)
-    address_street = forms.CharField(max_length=100)
-    address_city = forms.CharField(max_length=50)
+    address_street = SizedCharField(length=40, max_length=100)
+    address_city = SizedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=zip(_states,_states))
-    address_zip = forms.CharField(max_length=5)
+    address_zip = SizedCharField(length=5, max_length=5)
 
     def __init__(self, user = None, *args, **kwargs):
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
@@ -49,12 +55,7 @@ class UserContactForm(forms.Form):
         else:
             self.makeRequired = False
         # set a few things...
-        self.base_fields['first_name'].widget.attrs['size'] = 25
-        self.base_fields['last_name'].widget.attrs['size'] = 30
         self.base_fields['e_mail'].widget.attrs['size'] = 25
-        self.base_fields['address_street'].widget.attrs['size'] = 40
-        self.base_fields['address_city'].widget.attrs['size'] = 20
-        self.base_fields['address_zip'].widget.attrs['size'] = 5
 
         # GAH!
         for field in self.base_fields.iteritems():
@@ -154,15 +155,13 @@ class TeacherInfoForm(forms.Form):
     from esp.users.models import shirt_sizes, shirt_types
 
     graduation_year = forms.IntegerField(max_length=4, required=False)
-    school = forms.CharField(max_length=128, required=False)
-    major = forms.CharField(max_length=32, required=False)
+    school = SizedCharField(length=24, max_length=128, required=False)
+    major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.SelectField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.SelectField(choices=([('','')]+list(shirt_types)), required=False)
 
     def __init__(self, user = None, *args, **kwargs):
         self.base_fields['graduation_year'].widget.attrs['size'] = 4
-        self.base_fields['school'].widget.attrs['size'] = 24
-        self.base_fields['major'].widget.attrs['size'] = 30
         forms.Form.__init__(self, user, *args, **kwargs)
 
 class EducatorInfoForm(forms.Form):
