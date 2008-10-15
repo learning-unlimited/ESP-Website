@@ -51,6 +51,7 @@ class UserContactForm(forms.Form):
     address_city = SizedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=zip(_states,_states))
     address_zip = SizedCharField(length=5, max_length=5)
+    address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, user = None, *args, **kwargs):
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
@@ -103,6 +104,7 @@ class GuardContactForm(forms.Form):
         del self.base_fields['guard_address_street']
         del self.base_fields['guard_address_city']
         del self.base_fields['guard_address_zip']
+        del self.base_fields['guard_address_postal']
         self.makeRequired = leech.makeRequired
 
         super(GuardContactForm, self).__init__(self, *args, **kwargs)
