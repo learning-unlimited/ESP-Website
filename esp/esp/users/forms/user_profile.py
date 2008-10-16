@@ -79,34 +79,66 @@ class UserContactForm(forms.Form):
 
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
+
     phone_cell = PhoneNumberField(local_areacode='617')
-    def __init__(self, *args, **kwargs):
-        super(TeacherContactForm, self).__init__(self, *args, **kwargs)
     
 class EmergContactForm(forms.Form):
     """ Contact form for emergency contacts """
-    def __init__(self, *args, **kwargs): # TODO: do I need to explicitly list user as argument?
-        # Copy entries
-        leech = UserContactForm(*args, **kwargs)
-        for k,v in leech.base_fields.iteritems():
-            self.base_fields['emerg_'+k] = v
-        self.makeRequired = leech.makeRequired
+
+    emerg_first_name = SizedCharField(length=25, max_length=64)
+    emerg_last_name = SizedCharField(length=30, max_length=64)
+    emerg_e_mail = forms.EmailField(required=False)
+    emerg_phone_day = PhoneNumberField(local_areacode='617')
+    emerg_phone_cell = PhoneNumberField(local_areacode='617', required=False)
+    emerg_address_street = SizedCharField(length=40, max_length=100)
+    emerg_address_city = SizedCharField(length=20, max_length=50)
+    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states))
+    emerg_address_zip = SizedCharField(length=5, max_length=5)
+    emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
+
+    def __init__(self, user=None, *args, **kwargs):
+        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+            self.makeRequired = True
+        else:
+            self.makeRequired = False
+
+        # GAH!
+        for field in self.base_fields.itervalues():
+            if field.required:
+                field.required = self.makeRequired
+
+        # Restore oldforms thing
+        for field in self.base_fields.itervalues():
+            if field.required:
+                field.widget.attrs['class'] = 'required'
 
         super(EmergContactForm, self).__init__(self, *args, **kwargs)
 
+
 class GuardContactForm(forms.Form):
     """ Contact form for guardians """
-    def __init__(self, *args, **kwargs):
-        # Copy entries
-        leech = UserContactForm(*args, **kwargs)
-        for k,v in leech.base_fields.iteritems():
-            self.base_fields['guard_'+k] = v
-        del self.base_fields['guard_address_street']
-        del self.base_fields['guard_address_city']
-        del self.base_fields['guard_address_zip']
-        del self.base_fields['guard_address_postal']
-        self.makeRequired = leech.makeRequired
-        self.base_fields['guard_e_mail'].required = False
+
+    guard_first_name = SizedCharField(length=25, max_length=64)
+    guard_last_name = SizedCharField(length=30, max_length=64)
+    guard_e_mail = forms.EmailField(required=False)
+    guard_phone_day = PhoneNumberField(local_areacode='617')
+    guard_phone_cell = PhoneNumberField(local_areacode='617', required=False)
+
+    def __init__(self, user=None, *args, **kwargs):
+        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+            self.makeRequired = True
+        else:
+            self.makeRequired = False
+
+        # GAH!
+        for field in self.base_fields.itervalues():
+            if field.required:
+                field.required = self.makeRequired
+
+        # Restore oldforms thing
+        for field in self.base_fields.itervalues():
+            if field.required:
+                field.widget.attrs['class'] = 'required'
 
         super(GuardContactForm, self).__init__(self, *args, **kwargs)
 
