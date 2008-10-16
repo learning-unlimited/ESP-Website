@@ -37,6 +37,49 @@ class PhoneNumberField(forms.CharField):
                 return value
         raise forms.ValidationError('Phone numbers must be a valid US number. "%s" is invalid.' % value)
 
+
+# TODO: Make this not suck
+class SplitDateWidget(forms.MultiWidget):
+    """ A date widget that separates days, etc. """
+
+    def __init__(self, attrs=None):
+        from datetime import datetime
+
+        year_choices = range(datetime.now().year - 70,
+                             datetime.now().year - 10)
+        year_choices.reverse()
+        month_choices = ['%02d' % x for x in range(1, 13)]
+        day_choices   = ['%02d' % x for x in range(1, 32)]
+        choices = {'year' : [('',' ')] + zip(year_choices, year_choices),
+                   'month': [('',' ')] + zip(month_choices, month_choices),
+                   'day'  : [('',' ')] + zip(day_choices, day_choices)
+                   }
+
+        year_widget = forms.Select(choices=choices['year'])
+        month_widget = forms.Select(choices=choices['month'])
+        day_widget = forms.Select(choices=choices['day'])
+
+        widgets = (year_widget, month_widget, day_widget)
+        super(SplitDateWidget, self).__init__(widgets, attrs)
+
+    def decompress(self, value):
+        if value:
+            return [value.year, '%02d' % value.month, '%02d' % value.day]
+        return [None, None, None]
+
+    def value_from_datadict(self, data, files, name):
+        from datetime import date
+        val = data.get(name, None)
+        if val is not None:
+            return val
+        else:
+            vals = super(SplitDateWidget, self).value_from_datadict(data, files, name)
+            try:
+                return date(int(vals[0]), int(vals[1]), int(vals[2]))
+            except:
+                return None
+
+
 #### NOTE: Python super() does weird things (it's the next in the MRO, not a superclass).
 #### DO NOT OMIT IT if overriding __init__() when subclassing these forms
 
@@ -120,7 +163,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     school = forms.CharField(max_length=128, required=False)
-    dob = forms.DateField(required=False) # FIXME: put a better widget in!
+    dob = forms.DateField(required=False, widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
