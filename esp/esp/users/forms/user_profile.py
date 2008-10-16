@@ -1,4 +1,4 @@
-import django.forms as forms
+from django import forms
 import re
 
 # SRC: esp/program/manipulators.py
@@ -182,7 +182,7 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
     """ Form for student profiles """
 
 class TeacherProfileForm(TeacherContactForm, TeacherInfoForm):
-    """ Form for student profiles """
+    """ Form for teacher profiles """
 
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
