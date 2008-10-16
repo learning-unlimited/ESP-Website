@@ -164,7 +164,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     school = forms.CharField(max_length=128, required=False)
-    dob = forms.DateField(required=False, widget=SplitDateWidget())
+    dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
@@ -186,7 +186,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         return expl
 
 
-class TeacherInfoForm(forms.Form):
+class TeacherInfoForm(FormWithRequiredCss):
     """ Extra teacher-specific information """
 
     from esp.users.models import shirt_sizes, shirt_types
@@ -202,7 +202,7 @@ class TeacherInfoForm(forms.Form):
         self.base_fields['graduation_year'].widget.attrs['maxlength'] = 4
         super(TeacherInfoForm, self).__init__(*args, **kwargs)
 
-class EducatorInfoForm(forms.Form):
+class EducatorInfoForm(FormWithRequiredCss):
     """ Extra educator-specific information """
 
     subject_taught = SizedCharField(length=12, max_length=64, required=False)
@@ -210,7 +210,7 @@ class EducatorInfoForm(forms.Form):
     school = SizedCharField(length=24, max_length=128, required=False)
     position = SizedCharField(length=10, max_length=32, required=False)
 
-class GuardianInfoForm(forms.Form):
+class GuardianInfoForm(FormWithRequiredCss):
     """ Extra guardian-specific information """
 
     year_finished = forms.IntegerField(min_value=1, required=False)
