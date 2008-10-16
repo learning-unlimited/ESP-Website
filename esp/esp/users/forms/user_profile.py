@@ -180,9 +180,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         super(StudentInfoForm, self).__init__(*args, **kwargs)
 
     def clean_studentrep_expl(self):
-        self.cleaned_data['studentrep_expl'] = self.cleaned_data['studentrep_expl'].strip()
-        if self.cleaned_data['studentrep'] and self.cleaned_data['studentrep_expl'] == '':
+        expl = self.cleaned_data['studentrep_expl'].strip()
+        if self.cleaned_data['studentrep'] and expl == '':
             raise forms.ValidationError("Please enter an explanation above.")
+        return expl
 
 
 class TeacherInfoForm(forms.Form):
