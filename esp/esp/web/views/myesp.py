@@ -292,11 +292,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 	if request.method == 'POST' and request.POST.has_key('profile_page'):
                 form.data = request.POST
 		
-                ## TODO: RESTORE THIS
 		# Don't suddenly demand an explanation from people who are already student reps
-		#if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
-			#if errors.has_key('studentrep_expl'):
-				#del errors['studentrep_expl']
+		if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
+                        if form.has_key('repress_studentrep_expl_error'):
+                            form.repress_studentrep_expl_error()
 		
                 if form.is_valid():
                         new_data = form.cleaned_data

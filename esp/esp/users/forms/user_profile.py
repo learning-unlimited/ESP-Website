@@ -182,6 +182,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
 
+    studentrep_error = True
+
     def __init__(self, *args, **kwargs):
         # Set widget stuff
         self.base_fields['school'].widget.attrs['size'] = 24
@@ -191,9 +193,12 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         super(StudentInfoForm, self).__init__(*args, **kwargs)
 
+    def repress_studentrep_expl_error(self):
+        self.studentrep_error = False
+
     def clean_studentrep_expl(self):
         expl = self.cleaned_data['studentrep_expl'].strip()
-        if self.cleaned_data['studentrep'] and expl == '':
+        if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
             raise forms.ValidationError("Please enter an explanation above.")
         return expl
 
