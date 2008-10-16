@@ -63,11 +63,13 @@ class SplitDateWidget(forms.MultiWidget):
         super(SplitDateWidget, self).__init__(widgets, attrs)
 
     def decompress(self, value):
+        """ Splits datetime.date object into separate fields. """
         if value:
             return [value.month, value.day, value.year]
         return [None, None, None]
 
     def value_from_datadict(self, data, files, name):
+        """ Given a dict, extracts datetime.date object. Appears to require handling of both versions. """
         from datetime import date
         val = data.get(name, None)
         if val is not None:
