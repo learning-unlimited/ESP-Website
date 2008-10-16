@@ -136,7 +136,7 @@ class UserContactForm(FormUnrestrictedOtherUser):
         super(UserContactForm, self).__init__(self, *args, **kwargs)
 
     def clean_phone_cell(self):
-        if self.cleaned_data['phone_day'] == '' and self.cleaned_data['phone_cell'] == '':
+        if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
         return self.cleaned_data['phone_cell']
 
