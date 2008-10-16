@@ -13,14 +13,16 @@ class SizedCharField(forms.CharField):
         forms.CharField.__init__(self, *args, **kwargs)
         self.widget.attrs['size'] = length
 
-class PhoneNumberField(forms.RegexField):
+class PhoneNumberField(forms.CharField):
     """ Field for phone number. If area code not given, local_areacode is used instead. """
     def __init__(self, length=12, max_length=14, local_areacode = None, *args, **kwargs):
-        forms.RegexField.__init__(self, regex=_phone_re, max_length=14, *args, **kwargs)
+        forms.CharField.__init__(self, max_length=max_length, *args, **kwargs)
         self.widget.attrs['size'] = length
         self.areacode = local_areacode
 
     def clean(self, value):
+        if value == '':
+            return ''
         m = _phone_re.match(value)
         if m:
             numbers = m.groups()
@@ -79,8 +81,8 @@ class UserContactForm(FormUnrestrictedOtherUser):
         super(UserContactForm, self).__init__(self, *args, **kwargs)
 
     def clean_phone_cell(self):
-        if not self.cleaned_data.has_key('phone_day') and not self.cleaned_data.has_key('phone_cell'):
-            raise ValidationError("Please provide either a day phone or cell phone.")
+        if self.cleaned_data['phone_day'] == '' and self.cleaned_data['phone_cell'] == '':
+            raise forms.ValidationError("Please provide either a day phone or cell phone.")
 
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
@@ -134,9 +136,9 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         super(StudentInfoForm, self).__init__(*args, **kwargs)
 
     def clean_studentrep_expl(self):
-        # TODO: run if blank?
-        if self.cleaned_data['studentrep'] and not self.cleaned_data.has_key('studentrep_expl'):
-            raise ValidationError("Please enter an explanation above.")
+        self.cleaned_data['studentrep_expl'] = self.cleaned_data['studentrep_expl'].strip()
+        if self.cleaned_data['studentrep'] and self.cleaned_data['studentrep_expl'] == '':
+            raise forms.ValidationError("Please enter an explanation above.")
 
 
 class TeacherInfoForm(forms.Form):
