@@ -123,7 +123,7 @@ class UserContactForm(FormUnrestrictedOtherUser):
     first_name = SizedCharField(length=25, max_length=64)
     last_name = SizedCharField(length=30, max_length=64)
     e_mail = forms.EmailField()
-    phone_day = PhoneNumberField(local_areacode='617')
+    phone_day = PhoneNumberField(local_areacode='617', required=False)
     phone_cell = PhoneNumberField(local_areacode='617', required=False)
     address_street = SizedCharField(length=40, max_length=100)
     address_city = SizedCharField(length=20, max_length=50)
@@ -143,6 +143,8 @@ class UserContactForm(FormUnrestrictedOtherUser):
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
 
+    # Require both phone numbers for teachers.
+    phone_day = PhoneNumberField(local_areacode='617')
     phone_cell = PhoneNumberField(local_areacode='617')
     
 class EmergContactForm(FormUnrestrictedOtherUser):
