@@ -126,6 +126,7 @@ class UserContactForm(FormUnrestrictedOtherUser):
     def clean_phone_cell(self):
         if self.cleaned_data['phone_day'] == '' and self.cleaned_data['phone_cell'] == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
+        return self.cleaned_data['phone_cell']
 
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
