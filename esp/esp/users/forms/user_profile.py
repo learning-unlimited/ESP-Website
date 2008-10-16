@@ -120,7 +120,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     school = forms.CharField(max_length=128, required=False)
-    dob = None #FIXME!!!!
+    dob = forms.DateField(required=False) # FIXME: put a better widget in!
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
