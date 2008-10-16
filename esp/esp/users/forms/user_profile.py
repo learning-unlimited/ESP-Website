@@ -38,8 +38,29 @@ class PhoneNumberField(forms.RegexField):
 #### NOTE: Python super() does weird things (it's the next in the MRO, not a superclass).
 #### DO NOT OMIT IT if overriding __init__() when subclassing these forms
 
+class FormWithRequiredCss(forms.Form):
+    """ Form that adds the "required" class to every required widget, to restore oldforms behavior. """
+    def __init__(self, *args, **kwargs):
+        super(FormWithRequiredCss, self).__init__(*args, **kwargs)
+        for field in self.fields.itervalues():
+            if field.required:
+                field.widget.attrs['class'] = 'required'
+
+class FormUnrestrictedOtherUser(FormWithRequiredCss):
+    """ Form that implements makeRequired for the old form --- disables required fields at in some cases. """
+
+    def __init__(self, user=None, *args, **kwargs):
+        super(FormUnrestrictedOtherUser, self).__init__(*args, **kwargs)
+        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+            pass
+        else:
+            for field in self.fields.itervalues():
+                if field.required:
+                    field.required = False
+                    field.widget.attrs['class'] = None # GAH!
+
 # TODO: Try to adapt some of these for ModelForm?
-class UserContactForm(forms.Form):
+class UserContactForm(FormUnrestrictedOtherUser):
     """ Base for contact form """
 
     first_name = SizedCharField(length=25, max_length=64)
@@ -53,24 +74,8 @@ class UserContactForm(forms.Form):
     address_zip = SizedCharField(length=5, max_length=5)
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
-    def __init__(self, user = None, *args, **kwargs):
-        if user is None or not (hasattr(user, 'other_user') and user.other_user):
-            self.makeRequired = True
-        else:
-            self.makeRequired = False
-        # set a few things...
+    def __init__(self, *args, **kwargs):
         self.base_fields['e_mail'].widget.attrs['size'] = 25
-
-        # GAH!
-        for field in self.base_fields.itervalues():
-            if field.required:
-                field.required = self.makeRequired
-
-        # Restore oldforms thing
-        for field in self.base_fields.itervalues():
-            if field.required:
-                field.widget.attrs['class'] = 'required'
-
         super(UserContactForm, self).__init__(self, *args, **kwargs)
 
     def clean_phone_cell(self):
@@ -82,7 +87,7 @@ class TeacherContactForm(UserContactForm):
 
     phone_cell = PhoneNumberField(local_areacode='617')
     
-class EmergContactForm(forms.Form):
+class EmergContactForm(FormUnrestrictedOtherUser):
     """ Contact form for emergency contacts """
 
     emerg_first_name = SizedCharField(length=25, max_length=64)
@@ -96,26 +101,8 @@ class EmergContactForm(forms.Form):
     emerg_address_zip = SizedCharField(length=5, max_length=5)
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
-    def __init__(self, user=None, *args, **kwargs):
-        if user is None or not (hasattr(user, 'other_user') and user.other_user):
-            self.makeRequired = True
-        else:
-            self.makeRequired = False
 
-        # GAH!
-        for field in self.base_fields.itervalues():
-            if field.required:
-                field.required = self.makeRequired
-
-        # Restore oldforms thing
-        for field in self.base_fields.itervalues():
-            if field.required:
-                field.widget.attrs['class'] = 'required'
-
-        super(EmergContactForm, self).__init__(self, *args, **kwargs)
-
-
-class GuardContactForm(forms.Form):
+class GuardContactForm(FormUnrestrictedOtherUser):
     """ Contact form for guardians """
 
     guard_first_name = SizedCharField(length=25, max_length=64)
@@ -124,25 +111,7 @@ class GuardContactForm(forms.Form):
     guard_phone_day = PhoneNumberField(local_areacode='617')
     guard_phone_cell = PhoneNumberField(local_areacode='617', required=False)
 
-    def __init__(self, user=None, *args, **kwargs):
-        if user is None or not (hasattr(user, 'other_user') and user.other_user):
-            self.makeRequired = True
-        else:
-            self.makeRequired = False
-
-        # GAH!
-        for field in self.base_fields.itervalues():
-            if field.required:
-                field.required = self.makeRequired
-
-        # Restore oldforms thing
-        for field in self.base_fields.itervalues():
-            if field.required:
-                field.widget.attrs['class'] = 'required'
-
-        super(GuardContactForm, self).__init__(self, *args, **kwargs)
-
-class StudentInfoForm(forms.Form):
+class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
     from esp.users.models import ESPUser
     from esp.users.models import shirt_sizes, shirt_types
@@ -155,28 +124,12 @@ class StudentInfoForm(forms.Form):
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
 
-    def __init__(self, user = None, *args, **kwargs):
-        from esp.users.models import ESPUser
-        if user is None or not (hasattr(user, 'other_user') and user.other_user):
-            makeRequired = True
-        else:
-            makeRequired = False
-
+    def __init__(self, *args, **kwargs):
         # Set widget stuff
         self.base_fields['school'].widget.attrs['size'] = 24
         self.base_fields['studentrep_expl'].widget = forms.Textarea()
         self.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
         self.base_fields['studentrep_expl'].widget.attrs['cols'] = 45
-
-        # GAH!
-        for field in self.base_fields.itervalues():
-            if field.required:
-                field.required = makeRequired
-
-        # Restore oldforms thing
-        for field in self.base_fields.itervalues():
-            if field.required:
-                field.widget.attrs['class'] = 'required'
 
         super(StudentInfoForm, self).__init__(*args, **kwargs)
 
