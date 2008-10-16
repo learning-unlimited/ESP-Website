@@ -51,20 +51,20 @@ class SplitDateWidget(forms.MultiWidget):
         month_choices = ['%02d' % x for x in range(1, 13)]
         day_choices   = ['%02d' % x for x in range(1, 32)]
         choices = {'year' : [('',' ')] + zip(year_choices, year_choices),
-                   'month': [('',' ')] + zip(month_choices, month_choices),
-                   'day'  : [('',' ')] + zip(day_choices, day_choices)
+                   'month': [('',' ')] + zip(range(1, 13), month_choices),
+                   'day'  : [('',' ')] + zip(range(1, 32), day_choices)
                    }
 
         year_widget = forms.Select(choices=choices['year'])
         month_widget = forms.Select(choices=choices['month'])
         day_widget = forms.Select(choices=choices['day'])
 
-        widgets = (year_widget, month_widget, day_widget)
+        widgets = (month_widget, day_widget, year_widget)
         super(SplitDateWidget, self).__init__(widgets, attrs)
 
     def decompress(self, value):
         if value:
-            return [value.year, '%02d' % value.month, '%02d' % value.day]
+            return [value.month, value.day, value.year]
         return [None, None, None]
 
     def value_from_datadict(self, data, files, name):
@@ -75,9 +75,19 @@ class SplitDateWidget(forms.MultiWidget):
         else:
             vals = super(SplitDateWidget, self).value_from_datadict(data, files, name)
             try:
-                return date(int(vals[0]), int(vals[1]), int(vals[2]))
+                return date(int(vals[2]), int(vals[0]), int(vals[1]))
             except:
                 return None
+
+    # Put labels in
+    def format_output(self, rendered_widgets):
+        output = u'\n<label for="dob_0">Month:</label>\n'
+        output += rendered_widgets[0]
+        output += u'\n<label for="dob_1">Day:</label>\n'
+        output += rendered_widgets[1]
+        output += u'\n<label for="dob_2">Year:</label>\n'
+        output += rendered_widgets[2]
+        return output
 
 
 #### NOTE: Python super() does weird things (it's the next in the MRO, not a superclass).
