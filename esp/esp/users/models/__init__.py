@@ -188,13 +188,14 @@ class ESPUser(User, AnonymousUser):
                       'retTitle': retTitle,
                       'onsite'  : onsite}
 
-        request.session['user_morph'] = user_morph
-
         if type(user) == ESPUser:
             user = user.getOld()
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         login(request, user)
+
+        request.session['user_morph'] = user_morph
+
 
     def get_old(self, request):
         if not 'user_morph' in request.session:
