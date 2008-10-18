@@ -52,7 +52,7 @@ class UserBitForm(forms.ModelForm):
         else:
             self.base_fields['startdate'] = forms.DateTimeField(required=False)
             self.base_fields['enddate'] = forms.DateTimeField(required=False)
-            self.base_fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
+            self.base_fields['id'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
 
         self.base_fields['user'] = forms.ModelChoiceField(queryset=User.objects.all(), widget=forms.HiddenInput(), required=False)
         
