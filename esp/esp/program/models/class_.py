@@ -612,7 +612,8 @@ class ClassSection(models.Model):
         retVal = User.objects.none()
         for verb_str in verbs:
             v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            new_qs = User.objects.filter(userbit__verb=v, userbit__qsc=self.anchor) 
+            user_ids = [a['user'] for a in UserBit.valid_objects().filter(verb=v, qsc=self.anchor).values('user')]
+            new_qs = User.objects.filter(id__in=user_ids).distinct()
             retVal = retVal | new_qs
             
         retVal = [ESPUser(u) for u in retVal.distinct()]
