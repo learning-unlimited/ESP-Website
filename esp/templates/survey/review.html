@@ -41,9 +41,10 @@
                     {{ q.answers|unpack_answers|histogram:"html"|safe }}
                     {% with q.question.get_params as params %}
                         {% if params.lower_text %}
-                        <div style="text-align:right; font-weight:bold; font-size:0.8em; width:216px;">
+                        <div style="font-weight:bold; font-size:0.8em; width:216px;">
                             <div style="float:left;">{{ params.lower_text }}</div>
-                            {{ params.upper_text }}
+                            <div style="float:right;">{{ params.upper_text }}</div>
+                            <div style="text-align:center;">{{ params.middle_text }}</div>
                         </div>
                         {% endif %}
                     {% endwith %}
@@ -86,9 +87,11 @@
                     {{ q.answers|unpack_answers|histogram:"html"|safe }} 
                     {% with q.question.get_params as params %}
                         {% if params.lower_text %}
-                        <div style="text-align:right; font-weight:bold; font-size:0.8em; width:216px;">
+                        <div style="font-weight:bold; font-size:0.8em; width:216px;">
+                            {# I have moral qualms about fixing this width in pixels; hopefully someone will find a better way. -ageng 2008-10-20 #}
                             <div style="float:left;">{{ params.lower_text }}</div>
-                            {{ params.upper_text }}
+                            <div style="float:right;">{{ params.upper_text }}</div>
+                            <div style="text-align:center;">{{ params.middle_text }}</div>
                         </div>
                         {% endif %}
                     {% endwith %}
