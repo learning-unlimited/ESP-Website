@@ -38,7 +38,15 @@
             <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
             <td>
                 {% if not q.answers|length_is:0 %}
-                    {{ q.answers|unpack_answers|histogram:"html" }} 
+                    {{ q.answers|unpack_answers|histogram:"html"|safe }}
+                    {% with q.question.get_params as params %}
+                        {% if params.lower_text %}
+                        <div style="text-align:right; font-weight:bold; font-size:0.8em; width:216px;">
+                            <div style="float:left;">{{ params.lower_text }}</div>
+                            {{ params.upper_text }}
+                        </div>
+                        {% endif %}
+                    {% endwith %}
                 {% else %} 
                     There are no responses to this question.
                 {% endif %}
@@ -75,7 +83,15 @@
             <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
             <td>
                 {% if not q.answers|length_is:0 %}
-                    {{ q.answers|unpack_answers|histogram:"html" }} 
+                    {{ q.answers|unpack_answers|histogram:"html"|safe }} 
+                    {% with q.question.get_params as params %}
+                        {% if params.lower_text %}
+                        <div style="text-align:right; font-weight:bold; font-size:0.8em; width:216px;">
+                            <div style="float:left;">{{ params.lower_text }}</div>
+                            {{ params.upper_text }}
+                        </div>
+                        {% endif %}
+                    {% endwith %}
                 {% else %} 
                     There are no responses to this question.
                 {% endif %}

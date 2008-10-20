@@ -4,6 +4,15 @@
 <table width="600">
 <tr>
     <td width="35%" valign="top"><b>{{ name }}</b></td>
-    <td><ul>{% templatetag openvariable %} lst|list_answers {% templatetag closevariable %}</ul></td>
+    <td>{% templatetag openblock %} if lst {% templatetag closeblock %}
+        <ul>
+        {% templatetag openblock %} for item in lst {% templatetag closeblock %}
+            <li>{% templatetag openvariable %} item.answer {% templatetag closevariable %}<a href="review_single?{% templatetag openvariable %}item.survey_response.id{% templatetag closevariable %}" title="View this person&quot;s other responses">&raquo;</a></li>
+        {% templatetag openblock %} endfor {% templatetag closeblock %}
+        </ul>
+    {% templatetag openblock %} else {% templatetag closeblock %}
+            No responses.
+    {% templatetag openblock %} endif {% templatetag closeblock %}
+    </td>
 </tr>
 </table>
