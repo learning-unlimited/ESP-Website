@@ -148,8 +148,6 @@ INSTALLED_APPS = (
     'esp.money',
     'esp.resources',
     'esp.gen_media',
-    'esp.poll',
-    'esp.dblog',
     'esp.membership',
     'esp.queue',
     'esp.survey',
