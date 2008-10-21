@@ -131,14 +131,11 @@ class UserContactForm(FormUnrestrictedOtherUser):
     address_zip = SizedCharField(length=5, max_length=5)
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
-    def __init__(self, *args, **kwargs):
-        self.base_fields['e_mail'].widget.attrs['size'] = 25
-        super(UserContactForm, self).__init__(self, *args, **kwargs)
-
     def clean_phone_cell(self):
         if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
         return self.cleaned_data['phone_cell']
+UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
 
 class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
@@ -186,15 +183,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     studentrep_error = True
 
-    def __init__(self, *args, **kwargs):
-        # Set widget stuff
-        self.base_fields['school'].widget.attrs['size'] = 24
-        self.base_fields['studentrep_expl'].widget = forms.Textarea()
-        self.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
-        self.base_fields['studentrep_expl'].widget.attrs['cols'] = 45
-
-        super(StudentInfoForm, self).__init__(*args, **kwargs)
-
     def repress_studentrep_expl_error(self):
         self.studentrep_error = False
 
@@ -203,6 +191,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
             raise forms.ValidationError("Please enter an explanation above.")
         return expl
+StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
+StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
+StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
+StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['cols'] = 45
 
 
 class TeacherInfoForm(FormWithRequiredCss):
@@ -216,10 +208,8 @@ class TeacherInfoForm(FormWithRequiredCss):
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
 
-    def __init__(self, *args, **kwargs):
-        self.base_fields['graduation_year'].widget.attrs['size'] = 4
-        self.base_fields['graduation_year'].widget.attrs['maxlength'] = 4
-        super(TeacherInfoForm, self).__init__(*args, **kwargs)
+TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
+TeacherInfoForm.base_fields['graduation_year'].widget.attrs['maxlength'] = 4
 
 class EducatorInfoForm(FormWithRequiredCss):
     """ Extra educator-specific information """
@@ -235,12 +225,10 @@ class GuardianInfoForm(FormWithRequiredCss):
     year_finished = forms.IntegerField(min_value=1, required=False)
     num_kids = forms.IntegerField(min_value=1, required=False)
 
-    def __init__(self, *args, **kwargs):
-        self.base_fields['year_finished'].widget.attrs['size'] = 4
-        self.base_fields['year_finished'].widget.attrs['maxlength'] = 4
-        self.base_fields['num_kids'].widget.attrs['size'] = 3
-        self.base_fields['num_kids'].widget.attrs['maxlength'] = 16
-        super(GuardianInfoForm, self).__init__(*args, **kwargs)
+GuardianInfoForm.base_fields['year_finished'].widget.attrs['size'] = 4
+GuardianInfoForm.base_fields['year_finished'].widget.attrs['maxlength'] = 4
+GuardianInfoForm.base_fields['num_kids'].widget.attrs['size'] = 3
+GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
