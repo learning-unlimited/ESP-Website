@@ -309,10 +309,6 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
-        now = datetime.now()
-        Q_after_start = Q(userbit__startdate__isnull = True) | Q(userbit__startdate__lte = now)
-        Q_before_end = Q(userbit__enddate__isnull = True) | Q(userbit__enddate__gte = now)
-
         types = ['Student', 'Teacher','Guardian','Educator']
 
         if strType not in types:
@@ -320,8 +316,7 @@ class ESPUser(User, AnonymousUser):
 
         Q_useroftype      = Q(userbit__verb = GetNode('V/Flags/UserRole/'+strType)) &\
                             Q(userbit__qsc = GetNode('Q'))                          &\
-                            Q_after_start                                  &\
-                            Q_before_end
+                            UserBit.not_expired('userbit')
 
         if QObject:
             return Q_useroftype

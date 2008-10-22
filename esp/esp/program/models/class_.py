@@ -612,8 +612,7 @@ class ClassSection(models.Model):
         retVal = User.objects.none()
         for verb_str in verbs:
             v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            date_q = Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)
-            user_ids = [a['user'] for a in UserBit.objects.filter(verb=v, qsc=self.anchor).filter(date_q).values('user')]
+            user_ids = [a['user'] for a in UserBit.valid_objects().filter(verb=v, qsc=self.anchor).values('user')]
             new_qs = User.objects.filter(id__in=user_ids).distinct()
             retVal = retVal | new_qs
             
@@ -1076,7 +1075,11 @@ class ClassSubject(models.Model):
         
         v = GetNode('V/Flags/Registration/Teacher')
 
-        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
+        # NOTE: This ignores the recursive nature of UserBits, since it's very slow and kind of pointless here.
+        # Remove the following line and replace with
+        #     retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
+        # to reenable.
+        retVal = ESPUser.objects.all().filter(Q(userbit__qsc=self.anchor, userbit__verb=v), UserBit.not_expired('userbit')).distinct()
 
         list(retVal)
         

@@ -42,26 +42,25 @@ from esp.middleware import ESPError
 
 class UserBitForm(forms.ModelForm):
     def __init__(self, bit = None, *args, **kwargs):
+        super(UserBitForm, self).__init__(*args, **kwargs)
 
         if bit != None:
-            self.base_fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
-            self.base_fields['enddate'] = forms.DateTimeField(initial=bit.enddate, required=False)
-            self.base_fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput())
-            self.base_fields['qsc'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.qsc.id, widget=forms.HiddenInput())
-            self.base_fields['verb'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.verb.id, widget=forms.HiddenInput())
+            self.fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
+            self.fields['enddate'] = forms.DateTimeField(initial=bit.enddate, required=False)
+            self.fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput())
+            self.fields['qsc'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.qsc.id, widget=forms.HiddenInput())
+            self.fields['verb'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.verb.id, widget=forms.HiddenInput())
         else:
-            self.base_fields['startdate'] = forms.DateTimeField(required=False)
-            self.base_fields['enddate'] = forms.DateTimeField(required=False)
-            self.base_fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
+            self.fields['startdate'] = forms.DateTimeField(required=False)
+            self.fields['enddate'] = forms.DateTimeField(required=False)
+            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
 
-        self.base_fields['user'] = forms.ModelChoiceField(queryset=User.objects.all(), widget=forms.HiddenInput(), required=False)
+        self.fields['user'] = forms.ModelChoiceField(queryset=User.objects.all(), widget=forms.HiddenInput(), required=False)
         
-        self.base_fields['startdate'].line_group = 1
-        self.base_fields['enddate'].line_group = 1
-        self.base_fields['recursive'] = forms.BooleanField(label = 'Covers deadlines beneath it ("Recursive")', required=False) # I consider this a bug, though it makes sense in context of the form protocol: Un-checked BooleanFields are marked as having not been filled out
-        self.base_fields['recursive'].line_group = 2
-            
-        super(UserBitForm, self).__init__(*args, **kwargs)
+        self.fields['startdate'].line_group = 1
+        self.fields['enddate'].line_group = 1
+        self.fields['recursive'] = forms.BooleanField(label = 'Covers deadlines beneath it ("Recursive")', required=False) # I consider this a bug, though it makes sense in context of the form protocol: Un-checked BooleanFields are marked as having not been filled out
+        self.fields['recursive'].line_group = 2
         
     as_table = grouped_as_table
     

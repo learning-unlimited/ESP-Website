@@ -1,6 +1,6 @@
 from django.core import validators
 from django.db import models
-from django import oldforms, forms
+from django import forms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
 import re
@@ -226,62 +226,3 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             value = self.field.rel.to.objects.get(id=value)
 
         return value
-            
-class AjaxForeignKeyFormField(AjaxForeignKeyFieldBase, oldforms.FormField):
-    def __init__(self, field_name, field,queryset=None,
-                 is_required=False, validator_list=None,
-                 member_name=None, ajax_func = None, width=None):
-        self.queryset    = queryset
-        self.field_name  = field_name
-        self.field       = field
-        self.is_required = is_required
-
-        if width is None:
-            self.width = '25em'
-        else:
-            self.width = width
-
-        if ajax_func is None:
-            self.ajax_func = 'ajax_autocomplete'
-        else:
-            self.ajax_func = ajax_func
-        
-        if validator_list is None:
-            validator_list = []
-
-        self.validator_list = [self.isProperPost] + validator_list
-
-    def extract_data(self, data):
-        try:
-            value = data[self.field_name]
-        except KeyError:
-            value = data.get(self.field.attname, '')
-
-        try:
-            return int(str(value))
-        except ValueError:
-            return ''
-
-    def prepare(self, data):
-        try:
-            new_data =  self.isProperPost(self, data)
-            data[self.field_name] = new_data
-        except validators.ValidationError:
-            return
-
-    def isProperPost(self, field, data):
-        try:
-            data = data[self.field_name]
-        except:
-            pass
-            
-        try:
-            data = int(data)
-        except ValueError:
-            match = get_id_re.match(data)
-            if match:
-                data = match.groups()[0]
-            else:
-                raise validators.ValidationError, "Invalid text sent for key."
-#        form[self.field_name] = data
-        return data

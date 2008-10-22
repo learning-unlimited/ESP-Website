@@ -244,7 +244,7 @@ class MessageVars(models.Model):
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
-        import pickle
+        import cPickle as pickle
 
         
         newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
@@ -255,7 +255,7 @@ class MessageVars(models.Model):
         return newMessageVar
 
     def getDict(self, user):
-        import pickle
+        import cPickle as pickle
         #try:
         provider = pickle.loads(str(self.pickled_provider))
         #except:
@@ -268,7 +268,7 @@ class MessageVars(models.Model):
 
     def getVar(self, key, user):
         """ Get a variable from this object. """
-        import pickle
+        import cPickle as pickle
 
         try:
             provider = pickle.loads(str(self.pickled_provider))

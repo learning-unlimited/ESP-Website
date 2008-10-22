@@ -45,7 +45,9 @@ admin.site.register(SurveyResponse, SurveyResponseAdmin)
 admin.site.register(QuestionType)
 
 class QuestionAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['seq', 'name', 'question_type', 'survey']
+    list_display_links = ['name']
+    list_filter = ['survey']
 admin.site.register(Question, QuestionAdmin)
 
 admin.site.register(Answer)

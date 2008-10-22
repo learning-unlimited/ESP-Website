@@ -1,6 +1,6 @@
 from django.db.models import ForeignKey, Field
 from django.conf import settings
-from esp.db.forms import AjaxForeignKeyFormField, AjaxForeignKeyNewformField
+from esp.db.forms import AjaxForeignKeyNewformField
 
 
 class AjaxForeignKey(ForeignKey):
@@ -23,9 +23,3 @@ class AjaxForeignKey(ForeignKey):
         
         defaults.update(kwargs)
         return super(AjaxForeignKey, self).formfield(**defaults)
-
-    def get_manipulator_fields(self, *args, **kwargs):
-        return [AjaxForeignKeyFormField(field_name = self.name,
-                                        is_required = (not self.blank),
-                                        field      = self,
-                                        queryset   = self.queryset)]

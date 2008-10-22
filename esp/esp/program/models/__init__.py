@@ -1039,13 +1039,11 @@ class TeacherBio(models.Model):
         super(TeacherBio, self).save()
 
     def url(self):
-        from esp.users.models import ESPUser    
         return '/teach/teachers/%s/bio.html' % self.user.username
 
 
 
     def edit_url(self):
-        from esp.users.models import ESPUser    
         return '/teach/teachers/%s/bio.edit.html' % self.user.username
 
     @staticmethod

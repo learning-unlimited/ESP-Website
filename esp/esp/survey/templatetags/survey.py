@@ -111,8 +111,9 @@ def makelist(lst):
 @register.filter
 def list_answers(lst):
     #   Takes a list of Answer objects and makes an unordered list, with special links!
+    #   This isn't HTML-safe. I think this is dead code by now anyway, seeing as we only really uesd it for text-entry answers. -ageng 2008-10-20
     newlist = [ item for item in lst if len(str(item.answer).strip()) > 0 ]
-
+    
     if len(newlist) == 0:
         return "No responses"
     result = ""
