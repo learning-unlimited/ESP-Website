@@ -161,20 +161,32 @@ def get_survey_info(request, tl, program, instance):
 
 def display_survey(user, prog, surveys, request, tl, format):
     """ Wrapper doing the necessary work for the survey output. """
+    from esp.program.models import ClassSubject, ClassSection
+    
     perclass_data = []
     
-    if tl == 'teach' or ( tl == 'manage' and user.id is not request.user.id ):
+    cls = None
+    try:
+        cls = ClassSubject.objects.get( id = int( request.REQUEST['classsubject_id'] ) )
+    except (ValueError, KeyError, DoesNotExist):
+        pass
+    
+    if cls is not None:
+        perclass_questions = surveys[0].questions.filter(anchor__name="Classes", anchor__parent = prog.anchor).order_by('seq')
+        perclass_data = [ { 'class': cls, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(anchor=cls.anchor) } for y in perclass_questions ] } ]
+        surveys = []
+    elif tl == 'teach' or ( tl == 'manage' and user.id is not request.user.id ):
         #   In the teach category, show only class-specific questions
         classes = user.getTaughtClasses(prog)
         perclass_questions = surveys[0].questions.filter(anchor__name="Classes", anchor__parent = prog.anchor).order_by('seq')
-        perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': Answer.objects.filter(anchor=x.anchor, question=y) } for y in perclass_questions ] } for x in classes ]
+        perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(anchor=x.anchor) } for y in perclass_questions ] } for x in classes ]
         surveys = []
     elif tl == 'manage':
         #   In the manage category, pack the data in as extra attributes to the surveys
         surveys = list(surveys)
         for s in surveys:
             questions = s.questions.filter(anchor = prog.anchor).order_by('seq')
-            s.display_data = {'questions': [ { 'question': y, 'answers': Answer.objects.filter(question=y) } for y in questions ]}
+            s.display_data = {'questions': [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]}
             questions2 = s.questions.filter(anchor__parent = prog.anchor, question_type__is_numeric = True).order_by('seq')
             s.display_data['questions'].extend([{ 'question': y, 'answers': Answer.objects.filter(question=y) } for y in questions2])
             
