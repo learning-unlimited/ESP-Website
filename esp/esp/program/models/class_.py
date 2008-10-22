@@ -1075,11 +1075,7 @@ class ClassSubject(models.Model):
         
         v = GetNode('V/Flags/Registration/Teacher')
 
-        # NOTE: This ignores the recursive nature of UserBits, since it's very slow and kind of pointless here.
-        # Remove the following line and replace with
-        #     retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
-        # to reenable.
-        retVal = ESPUser.objects.all().filter(Q(userbit__qsc=self.anchor, userbit__verb=v), UserBit.not_expired('userbit')).distinct()
+        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
 
         list(retVal)
         
