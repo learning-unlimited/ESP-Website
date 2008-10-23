@@ -99,13 +99,20 @@ class TeacherClassRegManipulator(forms.Manipulator):
 
             CheckboxSelectMultipleField(field_name="global_resources", \
                                               choices=module.getResourceTypes(is_global=True)),
-
+            
+            # Splash is not using this one... -ageng 2008-10-22
             CheckboxSelectMultipleField(field_name="resources", \
                                               choices=module.getResourceTypes(is_global=False)),
 
             forms.LargeTextField(field_name="message_for_directors", \
-                                 is_required=False)
-
+                                 is_required=False),
+            
+            forms.LargeTextField(field_name="requested_special_resources", \
+                                 is_required=False),
+            
+            forms.TextField(field_name="requested_room", \
+                                 is_required=False),
+            
             )
 
         if module.set_prereqs:
