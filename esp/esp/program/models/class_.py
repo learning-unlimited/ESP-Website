@@ -887,8 +887,10 @@ class ClassSubject(models.Model):
     class_size_max = models.IntegerField()
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
+    requested_special_resources = models.TextField(blank=True, null=True)
     directors_notes = models.TextField(blank=True, null=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
+    requested_room = models.TextField(blank=True, null=True)
 
     sections = models.ManyToManyField(ClassSection, blank=True)
 

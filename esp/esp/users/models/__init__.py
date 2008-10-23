@@ -151,12 +151,10 @@ class ESPUser(User, AnonymousUser):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
 
     def getLastProfile(self):
-        if hasattr(self, '_reg_profile'):
-            return self._reg_profile
+        # caching is handled in RegistrationProfile.getLastProfile
+        # for coherence w.r.t clearing and more caching
         from esp.program.models import RegistrationProfile
-        self._reg_profile = RegistrationProfile.getLastProfile(self)
-
-        return self._reg_profile
+        return RegistrationProfile.getLastProfile(self)
 
     def getEditable(self, objType):
         ubs = UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
