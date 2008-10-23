@@ -34,11 +34,9 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
-#from esp.money.models    import Transaction
 from esp.program.models  import ClassSubject, ClassSection
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
-#from esp.money.models import LineItem, LineItemType
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.middleware import ESPError
