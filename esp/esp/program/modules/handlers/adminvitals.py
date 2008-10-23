@@ -141,7 +141,7 @@ class AdminVitals(ProgramModuleObj):
 
             adminvitals_shirt = {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
             # Use a timeout for the cache expirey --- expiring it "properly" would be rather messy and hard to maintain
-            cache.set(key, adminvitals_shirt, 24*60*3600)
+            cache.set(key, adminvitals_shirt, 24*3600)
 
         context['shirt_sizes'] = adminvitals_shirt['shirt_sizes']
         context['shirt_types'] = adminvitals_shirt['shirt_types']
