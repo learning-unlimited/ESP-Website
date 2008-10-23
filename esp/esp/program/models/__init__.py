@@ -922,12 +922,18 @@ class RegistrationProfile(models.Model):
 
     @staticmethod
     def getLastProfile(user):
-        regProfList = RegistrationProfile.objects.filter(user__exact=user).order_by('-last_ts','-id')
-        if len(regProfList) < 1:
+        regProf = user.cache['getLastProfile']
+        if regProf is not None:
+            return regProf
+
+        try:
+            regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
+        except:
+            # Create a new one if it doesn't exist
             regProf = RegistrationProfile()
             regProf.user = user
-        else:
-            regProf = regProfList[0]
+
+        user.cache['getLastProfile'] = regProf
         return regProf
 
     def confirmStudentReg(self, user):
@@ -943,9 +949,21 @@ class RegistrationProfile(models.Model):
         #    bit.expire()
         
     def save(self):
-        """ update the timestamp """
+        """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
+        #  TODO: make Django NOT do a db query to grab ESPUser's data
+        #  probably requires manually getting the cache data, since
+        #  it's not as lazily evaluated as it claims to be
+        ESPUser(self.user).cache['getLastProfile'] = None
         super(RegistrationProfile, self).save()
+
+    def delete(self, *args, **kwargs):
+        """ clear getLastProfile cache """
+        #  TODO: make Django NOT do a db query to grab ESPUser's data
+        #  probably requires manually getting the cache data, since
+        #  it's not as lazily evaluated as it claims to be
+        ESPUser(self.user).cache['getLastProfile'] = None
+        super(RegistrationProfile, self).delete(*args, **kwargs)
         
     @staticmethod
     def getLastForProgram(user, program):
