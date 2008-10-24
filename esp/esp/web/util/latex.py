@@ -34,10 +34,11 @@ import os.path
 import os
 from random import random
 from md5    import md5
+import tempfile
 from esp.middleware import ESPError
 from django.http import HttpResponse
 
-TEX_TEMP = '/tmp/'
+TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
 
 def render_to_latex(filepath, context_dict=None, filetype='pdf'):
@@ -71,14 +72,14 @@ def gen_latex(texcode, type='pdf'):
     """ Generate the latex code. """
 
     remove_files = True
-    file_base = TEX_TEMP + get_rand_file_base()
+    file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
     if type == 'tex':
         return HttpResponse(texcode, mimetype='text/plain')
     
 
     # write to the LaTeX file
-    texfile   = open(file_base+'.tex', 'w')
+    texfile   = open(file_base+TEX_EXT, 'w')
     texfile.write(texcode.encode('utf-8'))
     texfile.close()
     
@@ -88,31 +89,31 @@ def gen_latex(texcode, type='pdf'):
     # Get (sometimes-)necessary library files
     from esp.settings import PROJECT_ROOT
     import shutil
-    shutil.copy( "%s/esp/3rdparty/pspicture.ps" % PROJECT_ROOT, "/tmp/" )
+    shutil.copy( "%s/esp/3rdparty/pspicture.ps" % PROJECT_ROOT, TEX_TEMP )
     
     if type=='pdf':
         mime = 'application/pdf'
-        os.system('cd /tmp; latex %s.tex' % file_base)
-        os.system('cd /tmp; dvips %s.dvi' % file_base)
-        os.system('cd /tmp; ps2pdf %s.ps' % file_base)
+        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvips %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
             
     elif type=='dvi':
         mime = 'application/x-dvi'
-        os.system('cd /tmp; latex %s.tex' % file_base)
+        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
         
     elif type=='ps':
         mime = 'application/postscript'
-        os.system('cd /tmp; latex %s.tex' % file_base)
-        os.system('cd /tmp; dvips %s -o %s.ps' % (file_base, file_base))
+        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvips %s -o %s.ps' % (TEX_TEMP, file_base, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
         
     elif type=='log':
         mime = 'text/plain'
-        os.system('cd /tmp; latex %s.tex' % file_base)
+        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
         
     else:
         raise ESPError(), 'Invalid type received for latex generation: %s should be one of %s' % (type, file_types)
@@ -134,7 +135,7 @@ def gen_latex(texcode, type='pdf'):
             new_file.close()
             if remove_files:
                 os.remove(file_base+'.'+type)
-                os.remove(file_base+'.tex')
+                os.remove(file_base+TEX_EXT)
         
         except:
             raise ESPError(), 'Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type)
@@ -150,7 +151,7 @@ def gen_latex(texcode, type='pdf'):
 def get_rand_file_base():
     rand = md5(str(random())).hexdigest()
 
-    while os.path.exists('%s%s.%s' % (TEX_TEMP, rand, TEX_EXT)):
+    while os.path.exists(os.path.join(TEX_TEMP, rand+TEX_EXT)):
         rand = md5(str(random())).hexdigest()
 
     return rand

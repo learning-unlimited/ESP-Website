@@ -190,7 +190,7 @@ def histogram(answer_list, format='html'):
     
     template_file = TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
     file_base = get_rand_file_base()
-    file_name = '/tmp/%s.eps' % file_base
+    file_name = os.join(tempfile.gettempdir(), file_base+'.eps')
     image_width = 2.75
     
     processed_list = []
