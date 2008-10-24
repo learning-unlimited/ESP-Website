@@ -265,8 +265,23 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
     {% endif %}
 
     <tr>
+        <td>
+            <label class="header" for="id_requested_room">
+            If you have a specific room or type of room in mind, enter a room at MIT that would be ideal for you:
+            </label>
+
+            {% if form.requested_room.errors %}
+            <br /><span class="form_error">{{ form.requested_room.errors|join:", " }}</span><br />
+            {% endif %}
+        </td>
+        <td>
+            {{ form.requested_room }}
+        </td>
+    </tr>
+    
+    <tr>
         <th colspan="2" class="smaller"><p>
-        We can usually supply some common resources ("equipment/classroom options") at your request.  But if your class is truly uncommon, {{ one }} may also have access to unusual rooms and supplies.  These possibilities are listed in the second section, "special requests."
+        We can usually supply some common resources ("equipment/classroom options") at your request.  But if your class is truly uncommon, {{ one }} may also have access to unusual rooms and supplies.  These can be entered in the second section, "special requests."
         </p></th>
     </tr>
     <tr>
@@ -284,21 +299,32 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
     </tr>
     <tr>
         <td>
-            <label class="header">
-            Special requests:
+            <label class="header" for="id_requested_special_resources">
+            Special requests
+            <br />
+	    <br />
+            
+	    <span style="font-weight: normal">Write in any specific resources you need, like a piano, empty room, or kitchen.</span>
+            
             </label>
-            {% if form.resources.errors %}
-            <br /><span class="form_error">{{ form.resources.errors|join:", " }}</span><br />
+	    {% if form.requested_special_resources.errors %}
+            <br /><span class="form_error">{{ form.requested_special_resources.errors|join:", " }}</span><br />
             {% endif %}
+                {% comment %}
+                {% if form.resources.errors %}
+                <br /><span class="form_error">{{ form.resources.errors|join:", " }}</span><br />
+                {% endif %}
+                {% endcomment %}
         </td>
         <td>
-            {{ form.resources }}
+            {# form.resources #}
+            {{ form.requested_special_resources }}
         </td>
     </tr>
     <tr>
         <th colspan="2" class="smaller"><p>
-        <b>We cannot guarantee you any of the special resources listed above</b>.  We will contact you
-   if we are unable to get you the resource you need.  If you need any of these, please describe what you need in the
+        <b>We cannot guarantee you any of the special resources you requested above</b>.  We will contact you
+   if we are unable to get you the resource you need. Please include any necessary explanations in the
    comments to the directors box!</p></th>
     </tr>
     <tr>
@@ -309,7 +335,7 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
             <br />
 	    <br />
 
-	    <span style="font-weight: normal">Please explain any special equipment requests.  Remember that you can be reimbursed for up to $30 (or more with the directors' approval) for class expenses if you submit itemized receipts.</span>
+	    <span style="font-weight: normal">Please explain any special circumstances and equipment requests.  Remember that you can be reimbursed for up to $30 (or more with the directors' approval) for class expenses if you submit itemized receipts.</span>
 
             </label>
 

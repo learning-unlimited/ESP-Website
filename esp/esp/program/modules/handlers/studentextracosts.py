@@ -41,7 +41,6 @@ from django.contrib.auth.models import User
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItem, LineItemType
 
-#from esp.money.models import LineItemType, LineItem, RegisterLineItem, UnRegisterLineItem
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')

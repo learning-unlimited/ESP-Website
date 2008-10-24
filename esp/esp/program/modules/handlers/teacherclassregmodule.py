@@ -689,8 +689,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # send mail to directors
                 if newclass_newmessage and self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
-                              """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nComments to Director:\n%s\n\n""" % \
-                              (new_data['title'], new_data['class_info'], message_for_directors) , \
+                              """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nSpecial Resources:\n%s\n\nComments to Director:\n%s\n\n""" % \
+                              (new_data['title'], new_data['class_info'], new_data['requested_special_resources'], message_for_directors) , \
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
                               [self.program.director_email], True)
 

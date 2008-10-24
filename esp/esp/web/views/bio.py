@@ -35,7 +35,7 @@ from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.web.util         import get_from_id, render_to_response
 from esp.datatree.models  import GetNode
 from django               import forms
-from django.http          import HttpResponseRedirect
+from django.http          import HttpResponseRedirect, Http404
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
 
@@ -43,13 +43,16 @@ from esp.middleware       import ESPError
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
     """ Edits a teacher bio, given user and program identification information """
     
-    if tl == '':
-        founduser = ESPUser(request.user)
-    else:
-	if username != '':
-            founduser = ESPUser.objects.get(username=username)
+    try:
+        if tl == '':
+            founduser = ESPUser(request.user)
         else:
-            founduser = ESPUser.getUserFromNum(first, last, usernum)
+            if username != '':
+                founduser = ESPUser.objects.get(username=username)
+            else:
+                founduser = ESPUser.getUserFromNum(first, last, usernum)
+    except:
+        raise Http404
     
     foundprogram = get_from_id(progid, Program, 'program', False)
 
@@ -58,6 +61,12 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
 @login_required
 def bio_edit_user_program(request, founduser, foundprogram, external=False):
     """ Edits a teacher bio, given user and program """
+
+    if founduser is None:
+        if external:
+            raise ESPError(), 'No user given.'
+        else:
+            raise Http404
 
     if not founduser.isTeacher():
         raise ESPError(False), '%s is not a teacher of ESP.' % \
@@ -117,15 +126,21 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
 def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
     """ Displays a teacher bio """
 
-    if username != '':
-	founduser = ESPUser.objects.get(username=username)
-    else:
-        founduser = ESPUser.getUserFromNum(first, last, usernum)
+    try:
+        if username != '':
+            founduser = ESPUser.objects.get(username=username)
+        else:
+            founduser = ESPUser.getUserFromNum(first, last, usernum)
+    except:
+        raise Http404
 
     return bio_user(request, founduser)
 
 def bio_user(request, founduser):
     """ Display a teacher bio for a given user """
+
+    if founduser is None:
+        raise Http404
 
     if not founduser.isTeacher():
         raise ESPError(False), '%s is not a teacher of ESP.' % \

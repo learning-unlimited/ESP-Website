@@ -887,8 +887,10 @@ class ClassSubject(models.Model):
     class_size_max = models.IntegerField()
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
+    requested_special_resources = models.TextField(blank=True, null=True)
     directors_notes = models.TextField(blank=True, null=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
+    requested_room = models.TextField(blank=True, null=True)
 
     sections = models.ManyToManyField(ClassSection, blank=True)
 
@@ -1111,11 +1113,7 @@ class ClassSubject(models.Model):
         
         v = GetNode('V/Flags/Registration/Teacher')
 
-        # NOTE: This ignores the recursive nature of UserBits, since it's very slow and kind of pointless here.
-        # Remove the following line and replace with
-        #     retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
-        # to reenable.
-        retVal = ESPUser.objects.all().filter(Q(userbit__qsc=self.anchor, userbit__verb=v), UserBit.not_expired('userbit')).distinct()
+        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
 
         list(retVal)
         
