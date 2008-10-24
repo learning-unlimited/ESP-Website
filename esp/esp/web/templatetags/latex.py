@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 """ ESP Custom Filters for template """
 
 from django import template
-from esp.gen_media.models import LatexImage
+from esp.gen_media.inlinelatex import InlineLatex
 from django.http import HttpResponse
 from django.utils.encoding import force_unicode
 register = template.Library()
@@ -93,16 +93,12 @@ def teximages(value,dpi=150):
     for i in range(len(strings)):
         if i % 2 == 1 and i < len(strings) - 1:
             if len(strings[i].strip()) > 0:
-                converted[i] = True
-                #try:
-                if True:
-                    cur_img, created = LatexImage.objects.get_or_create(content = strings[i],
-                                                                        dpi     = dpi,
-                                                                        style   = style
-                                                                        )
-                    strings[i] = cur_img.getImage()
-                #except:
-                #    strings[i] = strings[i]
+                try:
+                    latex = InlineLatex(strings[i], style=style, dpi=dpi)
+                    strings[i] = latex.img()
+                    converted[i] = True
+                except:
+                    converted[i] = False
 
     value = strings[0]
 
