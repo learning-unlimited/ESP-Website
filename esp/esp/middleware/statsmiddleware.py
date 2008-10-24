@@ -108,7 +108,7 @@ class StatsMiddleware(object):
             if '</body>' in response.content.lower():
                 pos = response.content.find('</body>')
                 response.content = response.content[:pos] + \
-                                   sqlcontent + \
+                                   str(sqlcontent) + \
                                    response.content[pos:]
         return response
 

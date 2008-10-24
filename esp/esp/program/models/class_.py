@@ -118,12 +118,12 @@ class ClassManager(ProcedureManager):
             
         if ts is not None:
             #   Make a list of all section IDs for the program
-            section_list = []
+            section_ids = []
             for c in classes:
-                section_list += [item['id'] for item in c.sections.all().values('id')]
-            #   Get the IDs of those sections that have the right timeslot
-            section_ids = [sec['id'] for sec in ClassSection.objects.filter(meeting_times=ts, id__in=section_list).values('id')]
-            #   Get the class subjects having at least one of those sections.
+                sec = c.get_section(timeslot=ts)
+                if sec:
+                    section_ids.append(sec.id)
+                #   Get the class subjects having at least one of those sections.
             classes = ClassSubject.objects.filter(sections__in=section_ids)
 
         return classes.extra(select=select,
@@ -930,6 +930,42 @@ class ClassSubject(models.Model):
     def __init__(self, *args, **kwargs):
         super(ClassSubject, self).__init__(*args, **kwargs)
         self.cache = ClassSubject.objects.cache(self)
+
+    def get_section(self, timeslot=None):
+        """ Cache sections for a class.  Always use this function to get a class's sections. """
+        from django.core.cache import cache
+
+        if timeslot:
+            key = 'Sections_SubjectID%d_TimeslotID%d' % (self.id, timeslot.id)
+        else:
+            key = 'Sections_SubjectID%d_Default' % self.id
+
+        # Encode None as a string... silly, I know.   -Michael P
+        val = cache.get(key) 
+        if val:
+            # print 'hit cache for %s' % key
+            if val is not None:
+                if val == 'None':
+                    return None
+                else:
+                    return val
+        
+        if timeslot:
+            qs = self.sections.filter(meeting_times=timeslot)
+            if qs.count() > 0:
+                result = qs[0]
+            else:
+                result = None
+        else:
+            result = self.default_section()
+            
+        # print 'set cache for %s' % key
+        if result is not None:
+            cache.set(key, result)
+        else:
+            cache.set(key, 'None')
+
+        return result
 
     def default_section(self, create=True):
         """ Return the first section that was created for this class. """

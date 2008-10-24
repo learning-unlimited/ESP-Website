@@ -112,7 +112,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         for sec in classList:
             class_qset = ClassSubject.objects.catalog(self.program).filter(anchor__friendly_name = sec.title, grade_min__lte=user_grade, grade_max__gte=user_grade)
             show_changeslot = ( len([0 for c in class_qset if (not c.isFull()) or is_onsite]) > 1 ) # Does the class have enough siblings to warrant a "change section" link?
-            sec.verbs = sec.getRegVerbs(user)
+            if scrmi.use_priority:
+                sec.verbs = sec.getRegVerbs(user)
             for mt in sec.meeting_times.all().values('id'):
                 section_dict = {'section': sec, 'changeable': show_changeslot}
                 if mt['id'] in timeslot_dict:
@@ -124,11 +125,16 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
 
+            if scrmi.use_priority:
+                user_priority = user.getRegistrationPriority([timeslot])
+            else:
+                user_priority = None
+
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user.getRegistrationPriority([timeslot])))
+                schedule.append((timeslot, cls_list, blockCount + 1, user_priority))
             else:
-                schedule.append((timeslot, [], blockCount + 1, user.getRegistrationPriority([timeslot])))
+                schedule.append((timeslot, [], blockCount + 1, user_priority))
 
             prevTimeSlot = timeslot
                 
@@ -258,13 +264,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         user.updateOnsite(request)
         is_onsite = user.isOnsite(self.program)
         
-        classes = [c for c in ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull(timeslot=ts)) or is_onsite] 
-
         #   Override both grade limits and size limits during onsite registration
         if is_onsite:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = [c for c in ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull(timeslot=ts))] 
+            classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+            classes = filter(lambda c: not c.isFull(timeslot=ts), classes)
 
         categories = {}
 

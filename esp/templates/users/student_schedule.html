@@ -36,11 +36,12 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
         
         <td style="vertical-align: top !important;">
         {% for cls in timeslot.1 %}
+	{% if use_priority %}
             {% if not cls.section.verbs|length_is:0 %}
                 <i>{% for v in cls.section.verbs %} {{ v.friendly_name }}{% endfor %}:</i>
             {% endif %}
-
-            {{ cls.section.title }} 
+	{% endif %}
+	{{ cls.section.title }} 
             
             {% if request.user.onsite_local %}
                 ({{ cls.section.prettyrooms|join:", " }})

@@ -39,17 +39,22 @@ PROJECT_ROOT = '/esp/esp/'
 # log directory
 LOG_FILE="/var/log/django/esp_errlog"
 
+# rewrite URLs appropriately
+FORCE_SCRIPT_NAME=''
 
 
 ###################
 # Debug settings  #
 ###################
-DEBUG = False
+DEBUG = True
 DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 
 INTERNAL_IPS = (
     '127.0.0.1',
+    '66.31.202.119',
+    '18.208.0.164',
+    '18.208.0.160'
 )
 
 ##################
@@ -115,6 +120,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'esp.middleware.StripWhitespaceMiddleware',
+    'django.middleware.transaction.TransactionMiddleware',
 )
 
 ROOT_URLCONF = 'esp.urls'
@@ -158,7 +164,7 @@ INSTALLED_APPS = (
 
 # Not used for aws: imported from aws_settings.py
 #CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
-
+CACHE_PREFIX = ''
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
