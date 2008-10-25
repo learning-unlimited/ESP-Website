@@ -62,16 +62,11 @@ class UserBitManager(ProcedureManager):
         def get_global_key(self):
             """ Return the global userbit key. """
             new_key = 'UB_%s' % self._get_random_string()
-            if isinstance(cache, MemcachedClass):
-                # Using .add here is much safer than set.
-                cache._cache.add('UserBit_global', new_key, 86400)
-                global_key = cache.get('UserBit_global')
-            else:
-                global_key = cache.get('UserBit_global')
-                if global_key == 'None':
-                    global_key = None
-                if global_key is None:
-                    cache.set('UserBit_global', new_key, 86400)
+
+            # Using .add here is much safer than set.
+            KEY = 'UserBit_global'
+            cache.add(KEY, new_key, 86400)
+            global_key = cache.get(KEY)
 
             return global_key or new_key
 
@@ -100,14 +95,9 @@ class UserBitManager(ProcedureManager):
             """
             user_key = self.get_key_to_get_user_key()
             new_key = 'UB_u_%s' % self._get_random_string()
-            if isinstance(cache, MemcachedClass):
-                # Using .add here is much safer than set.
-                cache._cache.add(user_key, new_key, 86400)
-                current_key = cache.get(user_key)
-            else:
-                current_key = cache.get(user_key)
-                if current_key is None:
-                    cache.set(user_key, new_key, 86400)
+            # Using .add here is much safer than set.
+            cache.add(user_key, new_key, 86400)
+            current_key = cache.get(user_key)
             return current_key or new_key
 
         def update(self):
@@ -273,7 +263,8 @@ class UserBitManager(ProcedureManager):
         if res == None:
             retVal = Model.objects.none().distinct()
 
-        self.cache(user)[user_cache_key] = list(retVal)
+        list(retVal) # force retVal to evaluate itself
+        self.cache(user)[user_cache_key] = retVal
 
 	# Operation Complete!
 	return retVal

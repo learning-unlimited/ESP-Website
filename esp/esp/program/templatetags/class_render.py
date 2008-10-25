@@ -4,12 +4,11 @@ from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
 
 def cache_key_func(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
-    if not user or not prereg_url:
-        if timeslot:
-            return 'CLASS_DISPLAY__%s_%s' % (cls.id, timeslot.id)
-        else:
-            return 'CLASS_DISPLAY__%s' % cls.id
-    return None
+    # Try more caching, our code screens the classes anyway.
+    if timeslot:
+        return 'CLASS_DISPLAY__%s_%s' % (cls.id, timeslot.id)
+    else:
+        return 'CLASS_DISPLAY__%s' % cls.id
 
 def core_cache_key_func(cls):
     return 'CLASS_CORE_DISPLAY__%s' % cls.id
@@ -62,11 +61,7 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
     
     show_class =  (not filter) or (not errormsg)
     
-    section = None
-    if timeslot is not None:
-        sections = cls.sections.filter(meeting_times=timeslot)
-        if sections.count() > 0:
-            section = sections[0]
+    section = cls.get_section(timeslot=timeslot)
     
     return {'class':      cls,
             'section':    section,

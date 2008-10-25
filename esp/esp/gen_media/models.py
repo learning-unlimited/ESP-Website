@@ -38,6 +38,7 @@ from esp.users.models import User
 from esp.middleware   import ESPError
 from django.core.files import File
 import os
+import tempfile
 import datetime
 import cStringIO as StringIO
 import md5
@@ -57,7 +58,7 @@ commands = {'latex'  : '/usr/bin/latex',
             'convert': '/usr/bin/convert',
             'dvipng' : '/usr/bin/dvipng'}
 
-TMP      = '/tmp'
+TMP      = tempfile.gettempdir()
 
 class LatexImage(models.Model):
 
@@ -97,7 +98,7 @@ class LatexImage(models.Model):
               r""" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}""" % \
               (style, self.content, style)
 
-        tmppath = TMP + '/' + file_base
+        tmppath = os.path.join(TMP, file_base)
     
         tex_file = open(tmppath + '.tex', 'w')
         tex_file.write(tex.encode('utf-8'))
