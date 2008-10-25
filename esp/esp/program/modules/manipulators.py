@@ -62,7 +62,7 @@ class TeacherClassRegManipulator(forms.Manipulator):
         self.fields = (
             forms.TextField(field_name="title", \
                             length=50, \
-                            max_length=64, \
+                            max_length=200, \
                             is_required=True, \
                             validator_list=[validators.isNotEmpty]),
 
