@@ -1,6 +1,6 @@
 "Memcached cache backend"
 from django.core.cache.backends.base import BaseCache
-from django.core.backends.memcached import CacheClass as MemcacheCacheClass
+from django.core.cache.backends.memcached import CacheClass as MemcacheCacheClass
 import settings    
 
 class CacheClass(BaseCache):
