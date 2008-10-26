@@ -107,7 +107,7 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
-    'esp.middleware.scopecachemiddleware.ScopeCacheMiddleware',
+#    'esp.middleware.scopecachemiddleware.ScopeCacheMiddleware',
     'django.middleware.http.SetRemoteAddrFromForwardedFor',
     'esp.queue.middleware.QueueMiddleware',
     'esp.middleware.FixIEMiddleware',
