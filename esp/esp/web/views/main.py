@@ -55,6 +55,15 @@ from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 
 
+# From http://www.python.org/doc/2.5.2/lib/built-in-funcs.html
+def my_import(name):
+    mod = __import__(name)
+    components = name.split('.')
+    for comp in components[1:]:
+        mod = getattr(mod, comp)
+    return mod
+
+
 @vary_on_headers('Cookie')
 @cache_control(private=True)
 def myesp(request, module):
@@ -71,6 +80,9 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
+
+	if isinstance(renderer, basestring):
+		renderer = my_import(renderer)
 	
 	if filename != "":
 		url = url + "/" + filename
