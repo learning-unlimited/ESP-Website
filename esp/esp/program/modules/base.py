@@ -69,7 +69,7 @@ class ProgramModuleObj(models.Model):
                 val = self.program.getParentProgram().anchor
             else:
                 val = self.program.anchor
-            cache.set(CACHE_KEY, val, 1)
+            cache.set(CACHE_KEY, val, 60)
 
         return val
 
