@@ -161,7 +161,7 @@ INSTALLED_APPS = (
 
 CACHE_MIDDLEWARE_KEY_PREFIX="stanford_"
 
-CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
+CACHE_BACKEND="esp.utils.memcached_multikey://127.0.0.1:11211/?timeout=120"
 
 
 
