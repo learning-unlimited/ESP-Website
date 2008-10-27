@@ -534,10 +534,22 @@ class DataTree(models.Model):
     @classmethod
     def root(cls):
         " Get the root node of this tree. "
-        
+
+        if cls.ROOT_NODE != None:
+            return cls.ROOT_NODE
+
+        ROOT_NODE_CACHEKEY = "DATATREE_ROOT_NODE"
+
+        root = cache.get(ROOT_NODE_CACHEKEY)
+        if root:
+            cls.ROOT_NODE = root
+            return root
+
+
         try:
             cls.ROOT_NODE = cls.objects.get(name = cls.ROOT_NAME,
                                             parent__isnull = True)
+            cache.add(ROOT_NODE_CACHEKEY, cls.ROOT_NODE, timeout=120)
             return cls.ROOT_NODE
         except cls.DoesNotExist:
             root = cls( name = cls.ROOT_NAME,
@@ -546,7 +558,7 @@ class DataTree(models.Model):
                         rangestart = 0,
                         rangeend = 0+cls.START_SIZE - 1)
             root.save(True, old_save = True)
-
+            cache.add(ROOT_NODE_CACHEKEY, cls.ROOT_NODE, timeout=120)
             return root
 
     @staticmethod
