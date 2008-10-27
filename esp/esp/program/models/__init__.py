@@ -835,7 +835,14 @@ class Program(models.Model):
 
     @classmethod
     def by_prog_inst(cls, program, instance):
-        return Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
+        CACHE_KEY = "PROGRAM__BY_PROG_INST__%s__%s" % (program, instance)
+        prog_inst = cache.get(CACHE_KEY)
+        if prog_inst:
+            return prog_inst
+        else:
+            prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
+            cache.add(CACHE_KEY, prog_inst, timeout=86400)
+            return prog_inst
 
     
 class BusSchedule(models.Model):
