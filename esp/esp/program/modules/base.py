@@ -159,55 +159,68 @@ class ProgramModuleObj(models.Model):
         
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        modules = ProgramModule.objects.filter(main_call = call_txt,
-                                               module_type = tl)
+        cache_key = "PROGRAMMODULE_FIND_MODULE_%s" % call_txt
+        moduleobj = cache.get(cache_key)
+        if moduleobj == None:
 
-        module = None
+            modules = ProgramModule.objects.filter(main_call = call_txt,
+                                                   module_type = tl)[:1]
 
-        if modules.count() == 0:
-            modules = ProgramModule.objects.filter(aux_calls__contains = call_txt,
-                                                   module_type = tl)
-            for module in modules:
-                if call_txt in module.aux_calls.strip().split(','):
-                    break
-            if not module:
-                raise Http404
-        else:
-            module = modules[0]
+            module = None
 
-        if module:
-            moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog)
-            moduleobj = module.getPythonClass()()
-            if len(moduleobjs) == 0:
-                #   Deal with the fact that our database is not set up with a table for every program module.
-                moduleobj = ProgramModuleObj()
-
-                moduleobj.module = module
-                moduleobj.program = prog
-                moduleobj.seq = module.seq
-                moduleobj.required = module.required
-                moduleobj.save()
+            if len(modules) == 0:
+                modules = ProgramModule.objects.filter(aux_calls__contains = call_txt,
+                                                       module_type = tl)
+                for module in modules:
+                    if call_txt in module.aux_calls.strip().split(','):
+                        break
+                if not module:
+                    raise Http404
             else:
-                moduleobj.__dict__.update(moduleobjs[0].__dict__)
+                module = modules[0]
 
-        else:
-            raise Http404
+            if module:
+                moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog).select_related('module')[:1]
+                moduleobj = module.getPythonClass()()
+                if len(moduleobjs) == 0:
+                    #   Deal with the fact that our database is not set up with a table for every program module.
+                    moduleobj = ProgramModuleObj()
+
+                    moduleobj.module = module
+                    moduleobj.program = prog
+                    moduleobj.seq = module.seq
+                    moduleobj.required = module.required
+                    moduleobj.save()
+                else:
+                    moduleobj.__dict__.update(moduleobjs[0].__dict__)
+
+            else:
+                raise Http404
+
+            moduleobj.fixExtensions()
+
+            cache.add(cache_key, moduleobj, timeout=60)
 
         moduleobj.request = request
         moduleobj.user    = ESPUser(request.user)
-        moduleobj.fixExtensions()
         
-        #   For core modules, redirect to the incomplete required modules in the same section first.
-        #   The pages should all redirect to the core on completion.  If none are needed, the
-        #   code here won't do anything and the page will be returned as usual.
-        if isinstance(moduleobj, CoreModule):
-            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).order_by('seq')
-            for m in other_modules:
-                m.request = request
-                m.user    = ESPUser(request.user)
-                m.__class__ = m.module.getPythonClass()
-                if m.user.is_authenticated() and not m.isCompleted() and hasattr(m, m.module.main_call):
-                    return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+        # Set this key if this user has 
+        HAS_FINISHED_REQS_CACHE_KEY = "USER_%s__PROG_%s__TYPE_%s__DONE_REG_REQS" % (request.user.id, prog.id, moduleobj.module.module_type)
+        if not cache.get(HAS_FINISHED_REQS_CACHE_KEY):
+
+            #   For core modules, redirect to the incomplete required modules in the same section first.
+            #   The pages should all redirect to the core on completion.  If none are needed, the
+            #   code here won't do anything and the page will be returned as usual.
+            if request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+                other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).select_related(depth=1).order_by('seq')
+                for m in other_modules:
+                    m.request = request
+                    m.user    = ESPUser(request.user)
+                    m.__class__ = m.module.getPythonClass()
+                    if not m.isCompleted() and hasattr(m, m.module.main_call):
+                        return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+
+            cache.set(HAS_FINISHED_REQS_CACHE_KEY, True, timeout=600)
 
         if hasattr(moduleobj, call_txt):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
