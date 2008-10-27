@@ -187,6 +187,7 @@ def histogram(answer_list, format='html'):
     HISTOGRAM_DIR = MEDIA_ROOT + HISTOGRAM_PATH
     from esp.web.util.latex import get_rand_file_base
     import os
+    import tempfile
     
     template_file = TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
     file_base = get_rand_file_base()
