@@ -587,6 +587,12 @@ class DataTree(models.Model):
     @staticmethod
     def get_by_uri(uri, create = False):
         " Get the node by the URI, A/B/.../asdf "
+
+        CACHE_KEY = "DATATREE__GETBYURI__%s" % uri
+        retVal = cache.get(CACHE_KEY)
+        if retVal:
+            return retVal
+
         # first we strip
 
         #assert uri != 'V/Flags/Registration/Preliminary', 'Hmm'
@@ -596,12 +602,14 @@ class DataTree(models.Model):
         try:
             node = DataTree.objects.get(uri = uri,
                                     uri_correct = True)
+            cache.add(CACHE_KEY, node, timeout=60)
             return node
         except:
             pass
         
         if uri == '':
             node = DataTree.root()
+            cache.add(CACHE_KEY, node, timeout=60)
             return node
 
         pieces = uri.split(DataTree.DELIMITER)
@@ -614,7 +622,7 @@ class DataTree(models.Model):
         
         try:
             node = parent[cur_name]
-            
+            cache.add(CACHE_KEY, node, timeout=60)
             return node
         except:
             pass
@@ -626,6 +634,7 @@ class DataTree(models.Model):
         node = parent[cur_name]
         node.uri_correct = True
         node.save(uri_fix = True)
+        cache.add(CACHE_KEY, node, timeout=60)
         return node
 
     @staticmethod
