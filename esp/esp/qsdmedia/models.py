@@ -71,7 +71,7 @@ class Media(models.Model):
         self.target_file.save(filename, file)
 
     def __unicode__(self):
-        return str(self.friendly_name)
+        return unicode(self.friendly_name)
 
     @staticmethod
     def find_by_url_parts(parts, filename):
