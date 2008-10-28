@@ -45,18 +45,20 @@ section_redirect_keys = {
 section_prefix_keys = {'teach': 'teach', 'learn': 'learn', 'programs': ''}
 
 # Static media
-urlpatterns = patterns('django.views.static',
-                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),
-                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': PROJECT_ROOT + 'admin/media/'}),
-                       )
+# Un-comment to get the site to look pretty with a dev server.
+# Commenting out in the main server urls.py to speed things up.
+#urlpatterns = patterns('django.views.static',
+#                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),
+#                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': PROJECT_ROOT + 'admin/media/'}),
+#                       )
 
 # admin stuff
-urlpatterns += patterns('',
+urlpatterns = patterns('',
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/(.*)', 'admin.site.root'),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
-                     (r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
+                     #(r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$','django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
                         )
 
@@ -75,10 +77,10 @@ urlpatterns += patterns('django.views.generic',
 urlpatterns += patterns('esp.web.views.bio',
 
                         # bios
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ \.]+)/(?P<first>[-A-Za-z_ \.]+)(?P<usernum>[0-9]*)/bio.html$', 'bio'),
+                        #(r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ \.]+)/(?P<first>[-A-Za-z_ \.]+)(?P<usernum>[0-9]*)/bio.html$', 'bio'),
                         (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.html$', 'bio'),
                         (r'^myesp/teacherbio/?$', 'bio_edit'),
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ ]+)/(?P<first>[-A-Za-z_ ]+)(?P<usernum>[0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
+                        #(r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ ]+)/(?P<first>[-A-Za-z_ ]+)(?P<usernum>[0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
                         (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.edit.html/?(.*)$', 'bio_edit'),
                         )
 
@@ -91,9 +93,9 @@ urlpatterns += patterns('esp.qsd.views',
                         (r'^(?P<url>.*)\.html$', 'qsd'),
                         )
 
-urlpatterns += patterns('',
-                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', 'django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
-                        )
+#urlpatterns += patterns('',
+#                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', 'django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
+#                        )
 
 # logging in and out
 urlpatterns += patterns('django.contrib.auth.views',
