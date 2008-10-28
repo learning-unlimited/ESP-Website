@@ -41,8 +41,10 @@ class ESPLazyUser(LazyUser):
         global get_user, ESPUser
         if not hasattr(request, '_cached_user'):
             SESSION_KEY = '_auth_user_id'
-            user_id = request.session[SESSION_KEY]
-            CACHE_KEY = "CACHED_USER_OBJ__%s" % user_id
+            user = None
+            if request.session.has_key(SESSION_KEY):
+                user_id = request.session[SESSION_KEY]
+                CACHE_KEY = "CACHED_USER_OBJ__%s" % user_id
             user = cache.get(CACHE_KEY)
             if not user:                
                 if get_user is None or ESPUser is None:                
