@@ -300,7 +300,15 @@ class Program(models.Model):
         return self.anchor.parent
 
     def niceName(self):
-        return str(self).replace("_", " ")
+        # Cache niceName, because otherwise it takes a couple of queries
+        # to sort it out
+        CACHE_KEY = "PROGRAM__NICENAME__%s" % self.id
+
+        retVal = cache.get(CACHE_KEY)
+        if not retVal:
+            retVal = str(self).replace("_", " ")
+            cache.set(CACHE_KEY, retVal, timeout=86400)
+        return retVal
 
     def niceSubName(self):
         return self.anchor.name.replace('_', ' ')
@@ -444,7 +452,6 @@ class Program(models.Model):
         CACHE_DURATION = 10
 
         if use_cache:
-            from django.core.cache import cache
             isfull = cache.get(CACHE_KEY)
             if isfull != None:
                 return isfull
