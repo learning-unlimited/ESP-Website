@@ -42,7 +42,7 @@ The teachers of this class have provided the following materials for you.  We ho
 	{% endif %}
 	{% for doc in cls.anchor.media_set.all %}
 	<tr>
-		<td class="clsmiddle"><a href="{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
+		<td class="clsmiddle"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
 
 	</tr>
 	{% endfor %}

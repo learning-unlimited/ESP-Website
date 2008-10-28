@@ -38,6 +38,7 @@ from django.db import transaction
 from django.core.cache import cache
 from esp.db.fields import AjaxForeignKey
 from esp.utils.memdb import mem_db
+from random import random
 
 import exceptions
 
@@ -103,6 +104,27 @@ class DataTree(models.Model):
         size = node.range_size()
         return size + DataTree.START_SIZE
 
+
+    #######################
+    # CACHING             #
+    #######################
+
+    CACHE_REVISION_KEY = "DATATREE_REVISION"
+
+    @classmethod
+    def get_cache_revision(cls):
+        a = cache.get(cls.CACHE_REVISION_KEY)
+        if a:
+            return a
+        else:
+            cls.reset_cache_revision()
+            return cache.get(cls.CACHE_REVISION_KEY)
+
+    @classmethod
+    def reset_cache_revision(cls):
+        cache.set(cls.CACHE_REVISION_KEY, random(), timeout=86400)
+
+
     #######################
     # MUTATORS            #
     #######################
@@ -141,6 +163,8 @@ class DataTree(models.Model):
     @transaction.commit_on_success
     def save(self, create_root = False, uri_fix = False, old_save = False, start_size = None):
         " This will save the tree, using the rules of a tree. "
+        CACHE_KEY = "DATATREE__GETBYURI__%s__REV_%s" % (self.get_uri(), DataTree.get_cache_revision())
+
         if old_save:
             return super(DataTree, self).save()
 
@@ -155,9 +179,6 @@ class DataTree(models.Model):
         
         if self.name.find(DataTree.DELIMITER) != -1:
             raise DataTree.InvalidName, "You cannot use '%s' in the name field." % DataTree.DELIMITER
-
-
-
 
         DataTree.fix_tree_if_broken()
             
@@ -181,7 +202,8 @@ class DataTree(models.Model):
                 transaction.commit()
                 if node.parent_id != self.parent_id:
                     self.reinsert()
-                    
+
+                cache.delete(CACHE_KEY)
                 return new_node
         
 #        if not create_root and self.parent is None:
@@ -197,6 +219,7 @@ class DataTree(models.Model):
             DataTree.shift_all_ranges(start_size, commit_wait = True)
         
         new_node =  super(DataTree, self).save()
+        cache.delete(CACHE_KEY)
         return new_node
     
 
@@ -534,10 +557,22 @@ class DataTree(models.Model):
     @classmethod
     def root(cls):
         " Get the root node of this tree. "
-        
+
+        if cls.ROOT_NODE != None:
+            return cls.ROOT_NODE
+
+        ROOT_NODE_CACHEKEY = "DATATREE_ROOT_NODE"
+
+        root = cache.get(ROOT_NODE_CACHEKEY)
+        if root:
+            cls.ROOT_NODE = root
+            return root
+
+
         try:
             cls.ROOT_NODE = cls.objects.get(name = cls.ROOT_NAME,
                                             parent__isnull = True)
+            cache.add(ROOT_NODE_CACHEKEY, cls.ROOT_NODE, timeout=120)
             return cls.ROOT_NODE
         except cls.DoesNotExist:
             root = cls( name = cls.ROOT_NAME,
@@ -546,7 +581,7 @@ class DataTree(models.Model):
                         rangestart = 0,
                         rangeend = 0+cls.START_SIZE - 1)
             root.save(True, old_save = True)
-
+            cache.add(ROOT_NODE_CACHEKEY, cls.ROOT_NODE, timeout=120)
             return root
 
     @staticmethod
@@ -575,6 +610,12 @@ class DataTree(models.Model):
     @staticmethod
     def get_by_uri(uri, create = False):
         " Get the node by the URI, A/B/.../asdf "
+
+        CACHE_KEY = "DATATREE__GETBYURI__%s" % uri
+        retVal = cache.get(CACHE_KEY)
+        if retVal:
+            return retVal
+
         # first we strip
 
         #assert uri != 'V/Flags/Registration/Preliminary', 'Hmm'
@@ -584,12 +625,14 @@ class DataTree(models.Model):
         try:
             node = DataTree.objects.get(uri = uri,
                                     uri_correct = True)
+            cache.add(CACHE_KEY, node, timeout=60)
             return node
         except:
             pass
         
         if uri == '':
             node = DataTree.root()
+            cache.add(CACHE_KEY, node, timeout=60)
             return node
 
         pieces = uri.split(DataTree.DELIMITER)
@@ -602,7 +645,7 @@ class DataTree(models.Model):
         
         try:
             node = parent[cur_name]
-            
+            cache.add(CACHE_KEY, node, timeout=60)
             return node
         except:
             pass

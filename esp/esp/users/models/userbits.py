@@ -523,8 +523,10 @@ class UserBit(models.Model):
         return ( len(queryset.values('id')[:1]) > 0 )
 
     @staticmethod
-    def not_expired(prefix='', when=datetime.datetime.now()):
+    def not_expired(prefix='', when=None):
         """ Returns a Q object for field prefix being valid at time when """
+        if when is None:
+            when = datetime.datetime.now()
         if prefix is not '' and not prefix.endswith('__'):
             prefix += '__'
         q = Q(**{prefix+'startdate__isnull': True}) | Q(**{prefix+'startdate__lte': when})
@@ -532,7 +534,7 @@ class UserBit(models.Model):
         return q
 
     @staticmethod
-    def valid_objects(when=datetime.datetime.now()):
+    def valid_objects(when=None):
         """ Returns a QuerySet consisting of unexpired UserBits (at time when) """
         return UserBit.objects.filter(UserBit.not_expired(when=when))
 

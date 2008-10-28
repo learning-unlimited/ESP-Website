@@ -202,34 +202,26 @@ def qsd(request, branch, name, section, action):
         qsd_rec = qsd_rec_new
 
         # If any files were uploaded, save them
-        for FILE in request.FILES.iterkeys():
+        for name, file in request.FILES.iteritems():
             m = Media()
 
             # Strip "media/" from FILE, and strip the file name; just return the path
-            path = dirname(FILE[9:])
+            path = dirname(name[9:])
             if path == '':
                 m.anchor = qsd_rec.path
             else:
-                m.anchor = GetNode('Q/' + dirname(FILE))
+                m.anchor = GetNode('Q/' + dirname(name))
                 
-            m.mime_type = request.FILES[FILE].content_type
             # Do we want a better/manual mechanism for setting friendly_name?
-            m.friendly_name = basename(FILE)
-            m.size = request.FILES[FILE].size
+            m.friendly_name = basename(name)
             
-            splitname = basename(FILE).split('.')
-            if len(splitname) > 1:
-                m.file_extension = splitname[-1]
-            else:
-                m.file_extension = ''
-
             m.format = ''
 
-            local_filename = FILE
-            if FILE[:9] == 'qsdmedia/':
-                local_filename = FILE[9:]
+            local_filename = name
+            if name[:9] == 'qsdmedia/':
+                local_filename = name[9:]
                     
-            m.target_file.save(local_filename, request.FILES[FILE])
+            m.handle_file(file, local_filename)
             m.save()
 
         cache.delete(urlencode('quasistaticdata:' + cache_id))

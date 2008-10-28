@@ -55,24 +55,34 @@ class Media(models.Model):
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]
 
-    def handle_file(self, file, filename, save=True):
-        new_target_filename = '%s%s/%s' % (MEDIA_ROOT, strftime(root_file_path), filename)
-        dest_file = open(str(new_target_filename), 'wb')
-        for chunk in file.chunks():
-            dest_file.write(chunk)
-        dest_file.close()
-        self.target_file = File(dest_file)
-        self.target_file._name = '%s%s/%s' % (MEDIA_URL, strftime(root_file_path), filename)
+    def handle_file(self, file, filename):
+        """ Saves a file from request.FILES. """
+        from os.path import basename, dirname
+
+        # Do we actually need this?
+        splitname = basename(filename).split('.')
+        if len(splitname) > 1:
+            self.file_extension = splitname[-1]
+        else:
+            self.file_extension = ''
+
         self.mime_type = file.content_type
         self.size = file.size
-        extension_list = file.name.split('.')
-        extension_list.reverse()
-        self.file_extension = extension_list[0]
-        if save:
-            self.save()
+        self.target_file.save(filename, file)
+
+    def delete(self, *args, **kwargs):
+        """ Delete entry; provide hack to fix old absolute-path-storing. """
+        import os
+        # If needby, strip URL prefix
+        if os.path.isabs(self.target_file._name) and self.target_file._name.startswith(MEDIA_URL):
+            self.target_file._name = self.target_file._name[len(MEDIA_URL):]
+            # In case trailing slash missing
+            if self.target_file._name[0] is '/':
+                self.target_file._name = self.target_file._name[1:]
+        super(Media, self).delete(*args, **kwargs)
 
     def __unicode__(self):
-        return str(self.friendly_name)
+        return unicode(self.friendly_name)
 
     @staticmethod
     def find_by_url_parts(parts, filename):
