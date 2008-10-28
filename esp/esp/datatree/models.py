@@ -38,6 +38,7 @@ from django.db import transaction
 from django.core.cache import cache
 from esp.db.fields import AjaxForeignKey
 from esp.utils.memdb import mem_db
+from random import random
 
 import exceptions
 
@@ -103,6 +104,27 @@ class DataTree(models.Model):
         size = node.range_size()
         return size + DataTree.START_SIZE
 
+
+    #######################
+    # CACHING             #
+    #######################
+
+    CACHE_REVISION_KEY = "DATATREE_REVISION"
+
+    @classmethod
+    def get_cache_revision(cls):
+        a = cache.get(cls.CACHE_REVISION_KEY)
+        if a:
+            return a
+        else:
+            cls.reset_cache_revision()
+            return cache.get(CACHE_REVISION_KEY)
+
+    @classmethod
+    def reset_cache_revision(cls):
+        cache.set(CACHE_REVISION_KEY, random(), timeout=86400)
+
+
     #######################
     # MUTATORS            #
     #######################
@@ -141,6 +163,8 @@ class DataTree(models.Model):
     @transaction.commit_on_success
     def save(self, create_root = False, uri_fix = False, old_save = False, start_size = None):
         " This will save the tree, using the rules of a tree. "
+        CACHE_KEY = "DATATREE__GETBYURI__%s__REV_%s" % (self.get_uri(), DataTree.get_cache_revision())
+
         if old_save:
             return super(DataTree, self).save()
 
@@ -155,9 +179,6 @@ class DataTree(models.Model):
         
         if self.name.find(DataTree.DELIMITER) != -1:
             raise DataTree.InvalidName, "You cannot use '%s' in the name field." % DataTree.DELIMITER
-
-
-
 
         DataTree.fix_tree_if_broken()
             
@@ -181,7 +202,8 @@ class DataTree(models.Model):
                 transaction.commit()
                 if node.parent_id != self.parent_id:
                     self.reinsert()
-                    
+
+                cache.delete(CACHE_KEY)
                 return new_node
         
 #        if not create_root and self.parent is None:
@@ -197,6 +219,7 @@ class DataTree(models.Model):
             DataTree.shift_all_ranges(start_size, commit_wait = True)
         
         new_node =  super(DataTree, self).save()
+        cache.delete(CACHE_KEY)
         return new_node
     
 
@@ -634,7 +657,6 @@ class DataTree(models.Model):
         node = parent[cur_name]
         node.uri_correct = True
         node.save(uri_fix = True)
-        cache.add(CACHE_KEY, node, timeout=60)
         return node
 
     @staticmethod
