@@ -1186,3 +1186,34 @@ Student schedule for %s:
                  ))
 
         return response
+
+    @aux_call
+    @needs_admin
+    def oktimes_spr(self, request, tl, one, two, module, extra, prog):
+        import csv
+        from django.http import HttpResponse
+
+        response = HttpResponse(mimetype="text/csv")
+        write_csv = csv.writer(response)
+
+        sections = prog.class_sections()
+        times = prog.getTimeSlots()
+        sections_possible_times = [(section, section.viable_times()) for section in sections]
+        def time_possible(time, sections_list):
+            if time in sections_list:
+                return 'X'
+            else:
+                return ' '
+        def needs_projector(section):
+            if section.getResourceRequests().filter(res_type__name='LCD Projector'):
+                return 'Y'
+            else:
+                return ' '
+        write_csv.writerow([''] + ['Teachers'] + ['Projector?'] + [str(time) for time in times])
+        for section, timeslist in sections_possible_times:
+            write_csv.writerow([str(section) + ' (' + section.prettyDuration() + ')'] + \
+                               [section.parent_class.pretty_teachers()] + \
+                               [needs_projector(section)] + \
+                               [time_possible(time, timeslist) for time in times])
+        
+        return response

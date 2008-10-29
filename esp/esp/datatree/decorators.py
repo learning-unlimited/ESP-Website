@@ -37,15 +37,8 @@ from django.core.cache import cache
 
 # Where to start our tree search.
 
-section_redirect_keys = {
-    'teach':   'Programs',
-    'manage':  'Programs',
-    'onsite':  'Programs',    
-    'learn':   'Programs',
-    'programs':'Programs',
-    None:      'Web',
-    }
-    
+from esp.urls import section_redirect_keys
+   
 subsection_map = {
     'programs': '',
     }    

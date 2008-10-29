@@ -534,7 +534,10 @@ class DataTree(models.Model):
     @classmethod
     def root(cls):
         " Get the root node of this tree. "
-        
+
+        if cls.ROOT_NODE != None:
+            return cls.ROOT_NODE
+
         try:
             cls.ROOT_NODE = cls.objects.get(name = cls.ROOT_NAME,
                                             parent__isnull = True)
@@ -546,7 +549,6 @@ class DataTree(models.Model):
                         rangestart = 0,
                         rangeend = 0+cls.START_SIZE - 1)
             root.save(True, old_save = True)
-
             return root
 
     @staticmethod
