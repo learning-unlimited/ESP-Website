@@ -53,7 +53,7 @@ From this page, you can view documents related to the program (in the first sect
 	{% endif %}
 	{% for doc in prog.anchor.media_set.all %}
 	<tr>
-		<td class="class_stuff"><a href="{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
+            <td class="class_stuff"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
 			<form method="post" action="/manage/{{ prog.url }}/get_materials">
 				<input type="hidden" name="docid" value="{{ doc.id }}">
@@ -79,7 +79,7 @@ From this page, you can view documents related to the program (in the first sect
 		</tr>
 			{% for doc in cls.anchor.media_set.all %}
 			<tr>
-				<td class="class_stuff"><a href="{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
+				<td class="class_stuff"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
 				<td class="clsmiddle">
 					<form method="post" action="/manage/{{ program.url }}/get_materials">
 						<input type="hidden" name="docid" value="{{ doc.id }}">
