@@ -56,7 +56,7 @@ section_prefix_keys = {'teach': 'teach', 'learn': 'learn', 'programs': ''}
 urlpatterns = patterns('',
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
-                     (r'^admin/(.*)', 'django.contrib.admin.site.root'),
+                     (r'^admin/(.*)', admin.site.root),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      #(r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$','django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
