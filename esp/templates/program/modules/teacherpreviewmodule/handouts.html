@@ -9,7 +9,7 @@
     </tr>
     {% for doc in prog.anchor.media_set.all %}
     <tr>
-        <td class="class_stuff"><a href="{{ doc.target_file }}">{{ doc.friendly_name }}</a></td>
+        <td class="class_stuff"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
     </tr>
     {% endfor %}
     <tr>
