@@ -118,11 +118,11 @@ class DataTree(models.Model):
             return a
         else:
             cls.reset_cache_revision()
-            return cache.get(cls.CACHE_REVISION_KEY)
+            return cache.get(CACHE_REVISION_KEY)
 
     @classmethod
     def reset_cache_revision(cls):
-        cache.set(cls.CACHE_REVISION_KEY, random(), timeout=86400)
+        cache.set(CACHE_REVISION_KEY, random(), timeout=86400)
 
 
     #######################
