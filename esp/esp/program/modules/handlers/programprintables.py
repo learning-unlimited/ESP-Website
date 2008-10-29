@@ -1204,9 +1204,16 @@ Student schedule for %s:
                 return 'X'
             else:
                 return ' '
-        write_csv.writerow([''] + [str(time) for time in times])
+        def needs_projector(section):
+            if section.getResourceRequests().filter(res_type__name='LCD Projector'):
+                return 'Y'
+            else:
+                return ' '
+        write_csv.writerow([''] + ['Teachers'] + ['Projector?'] + [str(time) for time in times])
         for section, timeslist in sections_possible_times:
             write_csv.writerow([str(section) + ' (' + section.prettyDuration() + ')'] + \
+                               [section.parent_class.pretty_teachers()] + \
+                               [needs_projector(section)] + \
                                [time_possible(time, timeslist) for time in times])
         
         return response
