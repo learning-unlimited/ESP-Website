@@ -100,3 +100,6 @@ class TeacherPreviewModule(ProgramModuleObj):
         context['handouts'] = [{'url': key, 'title': handout_dict[key]} for key in handout_dict]
         
         return context
+    
+    def isStep(self):
+        return False
