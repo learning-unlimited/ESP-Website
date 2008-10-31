@@ -1216,7 +1216,8 @@ Student schedule for %s:
         # header row, naming each column
         write_csv.writerow([''] + ['Teachers'] + ['Projector?'] + \
                            ['Computer Lab?'] + ['Max Size'] + \
-                           ['Comments to Director'] + [str(time) for time in times])
+                           ['Grade Levels'] + ['Comments to Director'] + \
+                           [str(time) for time in times])
 
         # this writes each row associated with a section, for the columns determined above.
         for section, timeslist in sections_possible_times:
@@ -1225,6 +1226,7 @@ Student schedule for %s:
                                [needs_resource('LCD Projector', section)] + \
                                [needs_resource('Computer Lab', section)] + \
                                [section.parent_class.class_size_max] + \
+                               ['%d--%d' %(section.parent_class.grade_min, section.parent_class.grade_max)] +\
                                [section.parent_class.message_for_directors] + \
                                [time_possible(time, timeslist) for time in times])
         
