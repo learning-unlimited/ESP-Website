@@ -17,30 +17,8 @@
 <tt>{{ class.class_info }}</tt>
 </p>
 
-<p>
-First, here is the current distribution of classes across the timeslots in the program.  It may be helpful if you are trying to schedule this class.
-</p>
-
 <div id="program_form">
 <form name="classmanage" action="{{ request.path }}" method="POST">
-<table align="center" width="400">
-    <tr>
-        <th class="smaller">Timeslot: </th>
-        <th class="smaller"># of classes</th>
-    </tr>
-    {% if 1 %}
-        {% for timeslot in module.timeslot_counts %}
-            <tr>
-                <td>{{ timeslot.slotname }}</td>
-                <td>{{ timeslot.classcount }}</td>
-            </tr>
-        {% endfor %}
-    {% else %}
-        <tr>
-            <td colspan="2">No timeslots found.</td>
-        </tr>
-    {% endif %}
-</table>
 
 <br />
 
