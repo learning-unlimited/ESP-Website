@@ -45,15 +45,13 @@ section_redirect_keys = {
 section_prefix_keys = {'teach': 'teach', 'learn': 'learn', 'programs': ''}
 
 # Static media
-# Un-comment to get the site to look pretty with a dev server.
-# Commenting out in the main server urls.py to speed things up.
-#urlpatterns = patterns('django.views.static',
-#                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),
-#                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': PROJECT_ROOT + 'admin/media/'}),
-#                       )
+urlpatterns = patterns('django.views.static',
+                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),
+                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': PROJECT_ROOT + 'admin/media/'}),
+                       )
 
 # admin stuff
-urlpatterns = patterns('',
+urlpatterns += patterns('',
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/(.*)', admin.site.root),
