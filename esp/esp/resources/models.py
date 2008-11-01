@@ -305,7 +305,7 @@ class Resource(models.Model):
             test_resource = self.identical_resources().filter(event=timeslot)[0]
         
         if QObjects:
-            return QNot(test_resource.is_taken(True))
+            return ~Q(test_resource.is_taken(True))
         else:
             return not (test_resource.is_taken(False))
         
