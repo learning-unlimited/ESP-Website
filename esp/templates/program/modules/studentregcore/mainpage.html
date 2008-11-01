@@ -71,10 +71,12 @@
     {% else %}
     <a href="#module-{{ module.id }}">
     {% endif %}
-    <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" 
-        {% if module.isCompleted %}title="Done!" alt="Done!"{% else %}
+    {% with module.isCompleted as moduleCompleted %}
+    <img src="/media/images/{% if not moduleCompleted %}no{% endif %}checkmark.gif" 
+        {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
         title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
     </a>
+    {% endwith %}
     </td>
     </tr>
     {% endif %}
