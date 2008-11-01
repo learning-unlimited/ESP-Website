@@ -1305,6 +1305,9 @@ class ClassSubject(models.Model):
             return False # already accepted
 
         self.status = 10
+        # I do not understand the following line, but it saves us from "Cannot convert float to Decimal".
+        # Also seen in /esp/program/modules/forms/management.py -ageng 2008-11-01
+        self.duration = Decimal(str(self.duration))
         self.save()
         #   Accept any unreviewed sections.
         for sec in self.sections.all():
