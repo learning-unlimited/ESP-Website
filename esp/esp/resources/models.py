@@ -352,9 +352,7 @@ class Resource(models.Model):
             test_resource = self.identical_resources().filter(event=timeslot)[0]
         
         if QObjects:
-            retVal = QNot(test_resource.is_taken(True))
-            cache.set(cache_key, retVal, timeout=86400)
-            return retVal
+            return ~Q(test_resource.is_taken(True))
         else:
             retVal = not (test_resource.is_taken(False))
             cache.set(cache_key, retVal, timeout=86400)

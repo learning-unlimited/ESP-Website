@@ -84,6 +84,13 @@ class DataTree(models.Model):
         # ordering should be by rangestart
         ordering = ['rangestart','-rangeend']
 
+    ## functions returning rangestart and rangeend, that Adam will edit at some point. -rye
+    def get_rangestart(self):
+        return self.rangestart
+
+    def get_rangeend(self):
+        return self.rangeend
+
     ########################
     # PARAMETER Functions  #
     ########################
@@ -121,8 +128,8 @@ class DataTree(models.Model):
 
 
         # need these for later
-        rangestart = self.rangestart
-        rangeend   = self.rangeend
+        rangestart = self.get_rangestart()
+        rangeend   = self.get_rangeend()
 
         if len(self) > 0:
             if not recurse:
@@ -175,8 +182,8 @@ class DataTree(models.Model):
                 # any changes to the ranges,
                 # since editable = False doesn't do anything
                 node = node[0]
-                self.rangestart = node.rangestart
-                self.rangeend   = node.rangeend
+                self.rangestart = node.get_rangestart()
+                self.rangeend   = node.get_rangeend()
                 new_node = super(DataTree, self).save()
                 transaction.commit()
                 if node.parent_id != self.parent_id:
@@ -205,7 +212,7 @@ class DataTree(models.Model):
 
         if expand_func is None: expand_func = DataTree.expanded_size
         
-        DataTree.shift_many_ranges(self.rangeend,
+        DataTree.shift_many_ranges(self.get_rangeend(),
                                    expand_func(self),
                                    commit_wait = True)
 
@@ -327,8 +334,8 @@ class DataTree(models.Model):
     
     def __unicode__(self):
         return '%s (%s--%s)' % (self.get_uri(),
-                                self.rangestart,
-                                self.rangeend)
+                                self.get_rangestart(),
+                                self.get_rangeend())
 
     def tree_decode(self, tree_nodenames):
         " Given a list of nodes leading to this, returns the node. "
@@ -351,14 +358,14 @@ class DataTree(models.Model):
 
         children = self.children().filter(range_correct = True).order_by('-rangeend')
         if children.count() > 0:           
-            upperbound = children[0].rangeend
+            upperbound = children[0].get_rangeend()
         else:
-            upperbound = self.rangestart
+            upperbound = self.get_rangestart()
 
-        if upperbound < self.rangestart:
-            upperbound = self.rangestart
+        if upperbound < self.get_rangestart():
+            upperbound = self.get_rangestart()
         
-        if self.rangeend < (upperbound + start_size + 2):
+        if self.get_rangeend() < (upperbound + start_size + 2):
             # we dont' have enough room...time to expand
             self.expand(expand_func)
                 
@@ -407,8 +414,8 @@ class DataTree(models.Model):
         
     def descendants(self, distinct = True):
         " All nodes below this node. "
-        desc = DataTree.objects.filter(rangestart__gte = self.rangestart,
-                                   rangeend__lte   = self.rangeend)
+        desc = DataTree.objects.filter(rangestart__gte = self.get_rangestart(),
+                                   rangeend__lte   = self.get_rangeend())
 
         if distinct:
             desc = desc.distinct()
@@ -416,8 +423,8 @@ class DataTree(models.Model):
 
     def ancestors(self, distinct = True):
         " All nodes above this node. "
-        anc = DataTree.objects.filter(rangestart__lte = self.rangestart,
-                                      rangeend__gte   = self.rangeend)
+        anc = DataTree.objects.filter(rangestart__lte = self.get_rangestart(),
+                                      rangeend__gte   = self.get_rangeend())
         if distinct:
             anc = anc.distinct()
         return anc
@@ -428,7 +435,7 @@ class DataTree(models.Model):
 
     def range_size(self):
         " The capacity of this node. "
-        return self.rangeend - self.rangestart - 1
+        return self.get_rangeend() - self.get_rangestart() - 1
 
     def room_for_children(self):
         return self.range_size() - self.children().count() 
@@ -439,6 +446,14 @@ class DataTree(models.Model):
             return 0
         else:
             return len(self.get_uri().split('/'))
+
+    # function that returns a boolean if self is a descendant of node.
+    def is_descendant_of(self, node):
+        return ((self.get_rangestart() >= node.get_rangestart()) and (self.get_rangeend() <= node.get_rangeend()))
+
+    # same, but if self is an ancestor of node.
+    def is_ancestor_of(self, node):
+        return ((node.get_rangestart() >= self.get_rangestart()) and (node.get_rangeend() <= self.get_rangeend()))
 
     ####################################
     # DICTIONARY-like BEHAVIOR         #
@@ -807,7 +822,7 @@ class DataTree(models.Model):
         table = DataTree._meta.db_table
 
         cursor.execute("DELETE FROM %s WHERE rangestart > %s AND rangeend <= %s" % \
-                       (table, self.rangestart, self.rangeend,))
+                       (table, self.get_rangestart(), self.get_rangeend(),))
 
 
         if not commit_wait:
@@ -883,7 +898,7 @@ class DataTree(models.Model):
         from django.db import connection
         from django.conf import settings
 
-        if self.rangestart is None or self.rangeend is None:
+        if self.get_rangestart() is None or self.get_rangeend() is None:
             return
 
 
@@ -901,7 +916,7 @@ class DataTree(models.Model):
         cursor.execute(("UPDATE %s SET uri_correct = '%s' WHERE " + \
                         "rangestart > %s AND rangeend <= %s") % \
                        (DataTree._meta.db_table, false,
-                        self.rangestart, self.rangeend))
+                        self.get_rangestart(), self.get_rangeend()))
 
         if not commit_wait:
             try:

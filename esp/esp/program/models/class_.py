@@ -613,7 +613,7 @@ class ClassSection(models.Model):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.uri)
         result = {}
-        userbits = UserBit.objects.filter(qsc=self.anchor, verb__rangestart__gte=verb_base.rangestart, verb__rangeend__lte=verb_base.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True))
+        userbits = UserBit.objects.filter(qsc=self.anchor, verb__rangestart__gte=verb_base.get_rangestart(), verb__rangeend__lte=verb_base.get_rangeend()).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True))
         for u in userbits:
             bit_str = u.verb.uri[uri_start:]
             if bit_str not in result:
@@ -625,7 +625,7 @@ class ClassSection(models.Model):
     def students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.uri)
-        all_registration_verbs = DataTree.objects.filter(rangestart__gt=verb_base.rangestart, rangeend__lt=verb_base.rangeend)
+        all_registration_verbs = verb_base.descendants()
         verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
         
         return self.students(use_cache, verbs=verb_list)
@@ -692,7 +692,7 @@ class ClassSection(models.Model):
     def num_students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.uri)
-        all_registration_verbs = DataTree.objects.filter(rangestart__gt=verb_base.rangestart, rangeend__lt=verb_base.rangeend)
+        all_registration_verbs = verb_base.descendants()
         verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
         
         return self.num_students(use_cache, verbs=verb_list)
@@ -827,7 +827,7 @@ class ClassSection(models.Model):
         self.update_cache()
 
     def getRegBits(self, user):
-        result = UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        result = UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.get_rangestart(), qsc__rangeend__lte=self.anchor.get_rangeend()).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
         return result
     
     def getRegVerbs(self, user):
@@ -838,7 +838,7 @@ class ClassSection(models.Model):
 
         prereg_verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
-        for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__rangestart__gte=prereg_verb_base.rangestart, verb__rangeend__lte=prereg_verb_base.rangeend):
+        for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__rangestart__gte=prereg_verb_base.get_rangestart(), verb__rangeend__lte=prereg_verb_base.get_rangeend()):
             if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
                 ub.expire()
         
@@ -1114,8 +1114,8 @@ class ClassSubject(models.Model):
         self.sections.clear()
         
         #   Remove indirect dependencies
-        Media.objects.filter(anchor__rangestart__gte=self.anchor.rangestart, anchor__rangeend__lte=self.anchor.rangeend).delete()
-        UserBit.objects.filter(qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).delete()
+        Media.objects.filter(anchor__rangestart__gte=self.anchor.get_rangestart(), anchor__rangeend__lte=self.anchor.get_rangeend()).delete()
+        UserBit.objects.filter(qsc__rangestart__gte=self.anchor.get_rangestart(), qsc__rangeend__lte=self.anchor.get_rangeend()).delete()
         
         self.checklist_progress.clear()
         
@@ -1382,7 +1382,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return "/".join(urllist)
 
     def getRegBits(self, user):
-        return UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.rangestart, qsc__rangeend__lte=self.anchor.rangeend).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        return UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.get_rangestart(), qsc__rangeend__lte=self.anchor.get_rangeend()).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """

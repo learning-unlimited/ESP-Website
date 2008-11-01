@@ -17,11 +17,11 @@ def tree_filter(kwargs):
             raise ValueError('__above or __below requires a datatree node, recieved "%s"' % node)
         
         if action == '__below':
-            new_kwargs[key[:-5]+'rangestart__gte'] = node.rangestart
-            new_kwargs[key[:-5]+'rangeend__lte']   = node.rangeend
+            new_kwargs[key[:-5]+'rangestart__gte'] = node.get_rangestart()
+            new_kwargs[key[:-5]+'rangeend__lte']   = node.get_rangeend()
         else:
-            new_kwargs[key[:-5]+'rangestart__lte'] = node.rangestart
-            new_kwargs[key[:-5]+'rangeend__gte']   = node.rangeend
+            new_kwargs[key[:-5]+'rangestart__lte'] = node.get_rangestart()
+            new_kwargs[key[:-5]+'rangeend__gte']   = node.get_rangeend()
 
     return new_kwargs
 

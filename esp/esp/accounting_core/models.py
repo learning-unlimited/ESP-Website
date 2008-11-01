@@ -51,7 +51,7 @@ class LineItemTypeManager(ProcedureManager):
     def forProgram(self, program):
         """ Get all LineItemTypes (currently including optional ones) for the given program. """
         a = GetNode(program.anchor.get_uri()+'/LineItemTypes')
-        return self.filter(anchor__rangestart__gte=a.rangestart, anchor__rangeend__lte=a.rangeend)
+        return self.filter(anchor__rangestart__gte=a.get_rangestart(), anchor__rangeend__lte=a.get_rangeend())
 
 class LineItemType(models.Model):
     """ A set of default values for a line item """
@@ -246,7 +246,7 @@ class LineItemManager(ProcedureManager):
     def forProgram(self, program):
         """ Get all LineItems (currently including optional ones) whose types are anchored in the given program. """
         a = GetNode(program.anchor.get_uri()+'/LineItemTypes')
-        return self.filter(li_type__anchor__rangestart__gte=a.rangestart, li_type__anchor__rangeend__lte=a.rangeend)
+        return self.filter(li_type__anchor__rangestart__gte=a.get_rangestart(), li_type__anchor__rangeend__lte=a.get_rangeend())
 
 class LineItem(models.Model):
     """ A transaction line item """

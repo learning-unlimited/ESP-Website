@@ -416,11 +416,11 @@ class ESPUser(User, AnonymousUser):
             qsc_base = program.anchor
         
         if not verbs:
-            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.rangestart, qsc__rangeend__lte=qsc_base.rangeend, verb__rangestart__gte=verb_base.rangestart, verb__rangeend__lte=verb_base.rangeend, user=self)
+            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.get_rangestart(), qsc__rangeend__lte=qsc_base.get_rangeend(), verb__rangestart__gte=verb_base.get_rangestart(), verb__rangeend__lte=verb_base.get_rangeend(), user=self)
         else:
             verb_uris = ['V/Flags/Registration' + verb_str for verb_str in verbs]
             verb_ids = [v['id'] for v in DataTree.objects.filter(uri__in=verb_uris).values('id')]
-            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.rangestart, qsc__rangeend__lte=qsc_base.rangeend, verb__id__in=verb_ids, user=self)
+            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.get_rangestart(), qsc__rangeend__lte=qsc_base.get_rangeend(), verb__id__in=verb_ids, user=self)
             
         ubl = ubl.filter(Q(enddate__gte=datetime.now()) | Q(enddate__isnull=True))
         

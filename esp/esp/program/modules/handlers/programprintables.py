@@ -1196,24 +1196,38 @@ Student schedule for %s:
         response = HttpResponse(mimetype="text/csv")
         write_csv = csv.writer(response)
 
+        # get the list of all the sections, and all the times for this program.
         sections = prog.class_sections()
         times = prog.getTimeSlots()
         sections_possible_times = [(section, section.viable_times()) for section in sections]
+
+        # functions to determine what will fill in the spreadsheet cell for each thing
         def time_possible(time, sections_list):
             if time in sections_list:
                 return 'X'
             else:
                 return ' '
-        def needs_projector(section):
-            if section.getResourceRequests().filter(res_type__name='LCD Projector'):
+        def needs_resource(resname, section):
+            if section.getResourceRequests().filter(res_type__name=resname):
                 return 'Y'
             else:
                 return ' '
-        write_csv.writerow([''] + ['Teachers'] + ['Projector?'] + [str(time) for time in times])
+
+        # header row, naming each column
+        write_csv.writerow([''] + ['Teachers'] + ['Projector?'] + \
+                           ['Computer Lab?'] + ['Max Size'] + \
+                           ['Grade Levels'] + ['Comments to Director'] + \
+                           [str(time) for time in times])
+
+        # this writes each row associated with a section, for the columns determined above.
         for section, timeslist in sections_possible_times:
             write_csv.writerow([str(section) + ' (' + section.prettyDuration() + ')'] + \
                                [section.parent_class.pretty_teachers()] + \
-                               [needs_projector(section)] + \
+                               [needs_resource('LCD Projector', section)] + \
+                               [needs_resource('Computer Lab', section)] + \
+                               [section.parent_class.class_size_max] + \
+                               ['%d--%d' %(section.parent_class.grade_min, section.parent_class.grade_max)] +\
+                               [section.parent_class.message_for_directors] + \
                                [time_possible(time, timeslist) for time in times])
         
         return response
