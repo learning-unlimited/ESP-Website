@@ -70,7 +70,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
         Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
-        Reg = Q(userbit__verb__rangestart__gte = verb_base.rangestart, userbit__verb__rangeend__lte = verb_base.rangeend)
+        Reg = Q(userbit__verb__rangestart__gte = verb_base.get_rangestart(), userbit__verb__rangeend__lte = verb_base.get_rangeend())
         Unexpired = Q(userbit__enddate__isnull=True) | Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
         
         if QObject:
@@ -406,8 +406,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         #   This query just gets worse and worse.   -Michael
         oldclasses = ClassSection.objects.filter(meeting_times=extra,
                              classsubject__parent_program = self.program,
-                             anchor__userbit_qsc__verb__rangestart__gte = v_registered_base.rangestart,
-                             anchor__userbit_qsc__verb__rangeend__lte = v_registered_base.rangeend,
+                             anchor__userbit_qsc__verb__rangestart__gte = v_registered_base.get_rangestart(),
+                             anchor__userbit_qsc__verb__rangeend__lte = v_registered_base.get_rangeend(),
                              anchor__userbit_qsc__user = self.user).distinct()
                              
         #   Narrow this down to one class if we're using the priority system.

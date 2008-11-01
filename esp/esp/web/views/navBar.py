@@ -121,7 +121,7 @@ def makeNavBar(user, node, section = ''):
             #   This is disabled for the program sections, where we have lots of teach- or learn-
             #   specific nav bars that are visible to all.
             program_node = DataTree.get_by_uri('Q/Programs')
-            if not ((node.rangestart >= program_node.rangestart) and (node.rangeend <= program_node.rangeend)):
+            if not node.is_descendant_of(program_node):
                 if user.isTeacher():
                     sections += ['teach']
                 if user.isAdmin():

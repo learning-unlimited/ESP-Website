@@ -140,13 +140,13 @@ class QuasiStaticData(models.Model):
         path_parts = self.path.get_uri().split('/')
         program_top = DataTree.get_by_uri('Q/Programs')
         web_top = DataTree.get_by_uri('Q/Web')
-        if (my_path.rangestart >= program_top.rangestart) and (my_path.rangeend <= program_top.rangeend):
+        if my_path.is_descendant_of(program_top):
             name_parts = self.name.split(':')
             if len(name_parts) > 1:
                 result =  '/' + name_parts[0] + '/' + '/'.join(path_parts[2:]) + '/' + name_parts[1] + '.html'
             else:
                 result = '/programs/' + '/'.join(path_parts[2:]) + '/' + name_parts[0] + '.html'
-        elif (my_path.rangestart >= web_top.rangestart) and (my_path.rangeend <= web_top.rangeend):
+        elif my_path.is_descendant_of(web_top):
             result = '/' + '/'.join(path_parts[2:]) + '/' + self.name + '.html'
         else:
             result = '/' + '/'.join(path_parts[1:]) + '/' + self.name + '.html'

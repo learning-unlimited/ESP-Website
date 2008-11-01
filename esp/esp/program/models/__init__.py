@@ -820,7 +820,7 @@ class Program(models.Model):
             if UserBit.objects.filter(user__isnull=True, qsc=self.anchor, verb=reg_verb, startdate__lte=datetime.now()).count() > 0:
                 retVal = True
             else:
-                if UserBit.objects.filter(user__isnull=True, qsc__rangestart__lte=self.anchor.rangestart, qsc__rangeend__gte=self.anchor.rangeend, verb__rangestart__lte=reg_verb.rangestart, verb__rangeend__gte=reg_verb.rangeend, recursive=True, startdate__lte=datetime.now()).count() > 0:
+                if UserBit.objects.filter(user__isnull=True, qsc__rangestart__lte=self.anchor.get_rangestart(), qsc__rangeend__gte=self.anchor.get_rangeend(), verb__rangestart__lte=reg_verb.get_rangestart(), verb__rangeend__gte=reg_verb.get_rangeend(), recursive=True, startdate__lte=datetime.now()).count() > 0:
                     retVal = True
             cache.set(cache_key, retVal, 9999)
         return retVal
@@ -1148,7 +1148,7 @@ class FinancialAidRequest(models.Model):
        
         #   Find the amount we're charging the student for the program and ensure
         #   that we don't award more financial aid than charges.
-        charges = txn.lineitem_set.filter(anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, anchor__parent__name='LineItemTypes')
+        charges = txn.lineitem_set.filter(anchor__rangestart__gte=anchor.get_rangestart(), anchor__rangeend__lte=anchor.get_rangeend(), anchor__parent__name='LineItemTypes')
        
         chg_amt = 0
         for li in charges:
@@ -1157,7 +1157,7 @@ class FinancialAidRequest(models.Model):
             self.amount_received = -chg_amt
         
         #   Reverse all financial aid awards and add a new line item for this one.
-        finaids = txn.lineitem_set.filter(anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, anchor__parent__name='Accounts')
+        finaids = txn.lineitem_set.filter(anchor__rangestart__gte=anchor.get_rangestart(), anchor__rangeend__lte=anchor.get_rangeend(), anchor__parent__name='Accounts')
         rev_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid Reversal',anchor=funding_node['FinancialAid'])
         fwd_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid',anchor=funding_node['FinancialAid'])
         for li in finaids:
