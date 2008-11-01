@@ -586,12 +586,8 @@ class Program(models.Model):
         cache.set(cache_key, retVal, 9999)
         return retVal
 
-    def sections(self):
-        all_classes = self.classes()
-        section_ids = []
-        for c in all_classes:
-            section_ids += [item['id'] for item in c.sections.all().values('id')]
-        return ClassSection.objects.filter(id__in=section_ids).order_by('id')        
+    def sections(self, use_cache=True):
+        return ClassSection.objects.filter(classsubject__parent_program=self).distinct()
 
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')

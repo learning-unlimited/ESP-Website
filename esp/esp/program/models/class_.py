@@ -319,6 +319,11 @@ class ClassSection(models.Model):
     def sufficient_length(self, event_list=None):
         """   This function tells if the class' assigned times are sufficient to cover the duration.
         If the duration is not set, 1 hour is assumed. """
+        cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
+        retVal = cache.get(cache_key)
+        if retVal != None:
+            return retVal
+        
         if self.duration == 0.0:
             duration = 1.0
         else:
@@ -329,8 +334,10 @@ class ClassSection(models.Model):
         #   If you're 15 minutes short that's OK.
         time_tolerance = 15 * 60
         if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
+            cache.set(cache_key, False, timeout=86400)
             return False
         else:
+            cache.set(cache_key, True, timeout=86400)
             return True
     
     def extend_timeblock(self, event, merged=True):
@@ -351,31 +358,53 @@ class ClassSection(models.Model):
             return event_list
     
     def scheduling_status(self):
+        cache_key = "CLASSSECTION__SCHEDULING_STATUS__%s" % self.id
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+        
         #   Return a little string that tells you what's up with the resource assignments.
         if not self.sufficient_length():
-            return 'Needs time'
+            retVal = 'Needs time'
         elif self.classrooms().count() < 1:
-            return 'Needs room'
+            retVal = 'Needs room'
         elif self.unsatisfied_requests().count() > 0:
-            return 'Needs resources'
+            retVal = 'Needs resources'
         else:
-            return 'Happy'
-    
+            retVal = 'Happy'
+
+        cache.set(cache_key, retVal, timeout=60)
+        return retVal
+            
     def clear_resource_cache(self):
         from django.core.cache import cache
         from esp.program.templatetags.scheduling import options_key_func
+        from esp.resources.models import increment_global_resource_rev
         cache_key1 = 'class__viable_times:%d' % self.id
         cache_key2 = 'class__viable_rooms:%d' % self.id
+        cache_key3 = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
         cache.delete(cache_key1)
         cache.delete(cache_key2)
+        cache.delete(cache_key3)
+        incrememt_global_resource_rev()
     
     def unsatisfied_requests(self):
+        from esp.resources.models import global_resource_rev
+        cache_key = "CLASSSECTION__UNSATISFIED_REQUESTS__%s__%s" % (self.id, global_resource_rev())
+
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+        
         if self.classrooms().count() > 0:
             primary_room = self.classrooms()[0]
-            result = primary_room.satisfies_requests(self)
-            return result[1]
+            result = primary_room.satisfies_requests(self)[1]
+            cache.set(cache_key, result, timeout=86400)
+            return result
         else:
-            return self.getResourceRequests()
+            result = self.getResourceRequests()
+            cache.set(cache_key, result, timeout=86400)
+            return result
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()
@@ -385,7 +414,7 @@ class ClassSection(models.Model):
     def assign_start_time(self, first_event):
         """ Get enough events following the first one until you have the class duration covered.
         Then add them. """
-        
+
         #   This means we have to clear the classrooms.
         #   But we will try to re-assign the same room at the new times if it is available.
         current_rooms = self.initial_rooms()
@@ -407,6 +436,9 @@ class ClassSection(models.Model):
         if availability:
             for room in current_rooms:
                 self.assign_room(room)
+
+        cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
+        cache.delete(cache_key)
     
     def assign_room(self, base_room, compromise=True, clear_others=False):
         """ Assign the classroom given, except at the times needed by this class. """
@@ -571,7 +603,7 @@ class ClassSection(models.Model):
         user = ESPUser(teacher)
         if user.getTaughtClasses().count() == 0:
             return False
-        
+
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
             for time in cls.meeting_times.all():
                 if self.meeting_times.filter(id = time.id).count() > 0:
