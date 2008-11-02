@@ -44,8 +44,8 @@ class InlineLatexTest(unittest.TestCase):
     def tearDown(self):
         # Clean up
         for img in self._to_kill:
-            if os.path.exists(img.local_path()):
-                os.remove(img.local_path())
+            if os.path.exists(img.local_path):
+                os.remove(img.local_path)
         self._to_kill = []
 
     @staticmethod
@@ -61,10 +61,10 @@ class InlineLatexTest(unittest.TestCase):
 
         self._to_kill.append(img) # Clean up later
 
-        self.failIf(img.url() is None, "No URL was returned for %s." % eqn)
-        local_path = img.local_path()
+        self.failIf(img.url is None, "No URL was returned for %s." % eqn)
+        local_path = img.local_path
         self.failIf(local_path is None, "No local path was returned for %s." % eqn)
-        self.failIf(img.img() is None, "No image tag was returned for %s." % eqn)
+        self.failIf(img.img is None, "No image tag was returned for %s." % eqn)
         self.failUnless(os.path.exists(local_path), "File %s does not exist for %s." % (local_path, eqn))
 
         return img
@@ -79,35 +79,35 @@ class InlineLatexTest(unittest.TestCase):
         eqn = self.getRandomEquation()
         img1 = self.getAndCheck(eqn)
         img2 = self.getAndCheck(eqn)
-        self.failUnlessEqual(img1.local_path(), img2.local_path(), "Returned paths inconsistent for %s." % eqn)
+        self.failUnlessEqual(img1.local_path, img2.local_path, "Returned paths inconsistent for %s." % eqn)
 
     def testDefaultDPI(self):
         """ Test that the default DPI is indeed 150. """
         eqn = self.getRandomEquation()
         img1 = self.getAndCheck(eqn)
         img2 = self.getAndCheck(eqn, dpi=150)
-        self.failUnlessEqual(img1.local_path(), img2.local_path(), "Default DPI not 150.")
+        self.failUnlessEqual(img1.local_path, img2.local_path, "Default DPI not 150.")
 
     def testDistinctDPI(self):
         """ Test that switching DPIs gives different images. """
         eqn = self.getRandomEquation()
         img1 = self.getAndCheck(eqn, dpi=200)
         img2 = self.getAndCheck(eqn, dpi=150)
-        self.failIfEqual(img1.local_path(), img2.local_path(), "Images with different DPI saved at the same location.")
+        self.failIfEqual(img1.local_path, img2.local_path, "Images with different DPI saved at the same location.")
 
     def testDefaultStyle(self):
         """ Test that DISPLAY is the default style. """
         eqn = self.getRandomEquation()
         img1 = self.getAndCheck(eqn)
         img2 = self.getAndCheck(eqn, style='DISPLAY')
-        self.failUnlessEqual(img1.local_path(), img2.local_path(), "Default style inconsistent.")
+        self.failUnlessEqual(img1.local_path, img2.local_path, "Default style inconsistent.")
 
     def testDistinctStyle(self):
         """ Test that INLINE and DISPLAY give different images. """
         eqn = self.getRandomEquation()
         img1 = self.getAndCheck(eqn, style='INLINE')
         img2 = self.getAndCheck(eqn, style='DISPLAY')
-        self.failIfEqual(img1.local_path(), img2.local_path(), "Images with different style saved at the same location.")
+        self.failIfEqual(img1.local_path, img2.local_path, "Images with different style saved at the same location.")
 
     def testBadInput(self):
         """ Test that invalid LaTeX throws an exception. """

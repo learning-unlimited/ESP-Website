@@ -67,26 +67,29 @@ class InlineLatex(object):
 
         self._generate_file()
 
+    @property
     def local_path(self):
         """ The path to the file on the filesystem. """
         return os.path.join(settings.MEDIA_ROOT, self.file_path)
 
+    @property
     def url(self):
         """ The URL of the file. """
         # FIXME: Windoze?
         return os.path.join(settings.MEDIA_URL, self.file_path)
 
+    @property
     def img(self):
         """ An image tag, ready to be inserted into HTML. """
         return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' \
-                % (self.url(), self.content, self.content)
+                % (self.url, self.content, self.content)
 
     def _generate_file(self):
         """ Generates the png file. """
 
         if not os.path.exists(self.file_path):
             # Make directory if it doesn't exist
-            dir = os.path.dirname(self.local_path())
+            dir = os.path.dirname(self.local_path)
             if not os.path.exists(dir):
                 os.mkdir(dir)
 
@@ -113,5 +116,5 @@ class InlineLatex(object):
                 raise ESPError(False), 'latex compilation failed.'
 
             if os.system( '%s -q -T tight -bg %s -D %s -o %s %s.dvi > /dev/null' % \
-                    (commands['dvipng'], LATEX_BG, self.dpi, self.local_path(), tmppath)) is not 0:
+                    (commands['dvipng'], LATEX_BG, self.dpi, self.local_path, tmppath)) is not 0:
                 raise ESPError(False), 'dvipng failed.'

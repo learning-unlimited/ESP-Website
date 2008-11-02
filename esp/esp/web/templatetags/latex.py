@@ -95,7 +95,7 @@ def teximages(value,dpi=150):
             if len(strings[i].strip()) > 0:
                 try:
                     latex = InlineLatex(strings[i], style=style, dpi=dpi)
-                    strings[i] = latex.img()
+                    strings[i] = latex.img
                     converted[i] = True
                 except:
                     converted[i] = False
