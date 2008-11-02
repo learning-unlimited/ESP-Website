@@ -374,20 +374,23 @@ class DataTree(models.Model):
             start_size = DataTree.START_SIZE
 
         quoted_table = qn(self._meta.db_table)
-        sql = """SELECT upper, MIN(diff) FROM (
-(SELECT rangeend + '%%s', rangeend + '%%s' - (SELECT rangeend FROM %s WHERE id = %%s) AS diff FROM %s WHERE parent_id = %%s AND range_correct = %%s)
+        sql = """SELECT MAX(upper), MIN(diff) FROM (
+(SELECT rangeend AS upper, rangeend + '%%s' - (SELECT rangeend FROM %s WHERE id = %%s) AS diff FROM %s WHERE parent_id = %%s AND range_correct = %%s)
 UNION
-(SELECT rangeend - rangestart AS diff FROM %s WHERE id = %%s)) AS a""" % \
+(SELECT rangestart AS upper, rangeend - rangestart AS diff FROM %s WHERE id = %%s)) AS a""" % \
             (quoted_table, quoted_table, quoted_table)
         cursor = connection.cursor()
         cursor.execute(sql, [start_size + 2, self.id, self.id, True, self.id])
         results = cursor.fetchall()
         if results:
-            if results[0] < 0:
+            upperbound, diff = results
+            if diff < 0:
                 self.expand(expand_func)
         else:
             raise ValueError("Unable to get my own Node in query?")
 
+        sql = "UPDATE %s SET rangestart = %%s, rangeend = %%s WHERE id = %%s" % quoted_table
+        cursor.execute(sql, [upperbound + 1, upperbound + start_size, child_id])
         return upperbound + 1, upperbound + start_size
 
     def tree_encode(self):
@@ -1103,7 +1106,7 @@ UNION
 
             try:
                 low_id = DataTree.objects.order_by('id')[1].id
-            except:
+            except int:
                 low_id = 1
 
                 
@@ -1125,11 +1128,11 @@ UNION
                         print "ERROR:"
                         print DataTree.violating_range_sign_nodes()
                         return
-                except:
+                except int:
                     exc_info = sys.exc_info()
                     print exc_info[0], exc_info[1], exc_info[2]
 
-        except:
+        except int:
             exc_info = sys.exc_info()
             raise exc_info[0], exc_info[1], exc_info[2]
 

@@ -5,7 +5,7 @@ from django.contrib.auth.models import User, AnonymousUser
 import datetime
 import random
 import string
-
+import time
 
 # esp dependencies
 from django.db.models.query import Q
@@ -503,8 +503,6 @@ class UserBit(models.Model):
     @classmethod
     def time_cache(cls):
         from django.contrib.auth.models import User
-        from esp.datatree.models import *
-        import time
 
         axiak = User.objects.get(username='axiak')
         splash = GetNode('Q/Programs/Splash/2007')

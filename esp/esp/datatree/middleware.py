@@ -38,7 +38,7 @@ class DataTreeLockMiddleware(object):
     """
     
     def process_request(self, request):
-        from esp.datatree.models import *
+        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
         from django.shortcuts    import render_to_response
 
         if DataTree.locked() > 1:

@@ -34,8 +34,7 @@ def accesshandler(req):
         os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
     from esp.users.models import UserBit
-    from esp.datatree.models import *
-
+    from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
     
     request=AccessHandler()(req)
     if request.user.is_authenticated():
@@ -68,8 +67,7 @@ def authenhandler(req, **kwargs):
         os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
             
     from esp.users.models import UserBit
-    from esp.datatree.models import *
-
+    from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
 
 
     from django.contrib.auth.models import User

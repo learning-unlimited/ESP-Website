@@ -48,8 +48,7 @@ __all__ = ('QTree',)
 def _import_datatree():
     global DataTree
     if not DataTree:
-        from esp.datatree.models import *
-
+        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
 direction_map = {
     'below': ('gte', 'lte'),
     'above': ('lte', 'gte'),
