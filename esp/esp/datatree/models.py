@@ -44,7 +44,7 @@ from esp.utils.memdb import mem_db
 from esp.datatree.q_object import *
 
 
-__all__ = ('DataTree', 'GetNode', 'QTree')
+__all__ = ('DataTree', 'GetNode', 'QTree', 'get_lowest_parent', 'StringToPerm', 'PermToString')
 
 qn = connection.ops.quote_name
 
