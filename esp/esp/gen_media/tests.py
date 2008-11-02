@@ -34,10 +34,11 @@ import os
 
 __all__ = ['InlineLatexTest']
 
+from esp.gen_media.inlinelatex import InlineLatex
+from esp.middleware import ESPError
 class InlineLatexTest(unittest.TestCase):
     """ Tests for the inline LaTeX system. """
 
-    from esp.gen_media.inlinelatex import InlineLatex
     def setUp(self):
         self._to_kill = []
 
@@ -112,12 +113,13 @@ class InlineLatexTest(unittest.TestCase):
     def testBadInput(self):
         """ Test that invalid LaTeX throws an exception. """
         eqn = r"\frac{1}{\sqrt{5}"
-        self.failUnlessRaises(ESPError, InlineLatex(eqn), "Exception not thrown when given invalid TeX expression.")
-        self.failUnlessRaises(ESPError, InlineLatex(eqn, dpi=500), "Exception not thrown when given invalid TeX expression.")
-        self.failUnlessRaises(ESPError, InlineLatex(eqn, dpi=500, style='INLINE'), "Exception not thrown when given invalid TeX expression.")
-        self.failUnlessRaises(ESPError, InlineLatex(eqn, style='INLINE'), "Exception not thrown when given invalid TeX expression.")
+        self.failUnlessRaises(Exception, InlineLatex, eqn)
+        self.failUnlessRaises(Exception, InlineLatex, eqn, dpi=500)
+        self.failUnlessRaises(Exception, InlineLatex, eqn, dpi=500, style='INLINE')
+        self.failUnlessRaises(Exception, InlineLatex, eqn, style='INLINE')
 
     def testInvalidStyle(self):
         """ Test that an exception is thrown on invalid style. """
-        self.failUnlessRaises(ESPError, InlineLatex(getRandomEquation(), style='ORANGES'), "Exception not thrown when given invalid style.")
-        self.failUnlessRaises(ESPError, InlineLatex(getRandomEquation(), style='ORANGES'), "Exception not thrown when given invalid style.")
+        eqn = self.getRandomEquation()
+        self.failUnlessRaises(Exception, InlineLatex, eqn, style='ORANGES')
+        self.failUnlessRaises(Exception, InlineLatex, eqn, style='ORANGES')
