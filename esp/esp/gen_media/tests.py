@@ -108,3 +108,16 @@ class InlineLatexTest(unittest.TestCase):
         img1 = self.getAndCheck(eqn, style='INLINE')
         img2 = self.getAndCheck(eqn, style='DISPLAY')
         self.failIfEqual(img1.local_path(), img2.local_path(), "Images with different style saved at the same location.")
+
+    def testBadInput(self):
+        """ Test that invalid LaTeX throws an exception. """
+        eqn = r"\frac{1}{\sqrt{5}"
+        self.failUnlessRaises(ESPError, InlineLatex(eqn), "Exception not thrown when given invalid TeX expression.")
+        self.failUnlessRaises(ESPError, InlineLatex(eqn, dpi=500), "Exception not thrown when given invalid TeX expression.")
+        self.failUnlessRaises(ESPError, InlineLatex(eqn, dpi=500, style='INLINE'), "Exception not thrown when given invalid TeX expression.")
+        self.failUnlessRaises(ESPError, InlineLatex(eqn, style='INLINE'), "Exception not thrown when given invalid TeX expression.")
+
+    def testInvalidStyle(self):
+        """ Test that an exception is thrown on invalid style. """
+        self.failUnlessRaises(ESPError, InlineLatex(getRandomEquation(), style='ORANGES'), "Exception not thrown when given invalid style.")
+        self.failUnlessRaises(ESPError, InlineLatex(getRandomEquation(), style='ORANGES'), "Exception not thrown when given invalid style.")

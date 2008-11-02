@@ -108,10 +108,10 @@ class InlineLatex(object):
             tex_file.write(tex.encode('utf-8'))
             tex_file.close()
 
-            os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
-                      (TMP, commands['latex'], tmppath))
+            if os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
+                    (TMP, commands['latex'], tmppath)) is not 0:
+                raise ESPError(False), 'latex compilation failed.'
 
-            os.system( '%s -q -T tight -bg %s -D %s -o %s %s.dvi > /dev/null' % \
-                      (commands['dvipng'], LATEX_BG, self.dpi, self.local_path(), tmppath))
-
-        return True
+            if os.system( '%s -q -T tight -bg %s -D %s -o %s %s.dvi > /dev/null' % \
+                    (commands['dvipng'], LATEX_BG, self.dpi, self.local_path(), tmppath)) is not 0:
+                raise ESPError(False), 'dvipng failed.'
