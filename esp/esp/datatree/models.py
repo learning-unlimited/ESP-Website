@@ -32,12 +32,21 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+from django.conf import settings
+
 from django.db import models
 from django.db.models import Q
+from django.db import connection
 from django.db import transaction
 from django.core.cache import cache
 from esp.db.fields import AjaxForeignKey
 from esp.utils.memdb import mem_db
+from esp.datatree.q_object import *
+
+
+__all__ = ('DataTree', 'GetNode', 'QTree')
+
+qn = connection.ops.quote_name
 
 import exceptions
 
@@ -63,7 +72,7 @@ class DataTree(models.Model):
     MAX_WAIT    = 6000  # Maximum time to wait for a tree unlock
     PERCENT_BAD = .10 # percent of nodes that have to be bad
                       # before a "rebuild" without "reinsert"
-                      
+
 
     # some fields
     name          = models.CharField(max_length=64)
@@ -82,7 +91,10 @@ class DataTree(models.Model):
         # parent and name should be unique
         unique_together = (("name", "parent"),)
         # ordering should be by rangestart
-        ordering = ['rangestart','-rangeend']
+        #ordering = ['rangestart','-rangeend']
+
+    class Admin:
+        ordering = ('rangestart', '-rangeend')
 
     ## functions returning rangestart and rangeend, that Adam will edit at some point. -rye
     def get_rangestart(self):
@@ -116,7 +128,7 @@ class DataTree(models.Model):
     @transaction.commit_on_success
     def delete(self, recurse = False, superdelete = False):
         " Delete tree nodes. "
-        
+
         if superdelete:
             return super(DataTree, self).delete()
 
@@ -133,17 +145,18 @@ class DataTree(models.Model):
 
         if len(self) > 0:
             if not recurse:
-                raise DataTree.PermissionDenied, "You cannot delete a tree without deleting its children."
-            
+                raise DataTree.PermissionDenied("You cannot delete a tree without deleting its children.")
+
             self.delete_descendants(commit_wait = True)
 
         # move all of the tree nodes to the left.
-        DataTree.shift_many_ranges(rangestart,
-                               rangestart - rangeend - 1,
-                               commit_wait = True)
+        self.change_my_ranges()
+        #DataTree.shift_many_ranges(rangestart,
+        #                       rangestart - rangeend - 1,
+        #                       commit_wait = True)
 
         return super(DataTree, self).delete()
-        
+
 
     @transaction.commit_on_success
     def save(self, create_root = False, uri_fix = False, old_save = False, start_size = None):
@@ -159,15 +172,10 @@ class DataTree(models.Model):
 
         assert self.name != '', "Name must be specified!"
 
-        
         if self.name.find(DataTree.DELIMITER) != -1:
             raise DataTree.InvalidName, "You cannot use '%s' in the name field." % DataTree.DELIMITER
 
-
-
-
         DataTree.fix_tree_if_broken()
-            
 
         # we are going to wait if the tree is locked
         DataTree.wait_if_locked()
@@ -188,33 +196,37 @@ class DataTree(models.Model):
                 transaction.commit()
                 if node.parent_id != self.parent_id:
                     self.reinsert()
-                    
                 return new_node
-        
+
 #        if not create_root and self.parent is None:
 #            raise DataTree.CannotCreateRootException, "You cannot create a root node."
+
+        new_node = super(DataTree, self).save()
+
         # if the parent is something
         if self.parent_id is not None:
             # get the ranges for a new child
-            self.rangestart, self.rangeend = self.parent.new_ranges(start_size)
+            self.rangestart, self.rangeend = self.parent.new_ranges(start_size, child_id=self.id)
         else:
             self.rangestart = 0
             self.rangeend   = start_size - 1
             # make room for this tree node
             DataTree.shift_all_ranges(start_size, commit_wait = True)
-        
-        new_node =  super(DataTree, self).save()
+
+        DataTree.save(new_node)
         return new_node
-    
+
 
     def expand(self, expand_func = None):
         " Make this parent now have room."
 
-        if expand_func is None: expand_func = DataTree.expanded_size
-        
-        DataTree.shift_many_ranges(self.get_rangeend(),
-                                   expand_func(self),
-                                   commit_wait = True)
+        if expand_func is None:
+            expand_func = DataTree.expanded_size
+
+        self.change_my_ranges(offset=expand_func(self), commit_wait=True)
+        #DataTree.shift_many_ranges(self.get_rangeend(),
+        #                           expand_func(self),
+        #                           commit_wait = True)
 
 
     def rcopy(self, destination, child = False):
@@ -272,7 +284,7 @@ class DataTree(models.Model):
         else:
             self.rangestart, self.rangeend = self.parent.new_ranges((size-1)*DataTree.START_SIZE+\
                                                                     DataTree.START_SIZE-1,
-                                                                    DataTree.expand_conservative)
+                                                                    DataTree.expand_conservative, child_id=self.id)
 
 
         try:
@@ -352,24 +364,31 @@ class DataTree(models.Model):
         return DataTree.get_by_uri(node_uri, create = True)
 
 
-    def new_ranges(self, start_size = None, expand_func = None):
+    @transaction.commit_on_success
+    def new_ranges(self, start_size=None, expand_func=None, child_id=None):
         " Returns a 2-tuple (min,max) of range values for a new child under this one. "
-        if start_size is None: start_size = DataTree.START_SIZE
+        if not child_id:
+            raise ValueError("Require child_id to assign the ranges to.")
 
-        children = self.children().filter(range_correct = True).order_by('-rangeend')
-        if children.count() > 0:           
-            upperbound = children[0].get_rangeend()
+        if start_size is None:
+            start_size = DataTree.START_SIZE
+
+        quoted_table = qn(self._meta.db_table)
+        sql = """SELECT upper, MIN(diff) FROM (
+(SELECT rangeend + '%%s', rangeend + '%%s' - (SELECT rangeend FROM %s WHERE id = %%s) AS diff FROM %s WHERE parent_id = %%s AND range_correct = %%s)
+UNION
+(SELECT rangeend - rangestart AS diff FROM %s WHERE id = %%s)) AS a""" % \
+            (quoted_table, quoted_table, quoted_table)
+        cursor = connection.cursor()
+        cursor.execute(sql, [start_size + 2, self.id, self.id, True, self.id])
+        results = cursor.fetchall()
+        if results:
+            if results[0] < 0:
+                self.expand(expand_func)
         else:
-            upperbound = self.get_rangestart()
+            raise ValueError("Unable to get my own Node in query?")
 
-        if upperbound < self.get_rangestart():
-            upperbound = self.get_rangestart()
-        
-        if self.get_rangeend() < (upperbound + start_size + 2):
-            # we dont' have enough room...time to expand
-            self.expand(expand_func)
-                
-        return upperbound+1, upperbound + start_size
+        return upperbound + 1, upperbound + start_size
 
     def tree_encode(self):
         " Returns a list of nodes leading from root to this node. "
@@ -414,8 +433,7 @@ class DataTree(models.Model):
         
     def descendants(self, distinct = True):
         " All nodes below this node. "
-        desc = DataTree.objects.filter(rangestart__gte = self.get_rangestart(),
-                                   rangeend__lte   = self.get_rangeend())
+        desc = DataTree.objects.filter(QTree(ancestor = self))
 
         if distinct:
             desc = desc.distinct()
@@ -423,8 +441,7 @@ class DataTree(models.Model):
 
     def ancestors(self, distinct = True):
         " All nodes above this node. "
-        anc = DataTree.objects.filter(rangestart__lte = self.get_rangestart(),
-                                      rangeend__gte   = self.get_rangeend())
+        anc = DataTree.objects.filter(QTree(descendant = self))
         if distinct:
             anc = anc.distinct()
         return anc
@@ -449,11 +466,11 @@ class DataTree(models.Model):
 
     # function that returns a boolean if self is a descendant of node.
     def is_descendant_of(self, node):
-        return ((self.get_rangestart() >= node.get_rangestart()) and (self.get_rangeend() <= node.get_rangeend()))
+        return bool(DataTree.objects.filter(QTree(ancestor = node), id = self.id))
 
     # same, but if self is an ancestor of node.
     def is_ancestor_of(self, node):
-        return ((node.get_rangestart() >= self.get_rangestart()) and (node.get_rangeend() <= self.get_rangeend()))
+        return bool(DataTree.objects.filter(QTree(descendant = node), id = self.id))
 
     ####################################
     # DICTIONARY-like BEHAVIOR         #
@@ -815,19 +832,55 @@ class DataTree(models.Model):
 
     def delete_descendants(self, commit_wait = False):
         " Delete all the descendants of this node from the database. "
-        from django.db import connection
 
         cursor = connection.cursor()
 
         table = DataTree._meta.db_table
 
-        cursor.execute("DELETE FROM %s WHERE rangestart > %s AND rangeend <= %s" % \
-                       (table, self.get_rangestart(), self.get_rangeend(),))
+        cursor.execute("DELETE FROM %s WHERE rangestart > (SELECT rangestart FROM %s WHERE id = %s) AND rangeend <= (SELECT rangeend FROM %s WHERE id = %s)" %
+                       (table, table, self.id, table, self.id))
 
 
         if not commit_wait:
             transaction.commit()
 
+    def change_my_ranges(self, commit_wait=False, offset="DELETE"):
+        " Zip up the ranges from this current node. "
+        cursor = connection.cursor()
+        engine = settings.DATABASE_ENGINE.lower()
+
+        if 'postgres' in engine or 'sqlite' in engine:
+            case = "CASE WHEN %s THEN %s ELSE %s END"
+        elif 'mysql' in engine:
+            case = "IF(%s, %s, %s)"
+
+        quoted_table = qn(self._meta.db_table)
+
+        sql = """UPDATE %s SET rangestart = %s, rangeend = %s""" % (quoted_table, case, case)
+        get_expr = "(SELECT %%s FROM %s WHERE id = %s)" % (quoted_table, self.id)
+        myrangestart = get_expr % qn("rangestart")
+        myrangeend = get_expr % qn("rangeend")
+        if offset == "DELETE":
+            myrangelen = "- " + get_expr % "rangeend - rangestart - 1"
+        else:
+            op = offset < 0 and '- ' or '+ '
+            myrangelen = op + str(abs(offset))
+
+        sql = sql % (
+            "rangestart >= " + myrangeend, # If we're greater than the end...
+            "rangestart " + myrangelen, # subtract our length
+            "rangestart", # else do nothing,
+            "rangeend >= " + myrangeend, # If we're grater than the end ...
+            "rangeend " + myrangelen, # subtract our length
+            "rangeend", # else do nothing.
+            )
+
+        cursor.execute(sql)
+        if not commit_wait:
+            try:
+                transaction.commit()
+            except transaction.TransactionManagementError:
+                pass # We're not actually in a transaction; so don't bother
 
     @staticmethod
     def all_violators():
@@ -836,15 +889,14 @@ class DataTree(models.Model):
         # these are a list of functions which return violators
         violate_list = [DataTree.violating_range_sign_nodes,
                         DataTree.violating_range_nodes      ]
-        
+
         Q_final = reduce(operator.or_, [func(QObject = True) for func in violate_list])
-        
+
         return DataTree.objects.filter(Q_final).distinct()
 
     @staticmethod
     def violating_range_sign_nodes(QObject = False):
         " Returns the nodes that violate the rangestart-must-be-less-than-rangeend constaint. "
-        from django.db import connection
 
         cursor = connection.cursor()
 
@@ -869,8 +921,6 @@ class DataTree(models.Model):
     def violating_range_nodes(QObject = False):
         " Returns the nodes that violate the must-be-in-range-of-parent constraint "
 
-        from django.db import connection
-        
         cursor = connection.cursor()
 
         table = DataTree._meta.db_table
@@ -895,8 +945,6 @@ class DataTree(models.Model):
     
     def expire_uri(self, commit_wait = False):
         " Expire the URIs on all descendants of this node. "
-        from django.db import connection
-        from django.conf import settings
 
         if self.get_rangestart() is None or self.get_rangeend() is None:
             return
@@ -912,24 +960,22 @@ class DataTree(models.Model):
             false = '0'
             
         cursor = connection.cursor()
+        db_tree = qn(DataTree._meta.db_table)
 
         cursor.execute(("UPDATE %s SET uri_correct = '%s' WHERE " + \
-                        "rangestart > %s AND rangeend <= %s") % \
-                       (DataTree._meta.db_table, false,
-                        self.get_rangestart(), self.get_rangeend()))
+                        "rangestart > (SELECT rangestart FROM %s WHERE id = %s)" + \
+                        " AND rangeend <= (SELECT rangeend FROM %s WHERE id = %s)") % \
+                           (db_tree, false, db_tree, self.id, db_tree, self.id))
 
         if not commit_wait:
             try:
                 transaction.commit()
             except transaction.TransactionManagementError:
                 pass # We're not actually in a transaction; so don't bother
-            
-    @staticmethod
-    def shift_many_ranges(baserange, amount, above_base = True, commit_wait = False):
+
+    @classmethod
+    def shift_many_ranges(cls, baserange, amount, above_base = True, commit_wait = False):
         " Shift all ranges either above or below a base by amount. "
-        from django.db import connection
-        from django.conf import settings
-        
         if amount == 0:
             return
         cursor = connection.cursor()
@@ -959,7 +1005,7 @@ class DataTree(models.Model):
             sql = ("UPDATE %s SET rangestart = %s, " +\
                    "rangeend = %s WHERE "            +\
                    "rangestart %s %s OR rangeend %s %s") % \
-                        (DataTree._meta.db_table,
+                        (cls._meta.db_table,
                          rangestart_result,
                          rangeend_result,
                          op,baserange,
@@ -968,10 +1014,10 @@ class DataTree(models.Model):
             
         elif 'sqlite' in settings.DATABASE_ENGINE.lower():
             sql = ['UPDATE %s SET rangestart = rangestart %s WHERE rangestart %s %s;' % \
-                    (DataTree._meta.db_table,
+                    (cls._meta.db_table,
                     stramount, op, baserange),
                    'UPDATE %s SET rangeend   = rangeend   %s WHERE rangeend   %s %s;' % \
-                   (DataTree._meta.db_table,
+                   (cls._meta.db_table,
                     stramount, op, baserange)]
         else:
             assert False, 'Unkown database engine %s.' % settings.DATABASE_ENGINE
@@ -985,10 +1031,9 @@ class DataTree(models.Model):
         if not commit_wait:
             transaction.commit()
         
-    @staticmethod
-    def shift_all_ranges(amount, commit_wait = False):
+    @classmethod
+    def shift_all_ranges(cls, amount, commit_wait = False):
         " Shift all ranges by an amount, either positive or negative. "
-        from django.db import connection
         
         if amount == 0:
             return
@@ -1001,8 +1046,8 @@ class DataTree(models.Model):
         else:
             stramount = '- %s' % abs(amount)
             
-        cursor.execute("UPDATE DataTree SET rangeend = rangeend %s, " +\
-                       "rangestart = rangestart %s" % [stramount,stramount])
+        cursor.execute("UPDATE %s SET rangeend = rangeend %s, " +\
+                       "rangestart = rangestart %s" % (qn(cls._meta.db_table), stramount, stramount))
         
         if not commit_wait:
             transaction.commit()

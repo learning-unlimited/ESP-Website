@@ -29,25 +29,64 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+######################
+# File Locations     #
+######################
+
+# root directory
+PROJECT_ROOT = '/esp/web_git/mit/esp/'
+
+# log directory
+LOG_FILE="/var/log/django/esp_errlog"
+
+
+
+###################
+# Debug settings  #
+###################
 DEBUG = True
 DISPLAYSQL = False
-
 TEMPLATE_DEBUG = DEBUG
 
-ADMINS = (
-    ('Mike Axiak', 'axiak@mit.edu')
+INTERNAL_IPS = (
+    '18.208.0.164',
+    '18.187.7.102',
+    '71.126.253.25',
+    '72.93.219.106',
+    '127.0.0.1',
 )
+
+##################
+# Admins         #
+##################
+ADMINS = (
+    ('ESP Webmasters','esp-webmasters@mit.edu'),
+)
+
 MANAGERS = ADMINS
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = '25'
 
-DATABASE_ENGINE = 'postgresql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
-DATABASE_NAME = 'django'             # Or path to database file if using sqlite3.
+# problem mail
+EMAIL_HOST   = 'localhost'
+EMAIL_PORT   = '25'
+SERVER_EMAIL = 'server@esp.mit.edu'
+EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
+
+################
+# Database     #
+################
+
+# ENGINE one of:
+#  'postgresql_psycopg2', 'postgresql', 'mysql',
+#  'mysql_old', 'sqlite3' or 'ado_mssql'
+
+DATABASE_ENGINE = 'postgresql'
+DATABASE_NAME = 'django'
+DATABASE_HOST = 'localhost'
+DATABASE_PORT = '5433'
+# passwords etc
 from database_settings import *
-DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = '5433'             # Set to empty string for default. Not used with sqlite3.
 
-PROJECT_ROOT = '/home/axiak/esp/'
+
 
 TIME_ZONE = 'America/New_York'
 
@@ -55,41 +94,41 @@ LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
 
-MEDIA_ROOT = PROJECT_ROOT + 'media/'
+MEDIA_ROOT = PROJECT_ROOT + 'public/media/'
 
 MEDIA_URL = '/media/'
 
 ADMIN_MEDIA_PREFIX = '/media/admin/'
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'm)^ea+0^rg5w73-h9d$t)#1@jsf+0km97_rbnpy2884b^%t&wo'
 
-# List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.load_template_source',
     'django.template.loaders.app_directories.load_template_source',
-#     'django.template.loaders.eggs.load_template_source',
 )
 
 MIDDLEWARE_CLASSES = (
+#    'esp.middleware.scopecachemiddleware.ScopeCacheMiddleware',
+    'django.middleware.http.SetRemoteAddrFromForwardedFor',
+    'esp.queue.middleware.QueueMiddleware',
+    'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
-#    'esp.middleware.ESPErrorMiddleware',
+    'esp.middleware.ESPErrorMiddleware',
     'esp.middleware.StatsMiddleware',
+#   'esp.middleware.psycomiddleware.PsycoMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'django.contrib.csrf.middleware.CsrfMiddleware',
+#    'esp.middleware.esp_sessions.SessionMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'esp.middleware.ESPAuthMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',
-
+    'esp.middleware.PrettyErrorEmailMiddleware',
+    'esp.middleware.StripWhitespaceMiddleware',
 )
 
 ROOT_URLCONF = 'esp.urls'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates".
-    # Always use forward slashes, even on Windows.
-    PROJECT_ROOT+'templates'
+    PROJECT_ROOT+'templates',
 )
 
 APPEND_SLASH=False
@@ -100,40 +139,57 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
-    'esp.datatree',
-    'esp.miniblog',
     'esp.users',
-    'esp.workflow',
-    'esp.dbmail',
+    'esp.membership',
+    'esp.miniblog',
+    'esp.web',
     'esp.program',
     'esp.program.modules',
+    'esp.datatree',
+    'esp.dbmail',
     'esp.cal',
     'esp.lib',
     'esp.setup',
-    'esp.web',
     'esp.qsd',
     'esp.qsdmedia',
     'esp.money',
     'esp.resources',
-    'esp.poll',
-    'esp.dblog',
     'esp.gen_media',
-
+    'esp.dblog',
+    'esp.membership',
+    'esp.queue',
+    'esp.survey',
+    'esp.accounting_core',
+    'esp.accounting_docs',
+    'esp.shortterm',
+#    'django_evolution',
+#    'django_command_extensions',
 )
 
 
-#aseering 12-15-2006: Make memcached happen
-CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
+CACHE_BACKEND="esp.utils.memcached_multikey://127.0.0.1:11211/?timeout=120"
 
-
-LOG_FILE="/var/log/django/esp_errlog"
+CACHE_PREFIX="ESP"
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
+
+SESSION_ENGINE="django.contrib.sessions.backends.cache"
 
 TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
                                'esp.context_processors.esp_user',
                                'esp.context_processors.test_cookie',
+                               'esp.context_processors.current_site',
+                               'esp.context_processors.index_backgrounds',
                                'django.core.context_processors.i18n',
                                'django.core.context_processors.request',
                                'django.core.context_processors.auth',
                                )  
+
+# no i18n
+USE_I18N = False
+
+AUTH_PROFILE_MODULE='users.ESPUser_Profile'
+
+SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
+
+FORCE_SCRIPT_NAME = ''

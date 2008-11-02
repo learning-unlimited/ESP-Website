@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
@@ -404,11 +404,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         v_registered_base = request.get_node('V/Flags/Registration')
         
         #   This query just gets worse and worse.   -Michael
-        oldclasses = ClassSection.objects.filter(meeting_times=extra,
-                             classsubject__parent_program = self.program,
-                             anchor__userbit_qsc__verb__rangestart__gte = v_registered_base.get_rangestart(),
-                             anchor__userbit_qsc__verb__rangeend__lte = v_registered_base.get_rangeend(),
-                             anchor__userbit_qsc__user = self.user).distinct()
+        #   Maybe a little better with QTree?   -Axiak
+        oldclasses = ClassSection.objects.filter(
+            QTree(anchor__userbit_qsc__verb__below = v_registered_base),
+            meeting_times=extra,
+            classsubject__parent_program = self.program,
+            anchor__userbit_qsc__user = self.user).distinct()
                              
         #   Narrow this down to one class if we're using the priority system.
         if request.GET.has_key('sec_id'):
