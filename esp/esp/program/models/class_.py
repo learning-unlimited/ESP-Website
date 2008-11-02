@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 
 import datetime
 import time
+from decimal import Decimal
 
 # django Util
 from django.db import models
