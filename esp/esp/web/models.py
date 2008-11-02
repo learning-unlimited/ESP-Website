@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.db import models
 from django.db.models.query import Q
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
 from esp.db.fields import AjaxForeignKey

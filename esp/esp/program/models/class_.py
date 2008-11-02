@@ -51,7 +51,7 @@ from django.contrib.auth.models import User
 
 # ESP models
 from esp.miniblog.models import Entry
-from esp.datatree.models import DataTree, GetNode, QTree
+from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit

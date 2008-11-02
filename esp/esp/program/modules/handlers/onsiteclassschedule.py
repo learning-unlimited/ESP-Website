@@ -33,7 +33,7 @@ from esp.users.views import search_for_user
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser, UserBit
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from datetime         import datetime, timedelta
 
 class OnsiteClassSchedule(ProgramModuleObj):

@@ -14,7 +14,7 @@ from esp.db.fields import AjaxForeignKey
 
 # model dependencies
 from esp.users.models import ESPUser
-from esp.datatree.models import DataTree, QTree
+from esp.datatree.models import *
 from esp.datatree.util import tree_filter
 
 # Cache introspection
@@ -503,7 +503,7 @@ class UserBit(models.Model):
     @classmethod
     def time_cache(cls):
         from django.contrib.auth.models import User
-        from esp.datatree.models import DataTree, GetNode
+        from esp.datatree.models import *
         import time
 
         axiak = User.objects.get(username='axiak')

@@ -32,7 +32,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from esp.db.fields import AjaxForeignKey
 from esp.utils.forms import save_instance
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.program.models import ContactInfo
 import datetime
 

@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from django.db import models, transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem, EmptyTransactionException, CompletedTransactionException
 from esp.accounting_docs.checksum import Checksum

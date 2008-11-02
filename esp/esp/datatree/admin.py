@@ -33,7 +33,7 @@ Email: web@esp.mit.edu
 """
 
 from django.contrib import admin
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 
 class DataTreeAdmin(admin.ModelAdmin):
     list_display = ('uri',)

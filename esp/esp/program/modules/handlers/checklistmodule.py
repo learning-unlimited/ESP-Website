@@ -32,10 +32,10 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.program.models  import Program, ProgramCheckItem
 from esp.web.util        import render_to_response
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.users.models import ESPUser, User
 from django.http import HttpResponseRedirect
 

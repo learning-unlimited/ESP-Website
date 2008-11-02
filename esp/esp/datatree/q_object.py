@@ -48,7 +48,7 @@ __all__ = ('QTree',)
 def _import_datatree():
     global DataTree
     if not DataTree:
-        from esp.datatree.models import DataTree
+        from esp.datatree.models import *
 
 direction_map = {
     'below': ('gte', 'lte'),

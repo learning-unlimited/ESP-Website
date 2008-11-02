@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.core.files import File
 
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.settings import MEDIA_ROOT, MEDIA_URL
 from esp.db.fields import AjaxForeignKey
 from time import strftime

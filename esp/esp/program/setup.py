@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.users.models import ESPUser, User, UserBit
 from esp.users.models.userbits import UserBitImplication
 from esp.program.Lists_ClassCategories import populate as populate_LCC

@@ -298,7 +298,7 @@ class ProgramModuleObj(models.Model):
     def deadline_met(self, extension=''):
     
         from esp.users.models import UserBit
-        from esp.datatree.models import GetNode
+        from esp.datatree.models import *
 
 
         if not self.user or not self.program:
@@ -570,7 +570,7 @@ def needs_student(method):
 def meets_grade(method):
     def _checkGrade(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/wronggrade.html'
-        from esp.datatree.models import GetNode
+        from esp.datatree.models import *
         from esp.users.models import UserBit
 
         verb_override = GetNode('V/Flags/Registration/GradeOverride')
@@ -599,7 +599,7 @@ def meets_deadline(extension=''):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
             from esp.users.models import UserBit
-            from esp.datatree.models import GetNode
+            from esp.datatree.models import *
             if tl != 'learn' and tl != 'teach':
                 return True
 

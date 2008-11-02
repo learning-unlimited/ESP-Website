@@ -34,7 +34,7 @@ def accesshandler(req):
         os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
     from esp.users.models import UserBit
-    from esp.datatree.models import get_lowest_parent
+    from esp.datatree.models import *
 
     
     request=AccessHandler()(req)
@@ -68,7 +68,7 @@ def authenhandler(req, **kwargs):
         os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
             
     from esp.users.models import UserBit
-    from esp.datatree.models import get_lowest_parent
+    from esp.datatree.models import *
 
 
 

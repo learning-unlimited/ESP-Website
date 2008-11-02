@@ -9,7 +9,7 @@ class ESPUserTestCase(TestCase):
     fixtures = ['users']
 
     def setUp(self):
-        from esp.datatree.models import GetNode
+        from esp.datatree.models import *
         from esp.program.models  import Program
         node = GetNode('Q/Programs/Dummy_Programs/Profile_Storage')
         dummy_program = Program(anchor = node,

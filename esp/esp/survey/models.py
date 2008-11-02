@@ -44,7 +44,7 @@ except ImportError:
 from esp.db.fields import AjaxForeignKey
 
 # Models to depend on.
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.middleware import ESPError
 from esp.program.models import ClassSubject, ClassSection, Program
 

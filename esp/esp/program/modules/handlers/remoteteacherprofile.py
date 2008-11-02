@@ -32,7 +32,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_s
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.profile import RemoteTeacherProfileForm
 from esp.program.models          import Program
-from esp.datatree.models         import DataTree, GetNode
+from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
 from django.utils.datastructures import MultiValueDict

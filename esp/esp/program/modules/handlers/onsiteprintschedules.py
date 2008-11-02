@@ -35,7 +35,7 @@ from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from datetime         import datetime
 from esp.web.util     import render_to_response
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.users.models import UserBit
 from datetime         import datetime
 from django.db.models.query   import Q

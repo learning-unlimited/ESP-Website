@@ -28,7 +28,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.users.models import UserBit
 
 # INITIAL_USERBITS is an array of dictionaries;

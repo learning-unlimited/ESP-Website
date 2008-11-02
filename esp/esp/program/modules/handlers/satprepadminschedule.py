@@ -33,14 +33,14 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.miniblog.models import Entry
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.users.models    import ESPUser, User
 from esp.users.views import search_for_user, get_user_list
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo, ClassSubject, ClassCategories
 from esp.cal.models import Event
 from esp.resources.models import Resource, ResourceType
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 
 
 class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
