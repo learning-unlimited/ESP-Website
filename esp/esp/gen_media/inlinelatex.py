@@ -81,8 +81,9 @@ class InlineLatex(object):
     @property
     def img(self):
         """ An image tag, ready to be inserted into HTML. """
+        from django.utils.html import escape
         return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' \
-                % (self.url, self.content, self.content)
+                % (self.url, escape(self.content), escape(self.content))
 
     def _generate_file(self):
         """ Generates the png file. """
