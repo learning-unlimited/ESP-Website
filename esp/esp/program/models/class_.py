@@ -30,7 +30,11 @@ Email: web@esp.mit.edu
 
 import datetime
 import time
+<<<<<<< HEAD:esp/esp/program/models/class_.py
 from collections import defaultdict
+=======
+from decimal import Decimal
+>>>>>>> e1f7c3c783a0beb4d676aaae4b7a892adc12f240:esp/esp/program/models/class_.py
 
 # django Util
 from django.db import models
@@ -456,18 +460,22 @@ class ClassSection(models.Model):
             result = base_room.satisfies_requests(self)
             if result[0] is False:
                 status = False
-                errors.append('This room does not have all resources that the class needs (or it is too small) and you have opted not to compromise.  Try a better room.')
+                errors.append( 'Room <strong>%s</strong> does not have all resources that <strong>%s</strong> needs (or it is too small) and you have opted not to compromise.  Try a better room.' % (base_room.name, self) )
         
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
-            errors.append('This room is not available at the times requested by the class.  Bug the webmasters to find out why you were allowed to assign this room.')
+            errors.append( 'Room <strong>%s</strong> is not available at the times requested by <strong>%s</strong>.  Bug the webmasters to find out why you were allowed to assign this room.' % (base_room.name, self) )
         
         for r in rooms_to_assign:
             r.clear_schedule_cache(self.parent_program)
             result = self.assignClassRoom(r)
             if not result:
                 status = False
-                errors.append('Error: This classroom is already taken.  Please assign a different one.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.')
+                occupiers_str = ''
+                occupiers_set = base_room.assignments()
+                if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
+                    occupiers_str = ' by <strong>%s</strong>' % (occupiers_set[0].target or occupiers_set[0].target_subj)
+                errors.append( 'Error: Room <strong>%s</strong> is already taken%s.  Please assign a different one to <strong>%s</strong>.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.' % ( base_room.name, occupiers_str, self ) )
             
         return (status, errors)
     

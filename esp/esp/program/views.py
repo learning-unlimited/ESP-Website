@@ -49,7 +49,7 @@ from esp.program.forms import ProgramCreationForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
-from esp.accounting_core.models import LineItemType
+from esp.accounting_core.models import LineItemType, CompletedTransactionException
 
 import pickle
 
