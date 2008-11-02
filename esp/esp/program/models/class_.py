@@ -386,7 +386,7 @@ class ClassSection(models.Model):
         cache.delete(cache_key1)
         cache.delete(cache_key2)
         cache.delete(cache_key3)
-        incrememt_global_resource_rev()
+        increment_global_resource_rev()
     
     def unsatisfied_requests(self):
         from esp.resources.models import global_resource_rev
@@ -774,7 +774,7 @@ class ClassSection(models.Model):
         """
         events = list(self.meeting_times.all())
 
-        txtTimes = [ event.short_time() for event
+        txtTimes = [ event.pretty_time() for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
         self.cache['friendly_times'] = txtTimes
