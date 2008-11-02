@@ -30,11 +30,8 @@ Email: web@esp.mit.edu
 
 import datetime
 import time
-<<<<<<< HEAD:esp/esp/program/models/class_.py
 from collections import defaultdict
-=======
 from decimal import Decimal
->>>>>>> e1f7c3c783a0beb4d676aaae4b7a892adc12f240:esp/esp/program/models/class_.py
 
 # django Util
 from django.db import models
