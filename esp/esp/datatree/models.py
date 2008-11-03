@@ -68,7 +68,7 @@ class DataTree(models.Model):
     ROOT_NODE   = None
     ROOT_NAME   = 'ROOT'
     MAX_DEPTH   = 50
-    LOCK_WAIT   = .01
+    LOCK_WAIT   = .1
     MAX_WAIT    = 6000  # Maximum time to wait for a tree unlock
     PERCENT_BAD = .10 # percent of nodes that have to be bad
                       # before a "rebuild" without "reinsert"
@@ -162,7 +162,8 @@ class DataTree(models.Model):
         if old_save:
             return super(DataTree, self).save()
 
-        if start_size is None: start_size = DataTree.START_SIZE
+        if start_size is None:
+            start_size = DataTree.START_SIZE
 
         self.get_uri()
 
@@ -193,8 +194,8 @@ class DataTree(models.Model):
                 self.rangeend   = node.get_rangeend()
                 new_node = super(DataTree, self).save()
                 if node.parent_id != self.parent_id:
-                    self.reinsert()
-                return new_node
+                    self.move_ranges_to_parent()
+                return self
 
         if not self.rangestart:
             self.rangestart = 0
@@ -266,9 +267,15 @@ class DataTree(models.Model):
         self.save(old_save = True)
         return rangeend+1
 
+    def move_ranges_to_parent(self):
+        " Shift all the ranges under and including this node to another parent. "
+        range = DataTree.objects.get(id = self.id).values('rangestart', 'rangeend')
+        range = range['rangeend'] - range['rangestart'] + 1
+        self.rangestart, self.rangeend = self.parent.new_ranges(range, child_id=self.id, move_subtranges=True)
+        
+
     def reinsert(self, top = True):
         " Will perform a Re-insert. That is, it will rotate this to the last node. "
-
         if top:
             DataTree.wait_if_locked()
             DataTree.lock()
@@ -360,9 +367,8 @@ class DataTree(models.Model):
 
         return DataTree.get_by_uri(node_uri, create = True)
 
-
     @transaction.commit_on_success
-    def new_ranges(self, start_size=None, expand_func=None, child_id=None):
+    def new_ranges(self, start_size=None, expand_func=None, child_id=None, move_subranges=None):
         " Returns a 2-tuple (min,max) of range values for a new child under this one. "
         if not child_id:
             raise ValueError("Require child_id to assign the ranges to.")
@@ -386,8 +392,21 @@ UNION
         else:
             raise ValueError("Unable to get my own Node in query?")
 
-        sql = "UPDATE %s SET rangestart = %%s, rangeend = %%s WHERE id = %%s" % quoted_table
+        if move_subranges:
+            value_tpl = "(SELECT %s FROM %%(qt)s WHERE id = %%%%s)"
+            sql = "UPDATE %(qt)s SET rangestart = rangestart + " + (value_tpl % "%%s - rangestart") +\
+                " rangeend = rangeend + " + (value_tpl % "%%s - rangeend") + " WHERE rangestart >= " +\
+                (value_tpl % "rangestart") + " AND rangeend <= " + (value_tpl % "rangeend")
+            sql = sql % {'qt': quoted_table}
+            params = [upperbound + 1, child_id, upperbound + start_size, child_id, child_id, child_id]
+        else:
+            params = [upperbound + 1, upperbound + start_size, child_id]
+            sql = "UPDATE %s SET rangestart = %%s, rangeend = %%s WHERE id = %%s" % quoted_table
         cursor.execute(sql, [upperbound + 1, upperbound + start_size, child_id])
+        try:
+            transaction.commit()
+        except:
+            pass
         return upperbound + 1, upperbound + start_size
 
     def tree_encode(self):
@@ -405,13 +424,13 @@ UNION
             if save:
                 self.save(uri_fix = True)
             return ''
-        
+
         parent_uri = self.parent.get_uri()
         if parent_uri == '':
             self.uri = self.name
         else:
             self.uri = parent_uri + DataTree.DELIMITER + self.name
-            
+
         self.uri_correct = True
 
         if self.id is not None and save:
@@ -419,18 +438,25 @@ UNION
 
         return self.uri
 
-    def descendants_slow(self):
+    def descendants_slow(self, memo=None):
         " All nodes below this node, but very slowly. "
+        if memo is None:
+            import sys
+            sys.stderr.write("ENTERED descendants_slow!\n")
+            memo = set()
         children = self.children()
-        if len(self) == 0:
+        if not children[:1]:
             return [self]
-        children_list = [self]
+        memo.add(self)
+
+        children_list = []
 
         for child in children:
-            children_list += child.descendants_slow()
+            if child not in memo:
+                children_list += child.descendants_slow()
 
         return children_list
-        
+
     def descendants(self, distinct = True):
         " All nodes below this node. "
         desc = DataTree.objects.filter(QTree(below = self))
@@ -445,6 +471,11 @@ UNION
         if distinct:
             anc = anc.distinct()
         return anc
+
+    def sync_ranges(self):
+        node = DataTree.objects.get(id = self.id)
+        self.rangestart, self.rangeend = node.rangestart, node.rangeend
+        cache.set("GetNode%s" % self.get_uri(), self, 86400)
     
     def children(self):
         " Return all the subnodes of this one. "
@@ -567,7 +598,6 @@ UNION
     @classmethod
     def root(cls):
         " Get the root node of this tree. "
-
         if cls.ROOT_NODE != None:
             return cls.ROOT_NODE
 
@@ -580,7 +610,7 @@ UNION
                         uri  = '',
                         uri_correct = True,
                         rangestart = 0,
-                        rangeend = 0+cls.START_SIZE - 1)
+                        rangeend = 0+cls.START_SIZE * 10)
             root.save(True, old_save = True)
             return root
 
@@ -608,13 +638,21 @@ UNION
         return
 
     @staticmethod
-    def get_by_uri(uri, create = False):
+    def _get_by_uri(uri, create=False, depth=0):
         " Get the node by the URI, A/B/.../asdf "
+        CACHE_TIME = 86400
         uri = uri.strip(DataTree.DELIMITER)
 
+        cache_key = "GetNode%s" % uri
+        result = cache.get(cache_key)
+        if result:
+            return result
+
         try:
-            node = DataTree.objects.get(uri = uri,
-                                    uri_correct = True)
+            node = DataTree.objects.get(uri=uri,
+                                        uri_correct=True)
+
+            cache.set(cache_key, node, CACHE_TIME)
             return node
         except:
             pass
@@ -629,10 +667,11 @@ UNION
 
         cur_name   = pieces[-1]
         parent_uri = DataTree.DELIMITER.join(pieces[:-1])
-        parent = DataTree.get_by_uri(parent_uri, create)
-        
+        parent = DataTree._get_by_uri(parent_uri, create, depth + 1)
+
         try:
-            node = parent[cur_name]            
+            node = parent[cur_name]
+            cache.set(cache_key, node, CACHE_TIME)
             return node
         except:
             pass
@@ -645,8 +684,15 @@ UNION
         node.uri = uri
         node.uri_correct = True
         node.parent = parent
-        node.save(uri_fix = True)
+        node.save(uri_fix = True, start_size = 2 * (depth + 2))
+        print "Creating %s with %s ranges. [%s:%s]" % (uri, 2 * (depth + 1), node.rangestart, node.rangeend)
+        cache.set(cache_key, node, CACHE_TIME)
         return node
+
+    @staticmethod
+    @transaction.commit_on_success
+    def get_by_uri(uri, create=False, depth=0):
+        return DataTree._get_by_uri(uri, create, depth)
 
     @staticmethod
     def violating_dup_rangestart(QObject = False):
@@ -764,6 +810,10 @@ UNION
             DataTree.FIXING_TREE = False
             return False
 
+        import sys
+        sys.stderr.write("TREE IS BROKEN?\n===========================\n!!!!\n")
+        return
+
         res = DataTree.exists_violators(q_object=True)
         total = DataTree.objects.count()
         num_bad = DataTree.objects.filter(res).count()
@@ -816,20 +866,10 @@ UNION
     ##############################
 
 
-    @transaction.commit_manually
     def delete_descendants(self, commit_wait = False):
         " Delete all the descendants of this node from the database. "
+        DataTree.objects.filter(QTree(belowonly = self)).delete()
 
-        cursor = connection.cursor()
-
-        table = DataTree._meta.db_table
-
-        cursor.execute("DELETE FROM %s WHERE rangestart > (SELECT rangestart FROM %s WHERE id = %s) AND rangeend <= (SELECT rangeend FROM %s WHERE id = %s)" %
-                       (table, table, self.id, table, self.id))
-
-
-        if not commit_wait:
-            transaction.commit()
 
     def change_my_ranges(self, commit_wait=False, offset="DELETE"):
         " Zip up the ranges from this current node. "
@@ -1126,7 +1166,7 @@ WHERE
                     
                     if DataTree.exists_violators():
                         print "ERROR:"
-                        print DataTree.violating_range_sign_nodes()
+                        print DataTree.objects.filter(DataTree.exists_violators(True))
                         return
                 except int:
                     exc_info = sys.exc_info()
@@ -1160,13 +1200,7 @@ def get_lowest_parent(uri):
 
 def GetNode(nodename):
     " Get a datatree node and create it if it doesn't exist. "
-    cache_key = "GetNode__%s" % nodename
-    result = cache.get(cache_key)
-    if result:
-        return result
-    result = DataTree.get_by_uri(nodename, create = True)
-    cache.set(cache_key, result, 86400)
-    return result
+    return DataTree.get_by_uri(nodename, create = True)
 
 def StringToPerm(permstr):
     """ Convert a permission from 'a/b/c' format to [a, b, c] format """
