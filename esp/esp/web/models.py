@@ -34,7 +34,6 @@ from esp.datatree.models import *
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
 from esp.db.fields import AjaxForeignKey
-from esp.datatree.util import tree_filter_kwargs
         
 # Create your models here.
 
@@ -88,5 +87,5 @@ class NavBarEntry(models.Model):
                 raise NavBarEntry.DoesNotExist
             
         # Find the valid entries
-        return NavBarEntry.objects.filter(**tree_filter_kwargs(path__above = branch)).order_by('sort_rank')
+        return NavBarEntry.objects.filter(QTree(path__above =branch)).order_by('sort_rank')
 

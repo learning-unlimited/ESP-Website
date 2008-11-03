@@ -70,7 +70,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
         Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
-        Reg = Q(userbit__verb__rangestart__gte = verb_base.get_rangestart(), userbit__verb__rangeend__lte = verb_base.get_rangeend())
+        Reg = QTree(userbit__verb__below = verb_base)
         Unexpired = Q(userbit__enddate__isnull=True) | Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
         
         if QObject:

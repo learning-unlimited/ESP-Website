@@ -15,7 +15,6 @@ from esp.db.fields import AjaxForeignKey
 # model dependencies
 from esp.users.models import ESPUser
 from esp.datatree.models import *
-from esp.datatree.util import tree_filter
 
 # Cache introspection
 from django.core.cache.backends.memcached import CacheClass as MemcachedClass
