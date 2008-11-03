@@ -622,7 +622,7 @@ class ClassSection(models.Model):
         userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).distinct()
         for u in userbits:
             bit_str = u.verb.uri[uri_start:]
-            result[bit_str].append(u.user)
+            result[bit_str].append(ESPUser(u.user))
         return PropertyDict(result)
 
     def students_prereg(self, use_cache=True):

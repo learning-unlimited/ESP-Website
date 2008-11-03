@@ -122,20 +122,24 @@ class QTree(Q):
         #    appropriate SubWhereNode objects that have their own SQL.
 
         filter, value = item
-        column, qtype = filter.rsplit(LOOKUP_SEP, 1)
+        qtype = filter.rsplit(LOOKUP_SEP, 1)
+        if len(qtype) == 1:
+            qtype = qtype[0]
+            query_first = ''
+        else:
+            query_first = qtype[0] + '__'
+            qtype = qtype[1]
+
         if qtype[-3:] == '_id':
             qtype = qtype[:-3]
-
 
         if self.negated:
             qtype = REVERSE[qtype]
 
         new_q = Q(**{
-                LOOKUP_SEP.join((column,
-                                'rangestart',
+                LOOKUP_SEP.join((query_first + 'rangestart',
                                 direction_map[qtype][0])): TOKENS[0],
-                LOOKUP_SEP.join((column,
-                                'rangeend',
+                LOOKUP_SEP.join((query_first + 'rangeend',
                                 direction_map[qtype][1])): TOKENS[1],
                 })
         query.add_q(new_q)
@@ -196,6 +200,14 @@ class QTree(Q):
         obj.negated = not self.negated
         obj.children = deepcopy(self.children)
         return obj
+
+    # Fortunately Python can allow us to redefine behavior the other way.
+    def __rand__(self, other):
+        return self._combine(other, self.AND)
+
+    def __ror__(self, other):
+        return self._combine(other, self.OR)
+
 
 class SubWhereNode(object):
     def __init__(self, query, cols=(), params=()):
