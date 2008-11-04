@@ -107,40 +107,18 @@ class DataTree(models.Model):
     def get_rangeend(self):
         return self.rangeend
 
-    ########################
-    # PARAMETER Functions  #
-    ########################
-
-    @staticmethod
-    def expanded_size(node):
-        " This is whatever the expanded size should be. "
-        size = node.range_size()
-        if size < 2:
-            return 2
-        else:
-            return size
-
-    @staticmethod
-    def expand_conservative(node):
-        " This will expand conservatively. "
-        #size = node.range_size()
-        return DataTree.START_SIZE
-
     #######################
     # MUTATORS            #
     #######################
     def delete(self, recurse = False, superdelete = False):
         " Delete tree nodes. "
-
         if superdelete:
             return super(DataTree, self).delete()
-
 
         DataTree.objects.fix_tree_if_broken()
 
         # we are going to wait if the tree is locked
         DataTree.wait_if_locked()
-
 
         # need these for later
         rangestart = self.get_rangestart()
@@ -150,13 +128,10 @@ class DataTree(models.Model):
             if not recurse:
                 raise DataTree.PermissionDenied("You cannot delete a tree without deleting its children.")
 
-            self.delete_descendants(commit_wait = True)
+            self.delete_descendants()
 
         # move all of the tree nodes to the left.
-        self.change_my_ranges()
-        #DataTree.shift_many_ranges(rangestart,
-        #                       rangestart - rangeend - 1,
-        #                       commit_wait = True)
+        DataTree.objects._change_ranges(self)
 
         return super(DataTree, self).delete()
 
@@ -171,10 +146,11 @@ class DataTree(models.Model):
             self.__dict__.update(obj.__dict__)
             return self
 
+        old_node = DataTree.objects.get(id=self.id)
+        if old_node.parent_id != self.parent_id:
+            raise NotImplementedError("Have not yet written the parent moving code.")
+
         self.save_db(*self.SAVE_COLS)
-        # TODO: Handle the case where the node moves from one parent to
-        #       another (Hint: get by id to check the old parent from the new
-        #                      parent.)
 
 
     def save_db(self, *cols, **kwargs):
@@ -195,14 +171,6 @@ class DataTree(models.Model):
         if not cursor:
             cursor = connection.cursor()
         cursor.execute(sql, params)
-
-
-    def expand(self, expand_func=None, minimum_size=0, cursor=None):
-        " Make this parent now have room."
-        if expand_func is None:
-            expand_func = DataTree.expanded_size
-
-        self.change_my_ranges(offset=max(expand_func(self), minimum_size), commit_wait=True, cursor=cursor)
 
 
     def rcopy(self, destination, child = False):
@@ -318,9 +286,8 @@ class DataTree(models.Model):
 
     def is_root(self):
         """ If this node is the root node, returns True, otherwise False."""
-        return self.parent_id == None and self.name == DataTree.ROOT_NAME
-        
-    
+        return self.parent_id is None and self.name == DataTree.ROOT_NAME
+
     def __unicode__(self):
         return '%s (%s--%s)' % (self.get_uri(),
                                 self.get_rangestart(),
@@ -353,7 +320,7 @@ class DataTree(models.Model):
             self.uri_correct = True
             self.uri = ''
             if save:
-                self.save(uri_fix = True)
+                self.save(uri_fix=True)
             return ''
 
         parent_uri = self.parent.get_uri()
@@ -412,13 +379,6 @@ class DataTree(models.Model):
         " Return all the subnodes of this one. "
         return DataTree.objects.filter(parent = self)
 
-    def range_size(self):
-        " The capacity of this node. "
-        return self.get_rangeend() - self.get_rangestart() - 1
-
-    def room_for_children(self):
-        return self.range_size() - self.children().count() 
-    
     def depth(self):
         uri = self.get_uri()
         if uri == '':
@@ -428,11 +388,11 @@ class DataTree(models.Model):
 
     # function that returns a boolean if self is a descendant of node.
     def is_descendant_of(self, node):
-        return bool(DataTree.objects.filter(QTree(below = node), id = self.id))
+        return bool(DataTree.objects.filter(QTree(below = node), id = self.id)[:1])
 
     # same, but if self is an ancestor of node.
     def is_ancestor_of(self, node):
-        return bool(DataTree.objects.filter(QTree(above = node), id = self.id))
+        return bool(DataTree.objects.filter(QTree(above = node), id = self.id)[:1])
 
     ####################################
     # DICTIONARY-like BEHAVIOR         #
@@ -458,12 +418,12 @@ class DataTree(models.Model):
         return [(node.name, node) for node in self.children()]
 
     def has_key(self, key):
-        return self.children().filter(name__exact = key).count() > 0
+        return bool(self.children().filter(name__exact = key)[:1])
 
     def __contains__(self, child):
         if type(child) != DataTree:
             return False
-        return self.descendants().filter(id = child.id).count() > 0
+        return bool(self.descendants().filter(id = child.id)[:1])
     
 
     def __getitem__(self, key):
@@ -477,20 +437,7 @@ class DataTree(models.Model):
         assert isinstance(value, DataTree), "Expected a DataTree"
         value.name = key
         value.parent = self
-        #try:
-        #    if self.id is None:
-        #        self.save()
-
-        #    other_child = DataTree.objects.get(parent = self,
-        #name   = key)
-
-        #    other_child.friendly_name = value.friendly_name
-        #    other_child.save()
-        #    return other_child
-        #except:
-        #    value.name   = key
-        #    value.parent = self
-        #    value.save()
+        value.save()
 
 
     ###########################
@@ -716,43 +663,6 @@ class DataTree(models.Model):
         DataTree.objects.filter(QTree(belowonly = self)).delete()
 
 
-    def change_my_ranges(self, commit_wait=False, offset="DELETE", cursor=None):
-        " Zip up the ranges from this current node. "
-        if not cursor:
-            cursor = connection.cursor()
-        engine = settings.DATABASE_ENGINE.lower()
-
-        if 'postgres' in engine or 'sqlite' in engine:
-            case = "CASE WHEN %s THEN %s ELSE %s END"
-        elif 'mysql' in engine:
-            case = "IF(%s, %s, %s)"
-
-        quoted_table = qn(self._meta.db_table)
-
-        sql = """UPDATE %s SET rangestart = %s, rangeend = %s WHERE rangeend >= %%s OR rangestart >= %%s""" % (quoted_table, case, case)
-        get_expr = "(SELECT %%s FROM %s WHERE id = %s)" % (quoted_table, self.id)
-        myrangestart = get_expr % qn("rangestart")
-        myrangeend = get_expr % qn("rangeend")
-        if offset == "DELETE":
-            myrangelen = "- " + get_expr % "rangeend - rangestart - 1"
-        else:
-            op = offset < 0 and '- ' or '+ '
-            myrangelen = op + str(abs(offset))
-
-        sql = sql % (
-            "rangestart >= " + myrangeend, # If we're greater than the end...
-            "rangestart " + myrangelen, # subtract our length
-            "rangestart", # else do nothing,
-            "rangeend >= " + myrangeend, # If we're grater than the end ...
-            "rangeend " + myrangelen, # subtract our length
-            "rangeend", # else do nothing.
-            myrangeend,
-            myrangeend,
-            )
-        print "Moving all above %s by %s (%s)" % (self.id, offset, time.time())
-        cursor.execute(sql)
-
-
     @staticmethod
     def violating_range_nodes(QObject = False):
         " Returns the nodes that violate the must-be-in-range-of-parent constraint "
@@ -867,27 +777,6 @@ class DataTree(models.Model):
             
         if not commit_wait:
             transaction.commit()
-        
-    @classmethod
-    def shift_all_ranges(cls, amount, commit_wait = False):
-        " Shift all ranges by an amount, either positive or negative. "
-        
-        if amount == 0:
-            return
-        
-        cursor = connection.cursor()
-        
-        stramount = ''
-        if amount > 0:
-            stramount = '+ %s' % amount
-        else:
-            stramount = '- %s' % abs(amount)
-            
-        cursor.execute("UPDATE %s SET rangeend = rangeend %s, " +\
-                       "rangestart = rangestart %s" % (qn(cls._meta.db_table), stramount, stramount))
-        
-        if not commit_wait:
-            transaction.commit()
 
     ##################
     # EXCEPTIONS     #
@@ -948,15 +837,15 @@ class DataTree(models.Model):
                     cur_id = random.choice(range(low_id,low_id + size*factor))
                     #print 'Tried %s' % cur_id
                     nodes = DataTree.objects.filter(id = cur_id)
-                    #if nodes[:1]:
-                    #    node = nodes[0]
-                    #    print 'Deleting %s' % node
-                    #    node.delete(True)
-                    #    print 'Deleted %s' % node
-                    #else:
-                    uri = '/'.join(random.choice(words))
-                    node = DataTree.get_by_uri(uri, True)
-                    print 'Added %s' % node
+                    if nodes[:1]:
+                        node = nodes[0]
+                        print 'Deleting %s' % node
+                        node.delete(True)
+                        print 'Deleted %s' % node
+                    else:
+                        uri = '/'.join(random.choice(words))
+                        node = DataTree.get_by_uri(uri, True)
+                        print 'Added %s' % node
                     
                     if DataTree.objects.exists_violators():
                         print "ERROR:"

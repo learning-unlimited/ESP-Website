@@ -146,7 +146,6 @@ class DataTreeManager(models.Manager):
 
         return node
 
-
     def rebuild_tree(self):
         # TODO: Implement this.
         raise NotImplementedError("Need to do this ... ")
