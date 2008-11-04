@@ -80,7 +80,7 @@ EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 #  'mysql_old', 'sqlite3' or 'ado_mssql'
 
 DATABASE_ENGINE = 'postgresql'
-DATABASE_NAME = 'django'
+DATABASE_NAME = 'django2'
 DATABASE_HOST = 'localhost'
 DATABASE_PORT = '5432'
 # passwords etc
