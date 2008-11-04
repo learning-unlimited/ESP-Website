@@ -32,11 +32,12 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from django.db import models, connection, transaction
+from django.db import models, connection, transaction, DatabaseError
 from django.core.cache import cache
 
 from esp.datatree.sql.query_utils import *
 from esp.datatree.sql.constants import *
+from esp.datatree.sql.transaction import *
 
 __all__ = ('DataTreeManager',)
 
@@ -99,13 +100,14 @@ class DataTreeManager(models.Manager):
                 return self._get_by_uri(uri=uri, create=create)
         return super(DataTreeManager, self).get(*args, **kwargs)
 
-
-    @transaction.commit_on_success
+    @transaction.commit_manually
+    @serializable
     def create(self, name, parent, uri=None, start_size=None, friendly_name=None):
         """
         Create a new DataTree node.
         This will go to great lengths to insert a node safetly into the Tree.
         """
+
         cursor, created = self.__get_cursor(cache=True, return_created=True)
 
         opts = self.model._meta
@@ -117,15 +119,9 @@ class DataTreeManager(models.Manager):
         if not friendly_name:
             friendly_name = name
 
-        size_needed = self._expansion_required(parent_id, start_size)
-        if size_needed:
-            if not isinstance(parent, self.model):
-                parent = self.get(id=parent_id)
-
-            double_range = parent.rangeend - parent.rangestart
-            self._change_ranges(parent,
-                                left=UPPER,
-                                change_size=max(size_needed, double_range))
+        # Update the ranges to make sure we fit.
+        # Don't use the ranges (we'll update them below to avoid race conditions).
+        self.new_ranges(parent, start_size, get_ranges=False)
 
         if not uri:
             if not isinstance(parent, self.model):
@@ -138,30 +134,16 @@ class DataTreeManager(models.Manager):
         else:
             uri_correct = True
 
-        sql = sql__create % {
-            'table': self.qt,
-            'rangestart': sql__get_bounds % {'table': self.qt, 'query': "MAX(upper) + 1"},
-            'rangeend': sql__get_bounds % {'table': self.qt, 'query': "MAX(upper) + %s"},
-            }
+        id = self._insert_object(name, friendly_name, parent_id, uri, uri_correct, start_size)
 
-        uri = uri.strip(self.model.DELIMITER)
+        transaction.commit()
 
-        params = [name, friendly_name, parent_id, uri or '', uri_correct, 0, True]
-        params += [parent_id, 0, parent_id, 0, parent_id]
-        params += [start_size, parent_id, 0, parent_id, 0, parent_id]
-
-        cursor.execute(sql, params)
-        
-        id = connection.ops.last_insert_id(cursor, opts.db_table, opts.pk.name)
-
-        try:
-            transaction.commit()
-        except:
-            pass
-
+        connection.connection.set_isolation_level(1)
         node = self.get(id = id)
+
         if created:
             self.__unset_cursor()
+
         return node
 
 
@@ -173,6 +155,107 @@ class DataTreeManager(models.Manager):
         # TODO: Implement this cleaner.
         return self.model.root()
 
+    @transaction.commit_manually
+    @serializable
+    def new_ranges(self, parent, size=None, get_ranges=True):
+        """
+        Expand the parent to contain at least size + 1 open slots.
+        Returns those ranges. Though you probably don't want to use them.
+        """
+        if not size:
+            size = self.model.START_SIZE
+        parent_id = getattr(parent, 'id', parent)
+        size_needed = self._expansion_required(parent_id, size)
+        if size_needed:
+            if not isinstance(parent, self.model):
+                parent = self.get(id=parent_id)
+
+            double_range = parent.rangeend - parent.rangestart
+
+            self._change_ranges(parent,
+                                left=UPPER,
+                                change_size=max(size_needed, double_range))
+
+        if not get_ranges:
+            return
+
+        sql = sql__get_bounds % {'table': self.qt, 'query': "MAX(upper) + 1"}
+
+        cursor = self.__get_cursor()
+        cursor.execute(sql, [parent_id, 0, parent_id, 0, parent_id])
+        result = cursor.fetchone()
+        transaction.commit()
+        return result[0], result[0] + size - 1
+
+    def exists_violators(self, queryset=False, override=False):
+        """
+        Returns whether or not there are any violators of the range constraints.
+        If queryset=True, returns a queryset to represent this.
+        """
+        if not override:
+            return False
+        # these are a list of functions which return violators
+        range_sign_sql = self.extra(where = ['rangestart >= rangeend']).values('id')
+
+        if queryset:
+            range_sign_sql = range_sign_sql.query.as_sql()[0]
+            limit = ""
+        else:
+            range_sign_sql = range_sign_sql[:1].query.as_sql()[0]
+            limit = " LIMIT 1"
+
+        range_nodes_sql = """
+SELECT %s.id FROM %s
+  INNER JOIN %s AS parent_tree
+    ON %s.parent_id = parent_tree.id
+WHERE
+  %s.rangestart <= parent_tree.rangestart
+  OR
+  %s.rangeend > parent_tree.rangeend%s""" % \
+            (self.qt, self.qt, self.qt, self.qt, self.qt, self.qt, limit)
+
+        cursor = self.__get_cursor()
+        full_sql = "SELECT * FROM ((%s) UNION (%s)) AS a%s" % (range_sign_sql, range_nodes_sql, limit)
+        cursor.execute(full_sql)
+        if not queryset:
+            return bool(cursor.fetchall())
+        ids = [x[0] for x in cursor.fetchall()]
+        return self.filter(id__in = ids)
+
+
+    def fix_tree_if_broken(self, override=False):
+        " This will fix all the broken nodes in the table. "
+        if self.model.FIXING_TREE:
+            return
+
+        self.model.FIXING_TREE = True
+
+        if not self.exists_violators():
+            self.model.FIXING_TREE = False
+            return False
+
+        if not override:
+            import sys
+            sys.stderr.write("TREE IS BROKEN?\n===========================\n!!!!\n")
+            raise Exception()
+
+        res = self.exists_violators(queryset=True)
+        total = self.count()
+        num_bad = res.count()
+        if float(num_bad) / float(total) < self.model.PERCENT_BAD:
+            # if the tree is "insertable"
+            for parent in res.filter(child_set__isnull=False):
+                parent.reinsert()
+
+            if not self.exists_violators():
+                self.model.FIXING_TREE = False
+                return True
+
+        # Performing a full on rebuild.
+        self.rebuild_tree()
+
+        self.model.FIXING_TREE = False
+        return True
 
     # Private methods:
     def _expansion_required(self, node, room_required):
@@ -191,13 +274,30 @@ class DataTreeManager(models.Manager):
         cursor = self.__get_cursor()
         cursor.execute(sql, params)
         result = cursor.fetchall()
+
         if result[0][0] < 0:
             return -result[0][0]
         else:
             return 0
 
+    def _insert_object(self, name, friendly_name, parent_id, uri, uri_correct, start_size):
+        opts = self.model._meta
+        cursor = self.__get_cursor()
+        sql = sql__create % {
+            'table': self.qt,
+            'rangestart': sql__get_bounds % {'table': self.qt, 'query': "MAX(upper) + 1"},
+            'rangeend': sql__get_bounds % {'table': self.qt, 'query': "MAX(upper) + %s"},
+            }
 
-    @transaction.autocommit
+        uri = uri.strip(self.model.DELIMITER)
+
+        params = [name, friendly_name, parent_id, uri or '', uri_correct, 0, True]
+        params += [parent_id, 0, parent_id, 0, parent_id]
+        params += [start_size, parent_id, 0, parent_id, 0, parent_id]
+
+        cursor.execute(sql, params)
+        return connection.ops.last_insert_id(cursor, opts.db_table, opts.pk.name)
+
     def _change_ranges(self, node, left=LOWER, change_size=-WIDTH):
         """
         Alter the ranges of the table by the rules given:
@@ -274,10 +374,6 @@ class DataTreeManager(models.Manager):
 
         cursor = self.__get_cursor()
         cursor.execute(sql, params)
-        try:
-            transaction.commit()
-        except:
-            pass
 
     def _get_by_uri(self, uri, create=False, depth=0):
         delimiter = self.model.DELIMITER
@@ -320,8 +416,21 @@ class DataTreeManager(models.Manager):
         if not create:
             raise self.model.DoesNotExist("No node by uri %r" % uri)
 
-        node = self.create(name=cur_name, friendly_name=cur_name, parent=parent,
-                           start_size= 2 * (depth + 1))
+        node = None
+        for i in range(10):
+            try:
+                node = self.create(name=cur_name, friendly_name=cur_name, parent=parent,
+                                   start_size= 2 * (depth + 1))
+            except DatabaseError, e:
+                if 'could not serialize access' in str(e.message):
+                    continue
+                if 'deadlock detected' in str(e.message):
+                    continue
+                raise e
+            if node is not None:
+                break
+        else:
+            raise DatabaseError("Unable to commit to database.")
 
         if not depth and CACHE_TIME:
             cache.set(cache_key, node, CACHE_TIME)

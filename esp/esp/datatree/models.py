@@ -136,7 +136,7 @@ class DataTree(models.Model):
             return super(DataTree, self).delete()
 
 
-        DataTree.fix_tree_if_broken()
+        DataTree.objects.fix_tree_if_broken()
 
         # we are going to wait if the tree is locked
         DataTree.wait_if_locked()
@@ -249,8 +249,8 @@ class DataTree(models.Model):
         " Shift all the ranges under and including this node to another parent. "
         range = DataTree.objects.get(id = self.id).values('rangestart', 'rangeend')
         range = range['rangeend'] - range['rangestart'] + 1
-        self.rangestart, self.rangeend = self.parent.new_ranges(range, child_id=self.id, move_subranges=True)
-        
+        self.rangestart, self.rangeend = DataTree.objects.new_ranges(parent, range)
+        self.save(old_save=True)
 
     def reinsert(self, top = True):
         " Will perform a Re-insert. That is, it will rotate this to the last node. "
@@ -264,16 +264,8 @@ class DataTree(models.Model):
         if self.parent_id is None:
             self.rangestart, self.rangeend = (0, DataTree.START_SIZE*size+1)
         else:
-            self.rangestart, self.rangeend = self.parent.new_ranges((size-1)*DataTree.START_SIZE+\
-                                                                    DataTree.START_SIZE-1,
-                                                                    DataTree.expand_conservative, child_id=self.id)
-
-
-        try:
-            transaction.commit()
-        except:
-            pass
-        
+            self.rangestart, self.rangeend = DataTree.objects.new_ranges(self.parent,
+                                                                         (size - 1) * DataTree.START_SIZE)
         self.range_correct = True
         self.save(old_save = True)
 
@@ -283,8 +275,11 @@ class DataTree(models.Model):
 
         for child in self.children():
             child.reinsert(top = False)
-        
-        if top: DataTree.unlock()
+
+        transaction.commit()        
+
+        if top:
+            DataTree.unlock()
 
     
 
@@ -682,41 +677,6 @@ class DataTree(models.Model):
         DataTree.root().rebuild_range()
         DataTree.unlock()
 
-
-    @staticmethod
-    def fix_tree_if_broken(override=False):
-        " This will fix all the broken nodes in the table. "
-        if DataTree.FIXING_TREE:
-            return
-        DataTree.FIXING_TREE = True
-
-        if not DataTree.exists_violators():
-            DataTree.FIXING_TREE = False
-            return False
-
-        if not override:
-            import sys
-            sys.stderr.write("TREE IS BROKEN?\n===========================\n!!!!\n")
-            raise Exception()
-
-        res = DataTree.exists_violators(q_object=True)
-        total = DataTree.objects.count()
-        num_bad = DataTree.objects.filter(res).count()
-        if float(num_bad) / float(total) < DataTree.PERCENT_BAD:
-            # if the tree is "insertable"
-            res = DataTree.objects.filter(res)
-            for parent in DataTree.get_only_parents(res):
-                parent.reinsert()
-
-            if not DataTree.exists_violators():
-                DataTree.FIXING_TREE = False
-                return True
-
-        DataTree.rebuild_tree_ranges()
-
-        DataTree.FIXING_TREE = False
-        return True
-
     @staticmethod
     def zip_ranges():
         " This will compactify all the ranges into a neat, little enclosure. "
@@ -791,58 +751,6 @@ class DataTree(models.Model):
             )
         print "Moving all above %s by %s (%s)" % (self.id, offset, time.time())
         cursor.execute(sql)
-
-    @classmethod
-    def exists_violators(cls, q_object=False):
-        " Returns all nodes in violation of the constraints. "
-        # these are a list of functions which return violators
-        range_sign_sql = cls.objects.extra(where = ['rangestart >= rangeend']).values('id')
-        table = qn(cls._meta.db_table)
-        if not q_object:
-            range_sign_sql = range_sign_sql[:1].query.as_sql()[0]
-            limit = " LIMIT 1"
-        else:
-            range_sign_sql = range_sign_sql.query.as_sql()[0]
-            limit = ""
-        range_nodes_sql = """
-SELECT %s.id FROM %s
-  INNER JOIN %s AS parent_tree
-    ON %s.parent_id = parent_tree.id
-WHERE
-  %s.rangestart <= parent_tree.rangestart
-  OR
-  %s.rangeend > parent_tree.rangeend%s""" %\
-            (table, table, table, table, table, table, limit)
-
-        cursor = connection.cursor()
-        full_sql = "SELECT * FROM ((%s) UNION (%s)) AS a%s" % (range_sign_sql, range_nodes_sql, limit)
-        cursor.execute(full_sql)
-        if not q_object:
-            return bool(cursor.fetchall())
-        ids = [x[0] for x in cursor.fetchall()]
-        return Q(id__in = ids)
-
-    @staticmethod
-    def violating_range_sign_nodes(QObject = False):
-        " Returns the nodes that violate the rangestart-must-be-less-than-rangeend constaint. "
-
-        cursor = connection.cursor()
-
-        table = DataTree._meta.db_table
-
-        cursor.execute("SELECT id FROM %s WHERE rangestart >= rangeend" % table)
-
-        ids = [id[0] for id in cursor.fetchall()]
-
-        if len(ids) == 0:
-            Q_violating = Q(id = -10000)
-        else:
-            Q_violating = Q(id__in = ids)
-
-        if QObject:
-            return Q_violating
-        
-        return DataTree.objects.filter(Q_violating)
 
 
     @staticmethod
@@ -1023,9 +931,10 @@ WHERE
         # some random test
         import sys
         import random
+        GetNode('a')
         try:
             f = open('/usr/share/dict/words')
-            words = [word.strip() for word in f ]
+            words = [word.strip().decode('cp1250', 'replace') for word in f ]
 
             try:
                 low_id = DataTree.objects.order_by('id')[1].id
@@ -1045,12 +954,13 @@ WHERE
                     #    node.delete(True)
                     #    print 'Deleted %s' % node
                     #else:
-                    node = DataTree.get_by_uri('/'.join(random.choice(words)), True)
+                    uri = '/'.join(random.choice(words))
+                    node = DataTree.get_by_uri(uri, True)
                     print 'Added %s' % node
                     
-                    if DataTree.exists_violators():
+                    if DataTree.objects.exists_violators():
                         print "ERROR:"
-                        print DataTree.objects.filter(DataTree.exists_violators(True))
+                        print DataTree.objects.exists_violators(queryset=True)
                         return
                 except int:
                     exc_info = sys.exc_info()
