@@ -1144,7 +1144,7 @@ class FinancialAidRequest(models.Model):
        
         #   Find the amount we're charging the student for the program and ensure
         #   that we don't award more financial aid than charges.
-        charges = txn.lineitem_set.filter(QTree(anchor__ancestor=anchor), anchor__parent__name='LineItemTypes',)
+        charges = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='LineItemTypes',)
        
         chg_amt = 0
         for li in charges:
@@ -1153,7 +1153,7 @@ class FinancialAidRequest(models.Model):
             self.amount_received = -chg_amt
         
         #   Reverse all financial aid awards and add a new line item for this one.
-        finaids = txn.lineitem_set.filter(QTree(anchor__ancestor=anchor), anchor__parent__name='Accounts')
+        finaids = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='Accounts')
         rev_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid Reversal',anchor=funding_node['FinancialAid'])
         fwd_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid',anchor=funding_node['FinancialAid'])
         for li in finaids:

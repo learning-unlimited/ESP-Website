@@ -151,6 +151,8 @@ class QTree(Q):
         new_children = []
         datatree_id = getattr(value, 'id', value)
 
+        if not hasattr(where, 'children'):
+            where.children = []
         for child in where.children:
             # We go through each of the children, and look for the ones with:
             #  (i) At least 1 parameter.
