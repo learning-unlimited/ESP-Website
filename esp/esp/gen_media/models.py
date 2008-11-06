@@ -37,6 +37,8 @@ import os
 import datetime
 import md5
 
+import ImageFont, Image, ImageDraw, ImageFilter
+
 IMAGE_TYPE = 'png'
 
 class SubSectionImage(models.Model):
