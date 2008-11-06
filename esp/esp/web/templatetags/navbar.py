@@ -1,8 +1,5 @@
-from django.conf import settings
 from django import template
-from esp.users.models import ESPUser
 from urllib import quote as urlencode
-from django.core.cache import cache
 from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
 

@@ -1,11 +1,14 @@
-
+"""
+The DataTree organizes the ESP site into a heirarchal structure that
+can do some pretty interesting things pretty fast.
+"""
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,12 +31,27 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+import copy
 
+# A symbol to represent the "width" of the ranges of a node.
 
+__all__ = ('NodeWidthRep', 'WIDTH','LOWER','UPPER')
 
-def CloneAttachments(src_node, target_node):
-    # Clone all stuff attached to a given tree node
-    src = GetNode(src_node)
-    target = GetNode(target_node)
+LOWER = -1
+UPPER = 1
 
+class NodeWidthRep(object):
+    sign = 1
 
+    def __str__(self):
+        if self.sign == 1:
+            return '+'
+        else:
+            return '-'
+
+    def __neg__(self):
+        other = copy.deepcopy(self)
+        other.sign = -self.sign
+        return other
+
+WIDTH = NodeWidthRep()

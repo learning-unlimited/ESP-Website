@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.db import models
 from django.contrib.auth.models import User
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
 from esp.program.models import FinancialAidRequest

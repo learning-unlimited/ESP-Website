@@ -34,7 +34,7 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
 from esp.program.models import RegistrationProfile
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog, create_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSection, ClassSubject, ClassCategories

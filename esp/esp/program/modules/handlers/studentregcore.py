@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser, User
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from django.db.models.query import Q
 from esp.middleware   import ESPError
 from esp.accounting_docs.models import Document
