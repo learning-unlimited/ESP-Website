@@ -33,8 +33,7 @@ from django.core.files.base import ContentFile
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.web.util         import get_from_id, render_to_response
-from esp.datatree.models import *
-from django               import forms
+from esp.datatree.models  import *
 from django.http          import HttpResponseRedirect, Http404
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
@@ -146,19 +145,19 @@ def bio_user(request, founduser):
         raise ESPError(False), '%s is not a teacher of ESP.' % \
                                (founduser.name())
     
-    bio = TeacherBio.getLastBio(founduser)
-    if bio.picture is None:
-        bio.picture = 'not-available.jpg'
+    teacherbio = TeacherBio.getLastBio(founduser)
+    if teacherbio.picture is None:
+        teacherbio.picture = 'not-available.jpg'
         
-    if bio.slugbio is None or len(bio.slugbio.strip()) == 0:
-        bio.slugbio = 'ESP Teacher'
-    if bio.bio is None or len(bio.bio.strip()) == 0:
-        bio.bio     = 'Not Available.'
+    if teacherbio.slugbio is None or len(teacherbio.slugbio.strip()) == 0:
+        teacherbio.slugbio = 'ESP Teacher'
+    if teacherbio.bio is None or len(teacherbio.bio.strip()) == 0:
+        teacherbio.bio     = 'Not Available.'
 
 
     classes = ArchiveClass.getForUser(founduser)
 
     return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'), {'biouser': founduser,
-                                               'bio': bio,
+                                               'bio': teacherbio,
                                                'classes': classes})
 
