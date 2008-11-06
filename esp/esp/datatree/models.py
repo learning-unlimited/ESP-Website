@@ -150,7 +150,7 @@ class DataTree(models.Model):
         if old_node.parent_id != self.parent_id:
             raise NotImplementedError("Have not yet written the parent moving code.")
 
-        self.save_db(*self.SAVE_COLS)
+        self.save_db(*self.SAFE_COLS)
 
 
     def save_db(self, *cols, **kwargs):
