@@ -93,6 +93,10 @@ class SchedulingModule(ProgramModuleObj):
   
             key_list = new_dict.keys()
             key_list = filter(lambda a: a.endswith('new'), key_list)
+            key_list.sort()
+            # assert False, '\n'.join([str((k, new_dict[k])) for k in key_list])
+            # sec_update_list = []
+            # assert False, section_ids_to_process
             for key in key_list:
                 #   Find the variables that differ from existing data (something_new vs. something_old).
                 commands = key.split('_')

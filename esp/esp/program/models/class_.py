@@ -321,10 +321,15 @@ class ClassSection(models.Model):
     def sufficient_length(self, event_list=None):
         """   This function tells if the class' assigned times are sufficient to cover the duration.
         If the duration is not set, 1 hour is assumed. """
-        cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
-        retVal = cache.get(cache_key)
-        if retVal != None:
-            return retVal
+        
+        # Only cache when no event list is provided.
+        caching = False
+        if not event_list:
+            cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
+            caching = True
+            retVal = cache.get(cache_key)
+            if retVal != None:
+                return retVal
         
         if self.duration == 0.0:
             duration = 1.0
@@ -336,10 +341,10 @@ class ClassSection(models.Model):
         #   If you're 15 minutes short that's OK.
         time_tolerance = 15 * 60
         if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
-            cache.set(cache_key, False, timeout=86400)
+            if caching: cache.set(cache_key, False, timeout=86400)
             return False
         else:
-            cache.set(cache_key, True, timeout=86400)
+            if caching: cache.set(cache_key, True, timeout=86400)
             return True
     
     def extend_timeblock(self, event, merged=True):
@@ -551,7 +556,7 @@ class ClassSection(models.Model):
         
         #   This function is only meaningful if the times have already been set.  So, back out if they haven't.
         if not self.sufficient_length():
-            return None
+            return []
         
         #   Start with all rooms the program has.  
         #   Filter the ones that are available at all times needed by the class.
