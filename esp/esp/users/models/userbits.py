@@ -327,7 +327,7 @@ class UserBitManager(ProcedureManager):
 
         if isinstance(qsc_id, basestring):
             try:
-                qsc_id = DataTree.get_by_uriL(qsc_id).id
+                qsc_id = DataTree.get_by_uri(qsc_id).id
             except DataTree.NoSuchNodeException:
                 retVal = False
 

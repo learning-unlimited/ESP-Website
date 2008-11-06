@@ -45,12 +45,14 @@ IMAGE_TYPE    = 'png'
 LATEX_DPI     = 150
 LATEX_BG      = 'Transparent' #'white'
 
-commands = {'latex'  : '/usr/bin/latex',
+COMMANDS = {'latex'  : '/usr/bin/latex',
             'dvips'  : '/usr/bin/dvips',
             'convert': '/usr/bin/convert',
             'dvipng' : '/usr/bin/dvipng'}
 
 class InlineLatex(object):
+    """ A generated LaTeX image for use in inlining. """
+
     def __init__(self, content, style='DISPLAY', dpi=LATEX_DPI):
         self.content = content
         self.style = style
@@ -61,9 +63,9 @@ class InlineLatex(object):
 
         # Avoid having too many files in a single directory
         # (git does this too. :D And mediawiki does something similar.)
-        dir = self.file_name[:2]
+        self.cache_dir = self.file_name[:2]
         self.file_name = self.file_name[2:]
-        self.file_path = os.path.join(TEXIMAGE_DIR, dir, self.file_name)
+        self.file_path = os.path.join(TEXIMAGE_DIR, self.cache_dir, self.file_name)
 
         self._generate_file()
 
@@ -75,8 +77,12 @@ class InlineLatex(object):
     @property
     def url(self):
         """ The URL of the file. """
-        # FIXME: Windoze?
-        return os.path.join(settings.MEDIA_URL, self.file_path)
+        if settings.MEDIA_URL.endswith('/'):
+            return settings.MEDIA_URL + TEXIMAGE_DIR + '/' \
+                    + self.cache_dir + '/' + self.file_name
+        else:
+            return settings.MEDIA_URL + '/' + TEXIMAGE_DIR + '/' \
+                    + self.cache_dir + '/' + self.file_name
 
     @property
     def img(self):
@@ -90,9 +96,9 @@ class InlineLatex(object):
 
         if not os.path.exists(self.file_path):
             # Make directory if it doesn't exist
-            dir = os.path.dirname(self.local_path)
-            if not os.path.exists(dir):
-                os.mkdir(dir)
+            save_dir = os.path.dirname(self.local_path)
+            if not os.path.exists(save_dir):
+                os.mkdir(save_dir)
 
             if self.style == 'INLINE':
                 math_style = '$'
@@ -113,9 +119,9 @@ class InlineLatex(object):
             tex_file.close()
 
             if os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
-                    (TMP, commands['latex'], tmppath)) is not 0:
+                    (TMP, COMMANDS['latex'], tmppath)) is not 0:
                 raise ESPError(False), 'latex compilation failed.'
 
             if os.system( '%s -q -T tight -bg %s -D %s -o %s %s.dvi > /dev/null' % \
-                    (commands['dvipng'], LATEX_BG, self.dpi, self.local_path, tmppath)) is not 0:
+                    (COMMANDS['dvipng'], LATEX_BG, self.dpi, self.local_path, tmppath)) is not 0:
                 raise ESPError(False), 'dvipng failed.'
