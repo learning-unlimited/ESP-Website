@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.web.util        import render_to_response
 from datetime            import datetime        
 from django.db.models.query     import Q

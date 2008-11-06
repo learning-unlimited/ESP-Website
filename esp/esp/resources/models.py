@@ -37,6 +37,8 @@ from esp.middleware import ESPError_Log
 
 from django.db import models
 from django.db.models.query import Q
+from django.core.cache import cache
+
 import pickle
 
 ########################################
@@ -54,6 +56,21 @@ Procedures:
     -   Teacher availability module creates resources for each time slot a teacher is available for.
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
+
+GLOBAL_RESOURCE_CACHE_KEY="RESOURCE__GLOBAL_KEY"
+
+def global_resource_rev():
+    retVal = cache.get(GLOBAL_RESOURCE_CACHE_KEY)
+    if retVal:
+        return retVal
+    else:
+        return increment_global_resource_rev()
+
+def increment_global_resource_rev():
+    import random
+    val = random.randint(1,2**30)
+    cache.set(GLOBAL_RESOURCE_CACHE_KEY, val, timeout=86400)
+    return val
 
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
@@ -160,8 +177,16 @@ class Resource(models.Model):
             self.is_unique = True
         else:
             self.is_unique = False
-            
+
+        cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.id
+        cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.id
+        
         super(Resource, self).save()
+
+        cache.delete(cache_key_QObjects)
+        cache.delete(cache_key)
+
+        increment_global_resource_rev()
     
     def identical_resources(self):
         res_list = Resource.objects.filter(name=self.name)
@@ -170,21 +195,27 @@ class Resource(models.Model):
     def satisfies_requests(self, req_class):
         #   Returns a list of 2 items.  The first element is boolean and the second element is a list of the unsatisfied requests.
         #   If there are no unsatisfied requests but the room isn't big enough, the first element will be false.
-        result = [True, []]
-        request_list = req_class.getResourceRequests()
-        furnishings = self.associated_resources()
-        id_list = []
+        cache_key = "RESOURCES__SATISFIES_REQUESTS__%s__%s" % (self.id, global_resource_rev())
 
-        for req in request_list:
-            if furnishings.filter(res_type=req.res_type).count() < 1:
-                result[0] = False
-                id_list.append(req.id)
+        result = cache.get(cache_key)
+        if not result:
+            result = [True, []]
+            request_list = req_class.getResourceRequests()
+            furnishings = self.associated_resources()
+            id_list = []
+
+            for req in request_list:
+                if furnishings.filter(res_type=req.res_type).count() < 1:
+                    result[0] = False
+                    id_list.append(req.id)
+            
+            result[1] = ResourceRequest.objects.filter(id__in=id_list)
+
+            cache.set(cache_key, result, timeout=86400)
             
         if self.num_students < req_class.num_students():
             result[0] = False
-            
-        result[1] = ResourceRequest.objects.filter(id__in=id_list)
-            
+        
         return result
     
     def grouped_resources(self):
@@ -224,9 +255,16 @@ class Resource(models.Model):
             self.clear_schedule_cache(program)
             
         self.assignments().delete()
-    
+
     def assignments(self):
-        return ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
+        cache_key = "RESOURCE__ASSIGNMENTS__%s__%s" % (self.id, global_resource_rev())
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+        
+        retVal = ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
+        cache.set(cache_key, retVal, timeout=86400)
+        return retVal
     
     def cache_key(self, program):
         #   Let's make this key acceptable to memcached...
@@ -299,6 +337,15 @@ class Resource(models.Model):
             return False
         
     def is_available(self, QObjects=False, timeslot=None):
+        if QObjects:
+            cache_key = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.id
+        else:
+            cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.id
+
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+
         if timeslot is None:
             test_resource = self
         else:
@@ -307,7 +354,9 @@ class Resource(models.Model):
         if QObjects:
             return ~Q(test_resource.is_taken(True))
         else:
-            return not (test_resource.is_taken(False))
+            retVal = not (test_resource.is_taken(False))
+            cache.set(cache_key, retVal, timeout=86400)
+            return retVal
         
     def is_taken(self, QObjects=False):
         if QObjects:
@@ -328,6 +377,18 @@ class ResourceAssignment(models.Model):
                                                
     target = models.ForeignKey(ClassSection, null=True)
     target_subj = models.ForeignKey(ClassSubject, null=True)
+
+    def save(self):
+        cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.resource.id
+        cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.resource.id
+        
+        super(ResourceAssignment, self).save()
+
+        cache.delete(cache_key_QObjects)
+        cache.delete(cache_key)
+
+        increment_global_resource_rev()
+        
     
     def __unicode__(self):
         return 'Resource assignment for %s' % str(self.getTargetOrSubject())

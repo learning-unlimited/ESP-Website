@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from esp.users.models import ESPUser, UserBit
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from django.db.models import Q

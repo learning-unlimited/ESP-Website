@@ -98,17 +98,14 @@ class StatsMiddleware(object):
 
         if settings.DISPLAYSQL and settings.DEBUG and \
            request.META['REMOTE_ADDR'] in settings.INTERNAL_IPS:
-            sqlcontent = "\n\n"+'<div class="sql">\n'
-            
-            for q in connection.queries:
-                sqlcontent += "\n"+'%s:&nbsp;&nbsp;%s<br />' % \
-                              (q['time'], q['sql'])
-            sqlcontent += "\n\n</div>"
 
+            sqlcontent = ''.join("\n"+'%s:&nbsp;&nbsp;%s<br />' % \
+                              (q['time'], q['sql']) for q in connection.queries)
+                              
             if '</body>' in response.content.lower():
                 pos = response.content.find('</body>')
                 response.content = response.content[:pos] + \
-                                   unicode(sqlcontent) + \
+                                   u"\n\n" + u'<div class="sql">\n' + unicode(sqlcontent) + u"\n\n</div>" + \
                                    response.content[pos:]
         return response
 

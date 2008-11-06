@@ -30,6 +30,8 @@ Email: web@esp.mit.edu
 
 import datetime
 import time
+from collections import defaultdict
+from decimal import Decimal
 
 # django Util
 from django.db import models
@@ -46,7 +48,7 @@ from django.contrib.auth.models import User
 
 # ESP models
 from esp.miniblog.models import Entry
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
@@ -319,6 +321,11 @@ class ClassSection(models.Model):
     def sufficient_length(self, event_list=None):
         """   This function tells if the class' assigned times are sufficient to cover the duration.
         If the duration is not set, 1 hour is assumed. """
+        cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
+        retVal = cache.get(cache_key)
+        if retVal != None:
+            return retVal
+        
         if self.duration == 0.0:
             duration = 1.0
         else:
@@ -329,8 +336,10 @@ class ClassSection(models.Model):
         #   If you're 15 minutes short that's OK.
         time_tolerance = 15 * 60
         if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
+            cache.set(cache_key, False, timeout=86400)
             return False
         else:
+            cache.set(cache_key, True, timeout=86400)
             return True
     
     def extend_timeblock(self, event, merged=True):
@@ -351,31 +360,53 @@ class ClassSection(models.Model):
             return event_list
     
     def scheduling_status(self):
+        cache_key = "CLASSSECTION__SCHEDULING_STATUS__%s" % self.id
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+        
         #   Return a little string that tells you what's up with the resource assignments.
         if not self.sufficient_length():
-            return 'Needs time'
+            retVal = 'Needs time'
         elif self.classrooms().count() < 1:
-            return 'Needs room'
+            retVal = 'Needs room'
         elif self.unsatisfied_requests().count() > 0:
-            return 'Needs resources'
+            retVal = 'Needs resources'
         else:
-            return 'Happy'
-    
+            retVal = 'Happy'
+
+        cache.set(cache_key, retVal, timeout=60)
+        return retVal
+            
     def clear_resource_cache(self):
         from django.core.cache import cache
         from esp.program.templatetags.scheduling import options_key_func
+        from esp.resources.models import increment_global_resource_rev
         cache_key1 = 'class__viable_times:%d' % self.id
         cache_key2 = 'class__viable_rooms:%d' % self.id
+        cache_key3 = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
         cache.delete(cache_key1)
         cache.delete(cache_key2)
+        cache.delete(cache_key3)
+        increment_global_resource_rev()
     
     def unsatisfied_requests(self):
+        from esp.resources.models import global_resource_rev
+        cache_key = "CLASSSECTION__UNSATISFIED_REQUESTS__%s__%s" % (self.id, global_resource_rev())
+
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+        
         if self.classrooms().count() > 0:
             primary_room = self.classrooms()[0]
-            result = primary_room.satisfies_requests(self)
-            return result[1]
+            result = primary_room.satisfies_requests(self)[1]
+            cache.set(cache_key, result, timeout=86400)
+            return result
         else:
-            return self.getResourceRequests()
+            result = self.getResourceRequests()
+            cache.set(cache_key, result, timeout=86400)
+            return result
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()
@@ -385,7 +416,7 @@ class ClassSection(models.Model):
     def assign_start_time(self, first_event):
         """ Get enough events following the first one until you have the class duration covered.
         Then add them. """
-        
+
         #   This means we have to clear the classrooms.
         #   But we will try to re-assign the same room at the new times if it is available.
         current_rooms = self.initial_rooms()
@@ -407,6 +438,9 @@ class ClassSection(models.Model):
         if availability:
             for room in current_rooms:
                 self.assign_room(room)
+
+        cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
+        cache.delete(cache_key)
     
     def assign_room(self, base_room, compromise=True, clear_others=False):
         """ Assign the classroom given, except at the times needed by this class. """
@@ -423,18 +457,22 @@ class ClassSection(models.Model):
             result = base_room.satisfies_requests(self)
             if result[0] is False:
                 status = False
-                errors.append('This room does not have all resources that the class needs (or it is too small) and you have opted not to compromise.  Try a better room.')
+                errors.append( 'Room <strong>%s</strong> does not have all resources that <strong>%s</strong> needs (or it is too small) and you have opted not to compromise.  Try a better room.' % (base_room.name, self) )
         
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
-            errors.append('This room is not available at the times requested by the class.  Bug the webmasters to find out why you were allowed to assign this room.')
+            errors.append( 'Room <strong>%s</strong> is not available at the times requested by <strong>%s</strong>.  Bug the webmasters to find out why you were allowed to assign this room.' % (base_room.name, self) )
         
         for r in rooms_to_assign:
             r.clear_schedule_cache(self.parent_program)
             result = self.assignClassRoom(r)
             if not result:
                 status = False
-                errors.append('Error: This classroom is already taken.  Please assign a different one.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.')
+                occupiers_str = ''
+                occupiers_set = base_room.assignments()
+                if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
+                    occupiers_str = ' by <strong>%s</strong>' % (occupiers_set[0].target or occupiers_set[0].target_subj)
+                errors.append( 'Error: Room <strong>%s</strong> is already taken%s.  Please assign a different one to <strong>%s</strong>.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.' % ( base_room.name, occupiers_str, self ) )
             
         return (status, errors)
     
@@ -571,7 +609,7 @@ class ClassSection(models.Model):
         user = ESPUser(teacher)
         if user.getTaughtClasses().count() == 0:
             return False
-        
+
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
             for time in cls.meeting_times.all():
                 if self.meeting_times.filter(id = time.id).count() > 0:
@@ -580,14 +618,11 @@ class ClassSection(models.Model):
     def students_dict(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.uri)
-        result = {}
-        userbits = UserBit.objects.filter(qsc=self.anchor, verb__rangestart__gte=verb_base.get_rangestart(), verb__rangeend__lte=verb_base.get_rangeend()).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True))
+        result = defaultdict(list)
+        userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).distinct()
         for u in userbits:
             bit_str = u.verb.uri[uri_start:]
-            if bit_str not in result:
-                result[bit_str] = [ESPUser(u.user)]
-            else:
-                result[bit_str].append(ESPUser(u.user))
+            result[bit_str].append(ESPUser(u.user))
         return PropertyDict(result)
 
     def students_prereg(self, use_cache=True):
@@ -742,7 +777,7 @@ class ClassSection(models.Model):
         """
         events = list(self.meeting_times.all())
 
-        txtTimes = [ event.short_time() for event
+        txtTimes = [ event.pretty_time() for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
         self.cache['friendly_times'] = txtTimes
@@ -795,7 +830,7 @@ class ClassSection(models.Model):
         self.update_cache()
 
     def getRegBits(self, user):
-        result = UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.get_rangestart(), qsc__rangeend__lte=self.anchor.get_rangeend()).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        result = UserBit.objects.filter(QTree(qsc__below=self.anchor)).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
         return result
     
     def getRegVerbs(self, user):
@@ -806,7 +841,7 @@ class ClassSection(models.Model):
 
         prereg_verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
-        for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__rangestart__gte=prereg_verb_base.get_rangestart(), verb__rangeend__lte=prereg_verb_base.get_rangeend()):
+        for ub in UserBit.objects.filter(QTree(verb__below=prereg_verb_base), user=user, qsc=self.anchor_id):
             if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
                 ub.expire()
         
@@ -1082,8 +1117,8 @@ class ClassSubject(models.Model):
         self.sections.clear()
         
         #   Remove indirect dependencies
-        Media.objects.filter(anchor__rangestart__gte=self.anchor.get_rangestart(), anchor__rangeend__lte=self.anchor.get_rangeend()).delete()
-        UserBit.objects.filter(qsc__rangestart__gte=self.anchor.get_rangestart(), qsc__rangeend__lte=self.anchor.get_rangeend()).delete()
+        Media.objects.filter(QTree(anchor__below=self.anchor)).delete()
+        UserBit.objects.filter(QTree(qsc__below=self.anchor)).delete()
         
         self.checklist_progress.clear()
         
@@ -1274,6 +1309,9 @@ class ClassSubject(models.Model):
             return False # already accepted
 
         self.status = 10
+        # I do not understand the following line, but it saves us from "Cannot convert float to Decimal".
+        # Also seen in /esp/program/modules/forms/management.py -ageng 2008-11-01
+        self.duration = Decimal(str(self.duration))
         self.save()
         #   Accept any unreviewed sections.
         for sec in self.sections.all():
@@ -1351,7 +1389,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return "/".join(urllist)
 
     def getRegBits(self, user):
-        return UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.get_rangestart(), qsc__rangeend__lte=self.anchor.get_rangeend()).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        return UserBit.objects.filter(QTree(qsc__below=self.anchor), user=user).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """

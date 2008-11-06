@@ -33,7 +33,7 @@ Email: web@esp.mit.edu
 
 import datetime
 from django.db import models
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.users.models import UserBit, ESPUser
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer

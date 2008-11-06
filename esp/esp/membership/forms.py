@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 
 from esp.membership.models import AlumniInfo, AlumniContact, AlumniRSVP, AlumniMessage
 from esp.users.models import User, ESPUser, ContactInfo
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.forms import CaptchaForm, CaptchaModelForm, CaptchaField, new_callback, grouped_as_table, add_fields_to_class, save_instance
 from esp.membership.models import rsvp_choices, guest_choices

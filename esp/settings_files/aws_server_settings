@@ -46,7 +46,7 @@ FORCE_SCRIPT_NAME=''
 ###################
 # Debug settings  #
 ###################
-DEBUG = True
+DEBUG = False
 DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 

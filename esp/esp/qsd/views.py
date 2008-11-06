@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry
 from esp.web.util.main import render_to_response

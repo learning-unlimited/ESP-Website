@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
 from esp.users.models import UserBit, ESPUser, User
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.cal.models              import Event
 
 from esp.web.util        import render_to_response
@@ -43,6 +43,7 @@ from django import forms
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from esp.middleware import ESPError
 from django.db.models.query import Q
 
@@ -332,7 +333,9 @@ class AdminClass(ProgramModuleObj):
     def change_checkmark(self, class_id, check_id):
         cls = ClassSubject.objects.get(id = class_id)
         check = ProgramCheckItem.objects.get(id = check_id)
-    
+        
+        cache.delete( 'CLASS_MANAGE_ROW__%d' % cls.id )
+        # Cache key here should match that of /esp/program/templatetags/class_manage_row.py
         if len(cls.checklist_progress.filter(id = check_id).values('id')[:1]) > 0:
             cls.checklist_progress.remove(check)
             return False
