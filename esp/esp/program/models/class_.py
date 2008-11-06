@@ -561,7 +561,7 @@ class ClassSection(models.Model):
         for sec in user.getSections(self.parent_program, verbs=verbs):
             for time in sec.meeting_times.all():
                 if len(self.meeting_times.filter(id = time.id)) > 0:
-                    return 'This section conflicts with your schedule!'
+                    return 'This section conflicts with your schedule--check out the other sections!'
 
         # this user *can* add this class!
         return False
@@ -1180,19 +1180,20 @@ class ClassSubject(models.Model):
         # student has no classes...no conflict there.
         if user.getEnrolledClasses(self.parent_program, request).count() == 0:
             return False
-
-        if user.isEnrolledInClass(self, request):
-            return 'You are already signed up for this class!'
         
         res = False
-        # check to see if there's a conflict with each section of the subject
+        # check to see if there's a conflict with each section of the subject, or if the user
+        # has already signed up for one of the sections of this class
         for section in self.sections.all():
-            res = section.cannotAdd(user, checkFull, request, use_cache)
-            if not res: # if any *can* be added, then return False--we can add this class
-                return res
+            if user.isEnrolledInClass(section, request):
+                return 'You are already signed up for a section of this class!'
+            else:
+                res = section.cannotAdd(user, checkFull, request, use_cache)
+                if not res: # if any *can* be added, then return False--we can add this class
+                    return res
 
         # res can't have ever been False--so we must have an error. Pass it along.
-        return res
+        return 'This class conflicts with your schedule!'
 
     def makeTeacher(self, user):
         v = GetNode('V/Flags/Registration/Teacher')
