@@ -1,10 +1,14 @@
+"""
+The DataTree organizes the ESP site into a heirarchal structure that
+can do some pretty interesting things pretty fast.
+"""
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,25 +31,27 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+import copy
 
-from esp.datatree.models import *
-from esp.users.models import UserBit
+# A symbol to represent the "width" of the ranges of a node.
 
-# INITIAL_USERBITS is an array of dictionaries;
-# the dictionaries should be in a format that can be passed as kwargs to
-# UserBit.objects.get_or_create()
-INITIAL_USERBITS = (
-    { "qsc": GetNode("Q/Web"),
-      "verb": GetNode("V/Flags/Public") },
-    { "qsc": GetNode("Q/Web"),
-      "verb": GetNode("V/Subscribe") }
-    )
+__all__ = ('NodeWidthRep', 'WIDTH','LOWER','UPPER')
 
-def populateInitialUserBits(initial_userbits = None):
-    """ Create the UserBits listed in INITIAL_USERBITS """
+LOWER = -1
+UPPER = 1
 
-    if initial_userbits == None:
-        initial_userbits = INITIAL_USERBITS
-        
-    for bit in initial_userbits:
-        UserBit.objects.get_or_create(**bit)
+class NodeWidthRep(object):
+    sign = 1
+
+    def __str__(self):
+        if self.sign == 1:
+            return '+'
+        else:
+            return '-'
+
+    def __neg__(self):
+        other = copy.deepcopy(self)
+        other.sign = -self.sign
+        return other
+
+WIDTH = NodeWidthRep()

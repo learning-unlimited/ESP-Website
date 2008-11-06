@@ -36,7 +36,7 @@ from esp.users.models import ESPUser, UserBit, User
 from esp.web.util        import render_to_response
 from esp.program.models import ClassSubject, StudentApplication, StudentAppReview
 from django.contrib.auth.decorators import login_required
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from django.db.models.query import Q
 
@@ -86,7 +86,7 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         students = filter(lambda x: x.studentapplication_set.filter(program=self.program).count() > 0, students)
 
         for student in students:
-            student.added_class = student.userbit_set.filter(qsc__rangestart__gte=cls.anchor.get_rangestart(), qsc__rangeend__lte=cls.anchor.get_rangeend())[0].startdate
+            student.added_class = student.userbit_set.filter(QTree(qsc__below = cls.anchor))[0].startdate
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except:

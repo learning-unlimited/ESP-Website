@@ -32,7 +32,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.users.models import User, UserBit
 from django import forms
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class

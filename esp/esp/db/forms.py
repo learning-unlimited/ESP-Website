@@ -1,4 +1,3 @@
-from django.core import validators
 from django.db import models
 from django import forms
 from django.template.defaultfilters import addslashes
