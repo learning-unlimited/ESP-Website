@@ -1,3 +1,4 @@
+""" ESP Custom Filters for template """
 
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
@@ -28,11 +29,9 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-""" ESP Custom Filters for template """
 
 from django import template
 from esp.gen_media.inlinelatex import InlineLatex
-from django.http import HttpResponse
 from django.utils.encoding import force_unicode
 register = template.Library()
 
@@ -81,7 +80,9 @@ def texescape(value):
     return value
 
 @register.filter
-def teximages(value,dpi=150):
+def teximages(value, dpi=150):
+    """ Parse string for "$$foo$$", replace with inline LaTeX image, at
+    the specified DPI, defauting to 150. """
 
     value = force_unicode(value, errors='replace').strip()
 
@@ -102,7 +103,7 @@ def teximages(value,dpi=150):
 
     value = strings[0]
 
-    for i in range(1,len(strings)):
+    for i in range(1, len(strings)):
         if converted[i] or converted[i-1]:
             value += strings[i]
         else:
