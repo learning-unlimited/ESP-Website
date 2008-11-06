@@ -75,8 +75,10 @@ class InlineLatex(object):
     @property
     def url(self):
         """ The URL of the file. """
-        # FIXME: Windoze?
-        return os.path.join(settings.MEDIA_URL, self.file_path)
+        if settings.MEDIA_URL.endswith('/'):
+            return settings.MEDIA_URL + self.__class__.IMAGE_DIR + '/' + self.dir + '/' + self.file_name
+        else:
+            return settings.MEDIA_URL + '/' + self.__class__.IMAGE_DIR + '/' + self.dir + '/' + self.file_name
 
     @property
     def img(self):
