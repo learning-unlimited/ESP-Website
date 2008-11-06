@@ -170,14 +170,14 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
             classes_registered = 0
             for cls in enrolled_classes:
-                reg_verbs = cls.getRegVerbs()
+                reg_verbs = cls.getRegVerbs(request.user)
                 is_auto = 0
                 for r in reg_verbs:
                     if r.name == 'Automatic':
                         is_auto = 1
                 if not is_auto:
-                    classed_registered += 1
-                    
+                    classes_registered += 1
+
             if classes_registered >= 1:
                 datestring = ''
                 bitlist = UserBit.objects.filter(user__isnull=True, qsc=prog.anchor, verb=reg_verb)
