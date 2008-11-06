@@ -176,7 +176,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     if r.name == 'Automatic':
                         is_auto = 1
                 if not is_auto:
-                    classed_registered += 1
+                    classes_registered += 1
 
             if classes_registered >= 1:
                 datestring = ''
