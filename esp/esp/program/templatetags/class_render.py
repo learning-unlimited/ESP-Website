@@ -6,9 +6,15 @@ register = template.Library()
 def cache_key_func(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
     # Try more caching, our code screens the classes anyway.
     if timeslot:
-        return 'CLASS_DISPLAY__%s_%s' % (cls.id, timeslot.id)
+        if user:
+            return 'CLASS_DISPLAY__%s_%s_%s' % (cls.id, timeslot.id, user.id)
+        else:
+            return 'CLASS_DISPLAY__%s_%s' % (cls.id, timeslot.id)
     else:
-        return 'CLASS_DISPLAY__%s' % cls.id
+        if user:
+            return 'CLASS_DISPLAY__%s_%s' % (cls.id, user.id)
+        else:
+            return 'CLASS_DISPLAY__%s' % (cls.id)
 
 def core_cache_key_func(cls):
     return 'CLASS_CORE_DISPLAY__%s' % cls.id
