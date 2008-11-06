@@ -37,7 +37,6 @@ from django.db.models.query import Q
 from esp.dblog.models import error
 from django.db.models.query import QuerySet
 from django.core.cache import cache
-from datetime import datetime
 from esp.middleware import ESPError
 from django.template.defaultfilters import urlencode
 from django.contrib.auth import logout, login, authenticate
