@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
 from esp.users.models import UserBit, ESPUser, User
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.cal.models              import Event
 
 from esp.web.util        import render_to_response

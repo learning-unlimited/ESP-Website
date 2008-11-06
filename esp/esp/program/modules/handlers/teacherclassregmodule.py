@@ -32,7 +32,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_s
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext, manipulators
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassImplication
-from esp.datatree.models         import DataTree, GetNode
+from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
 from django                      import oldforms

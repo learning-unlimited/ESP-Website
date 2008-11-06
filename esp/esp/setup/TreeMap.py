@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 
 def PopulateInitialDataTree():
     for i in TreeMap:

@@ -34,7 +34,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, 
 from esp.program.models import ClassSubject, ClassSection
 from esp.web.util import render_to_response
 from esp.cal.models import Event
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 
 class OnSiteClassList(ProgramModuleObj):
     @classmethod

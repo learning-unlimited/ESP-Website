@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.miniblog.models import Entry
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
     @classmethod

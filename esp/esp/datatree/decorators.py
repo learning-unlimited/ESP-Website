@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from esp.users.models    import GetNodeOrNoBits, PermissionDenied
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from django.http import Http404
 from esp.web.util.main import render_to_response
 from django.core.cache import cache

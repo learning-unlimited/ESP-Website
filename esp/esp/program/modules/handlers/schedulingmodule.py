@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories
-from esp.datatree.models         import DataTree, GetNode
+from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django                      import forms
 from django.http                 import HttpResponseRedirect
@@ -139,7 +139,7 @@ class SchedulingModule(ProgramModuleObj):
                             new_room = Resource.objects.get(id=int(new_dict[key]))
                             (status, errors) = sec.assign_room(new_room, compromise=True, clear_others=True)
                             if status is False:
-                                raise ESPError(False), 'Classroom assignment errors: %s' % errors
+                                raise ESPError(False), 'Classroom assignment errors: <ul><li>%s</li></ul>' % '</li><li>'.join(errors)
 
                     #   Clear the cache for this class and its new room.
                     sec.clear_resource_cache()

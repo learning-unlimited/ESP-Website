@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from esp.membership.forms import ContactInfoForm, AlumniInfoForm, AlumniContactForm, AlumniRSVPForm, AlumniLookupForm, AlumniMessageForm
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.qsd.models import QuasiStaticData
 from esp.web.util.main import render_to_response
 from django.core.mail import send_mail

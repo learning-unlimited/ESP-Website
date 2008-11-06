@@ -54,8 +54,7 @@ class AdminMaterials(ProgramModuleObj):
     def get_materials(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm_Admin    
         from esp.qsdmedia.models import Media
-        from esp.datatree.models import DataTree
-            
+        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString            
         context_form = FileUploadForm_Admin()
         new_choices = [(a.anchor.id, a.emailcode() + ': ' + unicode(a)) for a in prog.classes()]
         new_choices.append((prog.anchor.id,'Document pertains to program'))

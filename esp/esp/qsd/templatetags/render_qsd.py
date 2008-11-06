@@ -1,6 +1,6 @@
 import md5
 from django import template
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.users.models import UserBit
 from esp.web.util.template import cache_inclusion_tag, DISABLED
 from esp.qsd.models import QuasiStaticData

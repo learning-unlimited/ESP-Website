@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
-from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
+from esp.datatree.models import *
 from datetime import datetime, timedelta
 from django.db.models.query import Q
 from esp.dblog.models import error
@@ -44,11 +44,17 @@ from django.contrib.auth import logout, login, authenticate
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
 from esp.db.cache import GenericCacheHelper
-from esp.users.models.userbits import UserBit
 from django.http import HttpRequest
 from django.template import loader
 from django.core.mail import send_mail
 from django.template import Context
+
+UserBit = None
+
+def _import_userbit():
+    global UserBit
+    if UserBit is None:
+        from esp.users.models.userbits import UserBit
 
 try:
     import cPickle as pickle
@@ -103,7 +109,7 @@ class ESPUser(User, AnonymousUser):
             self.__olduser = userObj
 
         else:
-            models.Model.__init__(self, userObj, *args, **kwargs)
+            User.__init__(self, userObj, *args, **kwargs)
             
         self.other_user = False
         self.cache = ESPUser.objects.cache(self)
@@ -148,6 +154,7 @@ class ESPUser(User, AnonymousUser):
         return self.getOld().is_authenticated()
 
     def getVisible(self, objType):
+        _import_userbit()
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
 
     def getLastProfile(self):
@@ -157,11 +164,13 @@ class ESPUser(User, AnonymousUser):
         return RegistrationProfile.getLastProfile(self)
 
     def getEditable(self, objType):
+        _import_userbit()
         ubs = UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
         id_list = [ub.id for ub in ubs]
         return objType.objects.filter(id__in=id_list)
 
     def canEdit(self, object):
+        _import_userbit()
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
 
     def updateOnsite(self, request):
@@ -307,6 +316,7 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
+        _import_userbit()
         types = ['Student', 'Teacher','Guardian','Educator']
 
         if strType not in types:
@@ -386,6 +396,7 @@ class ESPUser(User, AnonymousUser):
             return 'EnrolledClasses__noprogram'
 
     def clear_enrollment_cache(self, program):
+        _import_userbit()
         cache = UserBit.objects.cache(self)
         cache[self.enrollment_cache_key(program)] = None
 
@@ -408,6 +419,7 @@ class ESPUser(User, AnonymousUser):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
         here's a slightly more general function for finding who belongs where. """
         from esp.program.models import ClassSection
+        _import_userbit()
         
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         if not program:
@@ -416,12 +428,12 @@ class ESPUser(User, AnonymousUser):
             qsc_base = program.anchor
         
         if not verbs:
-            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.get_rangestart(), qsc__rangeend__lte=qsc_base.get_rangeend(), verb__rangestart__gte=verb_base.get_rangestart(), verb__rangeend__lte=verb_base.get_rangeend(), user=self)
+            ubl = UserBit.objects.filter(QTree(qsc__below=qsc_base, verb__below=verb_base), user=self)
         else:
             verb_uris = ['V/Flags/Registration' + verb_str for verb_str in verbs]
             verb_ids = [v['id'] for v in DataTree.objects.filter(uri__in=verb_uris).values('id')]
-            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.get_rangestart(), qsc__rangeend__lte=qsc_base.get_rangeend(), verb__id__in=verb_ids, user=self)
-            
+            ubl = UserBit.objects.filter(QTree(qsc__below = qsc_base), verb__id__in=verb_ids, user=self)
+
         ubl = ubl.filter(Q(enddate__gte=datetime.now()) | Q(enddate__isnull=True))
         
         cs_anchor_ids = [u['qsc'] for u in ubl.values('qsc')]
@@ -468,6 +480,7 @@ class ESPUser(User, AnonymousUser):
         return priority
 
     def isEnrolledInClass(self, clsObj, request=None):
+        _import_userbit()
         verb_str = 'V/Flags/Registration/Enrolled'
         if request:
             verb = request.get_node(verb_str)
@@ -477,9 +490,11 @@ class ESPUser(User, AnonymousUser):
         return UserBit.UserHasPerms(self, clsObj.anchor, verb)
 
     def canAdminister(self, nodeObj):
+        _import_userbit()
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
     def canRegToFullProgram(self, nodeObj):
+        _import_userbit()
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
     def hasFinancialAid(self, anchor):
@@ -553,6 +568,7 @@ class ESPUser(User, AnonymousUser):
         return (has_paid, status, amt_owed, li_list)
 
     def isOnsite(self, program = None):
+        _import_userbit()
         verb = GetNode('V/Registration/OnSite')
         if program is None:
             return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
@@ -598,6 +614,7 @@ class ESPUser(User, AnonymousUser):
 
 
     def isAdministrator(self, anchor_object = None):
+        _import_userbit()
         if anchor_object is None:
             return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
         else:
@@ -621,6 +638,7 @@ class ESPUser(User, AnonymousUser):
         Creates the methods such as isTeacher that determins whether
         or not the user is a member of that user class.
         """
+        _import_userbit()
         user_classes = ('Teacher','Guardian','Educator','Officer','Student')
         overrides = {'Officer': 'Administrator'}
         for user_class in user_classes:
@@ -643,11 +661,13 @@ class ESPUser(User, AnonymousUser):
 
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
+        _import_userbit()
         # Axiak
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer/Edit'))
 
     def getMiniBlogEntries(self):
         """Return all miniblog posts this person has V/Subscribe bits for"""
+        _import_userbit()
         # Axiak 12/17
         from esp.miniblog.models import Entry
         return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe')).order_by('-timestamp')
@@ -759,6 +779,7 @@ class StudentInfo(models.Model):
         return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
 
     def updateForm(self, form_dict):
+        _import_userbit()
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
@@ -775,6 +796,7 @@ class StudentInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
+        _import_userbit()
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
 
@@ -1227,6 +1249,7 @@ class K12School(models.Model):
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
+    _import_userbit()
 
     DEFAULT_VERB = 'V/Administer/Edit'
 

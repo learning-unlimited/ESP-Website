@@ -1,7 +1,7 @@
 """ Functions needed to transition from single to split class models. """
 
 from esp.program.models.class_ import ClassSubject, ClassSection
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.users.models import UserBit
 from esp.resources.models import ResourceAssignment
 

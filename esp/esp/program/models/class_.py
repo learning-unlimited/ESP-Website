@@ -30,6 +30,8 @@ Email: web@esp.mit.edu
 
 import datetime
 import time
+from collections import defaultdict
+from decimal import Decimal
 
 # django Util
 from django.db import models
@@ -46,7 +48,7 @@ from django.contrib.auth.models import User
 
 # ESP models
 from esp.miniblog.models import Entry
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
@@ -455,18 +457,22 @@ class ClassSection(models.Model):
             result = base_room.satisfies_requests(self)
             if result[0] is False:
                 status = False
-                errors.append('This room does not have all resources that the class needs (or it is too small) and you have opted not to compromise.  Try a better room.')
+                errors.append( 'Room <strong>%s</strong> does not have all resources that <strong>%s</strong> needs (or it is too small) and you have opted not to compromise.  Try a better room.' % (base_room.name, self) )
         
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
-            errors.append('This room is not available at the times requested by the class.  Bug the webmasters to find out why you were allowed to assign this room.')
+            errors.append( 'Room <strong>%s</strong> is not available at the times requested by <strong>%s</strong>.  Bug the webmasters to find out why you were allowed to assign this room.' % (base_room.name, self) )
         
         for r in rooms_to_assign:
             r.clear_schedule_cache(self.parent_program)
             result = self.assignClassRoom(r)
             if not result:
                 status = False
-                errors.append('Error: This classroom is already taken.  Please assign a different one.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.')
+                occupiers_str = ''
+                occupiers_set = base_room.assignments()
+                if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
+                    occupiers_str = ' by <strong>%s</strong>' % (occupiers_set[0].target or occupiers_set[0].target_subj)
+                errors.append( 'Error: Room <strong>%s</strong> is already taken%s.  Please assign a different one to <strong>%s</strong>.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.' % ( base_room.name, occupiers_str, self ) )
             
         return (status, errors)
     
@@ -612,14 +618,11 @@ class ClassSection(models.Model):
     def students_dict(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.uri)
-        result = {}
-        userbits = UserBit.objects.filter(qsc=self.anchor, verb__rangestart__gte=verb_base.get_rangestart(), verb__rangeend__lte=verb_base.get_rangeend()).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True))
+        result = defaultdict(list)
+        userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).distinct()
         for u in userbits:
             bit_str = u.verb.uri[uri_start:]
-            if bit_str not in result:
-                result[bit_str] = [ESPUser(u.user)]
-            else:
-                result[bit_str].append(ESPUser(u.user))
+            result[bit_str].append(ESPUser(u.user))
         return PropertyDict(result)
 
     def students_prereg(self, use_cache=True):
@@ -827,7 +830,7 @@ class ClassSection(models.Model):
         self.update_cache()
 
     def getRegBits(self, user):
-        result = UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.get_rangestart(), qsc__rangeend__lte=self.anchor.get_rangeend()).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        result = UserBit.objects.filter(QTree(qsc__below=self.anchor)).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
         return result
     
     def getRegVerbs(self, user):
@@ -838,7 +841,7 @@ class ClassSection(models.Model):
 
         prereg_verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
-        for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__rangestart__gte=prereg_verb_base.get_rangestart(), verb__rangeend__lte=prereg_verb_base.get_rangeend()):
+        for ub in UserBit.objects.filter(QTree(verb__below=prereg_verb_base), user=user, qsc=self.anchor_id):
             if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
                 ub.expire()
         
@@ -1114,8 +1117,8 @@ class ClassSubject(models.Model):
         self.sections.clear()
         
         #   Remove indirect dependencies
-        Media.objects.filter(anchor__rangestart__gte=self.anchor.get_rangestart(), anchor__rangeend__lte=self.anchor.get_rangeend()).delete()
-        UserBit.objects.filter(qsc__rangestart__gte=self.anchor.get_rangestart(), qsc__rangeend__lte=self.anchor.get_rangeend()).delete()
+        Media.objects.filter(QTree(anchor__below=self.anchor)).delete()
+        UserBit.objects.filter(QTree(qsc__below=self.anchor)).delete()
         
         self.checklist_progress.clear()
         
@@ -1385,7 +1388,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return "/".join(urllist)
 
     def getRegBits(self, user):
-        return UserBit.objects.filter(user=user, qsc__rangestart__gte=self.anchor.get_rangestart(), qsc__rangeend__lte=self.anchor.get_rangeend()).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        return UserBit.objects.filter(QTree(qsc__below=self.anchor), user=user).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """

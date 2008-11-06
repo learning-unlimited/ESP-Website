@@ -12,7 +12,7 @@
     {% for lineitem in itemizedcosts %}
     <tr>
         <td>{{ lineitem.text }}</td>
-        <td>${{ lineitem.amount|floatformat:2 }}</td>
+        <td>${{ lineitem.negative_amount|floatformat:2 }}</td>
     </tr>
     {% endfor %}
     <tr>

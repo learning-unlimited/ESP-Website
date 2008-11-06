@@ -5,7 +5,7 @@ from django.contrib.auth.models import User, AnonymousUser
 import datetime
 import random
 import string
-
+import time
 
 # esp dependencies
 from django.db.models.query import Q
@@ -13,13 +13,12 @@ from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 
 # model dependencies
-from esp.datatree.models import DataTree
+from esp.users.models import ESPUser
+from esp.datatree.models import *
 
 # Cache introspection
 from django.core.cache.backends.memcached import CacheClass as MemcachedClass
 
-# Parsing "__above" tree queries
-from esp.datatree.util import tree_filter_kwargs, tree_filter
 
 
 __all__ = ['UserBit','UserBitImplication']
@@ -129,17 +128,17 @@ class UserBitManager(ProcedureManager):
         """
         Returns true if the user has the verb anywhere. False otherwise.
         """
+        node_id = getattr(node, 'id', node)
         col_filter = '%s__above' % node_type
-        cache_key  = 'has_%s__%s' % (node_type, node.id)
+        cache_key  = 'has_%s__%s' % (node_type, node_id)
 
-        retVal = self.cache(user)['has_%s__%s' % (node_type, node.id)]
+        retVal = self.cache(user)['has_%s__%s' % (node_type, node_id)]
 
         if retVal is not None:
             return retVal
         else:
             
-            retVal = bool(self.filter(**tree_filter({'user':user,
-                                                     col_filter: node})))
+            retVal = bool(self.filter(QTree(**{col_filter: node_id}), user = user))
             self.cache(user)[cache_key] = retVal
 
         return retVal
@@ -250,7 +249,7 @@ class UserBitManager(ProcedureManager):
                 query = Model.objects.filter(anchor=q)
                 
             if qsc is not None:
-                query = query.filter(Q(**tree_filter_kwargs(anchor__below = qsc)))
+                query = query.filter(QTree(anchor__below = qsc))
 
             if res == None:
                 res = query
@@ -431,7 +430,7 @@ class UserBit(models.Model):
     >>> UserBit.objects.bits_get_qsc(user=ringo,verb=GetNode('V/Purchase'),qsc_root=GetNode('Q/Albums'))
     []
     """
-    user = AjaxForeignKey(User, blank=True, null=True, default=None) # User to give this permission
+    user = AjaxForeignKey(User, 'id', blank=True, null=True, default=None) # User to give this permission
     qsc = AjaxForeignKey(DataTree, related_name='userbit_qsc') # Controller to grant access to
     verb = AjaxForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
 
@@ -503,8 +502,6 @@ class UserBit(models.Model):
     @classmethod
     def time_cache(cls):
         from django.contrib.auth.models import User
-        from esp.datatree.models import DataTree, GetNode
-        import time
 
         axiak = User.objects.get(username='axiak')
         splash = GetNode('Q/Programs/Splash/2007')
@@ -598,9 +595,9 @@ class UserBitImplication(models.Model):
             Q_qsc  = Q(qsc_original  = userbit.qsc)
             Q_verb = Q(verb_original = userbit.verb)
         else:
-            Q_qsc  = Q(**tree_filter_kwargs(qsc_original__below = userbit.qsc))
+            Q_qsc  = QTree(qsc_original__below = userbit.qsc_id)
 
-            Q_verb = Q(**tree_filter_kwargs(verb_original__below = userbit.verb))
+            Q_verb = QTree(verb_original__below = userbit.verb_id)
 
         # if one of the two are null, the other one can match and it'd be fine.
         Q_match = (Q_qsc & Q_verb) | (Q_qsc_null & Q_verb) | (Q_qsc & Q_verb_null)
@@ -677,13 +674,13 @@ class UserBitImplication(models.Model):
         if self.qsc_original_id is None and self.verb_original_id is None:
             return
         if self.qsc_original_id is not None:
-            Q_qsc = (Q(**tree_filter_kwargs(qsc__above = self.qsc_original)) &\
+            Q_qsc = (QTree(qsc__above = self.qsc_original) &\
                      Q(recursive       = True)) \
                      | \
                      Q(qsc = self.qsc_original_id)
             
         if self.verb_original_id is not None:
-            Q_verb = (Q(**tree_filter_kwargs(verb__above = self.verb_original)) &\
+            Q_verb = (QTree(verb__above = self.verb_original) &\
                       Q(recursive       = True)) \
                       | \
                       Q(verb = self.verb_original_id)
