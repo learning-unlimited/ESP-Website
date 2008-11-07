@@ -31,7 +31,6 @@ Email: web@esp.mit.edu
 import datetime
 import time
 from collections import defaultdict
-from decimal import Decimal
 
 # django Util
 from django.db import models
@@ -1316,7 +1315,7 @@ class ClassSubject(models.Model):
         self.status = 10
         # I do not understand the following line, but it saves us from "Cannot convert float to Decimal".
         # Also seen in /esp/program/modules/forms/management.py -ageng 2008-11-01
-        self.duration = Decimal(str(self.duration))
+        #self.duration = Decimal(str(self.duration))
         self.save()
         #   Accept any unreviewed sections.
         for sec in self.sections.all():
@@ -1523,6 +1522,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return sort_fn
 
     def save(self):
+        self.duration = str(self.duration)
         super(ClassSubject, self).save()
         self.update_cache()
 
