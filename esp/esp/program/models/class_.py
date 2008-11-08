@@ -261,7 +261,7 @@ class ClassSection(models.Model):
         """ Returns the list of classroom resources assigned to this class."""
         from esp.resources.models import Resource
 
-        ra_list = [item['resource'] for item in self.classroomassignments().values('resource')]
+        ra_list = self.classroomassignments().values_list('resource', flat=True)
         return Resource.objects.filter(id__in=ra_list)
 
     def initial_rooms(self):
