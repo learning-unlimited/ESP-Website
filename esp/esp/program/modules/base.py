@@ -159,7 +159,7 @@ class ProgramModuleObj(models.Model):
         
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        cache_key = "PROGRAMMODULE_FIND_MODULE_%s" % call_txt
+        cache_key = "PROGRAMMODULE_FIND_MODULE_%s_%s_%s_%s" % (tl, one, two, call_txt)
         moduleobj = cache.get(cache_key)
         if moduleobj == None:
 
