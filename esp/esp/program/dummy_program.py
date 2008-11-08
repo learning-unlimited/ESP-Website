@@ -1,6 +1,6 @@
 """ Code to create the dummy program needed for profile storage. """
 
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.program.models import Program
 
 def init_dummy_program():

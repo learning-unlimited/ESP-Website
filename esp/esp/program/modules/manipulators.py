@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from django import oldforms as forms
 from django.core import validators
 import re
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.program.models import ClassCategories, ClassSubject, ClassSection
 
             

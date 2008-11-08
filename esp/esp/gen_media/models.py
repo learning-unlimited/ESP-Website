@@ -29,138 +29,15 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db   import models
-from django.core.files.base import ContentFile
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.core.files.storage import FileSystemStorage
 
-from esp.users.models import User
 from esp.middleware   import ESPError
-from django.core.files import File
 import os
-import tempfile
 import datetime
-import cStringIO as StringIO
 import md5
-from PIL import Image, ImageFont, ImageDraw, ImageFilter
 
-TEXIMAGE_BASE = settings.MEDIA_ROOT + 'latex/'
-TEXIMAGE_URL  = settings.MEDIA_URL + 'latex/'
-IMAGE_TYPE    = 'png'
-LATEX_DPI     = 150
-LATEX_BG      = 'Transparent' #'white'
-
-mimes         = {'gif': 'image/gif',
-                 'png': 'image/png'}
-
-commands = {'latex'  : '/usr/bin/latex',
-            'dvips'  : '/usr/bin/dvips',
-            'convert': '/usr/bin/convert',
-            'dvipng' : '/usr/bin/dvipng'}
-
-TMP      = tempfile.gettempdir()
-
-class LatexImage(models.Model):
-
-    content  = models.TextField()
-    image    = models.FileField(upload_to = 'latex')
-    dpi      = models.IntegerField(blank=True, null=True)
-    style    = models.CharField(max_length=16, choices = (('INLINE','INLINE'),('DISPLAY','DISPLAY')))
-    filetype = models.CharField(max_length=10)
-
-    def getImage(self):
-        if self.genImage():
-            return str(self)
-        else:
-            return self.content.strip('$')
-
-    def genImage(self):
-
-        if self.file_exists():
-            return True
-        
-        if not self.image:
-            file_base = get_rand_file_base()
-            self.filetype = IMAGE_TYPE
-        else:
-            #   Get the filename without its extension
-            file_base = os.path.basename(self.image.path)
-
-        if self.style == 'INLINE':
-            style = '$'
-        elif self.style == 'DISPLAY':
-            style = '$$'
-        else:
-            raise ESPError(False), 'Unknown display style'
-
-        tex = r"""\documentclass[fleqn]{article} \usepackage{amssymb,amsmath} """ +\
-              r"""\usepackage[latin1]{inputenc} \begin{document} """ + \
-              r""" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}""" % \
-              (style, self.content, style)
-
-        tmppath = os.path.join(TMP, file_base)
-    
-        tex_file = open(tmppath + '.tex', 'w')
-        tex_file.write(tex.encode('utf-8'))
-        tex_file.close()
-
-        if self.dpi is None:
-            cur_dpi = LATEX_DPI
-        else:
-            cur_dpi = self.dpi
-
-        os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
-                  (TMP, commands['latex'], tmppath))
-
-        os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi > /dev/null' % \
-                  (commands['dvipng'], LATEX_BG, cur_dpi, TEXIMAGE_BASE + file_base, tmppath))
-
-        if self.filetype.lower() != 'png':
-            os.system( '%s %s.png %s.%s %> /dev/null' % \
-                       (commands['convert'], TEXIMAGE_BASE + file_base, TEXIMAGE_BASE + file_base, self.filetype))
-        
-        #   Read the image file data
-        img_file = open(TEXIMAGE_BASE + file_base + '.' + self.filetype)
-        
-        #   Save it to a Django file
-        fs = FileSystemStorage(location=TEXIMAGE_BASE, base_url=TEXIMAGE_URL)
-        self.image = fs.save('latex/' + file_base + '.' + self.filetype, File(img_file))
-    
-        img_file.close()
-        
-        self.save(super=True)
-        
-        return True
-
-    def save(self, *args, **kwargs):
-        if 'super' not in kwargs:
-            self.genImage()
-        else:
-            del kwargs['super']
-        super(LatexImage,self).save(*args, **kwargs)
-        
-
-    def __unicode__(self):
-        return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' % \
-               (self.image.url, self.content, self.content)
-        
-    def file_exists(self):
-        if not self.image:
-            return False
-        return os.path.exists(self.image.path)
-
-    class Admin:
-        pass
-    
-def get_rand_file_base():
-    import sha
-    from random import random
-
-    rand = sha.new(str(random())).hexdigest()
-
-    while os.path.exists('%s/%s.%s' % (TEXIMAGE_BASE, rand, IMAGE_TYPE)):
-        rand = sha.new(str(random())).hexdigest()
-    return rand
+import ImageFont, Image, ImageDraw, ImageFilter
 
 IMAGE_TYPE = 'png'
 

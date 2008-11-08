@@ -31,12 +31,41 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+from django.db import models, connection, transaction
 
-from django.contrib import admin
-from esp.datatree.models import *
+try:
+    from functools import wraps
+except ImportError:
+    from django.utils.functional import wraps
 
-class DataTreeAdmin(admin.ModelAdmin):
-    list_display = ('uri',)
-    search_fields = ['uri']
+from collections import deque
 
-admin.site.register(DataTree, DataTreeAdmin)
+__all__ = ('serializable',)
+
+# TODO: Make this thread-safe using locals/thread dict ...
+#       [Read django.db.transaction.py for an easy example.]
+isolation_levels = deque([1])
+
+def serializable(func):
+    def _serializable(self, *args, **kwargs):
+        try:
+            transaction.commit()
+        except:
+            pass
+        self.cursor = None
+        connection.connection.set_isolation_level(2)
+        isolation_levels.append(2)
+        try:
+            return func(self, *args, **kwargs)
+        finally:
+            try:
+                transaction.commit()
+            except:
+                pass
+            if len(isolation_levels) < 2:
+                connection.connection.set_isolation_level(1)
+            else:
+                level = isolation_levels.pop()
+                old_level = isolation_levels[-1]
+                connection.connection.set_isolation_level(old_level)
+    return wraps(func)(_serializable)

@@ -32,7 +32,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_s
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext, manipulators
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassImplication
-from esp.datatree.models         import DataTree, GetNode
+from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
 from django                      import oldforms
@@ -717,6 +717,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             if newclass is not None:
                 new_data = newclass.__dict__
                 new_data['category'] = newclass.category.id
+                new_data['num_sections'] = newclass.sections.count()
                 new_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
                 new_data['resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=False).distinct().values('res_type') ]
                 new_data['allow_lateness'] = newclass.allow_lateness

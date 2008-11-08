@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 

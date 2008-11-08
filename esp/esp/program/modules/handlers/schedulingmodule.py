@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories
-from esp.datatree.models         import DataTree, GetNode
+from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django                      import forms
 from django.http                 import HttpResponseRedirect
@@ -93,6 +93,10 @@ class SchedulingModule(ProgramModuleObj):
   
             key_list = new_dict.keys()
             key_list = filter(lambda a: a.endswith('new'), key_list)
+            key_list.sort()
+            # assert False, '\n'.join([str((k, new_dict[k])) for k in key_list])
+            # sec_update_list = []
+            # assert False, section_ids_to_process
             for key in key_list:
                 #   Find the variables that differ from existing data (something_new vs. something_old).
                 commands = key.split('_')

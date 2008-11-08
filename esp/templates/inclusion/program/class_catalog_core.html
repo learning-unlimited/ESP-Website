@@ -33,7 +33,7 @@
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
 	  {% for sec in class.sections.all %}
-           Section {{ sec.index }}: {% if not sec.friendly_times|length_is:0 %}{{ sec.friendly_times|join:", " }}{% else %}Unassigned{% endif %} <br />
+           Section {{ sec.index }}: {% if not sec.friendly_times|length_is:0 %}{{ sec.friendly_times|join:", "|smartypants }}{% else %}Unassigned{% endif %} <br />
           {% endfor %}
         <br />
       </td>

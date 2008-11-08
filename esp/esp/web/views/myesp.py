@@ -34,7 +34,7 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
 from esp.program.models import RegistrationProfile
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog, create_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSection, ClassSubject, ClassCategories
@@ -353,7 +353,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 						userrole['base'] = 'teach'
 						userrole['reg'] = 'teacherreg'
 					ctxt['userrole'] = userrole
-					regverb = GetNode('V/Deadline/Registration/%s' % ctxt['userrole']['name'])
+					regverb = GetNode('V/Deadline/Registration/%s/MainPage' % ctxt['userrole']['name'])
 					progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
 					ctxt['progs'] = progs
 				return render_to_response('users/profile_complete.html', request, navnode, ctxt)

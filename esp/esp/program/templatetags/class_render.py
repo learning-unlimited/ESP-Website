@@ -66,12 +66,11 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
 
     if user and prereg_url:
         error1 = cls.cannotAdd(user, True, request=request)
-        error2 = section.cannotAdd(user, True, request=request)
         # If we can't add the class at all, then we take that error message
         if error1:
             errormsg = error1
         else:  # there's some section for which we can add this class; does that hold for this one?
-            errormsg = error2
+            errormsg = section.cannotAdd(user, True, request=request)
     
     show_class =  (not filter) or (not errormsg)
     

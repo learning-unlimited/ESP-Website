@@ -46,7 +46,7 @@ FORCE_SCRIPT_NAME=''
 ###################
 # Debug settings  #
 ###################
-DEBUG = True
+DEBUG = False
 DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 
@@ -54,7 +54,8 @@ INTERNAL_IPS = (
     '127.0.0.1',
     '66.31.202.119',
     '18.208.0.164',
-    '18.208.0.160'
+    '18.208.0.160',
+    '18.187.1.236',
 )
 
 ##################
@@ -67,7 +68,7 @@ ADMINS = (
 MANAGERS = ADMINS
 
 # problem mail
-EMAIL_HOST   = 'localhost'
+EMAIL_HOST   = 'outgoing.mit.edu'
 EMAIL_PORT   = '25'
 SERVER_EMAIL = 'server@esp.mit.edu'
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
@@ -120,7 +121,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'esp.middleware.StripWhitespaceMiddleware',
-    'django.middleware.transaction.TransactionMiddleware',
+#    'django.middleware.transaction.TransactionMiddleware',
 )
 
 ROOT_URLCONF = 'esp.urls'

@@ -159,7 +159,7 @@ class ProgramModuleObj(models.Model):
         
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        cache_key = "PROGRAMMODULE_FIND_MODULE_%s" % call_txt
+        cache_key = "PROGRAMMODULE_FIND_MODULE_%s_%s_%s_%s" % (tl, one, two, call_txt)
         moduleobj = cache.get(cache_key)
         if moduleobj == None:
 
@@ -298,8 +298,7 @@ class ProgramModuleObj(models.Model):
     def deadline_met(self, extension=''):
     
         from esp.users.models import UserBit
-        from esp.datatree.models import GetNode
-
+        from esp.datatree.models import GetNode, DataTree
 
         if not self.user or not self.program:
             raise ESPError(False), "There is no user or program object!"
@@ -570,7 +569,7 @@ def needs_student(method):
 def meets_grade(method):
     def _checkGrade(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/wronggrade.html'
-        from esp.datatree.models import GetNode
+        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
         from esp.users.models import UserBit
 
         verb_override = GetNode('V/Flags/Registration/GradeOverride')
@@ -599,7 +598,7 @@ def meets_deadline(extension=''):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
             from esp.users.models import UserBit
-            from esp.datatree.models import GetNode
+            from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
             if tl != 'learn' and tl != 'teach':
                 return True
 

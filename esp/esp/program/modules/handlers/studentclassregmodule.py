@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
@@ -70,7 +70,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
         Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
-        Reg = Q(userbit__verb__rangestart__gte = verb_base.get_rangestart(), userbit__verb__rangeend__lte = verb_base.get_rangeend())
+        Reg = QTree(userbit__verb__below = verb_base)
         Unexpired = Q(userbit__enddate__isnull=True) | Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
         
         if QObject:
@@ -170,14 +170,14 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
             classes_registered = 0
             for cls in enrolled_classes:
-                reg_verbs = cls.getRegVerbs()
+                reg_verbs = cls.getRegVerbs(request.user)
                 is_auto = 0
                 for r in reg_verbs:
                     if r.name == 'Automatic':
                         is_auto = 1
                 if not is_auto:
-                    classed_registered += 1
-                    
+                    classes_registered += 1
+
             if classes_registered >= 1:
                 datestring = ''
                 bitlist = UserBit.objects.filter(user__isnull=True, qsc=prog.anchor, verb=reg_verb)
@@ -404,11 +404,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         v_registered_base = request.get_node('V/Flags/Registration')
         
         #   This query just gets worse and worse.   -Michael
-        oldclasses = ClassSection.objects.filter(meeting_times=extra,
-                             classsubject__parent_program = self.program,
-                             anchor__userbit_qsc__verb__rangestart__gte = v_registered_base.get_rangestart(),
-                             anchor__userbit_qsc__verb__rangeend__lte = v_registered_base.get_rangeend(),
-                             anchor__userbit_qsc__user = self.user).distinct()
+        #   Maybe a little better with QTree?   -Axiak
+        oldclasses = ClassSection.objects.filter(
+            QTree(anchor__userbit_qsc__verb__below = v_registered_base),
+            meeting_times=extra,
+            classsubject__parent_program = self.program,
+            anchor__userbit_qsc__user = self.user).distinct()
                              
         #   Narrow this down to one class if we're using the priority system.
         if request.GET.has_key('sec_id'):
