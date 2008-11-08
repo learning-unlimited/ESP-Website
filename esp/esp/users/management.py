@@ -34,8 +34,13 @@ from django.dispatch import dispatcher
 from django.db.models import signals 
 from esp.users import models as UsersModel
 
+have_already_installed = False
+
 def post_syncdb(sender, app, **kwargs):
-    if app == UsersModel:
+    global have_already_installed
+
+    if (not have_already_installed) and app == UsersModel:
+        have_already_installed = True
         print "Installing esp.users initial data..."
         UsersModel.install()
 

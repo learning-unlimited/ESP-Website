@@ -34,10 +34,20 @@ from django.dispatch import dispatcher
 from django.db.models import signals 
 from esp.datatree import models as datatree
 
+have_already_installed = False
+
 def post_syncdb(sender, app, **kwargs):
-    if app == datatree:
+    global have_already_installed
+    if app == datatree and not have_already_installed:
+        have_already_installed = True
         print "Installing esp.datatree initial data..."
         datatree.install()
 
+        from django.db import connection
+        cursor = connection.cursor()
+        f = open("datatree/sql/datatree.postgresql.sql")
+        cursor.execute(f.read())
+        f.close()
+        
 signals.post_syncdb.connect(post_syncdb)
 
