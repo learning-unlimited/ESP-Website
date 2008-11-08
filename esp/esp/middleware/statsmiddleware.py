@@ -101,11 +101,13 @@ class StatsMiddleware(object):
 
             sqlcontent = ''.join("\n"+'%s:&nbsp;&nbsp;%s<br />' % \
                               (q['time'], q['sql']) for q in connection.queries)
-                              
+
+            sqlcontent = str(sqlcontent)
+            
             if '</body>' in response.content.lower():
                 pos = response.content.find('</body>')
-                response.content = response.content[:pos] + \
-                                   u"\n\n" + u'<div class="sql">\n' + unicode(sqlcontent) + u"\n\n</div>" + \
-                                   response.content[pos:]
+                response.content = '%s\n\n<div class="sql">\n%s\n\n</div>%s' % \
+                                   (response.content[:pos], sqlcontent, response.content[pos:])
+
         return response
 
