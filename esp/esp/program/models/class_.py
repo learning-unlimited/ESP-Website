@@ -192,14 +192,22 @@ class ClassSection(models.Model):
     title = property(_get_title)
     
     def _get_capacity(self):
+        key = 'CLASSSECTION_CAPACITY_%d' % self.id
+        ans = cache.get(key)
+        if ans is not None:
+            return ans
+
         rooms = self.initial_rooms()
         if len(rooms) == 0:
-            return self.parent_class.class_size_max
+            ans = self.parent_class.class_size_max
         else:
             rc = 0
             for r in rooms:
                 rc += r.num_students
-            return min(self.parent_class.class_size_max, rc)
+            ans = min(self.parent_class.class_size_max, rc)
+        # TODO: properly evict cache -- that said, code is currently wrong anyway
+        cache.set(key, ans, 3600)
+        return ans
     capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
@@ -261,7 +269,7 @@ class ClassSection(models.Model):
         """ Returns the list of classroom resources assigned to this class."""
         from esp.resources.models import Resource
 
-        ra_list = [item['resource'] for item in self.classroomassignments().values('resource')]
+        ra_list = self.classroomassignments().values_list('resource', flat=True)
         return Resource.objects.filter(id__in=ra_list)
 
     def initial_rooms(self):

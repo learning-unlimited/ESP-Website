@@ -133,7 +133,7 @@ If you have any questions regarding the program, <br /> please email the
         </td>
         <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}</td>
         <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
-            <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>) (<a href="/teach/{{ one }}/{{ two }}/select_students/{{ sec.id }}">enroll/reject</a>)</td>
+            <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>) {% comment %}(<a href="/teach/{{ one }}/{{ two }}/select_students/{{ sec.id }}">enroll/reject</a>){% endcomment %}</td>
         <td class="clsright" valign="top"><a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ request.META.HTTP_HOST }}">E-mail students</a></td>
     </tr>
     {% endfor %}
