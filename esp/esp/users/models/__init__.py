@@ -420,13 +420,13 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import ClassSection
         _import_userbit()
         
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        if program:
+            qsc_base = program.anchor
+        else:
+            qsc_base = DataTree.get_by_uri('Q')
                 
         if not verbs:
-            if program:
-                qsc_base = program.anchor
-            else:
-                qsc_base = DataTree.get_by_uri('Q')
+            verb_base = DataTree.get_by_uri('V/Flags/Registration')
                 
             csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base,
                                                     anchor__userbit_qsc__verb__below=verb_base)
