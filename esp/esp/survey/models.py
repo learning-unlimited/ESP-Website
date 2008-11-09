@@ -62,7 +62,7 @@ class ListField(object):
         c.a = ('a','b','c')
 
         print c.b
-        >>> "a|b|c"
+        > "a|b|c"
 
         c.save()
 

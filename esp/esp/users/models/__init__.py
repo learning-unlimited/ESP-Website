@@ -420,23 +420,30 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import ClassSection
         _import_userbit()
         
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        if not program:
-            qsc_base = DataTree.get_by_uri('Q')
-        else:
+        if program:
             qsc_base = program.anchor
-        
-        if not verbs:
-            ubl = UserBit.objects.filter(QTree(qsc__below=qsc_base, verb__below=verb_base), user=self)
         else:
-            verb_uris = ['V/Flags/Registration' + verb_str for verb_str in verbs]
-            verb_ids = [v['id'] for v in DataTree.objects.filter(uri__in=verb_uris).values('id')]
-            ubl = UserBit.objects.filter(QTree(qsc__below = qsc_base), verb__id__in=verb_ids, user=self)
+            qsc_base = DataTree.get_by_uri('Q')
+                
+        if not verbs:
+            verb_base = DataTree.get_by_uri('V/Flags/Registration')
+                
+            csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base,
+                                                    anchor__userbit_qsc__verb__below=verb_base)
+                                              & Q( Q(anchor__userbit_qsc__user=self),
+                                                   Q(anchor__userbit_qsc__enddate__gte=datetime.now()) |
+                                                   Q(anchor__userbit_qsc__enddate__isnull=True))).distinct()
 
-        ubl = ubl.filter(Q(enddate__gte=datetime.now()) | Q(enddate__isnull=True))
-        
-        cs_anchor_ids = [u['qsc'] for u in ubl.values('qsc')]
-        csl = ClassSection.objects.filter(anchor__id__in=cs_anchor_ids) 
+        else:            
+            verb_uris = ('V/Flags/Registration' + verb_str for verb_str in verbs)
+            
+            csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base)
+                                              & Q(Q(anchor__userbit_qsc__enddate__gte=datetime.now()) |
+                                                  Q(anchor__userbit_qsc__enddate__isnull=True)),
+                                              Q(anchor__userbit_qsc__user=self,
+                                                anchor__userbit_qsc__verb__uri__in=verb_uris)
+                                              ).distinct()
+            
 
         return csl
 

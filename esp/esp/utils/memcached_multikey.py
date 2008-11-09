@@ -6,11 +6,12 @@ from esp import settings
 class CacheClass(BaseCache):
     def __init__(self, server, params):
         BaseCache.__init__(self, params)
-        self._wrapped_cache = MemcacheCacheClass(server, params)        
-        self._cache_prefix = getattr(settings, 'CACHE_PREFIX', '')
+        self._wrapped_cache = MemcacheCacheClass(server, params)
+        if not hasattr(settings, 'CACHE_PREFIX'):
+            settings.CACHE_PREFIX = ''
 
     def make_key(self, key):
-        return self._cache_prefix + key
+        return settings.CACHE_PREFIX + key
         
     def add(self, key, value, timeout=0):
         return self._wrapped_cache.add(self.make_key(key), value, timeout=timeout)
