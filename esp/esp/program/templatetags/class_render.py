@@ -58,7 +58,7 @@ def render_class_core(cls):
             'colorstring': colorstring,
             'show_enrollment': show_enrollment }
             
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
     errormsg = None
 
