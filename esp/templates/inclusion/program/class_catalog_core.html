@@ -33,7 +33,7 @@
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
 	  {% for sec in class.sections.all %}
-           Section {{ sec.index }}: {% if not sec.friendly_times|length_is:0 %}{{ sec.friendly_times|join:", "|smartypants }}{% else %}Unassigned{% endif %} <br />
+           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "|smartypants }} <br />{% endif %}
           {% endfor %}
         <br />
       </td>
@@ -44,7 +44,7 @@
          {% if show_enrollment %} <br />
          <strong>Enrollment</strong><br />
            {% for sec in class.sections.all %}
-             Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />
+              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />{% endif %}
            {% endfor %}
         {% endif %}
       </td>
