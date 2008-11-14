@@ -1197,6 +1197,16 @@ class ClassSubject(models.Model):
             teachers.append(name)
         return teachers
 
+    def getTeacherNamesLast(self):
+        teachers = []
+        for teacher in self.teachers():
+            name = '%s, %s' % (teacher.last_name,
+                              teacher.first_name)
+            if name.strip() == '':
+                name = teacher.username
+            teachers.append(name)
+        return teachers
+		
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent():

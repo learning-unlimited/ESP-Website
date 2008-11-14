@@ -27,14 +27,18 @@ body { font-family: georgia; }
 .box { width: 15px; height: 15px; border: 2px solid black; 
    font-weight: bold; text-align: center; vertical-align: middle;
 }
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
 </style>
+<script src="/media/scripts/sorttable.js"></script>
 </head>
 <body>
-<div class="title" style="text-align: center;">
-<span>Students' Emergency Contacts for {{program.niceName}}</span>
-</div>
 
-<table class="pretty" cellspacing="0">
+<table class="pretty sortable" cellspacing="0">
 <tr>
    <th>#</th>
    <th>ID</th>
@@ -48,7 +52,7 @@ body { font-family: georgia; }
 <tr>
    <td>{{ forloop.counter }}</td>
    <td>{{ student.id }}</td>
-   <td>{{ student.name }}</td>
+   <td>{{ student.last_name }}, {{ student.first_name}}</td>
    <td>{{ student.emerg_contact.first_name }} {{ student.emerg_contact.last_name }}</td>
    <td>{{ student.emerg_contact.address }}</td>
    <td>{{ student.emerg_contact.phone_day }}</td>
