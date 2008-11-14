@@ -625,6 +625,7 @@ class ClassSection(models.Model):
             for time in cls.meeting_times.all():
                 if self.meeting_times.filter(id = time.id).count() > 0:
                     return True
+        return False
 
     def students_dict(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
@@ -1301,6 +1302,7 @@ class ClassSubject(models.Model):
                     for sec in self.sections.all():
                         if sec.meeting_times.filter(id = time.id).count() > 0:
                             return True
+        return False
 
     def isAccepted(self):
         return self.status == 10
