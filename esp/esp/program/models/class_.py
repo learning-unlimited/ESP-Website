@@ -192,8 +192,7 @@ class ClassSection(models.Model):
     title = property(_get_title)
     
     def _get_capacity(self):
-        key = 'CLASSSECTION_CAPACITY_%d' % self.id
-        ans = cache.get(key)
+        ans = self.cache['capacity']
         if ans is not None:
             return ans
 
@@ -205,8 +204,8 @@ class ClassSection(models.Model):
             for r in rooms:
                 rc += r.num_students
             ans = min(self.parent_class.class_size_max, rc)
-        # TODO: properly evict cache -- that said, code is currently wrong anyway
-        cache.set(key, ans, 3600)
+
+        self.cache['capacity'] = ans
         return ans
     capacity = property(_get_capacity)
 
@@ -623,9 +622,10 @@ class ClassSection(models.Model):
             return False
 
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
-            for time in cls.meeting_times.all():
-                if self.meeting_times.filter(id = time.id).count() > 0:
-                    return True
+            for sec in cls.sections.all().exclude(id=self.id):
+                for time in sec.meeting_times.all():
+                    if self.meeting_times.filter(id = time.id).count() > 0:
+                        return True
 
     def students_dict(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
@@ -1197,6 +1197,16 @@ class ClassSubject(models.Model):
             teachers.append(name)
         return teachers
 
+    def getTeacherNamesLast(self):
+        teachers = []
+        for teacher in self.teachers():
+            name = '%s, %s' % (teacher.last_name,
+                              teacher.first_name)
+            if name.strip() == '':
+                name = teacher.username
+            teachers.append(name)
+        return teachers
+
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent():
@@ -1299,9 +1309,10 @@ class ClassSubject(models.Model):
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
             for section in cls.sections.all():
                 for time in section.meeting_times.all():
-                    for sec in self.sections.all():
+                    for sec in self.sections.all().exclude(id=section.id):
                         if sec.meeting_times.filter(id = time.id).count() > 0:
                             return True
+        return False
 
     def isAccepted(self):
         return self.status == 10

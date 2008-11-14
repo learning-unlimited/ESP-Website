@@ -261,7 +261,7 @@ class ProgramPrintables(ProgramModuleObj):
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
         sections = self.program.sections()
                    
-        sections = filter(lambda z: z.isAccepted(), sections)
+        sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
         sections = filter(filt_exp, sections)                  
 
         if request.GET.has_key('secids'):

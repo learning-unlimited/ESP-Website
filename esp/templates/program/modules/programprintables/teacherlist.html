@@ -26,14 +26,19 @@ td, th {
        border: 1px solid black;
        border-collapse: collapse
 }
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
 </style>
+<script src="/media/scripts/sorttable.js"></script>
 
 </head>
 <body>
 
-<h1>Teachers</h1>
-
-<table style="border: 1px solid black; border-collapse: collapse;">
+<table class="sortable" style="border: 1px solid black; border-collapse: collapse;">
 <tr>
  <th />
  <th>Name</th>
@@ -45,7 +50,7 @@ td, th {
 {% for scheditem in scheditems %}
 <tr>
  <td>{{forloop.counter}}</td>
- <td>{{ scheditem.name }}</td>
+ <td>{{ scheditem.user.last_name }}, {{ scheditem.user.first_name}}</td>
  <td>{{ scheditem.phonenum }}</td>
  <td>{{ scheditem.cls.title }}</td>
  <td>{{ scheditem.cls.friendly_times.0 }}</td>
