@@ -623,9 +623,10 @@ class ClassSection(models.Model):
             return False
 
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
-            for time in cls.meeting_times.all():
-                if self.meeting_times.filter(id = time.id).count() > 0:
-                    return True
+            for sec in cls.sections.all().exclude(id=self.id):
+                for time in sec.meeting_times.all():
+                    if self.meeting_times.filter(id = time.id).count() > 0:
+                        return True
 
     def students_dict(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
@@ -1299,7 +1300,7 @@ class ClassSubject(models.Model):
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
             for section in cls.sections.all():
                 for time in section.meeting_times.all():
-                    for sec in self.sections.all():
+                    for sec in self.sections.all().exclude(id=section.id):
                         if sec.meeting_times.filter(id = time.id).count() > 0:
                             return True
 
