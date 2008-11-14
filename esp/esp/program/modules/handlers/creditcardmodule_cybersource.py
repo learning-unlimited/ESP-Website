@@ -70,7 +70,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
         # I think this is substantially better; it's the same thing, but in one query. - Adam
         #transactions = Transaction.objects.filter(anchor = self.program_anchor_cached())
         #userids = [ x.document_id for x in documents ]
-        QObj = Q(document__anchor=self.program_anchor_cached())
+        QObj = Q(document__anchor=self.program_anchor_cached(), document__doctype=3, document__cc_ref__gt='')
 
         if QObject:
             return {'creditcard': QObj}
