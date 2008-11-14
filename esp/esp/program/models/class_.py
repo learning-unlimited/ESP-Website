@@ -192,8 +192,7 @@ class ClassSection(models.Model):
     title = property(_get_title)
     
     def _get_capacity(self):
-        key = 'CLASSSECTION_CAPACITY_%d' % self.id
-        ans = cache.get(key)
+        ans = self.cache['capacity']
         if ans is not None:
             return ans
 
@@ -205,8 +204,8 @@ class ClassSection(models.Model):
             for r in rooms:
                 rc += r.num_students
             ans = min(self.parent_class.class_size_max, rc)
-        # TODO: properly evict cache -- that said, code is currently wrong anyway
-        cache.set(key, ans, 3600)
+
+        self.cache['capacity'] = ans
         return ans
     capacity = property(_get_capacity)
 
