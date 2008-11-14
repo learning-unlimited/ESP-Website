@@ -192,8 +192,7 @@ class ClassSection(models.Model):
     title = property(_get_title)
     
     def _get_capacity(self):
-        key = 'CLASSSECTION_CAPACITY_%d' % self.id
-        ans = cache.get(key)
+        ans = self.cache['capacity']
         if ans is not None:
             return ans
 
@@ -205,8 +204,8 @@ class ClassSection(models.Model):
             for r in rooms:
                 rc += r.num_students
             ans = min(self.parent_class.class_size_max, rc)
-        # TODO: properly evict cache -- that said, code is currently wrong anyway
-        cache.set(key, ans, 3600)
+
+        self.cache['capacity'] = ans
         return ans
     capacity = property(_get_capacity)
 
@@ -1198,6 +1197,16 @@ class ClassSubject(models.Model):
             teachers.append(name)
         return teachers
 
+    def getTeacherNamesLast(self):
+        teachers = []
+        for teacher in self.teachers():
+            name = '%s, %s' % (teacher.last_name,
+                              teacher.first_name)
+            if name.strip() == '':
+                name = teacher.username
+            teachers.append(name)
+        return teachers
+
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent():
@@ -1303,6 +1312,7 @@ class ClassSubject(models.Model):
                     for sec in self.sections.all().exclude(id=section.id):
                         if sec.meeting_times.filter(id = time.id).count() > 0:
                             return True
+        return False
 
     def isAccepted(self):
         return self.status == 10

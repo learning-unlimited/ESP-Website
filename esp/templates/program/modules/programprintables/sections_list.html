@@ -26,12 +26,19 @@ td, th {
        border: 1px solid black; 
        border-collapse: collapse
 }
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
 </style>
+<script src="/media/scripts/sorttable.js"></script>
 
 </head>
 <body>
 
-<table style="border: 1px solid black; border-collapse: collapse;">
+<table class="sortable.js" style="border: 1px solid black; border-collapse: collapse;">
 <tr>
  <th>#</th>
  <th>Class Code</th>
@@ -48,7 +55,7 @@ td, th {
  <td>{{ cls.emailcode }}</td>
  <td>{{ cls.title }}</td>
  <td>{{ cls.parent_class.class_info|truncatewords_html:10 }}
- <td>{{ cls.parent_class.getTeacherNames|join:", " }}</td>
+ <td>{{ cls.parent_class.getTeacherNamesLast|join:"; " }}</td>
  <td>{% if cls.prettyrooms|length_is:0 %}Unassigned{% else %}{{ cls.prettyrooms|join:"<br />"}}{% endif %}</td>
  <td>{% if cls.friendly_times|length_is:0 %}Unassigned{% else %}{{ cls.friendly_times|join:"<br />"}}{% endif %}</td>
 </tr>

@@ -429,23 +429,27 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                          
 
         elif op == 'save':
-            #            if
-            for teacher in coteachers:
+            old_coteachers_set = set(cls.teachers())
+            new_coteachers_set = set(coteachers)
+
+            to_be_added = new_coteachers_set - old_coteachers_set
+            to_be_deleted = old_coteachers_set - new_coteachers_set
+
+            # don't delete the current user
+            to_be_deleted.remove(self.user)
+
+            for teacher in to_be_added:
                 if cls.conflicts(teacher):
                     conflictingusers.append(teacher.first_name+' '+teacher.last_name)
+
             if len(conflictingusers) == 0:
-                for teacher in cls.teachers():
+                # remove some old coteachers
+                for teacher in to_be_deleted:
                     cls.removeTeacher(teacher)
                     cls.removeAdmin(teacher)
 
-                # add self back...
-                cls.makeTeacher(self.user)
-                cls.makeAdmin(self.user, self.teacher_class_noedit)
-                cls.subscribe(self.user)
-                self.program.teacherSubscribe(self.user)                
-
-                # add bits for all new (and old) coteachers
-                for teacher in coteachers:
+                # add bits for all new coteachers
+                for teacher in to_be_added:
                     self.program.teacherSubscribe(teacher)
                     cls.makeTeacher(teacher)
                     cls.subscribe(teacher)
