@@ -53,47 +53,26 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """
-        def cmp_class(one, other):
-            if cmp(one.category.id, other.category.id) != 0:
-                return cmp(one.category.id, other.category.id)
-            else:
-                return cmp(one.start_time(), other.start_time())
-
-        def cmp_section(one, other):
-            p1 = one.parent_class
-            p2 = other.parent_class
-            if cmp(p1.category.id, p2.category.id) != 0:
-                return cmp(p1.category.id, p2.category.id)
-            else:
-                return cmp(one.start_time(), other.start_time())
-
         context = {}
-        defaults = {'refresh': 30, 'scrollspeed': 3}
+        defaults = {'refresh': 120, 'scrollspeed': 3}
         for key_option in defaults.keys():
             if request.GET.has_key(key_option):
                 context[key_option] = request.GET[key_option]
             else:
                 context[key_option] = defaults[key_option]
 
-        classes = list(self.program.sections())
-        classes.sort(cmp=cmp_section)
+        classes = self.program.sections().filter(classsubject__status=10).order_by('classsubject__category', 'classsubject__meeting_times')
 
         time_now = datetime.now()
         window_start = time_now + timedelta(-1, 85800)
         window_end = time_now + timedelta(0, 3000)
         curtime = Event.objects.filter(start__gte=window_start, start__lte=window_end)
-        if curtime.count() > 0:
+        if curtime:
             curtime = curtime[0]
         else:
             curtime = None
         
-        categories = {}
-        for sec in classes:
-            categories[sec.parent_class.category_id] = {'id': sec.parent_class.category_id, 'category': sec.parent_class.category.category}
-
-        printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
-
-        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
+        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
         
         return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), context)
 
