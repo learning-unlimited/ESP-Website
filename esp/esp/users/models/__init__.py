@@ -220,6 +220,7 @@ class ESPUser(User, AnonymousUser):
         if type(new_user) == ESPUser:
             old_user = new_user.getOld()
         old_user.backend = 'django.contrib.auth.backends.ModelBackend'
+        
         login(request, old_user)
 
         return retUrl
@@ -513,11 +514,12 @@ class ESPUser(User, AnonymousUser):
         return False
 
     def paymentStatus(self, anchor=None):
-        """ Returns a tuple of (has_paid, status_str, line_items) to indicate
+        """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate
         the user's payment obligations to ESP:
         -   has_paid: True or False, indicating whether any money is owed to
             the accounts under the specified anchor
         -   status: A string briefly explaining the status of the transactions
+        -   amount_owed: A Decimal for the amount they need to pay
         -   line_items: A list of the relevant line items
         """
         from esp.accounting_docs.models import Document
@@ -529,8 +531,8 @@ class ESPUser(User, AnonymousUser):
         receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable')
         realized_parent = DataTree.get_by_uri('Q/Accounts/Realized')
 
-        #   We have to check both complete and incomplete documents.
-        docs = Document.objects.filter(user=self)
+        #   We have to check both complete and incomplete documents belonging to the anchor.
+        docs = Document.objects.filter(user=self, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend)
 
         li_list = []
         for d in docs:
@@ -561,17 +563,25 @@ class ESPUser(User, AnonymousUser):
         has_paid = False
         status = 'Unknown'
         if amt_charged == 0:
-            status = 'Empty'
+            status = 'No charges'
         elif amt_expected != 0:
             if amt_paid == 0:
                 status = 'Pending/Unpaid'
             else:
                 status = 'Partially paid'
+        elif amt_charged > 0 and amt_paid == 0:
+            status = 'Unpaid'
         else:
             status = 'Fully paid'
             has_paid = True
+        
         amt_owed = amt_charged - amt_paid
         return (has_paid, status, amt_owed, li_list)
+
+    has_paid = lambda x, y: x.paymentStatus(y)[0]
+    payment_status_str = lambda x, y: x.paymentStatus(y)[1]
+    amount_owed = lambda x, y: x.paymentStatus(y)[2]
+    line_items = lambda x, y: x.paymentStatus(y)[3]
 
     def isOnsite(self, program = None):
         _import_userbit()

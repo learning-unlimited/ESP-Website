@@ -41,7 +41,7 @@ from django              import forms
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
 from esp.users.views    import search_for_user
-from esp.money.models   import Transaction
+from esp.accounting_docs.models   import Document
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
@@ -53,32 +53,14 @@ class OnSiteCheckinModule(ProgramModuleObj):
             "seq": 1
             }
 
-    def updatePaid(self, paid=True):
-        t = Transaction.objects.filter(fbo    = self.student,
-                                       anchor = self.program_anchor_cached())
-        if t.count() > 0 and not paid:
-            for trans in t:
-                trans.delete()
-
-        if t.count() == 0 and paid:
-            payment_amount = 30.00
-            module_list = self.program.getModules()
-            module_class = CreditCardModule
-            for m in module_list:
-                if type(m) == module_class:
-                    info = CreditCardModuleInfo.objects.filter(module=m)
-                    if info.count() == 1:
-                        payment_amount = info[0].base_cost
-            
-            trans = Transaction(anchor = self.program_anchor_cached(),
-                                fbo    = self.student,
-                                payer  = self.student,
-                                amount = payment_amount,
-                                line_item = 'Onsite payment for %s' % self.program.niceName(),
-                                executed = True,
-                                payment_type_id = 6
-                                )
-            trans.save()
+    def updatePaid(self, paid=True):   
+        """ Close off the student's invoice and, if paid is True, create a receipt showing
+        that they have paid all of the money they owe for the program. """
+        if not self.hasPaid():
+            doc = Document.get_invoice(self.student, self.program_anchor_cached())
+            Document.prepare_onsite(self.student, doc.locator)
+            if paid:
+                Document.receive_onsite(self.student, doc.locator)
             
 
     def createBit(self, extension):
@@ -119,11 +101,10 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     def hasPaid(self):
         verb = GetNode('V/Flags/Registration/Paid')
+        ps = self.student.paymentStatus(self.program_anchor_cached())
         return UserBit.UserHasPerms(self.student,
                                     self.program_anchor_cached(),
-                                    verb) or \
-               Transaction.objects.filter(fbo = self.student,
-                                          anchor = self.program_anchor_cached()).count() > 0
+                                    verb) or self.student.has_paid(self.program_anchor_cached())
     
     def hasMedical(self):
         verb = GetNode('V/Flags/Registration/MedicalFiled')

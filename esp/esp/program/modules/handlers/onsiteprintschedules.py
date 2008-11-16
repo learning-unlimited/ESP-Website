@@ -84,20 +84,17 @@ class OnsitePrintSchedules(ProgramModuleObj):
         for student in old_students:
             student.updateOnsite(request)
             # get list of valid classes
-            classes = [ cls for cls in student.getEnrolledClasses()
+            classes = [ cls for cls in student.getEnrolledSections()
                         if cls.parent_program == self.program
                         and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
                 
-            #   add financial aid information
-            for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
-                RegisterLineItem(student, i)
-                    
-            student.itemizedcosts = LineItem.purchased(prog.anchor, student, filter_already_paid=False)
-            student.itemizedcosttotal = LineItem.purchasedTotalCost(prog.anchor, student)
-            student.has_paid = ( student.itemizedcosttotal == 0 )
-                    
+            #   Payment information using new accounting system
+            ps = student.paymentStatus(self.program_anchor_cached())
+            student.itemizedcosts = ps[3]
+            student.itemizedcosttotal = ps[2]
+            student.has_paid = ps[0]  
             student.payment_info = True
             student.classes = classes
                 
