@@ -168,10 +168,10 @@ class Resource(models.Model):
     def save(self):
         if self.group_id == -1:
             #   Give this a new group id.
-            vals = Resource.objects.all().order_by('-group_id').values('group_id')
+            vals = Resource.objects.all().order_by('-group_id').values_list('group_id', flat=True)
             max_id = 0
             if len(vals) > 0:
-                max_id = vals[0]['group_id']
+                max_id = vals[0]
                 
             self.group_id = max_id + 1
             self.is_unique = True
