@@ -44,8 +44,8 @@ from django.template import Template, VariableNode, TextNode
 from esp.settings import DEFAULT_EMAIL_ADDRESSES
 
 
-def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
-              extra_headers={ 'Bcc': DEFAULT_EMAIL_ADDRESSES['archive'], 'Return-Path': DEFAULT_EMAIL_ADDRESSES['bounces'] },
+def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=DEFAULT_EMAIL_ADDRESSES['archive'],
+              extra_headers={ 'Return-Path': DEFAULT_EMAIL_ADDRESSES['bounces'] },
               *args, **kwargs):
     if type(recipient_list) == str or type(recipient_list) == unicode:
         new_list = [ recipient_list ]
@@ -57,7 +57,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     
     # The below stolen from send_mail in django.core.mail
     connection = SMTPConnection(username=None, password=None, fail_silently=fail_silently)
-    EmailMessage(subject, message, from_email, new_list, connection=connection, headers=extra_headers).send()
+    EmailMessage(subject, message, from_email, new_list, bcc=(bcc,), connection=connection, headers=extra_headers).send()
 
 
 
