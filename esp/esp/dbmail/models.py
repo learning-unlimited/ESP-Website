@@ -32,22 +32,20 @@ from django.db import models
 from django.contrib.auth.models import User
 from esp.middleware import ESPError
 from datetime import datetime
-from esp.lib.markdown import markdown
 from esp.db.fields import AjaxForeignKey
 
-import django.core.mail
-
 from esp.datatree.models import *
-from esp.users.models import UserBit, PersistentQueryFilter, ESPUser
-from django.template import Template, VariableNode, TextNode
+from esp.users.models import PersistentQueryFilter, ESPUser #, UserBit
+from django.template import Template #, VariableNode, TextNode
 
-from esp.settings import DEFAULT_EMAIL_ADDRESSES
+from django.conf import settings
 
 from django.core.mail import SMTPConnection
 
 
-def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=DEFAULT_EMAIL_ADDRESSES['archive'],
-              return_path=DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
+
+def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=settings.DEFAULT_EMAIL_ADDRESSES['archive'],
+              return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
               *args, **kwargs):
     if type(recipient_list) == str or type(recipient_list) == unicode:
         new_list = [ recipient_list ]
@@ -99,8 +97,21 @@ class MessageRequest(models.Model):
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
     def __unicode__(self):
-        return str(self.subject)
-
+        return unicode(self.subject)
+    
+    # Access special_headers as a dictionary
+    def special_headers_dict_get(self):
+        if not self.special_headers:
+            return {}
+        import cPickle as pickle
+        return pickle.loads(str(self.special_headers)) # We call str here because pickle hates unicode. -ageng 2008-11-18
+    def special_headers_dict_set(self, value):
+        import cPickle as pickle
+        if type(value) is not dict:
+            value = {}
+        self.special_headers = pickle.dumps(value)
+    special_headers_dict = property( special_headers_dict_get, special_headers_dict_set )
+    
     @staticmethod
     def createRequest(var_dict = None, *args, **kwargs):
         """ To create a new MessageRequest, you should provide a dictionary of
@@ -116,7 +127,7 @@ class MessageRequest(models.Model):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
 
         # prepare variables
-        text = str(text)
+        text = unicode(text)
         user = ESPUser(user)
 
         
@@ -198,7 +209,7 @@ class TextOfEmail(models.Model):
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
 
     def __unicode__(self):
-        return str(self.subject) + ' <' + str(self.send_to) + '>'
+        return unicode(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self):
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
@@ -207,13 +218,21 @@ class TextOfEmail(models.Model):
         #if self.sent != None:
         #    return False
         
+        parent_request = None
+        if self.emailrequest_set.count() > 0:
+            parent_request = self.emailrequest_set.all()[0].msgreq
+        
+        if parent_request is not None:
+            extra_headers = parent_request.special_headers_dict
+        
         now = datetime.now()
         
         send_mail(self.subject,
                   self.msgtext,
                   self.send_from,
                   self.send_to,
-                  True)
+                  True,
+                  extra_headers=extra_headers)
 
         #send_mail(str(self.subject),
         #          str(self.msgtext),
@@ -351,7 +370,7 @@ class EmailRequest(models.Model):
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)
 
     def __unicode__(self):
-        return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'
+        return unicode(self.msgreq.subject) + ' <' + unicode(self.target.username) + '>'
 
     class Admin:
         pass
