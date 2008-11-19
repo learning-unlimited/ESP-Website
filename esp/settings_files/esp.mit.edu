@@ -82,7 +82,7 @@ EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 DATABASE_ENGINE = 'postgresql'
 DATABASE_NAME = 'django'
 DATABASE_HOST = 'localhost'
-DATABASE_PORT = '5433'
+DATABASE_PORT = '5432'
 # passwords etc
 from database_settings import *
 
@@ -167,7 +167,7 @@ INSTALLED_APPS = (
 )
 
 
-CACHE_BACKEND="esp.utils.memcached_multikey://127.0.0.1:11211/?timeout=120"
+CACHE_BACKEND="esp.utils.memcached_multikey://127.0.0.1:11211/?timeout=86400"
 
 CACHE_PREFIX="ESP"
 
