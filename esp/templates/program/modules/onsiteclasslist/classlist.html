@@ -76,7 +76,6 @@ padding-bottom: 5px;
 <div id="catalog">
 <table width="100%">
 <tr>
-{% if current_time %}
 <td width="65%" valign="top">
   <table cellpadding="2" cellspacing="0" width="100%">
     <tr>
@@ -89,14 +88,13 @@ padding-bottom: 5px;
     {% for class in classes %}{% if class.starts_soon %}{% if not class.isFull %}{% render_class_current class %}{% endif %}{% endif %}{% endfor %}
 </table>
 </td>
-{% endif %}
-<td valign="top">
+<Td valign="top">
   <div id="scroller_top" onclick="reset();">
-    {% include "program/modules/onsiteclasslist/allclass_fragment.html %}
+    {% include "program/modules/onsiteclasslist/allclass_fragment.html" %}
     </div>
     <br />
     <div id="scroller_bottom" onclick="reset();">
-    {% include "program/modules/onsiteclasslist/allclass_fragment.html %}
+    {% include "program/modules/onsiteclasslist/allclass_fragment.html" %}
     </div>
 </td>
 </tr>

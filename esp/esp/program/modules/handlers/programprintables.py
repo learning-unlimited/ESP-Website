@@ -912,33 +912,6 @@ Student schedule for %s:
                                     
         finished_verb = GetNode('V/Finished')
         finished_qsc  = self.program_anchor_cached().tree_create(['SATPrepLabel'])
-        
-        #if request.GET.has_key('print'):
-            
-        #    if request.GET['print'] == 'all':
-        #        students = self.program.students_union()
-        #    elif request.GET['print'] == 'remaining':
-        #        printed_students = UserBit.bits_get_users(verb = finished_verb,
-        #qsc  = finished_qsc)
-        #        printed_students_ids = [user.id for user in printed_students ]
-        #        if len(printed_students_ids) == 0:
-        #            students = self.program.students_union()
-        #        else:
-        #            students = self.program.students_union().exclude(id__in = printed_students_ids)
-        #    else:
-        #        students = ESPUser.objects.filter(id = request.GET['print'])
-
-        #    for student in students:
-        #        ub, created = UserBit.objects.get_or_create(user      = student,
-        #                                                    verb      = finished_verb,
-        #                                                    qsc       = finished_qsc,
-        #                                                    recursive = False)
-
-        #        if created:
-        #            ub.save()
-                    
-        #    students = [ESPUser(student) for student in students]
-        #    students.sort()
 
         numperpage = 10
             
@@ -959,8 +932,24 @@ Student schedule for %s:
                     users.append(expanded[j][i])
         students = users
         return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
-    #return render_to_response(self.baseDir()+'SATPrepLabels_options.html', request, (prog, tl), {})
+
             
+    @aux_call
+    @needs_admin
+    def satpreplabels_bysection(self, request, tl, one, two, module, extra, prog):
+        #   Generate SAT Prep labels sorted by the first-period class.
+        #   This is useful for the practice exam when it is held in the usual classrooms.
+        from esp.cal.models import Event
+        mt_list = []
+        csl = prog.sections()
+        for c in csl:
+            for t in c.meeting_times.all():
+                if t not in mt_list: mt_list.append(t)
+        mt_list.sort(key=lambda x: x.start)        
+        early_time = mt_list[0]
+        sections = csl.filter(meeting_times=early_time)
+
+        return render_to_response(self.baseDir()+'SATPrepLabels_bysection.html', request, (prog, tl), {'sections': sections})
 
     @aux_call
     @needs_admin

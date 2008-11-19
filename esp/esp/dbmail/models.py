@@ -41,19 +41,24 @@ from esp.datatree.models import *
 from esp.users.models import UserBit, PersistentQueryFilter, ESPUser
 from django.template import Template, VariableNode, TextNode
 
-def send_mail(subject, message, from_email, recipient_list,
-              fail_silently=False, *args, **kwargs):
+from esp.settings import DEFAULT_EMAIL_ADDRESSES
+
+
+def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
+              extra_headers={ 'Bcc': DEFAULT_EMAIL_ADDRESSES['archive'], 'Return-Path': DEFAULT_EMAIL_ADDRESSES['bounces'] },
+              *args, **kwargs):
     if type(recipient_list) == str or type(recipient_list) == unicode:
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
-    new_list.append('esparchive@gmail.com')
-
-    from django.core.mail import send_mail as django_send_mail
-    print "Sent mail to %s" % str(new_list)
-    django_send_mail(subject, message, from_email, new_list,
-                               fail_silently, *args, **kwargs)
     
+    from django.core.mail import EmailMessage, SMTPConnection #send_mail as django_send_mail
+    print "Sent mail to %s" % str(new_list)
+    
+    # The below stolen from send_mail in django.core.mail
+    connection = SMTPConnection(username=None, password=None, fail_silently=fail_silently)
+    EmailMessage(subject, message, from_email, new_list, connection=connection, headers=extra_headers).send()
+
 
 
 class ActionHandler(object):
