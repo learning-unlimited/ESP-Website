@@ -21,8 +21,12 @@ body { font-family: georgia; margin: 0; font-size: 12px;}
 .schedule td.oldday { border-bottom: 0;
                       border-top: 0;}
 td.newday { border-width: 2px 1px 0 1px;}
-#pagebreak {page-break-after: always; }
+td.clip { overflow: hidden; height: 1em;}
+.pagebreak {page-break-after: always; }
 .description { text-align: center; padding: .2in 0 .2in 0; }
+.meals { margin: 0; }
+.meals li { font-weight: bold; text-size: x-large; list-style: none; display: block; width: 180px; border: 1px solid black; margin: 0 auto; margin-bottom: 8px;}
+.perforate { display: none; }
 </style>
 <script type="text/javascript">
 <!--
@@ -37,7 +41,7 @@ function print() {
 {% for student in students %}
 {% if not forloop.first %}
   </table> 
-  <div id="pagebreak"> &nbsp; </div>
+  <div class="pagebreak"> &nbsp; </div>
 {% endif %}
 {% include 'program/modules/programprintables/singleschedule_student.html' %}
 {% endfor %}
