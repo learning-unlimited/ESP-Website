@@ -97,7 +97,7 @@ class MessageRequest(models.Model):
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
     def __unicode__(self):
-        return str(self.subject)
+        return unicode(self.subject)
     
     # Access special_headers as a dictionary
     def special_headers_dict_get(self):
@@ -127,7 +127,7 @@ class MessageRequest(models.Model):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
 
         # prepare variables
-        text = str(text)
+        text = unicode(text)
         user = ESPUser(user)
 
         
@@ -209,7 +209,7 @@ class TextOfEmail(models.Model):
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
 
     def __unicode__(self):
-        return str(self.subject) + ' <' + str(self.send_to) + '>'
+        return unicode(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self):
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
@@ -370,7 +370,7 @@ class EmailRequest(models.Model):
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)
 
     def __unicode__(self):
-        return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'
+        return unicode(self.msgreq.subject) + ' <' + unicode(self.target.username) + '>'
 
     class Admin:
         pass
