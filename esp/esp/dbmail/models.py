@@ -43,20 +43,22 @@ from django.template import Template, VariableNode, TextNode
 
 from esp.settings import DEFAULT_EMAIL_ADDRESSES
 
+from django.core.mail import SMTPConnection
+
 
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=DEFAULT_EMAIL_ADDRESSES['archive'],
-              extra_headers={ 'Return-Path': DEFAULT_EMAIL_ADDRESSES['bounces'] },
+              return_path=DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
               *args, **kwargs):
     if type(recipient_list) == str or type(recipient_list) == unicode:
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
     
-    from django.core.mail import EmailMessage, SMTPConnection #send_mail as django_send_mail
+    from django.core.mail import EmailMessage #send_mail as django_send_mail
     print "Sent mail to %s" % str(new_list)
     
     # The below stolen from send_mail in django.core.mail
-    connection = SMTPConnection(username=None, password=None, fail_silently=fail_silently)
+    connection = CustomSMTPConnection(username=None, password=None, fail_silently=fail_silently, return_path=return_path)
     EmailMessage(subject, message, from_email, new_list, bcc=(bcc,), connection=connection, headers=extra_headers).send()
 
 
@@ -411,3 +413,26 @@ class PlainRedirect(models.Model):
 
     class Meta:
         ordering=('original',)
+
+
+# Taken from http://www.djangosnippets.org/snippets/735/
+class CustomSMTPConnection(SMTPConnection):
+    """Simple override of SMTPConnection to allow a Return-Path to be specified"""
+    def __init__(self, return_path=None, **kwargs):
+        self.return_path = return_path
+        super(CustomSMTPConnection, self).__init__(**kwargs)
+    
+    def _send(self, email_message):
+        """A helper method that does the actual sending."""
+        if not email_message.to:
+            return False
+        try:
+            return_path = self.return_path or email_message.from_email
+            self.connection.sendmail(return_path,
+                    email_message.recipients(),
+                    email_message.message().as_string())
+        except:
+            if not self.fail_silently:
+                raise
+            return False
+        return True
