@@ -290,7 +290,7 @@ class Resource(models.Model):
         
         sequence = []
         event_list = list(program.getTimeSlots())
-        room_list = self.identical_resources().filter(event__in=event_list).order_by('event')
+        room_list = self.identical_resources().filter(event__in=event_list)
         for timeslot in event_list:
             single_room = room_list.filter(event=timeslot)
             if single_room.count() == 1:
