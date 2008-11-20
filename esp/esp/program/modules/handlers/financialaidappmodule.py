@@ -54,19 +54,22 @@ class FinancialAidAppModule(ProgramModuleObj):
         Q_students = Q(financialaidrequest__program = self.program)
 
         Q_students_complete = Q(financialaidrequest__done = True)
+        Q_students_approved = Q(financialaidrequest__amount_received__gt=0) | Q(financialaidrequest__approved__isnull=False)
 
         if QObject:
             return {'studentfinaid_complete': Q_students & Q_students_complete,
-                    'studentfinaid':          Q_students}
+                    'studentfinaid':          Q_students,
+                    'studentfinaid_approved': Q_students & Q_students_approved}
         else:
             return {'studentfinaid_complete': User.objects.filter(Q_students & Q_students_complete),
-                    'studentfinaid':          User.objects.filter(Q_students)}
+                    'studentfinaid':          User.objects.filter(Q_students),
+                    'studentfinaid_approved': User.objects.filter(Q_students & Q_students_approved)}
         
-
 
     def studentDesc(self):
         return {'studentfinaid_complete': """Students who have completed the student financial aid applications.""",
-                'studentfinaid':          """Students who have started the student financial aid applications."""}
+                'studentfinaid':          """Students who have started the student financial aid applications.""",
+                'studentfinaid_approved': """Students who have been granted financial aid."""}
     
     def isCompleted(self):
         return self.user.financialaidrequest_set.all().filter(program = self.program, done = True).count() > 0
