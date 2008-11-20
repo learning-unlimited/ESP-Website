@@ -48,7 +48,20 @@ Please select from options below.
 
 <h3>Admin Binder Stuff</h3>
 <ul>
-<li><a href="./classesbytime" title="Classes by Time">Class Sections</a></li>
+<ul>
+<li><a href="./classesbytime" title="Classes by Time">Class Sections sorted by time</a>
+    <ul>
+    <li><a href="./classesbytime?grade_min=7&grade_max=8" title="Classes by Time">Limit to middle school (grades 7-8)</a></li>
+    <li><a href="./classesbytime?grade_min=9&grade_max=12" title="Classes by Time">Limit to high school (grades 9-12)</a></li>
+    </ul>
+</li>
+<li>Students who have ordered/reserved line items:
+    <ul>
+    {% for li_type in li_types %}
+        <li><a href="./students_lineitem?id={{ li_type.id }}">{{ li_type.text }}</a></li>
+    {% endfor %}
+    </ul>
+</li>
 <li><a href="./classesbytitle" title="Classes by Name">Class Subjects</a></li>
 <li><a href="./classprereqs" title="Class Prerequisites">Class Prerequisites</a></li>
 <li><a href="./teachersbyname" title="Teacher List">Teachers by Name</a> (by teachers)</li>
