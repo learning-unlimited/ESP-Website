@@ -39,6 +39,7 @@ table.sortable thead {
 <body>
 
 <table class="sortable" style="border: 1px solid black; border-collapse: collapse;">
+<thead>
 <tr>
  <th />
  <th>Name</th>
@@ -46,6 +47,7 @@ table.sortable thead {
  <th>First Class</th>
  <th>Time of First Class</th>
 </tr>
+</thead>
 
 {% for scheditem in scheditems %}
 <tr>
@@ -53,7 +55,7 @@ table.sortable thead {
  <td>{{ scheditem.user.last_name }}, {{ scheditem.user.first_name}}</td>
  <td>{{ scheditem.phonenum }}</td>
  <td>{{ scheditem.cls.title }}</td>
- <td>{{ scheditem.cls.friendly_times.0 }}</td>
+ <td sorttable_customkey="{{ scheditem.cls.start_time.start }}">{{ scheditem.cls.friendly_times.0 }}</td>
 </tr>
 {% endfor %}
 

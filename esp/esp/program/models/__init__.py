@@ -69,7 +69,7 @@ class ProgramModule(models.Model):
     seq = models.IntegerField()
 
     # Secondary view functions associated with this ProgramModule
-    aux_calls = models.CharField(max_length=512, blank=True, null=True)
+    aux_calls = models.CharField(max_length=1024, blank=True, null=True)
 
     # Summary view functions, that summarize data for all instances of this ProgramModule
     summary_calls = models.CharField(max_length=512, blank=True, null=True)
@@ -704,10 +704,13 @@ class Program(models.Model):
         else:
             return None
         
-    def getLineItemTypes(self, user=None):
+    def getLineItemTypes(self, user=None, required=True):
         from esp.accounting_core.models import LineItemType, Balance
         
-        li_types = list(LineItemType.objects.filter(anchor=GetNode(self.anchor.get_uri()+'/LineItemTypes/Required')))
+        if required:
+            li_types = list(LineItemType.objects.filter(anchor=GetNode(self.anchor.get_uri()+'/LineItemTypes/Required')))
+        else:
+            li_types = list(LineItemType.objects.filter(anchor__parent=GetNode(self.anchor.get_uri()+'/LineItemTypes/Optional')))
         
         #   OK, nevermind... Add in *parent program* line items that have not been paid for.
         parent_li_types = []
