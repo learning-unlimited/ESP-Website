@@ -48,14 +48,23 @@ Please select from options below.
 
 <h3>Admin Binder Stuff</h3>
 <ul>
-<li><a href="./classesbytime" title="Classes by Time">Class Sections by Time</a></li>
-<li><a href="./classesbytitle" title="Classes by Name">Class Subjects by Title</a></li>
-<li><a href="./classesbyroom" title="Classes by Room">Class Sections by Room</a></li>
-<li><a href="./classesbyid" title="Classes by ID Number">Class Subjects by ID Number</a></li>
+<ul>
+<li><a href="./classesbytime" title="Classes by Time">Class Sections sorted by time</a>
+    <ul>
+    <li><a href="./classesbytime?grade_min=7&grade_max=8" title="Classes by Time">Limit to middle school (grades 7-8)</a></li>
+    <li><a href="./classesbytime?grade_min=9&grade_max=12" title="Classes by Time">Limit to high school (grades 9-12)</a></li>
+    </ul>
+</li>
+<li>Students who have ordered/reserved line items:
+    <ul>
+    {% for li_type in li_types %}
+        <li><a href="./students_lineitem?id={{ li_type.id }}">{{ li_type.text }}</a></li>
+    {% endfor %}
+    </ul>
+</li>
+<li><a href="./classesbytitle" title="Classes by Name">Class Subjects</a></li>
 <li><a href="./classprereqs" title="Class Prerequisites">Class Prerequisites</a></li>
 <li><a href="./teachersbyname" title="Teacher List">Teachers by Name</a> (by teachers)</li>
-<li><a href="./teachersbytime" title="Teacher List">Teachers by Time of First Class</a> - one per day (by teachers)</li>
-<li><a href="./teacherinfo" title="Teacher List">Teachers with Remote Profile Info</a> (by teachers; requires Remote Profile Module)</li>
 <li><a href="./roomsbytime" title="Room List">Open Rooms by Time</a></li>
 <li><a href="./studentsbyname" title="Student List">Students by Name</a> (by students)</li>
 <li><a href="./emergencycontacts" title="Student List">Students' Emergency Contact Info</a> (by students)</li>

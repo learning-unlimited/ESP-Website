@@ -34,8 +34,12 @@ from django.dispatch import dispatcher
 from django.db.models import signals 
 from esp.program.modules import models as Modules
 
+have_already_installed = False
+
 def post_syncdb(sender, app, **kwargs):
-    if app == Modules:
+    global have_already_installed
+    if app == Modules and not have_already_installed:
+        have_already_installed = True
         print "Installing esp.program.modules initial data..."
         Modules.install()
 

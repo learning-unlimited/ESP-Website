@@ -58,12 +58,12 @@ class CreditCardViewer_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
 
         if request.GET.has_key('only_completed'):
             student_list = student_list.filter(document__txn__complete=True)
-            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=True)) for student in student_list ]
+            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=True), ESPUser(student).paymentStatus(self.program_anchor_cached())) for student in student_list ]
         elif request.GET.has_key('only_incomplete'):
             student_list = student_list.filter(document__txn__complete=False)
-            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=False)) for student in student_list ]
+            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=False), ESPUser(student).paymentStatus(self.program_anchor_cached())) for student in student_list ]
         else:
-            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached())) for student in student_list ]
+            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached()), ESPUser(student).paymentStatus(self.program_anchor_cached())) for student in student_list ]
 
         context = { 'payment_table': payment_table }
         

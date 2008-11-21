@@ -193,3 +193,8 @@ AUTH_PROFILE_MODULE='users.ESPUser_Profile'
 SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
 
 FORCE_SCRIPT_NAME = ''
+
+DEFAULT_EMAIL_ADDRESSES = {
+    'archive': 'esparchive@gmail.com',
+    'bounces': 'esp-bounces@mit.edu'
+}

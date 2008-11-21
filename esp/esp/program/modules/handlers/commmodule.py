@@ -63,24 +63,33 @@ class CommModule(ProgramModuleObj):
 
     def isCompleted(self):
         
-	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
-	return satPrep.id is not None
+        satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
+        return satPrep.id is not None
 
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
         from esp.users.models import PersistentQueryFilter
+        from django.conf import settings
 
         filterid, listcount, subject, body = [request.POST['filterid'],
                                               request.POST['listcount'],
                                               request.POST['subject'],
                                               request.POST['body']    ]
 
+        # Set From address
         if request.POST.has_key('from') and \
            len(request.POST['from'].strip()) > 0:
             fromemail = request.POST['from']
         else:
-            fromemail = self.user.email
+            # String together an address like username@esp.mit.edu
+            fromemail = '%s@%s' % (self.user.username, settings.SITE_INFO[1])
+        
+        # Set Reply-To address
+        if request.POST.has_key('replyto') and len(request.POST['replyto'].strip()) > 0:
+            replytoemail = request.POST['replyto']
+        else:
+            replytoemail = fromemail
 
         try:
             filterid = int(filterid)
@@ -102,6 +111,7 @@ class CommModule(ProgramModuleObj):
                                                'listcount': listcount,
                                                'subject': subject,
                                                'from': fromemail,
+                                               'replyto': replytoemail,
                                                'body': body,
                                                'renderedtext': renderedtext})
 
@@ -113,22 +123,18 @@ class CommModule(ProgramModuleObj):
         from esp.users.models import PersistentQueryFilter
         
         announcements = self.program_anchor_cached().tree_create(['Announcements'])
-        filterid, subject, body  = [request.POST['filterid'],
+        filterid, fromemail, replytoemail, subject, body = [
+                                    request.POST['filterid'],
+                                    request.POST['from'],
+                                    request.POST['replyto'],
                                     request.POST['subject'],
                                     request.POST['body']    ]
-
-
-        if request.POST.has_key('from') and \
-           len(request.POST['from'].strip()) > 0:
-            fromemail = request.POST['from']
-        else:
-            fromemail = self.user.email
-
+        
         try:
             filterid = int(filterid)
         except:
             raise ESPError(), "Corrupted POST data!  Please contact us at esp-webmasters@mit.edu and tell us how you got this error, and we'll look into it."
-
+        
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, User)
 
         variable_modules = {'user': self.user, 'program': self.program}
@@ -138,7 +144,9 @@ class CommModule(ProgramModuleObj):
                                                       recipients = filterobj,
                                                       sender     = fromemail,
                                                       creator    = self.user,
-                                                      msgtext    = body)
+                                                      msgtext    = body,
+                                                      special_headers_dict
+                                                                 = { 'Reply-To': replytoemail, }, )
 
         newmsg_request.save()
 
@@ -190,9 +198,11 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def maincomm2(self, request, tl, one, two, module, extra, prog):
 
-        filterid, listcount, fromemail, subject, body = [request.POST['filterid'],
+        filterid, listcount, fromemail, replytoemail, subject, body = [
+                                                         request.POST['filterid'],
                                                          request.POST['listcount'],
                                                          request.POST['from'],
+                                                         request.POST['replyto'],
                                                          request.POST['subject'],
                                                          request.POST['body']    ]
 
@@ -200,12 +210,13 @@ class CommModule(ProgramModuleObj):
                                   (prog, tl), {'listcount': listcount,
                                                'filterid': filterid,
                                                'from': fromemail,
+                                               'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body})
 
     @needs_student
     def satprepinfo(self, request, tl, one, two, module, extra, prog):
-	if request.method == 'POST':
+        if request.method == 'POST':
             form = SATPrepInfoForm(request.POST)
 
             if form.is_valid():
@@ -214,10 +225,10 @@ class CommModule(ProgramModuleObj):
                 form.save()
 
                 return self.goToCore(tl)
-	else:
+        else:
             satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
             form = SATPrepInfoForm(instance = satPrep)
 
-	return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
+        return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
 
 

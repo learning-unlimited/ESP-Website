@@ -220,6 +220,7 @@ class ESPUser(User, AnonymousUser):
         if type(new_user) == ESPUser:
             old_user = new_user.getOld()
         old_user.backend = 'django.contrib.auth.backends.ModelBackend'
+        
         login(request, old_user)
 
         return retUrl
@@ -420,23 +421,30 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import ClassSection
         _import_userbit()
         
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        if not program:
-            qsc_base = DataTree.get_by_uri('Q')
-        else:
+        if program:
             qsc_base = program.anchor
-        
-        if not verbs:
-            ubl = UserBit.objects.filter(QTree(qsc__below=qsc_base, verb__below=verb_base), user=self)
         else:
-            verb_uris = ['V/Flags/Registration' + verb_str for verb_str in verbs]
-            verb_ids = [v['id'] for v in DataTree.objects.filter(uri__in=verb_uris).values('id')]
-            ubl = UserBit.objects.filter(QTree(qsc__below = qsc_base), verb__id__in=verb_ids, user=self)
+            qsc_base = DataTree.get_by_uri('Q')
+                
+        if not verbs:
+            verb_base = DataTree.get_by_uri('V/Flags/Registration')
+                
+            csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base,
+                                                    anchor__userbit_qsc__verb__below=verb_base)
+                                              & Q( Q(anchor__userbit_qsc__user=self),
+                                                   Q(anchor__userbit_qsc__enddate__gte=datetime.now()) |
+                                                   Q(anchor__userbit_qsc__enddate__isnull=True))).distinct()
 
-        ubl = ubl.filter(Q(enddate__gte=datetime.now()) | Q(enddate__isnull=True))
-        
-        cs_anchor_ids = [u['qsc'] for u in ubl.values('qsc')]
-        csl = ClassSection.objects.filter(anchor__id__in=cs_anchor_ids) 
+        else:            
+            verb_uris = ('V/Flags/Registration' + verb_str for verb_str in verbs)
+            
+            csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base)
+                                              & Q(Q(anchor__userbit_qsc__enddate__gte=datetime.now()) |
+                                                  Q(anchor__userbit_qsc__enddate__isnull=True)),
+                                              Q(anchor__userbit_qsc__user=self,
+                                                anchor__userbit_qsc__verb__uri__in=verb_uris)
+                                              ).distinct()
+            
 
         return csl
 
@@ -506,11 +514,12 @@ class ESPUser(User, AnonymousUser):
         return False
 
     def paymentStatus(self, anchor=None):
-        """ Returns a tuple of (has_paid, status_str, line_items) to indicate
+        """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate
         the user's payment obligations to ESP:
         -   has_paid: True or False, indicating whether any money is owed to
             the accounts under the specified anchor
         -   status: A string briefly explaining the status of the transactions
+        -   amount_owed: A Decimal for the amount they need to pay
         -   line_items: A list of the relevant line items
         """
         from esp.accounting_docs.models import Document
@@ -522,8 +531,8 @@ class ESPUser(User, AnonymousUser):
         receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable')
         realized_parent = DataTree.get_by_uri('Q/Accounts/Realized')
 
-        #   We have to check both complete and incomplete documents.
-        docs = Document.objects.filter(user=self)
+        #   We have to check both complete and incomplete documents belonging to the anchor.
+        docs = Document.objects.filter(user=self, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend)
 
         li_list = []
         for d in docs:
@@ -554,17 +563,25 @@ class ESPUser(User, AnonymousUser):
         has_paid = False
         status = 'Unknown'
         if amt_charged == 0:
-            status = 'Empty'
+            status = 'No charges'
         elif amt_expected != 0:
             if amt_paid == 0:
                 status = 'Pending/Unpaid'
             else:
                 status = 'Partially paid'
+        elif amt_charged > 0 and amt_paid == 0:
+            status = 'Unpaid'
         else:
             status = 'Fully paid'
             has_paid = True
+        
         amt_owed = amt_charged - amt_paid
         return (has_paid, status, amt_owed, li_list)
+
+    has_paid = lambda x, y: x.paymentStatus(y)[0]
+    payment_status_str = lambda x, y: x.paymentStatus(y)[1]
+    amount_owed = lambda x, y: x.paymentStatus(y)[2]
+    line_items = lambda x, y: x.paymentStatus(y)[3]
 
     def isOnsite(self, program = None):
         _import_userbit()

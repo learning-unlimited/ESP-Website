@@ -1,19 +1,33 @@
 {% if onsiteregform %}{% else %}
+<div style="height: 7.5in;">
 <table align="center" width="100%">
 <tr>
-    <td valign="top" align="center" width="25%">
+    <td valign="top" align="center" width="25%">{% comment %}
         {% if student.payment_info %}
-        <b>Amount owed:</b> 
-        <div style="border: 1px solid black">
-            <table cellpadding="5px" border="0"><tr><td style="font-size: 1.2em; font-weight: bold;">${{ student.itemizedcosttotal|floatformat:"-2" }}</td></tr></table>
-        </div>
+            {% if student.meals %}
+            <ul class="meals">
+            {% for item in student.meals %}
+                <li>{{ item.li_type.text }}
+            {% endfor %}
+            </ul>
+			{% else %}
+			<b>No meals preordered</b>
+            {% endif %}
         {% else %}&nbsp;
         {% endif %}
-    </td>
-    <td>
-        <div class="title">Student Schedule for <br /><br />
+    {% endcomment %}</td>
+    <td valign="top" width="40%" align="center">
+        <div class="title">Student Schedule for <br />
             <span>{{ student.name }}</span>
         </div>
+		<br />
+        {% comment %}{% if student.payment_info %}
+        <b>Amount owed: </b> 
+        <div style="border: 1px solid black; padding: 5px; font-size: 1.2em; font-weight: bold; text-align: center; width: 50%; margin: 0 auto;">
+            ${{ student.itemizedcosttotal|floatformat:"-2" }}
+        </div>
+        {% else %}&nbsp;
+        {% endif %}{% endcomment %}
     </td>
     <td valign="top" align="center" width="25%">
         <div style="font-weight:bold; text-align:left; text-indent:-3em;">
@@ -24,18 +38,6 @@
                 <div style="font-style:italic;">{{ program.getParentProgram.niceName }} Student</div>
             {% endif %}
         </div>
-        {% if student.payment_info %}
-        <!--<b>Meal tickets:</b>-->
-            {% if student.itemizedcosts %}
-            <ul>
-            {% for item in student.itemizedcosts %}
-                {% if item.li_type.show_on_schedule %}<li>{{ item.li_type.text }}{% endif %}
-            {% endfor %}
-            </ul>
-            {% else %}None
-            {% endif %}
-        {% else %}&nbsp;
-        {% endif %}
     </td>
 </tr>
 </table>
@@ -45,8 +47,6 @@ For help finding your classrooms, please consult the directions and maps in your
 If you have any questions or would like to switch classes, please go to the program office.
 </div>
 {% endif %}
-<div style="height: 0.5in;">&nbsp;</div>
-<br />
 {% if onsiteregform %}<h2><center>Please write in your class choices here:</center></h2>{% endif %}
 <table align="center" cellspacing="0" cellpadding="4px" class="schedule">
    <tr>
@@ -56,17 +56,34 @@ If you have any questions or would like to switch classes, please go to the prog
 {% comment %}
      <th class="day">Day</th>
 {% endcomment %}
-     <th>Time</th>
+     <th width="200">Time</th>
      <th>Room{% if onsiteregform %}<br /><small>(For Official Use Only)</small>{% endif %}</th>
      <th>Class</th>
      {% if onsiteregform %}{% else %}<th>Teacher(s)</th>{% endif %}
    </tr>{% for cls in student.classes %}
    {% autoescape off %}
    <tr>
-     <td>{{ cls.friendly_times|join:"<br />" }}</td>
-     <td>{% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</td>
-     <td>{{ cls.title }}</td>
-     {% if onsiteregform %}{% else %}<td>{{ cls.parent_class.getTeacherNames|join:", " }}</td>{% endif %}
+     <td><div class="clip" >{{ cls.friendly_times|join:"<br />" }}</div></td>
+     <td><div class="clip" >{% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</div></td>
+     <td><div class="clip" >{{ cls.emailcode}}: {{ cls.title }}</div></td>
+     {% if onsiteregform %}{% else %}<td><div class="clip">{{ cls.parent_class.getTeacherNames|join:", " }}</div></td>{% endif %}
    </tr>
    {% endautoescape %}
 {% endfor %}
+
+</table>
+</div>
+ {% comment %}
+<table class="perforate" cellpadding="4px">
+ <tr>
+  <td width="40%" align="center">
+   <image src="http://esp.scripts.mit.edu/barcodegen/html/image.php?code=code39&o=1&t=50&r=1&text={{ student.invoice_id }}&f1=Arial.ttf&f2=8&a1=&a2=&a3=" />
+  </td>
+  <td width="30%">
+   <b>{{ student.name }}<br />{{ student.id }}</b>
+  </td>
+  <td width="30%">
+    <b>Amount owed: ${{ student.itemizedcosttotal|floatformat:"-2" }}</b>
+    </div>
+  </td>
+ </tr> {% endcomment %}

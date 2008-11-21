@@ -101,7 +101,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def printoptions(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
-        context = {'module': self}
+        context = {'module': self, 'li_types': prog.getLineItemTypes(required=False)}
 
         return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
 
@@ -244,6 +244,12 @@ class ProgramPrintables(ProgramModuleObj):
                    
         classes = filter(filt_exp, classes)                  
 
+        if request.GET.has_key('grade_min'):
+            classes = filter(lambda x: x.grade_max > int(request.GET['grade_min']), classes)
+
+        if request.GET.has_key('grade_max'):
+            classes = filter(lambda x: x.grade_min < int(request.GET['grade_max']), classes)
+
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
             cls_dict = {}
@@ -261,8 +267,14 @@ class ProgramPrintables(ProgramModuleObj):
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
         sections = self.program.sections()
                    
-        sections = filter(lambda z: z.isAccepted(), sections)
+        sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
         sections = filter(filt_exp, sections)                  
+
+        if request.GET.has_key('grade_min'):
+            sections = filter(lambda x: (x.parent_class.grade_max > int(request.GET['grade_min'])), sections)
+
+        if request.GET.has_key('grade_max'):
+            sections = filter(lambda x: (x.parent_class.grade_min < int(request.GET['grade_max'])), sections)
 
         if request.GET.has_key('secids'):
             clsids = request.GET['secids'].split(',')
@@ -514,6 +526,24 @@ class ProgramPrintables(ProgramModuleObj):
             return {'emerg_contact': RegistrationProfile.getLastForProgram(student, prog).contact_emergency}
         
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff)
+
+    @aux_call
+    @needs_admin
+    def students_lineitem(self, request, tl, one, two, module, extra, prog):
+        from esp.accounting_core.models import LineItem
+        #   Determine line item
+        student_ids = []
+        if request.GET.has_key('id'):
+            lit_id = request.GET['id']
+            request.session['li_type_id'] = lit_id
+        else:
+            lit_id = request.session['li_type_id']
+
+        line_items = LineItem.objects.filter(li_type__id=lit_id)
+        for l in line_items:
+            student_ids.append(l.transaction.document_set.all()[0].user.id)
+
+        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, filt_exp = lambda x: x.id in student_ids)
 
     @aux_call
     @needs_admin
@@ -791,7 +821,9 @@ Student schedule for %s:
                 invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
             
             # attach payment information to student
+            student.invoice_id = invoice.locator
             student.itemizedcosts = invoice.get_items()
+            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')
             student.itemizedcosttotal = invoice.cost()
             student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
             if student.has_financial_aid:
@@ -912,33 +944,6 @@ Student schedule for %s:
                                     
         finished_verb = GetNode('V/Finished')
         finished_qsc  = self.program_anchor_cached().tree_create(['SATPrepLabel'])
-        
-        #if request.GET.has_key('print'):
-            
-        #    if request.GET['print'] == 'all':
-        #        students = self.program.students_union()
-        #    elif request.GET['print'] == 'remaining':
-        #        printed_students = UserBit.bits_get_users(verb = finished_verb,
-        #qsc  = finished_qsc)
-        #        printed_students_ids = [user.id for user in printed_students ]
-        #        if len(printed_students_ids) == 0:
-        #            students = self.program.students_union()
-        #        else:
-        #            students = self.program.students_union().exclude(id__in = printed_students_ids)
-        #    else:
-        #        students = ESPUser.objects.filter(id = request.GET['print'])
-
-        #    for student in students:
-        #        ub, created = UserBit.objects.get_or_create(user      = student,
-        #                                                    verb      = finished_verb,
-        #                                                    qsc       = finished_qsc,
-        #                                                    recursive = False)
-
-        #        if created:
-        #            ub.save()
-                    
-        #    students = [ESPUser(student) for student in students]
-        #    students.sort()
 
         numperpage = 10
             
@@ -959,8 +964,24 @@ Student schedule for %s:
                     users.append(expanded[j][i])
         students = users
         return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
-    #return render_to_response(self.baseDir()+'SATPrepLabels_options.html', request, (prog, tl), {})
+
             
+    @aux_call
+    @needs_admin
+    def satpreplabels_bysection(self, request, tl, one, two, module, extra, prog):
+        #   Generate SAT Prep labels sorted by the first-period class.
+        #   This is useful for the practice exam when it is held in the usual classrooms.
+        from esp.cal.models import Event
+        mt_list = []
+        csl = prog.sections()
+        for c in csl:
+            for t in c.meeting_times.all():
+                if t not in mt_list: mt_list.append(t)
+        mt_list.sort(key=lambda x: x.start)        
+        early_time = mt_list[0]
+        sections = csl.filter(meeting_times=early_time)
+
+        return render_to_response(self.baseDir()+'SATPrepLabels_bysection.html', request, (prog, tl), {'sections': sections})
 
     @aux_call
     @needs_admin

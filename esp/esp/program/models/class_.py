@@ -31,7 +31,6 @@ Email: web@esp.mit.edu
 import datetime
 import time
 from collections import defaultdict
-from decimal import Decimal
 
 # django Util
 from django.db import models
@@ -193,14 +192,21 @@ class ClassSection(models.Model):
     title = property(_get_title)
     
     def _get_capacity(self):
+        ans = self.cache['capacity']
+        if ans is not None:
+            return ans
+
         rooms = self.initial_rooms()
         if len(rooms) == 0:
-            return self.parent_class.class_size_max
+            ans = self.parent_class.class_size_max
         else:
             rc = 0
             for r in rooms:
                 rc += r.num_students
-            return min(self.parent_class.class_size_max, rc)
+            ans = min(self.parent_class.class_size_max, rc)
+
+        self.cache['capacity'] = ans
+        return ans
     capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
@@ -262,7 +268,7 @@ class ClassSection(models.Model):
         """ Returns the list of classroom resources assigned to this class."""
         from esp.resources.models import Resource
 
-        ra_list = [item['resource'] for item in self.classroomassignments().values('resource')]
+        ra_list = self.classroomassignments().values_list('resource', flat=True)
         return Resource.objects.filter(id__in=ra_list)
 
     def initial_rooms(self):
@@ -321,10 +327,15 @@ class ClassSection(models.Model):
     def sufficient_length(self, event_list=None):
         """   This function tells if the class' assigned times are sufficient to cover the duration.
         If the duration is not set, 1 hour is assumed. """
-        cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
-        retVal = cache.get(cache_key)
-        if retVal != None:
-            return retVal
+        
+        # Only cache when no event list is provided.
+        caching = False
+        if not event_list:
+            cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
+            caching = True
+            retVal = cache.get(cache_key)
+            if retVal != None:
+                return retVal
         
         if self.duration == 0.0:
             duration = 1.0
@@ -336,10 +347,10 @@ class ClassSection(models.Model):
         #   If you're 15 minutes short that's OK.
         time_tolerance = 15 * 60
         if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
-            cache.set(cache_key, False, timeout=86400)
+            if caching: cache.set(cache_key, False, timeout=86400)
             return False
         else:
-            cache.set(cache_key, True, timeout=86400)
+            if caching: cache.set(cache_key, True, timeout=86400)
             return True
     
     def extend_timeblock(self, event, merged=True):
@@ -551,7 +562,7 @@ class ClassSection(models.Model):
         
         #   This function is only meaningful if the times have already been set.  So, back out if they haven't.
         if not self.sufficient_length():
-            return None
+            return []
         
         #   Start with all rooms the program has.  
         #   Filter the ones that are available at all times needed by the class.
@@ -599,7 +610,7 @@ class ClassSection(models.Model):
         for sec in user.getSections(self.parent_program, verbs=verbs):
             for time in sec.meeting_times.all():
                 if len(self.meeting_times.filter(id = time.id)) > 0:
-                    return 'This section conflicts with your schedule!'
+                    return 'This section conflicts with your schedule--check out the other sections!'
 
         # this user *can* add this class!
         return False
@@ -614,6 +625,7 @@ class ClassSection(models.Model):
             for time in cls.meeting_times.all():
                 if self.meeting_times.filter(id = time.id).count() > 0:
                     return True
+        return False
 
     def students_dict(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
@@ -1185,6 +1197,16 @@ class ClassSubject(models.Model):
             teachers.append(name)
         return teachers
 
+    def getTeacherNamesLast(self):
+        teachers = []
+        for teacher in self.teachers():
+            name = '%s, %s' % (teacher.last_name,
+                              teacher.first_name)
+            if name.strip() == '':
+                name = teacher.username
+            teachers.append(name)
+        return teachers
+		
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent():
@@ -1216,18 +1238,20 @@ class ClassSubject(models.Model):
         if user.getEnrolledClasses(self.parent_program, request).count() == 0:
             return False
 
-        if user.isEnrolledInClass(self, request):
-            return 'You are already signed up for this class!'
+        for section in self.sections.all():
+            if user.isEnrolledInClass(section, request):
+                return 'You are already signed up for a section of this class!'
         
         res = False
-        # check to see if there's a conflict with each section of the subject
+        # check to see if there's a conflict with each section of the subject, or if the user
+        # has already signed up for one of the sections of this class
         for section in self.sections.all():
             res = section.cannotAdd(user, checkFull, request, use_cache)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
 
         # res can't have ever been False--so we must have an error. Pass it along.
-        return res
+        return 'This class conflicts with your schedule!'
 
     def makeTeacher(self, user):
         v = GetNode('V/Flags/Registration/Teacher')
@@ -1288,6 +1312,7 @@ class ClassSubject(models.Model):
                     for sec in self.sections.all():
                         if sec.meeting_times.filter(id = time.id).count() > 0:
                             return True
+        return False
 
     def isAccepted(self):
         return self.status == 10
@@ -1310,7 +1335,7 @@ class ClassSubject(models.Model):
         self.status = 10
         # I do not understand the following line, but it saves us from "Cannot convert float to Decimal".
         # Also seen in /esp/program/modules/forms/management.py -ageng 2008-11-01
-        self.duration = Decimal(str(self.duration))
+        #self.duration = Decimal(str(self.duration))
         self.save()
         #   Accept any unreviewed sections.
         for sec in self.sections.all():
@@ -1517,6 +1542,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return sort_fn
 
     def save(self):
+        self.duration = str(self.duration)
         super(ClassSubject, self).save()
         self.update_cache()
 

@@ -121,6 +121,8 @@ class Event(models.Model):
     @staticmethod
     def total_length(event_list):
         #   Returns the time from the start of the first event to the end of the last.
+        event_list = list(event_list)
+        event_list.sort(key=lambda x:x.start)
         if len(event_list) > 0:
             return event_list[-1].end - event_list[0].start
         else:

@@ -55,13 +55,10 @@ from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 
 
-# From http://www.python.org/doc/2.5.2/lib/built-in-funcs.html
+# get_callable might not actually be public API. Django's nice and well-documented like that.
 def my_import(name):
-    mod = __import__(name)
-    components = name.split('.')
-    for comp in components[1:]:
-        mod = getattr(mod, comp)
-    return mod
+    from django.core.urlresolvers import get_callable
+    return get_callable(name)
 
 
 @vary_on_headers('Cookie')

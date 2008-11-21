@@ -27,20 +27,27 @@ body { font-family: georgia; }
 .box { width: 15px; height: 15px; border: 2px solid black; 
    font-weight: bold; text-align: center; vertical-align: middle;
 }
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
 </style>
+<script src="/media/scripts/sorttable.js"></script>
 </head>
 <body>
-<div class="title" style="text-align: center;">
-<span>Room List for {{ program.niceName }}</span>
-</div>
 
-<table class="pretty" cellspacing="0" cellpadding="2" width="100%">
+<table class="pretty sortable" cellspacing="0" cellpadding="2" width="100%" style="border-collapse:collapse;">
+<thead>
 <tr>
    <th>#</th>
    <th>Name</th>
    <th>Available Times</th>
    <th>Furnishings</th>
 </tr>
+</thead>
+<tbody>
 {% for room in rooms %}
 <tr>
     <td>{{ forloop.counter }}</td>
@@ -53,6 +60,7 @@ body { font-family: georgia; }
     </td>    
 </tr>
  {% endfor %}
+ </tbody>
 </table>
 
 </body>

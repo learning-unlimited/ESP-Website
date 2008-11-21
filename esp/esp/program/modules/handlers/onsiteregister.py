@@ -37,7 +37,7 @@ from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm
-from esp.money.models   import Transaction
+from esp.accounting_docs.models   import Document
 
 
 class OnSiteRegister(ProgramModuleObj):
@@ -50,23 +50,13 @@ class OnSiteRegister(ProgramModuleObj):
             }
 
     def updatePaid(self, paid=True):
-        t = Transaction.objects.filter(fbo    = self.student,
-                                       anchor = self.program_anchor_cached())
-        if t.count() > 0 and not paid:
-            for trans in t:
-                trans.delete()
-
-        if t.count() == 0 and paid:
-            trans = Transaction(anchor = self.program_anchor_cached(),
-                                fbo    = self.student,
-                                payer  = self.student,
-                                amount = "30.00",
-                                line_item = 'Onsite payment for %s' % self.program.niceName(),
-                                executed = True,
-                                payment_type_id = 6
-                                )
-            trans.save()
-            
+        """ Create an invoice for the student and, if paid is True, create a receipt showing
+        that they have paid all of the money they owe for the program. """
+        li_types = self.program.getLineItemTypes(self.student)
+        doc = Document.get_invoice(self.student, self.program_anchor_cached(), li_types)
+        Document.prepare_onsite(self.student, doc.locator)
+        if paid:
+            Document.receive_onsite(self.student, doc.locator)
 
     def createBit(self, extension):
         if extension == 'Paid':
@@ -135,6 +125,9 @@ class OnSiteRegister(ProgramModuleObj):
 
                 if new_data['paid']:
                     self.createBit('Paid')
+                    self.updatePaid(True)
+                else:
+                    self.updatePaid(False)
 
                 self.createBit('Attended')
 

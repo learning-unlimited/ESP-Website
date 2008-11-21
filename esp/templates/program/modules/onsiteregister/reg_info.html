@@ -49,14 +49,14 @@ Please enter the information for the new student:
 
 <tr>
  <td><label for="id_grade">Grade:</label><br />
-  <small>For the school year starting Fall 2007</small>
+  <small>For the school year starting Fall 2008</small>
 </td>
  <td>{{ form.grade }} {% if form.grade.errors %}
    <br /><span class="form_error">{{ form.grade.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
-
+{% comment %}
 <tr>
  <td><label for="id_medical">Handed Medical Form In?:</label></td>
  <td>{{ form.medical }} {% if form.medical.errors %}
@@ -82,7 +82,7 @@ Please enter the information for the new student:
    {% endif %}
  </td>
 </tr>
-
+{% endcomment %}
 <tr>
  <th colspan="2">
  <input type="submit" value="Save Registration" />

@@ -495,6 +495,12 @@ class UserBit(models.Model):
         self.enddate = datetime.datetime.now()
         self.save()
 
+        # when we expire a userbit, we want to update the userbit cache
+        if not hasattr(self.user,'id') or self.user.id is None:
+            UserBit.updateCache(None)
+        else:
+            UserBit.updateCache(self.user.id)
+
     def updateCache(cls, user_id):
         cls.objects.cache(user_id).update()
     updateCache = classmethod(updateCache)

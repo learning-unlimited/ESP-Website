@@ -353,7 +353,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 						userrole['base'] = 'teach'
 						userrole['reg'] = 'teacherreg'
 					ctxt['userrole'] = userrole
-					regverb = GetNode('V/Deadline/Registration/%s' % ctxt['userrole']['name'])
+					regverb = GetNode('V/Deadline/Registration/%s/MainPage' % ctxt['userrole']['name'])
 					progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
 					ctxt['progs'] = progs
 				return render_to_response('users/profile_complete.html', request, navnode, ctxt)

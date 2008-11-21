@@ -183,7 +183,7 @@ class Document(models.Model):
     @staticmethod
     def get_by_locator(loc):
         return Document.objects.get(locator=loc)
-    
+
     @staticmethod
     def receive_creditcard(user, loc, amt, cc_id):
         """ Call this function when a successful credit card payment is received. """
@@ -222,7 +222,7 @@ class Document(models.Model):
         
         money_target = DataTree.get_by_uri('Q/Accounts/Receivable/OnSite', create=True)
         old_doc = Document.get_by_locator(loc)
-        old_doc.txn.post_balance(student, 'Expecting on-site payment', money_target)
+        old_doc.txn.post_balance(user, 'Expecting on-site payment', money_target)
     
     @staticmethod
     def receive_onsite(user, loc, amt=None, ref=''):
@@ -244,7 +244,11 @@ class Document(models.Model):
         li_type, unused = LineItemType.objects.get_or_create(text='Received on-site payment',anchor=money_src)
         new_tx.add_item(user, li_type, amount=-amt)
         
-        new_doc = Document()
+        try:
+            new_doc = Document.get_receipt(user, old_doc.anchor)
+        except:        
+            new_doc = Document()
+        
         new_doc.txn = new_tx
         new_doc.doctype = 3
         new_doc.anchor = old_doc.anchor
