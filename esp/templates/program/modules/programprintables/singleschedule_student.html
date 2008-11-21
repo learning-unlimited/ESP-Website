@@ -2,7 +2,7 @@
 <div style="height: 10.5in;">
 <table align="center" width="100%">
 <tr>
-    <td valign="top" align="center" width="25%">
+    <td valign="top" align="center" width="25%">{% comment %}
         {% if student.payment_info %}
             {% if student.meals %}
             <ul class="meals">
@@ -15,19 +15,19 @@
             {% endif %}
         {% else %}&nbsp;
         {% endif %}
-    </td>
+    {% endcomment %}</td>
     <td valign="top" width="40%" align="center">
         <div class="title">Student Schedule for <br />
             <span>{{ student.name }}</span>
         </div>
 		<br />
-        {% if student.payment_info %}
-        <b>Amount owed:</b> 
+        {% comment %}{% if student.payment_info %}
+        <b>Amount owed: </b> 
         <div style="border: 1px solid black; padding: 5px; font-size: 1.2em; font-weight: bold; text-align: center; width: 50%; margin: 0 auto;">
             ${{ student.itemizedcosttotal|floatformat:"-2" }}
         </div>
         {% else %}&nbsp;
-        {% endif %}
+        {% endif %}{% endcomment %}
     </td>
     <td valign="top" align="center" width="25%">
         <div style="font-weight:bold; text-align:left; text-indent:-3em;">
@@ -71,8 +71,9 @@ If you have any questions or would like to switch classes, please go to the prog
    {% endautoescape %}
 {% endfor %}
 
-</table> 
+</table>
 </div>
+ {% comment %}
 <table class="perforate" cellpadding="4px">
  <tr>
   <td width="40%" align="center">
@@ -85,4 +86,4 @@ If you have any questions or would like to switch classes, please go to the prog
     <b>Amount owed: ${{ student.itemizedcosttotal|floatformat:"-2" }}</b>
     </div>
   </td>
- </tr>
+ </tr> {% endcomment %}
