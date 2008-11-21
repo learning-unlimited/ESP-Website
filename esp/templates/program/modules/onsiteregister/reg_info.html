@@ -56,7 +56,7 @@ Please enter the information for the new student:
    {% endif %}
  </td>
 </tr>
-
+{% comment %}
 <tr>
  <td><label for="id_medical">Handed Medical Form In?:</label></td>
  <td>{{ form.medical }} {% if form.medical.errors %}
@@ -82,7 +82,7 @@ Please enter the information for the new student:
    {% endif %}
  </td>
 </tr>
-
+{% endcomment %}
 <tr>
  <th colspan="2">
  <input type="submit" value="Save Registration" />

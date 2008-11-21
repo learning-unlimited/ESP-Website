@@ -101,7 +101,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def printoptions(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
-        context = {'module': self}
+        context = {'module': self, 'li_types': prog.getLineItemTypes(required=False)}
 
         return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
 
@@ -244,6 +244,12 @@ class ProgramPrintables(ProgramModuleObj):
                    
         classes = filter(filt_exp, classes)                  
 
+        if request.GET.has_key('grade_min'):
+            classes = filter(lambda x: x.grade_max > int(request.GET['grade_min']), classes)
+
+        if request.GET.has_key('grade_max'):
+            classes = filter(lambda x: x.grade_min < int(request.GET['grade_max']), classes)
+
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
             cls_dict = {}
@@ -263,6 +269,12 @@ class ProgramPrintables(ProgramModuleObj):
                    
         sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
         sections = filter(filt_exp, sections)                  
+
+        if request.GET.has_key('grade_min'):
+            sections = filter(lambda x: (x.parent_class.grade_max > int(request.GET['grade_min'])), sections)
+
+        if request.GET.has_key('grade_max'):
+            sections = filter(lambda x: (x.parent_class.grade_min < int(request.GET['grade_max'])), sections)
 
         if request.GET.has_key('secids'):
             clsids = request.GET['secids'].split(',')
@@ -514,6 +526,24 @@ class ProgramPrintables(ProgramModuleObj):
             return {'emerg_contact': RegistrationProfile.getLastForProgram(student, prog).contact_emergency}
         
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff)
+
+    @aux_call
+    @needs_admin
+    def students_lineitem(self, request, tl, one, two, module, extra, prog):
+        from esp.accounting_core.models import LineItem
+        #   Determine line item
+        student_ids = []
+        if request.GET.has_key('id'):
+            lit_id = request.GET['id']
+            request.session['li_type_id'] = lit_id
+        else:
+            lit_id = request.session['li_type_id']
+
+        line_items = LineItem.objects.filter(li_type__id=lit_id)
+        for l in line_items:
+            student_ids.append(l.transaction.document_set.all()[0].user.id)
+
+        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, filt_exp = lambda x: x.id in student_ids)
 
     @aux_call
     @needs_admin
