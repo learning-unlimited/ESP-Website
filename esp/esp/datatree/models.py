@@ -142,7 +142,7 @@ class DataTree(models.Model):
             return models.Model.save(self)
 
         if not self.id:
-            obj = DataTree.objects.save(name=self.name, friendly_name=self.name, parent=self.parent, start_size=start_size, uri=self.uri)
+            obj = DataTree.objects.create(name=self.name, friendly_name=self.name, parent=self.parent, start_size=start_size, uri=self.uri)
             self.__dict__.update(obj.__dict__)
             return self
 
