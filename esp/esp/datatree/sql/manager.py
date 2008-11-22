@@ -72,8 +72,8 @@ SELECT %(query)s FROM
 
 # Insertion
 sql__create = """
-INSERT INTO %(table)s (name, friendly_name, parent_id, uri, uri_correct, lock_table, range_correct, rangestart, rangeend)
-VALUES (%%s, %%s, %%s, %%s, %%s, %%s, %%s, (%(rangestart)s), (%(rangeend)s))
+INSERT INTO %(table)s (name, friendly_name, parent_id, uri, uri_correct, lock_table, range_correct, rangestart, rangeend%(extracols)s)
+VALUES (%%s, %%s, %%s, %%s, %%s, %%s, %%s, (%(rangestart)s), (%(rangeend)s)%(extravals)s)
 """
 
 class DataTreeManager(models.Manager):
@@ -102,7 +102,7 @@ class DataTreeManager(models.Manager):
 
     @transaction.commit_manually
     @serializable
-    def create(self, name, parent, uri=None, start_size=None, friendly_name=None):
+    def create(self, name, parent, id=None, uri=None, start_size=None, friendly_name=None):
         """
         Create a new DataTree node.
         This will go to great lengths to insert a node safetly into the Tree.
@@ -134,7 +134,7 @@ class DataTreeManager(models.Manager):
         else:
             uri_correct = True
 
-        id = self._insert_object(name, friendly_name, parent_id, uri, uri_correct, start_size)
+        id = self._insert_object(name, friendly_name, parent_id, uri, uri_correct, start_size, id=id, force_insert=True)
 
         transaction.commit()
 
@@ -279,13 +279,24 @@ WHERE
         else:
             return 0
 
-    def _insert_object(self, name, friendly_name, parent_id, uri, uri_correct, start_size):
+    def _insert_object(self, name, friendly_name, parent_id, uri, uri_correct, start_size, id=None, force_insert=True):
         opts = self.model._meta
         cursor = self.__get_cursor()
+        if id:
+            extracols = ', id'
+            extravals = ', %s'
+            if force_insert:
+                self.filter(id=id).delete()
+        else:
+            extracols = ''
+            extravals = ''
+
         sql = sql__create % {
             'table': self.qt,
             'rangestart': sql__get_bounds % {'table': self.qt, 'query': "MAX(upper) + 1"},
             'rangeend': sql__get_bounds % {'table': self.qt, 'query': "MAX(upper) + %s"},
+            'extracols': extracols,
+            'extravals': extravals,
             }
 
         uri = uri.strip(self.model.DELIMITER)
@@ -294,8 +305,14 @@ WHERE
         params += [parent_id, 0, parent_id, 0, parent_id]
         params += [start_size, parent_id, 0, parent_id, 0, parent_id]
 
+        if id:
+            params.append(id)
+
         cursor.execute(sql, params)
-        return connection.ops.last_insert_id(cursor, opts.db_table, opts.pk.name)
+        if id:
+            return id
+        else:
+            return connection.ops.last_insert_id(cursor, opts.db_table, opts.pk.name)
 
     def _change_ranges(self, node, left=LOWER, change_size=-WIDTH):
         """
