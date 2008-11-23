@@ -961,12 +961,15 @@ class ClassSubject(models.Model):
             return "N/A"
         else:
             return self.sections.all()[0].prettyrooms()
+
+    def ascii_info(self):
+        return self.class_info.encode('ascii', 'ignore')
         
     def _get_meeting_times(self):
         timeslot_id_list = []
         for s in self.sections.all():
             timeslot_id_list += [item['id'] for item in s.meeting_times.all().values('id')]
-        return Event.objects.filter(id__in=timeslot_id_list)
+        return Event.objects.filter(id__in=timeslot_id_list).order_by('start')
     all_meeting_times = property(_get_meeting_times)
 
     def _get_capacity(self):
