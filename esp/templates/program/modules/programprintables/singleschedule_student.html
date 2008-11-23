@@ -1,10 +1,10 @@
 {% if onsiteregform %}{% else %}
-<div style="height: 10.5in;">
+<div style="">
 <table align="center" width="100%">
 <tr>
-    <td valign="top" align="center" width="25%">{% comment %}
+    <td valign="top" align="center" width="25%">
         {% if student.payment_info %}
-            {% if student.meals %}
+            {% comment %}{% if student.meals %}
             <ul class="meals">
             {% for item in student.meals %}
                 <li>{{ item.li_type.text }}
@@ -12,22 +12,22 @@
             </ul>
 			{% else %}
 			<b>No meals preordered</b>
-            {% endif %}
+            {% endif %}{% endcomment %}
         {% else %}&nbsp;
         {% endif %}
-    {% endcomment %}</td>
+    </td>
     <td valign="top" width="40%" align="center">
         <div class="title">Student Schedule for <br />
             <span>{{ student.name }}</span>
         </div>
 		<br />
-        {% comment %}{% if student.payment_info %}
+        {% if student.payment_info %}{% comment %}
         <b>Amount owed: </b> 
         <div style="border: 1px solid black; padding: 5px; font-size: 1.2em; font-weight: bold; text-align: center; width: 50%; margin: 0 auto;">
             ${{ student.itemizedcosttotal|floatformat:"-2" }}
-        </div>
+        </div>{% endcomment %}
         {% else %}&nbsp;
-        {% endif %}{% endcomment %}
+        {% endif %}
     </td>
     <td valign="top" align="center" width="25%">
         <div style="font-weight:bold; text-align:left; text-indent:-3em;">
@@ -73,8 +73,10 @@ If you have any questions or would like to switch classes, please go to the prog
 
 </table>
 </div>
- {% comment %}
+
 <table class="perforate" cellpadding="4px">
+<tr><td>&nbsp;</td></tr>
+{% comment %}
  <tr>
   <td width="40%" align="center">
    <image src="http://esp.scripts.mit.edu/barcodegen/html/image.php?code=code39&o=1&t=50&r=1&text={{ student.invoice_id }}&f1=Arial.ttf&f2=8&a1=&a2=&a3=" />
@@ -86,4 +88,5 @@ If you have any questions or would like to switch classes, please go to the prog
     <b>Amount owed: ${{ student.itemizedcosttotal|floatformat:"-2" }}</b>
     </div>
   </td>
- </tr> {% endcomment %}
+ </tr>
+{% endcomment %}
