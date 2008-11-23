@@ -6,7 +6,7 @@
     <tr><td>
     {% for class in classes %}
         {% if not class.isFull %}
-{#        {% if not class.already_passed %} #}
+        {% if not class.already_passed %} 
             {% ifchanged %}
                 </td></tr>
                 <tr><th class="materials">{{ class.category.category }}</th></tr>
@@ -14,6 +14,6 @@
             {% endifchanged %}
             <div class="classitem"><b>{{ class.emailcode }}</b> ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}): <br /> {{ class.title }} <br /></div>
         {% endif %}
-{#        {% endif %} #}
+        {% endif %} 
     {% endfor %}
     </table>
