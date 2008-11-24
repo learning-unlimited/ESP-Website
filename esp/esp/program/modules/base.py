@@ -531,7 +531,7 @@ def needs_admin(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
         if not moduleObj.user.isAdmin(moduleObj.program):
-            if not hasattr(moduleObj.user, 'other_user') and moduleObj.user.other_user.isAdmin(moduleObj.program):
+            if not ( hasattr(moduleObj.user, 'other_user') and moduleObj.user.other_user and moduleObj.user.other_user.isAdmin(moduleObj.program) ):
                 return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
         return method(moduleObj, request, *args, **kwargs)
 
