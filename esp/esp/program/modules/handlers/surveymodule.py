@@ -85,6 +85,7 @@ class SurveyModule(ProgramModuleObj, CoreModule):
 
         return nav_bars
     
+    @meets_deadline('/Survey')
     def survey(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':
             return survey_view(request, tl, one, two)
