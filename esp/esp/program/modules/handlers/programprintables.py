@@ -212,6 +212,17 @@ class ProgramPrintables(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
+        if request.GET.has_key('mingrade'):
+            mingrade=int(request.GET['mingrade'])
+            classes = classes.filter(grade_max__gte=mingrade)
+
+        if request.GET.has_key('maxgrade'):
+            maxgrade=int(request.GET['maxgrade'])
+            classes = classes.filter(grade_min__lte=maxgrade)
+
+        if request.GET.has_key('open'):
+            classes = [cls for cls in classes if not cls.isFull()]
+
         if request.GET.has_key('sort_name_list'):
             sort_name_list = request.GET['sort_name_list'].split(',')
             first_sort = sort_name_list[0]
@@ -226,7 +237,7 @@ class ProgramPrintables(ProgramModuleObj):
             cls_dict = {}
             for cls in classes:
                 cls_dict[str(cls.id)] = cls
-            classes = [cls_dict[clsid] for clsid in clsids]
+            classes = [cls_dict[clsid] for clsid in clsids if cls_dict.has_key(clsid)]
 
         context = {'classes': classes, 'program': self.program}
 

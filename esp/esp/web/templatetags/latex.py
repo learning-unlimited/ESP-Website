@@ -76,7 +76,9 @@ def texescape(value):
     value = value.replace('\r\n', '\n')
     value = value.replace('\r',   '\n')
     value = value.replace('\n',   '\\\\\n')
-    
+
+    value = value.encode('ascii', 'ignore')
+
     return value
 
 @register.filter

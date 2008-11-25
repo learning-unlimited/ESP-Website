@@ -83,6 +83,7 @@ class SurveyManagement(ProgramModuleObj):
         return render_to_response('program/modules/surveymanagement/edit.html', request, prog.anchor, context)
 
     @main_call
+    @needs_admin
     def surveys(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':
             return render_to_response('program/modules/surveymanagement/main.html', request, prog.anchor, {'program': prog, 'surveys': prog.getSurveys()})

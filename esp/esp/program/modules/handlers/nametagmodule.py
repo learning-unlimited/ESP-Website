@@ -131,6 +131,7 @@ class NameTagModule(ProgramModuleObj):
             volunteers = request.POST['volunteers']
             for user in volunteers.split("\n"):
                 arruser = user.split(",", 1)
+                
                 if len(arruser) >= 2:
                     users.append({'title': arruser[1].strip(),
                                   'name' : arruser[0].strip(),
