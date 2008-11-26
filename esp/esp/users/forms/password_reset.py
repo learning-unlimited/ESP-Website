@@ -7,10 +7,10 @@ __all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
 
 class PasswordResetForm(forms.Form):
 
-    email     = forms.EmailField(max_length=64, required=False,
+    email     = forms.EmailField(max_length=75, required=False,
                                  help_text="(e.g. johndoe@example.org)")
 
-    username  = forms.CharField(max_length=64, required=False,
+    username  = forms.CharField(max_length=30, required=False,
                                 help_text = '(Case sensitive)')
 
 

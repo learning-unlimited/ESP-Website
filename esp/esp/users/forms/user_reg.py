@@ -28,7 +28,7 @@ class UserRegForm(forms.Form):
 
     initial_role = forms.ChoiceField(choices = role_choices)
 
-    email = forms.EmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=30)
+    email = forms.EmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75)
 
 
     def clean_username(self):
