@@ -1104,7 +1104,11 @@ class ClassSubject(models.Model):
         return '/'.join(str_array[-4:])
 
     def got_qsd(self):
-        return QuasiStaticData.objects.filter(path = self.anchor).values('id').count() > 0
+        """ Returns if this class has any associated QSD. """
+        if QuasiStaticData.objects.filter(path = self.anchor)[:1]:
+            return True
+        else:
+            return False
         
     def __unicode__(self):
         if self.title() is not None:
