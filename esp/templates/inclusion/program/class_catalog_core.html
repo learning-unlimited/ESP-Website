@@ -2,7 +2,11 @@
 {% load smartypants %}
     <tr>
       <th colspan="2" style="width: 70%;{{ colorstring }}">
-	{% if class.got_qsd %}<a href="Classes/{{ class.emailcode }}/index.html">{% endif %}{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}{% if class.got_qsd %}</a>{% endif %}
+          {% if class.got_index_qsd %}
+           <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
+          {% else %}
+           {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}
+          {% endif %}
       </th>
       <th style="width: 30%;{{ colorstring }}">
        <span class="teachers">
