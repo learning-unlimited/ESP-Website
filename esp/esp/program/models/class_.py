@@ -1109,6 +1109,13 @@ class ClassSubject(models.Model):
             return True
         else:
             return False
+
+    def got_index_qsd(self):
+        """ Returns if this class has an associated index.html QSD. """
+        if QuasiStaticData.objects.filter(path = self.anchor, name = "learn:index")[:1]:
+            return True
+        else:
+            return False
         
     def __unicode__(self):
         if self.title() is not None:
