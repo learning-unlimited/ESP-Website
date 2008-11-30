@@ -342,7 +342,7 @@ class Answer(models.Model):
 
         if self.value[0] == '+':
             try:
-                value = pickle.loads(self.value[1:])
+                value = pickle.loads(str(self.value[1:]))
             except:
                 value = self.value[1:]
         else:
