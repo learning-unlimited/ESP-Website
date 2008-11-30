@@ -32,6 +32,11 @@ from django import template
 from django.template import loader
 from esp.program.models.class_ import ClassSubject
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
 register = template.Library()
 
 @register.filter
@@ -189,9 +194,6 @@ def histogram(answer_list, format='html'):
     import os
     import tempfile
     
-    template_file = TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
-    file_base = get_rand_file_base()
-    file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
     image_width = 2.75
     
     processed_list = []
@@ -204,7 +206,6 @@ def histogram(answer_list, format='html'):
     
     #   Place results in key, value pairs where keys contain values and values contain frequencies.
     context = {}
-    context['file_name'] = file_name
     context['title'] = 'Results of survey'
     context['num_responses'] = len(answer_list)
     
@@ -234,7 +235,15 @@ def histogram(answer_list, format='html'):
         context['crowded'] = True
     else:
         context['crowded'] = False
+
+    import sha
+    file_base = sha.sha(pickle.dumps(context)).hexdigest()
+    file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
+    template_file = TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
+
+    context['file_name'] = file_name # This guy depends on the SHA-1
     
+    #  No point in SHA-1 caching these guys; they're in /tmp
     file_contents = loader.render_to_string(template_file, context)
     file_obj = open(file_name, 'w')
     file_obj.write(file_contents)
@@ -245,7 +254,9 @@ def histogram(answer_list, format='html'):
     if format == 'tex':
         return '\includegraphics[width=%fin]{%s}' % (image_width, file_name)
     elif format == 'html':
-        os.system('gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s%s.png %s' % (HISTOGRAM_DIR, file_base, file_name))
+        image_path = '%s%s.png' % (HISTOGRAM_DIR, file_base)
+        if not os.path.exists(image_path):
+            os.system('gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s %s' % (image_path, file_name))
         return '<img src="%s.png" />' % ('/media/' + HISTOGRAM_PATH + file_base)
     
 @register.filter
