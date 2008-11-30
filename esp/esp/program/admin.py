@@ -34,7 +34,7 @@ from esp.program.models import ProgramModule, ArchiveClass, Program, BusSchedule
 from esp.program.models import TeacherParticipationProfile, SATPrepRegInfo, RegistrationProfile
 from esp.program.models import TeacherBio, FinancialAidRequest
 
-from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject
+from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories
 
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler', 'main_call')
@@ -91,3 +91,4 @@ class SubjectAdmin(admin.ModelAdmin):
     search_fields = ['class_info', 'anchor__friendly_name']
 admin.site.register(ClassSubject, SubjectAdmin)
 
+admin.site.register(ClassCategories)
