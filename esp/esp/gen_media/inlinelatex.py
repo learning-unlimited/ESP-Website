@@ -33,7 +33,7 @@ from django.conf import settings
 from esp.middleware import ESPError
 
 import tempfile
-import sha
+import hashlib
 import os
 
 __all__ = ['InlineLatex']
@@ -58,7 +58,7 @@ class InlineLatex(object):
         self.style = style
         self.dpi = dpi
 
-        self.file_base = sha.sha(style + '|' + str(dpi) + '|' + content).hexdigest()
+        self.file_base = hashlib.sha1(style + '|' + str(dpi) + '|' + content).hexdigest()
         self.file_name = self.file_base + '.' + IMAGE_TYPE
 
         # Avoid having too many files in a single directory

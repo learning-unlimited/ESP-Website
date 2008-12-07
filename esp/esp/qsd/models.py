@@ -34,7 +34,7 @@ from esp.lib.markdown import markdown
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from datetime import datetime
-import md5
+import hashlib
 
 from esp.db.fields import AjaxForeignKey
 from esp.db.file_db import *
@@ -186,9 +186,9 @@ def qsd_cache_key(path, name, user=None,):
     # Also, make sure the qsd/models.py's get_file_id method
     # is also updated. Otherwise, other things might break.
     if user and user.is_authenticated():
-        return md5.new('%s-%s-%s' % (path.uri, name, user.id)).hexdigest()
+        return hashlib.md5('%s-%s-%s' % (path.uri, name, user.id)).hexdigest()
     else:
-        return md5.new('%s-%s' % (path.uri, name)).hexdigest()
+        return hashlib.md5('%s-%s' % (path.uri, name)).hexdigest()
 
 
 class ESPQuotations(models.Model):

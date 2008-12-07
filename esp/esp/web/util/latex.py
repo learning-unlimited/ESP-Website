@@ -33,7 +33,7 @@ Email: web@esp.mit.edu
 import os.path
 import os
 from random import random
-from md5    import md5
+import hashlib
 import tempfile
 from esp.middleware import ESPError
 from django.http import HttpResponse
@@ -149,10 +149,10 @@ def gen_latex(texcode, type='pdf'):
     
 
 def get_rand_file_base():
-    rand = md5(str(random())).hexdigest()
+    rand = hashlib.md5(str(random())).hexdigest()
 
     while os.path.exists(os.path.join(TEX_TEMP, rand+TEX_EXT)):
-        rand = md5(str(random())).hexdigest()
+        rand = hashlib.md5(str(random())).hexdigest()
 
     return rand
 

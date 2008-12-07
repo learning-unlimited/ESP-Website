@@ -35,7 +35,7 @@ from django.core.files.storage import default_storage
 from esp.middleware   import ESPError
 import os
 import datetime
-import md5
+import hashlib
 
 import ImageFont, Image, ImageDraw, ImageFilter
 
@@ -81,7 +81,7 @@ class SubSectionImage(models.Model):
         im = im.filter(ImageFilter.SMOOTH)
         im = im.filter(ImageFilter.SHARPEN)        
 
-        file_name = md5.new(font_string).hexdigest()
+        file_name = hashlib.md5(font_string).hexdigest()
 
         full_file_name = '%s/%s/%s.%s' %\
                       (settings.MEDIA_ROOT, self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)

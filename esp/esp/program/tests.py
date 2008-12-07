@@ -1,11 +1,11 @@
 from django.contrib.auth.models import User,Group
-import datetime, random, sha
+import datetime, random, hashlib
 import unittest
 
 class ProfileTest(unittest.TestCase):
 
     def setUp(self):
-        self.salt = sha.new(str(random.random())).hexdigest()[:5]
+        self.salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
 
     def testAcctCreate(self):
         self.u=User(
