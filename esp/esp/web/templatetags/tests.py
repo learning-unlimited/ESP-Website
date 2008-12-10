@@ -71,6 +71,7 @@ class TexImagesTest(unittest.TestCase):
                 Yeah. Aren't I special?"""
         processed = teximages(string)
         imglist = self.extractImages(processed, 0)
+        self.failUnlessEqual(string, processed, "String without (good) TeX should have been left unchanged.")
 
     def testDuplicate(self):
         """ Tests that an equation appearing twice points to the same image. """
