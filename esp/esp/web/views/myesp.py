@@ -282,15 +282,15 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 	curUser = ESPUser(curUser)
 	curUser.updateOnsite(request)
 	
-	form = {'': UserContactForm(curUser),
-		       'student': StudentProfileForm(curUser),
-		       'teacher': TeacherProfileForm(curUser),
-		       'guardian': GuardianProfileForm(curUser),
-		       'educator': EducatorProfileForm(curUser)}[role]
+	FormClass = {'': UserContactForm,
+		       'student': StudentProfileForm,
+		       'teacher': TeacherProfileForm,
+		       'guardian': GuardianProfileForm,
+		       'educator': EducatorProfileForm}[role]
 	context['profiletype'] = role
 
 	if request.method == 'POST' and request.POST.has_key('profile_page'):
-                form.data = request.POST
+                form = FormClass(curUser, request.POST)
 		
 		# Don't suddenly demand an explanation from people who are already student reps
 		if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
@@ -374,7 +374,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		new_data['e_mail']     = curUser.email
 		new_data = regProf.updateForm(new_data, role)
 
-                form.data = new_data
+                form = FormClass(curUser, new_data)
 
 	context['request'] = request
 	context['form'] = form
