@@ -1,5 +1,18 @@
 #!/usr/bin/python
 
+"""
+Database Schema Change Notifier
+
+    $ ./db_schema_notify.py [commitone] [committwo]
+
+Supply no command line arguments to see changes from the last update.
+Supply a single commit to see changes since then.
+Supply two commits to see changes between them.
+"""
+
+# Make it run on Python 2.5
+from __future__ import with_statement
+
 import sys, os
 
 # Use colors?
@@ -22,29 +35,38 @@ def pipelines( cmd ):
     import subprocess
     return subprocess.Popen( cmd.split(' '), stdout=subprocess.PIPE ).communicate()[0].splitlines()
 
-# Trust .git/logs/HEAD to be sane.
-# Also, feel free to come up with a better way to get the last line.
-# I'd use tail, except then Windows people would be sad.
-with open( './.git/logs/HEAD', 'r' ) as f:
-    for line in f:
-        pass
-commit_prev, commit_now = line.split()[:2]
 
-added_files = []
+# Figure out which commits we're comparing.
+if len(sys.argv) > 1:
+    # Maybe we were passed the revisions to use to use on the command line.
+    commits_str = sys.argv[1]
+    if '..' not in commits_str:
+        if len(sys.argv) > 2:
+            commits_str += '..' + sys.argv[2]
+        else:
+            commits_str += '..HEAD'
+else:
+    # No command-line arguments. Then dig through reflog.
+    # Trust .git/logs/HEAD to be sane.
+    # Also, feel free to come up with a better way to get the last line.
+    # I'd use tail, except then Windows people would be sad.
+    with open( './.git/logs/HEAD', 'r' ) as f:
+        for line in f:
+            pass
+    commits_str = '..'.join( line.split()[:2] )
+
+
+# Look for changes in esp/db_schema. Save what we don't know how to handle.
 unhandled_changes = []
-
-# Look for changes in esp/db_schema
-manifest = pipelines( 'git --no-pager diff --summary %s..%s esp/db_schema' % ( commit_prev, commit_now ) )
+manifest = pipelines( 'git --no-pager diff --summary %s esp/db_schema' % commits_str )
 for line in manifest:
     words = line.split()
-    if words[0] == 'create':
-        # Stick newly-created files into a list
-        added_files.append( words[-1] )
-    else:
+    if words[0] != 'create':
         # Deleted or modified? Usually shouldn't happen. Warn if it does.
         # Need a better way to deal with branch switching.
         unhandled_changes.append(line)
 
+# If no changes, quit now.
 if not manifest:
     print '    No schema changes found.'
     exit(0)
@@ -60,7 +82,7 @@ print """%s===============================
 """ % ( color(31, 1), color(37, 1), color(31, 1), color(0) )
 
 # Grab the change log for existing files start tweaking it.
-changelog_raw = pipelines( 'git --no-pager whatchanged -m %s..%s esp/db_schema' % ( commit_prev, commit_now ) )
+changelog_raw = pipelines( 'git --no-pager whatchanged -m %s esp/db_schema' % commits_str )
 for line in changelog_raw:
     words = line.split()
     
@@ -101,5 +123,7 @@ print """
 %s-----
 %sTo see this message again before the next checkout or merge, run:
     $ %s%s/db_schema_notify.py%s
+You can also pass specific commits as arguments to this script, to see the
+    changes between two commits or between a commit and the current HEAD.
 """ % ( color(37, 1), color(0), color(32, 1), os.getcwd(), color(0) )
 
