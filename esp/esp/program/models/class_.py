@@ -1553,7 +1553,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return sort_fn
 
     def save(self):
-        self.duration = str(self.duration)
         super(ClassSubject, self).save()
         self.update_cache()
 
