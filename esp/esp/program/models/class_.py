@@ -1642,15 +1642,17 @@ class ClassCategories(models.Model):
 
     Categories include 'Mathematics', 'Science', 'Zocial Zciences', etc.
     """
-    category = models.TextField()
-
+    
+    category = models.TextField(blank=False)
+    symbol = models.CharField(max_length=1, default='?', blank=False)
+    
     class Meta:
         verbose_name_plural = 'Class Categories'
         app_label = 'program'
         db_table = 'program_classcategories'
 
     def __unicode__(self):
-        return str(self.category)
+        return unicode(self.category)
         
         
     @staticmethod

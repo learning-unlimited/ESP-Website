@@ -287,7 +287,7 @@ def top_classes(request, tl, program, instance):
             except ValueError:
                 pass
         
-        categories = ClassCategories.objects.all().order_by('category').exclude(category__contains='SAT')
+        categories = prog.class_categories.all().order_by('category')
         categories = [ x.category for x in categories ]
         
         perclass_data = []

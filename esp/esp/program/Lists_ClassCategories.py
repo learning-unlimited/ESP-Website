@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,19 +31,19 @@ Email: web@esp.mit.edu
 from esp.program.models import ClassCategories
 
 ClassCategoryOptions = (
-    'Computer Science',
-    'Hobbies',
-    'Liberal Arts',
-    'Mathematics',
-    'Performing Arts',
-    'Science',
-    'Zocial Zcience',
+    ('M', 'Math and Computer Science'),
+    ('S', 'Science'),
+    ('E', 'Engineering'),
+    ('H', 'Humanities'),
+    ('A', 'Arts'),
+    ('X', 'Miscellaneous'),
     )
 
 def populate():
-	for c_desc in ClassCategoryOptions:
-	    if ClassCategories.objects.filter(category=c_desc).count() == 0:
-	        c = ClassCategories()
-	        c.category = c_desc
-	        c.save()
+    for c_desc in ClassCategoryOptions:
+        if ClassCategories.objects.filter(category=c_desc[1]).count() == 0:
+            c = ClassCategories()
+            c.symbol = c_desc[0]
+            c.category = c_desc[1]
+            c.save()
 

@@ -251,7 +251,9 @@ def _get_type_url(type):
     
 class Program(models.Model):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
-
+    
+    #from esp.program.models.class_ import ClassCategories
+    
     anchor = AjaxForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
@@ -260,7 +262,8 @@ class Program(models.Model):
     class_size_max = models.IntegerField()
     program_size_max = models.IntegerField(null=True)
     program_modules = models.ManyToManyField(ProgramModule)
-
+    class_categories = models.ManyToManyField('ClassCategories')
+    
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
