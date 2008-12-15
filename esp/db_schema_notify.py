@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+# Make it run on Python 2.5
+from __future__ import with_statement
+
 import sys, os
 
 # Use colors?
