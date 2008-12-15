@@ -1,4 +1,3 @@
-import md5
 from django import template
 from esp.datatree.models import *
 from esp.users.models import UserBit

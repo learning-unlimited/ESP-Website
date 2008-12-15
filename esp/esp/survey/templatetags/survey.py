@@ -236,8 +236,8 @@ def histogram(answer_list, format='html'):
     else:
         context['crowded'] = False
 
-    import sha
-    file_base = sha.sha(pickle.dumps(context)).hexdigest()
+    import hashlib
+    file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
     file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
     template_file = TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
 

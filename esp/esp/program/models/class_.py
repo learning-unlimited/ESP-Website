@@ -1556,7 +1556,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return sort_fn
 
     def save(self):
-        self.duration = str(self.duration)
         super(ClassSubject, self).save()
         self.update_cache()
 
@@ -1645,15 +1644,17 @@ class ClassCategories(models.Model):
 
     Categories include 'Mathematics', 'Science', 'Zocial Zciences', etc.
     """
-    category = models.TextField()
-
+    
+    category = models.TextField(blank=False)
+    symbol = models.CharField(max_length=1, default='?', blank=False)
+    
     class Meta:
         verbose_name_plural = 'Class Categories'
         app_label = 'program'
         db_table = 'program_classcategories'
 
     def __unicode__(self):
-        return str(self.category)
+        return unicode(self.category)
         
         
     @staticmethod

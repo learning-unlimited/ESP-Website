@@ -1311,11 +1311,11 @@ class PersistentQueryFilter(models.Model):
     @staticmethod
     def create_from_Q(item_model, q_filter, description = ''):
         """ The main constructor, please call this. """
-        import sha
+        import hashlib
         dumped_filter = pickle.dumps(q_filter)
         foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                    q_filter = dumped_filter,
-                                                                   sha1_hash = sha.new(dumped_filter).hexdigest())
+                                                                   sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
         foo.useful_name = description
         foo.save()
         return foo
@@ -1358,13 +1358,13 @@ class PersistentQueryFilter(models.Model):
         """ This function will get the filter from the Q object. It will either create one
             or use an old one depending on whether it's been used. """
 
-        import sha
+        import hashlib
         try:
             qobject_string = pickle.dumps(QObject)
         except:
             qobject_string = ''
         try:
-            filterObj = PersistentQueryFilter.objects.get(sha1_hash = sha.new(qobject_string).hexdigest())#    pass
+            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
         except:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,
