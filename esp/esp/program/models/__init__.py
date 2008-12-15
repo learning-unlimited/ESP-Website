@@ -257,7 +257,7 @@ class Program(models.Model):
     anchor = AjaxForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
-    director_email = models.CharField(max_length=64)
+    director_email = models.EmailField()
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
     program_size_max = models.IntegerField(null=True)

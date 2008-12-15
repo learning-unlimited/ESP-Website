@@ -80,7 +80,7 @@ class ClassRegModuleInfo(models.Model):
     class_max_size       = models.IntegerField(blank=True, null=True)
     
     class_size_step      = models.IntegerField(blank=True, null=True)
-    director_email       = models.CharField(max_length=64, blank=True, null=True)
+    director_email       = models.EmailField(blank=True, null=True)
     class_durations      = models.CharField(max_length=128, blank=True, null=True)
     teacher_class_noedit = models.DateTimeField(blank=True, null=True)
     
