@@ -29,6 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
+from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User, AnonymousUser
 from esp.datatree.models import *
@@ -1144,15 +1145,15 @@ class ContactInfo(models.Model):
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('E-mail address', blank=True, null=True)
-    phone_day = models.PhoneNumberField('Home phone',blank=True, null=True)
-    phone_cell = models.PhoneNumberField('Cell phone',blank=True, null=True, core=True)
-    phone_even = models.PhoneNumberField('Alternate phone',blank=True, null=True)
-    address_street = models.CharField('Street address',max_length=100,blank=True, null=True, core=True)
-    address_city = models.CharField('City',max_length=50,blank=True, null=True, core=True)
-    address_state = models.USStateField('State',blank=True, null=True, core=True)
-    address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True, core=True)
+    phone_day = PhoneNumberField('Home phone',blank=True, null=True)
+    phone_cell = PhoneNumberField('Cell phone',blank=True, null=True)
+    phone_even = PhoneNumberField('Alternate phone',blank=True, null=True)
+    address_street = models.CharField('Street address',max_length=100,blank=True, null=True)
+    address_city = models.CharField('City',max_length=50,blank=True, null=True)
+    address_state = USStateField('State',blank=True, null=True)
+    address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
     address_postal = models.TextField(blank=True,null=True)
-    undeliverable = models.BooleanField(default=False, core=True)
+    undeliverable = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'users'
