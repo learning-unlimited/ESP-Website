@@ -30,7 +30,8 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules.module_ext     import ClassRegModuleInfo
-from esp.program.modules         import module_ext, manipulators
+from esp.program.modules         import module_ext
+from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassImplication
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
@@ -488,35 +489,17 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         new_data = MultiValueDict()
         context = {'module': self}
         
-        manipulator = manipulators.TeacherClassRegManipulator(self)
-
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
             if not self.deadline_met():
                 return self.goToCore();
             
-            new_data = request.POST.copy()
-            errors = manipulator.get_validation_errors(new_data)
-            
+            reg_form = TeacherClassRegForm(self, request.POST)
             # Silently drop errors from section wizard when we're not using it
-            if newclass is not None:
-                if prog.getSubprograms().count() > 0:
-                    for subprogram in prog.getSubprograms():
-                        subprogram_string = subprogram.niceName().replace(' ', '_')
-                        try:
-                            del errors['section_count_' + subprogram_string]
-                            del errors['section_duration_' + subprogram_string]
-                        except KeyError:
-                            pass
             # Drop duration-validation errors if we didn't let them pick
-            if len(self.getDurations()) < 1:
-                try:
-                    del errors['duration']
-                except KeyError:
-                    pass
-            
-            if not errors: # will succeed for errors an empty dictionary
-                manipulator.do_html2python(new_data)
-
+            if reg_form.is_valid():
+                new_data = reg_form.cleaned_data
+                
+                # Some defaults
                 newclass_isnew = False
                 newclass_newmessage = True
                 newclass_oldtime = timedelta() # Remember the old class duration so that we can sanity-check things later.
@@ -719,20 +702,23 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         else:
             errors = {}
             if newclass is not None:
-                new_data = newclass.__dict__
-                new_data['category'] = newclass.category.id
-                new_data['num_sections'] = newclass.sections.count()
-                new_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
-                new_data['resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=False).distinct().values('res_type') ]
-                new_data['allow_lateness'] = newclass.allow_lateness
-                new_data['has_own_space'] = False
-                new_data['title'] = newclass.anchor.friendly_name
-                new_data['url']   = newclass.anchor.name
+                current_data = newclass.__dict__
+                current_data['category'] = newclass.category.id
+                current_data['num_sections'] = newclass.sections.count()
+                current_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
+                current_data['resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=False).distinct().values('res_type') ]
+                current_data['allow_lateness'] = newclass.allow_lateness
+                current_data['has_own_space'] = False
+                current_data['title'] = newclass.anchor.friendly_name
+                current_data['url']   = newclass.anchor.name
                 context['class'] = newclass
+                reg_form = TeacherClassRegForm(self, current_data)
+            else:
+                reg_form = TeacherClassRegForm(self)
 
         context['one'] = one
         context['two'] = two
-        context['form'] = oldforms.FormWrapper(manipulator, new_data, errors)
+        context['form'] = reg_form #oldforms.FormWrapper(manipulator, new_data, errors)
         
         if newclass is None:
             context['addoredit'] = 'Add'
