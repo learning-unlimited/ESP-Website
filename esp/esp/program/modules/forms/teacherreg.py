@@ -28,10 +28,9 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-#from django import oldforms as forms
+
 from django import forms
 from esp.forms import SizedCharField, BlankSelectWidget, SplitDateWidget, FormWithRequiredCss, FormUnrestrictedOtherUser
-#from django.core import validators
 import re
 from esp.datatree.models import *
 from esp.program.models import ClassCategories, ClassSubject, ClassSection

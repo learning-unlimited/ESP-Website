@@ -36,7 +36,6 @@ from esp.program.models          import Program, ClassSubject, ClassSection, Cla
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
-from django                      import oldforms
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
 from django.core.mail            import send_mail
@@ -718,7 +717,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         context['one'] = one
         context['two'] = two
-        context['form'] = reg_form #oldforms.FormWrapper(manipulator, new_data, errors)
+        context['form'] = reg_form
         
         if newclass is None:
             context['addoredit'] = 'Add'
