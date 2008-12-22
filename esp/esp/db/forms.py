@@ -169,13 +169,28 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         -   [name] = AjaxForeignKeyNewformField(field=[field])
             where [field] is the field in a model (i.e. ForeignKey) 
     """
-    def __init__(self, field_name='', field=None, key_type=None, required=False, label='', initial=None, widget=None, help_text='', ajax_func=None, queryset=None, error_messages=None):
+    def __init__(self, field_name='', field=None, key_type=None, to_field=None,
+                 to_field_name=None, required=False, label='', initial=None,
+                 widget=None, help_text='', ajax_func=None, queryset=None,
+                 error_messages=None, show_hidden_initial=False):
 
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'
         else:
             self.widget.ajax_func = ajax_func
-
+        
+        # ---
+        # We don't do anything with these arguments, but maybe we should.
+        # As of now we just assume we're looking for the id. -ageng 2008-12-22
+        if to_field_name is None:
+            to_field_name = 'id'
+        if to_field_name != 'id':
+            raise NotImplementedException
+        if to_field is not None:
+            raise NotImplementedException
+        self.show_hidden_initial = show_hidden_initial
+        # ---
+        
         if field:
             self.widget = AjaxForeignKeyWidget(attrs={'field': field, 'width': 35, 'ajax_func': ajax_func})
         elif key_type:
