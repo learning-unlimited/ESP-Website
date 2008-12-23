@@ -179,26 +179,10 @@ class ProgramModuleObj(models.Model):
             else:
                 module = modules[0]
 
-            if module:
-                moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog).select_related('module')[:1]
-                moduleobj = module.getPythonClass()()
-                if len(moduleobjs) == 0:
-                    #   Deal with the fact that our database is not set up with a table for every program module.
-                    moduleobj = ProgramModuleObj()
-
-                    moduleobj.module = module
-                    moduleobj.program = prog
-                    moduleobj.seq = module.seq
-                    moduleobj.required = module.required
-                    moduleobj.save()
-                else:
-                    moduleobj.__dict__.update(moduleobjs[0].__dict__)
-
-            else:
+            if not module:
                 raise Http404
-
-            moduleobj.fixExtensions()
-
+            
+            moduleobj = ProgramModuleObj.getFromProgModule(prog, module)
             cache.add(cache_key, moduleobj, timeout=60)
 
         moduleobj.request = request
@@ -234,7 +218,7 @@ class ProgramModuleObj(models.Model):
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
         
-        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod)
+        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module')
         if len(BaseModuleList) < 1:
             BaseModule = ProgramModuleObj()
             BaseModule.program = prog
