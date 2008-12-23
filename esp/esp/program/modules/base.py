@@ -233,20 +233,23 @@ class ProgramModuleObj(models.Model):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
-        ModuleObj   = mod.getPythonClass()()
+        
         BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod)
         if len(BaseModuleList) < 1:
-            ModuleObj.program = prog
-            ModuleObj.module  = mod
-            ModuleObj.seq     = mod.seq
-            ModuleObj.required = mod.required
-            ModuleObj.save()
+            BaseModule = ProgramModuleObj()
+            BaseModule.program = prog
+            BaseModule.module  = mod
+            BaseModule.seq     = mod.seq
+            BaseModule.required = mod.required
+            BaseModule.save()
 
         elif len(BaseModuleList) > 1:
             assert False, 'Too many module objects!'
         else:
-            ModuleObj.__dict__.update(BaseModuleList[0].__dict__)
+            BaseModule = BaseModuleList[0]
         
+        ModuleObj   = mod.getPythonClass()()
+        ModuleObj.__dict__.update(BaseModule.__dict__)
         ModuleObj.fixExtensions()
 
         return ModuleObj
