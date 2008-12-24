@@ -49,13 +49,14 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                         help_text='Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)' )
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(), required=False )
     
+    # At the moment we don't use viable_times at all.
     viable_times   = forms.ChoiceField( label='Starting Time', choices=[] )
-    duration       = forms.ChoiceField( label='Length of Each Section', help_text='(hours:minutes)', choices=[('1.0', '1:00')], widget=BlankSelectWidget() )
+    duration       = forms.ChoiceField( label='Length of Each Section', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget() )
     num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget() )
     session_count  = forms.ChoiceField( label='Number of Times Each Section Meets', choices=[(1,1)], widget=BlankSelectWidget() )
     
-    grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
-    grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
+    grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 12)], widget=BlankSelectWidget() )
+    grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(7, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(),
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
@@ -67,7 +68,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     global_resources = forms.MultipleChoiceField( label='Equipment and Classroom Options',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False,
                                                   help_text='Check all that apply. We can usually supply some common resources ("equipment/classroom options") at your request. But if your class is truly uncommon, Splash may also have access to unusual rooms and supplies. These can be entered in the second section, "special requests."' )
-    resources        = forms.MultipleChoiceField( label='Special Requests',
+    resources        = forms.MultipleChoiceField( label='Other Resources',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False )
     requested_special_resources = forms.CharField( label='Special Requests', widget=forms.Textarea(), required=False,
                                                    help_text='Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the comments to the directors box! ' )
@@ -102,15 +103,25 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # global_resources: module.getResourceTypes(is_global=True)
         self.fields['global_resources'].choices = module.getResourceTypes(is_global=True)
         # resources: module.getResourceTypes(is_global=False)
-        self.fields['resources'].choices = module.getResourceTypes(is_global=False)
+        resource_choices = module.getResourceTypes(is_global=False)
         
-        # decide whether to include...
-        #  prereqs, allow_lateness, duration, viable_times, session_count, section wizarding...
+        # decide whether to display certain fields
+        # resources
+        if len(resource_choices) > 0:
+            self.fields['resources'].choices = resource_choices
+        else:
+            self.fields['resources'].widget = forms.HiddenInput()
+        
+        # prereqs
         if not module.set_prereqs:
-            del self.fields['prereqs']
-        if not module.allow_lateness:
-            del self.fields['allow_lateness']
+            self.fields['prereqs'].widget = forms.HiddenInput()
         
+        # allow_lateness
+        if not module.allow_lateness:
+            self.fields['allow_lateness'].widget = forms.HiddenInput()
+            self.fields['allow_lateness'].initial = 'False'
+        
+        #  viable_times vs. duration
         if module.display_times:
             if module.times_selectmultiple:
                 self.fields['viable_times'] = forms.MultipleChoiceField( label='Viable Times', choices=module.getTimes(), widget=forms.CheckboxSelectMultiple() )
@@ -118,18 +129,21 @@ class TeacherClassRegForm(FormWithRequiredCss):
                 self.fields['viable_times'].choices = module.getTimes()
         else:
             del self.fields['viable_times']
-        
         if module.times_selectmultiple or not module.display_times:
             self.fields['duration'].choices = sorted(module.getDurations())
         else:
-            del self.fields['duration']
+            self.fields['duration'].widget = forms.HiddenInput()
+            self.fields['duration'].initial = '0.0'
+        
+        # session_count
         if module.session_counts:
             session_count_choices = module.session_counts_ints
             session_count_choices = zip(session_count_choices, session_count_choices)
             self.fields['session_count'].choices = session_count_choices
         else:
-            del self.fields['session_count']
-        # plus section wizard
+            self.fields['session_count'].widget = forms.HiddenInput()
+            self.fields['session_count'].initial = 1
+        # plus subprogram section wizard
     
     def clean(self):
         cleaned_data = self.cleaned_data

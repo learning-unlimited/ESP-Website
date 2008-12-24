@@ -494,7 +494,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             
             reg_form = TeacherClassRegForm(self, request.POST)
             # Silently drop errors from section wizard when we're not using it
-            # Drop duration-validation errors if we didn't let them pick
             if reg_form.is_valid():
                 new_data = reg_form.cleaned_data
                 
@@ -644,7 +643,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                             for i in range(0, section_count):
                                 subsection = section.add_section(duration=section_data['duration'])
                                 # create resource requests for each section
-                                for res_type_id in request.POST.getlist('resources'):
+                                for res_type_id in new_data['resources']:
                                     if res_type_id in subprogram_module.getResourceTypes():
                                         rr = ResourceRequest()
                                         rr.target = subsection
@@ -658,7 +657,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 #   Note that resource requests now belong to the sections
                 for sec in newclass.sections.all():
                     sec.clearResourceRequests()
-                    for res_type_id in request.POST.getlist('resources') + request.POST.getlist('global_resources'):
+                    for res_type_id in new_data['resources'] + new_data['global_resources']:
                         rr = ResourceRequest()
                         rr.target = sec
                         rr.res_type = ResourceType.objects.get(id=res_type_id)
@@ -702,6 +701,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             errors = {}
             if newclass is not None:
                 current_data = newclass.__dict__
+                # Duration can end up with rounding errors. Pick the closest.
+                old_delta = None
+                for k, v in self.getDurations() + [(0.0,'')]:
+                    new_delta = abs( k - current_data['duration'] )
+                    if old_delta is None or new_delta < old_delta:
+                        old_delta = new_delta
+                        current_data['duration'] = k
                 current_data['category'] = newclass.category.id
                 current_data['num_sections'] = newclass.sections.count()
                 current_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
@@ -731,12 +737,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                                                     'section_duration_field': context['form']['section_duration_' + subprogram_string]})
         else:
             context['addoredit'] = 'Edit'
-        
-        # Don't bother showing duration selection if there isn't anything to choose from
-        if len(self.getDurations()) < 1:
-            context['durations'] = False
-        else:
-            context['durations'] = True
             
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
