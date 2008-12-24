@@ -21,7 +21,7 @@ class PhoneNumberField(forms.CharField):
         self.areacode = local_areacode
 
     def clean(self, value):
-        if value == '':
+        if value is None or value == '':
             return ''
         m = _phone_re.match(value)
         if m:

@@ -42,7 +42,7 @@ from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import loader, Context
-from icalendar import Calendar, Event as CalEvent, UTC
+#from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
 from django.contrib.auth.models import User
 from esp.middleware import ESPError
@@ -294,7 +294,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		
 		# Don't suddenly demand an explanation from people who are already student reps
 		if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
-                        if form.has_key('repress_studentrep_expl_error'):
+                        if hasattr(form, 'repress_studentrep_expl_error'):
                             form.repress_studentrep_expl_error()
 		
                 if form.is_valid():
