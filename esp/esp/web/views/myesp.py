@@ -42,7 +42,7 @@ from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import loader, Context
-from icalendar import Calendar, Event as CalEvent, UTC
+#from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
 from django.contrib.auth.models import User
 from esp.middleware import ESPError
