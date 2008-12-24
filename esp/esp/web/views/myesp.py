@@ -294,7 +294,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		
 		# Don't suddenly demand an explanation from people who are already student reps
 		if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
-                        if form.has_key('repress_studentrep_expl_error'):
+                        if hasattr(form, 'repress_studentrep_expl_error'):
                             form.repress_studentrep_expl_error()
 		
                 if form.is_valid():
