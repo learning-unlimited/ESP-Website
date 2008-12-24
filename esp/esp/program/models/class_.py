@@ -938,9 +938,10 @@ class ClassSubject(models.Model):
     directors_notes = models.TextField(blank=True, null=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
     requested_room = models.TextField(blank=True, null=True)
-
+    
     sections = models.ManyToManyField(ClassSection, blank=True)
-
+    session_count = models.IntegerField(default=1)
+    
     objects = ClassManager()
     checklist_progress_all_cached = checklist_progress_base('ClassSubject')
 
