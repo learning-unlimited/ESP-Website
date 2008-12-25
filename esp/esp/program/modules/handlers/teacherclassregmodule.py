@@ -703,7 +703,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data = newclass.__dict__
                 # Duration can end up with rounding errors. Pick the closest.
                 old_delta = None
-                for k, v in self.getDurations() + [(0.0,'')]:
+                for k, v in self.getDurations() + [(0,'')]:
                     new_delta = abs( k - current_data['duration'] )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
