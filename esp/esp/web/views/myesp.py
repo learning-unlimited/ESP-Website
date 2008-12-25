@@ -352,7 +352,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 					ctxt['userrole'] = userrole
 					regverb = GetNode('V/Deadline/Registration/%s/MainPage' % ctxt['userrole']['name'])
 					progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
+					nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 					ctxt['progs'] = progs
+					ctxt['nextreg'] = list(nextreg)
 				return render_to_response('users/profile_complete.html', request, navnode, ctxt)
 			else:
 				return True

@@ -34,6 +34,25 @@ def preview_cache_key_func(cls, user=None, prereg_url=None, filter=False, reques
         return 'CLASS_PREVIEW__%s' % cls.id
     return None
 
+def get_smallest_section(cls, timeslot=None):
+    if timeslot:
+        sections = cls.sections.filter(meeting_times=timeslot)
+    else:
+        sections = cls.sections.all()
+
+    if sections.count() > 0:
+        min_count = 9999
+        min_index = -1
+        for i in range(0, sections.count()):
+            q = sections[i].num_students()
+            if q < min_count:
+                min_index = i
+                min_count = q
+        section = sections[min_index]
+    else:
+        section = None
+
+    return section
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func)
 def render_class_core(cls):

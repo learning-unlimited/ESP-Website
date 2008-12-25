@@ -657,6 +657,7 @@ class Program(models.Model):
     def getDurations(self, round=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
         from esp.program.modules.module_ext import ClassRegModuleInfo
+        from decimal import Decimal
         
         times = Event.group_contiguous(list(self.getTimeSlots()))
         info_list = ClassRegModuleInfo.objects.filter(module__program=self)
@@ -680,7 +681,7 @@ class Program(models.Model):
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
-                        durationDict[durationSeconds / 3600.0] = \
+                        durationDict[Decimal(durationSeconds) / 3600] = \
                                         str(rounded_seconds / 3600) + ':' + \
                                         str((rounded_seconds / 60) % 60).rjust(2,'0')
             

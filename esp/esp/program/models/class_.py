@@ -1096,6 +1096,15 @@ class ClassSubject(models.Model):
             result += sec.num_students(use_cache, verbs)
         return result
         
+    def max_students(self):
+        return self.sections.count()*self.class_size_max
+
+    def fraction_full(self):
+        try:
+            return self.num_students()/self.max_students()
+        except ZeroDivisionError:
+            return 1.0
+
     def emailcode(self):
         """ Return the emailcode for this class.
 
@@ -1397,7 +1406,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.status = -20
         self.save()
             
-    def clearStudents():
+    def clearStudents(self):
         for sec in self.sections.all():
             sec.clearStudents()
             
