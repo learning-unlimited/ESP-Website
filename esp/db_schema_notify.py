@@ -46,14 +46,8 @@ if len(sys.argv) > 1:
         else:
             commits_str += '..HEAD'
 else:
-    # No command-line arguments. Then dig through reflog.
-    # Trust .git/logs/HEAD to be sane.
-    # Also, feel free to come up with a better way to get the last line.
-    # I'd use tail, except then Windows people would be sad.
-    with open( './.git/logs/HEAD', 'r' ) as f:
-        for line in f:
-            pass
-    commits_str = '..'.join( line.split()[:2] )
+    # No command-line arguments. Then use the last change made to HEAD.
+    commits_str = 'HEAD@{1}..HEAD'
 
 
 # Look for changes in esp/db_schema. Save what we don't know how to handle.
