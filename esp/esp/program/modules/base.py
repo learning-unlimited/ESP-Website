@@ -179,26 +179,10 @@ class ProgramModuleObj(models.Model):
             else:
                 module = modules[0]
 
-            if module:
-                moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog).select_related('module')[:1]
-                moduleobj = module.getPythonClass()()
-                if len(moduleobjs) == 0:
-                    #   Deal with the fact that our database is not set up with a table for every program module.
-                    moduleobj = ProgramModuleObj()
-
-                    moduleobj.module = module
-                    moduleobj.program = prog
-                    moduleobj.seq = module.seq
-                    moduleobj.required = module.required
-                    moduleobj.save()
-                else:
-                    moduleobj.__dict__.update(moduleobjs[0].__dict__)
-
-            else:
+            if not module:
                 raise Http404
-
-            moduleobj.fixExtensions()
-
+            
+            moduleobj = ProgramModuleObj.getFromProgModule(prog, module)
             cache.add(cache_key, moduleobj, timeout=60)
 
         moduleobj.request = request
@@ -233,20 +217,23 @@ class ProgramModuleObj(models.Model):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
-        ModuleObj   = mod.getPythonClass()()
-        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod)
+        
+        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module')
         if len(BaseModuleList) < 1:
-            ModuleObj.program = prog
-            ModuleObj.module  = mod
-            ModuleObj.seq     = mod.seq
-            ModuleObj.required = mod.required
-            ModuleObj.save()
+            BaseModule = ProgramModuleObj()
+            BaseModule.program = prog
+            BaseModule.module  = mod
+            BaseModule.seq     = mod.seq
+            BaseModule.required = mod.required
+            BaseModule.save()
 
         elif len(BaseModuleList) > 1:
             assert False, 'Too many module objects!'
         else:
-            ModuleObj.__dict__.update(BaseModuleList[0].__dict__)
+            BaseModule = BaseModuleList[0]
         
+        ModuleObj   = mod.getPythonClass()()
+        ModuleObj.__dict__.update(BaseModule.__dict__)
         ModuleObj.fixExtensions()
 
         return ModuleObj

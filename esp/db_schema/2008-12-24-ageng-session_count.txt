@@ -1,0 +1,9 @@
+Review the update script 2008-12-24-ageng-session_count.py. It can be run with:
+    $ ./manage.py shell
+    >>> run ../db_schema/2008-12-24-ageng-session_count.py
+
+Actions taken by the script:
+    Check whether the column program_class.session_count already exists.
+    Create it if it doesn't exist.
+    Set session_count=1 for all classsubjects that don't have it set.
+    Set NOT NULL on the column.
