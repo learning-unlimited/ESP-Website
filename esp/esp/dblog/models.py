@@ -44,7 +44,7 @@ class Log(models.Model):
     stack_trace = models.TextField(blank=True)
     current_date = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def __unicode__(self):
 
         return str(self.current_date) + '\n\nTEXT: ' + \
                self.text              + '\n\nEXTRA:' + \

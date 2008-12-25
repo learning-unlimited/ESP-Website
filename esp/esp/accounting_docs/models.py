@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,9 +31,9 @@ Email: web@esp.mit.edu
 from django.db import models, transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
-from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem, EmptyTransactionException
+from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem, EmptyTransactionException, CompletedTransactionException
 from esp.accounting_docs.checksum import Checksum
 from esp.users.models import ESPUser
 from datetime import datetime
@@ -48,8 +48,8 @@ class PurchaseOrder(models.Model):
     """ A purchase order available for invoicing in a given accounting ledger """
     anchor = AjaxForeignKey(DataTree)
     address = models.TextField()
-    fax = models.CharField(blank=True, maxlength=16)
-    phone = models.CharField(blank=True, maxlength=16)
+    fax = models.CharField(blank=True, max_length=16)
+    phone = models.CharField(blank=True, max_length=16)
     email = models.EmailField(blank=True)
     reference = models.TextField()
     rules = models.TextField()
@@ -87,7 +87,7 @@ class Document(models.Model):
     docs_next = models.ManyToManyField('self', symmetrical=False, related_name='docs_prev')
 
     # Document references
-    locator = models.CharField(maxlength=16, unique=True)
+    locator = models.CharField(max_length=16, unique=True)
     po = models.ForeignKey(PurchaseOrder, null=True)
     cc_ref = models.TextField(blank=True,default='')
 
@@ -104,9 +104,6 @@ class Document(models.Model):
         choices_dict = dict(self.TYPE_CHOICES)
             
         return u"%s for %s on %s%s" % (choices_dict[self.doctype], str(self.user), str(self.anchor), complete_str)
-
-    def __str__(self):
-        return str(unicode(self))
     
     def set_default_locator(self):
         self.locator = Document._checksum.calculate(str(self.id))
@@ -120,7 +117,7 @@ class Document(models.Model):
     @staticmethod
     def get_DOCTYPE(user, anchor, li_types=[], dont_duplicate=False, finaid=None, get_complete=False, doctype=None):
         """ Create an "empty shopping cart" for a particular user in a particular
-        anchor (i.e. program). """
+        anchor (i.e. program). Or find the cart when they already have one. """
         
         if finaid is None:
             finaid = ESPUser(user).hasFinancialAid(anchor)
@@ -144,7 +141,7 @@ class Document(models.Model):
             doc = qs[0]
             for lit in li_types:
                 if not dont_duplicate or doc.txn.lineitem_set.filter(li_type=lit).count() == 0:
-                    doc.txn.add_item(user, lit, finaid)
+                    doc.txn.add_item(user, lit, finaid, anchor=anchor)
             return doc
         elif qs.count() < 1 and get_complete:
             raise MultipleDocumentError, 'Found no complete documents with the requested properties'
@@ -186,12 +183,14 @@ class Document(models.Model):
     @staticmethod
     def get_by_locator(loc):
         return Document.objects.get(locator=loc)
-    
+
     @staticmethod
     def receive_creditcard(user, loc, amt, cc_id):
         """ Call this function when a successful credit card payment is received. """
         old_doc = Document.get_by_locator(loc)
-
+        if old_doc.txn.complete:
+            raise CompletedTransactionException
+        
         new_tx = Transaction.begin(old_doc.anchor, 'Credit card payment')
         li_type, unused = LineItemType.objects.get_or_create(text='Credit Card Payment',anchor=GetNode("Q/Accounts/Receivable/OnSite"))
         new_tx.add_item(user, li_type, amount=-amt)
@@ -223,7 +222,7 @@ class Document(models.Model):
         
         money_target = DataTree.get_by_uri('Q/Accounts/Receivable/OnSite', create=True)
         old_doc = Document.get_by_locator(loc)
-        old_doc.txn.post_balance(student, 'Expecting on-site payment', money_target)
+        old_doc.txn.post_balance(user, 'Expecting on-site payment', money_target)
     
     @staticmethod
     def receive_onsite(user, loc, amt=None, ref=''):
@@ -245,7 +244,11 @@ class Document(models.Model):
         li_type, unused = LineItemType.objects.get_or_create(text='Received on-site payment',anchor=money_src)
         new_tx.add_item(user, li_type, amount=-amt)
         
-        new_doc = Document()
+        try:
+            new_doc = Document.get_receipt(user, old_doc.anchor)
+        except:        
+            new_doc = Document()
+        
         new_doc.txn = new_tx
         new_doc.doctype = 3
         new_doc.anchor = old_doc.anchor

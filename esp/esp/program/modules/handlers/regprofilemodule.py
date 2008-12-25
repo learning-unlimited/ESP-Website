@@ -28,15 +28,23 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
-from esp.web.views.myesp import profile_editor
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser, User
-from esp.db.models import Q
+from django.db.models.query import Q
 from django.contrib.auth.decorators import login_required
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Update Your Profile",
+            "module_type": "teach",
+            "seq": 1,
+            "check_call": "profile_check",
+            "required": True
+            }
 
     def students(self, QObject = False):
         if QObject:
@@ -57,7 +65,8 @@ class RegProfileModule(ProgramModuleObj):
 
     def teacherDesc(self):
         return {'teacher_profile': """Teachers who have completed the profile."""}
-    
+
+    @main_call
     @login_required
     def profile(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
@@ -86,18 +95,7 @@ class RegProfileModule(ProgramModuleObj):
 	return response
 
     def isCompleted(self):
-	reg_prof = RegistrationProfile.getLastForProgram(self.user, self.program)
-	if reg_prof.id is not None:
-	    return True
-
-	test_prof = RegistrationProfile.getLastProfile(self.user)
-	if test_prof.id is not None:
-	    regProf = test_prof
-	    regProf.id = None
-	    regProf.program = self.program 
-	    regProf.save()
-	    return True
-	else:
-            return False
+        regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
+        return regProf.id is not None
 
 

@@ -4,12 +4,17 @@ from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
 
 def cache_key_func(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
-    if not user or not prereg_url:
-        if timeslot:
-            return 'CLASS_DISPLAY__%s_%s' % (cls.id, timeslot.id)
+    # Try more caching, our code screens the classes anyway.
+    if timeslot:
+        if user:
+            return 'CLASS_DISPLAY__%s_%s_%s' % (cls.id, timeslot.id, user.id)
         else:
-            return 'CLASS_DISPLAY__%s' % cls.id
-    return None
+            return 'CLASS_DISPLAY__%s_%s' % (cls.id, timeslot.id)
+    else:
+        if user:
+            return 'CLASS_DISPLAY__%s_%s' % (cls.id, user.id)
+        else:
+            return 'CLASS_DISPLAY__%s' % (cls.id)
 
 def core_cache_key_func(cls):
     return 'CLASS_CORE_DISPLAY__%s' % cls.id
@@ -39,7 +44,7 @@ def get_smallest_section(cls, timeslot=None):
         min_count = 9999
         min_index = -1
         for i in range(0, sections.count()):
-            q = sections[i].num_students() 
+            q = sections[i].num_students()
             if q < min_count:
                 min_index = i
                 min_count = q
@@ -68,22 +73,28 @@ def render_class_core(cls):
         colorstring = ' background-color:#' + colorstring + ';'
     
     return {'class': cls,
-            'section': get_smallest_section(cls, timeslot=None), 
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
             'show_enrollment': show_enrollment }
             
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
     errormsg = None
 
+    section = cls.get_section(timeslot=timeslot)
+
     if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True, request=request)
+        error1 = cls.cannotAdd(user, True, request=request)
+        # If we can't add the class at all, then we take that error message
+        if error1:
+            errormsg = error1
+        else:  # there's some section for which we can add this class; does that hold for this one?
+            errormsg = section.cannotAdd(user, True, request=request)
     
     show_class =  (not filter) or (not errormsg)
     
     return {'class':      cls,
-            'section':    get_smallest_section(cls, timeslot),
+            'section':    section,
             'user':       user,
             'prereg_url': prereg_url,
             'errormsg':   errormsg,

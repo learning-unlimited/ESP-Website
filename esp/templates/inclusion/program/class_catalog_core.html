@@ -2,21 +2,26 @@
 {% load smartypants %}
     <tr>
       <th colspan="2" style="width: 70%;{{ colorstring }}">
-	{% if class.got_qsd %}<a href="Classes/{{ class.emailcode }}/index.html">{% endif %}{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}{% if class.got_qsd %}</a>{% endif %}
+          {% if class.got_index_qsd %}
+           <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
+          {% else %}
+           {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}
+          {% endif %}
       </th>
       <th style="width: 30%;{{ colorstring }}">
        <span class="teachers">
        {% for teacher in class.teachers %}
-       <a href="/teach/teachers/{{ teacher.last_name|urlencode }}/{{ teacher.first_name|urlencode }}{{ teacher.getUserNum }}/bio.html" 
-          title="Click for the biography of {{teacher.first_name }} {{teacher.last_name }}">
-          {{ teacher.first_name }} {{teacher.last_name }}
-       </a>{% if not forloop.last %},{% endif %}{% endfor %}
+       <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html" 
+          title="The biography of {{teacher.first_name }} {{teacher.last_name }}">{{ teacher.first_name }} {{teacher.last_name }}</a>{% if not forloop.last %},{% endif %}
+       {% endfor %}
        </span>
        </th>
      </tr>
      <tr>
        <td colspan="3" class="info">
+        {% autoescape off %}
          {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
+        {% endautoescape %}
        {% if class.prereqs %}
        <br /><br />
        <em>*Prerequisites*</em>
@@ -31,21 +36,19 @@
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
 	  {% for sec in class.sections.all %}
-           Section {{ sec.index }}: {% if not sec.friendly_times|length_is:0 %}{{ sec.friendly_times|join:", " }}{% else %}Unassigned{% endif %} <br />
+           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "|smartypants }} <br />{% endif %}
           {% endfor %}
         <br />
       </td>
  
       <td style="width: 50%;" colspan="2">
          <strong>Grades:</strong>
-           {{ class.grade_min }}--{{ class.grade_max }} 
+           {{ class.grade_min }}-{{ class.grade_max }}
          {% if show_enrollment %} <br />
-         <strong>{% if isfull %}<font color="#990000">Class is full!</font></strong>{% else %}</strong>
-         {% for sec in class.sections.all %}
-            Section {{ sec.index }}: {% if sec.isfull %}<font color = #990000">Section is full!</font>{% else %} {{ sec.num_students }} (max {{ class.class_size_max }})
-        {% endif %} <br />
-        {% endfor %}
-        {% endif %}
+         <strong>Enrollment</strong><br />
+           {% for sec in class.sections.all %}
+              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />{% endif %}
+           {% endfor %}
         {% endif %}
       </td>
     </tr>

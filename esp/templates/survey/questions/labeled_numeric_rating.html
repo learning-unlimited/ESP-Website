@@ -1,0 +1,13 @@
+<!-- Question Type: Labeled Numeric Rating -->
+{% load survey %}
+<table width="600">
+<tr>
+    <td width="30%">{{ name }}</td>
+    {% for label in list %}
+        <td width="{{ 1|field_width:number_of_ratings }}"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="{{ forloop.counter }}" />{{ forloop.counter }}
+        <br />{{ label }}
+        </td>
+    {% endfor %}
+</tr>
+</table>
+

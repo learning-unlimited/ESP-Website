@@ -1,3 +1,4 @@
+from __future__ import with_statement
 
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
@@ -30,10 +31,21 @@ Email: web@esp.mit.edu
 """
 
 
+from django.dispatch import dispatcher
+from django.db.models import signals 
+from esp.users import models as UsersModel
+from esp.utils.custom_cache import custom_cache
 
-def CloneAttachments(src_node, target_node):
-    # Clone all stuff attached to a given tree node
-    src = GetNode(src_node)
-    target = GetNode(target_node)
+have_already_installed = False
 
+def post_syncdb(sender, app, **kwargs):
+    global have_already_installed
+    
+    if (not have_already_installed) and app == UsersModel:
+        with custom_cache():
+            have_already_installed = True
+            print "Installing esp.users initial data..."
+            UsersModel.install()
+
+signals.post_syncdb.connect(post_syncdb)
 

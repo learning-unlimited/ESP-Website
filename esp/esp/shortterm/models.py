@@ -5,10 +5,10 @@ from django.core.mail import send_mail
 # Create your models here.
 
 class ResponseForm(models.Model):
-    contact_name = models.CharField(maxlength = 100)
-    position = models.CharField(maxlength = 100)
+    contact_name = models.CharField(max_length = 100)
+    position = models.CharField(max_length = 100)
     email = models.EmailField()
-    school = models.CharField(maxlength = 150)
+    school = models.CharField(max_length = 150)
     mailing_address = models.TextField()
     xeroxable_flier_for_summer_hssp = models.BooleanField()
     xeroxable_flier_for_junction = models.BooleanField()
@@ -17,7 +17,7 @@ class ResponseForm(models.Model):
     splash_on_wheels_application = models.FileField(upload_to="uploaded/sow_apps/%y/", blank=True, null=True)
     bulk_financial_aid_application = models.FileField(upload_to="uploaded/bulk_finaid_form/%y/", blank=True, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Survey Response: %s (%s)' % (self.school, self.contact_name)
 
     def send_mail(self):

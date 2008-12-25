@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Stay in touch"|subsection }}
+{% autoescape off %}{{ "Stay in touch"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block stylesheets %}

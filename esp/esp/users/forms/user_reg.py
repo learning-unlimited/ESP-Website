@@ -1,5 +1,5 @@
 
-from django import newforms as forms
+from django import forms
 from django.contrib.auth.models import User
 
 role_choices = (
@@ -28,14 +28,14 @@ class UserRegForm(forms.Form):
 
     initial_role = forms.ChoiceField(choices = role_choices)
 
-    email = forms.EmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=30)
+    email = forms.EmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75)
 
 
     def clean_username(self):
         """ Make sure that 'username' (as provided as input to this form)
             only contains letters and numbers, and doesn't already exist """
 
-        data = self.clean_data['username']
+        data = self.cleaned_data['username']
 
         import string
         good_chars = set(string.letters + string.digits)
@@ -51,14 +51,14 @@ class UserRegForm(forms.Form):
         return data
 
     def clean_confirm_password(self):
-        if self.clean_data['confirm_password'] != self.clean_data['password']:
+        if self.cleaned_data['confirm_password'] != self.cleaned_data['password']:
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
-        return self.clean_data['confirm_password']
+        return self.cleaned_data['confirm_password']
 
 
     def clean_email(self):
         """ Make sure the e-mail address is sane """
-        email = self.clean_data['email']
+        email = self.cleaned_data['email']
         email_parts = email.split("@")
         if len(email_parts) != 2:
             raise forms.ValidationError('E-mail addresses must be of the form "name@host"')
@@ -87,7 +87,7 @@ class EmailUserForm(forms.Form):
 
     def clean_email(self):
         """ Make sure the e-mail address is sane """
-        email = self.clean_data['email']
+        email = self.cleaned_data['email']
         email_parts = email.split("@")
         if len(email_parts) != 2:
             raise forms.ValidationError('E-mail addresses must be of the form "name@host"')

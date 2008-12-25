@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Stay in touch"|subsection }}
+{% autoescape off %}{{ "Stay in touch"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block subsection_name %}Welcome{% endblock %}
@@ -49,8 +49,8 @@
     </p>
     <p>
     The MIT Educational Studies Program (ESP) has brought fun and affordable 
-    educational programs to secondary school students -- through programs such
-    as Splash, HSSP, Delve, and SAT Prep -- since 1957.  We've broadened our
+    educational programs to secondary school students &mdash; through programs such
+    as Splash, HSSP, Delve, and SAT Prep &mdash; since 1957.  We've broadened our
     outreach significantly in the last few years!  If you are interested in learning 
     a bit more about ESP, please visit  
     <a href="/alumni/intro.html">this page</a>.
@@ -118,7 +118,7 @@
     <table width="600" align="center" cellpadding="0" cellspacing="0">
         <tr>
             <td width="20%" valign="top">{{ lookup_result.contactinfo.first_name }} {{ lookup_result.contactinfo.last_name }}</td>
-            <td width="20%" valign="top">{{ lookup_result.start_year }} -- {{ lookup_result.end_year }}</td>
+            <td width="20%" valign="top">{{ lookup_result.start_year }} &ndash; {{ lookup_result.end_year }}</td>
             <td width="60%" valign="top">{{ lookup_result.involvement }}</td>
         </tr>
     </table>

@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Success"|subsection }}
+{% autoescape off %}{{ "Success"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block content %}

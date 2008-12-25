@@ -10,7 +10,7 @@
 
 {% load subsection %}
 {% block subsection %}
-    {{ "Survey"|subsection }}
+    {% autoescape off %}{{ "Survey"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block content %}
@@ -38,7 +38,16 @@
             <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
             <td>
                 {% if not q.answers|length_is:0 %}
-                    {{ q.answers|unpack_answers|histogram:"html" }} 
+                    {{ q.answers|unpack_answers|histogram:"html"|safe }}
+                    {% with q.question.get_params as params %}
+                        {% if params.lower_text %}
+                        <div style="font-weight:bold; font-size:0.8em; width:216px;">
+                            <div style="float:left;">1 = {{ params.lower_text }}</div>
+                            <div style="float:right;">{{ params.upper_text }} = {{ params.number_of_ratings }}</div>
+                            <div style="text-align:center;">{{ params.middle_text }}</div>
+                        </div>
+                        {% endif %}
+                    {% endwith %}
                 {% else %} 
                     There are no responses to this question.
                 {% endif %}
@@ -75,7 +84,17 @@
             <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
             <td>
                 {% if not q.answers|length_is:0 %}
-                    {{ q.answers|unpack_answers|histogram:"html" }} 
+                    {{ q.answers|unpack_answers|histogram:"html"|safe }} 
+                    {% with q.question.get_params as params %}
+                        {% if params.lower_text %}
+                        <div style="font-weight:bold; font-size:0.8em; width:216px;">
+                            {# I have moral qualms about fixing this width in pixels; hopefully someone will find a better way. -ageng 2008-10-20 #}
+                            <div style="float:left;">1 = {{ params.lower_text }}</div>
+                            <div style="float:right;">{{ params.upper_text }} = {{ params.number_of_ratings }}</div>
+                            <div style="text-align:center;">{{ params.middle_text }}</div>
+                        </div>
+                        {% endif %}
+                    {% endwith %}
                 {% else %} 
                     There are no responses to this question.
                 {% endif %}

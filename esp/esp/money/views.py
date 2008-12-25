@@ -31,11 +31,13 @@ Email: web@esp.mit.edu
 from esp.money.models import Transaction
 from esp.web.util import render_to_response
 from django.http import Http404, HttpResponse, HttpResponseRedirect
-from django import forms
+from django.forms import ModelForm
+
+class TransactionForm(ModelForm):
+    class Meta:
+        model = Transaction
 
 def create_reimbursement(request):
-    manipulator = Transaction.AddManipulator()
-
     if request.POST:
         pyPOST = request.POST.copy()
 
@@ -44,27 +46,23 @@ def create_reimbursement(request):
         if pyPOST['fbo'] == '':
             pyPOST['fbo'] = pyPOST['payer']                             
 
-        errors = manipulator.get_validation_errors(pyPOST)
+        f = TransactionForm(pyPOST)
 
-        if not errors:
-            # The data's good; we can save it
-            manipulator.do_html2python(pyPOST)
-
+        if f.is_valid():
             # Reimbursements are Transactions that haven't been executed yet.
             # We could theoretically have a bit that gives a user
             # immediate-accept of reimbursements; not sure that we want this
-            if pyPOST.has_key('executed') and pyPOST['executed'] == True:
-                pyPOST['executed'] == False
+            if f.cleaned_data.has_key('executed') and f.cleaned_data['executed'] == True:
+                f.cleaned_data['executed'] == False
 
             # Save the data from the Web form
-            reimbursement = manipulator.save(pyPOST)
+            reimbursement = f.save()
 
             # Hack to make browsers happy to not re-post data
             return HttpResponseRedirect('thanks.html')
 
     else:
-        errors = pyPOST = {}
+        f = TransactionForm()
 
-    form = forms.FormWrapper(manipulator, pyPOST, errors)
-    return render_to_response('money/reimbursement_request.html', { 'form': form } )
+    return render_to_response('money/reimbursement_request.html', { 'form': f } )
 

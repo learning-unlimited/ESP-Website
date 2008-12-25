@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Create an account"|subsection }}
+{% autoescape off %}{{ "Create an account"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block stylesheets %}

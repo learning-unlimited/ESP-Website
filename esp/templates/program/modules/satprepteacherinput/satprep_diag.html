@@ -21,8 +21,8 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 <h1>SAT Prep - Score Information </h1>
 <br />
 <p>Please enter the diagnostic/practice scores for &quot;{{user.name}}&quot; below:</p>
-{% if form.has_errors %}
-<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
+{% if form.errors %}
+<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.<h2>
 {% endif %}
 
 

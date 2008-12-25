@@ -28,16 +28,16 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_admin
+from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories
-from esp.datatree.models         import DataTree, GetNode
+from esp.datatree.models import *
 from esp.web.util                import render_to_response
-from django                      import newforms as forms
+from django                      import forms
 from django.http                 import HttpResponseRedirect
 from esp.cal.models              import Event
 from django.core.cache           import cache
-from esp.db.models               import Q
+from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.middleware              import ESPError
 from esp.resources.models        import ResourceRequest, ResourceType, Resource, ResourceAssignment
@@ -47,12 +47,21 @@ from datetime                    import timedelta
 class SchedulingModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Scheduling",
+            "module_type": "manage",
+            "seq": 8
+            }
+    
     def prepare(self, context={}):
         if context is None: context = {}
         
         context['schedulingmodule'] = self 
         return context
 
+    @main_call
     @needs_admin
     def scheduling(self, request, tl, one, two, module, extra, prog):
         #   Renders the teacher availability page and handles submissions of said page.
@@ -84,6 +93,10 @@ class SchedulingModule(ProgramModuleObj):
   
             key_list = new_dict.keys()
             key_list = filter(lambda a: a.endswith('new'), key_list)
+            key_list.sort()
+            # assert False, '\n'.join([str((k, new_dict[k])) for k in key_list])
+            # sec_update_list = []
+            # assert False, section_ids_to_process
             for key in key_list:
                 #   Find the variables that differ from existing data (something_new vs. something_old).
                 commands = key.split('_')
@@ -130,7 +143,7 @@ class SchedulingModule(ProgramModuleObj):
                             new_room = Resource.objects.get(id=int(new_dict[key]))
                             (status, errors) = sec.assign_room(new_room, compromise=True, clear_others=True)
                             if status is False:
-                                raise ESPError(False), 'Classroom assignment errors: %s' % errors
+                                raise ESPError(False), 'Classroom assignment errors: <ul><li>%s</li></ul>' % '</li><li>'.join(errors)
 
                     #   Clear the cache for this class and its new room.
                     sec.clear_resource_cache()
@@ -153,7 +166,8 @@ class SchedulingModule(ProgramModuleObj):
 
         #   So far, this page shows you the same stuff no matter what you do.
         return render_to_response(self.baseDir()+'main.html', request, (prog, tl), context)
-    
+
+    @aux_call
     @needs_admin
     def force_availability(self, request, tl, one, two, module, extra, prog):
         teacher_dict = prog.teachers(QObjects=True)
@@ -162,11 +176,7 @@ class SchedulingModule(ProgramModuleObj):
             if request.POST.has_key('sure') and request.POST['sure'] == 'True':
                 
                 #   Find all teachers who have not indicated their availability and do it for them.
-                unavailable_teachers = []
-                for t in prog.teachers()['class_approved']:
-                    if len(ESPUser(t).getAvailableTimes(prog)) == 0:
-                        unavailable_teachers.append(t)
-                #   unavailable_teachers = User.objects.filter(teacher_dict['class_approved']).exclude(teacher_dict['availability']).distinct()
+                unavailable_teachers = User.objects.filter(teacher_dict['class_approved'] | teacher_dict['class_proposed']).exclude(teacher_dict['availability']).distinct()
                 for t in unavailable_teachers:
                     teacher = ESPUser(t)
                     for ts in prog.getTimeSlots():
@@ -183,6 +193,7 @@ class SchedulingModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'force_prompt.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def securityschedule(self, request, tl, one, two, module, extra, prog):
         """ Display a list of classes (by classroom) for each timeblock in a program """

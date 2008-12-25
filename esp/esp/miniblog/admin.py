@@ -28,5 +28,21 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.web.manipulators.bio import *
 
+from django.contrib import admin
+from esp.miniblog.models import AnnouncementLink, Entry, Comment
+
+admin.site.register(AnnouncementLink)
+
+class EntryAdmin(admin.ModelAdmin):
+    search_fields = ['content','title','anchor__uri']
+    class Media:
+        js = (
+            '/media/scripts/admin_miniblog.js',
+            )
+admin.site.register(Entry, EntryAdmin)
+
+class CommentAdmin(admin.ModelAdmin):
+    search_fields = ['author__first_name','author__last_name',
+                     'subject','entry__title']
+admin.site.register(Comment, CommentAdmin)

@@ -28,42 +28,53 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
-from esp.datatree.models import GetNode, DataTree
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
-from esp.db.models       import Q
+from django.db.models.query       import Q
 from django.template.loader import get_template
 from esp.program.models  import FinancialAidRequest
-from django              import newforms as forms
+from django              import forms
 
 
 # student class picker module
 class FinancialAidAppModule(ProgramModuleObj):
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Financial Aid Application",
+            "module_type": "learn",
+            "seq": 25
+            }
 
     def students(self, QObject = False):
         Q_students = Q(financialaidrequest__program = self.program)
 
         Q_students_complete = Q(financialaidrequest__done = True)
+        Q_students_approved = Q(financialaidrequest__amount_received__gt=0) | Q(financialaidrequest__approved__isnull=False)
 
         if QObject:
             return {'studentfinaid_complete': Q_students & Q_students_complete,
-                    'studentfinaid':          Q_students}
+                    'studentfinaid':          Q_students,
+                    'studentfinaid_approved': Q_students & Q_students_approved}
         else:
             return {'studentfinaid_complete': User.objects.filter(Q_students & Q_students_complete),
-                    'studentfinaid':          User.objects.filter(Q_students)}
+                    'studentfinaid':          User.objects.filter(Q_students),
+                    'studentfinaid_approved': User.objects.filter(Q_students & Q_students_approved)}
         
-
 
     def studentDesc(self):
         return {'studentfinaid_complete': """Students who have completed the student financial aid applications.""",
-                'studentfinaid':          """Students who have started the student financial aid applications."""}
+                'studentfinaid':          """Students who have started the student financial aid applications.""",
+                'studentfinaid_approved': """Students who have been granted financial aid."""}
     
     def isCompleted(self):
         return self.user.financialaidrequest_set.all().filter(program = self.program, done = True).count() > 0
 
+    @main_call
     @needs_student
     @meets_deadline()
     def finaid(self,request, tl, one, two, module, extra, prog):
@@ -76,7 +87,8 @@ class FinancialAidAppModule(ProgramModuleObj):
                                   request,
                                   (self.program, tl),
                                   {})
-    
+
+    @aux_call
     @needs_student
     @meets_deadline()
     def finaid_app(self,request, tl, one, two, module, extra, prog):
@@ -90,15 +102,14 @@ class FinancialAidAppModule(ProgramModuleObj):
         app, created = FinancialAidRequest.objects.get_or_create(user = self.user,
                                                                 program = self.program)
 
-        Form = forms.form_for_model(FinancialAidRequest)
-        exclude_fields = ['approved', 'amount_received', 'amount_needed', 'reviewed']
-        for f in exclude_fields:
-            del Form.base_fields[f]
+        class Form(forms.ModelForm):
+            class Meta:
+                model = FinancialAidRequest
       
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
             if form.is_valid():
-                app.__dict__.update(form.clean_data)
+                app.__dict__.update(form.cleaned_data)
                
                 if not request.POST.has_key('submitform') or request.POST['submitform'].lower() == 'complete':
                     app.done = True

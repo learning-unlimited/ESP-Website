@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "ESP Management"|subsection }}
+{% autoescape off %}{{ "ESP Management"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block subsection_name %}Welcome{% endblock %}
@@ -52,7 +52,7 @@ The program you are trying to create is: <b>{{ prog.anchor.name }} {{ datatrees.
     <tr><td>{{ item.0 }}</td><td>{{ item.1 }}</td><td>{{ item.2 }}</td><td>{{ item.3 }}</td></tr>
 {% endfor %}
 </table>
-x</div>
+</div>
 </p>
 
 <p>
@@ -74,6 +74,7 @@ x</div>
 
 <div id="program_form">
 <form method="POST" action="{{ request.path }}?checked=1">
+
 <input type="submit" class="button" value="Make Program Happen">
 </form>
 </div>

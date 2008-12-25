@@ -3,7 +3,7 @@ from esp.users.forms.password_reset import PasswordResetForm,NewPasswordSetForm
 from django.contrib.auth.models import User
 from django.template import loader
 from django.http import HttpResponseRedirect
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.users.models import PersistentQueryFilter, ESPUser
 from esp.web.util.main import render_to_response
 from esp.users.decorators import anonymous_only
@@ -31,11 +31,11 @@ def initial_passwd_request(request, success=None):
 
         if form.is_valid():
             
-            username = form.clean_data['username']
+            username = form.cleaned_data['username']
             if username != '':
                 users = User.objects.filter(username = username)
             else:
-                users = User.objects.filter(email__iexact = form.clean_data['email'])
+                users = User.objects.filter(email__iexact = form.cleaned_data['email'])
 
             for user in users:
                 ESPUser(user).recoverPassword()
@@ -69,11 +69,11 @@ def email_passwd_followup(request,success=None):
         form = NewPasswordSetForm(request.POST)
 
         if form.is_valid():
-            user = User.objects.get(username = form.clean_data['username'])
-            user.set_password(form.clean_data['password'])
+            user = User.objects.get(username = form.cleaned_data['username'])
+            user.set_password(form.cleaned_data['password'])
             user.save()
-            auth_user = authenticate(username = form.clean_data['username'],
-                                     password = form.clean_data['password'])
+            auth_user = authenticate(username = form.cleaned_data['username'],
+                                     password = form.cleaned_data['password'])
             login(request, auth_user)
             return HttpResponseRedirect('%ssuccess/' % request.path)
                               

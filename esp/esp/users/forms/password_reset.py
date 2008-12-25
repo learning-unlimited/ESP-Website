@@ -1,16 +1,16 @@
 
 
-from django import newforms as forms
+from django import forms
 from django.contrib.auth.models import User
 
-__all__ = ['PasswordResetForm','NewPasswordSetForm']
+__all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
 
 class PasswordResetForm(forms.Form):
 
-    email     = forms.EmailField(max_length=64, required=False,
+    email     = forms.EmailField(max_length=75, required=False,
                                  help_text="(e.g. johndoe@example.org)")
 
-    username  = forms.CharField(max_length=64, required=False,
+    username  = forms.CharField(max_length=30, required=False,
                                 help_text = '(Case sensitive)')
 
 
@@ -61,27 +61,27 @@ class PasswordResetForm(forms.Form):
 
     def clean_username(self):
 
-        if self.clean_data.get('username','').strip() == '' and \
-           self.clean_data.get('email','').strip() == '':
+        if self.cleaned_data.get('username','').strip() == '' and \
+           self.cleaned_data.get('email','').strip() == '':
             raise forms.ValidationError("You need to specify something.")
 
-        if self.clean_data['username'].strip() == '': return ''
+        if self.cleaned_data['username'].strip() == '': return ''
 
         try:
-            user = User.objects.get(username=self.clean_data['username'])
+            user = User.objects.get(username=self.cleaned_data['username'])
         except User.DoesNotExist:
-            raise forms.ValidationError, "User '%s' does not exist." % self.clean_data['username']
+            raise forms.ValidationError, "User '%s' does not exist." % self.cleaned_data['username']
 
-        return self.clean_data['username'].strip()
+        return self.cleaned_data['username'].strip()
 
     def clean_email(self):
-        if self.clean_data['email'].strip() == '':
+        if self.cleaned_data['email'].strip() == '':
             return ''
 
-        if len(User.objects.filter(email__iexact=self.clean_data['email']).values('id')[:1])>0:
-            return self.clean_data['email'].strip()
+        if len(User.objects.filter(email__iexact=self.cleaned_data['email']).values('id')[:1])>0:
+            return self.cleaned_data['email'].strip()
 
-        raise forms.ValidationError('No user has email %s' % self.clean_data['email'])
+        raise forms.ValidationError('No user has email %s' % self.cleaned_data['email'])
 
 
 class NewPasswordSetForm(forms.Form):
@@ -95,23 +95,45 @@ class NewPasswordSetForm(forms.Form):
 
     def clean_username(self):
         from esp.middleware import ESPError
-        if not self.clean_data.has_key('code'):
+        if not self.cleaned_data.has_key('code'):
             raise ESPError(False), "The form that you submitted does not contain a valid password-reset code.  If you arrived at this form from an e-mail, are you certain that you used the entire URL from the e-mail (including the bit after '?code=')?"
         try:
-            user = User.objects.get(username = self.clean_data['username'].strip(),
-                                    password = self.clean_data['code'])
+            user = User.objects.get(username = self.cleaned_data['username'].strip(),
+                                    password = self.cleaned_data['code'])
         except User.DoesNotExist:
             raise forms.ValidationError('Invalid username.')
 
-        return self.clean_data['username'].strip()
+        return self.cleaned_data['username'].strip()
     
 
     def clean_password_confirm(self):
-        new_passwd= self.clean_data['password_confirm'].strip()
+        new_passwd = self.cleaned_data['password_confirm'].strip()
 
-        if not self.clean_data.has_key('password'):
+        if not self.cleaned_data.has_key('password'):
             raise forms.ValidationError('Invalid password; confirmation failed')
 
-        if self.clean_data['password'] != new_passwd:
+        if self.cleaned_data['password'] != new_passwd:
+            raise forms.ValidationError('Password and confirmation are not equal.')
+        return new_passwd
+
+class UserPasswdForm(forms.Form):
+    password = forms.CharField(max_length=32, widget=forms.PasswordInput())
+    newpasswd = forms.CharField(max_length=32, widget=forms.PasswordInput())
+    newpasswdconfirm = forms.CharField(max_length=32, widget=forms.PasswordInput())
+
+    def __init__(self, *args, **kwargs):
+        for k,v in self.base_fields.items():
+            if v.required:
+                v.widget.attrs['class'] = 'required'
+            v.widget.attrs['size'] = 12
+        forms.Form.__init__(self, *args, **kwargs)
+
+    def clean_newpasswdconfirm(self):
+        new_passwd = self.cleaned_data['newpasswdconfirm'].strip()
+
+        if not self.cleaned_data.has_key('newpasswd'):
+            raise forms.ValidationError('Invalid password; confirmation failed')
+
+        if self.cleaned_data['newpasswd'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
         return new_passwd

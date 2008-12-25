@@ -28,33 +28,41 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules.module_ext     import ClassRegModuleInfo
-from esp.program.modules         import module_ext, manipulators
+from esp.program.modules         import module_ext
+from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassImplication
-from esp.datatree.models         import DataTree, GetNode
+from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
-from django                      import forms
 from django.utils.datastructures import MultiValueDict
 from esp.cal.models              import Event
 from django.core.mail            import send_mail
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
-from esp.db.models               import Q
+from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
 from datetime                    import timedelta
 
-class TeacherClassRegModule(ProgramModuleObj):
+class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
         StudentClassRegModule. Please be mindful of all the options of this module. """
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Register Your Classes",
+            "module_type": "teach",
+            "seq": 10,
+            "main_call": "listclasses"
+            }
 
     
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return [('classRegInfo', module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+        return []#(., module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
 
 
     def prepare(self, context={}):
@@ -117,13 +125,13 @@ class TeacherClassRegModule(ProgramModuleObj):
     def getClassSizes(self):
         min_size, max_size, class_size_step = (0, 200, 10)
 
-        if self.classRegInfo.class_max_size:
-            max_size = self.classRegInfo.class_max_size
+        if self.class_max_size:
+            max_size = self.class_max_size
             
-        if self.classRegInfo.class_size_step:
-            class_size_step = self.classRegInfo.class_size_step
+        if self.class_size_step:
+            class_size_step = self.class_size_step
 
-        ret_range = range(0, 23) + [30, 35, 40, 60, 75]
+        ret_range = range(0, 23) + [30, 35, 40, 150]
         ret_range = filter(lambda x: ((x >= min_size) and (x <= max_size)), ret_range)
 
         return ret_range
@@ -161,6 +169,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             
         return [(str(x.id), x.name) for x in res_types]
 
+    @aux_call
     @needs_teacher
     @meets_deadline("/Classes/View")
     def section_students(self, request, tl, one, two, module, extra, prog):
@@ -169,8 +178,9 @@ class TeacherClassRegModule(ProgramModuleObj):
         if section.count() != 1:
             raise ESPError(False), 'Could not find that class section; please contact the webmasters.'
 
-        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'section': section[0], 'cls': section[0].parent_class})
+        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'section': section[0], 'cls': section[0]})
 
+    @aux_call
     @needs_teacher
     @meets_deadline("/Classes/View")
     def class_students(self, request, tl, one, two, module, extra, prog):
@@ -181,7 +191,84 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'cls': cls[0]})
         
+        
+    @aux_call
+    @needs_teacher
+    @meets_deadline("/Classes/View")
+    def select_students(self, request, tl, one, two, module, extra, prog):
+        from esp.users.models import UserBit
+        #   Get preregistered and enrolled students
+        try:
+            sec = ClassSection.objects.filter(id=extra)[0]
+        except:
+            raise ESPError(False), 'Class section not found.  If you came from a link on our site, please notify the webmasters.'
+        
+        students_list = sec.students_prereg()
+        
+        if request.method == 'POST':
+            #   Handle form submission
+            #   result_strs = []
+            data = request.POST.copy()
+            sections_dict = {}
+            for key in data:
+                key_dir = key.split('_')
+                if key_dir[0] == 'regstatus' and len(key_dir) == 3:
+                    student_id = int(key_dir[1])
+                    sec_id = int(key_dir[2])
+                    if sec_id not in sections_dict:
+                        sections_dict[sec_id] = [{'id':student_id, 'status': data[key]}]
+                    else:
+                        sections_dict[sec_id].append({'id':student_id, 'status': data[key]})
+            
+            for sec_id in sections_dict:
+                sec = ClassSection.objects.get(id=sec_id)
+                sec.cache['students'] = None
+                sec.cache['num_students'] = None
+                for item in sections_dict[sec_id]:
+                    student = ESPUser(User.objects.get(id=item['id']))
+                    ignore = False
+                    value = item['status']
+                    if value == 'enroll':
+                        verb_name = 'Enrolled'
+                    elif value == 'reject':
+                        verb_name = 'Rejected'
+                    else:
+                        ignore = True
+                        
+                    if not ignore:
+                        verb = DataTree.get_by_uri('V/Flags/Registration/' + verb_name, create=True)
+                        other_bits = sec.getRegBits(student).filter(verb__name__in=['Enrolled', 'Rejected'])
+                        found = False
+                        for bit in other_bits:
+                            if not found and bit.verb == verb:
+                                found = True
+                            else:
+                                bit.expire()
+                            #   result_strs.append('Expired: %s' % bit)
+                        if not found:
+                            new_bit = UserBit(user=student, verb=verb, qsc=sec.anchor)
+                            new_bit.save()
+                        #   result_strs.append('Created: %s' % new_bit)
+                        
+        #   Jazz up this information a little
 
+        for student in students_list:
+            uri_base = 'V/Flags/Registration/'
+            uri_start = len(uri_base)
+            bits = sec.getRegBits(student)
+            student.bits = [bit.verb.uri[uri_start:] for bit in bits]
+            prereg_bits = bits.exclude(verb__name__in=['Enrolled', 'Rejected'])
+            if prereg_bits.count() != 0:
+                student.added_class = prereg_bits[0].startdate
+            if bits.filter(verb__name='Enrolled').count() > 0:
+                student.enrolled = True
+            elif bits.filter(verb__name='Rejected').count() > 0:
+                student.rejected = True
+
+        return render_to_response(self.baseDir()+'select_students.html', request, (prog, tl), {'prog': prog, 'sec': sec, 'students_list': students_list})
+
+        
+    @aux_call
     @needs_teacher
     @meets_deadline('/Classes')
     def deleteclass(self, request, tl, one, two, module, extra, prog):
@@ -195,7 +282,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         cls.delete()
         return self.goToCore(tl)
 
-
+    @aux_call
     @needs_teacher
     @meets_deadline("/Classes/View")
     def class_status(self, request, tl, one, two, module, extra, prog):
@@ -215,13 +302,14 @@ class TeacherClassRegModule(ProgramModuleObj):
                   }
 
         return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
-	
+
+    @aux_call
     @needs_teacher
     @meets_deadline("/MainPage")
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm    
         from esp.qsdmedia.models import Media
-	    
+
         clsid = 0
         if request.POST.has_key('clsid'):
             clsid = request.POST['clsid']
@@ -231,10 +319,10 @@ class TeacherClassRegModule(ProgramModuleObj):
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
-	
+        
         target_class = classes[0]
         context_form = FileUploadForm()
-	
+    
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
                 docid = request.POST['docid']
@@ -242,31 +330,26 @@ class TeacherClassRegModule(ProgramModuleObj):
                 media.delete()
             	
             elif request.POST['command'] == 'add':
-                data = request.POST.copy()
-                data.update(request.FILES)
-                form = FileUploadForm(data)
-		
-                
+                form = FileUploadForm(request.POST, request.FILES)
+
                 if form.is_valid():
-                    media = Media(friendly_name = form.clean_data['title'], anchor = target_class.anchor)
-	            #	Append the class code on the filename
-	            new_target_filename = target_class.emailcode() + '_' + form.clean_data['uploadedfile']['filename']
-                    media.save_target_file_file(new_target_filename, form.clean_data['uploadedfile']['content'])
-                    media.mime_type = form.clean_data['uploadedfile']['content-type']
-	            media.size = len(form.clean_data['uploadedfile']['content'])
-	            extension_list = form.clean_data['uploadedfile']['filename'].split('.')
-	            extension_list.reverse()
-	            media.file_extension = extension_list[0]
-	            media.format = ''
-		    
+                    media = Media(friendly_name = form.cleaned_data['title'], anchor = target_class.anchor)
+                    ufile = form.cleaned_data['uploadedfile']
+                    
+                    #	Append the class code on the filename
+                    desired_filename = '%s_%s' % (target_class.emailcode(), ufile.name)
+                    media.handle_file(ufile, desired_filename)
+                    
+                    media.format = ''
                     media.save()
-	        else:
-	            context_form = form
-	
+                else:
+                    context_form = form
+        
         context = {'cls': target_class, 'uploadform': context_form, 'module': self}
-	
+    
         return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_teacher
     @meets_deadline('/MainPage')
     def coteachers(self, request, tl, one, two, module, extra, prog): 
@@ -346,27 +429,31 @@ class TeacherClassRegModule(ProgramModuleObj):
                          
 
         elif op == 'save':
-            #            if
-            for teacher in coteachers:
+            old_coteachers_set = set(cls.teachers())
+            new_coteachers_set = set(coteachers)
+
+            to_be_added = new_coteachers_set - old_coteachers_set
+            to_be_deleted = old_coteachers_set - new_coteachers_set
+
+            # don't delete the current user
+            to_be_deleted.remove(self.user)
+
+            for teacher in to_be_added:
                 if cls.conflicts(teacher):
                     conflictingusers.append(teacher.first_name+' '+teacher.last_name)
+
             if len(conflictingusers) == 0:
-                for teacher in cls.teachers():
+                # remove some old coteachers
+                for teacher in to_be_deleted:
                     cls.removeTeacher(teacher)
                     cls.removeAdmin(teacher)
 
-                # add self back...
-                cls.makeTeacher(self.user)
-                cls.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
-                cls.subscribe(self.user)
-                self.program.teacherSubscribe(self.user)                
-
-                # add bits for all new (and old) coteachers
-                for teacher in coteachers:
+                # add bits for all new coteachers
+                for teacher in to_be_added:
                     self.program.teacherSubscribe(teacher)
                     cls.makeTeacher(teacher)
                     cls.subscribe(teacher)
-                    cls.makeAdmin(teacher, self.classRegInfo.teacher_class_noedit)                    
+                    cls.makeAdmin(teacher, self.teacher_class_noedit)                    
                 cls.update_cache()
                 return self.goToCore(tl)
 
@@ -377,6 +464,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                                          'txtTeachers': txtTeachers,
                                                                                          'coteachers':  coteachers,
                                                                                          'conflicts':   conflictingusers})
+
+    @aux_call
     @meets_deadline("/Classes/Edit")
     @needs_teacher
     def editclass(self, request, tl, one, two, module, extra, prog):
@@ -387,7 +476,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         return self.makeaclass(request, tl, one, two, module, extra, prog, cls)
 
-
+    @aux_call
     @meets_deadline('/Classes')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
@@ -399,35 +488,16 @@ class TeacherClassRegModule(ProgramModuleObj):
         new_data = MultiValueDict()
         context = {'module': self}
         
-        manipulator = manipulators.TeacherClassRegManipulator(self)
-
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
             if not self.deadline_met():
                 return self.goToCore();
             
-            new_data = request.POST.copy()
-            errors = manipulator.get_validation_errors(new_data)
-            
+            reg_form = TeacherClassRegForm(self, request.POST)
             # Silently drop errors from section wizard when we're not using it
-            if newclass is not None:
-                if prog.getSubprograms().count() > 0:
-                    for subprogram in prog.getSubprograms():
-                        subprogram_string = subprogram.niceName().replace(' ', '_')
-                        try:
-                            del errors['section_count_' + subprogram_string]
-                            del errors['section_duration_' + subprogram_string]
-                        except KeyError:
-                            pass
-            # Drop duration-validation errors if we didn't let them pick
-            if len(self.getDurations()) < 1:
-                try:
-                    del errors['duration']
-                except KeyError:
-                    pass
-            
-            if not errors: # will succeed for errors an empty dictionary
-                manipulator.do_html2python(new_data)
-
+            if reg_form.is_valid():
+                new_data = reg_form.cleaned_data
+                
+                # Some defaults
                 newclass_isnew = False
                 newclass_newmessage = True
                 newclass_oldtime = timedelta() # Remember the old class duration so that we can sanity-check things later.
@@ -438,7 +508,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 else:
                     if new_data['message_for_directors'] == newclass.message_for_directors:
                         newclass_newmessage = False
-                    newclass_oldtime = timedelta(hours=newclass.default_section().duration)
+                    newclass_oldtime = timedelta(hours=float(newclass.default_section().duration))
 
                 for k, v in new_data.items():
                     if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
@@ -573,7 +643,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                             for i in range(0, section_count):
                                 subsection = section.add_section(duration=section_data['duration'])
                                 # create resource requests for each section
-                                for res_type_id in request.POST.getlist('resources'):
+                                for res_type_id in new_data['resources']:
                                     if res_type_id in subprogram_module.getResourceTypes():
                                         rr = ResourceRequest()
                                         rr.target = subsection
@@ -587,7 +657,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 #   Note that resource requests now belong to the sections
                 for sec in newclass.sections.all():
                     sec.clearResourceRequests()
-                    for res_type_id in request.POST.getlist('resources') + request.POST.getlist('global_resources'):
+                    for res_type_id in new_data['resources'] + new_data['global_resources']:
                         rr = ResourceRequest()
                         rr.target = sec
                         rr.res_type = ResourceType.objects.get(id=res_type_id)
@@ -604,15 +674,15 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # send mail to directors
                 if newclass_newmessage and self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
-                              """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nComments to Director:\n%s\n\n""" % \
-                              (new_data['title'], new_data['class_info'], message_for_directors) , \
+                              """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nSpecial Resources:\n%s\n\nComments to Director:\n%s\n\n""" % \
+                              (new_data['title'], new_data['class_info'], new_data['requested_special_resources'], message_for_directors) , \
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
                               [self.program.director_email], True)
 
                 # add userbits
                 if newclass_isnew:
                     newclass.makeTeacher(self.user)
-                    newclass.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
+                    newclass.makeAdmin(self.user, self.teacher_class_noedit)
                     newclass.subscribe(self.user)
                     self.program.teacherSubscribe(self.user)
                     newclass.propose()
@@ -630,19 +700,30 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             errors = {}
             if newclass is not None:
-                new_data = newclass.__dict__
-                new_data['category'] = newclass.category.id
-                new_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
-                new_data['resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=False).distinct().values('res_type') ]
-                new_data['allow_lateness'] = newclass.allow_lateness
-                new_data['has_own_space'] = False
-                new_data['title'] = newclass.anchor.friendly_name
-                new_data['url']   = newclass.anchor.name
+                current_data = newclass.__dict__
+                # Duration can end up with rounding errors. Pick the closest.
+                old_delta = None
+                for k, v in self.getDurations() + [(0,'')]:
+                    new_delta = abs( k - current_data['duration'] )
+                    if old_delta is None or new_delta < old_delta:
+                        old_delta = new_delta
+                        current_data['duration'] = k
+                current_data['category'] = newclass.category.id
+                current_data['num_sections'] = newclass.sections.count()
+                current_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
+                current_data['resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=False).distinct().values('res_type') ]
+                current_data['allow_lateness'] = newclass.allow_lateness
+                current_data['has_own_space'] = False
+                current_data['title'] = newclass.anchor.friendly_name
+                current_data['url']   = newclass.anchor.name
                 context['class'] = newclass
+                reg_form = TeacherClassRegForm(self, current_data)
+            else:
+                reg_form = TeacherClassRegForm(self)
 
         context['one'] = one
         context['two'] = two
-        context['form'] = forms.FormWrapper(manipulator, new_data, errors)
+        context['form'] = reg_form
         
         if newclass is None:
             context['addoredit'] = 'Add'
@@ -656,16 +737,11 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                     'section_duration_field': context['form']['section_duration_' + subprogram_string]})
         else:
             context['addoredit'] = 'Edit'
-        
-        # Don't bother showing duration selection if there isn't anything to choose from
-        if len(self.getDurations()) < 1:
-            context['durations'] = False
-        else:
-            context['durations'] = True
             
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 
+    @aux_call
     @needs_teacher
 #    @meets_deadline('/Classes')    
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):

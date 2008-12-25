@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from django import newforms as forms
+from django import forms
 from django.utils.translation import gettext_lazy as _
 email_choices = (
     ('esp','Unknown'),

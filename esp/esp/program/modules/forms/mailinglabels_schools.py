@@ -32,7 +32,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from django import newforms as forms
+from django import forms
 
 
 class SchoolSelectForm(forms.Form):

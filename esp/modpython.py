@@ -3,7 +3,7 @@
 import os, sys
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
-sys.path = ['/esp/esp'] + sys.path
+sys.path = ['/esp/web/esp', '/esp/web/esp/esp', '/esp/web/esp/django', '/usr/lib/python2.5/site-packages/'] + sys.path
 
 from django.core.handlers import modpython
 from django.core.urlresolvers import RegexURLResolver, RegexURLPattern

@@ -1,6 +1,6 @@
 
 
-from django import newforms as forms
+from django import forms
 
 
 choices = zip(range(11),range(11))

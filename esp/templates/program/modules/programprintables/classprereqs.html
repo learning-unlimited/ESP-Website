@@ -32,12 +32,19 @@ li {
  padding-left: 2em;
  text-indent: -2em;
 }
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
 </style>
+<script src="/media/scripts/sorttable.js"></script>
 
 </head>
 <body>
 
-<table style="border: 1px solid black; border-collapse: collapse;">
+<table class="sortable" style="border: 1px solid black; border-collapse: collapse;">
 <tr>
  <th>#</th>
  <th>Class Code</th>

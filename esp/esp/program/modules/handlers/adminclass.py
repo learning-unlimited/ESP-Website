@@ -28,24 +28,24 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
 from esp.users.models import UserBit, ESPUser, User
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.cal.models              import Event
 
 from esp.web.util        import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm
 
-from django import oldforms
-from django import newforms as forms
+from django import forms
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from esp.middleware import ESPError
-from esp.db.models import Q
+from django.db.models.query import Q
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -54,6 +54,15 @@ class AdminClass(ProgramModuleObj):
         Works best with student and teacher class modules, but they are not necessary.
         Options for this are available on the main manage page.
         """
+
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Manage Classes",
+            "module_type": "manage",
+            "seq": 1,
+            "main_call": "listclasses"
+            }
         
     form_choice_types = ['status', 'room', 'progress', 'resources', 'times', 'min_grade', 'max_grade']
     def getFormChoices(self, field_str):
@@ -92,7 +101,7 @@ class AdminClass(ProgramModuleObj):
         return clsTimeSlots
 
     def getClasses(self):
-        return self.user.getEditable(ClassSubject).filter(parent_program = self.program)
+        return self.user.getEditable(ClassSubject).filter(parent_program = self.program).order_by('anchor__name')
         
     def prepare(self, context=None):
         if context is None: context = {}
@@ -163,7 +172,12 @@ class AdminClass(ProgramModuleObj):
                 except ValueError:
                     usernames.append( id.strip() )
                     
-            Q_Users = Q(username__in = usernames) | Q(id__in = ids)
+            Q_Users = Q()
+            if usernames != []:
+                Q_Users |= Q(username__in = usernames)
+
+            if ids != []:
+                Q_Users |= Q(id__in = ids)
                     
             users = User.objects.filter( Q_Users )
 
@@ -175,9 +189,15 @@ class AdminClass(ProgramModuleObj):
 
             already_registered_ids = [ i.id for i in already_registered_users ]
                                                
-            new_attendees = User.objects.filter( Q_Users ).exclude( id__in = already_registered_ids ).distinct()
+            new_attendees = User.objects.filter( Q_Users )
+            if already_registered_ids != []:
+                new_attendees = new_attendees.exclude( id__in = already_registered_ids )
+            new_attendees = new_attendees.distinct()
 
-            no_longer_attending = User.objects.exclude( Q_Users ).filter( id__in = already_registered_ids ).distinct()
+            no_longer_attending = User.objects.filter( id__in = already_registered_ids )
+            if ids != [] or usernames != []:
+                no_longer_attending = no_longer_attending.exclude( Q_Users )
+            no_longer_attending = no_longer_attending.distinct()
 
             if request.POST['class_id'] == 'program':
                 for stu in no_longer_attending:
@@ -215,7 +235,7 @@ class AdminClass(ProgramModuleObj):
     def deletesection(self, request, tl, one, two, module, extra, prog):
         """ A little function to remove the section specified in POST. """
         if request.method == 'POST':
-            if request.has_key('sure') and request.POST['sure'] == 'True':
+            if request.POST.has_key('sure') and request.POST['sure'] == 'True':
                 try:
                     s = ClassSection.objects.get(id=int(request.GET['sec_id']))
                     s.delete()
@@ -237,6 +257,7 @@ class AdminClass(ProgramModuleObj):
                     
         return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
 
+    @aux_call
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
         cls, found = self.getClass(request,extra)
@@ -261,10 +282,10 @@ class AdminClass(ProgramModuleObj):
                 valid = (valid and sf.is_valid())
             
             if valid:
-                cls_alter = ClassSubject.objects.get(id=cls_form.clean_data['clsid'])
+                cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
                 cls_form.save_data(cls_alter)
                 for sf in sec_forms:
-                    sec_alter = ClassSection.objects.get(id=sf.clean_data['secid'])
+                    sec_alter = ClassSection.objects.get(id=sf.cleaned_data['secid'])
                     sf.save_data(sec_alter)
                 return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))
         
@@ -277,6 +298,7 @@ class AdminClass(ProgramModuleObj):
         
         return render_to_response(self.baseDir()+'manageclass.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def approveclass(self, request, tl, one, two, module, extra, prog):
         cls, found = self.getClass(request, extra)
@@ -297,6 +319,7 @@ class AdminClass(ProgramModuleObj):
             return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)
 
+    @aux_call
     @needs_admin
     def proposeclass(self, request, tl, one, two, module, extra, prog):
         cls, found = self.getClass(request, extra)
@@ -310,7 +333,9 @@ class AdminClass(ProgramModuleObj):
     def change_checkmark(self, class_id, check_id):
         cls = ClassSubject.objects.get(id = class_id)
         check = ProgramCheckItem.objects.get(id = check_id)
-    
+        
+        cache.delete( 'CLASS_MANAGE_ROW__%d' % cls.id )
+        # Cache key here should match that of /esp/program/templatetags/class_manage_row.py
         if len(cls.checklist_progress.filter(id = check_id).values('id')[:1]) > 0:
             cls.checklist_progress.remove(check)
             return False
@@ -318,6 +343,7 @@ class AdminClass(ProgramModuleObj):
             cls.checklist_progress.add(check)
             return True
 
+    @aux_call
     @needs_admin
     def alter_checkmark(self, request, *args, **kwargs):
         """
@@ -333,6 +359,7 @@ class AdminClass(ProgramModuleObj):
         else:
             return HttpResponse('Off');
 
+    @aux_call
     @needs_admin
     def changeoption(self, request,tl,one,two,module,extra,prog):
         check_id = request.GET['step']
@@ -358,12 +385,14 @@ class AdminClass(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def deleteclass(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
+
         cls.delete(True)
         return self.goToCore(tl)
 
@@ -455,12 +484,12 @@ class AdminClass(ProgramModuleObj):
 
                 # add self back...
                 cls.makeTeacher(self.user)
-                cls.makeAdmin(self.user, self.classRegInfo.teacher_class_noedit)
+                cls.makeAdmin(self.user, self.teacher_class_noedit)
 
                 # add bits for all new (and old) coteachers
                 for teacher in coteachers:
                     cls.makeTeacher(teacher)
-                    cls.makeAdmin(teacher, self.classRegInfo.teacher_class_noedit)                    
+                    cls.makeAdmin(teacher, self.teacher_class_noedit)                    
                 
                 return self.goToCore(tl)
 
@@ -471,7 +500,8 @@ class AdminClass(ProgramModuleObj):
                                                                                          'txtTeachers': txtTeachers,
                                                                                          'coteachers':  coteachers,
                                                                                          'conflicts':   conflictingusers})
-    
+
+    @aux_call
     @needs_admin
     def editclass(self, request, tl, one, two, module, extra, prog):
         """ Hand over to the teacher class reg module so we only have this code in one place. """
@@ -491,7 +521,7 @@ class AdminClass(ProgramModuleObj):
         limit = 10
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
-        from esp.db.models import Q
+        from django.db.models.query import Q
 
         # Initialize anchors for identifying teachers
         q = GetNode( 'Q' )

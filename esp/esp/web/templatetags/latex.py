@@ -1,3 +1,4 @@
+""" ESP Custom Filters for template """
 
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
@@ -28,18 +29,17 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-""" ESP Custom Filters for template """
 
 from django import template
-from esp.gen_media.models import LatexImage
-from django.http import HttpResponse
+from esp.gen_media.inlinelatex import InlineLatex
+from django.utils.encoding import force_unicode
 register = template.Library()
 
 @register.filter
 def texescape(value):
     """ This will escape a string according to the rules of LaTeX """
 
-    value = str(value).strip()
+    value = unicode(value).strip()
 
     special_backslash = '!**ABCDEF**!' # something unlikely to be repeated
 
@@ -80,9 +80,11 @@ def texescape(value):
     return value
 
 @register.filter
-def teximages(value,dpi=150):
+def teximages(value, dpi=150):
+    """ Parse string for "$$foo$$", replace with inline LaTeX image, at
+    the specified DPI, defauting to 150. """
 
-    value = str(value).strip()
+    value = force_unicode(value, errors='replace').strip()
 
     strings = value.split('$$')
     style   = 'DISPLAY'
@@ -92,26 +94,23 @@ def teximages(value,dpi=150):
     for i in range(len(strings)):
         if i % 2 == 1 and i < len(strings) - 1:
             if len(strings[i].strip()) > 0:
-                converted[i] = True
-                #try:
-                if True:
-                    cur_img, created = LatexImage.objects.get_or_create(content = strings[i],
-                                                                        dpi     = dpi,
-                                                                        style   = style
-                                                                        )
-                    strings[i] = cur_img.getImage()
-                #except:
-                #    strings[i] = strings[i]
+                try:
+                    latex = InlineLatex(strings[i], style=style, dpi=dpi)
+                    strings[i] = latex.img
+                    converted[i] = True
+                except:
+                    converted[i] = False
 
     value = strings[0]
 
-    for i in range(1,len(strings)):
+    for i in range(1, len(strings)):
         if converted[i] or converted[i-1]:
             value += strings[i]
         else:
             value += '$$' + strings[i]
         
     return value
+teximages.is_safe = True
 
 
 

@@ -1,12 +1,14 @@
 # Create your views here.
 
-from django import newforms as forms
+from django import forms
 from esp.shortterm.models import ResponseForm
 from django.http import HttpResponseRedirect
 from esp.web.util.main import render_to_response
 
 
-SchoolResponseForm = forms.form_for_model(ResponseForm)
+class SchoolResponseForm(forms.ModelForm):
+    class Meta:
+        model = ResponseForm
 
 def school_response_form(request):
     if request.POST:

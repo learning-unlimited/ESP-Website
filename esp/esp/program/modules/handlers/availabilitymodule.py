@@ -28,15 +28,15 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program
-from esp.datatree.models         import DataTree, GetNode
+from esp.datatree.models import *
 from esp.web.util                import render_to_response
-from django                      import newforms as forms
+from django                      import forms
 from esp.cal.models              import Event
 from django.core.cache           import cache
-from esp.db.models               import Q
+from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, Resource
 from datetime                    import timedelta
@@ -44,6 +44,14 @@ from datetime                    import timedelta
 class AvailabilityModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Indicate Your Availability",
+            "module_type": "teach",
+            "seq": 0
+            }
+    
     def prepare(self, context={}):
         """ prepare returns the context for the main availability page. 
             Everything else can be gotten from hooks in this module. """
@@ -62,7 +70,7 @@ class AvailabilityModule(ProgramModuleObj):
         for a in available_slots:
             available_time = available_time + a.duration()
         
-        if (total_time > available_time):
+        if (total_time > available_time) or (available_time == 0):
             return False
         else:
             return True
@@ -93,6 +101,7 @@ class AvailabilityModule(ProgramModuleObj):
         times = self.program.getTimeSlots()
         return [(str(t.id), t.short_description) for t in times]
 
+    @main_call
     def availability(self, request, tl, one, two, module, extra, prog):
         #   Renders the teacher availability page and handles submissions of said page.
         

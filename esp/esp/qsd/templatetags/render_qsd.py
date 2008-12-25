@@ -1,9 +1,9 @@
-import md5
 from django import template
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.users.models import UserBit
 from esp.web.util.template import cache_inclusion_tag, DISABLED
 from esp.qsd.models import QuasiStaticData
+from esp.qsd.models import qsd_cache_key
 from urllib import quote
 
 from esp.utils.file_cache import FileCache
@@ -13,13 +13,10 @@ register = template.Library()
 render_qsd_cache = FileCache(4, 'render_qsd')
 
 def cache_key(qsd, user=None):
-    if user:
-        return md5.new('%s_%s_%s' % (qsd.path.uri, qsd.name, user.id)).hexdigest()
-    else:
-        return md5.new('%s_%s' % (qsd.path.uri, qsd.name)).hexdigest()
+    return qsd_cache_key(qsd.path, qsd.name, user,)
 
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=render_qsd_cache, cache_time=86400)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=render_qsd_cache, cache_time=300)
 def render_qsd(qsd, user=None):
     edit_bits = False
     if user:

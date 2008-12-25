@@ -38,9 +38,11 @@
     <th class="small">&nbsp; <!-- assign room --></th>
     <th class="small">Options</th>
 </tr>
+{% autoescape off %}
 {% for cls in prog.classes %}
     {% class_options_row cls %}
 {% endfor %}
+{% endautoescape %}
 </table>
 </form>
 

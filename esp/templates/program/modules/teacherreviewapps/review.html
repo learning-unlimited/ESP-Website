@@ -4,7 +4,7 @@
 
 {% block subsection %}
 {% load subsection %}
-{{ "Review student apps"|subsection }}
+{% autoescape off %}{{ "Review student apps"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block stylesheets %}

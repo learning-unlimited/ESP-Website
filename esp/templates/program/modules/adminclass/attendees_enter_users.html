@@ -18,7 +18,7 @@
 <form action="" method="POST">
 <input type="hidden" name="class_id" value="{% if is_program %}program{% else %}{{ class_id }}{% endif %}" />
 <textarea name="ids_to_enter" rows="30" cols="15">
-{% for stu in registered_students %}{{ stu.id }}
+{% for stu in registered_students %}{{ stu.username }}
 {% endfor %}
 </textarea><br />
 <input type="submit" value="Save" />

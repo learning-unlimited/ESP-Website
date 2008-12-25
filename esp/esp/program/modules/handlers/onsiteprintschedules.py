@@ -30,20 +30,27 @@ Email: web@esp.mit.edu
 """
 from django.http      import HttpResponse
 from esp.users.views  import search_for_user
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from datetime         import datetime
 from esp.web.util     import render_to_response
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.users.models import UserBit
 from datetime         import datetime
-from esp.db.models    import Q
+from django.db.models.query   import Q
 from esp.money.models import LineItemType, RegisterLineItem, LineItem
 
 class OnsitePrintSchedules(ProgramModuleObj):
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Automatically Print Schedules",
+            "module_type": "onsite",
+            "seq": 10000
+            }
 
-
+    @main_call
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
@@ -59,16 +66,11 @@ class OnsitePrintSchedules(ProgramModuleObj):
 
         verb  = GetNode(verb_path)
         qsc   = self.program_anchor_cached().tree_create(['Schedule'])
-        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = datetime.now())
-        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = datetime.now())
 
         Q_qsc  = Q(qsc  = qsc.id)
         Q_verb = Q(verb__in = [ verb.id ] + list( verb.children() ) )
         
-        ubits = UserBit.objects.filter(Q_qsc & \
-                                       Q_verb & \
-                                       Q_after_start & \
-                                       Q_before_end).order_by('startdate')
+        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')
         
         for ubit in ubits:
             ubit.enddate = datetime.now()
@@ -82,20 +84,17 @@ class OnsitePrintSchedules(ProgramModuleObj):
         for student in old_students:
             student.updateOnsite(request)
             # get list of valid classes
-            classes = [ cls for cls in student.getEnrolledClasses()
+            classes = [ cls for cls in student.getEnrolledSections()
                         if cls.parent_program == self.program
                         and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
                 
-            #   add financial aid information
-            for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
-                RegisterLineItem(student, i)
-                    
-            student.itemizedcosts = LineItem.purchased(prog.anchor, student, filter_already_paid=False)
-            student.itemizedcosttotal = LineItem.purchasedTotalCost(prog.anchor, student)
-            student.has_paid = ( student.itemizedcosttotal == 0 )
-                    
+            #   Payment information using new accounting system
+            ps = student.paymentStatus(self.program_anchor_cached())
+            student.itemizedcosts = ps[3]
+            student.itemizedcosttotal = ps[2]
+            student.has_paid = ps[0]  
             student.payment_info = True
             student.classes = classes
                 

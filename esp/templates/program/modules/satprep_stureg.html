@@ -2,29 +2,23 @@
 
 {% block title %}Profile Editor{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
 {% block subsection_name %}Student Profile Editor{% endblock %}
 
 {% block content %}
-
-<style type="text/css">
-
-.required { border: 2px solid black; }
-
-.form_error { font-size: 80%; font-style: italic; color: #C00; }
-
-label { font-family: Arial, Lucida, Helvetica, sans-serif; font-size: 0.8em; font-weight: normal;}
-label.groupheader { font-size: 1.2em; font-weight: bold; }
-#divmaintext table td { vertical-align: top; }
-
-</style>
 <br /><br />
 <h1>SAT Prep - Specific Information </h1>
 <br />
 <p> Please fill out the following short form to give us SATPrep-specific information. <br />
 While none of this information is required, it will greatly enhance our ability to help you.</p>
 
-{% if form.has_errors %}
-<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
+<div id="program_form">
+{% if form.errors %}
+<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.<h2>
 {% endif %}
 
 
@@ -65,12 +59,12 @@ While none of this information is required, it will greatly enhance our ability 
    {% endif %}
  </td>
 </tr>
+<tr>
+<td colspan="2">
+<center><input type="submit" class="fancybutton" value="Save SAT Prep Information"></center>
+</td>
+</tr>
 </table>
-
-<br />
-<center><input type='submit' value='Save SAT Prep Information'></center>
-
-<br />
 </form>
 
 </div>

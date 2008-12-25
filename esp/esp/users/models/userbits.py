@@ -5,18 +5,20 @@ from django.contrib.auth.models import User, AnonymousUser
 import datetime
 import random
 import string
-
+import time
 
 # esp dependencies
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 
 # model dependencies
-from esp.datatree.models import DataTree
+from esp.users.models import ESPUser
+from esp.datatree.models import *
 
 # Cache introspection
 from django.core.cache.backends.memcached import CacheClass as MemcachedClass
+
 
 
 __all__ = ['UserBit','UserBitImplication']
@@ -59,16 +61,11 @@ class UserBitManager(ProcedureManager):
         def get_global_key(self):
             """ Return the global userbit key. """
             new_key = 'UB_%s' % self._get_random_string()
-            if isinstance(cache, MemcachedClass):
-                # Using .add here is much safer than set.
-                cache._cache.add('UserBit_global', new_key, 86400)
-                global_key = cache.get('UserBit_global')
-            else:
-                global_key = cache.get('UserBit_global')
-                if global_key == 'None':
-                    global_key = None
-                if global_key is None:
-                    cache.set('UserBit_global', new_key, 86400)
+
+            # Using .add here is much safer than set.
+            KEY = 'UserBit_global'
+            cache.add(KEY, new_key, 86400)
+            global_key = cache.get(KEY)
 
             return global_key or new_key
 
@@ -88,7 +85,7 @@ class UserBitManager(ProcedureManager):
             global_key = self.get_global_key()
             user_key = '%s_user_%s' % (global_key, user_id)
 
-            return user_key
+            return str(user_key)
 
         def get_key_for_user(self):
             """
@@ -97,14 +94,9 @@ class UserBitManager(ProcedureManager):
             """
             user_key = self.get_key_to_get_user_key()
             new_key = 'UB_u_%s' % self._get_random_string()
-            if isinstance(cache, MemcachedClass):
-                # Using .add here is much safer than set.
-                cache._cache.add(user_key, new_key, 86400)
-                current_key = cache.get(user_key)
-            else:
-                current_key = cache.get(user_key)
-                if current_key is None:
-                    cache.set(user_key, new_key, 86400)
+            # Using .add here is much safer than set.
+            cache.add(user_key, new_key, 86400)
+            current_key = cache.get(user_key)
             return current_key or new_key
 
         def update(self):
@@ -136,17 +128,17 @@ class UserBitManager(ProcedureManager):
         """
         Returns true if the user has the verb anywhere. False otherwise.
         """
+        node_id = getattr(node, 'id', node)
         col_filter = '%s__above' % node_type
-        cache_key  = 'has_%s__%s' % (node_type, node.id)
+        cache_key  = 'has_%s__%s' % (node_type, node_id)
 
-        retVal = self.cache(user)['has_%s__%s' % (node_type, node.id)]
+        retVal = self.cache(user)['has_%s__%s' % (node_type, node_id)]
 
         if retVal is not None:
             return retVal
         else:
             
-            retVal = len(self.filter(Q(**{'user':user,
-                                          col_filter: node})).values('id')[:1]) > 0
+            retVal = bool(self.filter(QTree(**{col_filter: node_id}), user = user))
             self.cache(user)[cache_key] = retVal
 
         return retVal
@@ -197,11 +189,13 @@ class UserBitManager(ProcedureManager):
         if node_root:
             procedure_name += '_root'
 
-        if user is None:
-            user = -10
+        #Django accepts "None" for .filter(foo=None) now, and it does requre a user object rather than an integer
+        #if user is None:
+        #    user = -10
 
         if hasattr(user, 'id') and user.id is None:
-            user = -10
+            user = None
+        #    user = -10
 
         if node_root:
             userbits = self.filter_by_procedure(procedure_name, user, node, now, end_of_now, node_root)
@@ -255,7 +249,7 @@ class UserBitManager(ProcedureManager):
                 query = Model.objects.filter(anchor=q)
                 
             if qsc is not None:
-                query = query.filter(Q(anchor__below = qsc))
+                query = query.filter(QTree(anchor__below = qsc))
 
             if res == None:
                 res = query
@@ -268,6 +262,7 @@ class UserBitManager(ProcedureManager):
         if res == None:
             retVal = Model.objects.none().distinct()
 
+        list(retVal) # force retVal to evaluate itself
         self.cache(user)[user_cache_key] = retVal
 
 	# Operation Complete!
@@ -332,7 +327,7 @@ class UserBitManager(ProcedureManager):
 
         if isinstance(qsc_id, basestring):
             try:
-                qsc_id = DataTree.get_by_uriL(qsc_id).id
+                qsc_id = DataTree.get_by_uri(qsc_id).id
             except DataTree.NoSuchNodeException:
                 retVal = False
 
@@ -435,7 +430,7 @@ class UserBit(models.Model):
     >>> UserBit.objects.bits_get_qsc(user=ringo,verb=GetNode('V/Purchase'),qsc_root=GetNode('Q/Albums'))
     []
     """
-    user = AjaxForeignKey(User, blank=True, null=True) # User to give this permission
+    user = AjaxForeignKey(User, 'id', blank=True, null=True, default=None) # User to give this permission
     qsc = AjaxForeignKey(DataTree, related_name='userbit_qsc') # Controller to grant access to
     verb = AjaxForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
 
@@ -449,15 +444,18 @@ class UserBit(models.Model):
         app_label = 'users'
         db_table = 'users_userbit'
 
-    def __str__(self):
-
+    def __unicode__(self):
+        
+        
         def clean_node(node):
             if hasattr(node, 'uri'):
                 return node.uri
             return '?'
 
-        user = self.user
-        if user is None: user = 'Everyone'
+        if self.user is None:
+            user = 'Everyone'
+        else:
+            user = self.user.username
 
         if self.recursive:
             recurse = ""
@@ -497,6 +495,12 @@ class UserBit(models.Model):
         self.enddate = datetime.datetime.now()
         self.save()
 
+        # when we expire a userbit, we want to update the userbit cache
+        if not hasattr(self.user,'id') or self.user.id is None:
+            UserBit.updateCache(None)
+        else:
+            UserBit.updateCache(self.user.id)
+
     def updateCache(cls, user_id):
         cls.objects.cache(user_id).update()
     updateCache = classmethod(updateCache)
@@ -504,8 +508,6 @@ class UserBit(models.Model):
     @classmethod
     def time_cache(cls):
         from django.contrib.auth.models import User
-        from esp.datatree.models import DataTree, GetNode
-        import time
 
         axiak = User.objects.get(username='axiak')
         splash = GetNode('Q/Programs/Splash/2007')
@@ -523,20 +525,27 @@ class UserBit(models.Model):
         """ Returns False if there are no elements in queryset """
         return ( len(queryset.values('id')[:1]) > 0 )
 
-    class Admin:
-        search_fields = ['user__last_name','user__first_name',
-                         'qsc__uri','verb__uri']
+    @staticmethod
+    def not_expired(prefix='', when=None):
+        """ Returns a Q object for field prefix being valid at time when """
+        if when is None:
+            when = datetime.datetime.now()
+        if prefix is not '' and not prefix.endswith('__'):
+            prefix += '__'
+        q = Q(**{prefix+'startdate__isnull': True}) | Q(**{prefix+'startdate__lte': when})
+        q = q & (Q(**{prefix+'enddate__isnull': True}) | Q(**{prefix+'enddate__gte': when}))
+        return q
+
+    @staticmethod
+    def valid_objects(when=None):
+        """ Returns a QuerySet consisting of unexpired UserBits (at time when) """
+        return UserBit.objects.filter(UserBit.not_expired(when=when))
 
     UserHasPerms   = classmethod(lambda cls,*args,**kwargs: cls.objects.UserHasPerms(*args,**kwargs))
     bits_get_qsc   = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_qsc(*args,**kwargs))
     bits_get_users = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_users(*args,**kwargs))
     bits_get_verb  = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_verb(*args,**kwargs))
     find_by_anchor_perms = classmethod(lambda cls,*args,**kwargs: cls.objects.find_by_anchor_perms(*args,**kwargs))
-
-
-
-
-
 
 
 #######################################
@@ -562,7 +571,7 @@ class UserBitImplication(models.Model):
         db_table = 'users_userbitimplication'
 
 
-    def __str__(self):
+    def __unicode__(self):
         var = {}
         for k in ['verb_original_id', 'qsc_original_id',
                   'verb_implied_id',  'qsc_implied_id' ]:
@@ -592,9 +601,9 @@ class UserBitImplication(models.Model):
             Q_qsc  = Q(qsc_original  = userbit.qsc)
             Q_verb = Q(verb_original = userbit.verb)
         else:
-            Q_qsc  = Q(qsc_original__below = userbit.qsc)
+            Q_qsc  = QTree(qsc_original__below = userbit.qsc_id)
 
-            Q_verb = Q(verb_original__below = userbit.verb)
+            Q_verb = QTree(verb_original__below = userbit.verb_id)
 
         # if one of the two are null, the other one can match and it'd be fine.
         Q_match = (Q_qsc & Q_verb) | (Q_qsc_null & Q_verb) | (Q_qsc & Q_verb_null)
@@ -671,13 +680,13 @@ class UserBitImplication(models.Model):
         if self.qsc_original_id is None and self.verb_original_id is None:
             return
         if self.qsc_original_id is not None:
-            Q_qsc = (Q(qsc__above = self.qsc_original) &\
+            Q_qsc = (QTree(qsc__above = self.qsc_original) &\
                      Q(recursive       = True)) \
                      | \
                      Q(qsc = self.qsc_original_id)
             
         if self.verb_original_id is not None:
-            Q_verb = (Q(verb__above = self.verb_original) &\
+            Q_verb = (QTree(verb__above = self.verb_original) &\
                       Q(recursive       = True)) \
                       | \
                       Q(verb = self.verb_original_id)
@@ -714,7 +723,4 @@ class UserBitImplication(models.Model):
         """
         for implication in UserBitImplication.objects.all():
             implication.apply()
-    
-    class Admin:
-        pass
 

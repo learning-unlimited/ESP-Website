@@ -78,10 +78,17 @@ class ESPErrorMiddleware(object):
             except KeyError:
                 pass
 
+            # URL-encode some data since cookies don't like funny characters. They
+            # make the chocolate chips nervous.
+            # : see public/media/scripts/content/user_data.js
+            import urllib
+            encoding = request.encoding
+            if encoding is None:
+                encoding = settings.DEFAULT_CHARSET
             new_values = {'cur_username': user.username,
-                          'cur_email': user.email,
-                          'cur_first_name': user.first_name,
-                          'cur_last_name': user.last_name,
+                          'cur_email': urllib.quote(user.email.encode(encoding)),
+                          'cur_first_name': urllib.quote(user.first_name.encode(encoding)),
+                          'cur_last_name': urllib.quote(user.last_name.encode(encoding)),
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
                           'cur_retTitle': ret_title,
                           

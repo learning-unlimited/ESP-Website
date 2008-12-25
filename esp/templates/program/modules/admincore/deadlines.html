@@ -39,18 +39,21 @@ padding-right:20px;
 
 <form method="post" action="" id="manage_form">
 {% for bit in userbit_forms %}
+{% autoescape off %}
 <table border="2"><tr><td>
 <p>
-<h2>{{ bit.verb }}</h2> -- {% ifequal bit.verb.friendly_name "" %}(no description){% else %}{{ bit.verb.friendly_name }}{% endifequal %}
+<h2>{{ bit.verb }}</h2> &mdash; {% ifequal bit.verb.friendly_name "" %}(no description){% else %}{{ bit.verb.friendly_name }}{% endifequal %}
 <br />
 <table>
 <tr>
 <th><label for="delete_bit_{{ bit.verb.id }}">Close This Deadline Now:</label></th>
 <td align="left"><input type="checkbox" name="delete_bit_{{ bit.verb.id }}" /></td>
 </tr>
+{% autoescape off %}
 {{ bit.ub_form.as_table }}
+{% endautoescape %}
 </table>
-
+{% endautoescape %}
 </p>
 </td></tr></table>
 {% endfor %}

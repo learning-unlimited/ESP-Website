@@ -28,17 +28,15 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
-from esp.datatree.models import GetNode
-#from esp.money.models    import Transaction
+from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
-#from esp.money.models import LineItem, LineItemType
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.middleware import ESPError
@@ -46,13 +44,22 @@ from esp.middleware import ESPError
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
     Things from checklists to rosters to attendance sheets can be found here. """
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Program Printables",
+            "module_type": "manage",
+            "seq": 5
+            }
 
+    @aux_call
     @needs_admin
     def paid_list_filter(self, request, tl, one, two, module, extra, prog):
         lineitemtypes = LineItemType.objects.forProgram(prog)
         context = { 'lineitemtypes': lineitemtypes }
         return render_to_response(self.baseDir()+'paid_list_filter.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def paid_list(self, request, tl, one, two, module, extra, prog):
 
@@ -90,14 +97,15 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'paid_list.html', request, (prog, tl), context)
 
-    
+    @main_call
     @needs_admin
     def printoptions(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
-        context = {'module': self}
+        context = {'module': self, 'li_types': prog.getLineItemTypes(required=False)}
 
         return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def catalog(self, request, tl, one, two, module, extra, prog):
         " this sets the order of classes for the catalog. "
@@ -197,6 +205,7 @@ class ProgramPrintables(ProgramModuleObj):
                                   {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list) })
         
 
+    @aux_call
     @needs_admin
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
@@ -235,6 +244,12 @@ class ProgramPrintables(ProgramModuleObj):
                    
         classes = filter(filt_exp, classes)                  
 
+        if request.GET.has_key('grade_min'):
+            classes = filter(lambda x: x.grade_max > int(request.GET['grade_min']), classes)
+
+        if request.GET.has_key('grade_max'):
+            classes = filter(lambda x: x.grade_min < int(request.GET['grade_max']), classes)
+
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
             cls_dict = {}
@@ -252,8 +267,14 @@ class ProgramPrintables(ProgramModuleObj):
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
         sections = self.program.sections()
                    
-        sections = filter(lambda z: z.isAccepted(), sections)
+        sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
         sections = filter(filt_exp, sections)                  
+
+        if request.GET.has_key('grade_min'):
+            sections = filter(lambda x: (x.parent_class.grade_max > int(request.GET['grade_min'])), sections)
+
+        if request.GET.has_key('grade_max'):
+            sections = filter(lambda x: (x.parent_class.grade_min < int(request.GET['grade_max'])), sections)
 
         if request.GET.has_key('secids'):
             clsids = request.GET['secids'].split(',')
@@ -268,6 +289,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'sections_list.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def classesbytime(self, request, tl, one, two, module, extra, prog):
         def cmp_time(one, other):
@@ -283,6 +305,7 @@ class ProgramPrintables(ProgramModuleObj):
         
         return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_time)
 
+    @aux_call
     @needs_admin
     def classesbytitle(self, request, tl, one, two, module, extra, prog):
         def cmp_title(one, other):
@@ -295,6 +318,7 @@ class ProgramPrintables(ProgramModuleObj):
         
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_title)
 
+    @aux_call
     @needs_admin
     def classesbyroom(self, request, tl, one, two, module, extra, prog):
         def cmp_room(one, other):
@@ -313,13 +337,15 @@ class ProgramPrintables(ProgramModuleObj):
             return cmp(one, other)
         
         return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_room)
-    
+
+    @aux_call
     @needs_admin
     def classesbyid(self, request, tl, one, two, module, extra, prog):
         def cmp_id(one, other):
             return cmp(one.id, other.id)
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_id)
-    
+
+    @aux_call
     @needs_admin
     def classprereqs(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(parent_program = self.program)
@@ -398,11 +424,13 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def teacherlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
         return self.teachersbyFOO(request, tl, one, two, module, extra, prog)
 
+    @aux_call
     @needs_admin
     def teachersbytime(self, request, tl, one, two, module, extra, prog):
         
@@ -419,7 +447,8 @@ class ProgramPrintables(ProgramModuleObj):
 
         return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
             
-    
+
+    @aux_call
     @needs_admin
     def teachersbyname(self, request, tl, one, two, module, extra, prog):
         
@@ -449,7 +478,8 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'rooms': rooms, 'program': self.program}
 
         return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
-        
+
+    @aux_call
     @needs_admin
     def roomsbytime(self, request, tl, one, two, module, extra, prog):
         #   List of open classrooms, sorted by the first time they are available
@@ -479,12 +509,14 @@ class ProgramPrintables(ProgramModuleObj):
         context['students'] = students
         
         return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
-        
+
+    @aux_call
     @needs_admin
     def studentsbyname(self, request, tl, one, two, module, extra, prog):
         """ default function to get student list for program """
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog)
-        
+
+    @aux_call
     @needs_admin
     def emergencycontacts(self, request, tl, one, two, module, extra, prog):
         """ student list, having emergency contact information instead """
@@ -494,13 +526,33 @@ class ProgramPrintables(ProgramModuleObj):
             return {'emerg_contact': RegistrationProfile.getLastForProgram(student, prog).contact_emergency}
         
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff)
-    
+
+    @aux_call
+    @needs_admin
+    def students_lineitem(self, request, tl, one, two, module, extra, prog):
+        from esp.accounting_core.models import LineItem
+        #   Determine line item
+        student_ids = []
+        if request.GET.has_key('id'):
+            lit_id = request.GET['id']
+            request.session['li_type_id'] = lit_id
+        else:
+            lit_id = request.session['li_type_id']
+
+        line_items = LineItem.objects.filter(li_type__id=lit_id)
+        for l in line_items:
+            student_ids.append(l.transaction.document_set.all()[0].user.id)
+
+        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, filt_exp = lambda x: x.id in student_ids)
+
+    @aux_call
     @needs_admin
     def satprepStudentCheckboxes(self, request, tl, one, two, module, extra, prog):
         students = [ESPUser(student) for student in self.program.students_union() ]
         students.sort()
         return render_to_response(self.baseDir()+'satprep_students.html', request, (prog, tl), {'students': students})
 
+    @aux_call
     @needs_admin
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
@@ -530,6 +582,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def teacherinfo(self, request, tl, one, two, module, extra, prog):
         from esp.program.modules.module_ext import RemoteProfile
@@ -588,6 +641,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         return ''
 
+    @aux_call
     @needs_admin
     def refund_receipt(self, request, tl, one, two, module, extra, prog):
         from esp.money.models import Transaction
@@ -607,7 +661,7 @@ class ProgramPrintables(ProgramModuleObj):
                 if transactions.count() == 0:
                     transaction = Transaction()
                     try:
-                        transaction.amount = float(form.clean_data['txn_amount'])
+                        transaction.amount = float(form.cleaned_data['txn_amount'])
                     except:
                         raise ESPError(False), 'No transaction was found, and you did not specify a valid refund amount.  Please enter a dollar amout such as "20.00" and try again.'
                 else:
@@ -616,10 +670,10 @@ class ProgramPrintables(ProgramModuleObj):
                 context = {'user': user, 'transaction': transaction}
                 context['program'] = prog
 
-                context['payer_name'] = form.clean_data['payer_name']
-                context['payer_address'] = form.clean_data['payer_address']                
-                context['omars_number'] = form.clean_data['omars_number']
-                context['credit_card_num'] = form.clean_data['credit_card_num']
+                context['payer_name'] = form.cleaned_data['payer_name']
+                context['payer_address'] = form.cleaned_data['payer_address']                
+                context['omars_number'] = form.cleaned_data['omars_number']
+                context['credit_card_num'] = form.cleaned_data['credit_card_num']
                 context['amount'] = '%.02f' % (float(transaction.amount))
 
                 if extra:
@@ -643,8 +697,8 @@ class ProgramPrintables(ProgramModuleObj):
     def get_student_classlist(program, student):
         
         # get list of valid classes
-        classes = [ cls for cls in student.getEnrolledClasses()]
-
+        classes = [ cls for cls in student.getEnrolledSections()]
+        
         # add taugtht classes
         classes += [ cls for cls in student.getTaughtClasses()  ]
             
@@ -697,10 +751,11 @@ Student schedule for %s:
             else:
                 rooms = ' ' + ", ".join(rooms)
                 
-            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title).ljust(40), rooms)
                
         return schedule
 
+    @aux_call
     @needs_admin
     def onsiteregform(self, request, tl, one, two, module, extra, prog):
 
@@ -714,6 +769,7 @@ Student schedule for %s:
                     }
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def studentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
@@ -765,7 +821,9 @@ Student schedule for %s:
                 invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
             
             # attach payment information to student
+            student.invoice_id = invoice.locator
             student.itemizedcosts = invoice.get_items()
+            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')
             student.itemizedcosttotal = invoice.cost()
             student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
             if student.has_financial_aid:
@@ -778,7 +836,7 @@ Student schedule for %s:
         context['students'] = students
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
-
+    @aux_call
     @needs_admin
     def flatstudentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
@@ -807,9 +865,10 @@ Student schedule for %s:
                                    'cls' : cls})
 
         context['scheditems'] = scheditems
+        
         return render_to_response(self.baseDir()+'flatstudentschedule.html', request, (prog, tl), context)
 
-
+    @aux_call
     @needs_admin
     def roomschedules(self, request, tl, one, two, module, extra, prog):
         """ generate class room rosters"""
@@ -843,7 +902,7 @@ Student schedule for %s:
 
         return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
         
-
+    @aux_call
     @needs_admin
     def satprepreceipt(self, request, tl, one, two, module, extra, prog):
         from esp.money.models import Transaction
@@ -870,7 +929,8 @@ Student schedule for %s:
         context['receipts'] = receipts
         
         return render_to_response(self.baseDir()+'studentreceipts.html', request, (prog, tl), context)
-    
+
+    @aux_call
     @needs_admin
     def satpreplabels(self, request, tl, one, two, module, extra, prog):
         filterObj, found = get_user_list(request, self.program.getLists(True))
@@ -884,33 +944,6 @@ Student schedule for %s:
                                     
         finished_verb = GetNode('V/Finished')
         finished_qsc  = self.program_anchor_cached().tree_create(['SATPrepLabel'])
-        
-        #if request.GET.has_key('print'):
-            
-        #    if request.GET['print'] == 'all':
-        #        students = self.program.students_union()
-        #    elif request.GET['print'] == 'remaining':
-        #        printed_students = UserBit.bits_get_users(verb = finished_verb,
-        #qsc  = finished_qsc)
-        #        printed_students_ids = [user.id for user in printed_students ]
-        #        if len(printed_students_ids) == 0:
-        #            students = self.program.students_union()
-        #        else:
-        #            students = self.program.students_union().exclude(id__in = printed_students_ids)
-        #    else:
-        #        students = ESPUser.objects.filter(id = request.GET['print'])
-
-        #    for student in students:
-        #        ub, created = UserBit.objects.get_or_create(user      = student,
-        #                                                    verb      = finished_verb,
-        #                                                    qsc       = finished_qsc,
-        #                                                    recursive = False)
-
-        #        if created:
-        #            ub.save()
-                    
-        #    students = [ESPUser(student) for student in students]
-        #    students.sort()
 
         numperpage = 10
             
@@ -931,9 +964,26 @@ Student schedule for %s:
                     users.append(expanded[j][i])
         students = users
         return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
-    #return render_to_response(self.baseDir()+'SATPrepLabels_options.html', request, (prog, tl), {})
+
             
-        
+    @aux_call
+    @needs_admin
+    def satpreplabels_bysection(self, request, tl, one, two, module, extra, prog):
+        #   Generate SAT Prep labels sorted by the first-period class.
+        #   This is useful for the practice exam when it is held in the usual classrooms.
+        from esp.cal.models import Event
+        mt_list = []
+        csl = prog.sections()
+        for c in csl:
+            for t in c.meeting_times.all():
+                if t not in mt_list: mt_list.append(t)
+        mt_list.sort(key=lambda x: x.start)        
+        early_time = mt_list[0]
+        sections = csl.filter(meeting_times=early_time)
+
+        return render_to_response(self.baseDir()+'SATPrepLabels_bysection.html', request, (prog, tl), {'sections': sections})
+
+    @aux_call
     @needs_admin
     def classrosters(self, request, tl, one, two, module, extra, prog):
         """ generate class rosters """
@@ -965,7 +1015,7 @@ Student schedule for %s:
         
         return render_to_response(self.baseDir()+tpl, request, (prog, tl), context)
         
-
+    @aux_call
     @needs_admin
     def teacherlabels(self, request, tl, one, two, module, extra, prog):
         context = {'module': self}
@@ -974,6 +1024,7 @@ Student schedule for %s:
         context['teachers'] = teachers
         return render_to_response(self.baseDir()+'teacherlabels.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def studentchecklist(self, request, tl, one, two, module, extra, prog):
         context = {'module': self}
@@ -1005,6 +1056,7 @@ Student schedule for %s:
         context['studentList'] = studentList
         return render_to_response(self.baseDir()+'studentchecklist.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def classchecklists(self, request, tl, one, two, module, extra, prog):
         """ Gives you a checklist for each classroom with the students that are supposed to be in that
@@ -1044,6 +1096,7 @@ Student schedule for %s:
         
         return render_to_response(self.baseDir()+'classchecklists.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def adminbinder(self, request, tl, one, two, module, extra, prog):
         
@@ -1104,6 +1157,7 @@ Student schedule for %s:
             context['scheditems'] = scheditems
             return render_to_response(self.baseDir()+'adminclasstime.html', request, (prog, tl), context)        
 
+    @aux_call
     @needs_admin
     def certificate(self, request, tl, one, two, module, extra, prog):
         from esp.web.util.latex import render_to_latex
@@ -1123,7 +1177,7 @@ Student schedule for %s:
 
         return render_to_latex(self.baseDir()+'completion_certificate.tex', context, file_type)
         
-
+    @aux_call
     @needs_admin
     def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
         import csv
@@ -1152,4 +1206,49 @@ Student schedule for %s:
                  ", ".join(cls.prettyrooms()),
                  ))
 
+        return response
+
+    @aux_call
+    @needs_admin
+    def oktimes_spr(self, request, tl, one, two, module, extra, prog):
+        import csv
+        from django.http import HttpResponse
+
+        response = HttpResponse(mimetype="text/csv")
+        write_csv = csv.writer(response)
+
+        # get the list of all the sections, and all the times for this program.
+        sections = prog.class_sections()
+        times = prog.getTimeSlots()
+        sections_possible_times = [(section, section.viable_times()) for section in sections]
+
+        # functions to determine what will fill in the spreadsheet cell for each thing
+        def time_possible(time, sections_list):
+            if time in sections_list:
+                return 'X'
+            else:
+                return ' '
+        def needs_resource(resname, section):
+            if section.getResourceRequests().filter(res_type__name=resname):
+                return 'Y'
+            else:
+                return ' '
+
+        # header row, naming each column
+        write_csv.writerow([''] + ['Teachers'] + ['Projector?'] + \
+                           ['Computer Lab?'] + ['Max Size'] + \
+                           ['Grade Levels'] + ['Comments to Director'] + \
+                           [str(time) for time in times])
+
+        # this writes each row associated with a section, for the columns determined above.
+        for section, timeslist in sections_possible_times:
+            write_csv.writerow([str(section) + ' (' + section.prettyDuration() + ')'] + \
+                               [section.parent_class.pretty_teachers()] + \
+                               [needs_resource('LCD Projector', section)] + \
+                               [needs_resource('Computer Lab', section)] + \
+                               [section.parent_class.class_size_max] + \
+                               ['%d--%d' %(section.parent_class.grade_min, section.parent_class.grade_max)] +\
+                               [section.parent_class.message_for_directors] + \
+                               [time_possible(time, timeslist) for time in times])
+        
         return response

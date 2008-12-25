@@ -28,19 +28,26 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
-from esp.program.manipulators import SATPrepInfoManipulator
-from django import forms
+from esp.program.modules.forms.satprep import SATPrepInfoForm
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser
 from django.contrib.auth.models import User
-from esp.db.models      import Q
+from django.db.models.query     import Q
 
 
 
 class SATPrepModule(ProgramModuleObj):
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Program-specific Information",
+            "module_type": "learn",
+            "seq": 10,
+            "required": True
+            }
 
     def get_msg_vars(self, user, key):
         user = ESPUser(user)
@@ -122,29 +129,22 @@ class SATPrepModule(ProgramModuleObj):
 	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
 	return satPrep.id is not None
 
-
+    @main_call
     @needs_student
     def satprepinfo(self, request, tl, one, two, module, extra, prog):
-	manipulator = SATPrepInfoManipulator()
-	new_data = {}
 	if request.method == 'POST':
-		new_data = request.POST.copy()
-		
-		errors = manipulator.get_validation_errors(new_data)
-		
-		if not errors:
-			manipulator.do_html2python(new_data)
-			new_reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-			new_reginfo.addOrUpdate(new_data, request.user, prog)
+            form = SATPrepInfoForm(request.POST)
 
-                        return self.goToCore(tl)
+            if form.is_valid():
+                reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
+                form.instance = reginfo
+                form.save()
+
+                return self.goToCore(tl)
 	else:
-		satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
-		
-		new_data = satPrep.updateForm(new_data)
-		errors = {}
+            satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
+            form = SATPrepInfoForm(instance = satPrep)
 
-	form = forms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
 
 

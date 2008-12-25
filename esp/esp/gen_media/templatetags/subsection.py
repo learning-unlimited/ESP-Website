@@ -3,9 +3,12 @@ from esp.gen_media.models import SubSectionImage
 from django.core.cache import cache
 from urllib import quote
 from django.conf import settings
+from django.utils.html import conditional_escape
+from django.utils.safestring import mark_safe
 
 register = template.Library()
-@register.filter(name='subsection')
+
+
 def subsection(value):
     """
     Returns a subsection for ESP.
@@ -24,4 +27,6 @@ def subsection(value):
 
     cache.set(cache_key, retVal, 9999)
 
-    return retVal
+    return mark_safe(retVal)
+
+subsection = register.filter(name="subsection")(subsection)

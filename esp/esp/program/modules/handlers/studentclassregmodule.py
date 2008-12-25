@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,54 +28,64 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
-from esp.datatree.models import GetNode, DataTree
+
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
-from esp.db.models       import Q
+from django.db.models.query import Q
 from django.template.loader import get_template
 from esp.cal.models import Event
 from datetime import datetime
 
 # student class picker module
-class StudentClassRegModule(ProgramModuleObj):
+class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
+    @classmethod
+    def module_properties(cls):
+        return [ {
+            "link_title": "Sign up for Classes",
+            "module_type": "learn",
+            "seq": 10,
+            "required": True,
+            "main_call": "classlist"
+            }, {
+            "link_title": "Sign up for Classes",
+            "admin_title": "Sign up for Classes, SoW (StudentClassRegModule)",
+            "module_type": "learn",
+            "seq": 10,
+            "required": True,
+            "main_call": "sowclass"
+            } ]
 
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return [('classRegInfo', module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+        return []#(., module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
 
 
     def students(self, QObject = False):
-        from django.db.models import Q as django_Q
+        from django.db.models import Q
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
-        Par = django_Q(userbit__qsc__parent__parent=self.program.classes_node())
-        Conf = django_Q(userbit__verb = GetNode('V/Flags/Registration/Confirmed'))
-        Prel = django_Q(userbit__verb = GetNode('V/Flags/Registration/Preliminary'))
-        Unexpired = django_Q(userbit__enddate__isnull=True) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
+        Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
+        Reg = QTree(userbit__verb__below = verb_base)
+        Unexpired = Q(userbit__enddate__isnull=True) | Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
         
         if QObject:
-            return {'classreg': self.getQForUser(Par & Unexpired & (Conf | Prel))}
+            return {'classreg': self.getQForUser(Par & Unexpired & Reg)}
         else:
-            return {'classreg': User.objects.filter(Par & Unexpired & (Conf | Prel)).distinct()}
-
+            return {'classreg': User.objects.filter(Par & Unexpired & Reg).distinct()}
 
     def studentDesc(self):
-        return {'classreg': """Students who have are enrolled in at least one class."""}
+        return {'classreg': """Students who have have signed up for at least one class."""}
     
     def isCompleted(self):
         self.user = ESPUser(self.user)
-        cls_list = self.user.getEnrolledSections(self.program)
-        ts_list = []
-        for c in cls_list:
-            ts_list += list(c.meeting_times.all())
-        missing_timeslots = 0
-        for t in self.program.getTimeSlots():
-            if t not in ts_list:
-                return False
-        return True
+        if len(self.user.getClasses(self.program)) == 0:
+            return False
+        return (len(self.user.getClasses(self.program)) > 0)
 
     def deadline_met(self):
         #tmpModule = ProgramModuleObj()
@@ -85,9 +95,9 @@ class StudentClassRegModule(ProgramModuleObj):
     
     @needs_student
     def prepare(self, context={}):
-	regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-	timeslots = list(self.program.getTimeSlots().order_by('start'))
-	classList = regProf.preregistered_classes()
+        regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
+        timeslots = list(self.program.getTimeSlots().order_by('id'))
+        classList = regProf.preregistered_classes()
 
         prevTimeSlot = None
         blockCount = 0
@@ -95,38 +105,52 @@ class StudentClassRegModule(ProgramModuleObj):
         user = ESPUser(self.user)
         user_grade = user.getGrade()
         is_onsite = user.isOnsite(self.program)
+        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
         
         schedule = []
         timeslot_dict = {}
         for sec in classList:
             class_qset = ClassSubject.objects.catalog(self.program).filter(anchor__friendly_name = sec.title, grade_min__lte=user_grade, grade_max__gte=user_grade)
             show_changeslot = ( len([0 for c in class_qset if (not c.isFull()) or is_onsite]) > 1 ) # Does the class have enough siblings to warrant a "change section" link?
+            if scrmi.use_priority:
+                sec.verbs = sec.getRegVerbs(user)
             for mt in sec.meeting_times.all().values('id'):
-                timeslot_dict.update({mt['id']: (sec, show_changeslot)})
-            
+                section_dict = {'section': sec, 'changeable': show_changeslot}
+                if mt['id'] in timeslot_dict:
+                    timeslot_dict[mt['id']].append(section_dict)
+                else:
+                    timeslot_dict[mt['id']] = [section_dict]
         for timeslot in timeslots:
             if prevTimeSlot != None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
 
-            if timeslot.id in timeslot_dict:
-                schedule.append((timeslot, timeslot_dict[timeslot.id][0], blockCount + 1, timeslot_dict[timeslot.id][1]))
+            if scrmi.use_priority:
+                user_priority = user.getRegistrationPriority([timeslot])
             else:
-                schedule.append((timeslot, None, blockCount + 1, False))
+                user_priority = None
+
+            if timeslot.id in timeslot_dict:
+                cls_list = timeslot_dict[timeslot.id]
+                schedule.append((timeslot, cls_list, blockCount + 1, user_priority))
+            else:
+                schedule.append((timeslot, [], blockCount + 1, user_priority))
 
             prevTimeSlot = timeslot
                 
         context['timeslots'] = schedule
+        context['use_priority'] = scrmi.use_priority
         
-	return context
+        return context
 
-        
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
     def addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
         
         reg_verb = GetNode('V/Deadline/Registration/Student/Classes')
+        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
         
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(self.user, "onsite_local"):
@@ -139,13 +163,21 @@ class StudentClassRegModule(ProgramModuleObj):
             from esp.dblog.models import error
             raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
 
+        enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
+
         # Can we register for more than one class yet?
         if (not self.user.onsite_local) and (not UserBit.objects.UserHasPerms(request.user, prog.anchor, reg_verb ) ):
             # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
             classes_registered = 0
-            for cls in ESPUser(request.user).getEnrolledClasses(prog, request):
-                if not UserBit.objects.UserHasPerms(request.user, cls.anchor, GetNode('V/Flags/Registration/Preliminary/Automatic' )):
+            for cls in enrolled_classes:
+                reg_verbs = cls.getRegVerbs(request.user)
+                is_auto = 0
+                for r in reg_verbs:
+                    if r.name == 'Automatic':
+                        is_auto = 1
+                if not is_auto:
                     classes_registered += 1
+
             if classes_registered >= 1:
                 datestring = ''
                 bitlist = UserBit.objects.filter(user__isnull=True, qsc=prog.anchor, verb=reg_verb)
@@ -159,23 +191,29 @@ class StudentClassRegModule(ProgramModuleObj):
 
         cobj = ClassSubject.objects.get(id=classid)
         section = ClassSection.objects.get(id=sectionid)
-        error = cobj.cannotAdd(self.user,self.classRegInfo.enforce_max,use_cache=False)
+        if not scrmi.use_priority:
+            error = section.cannotAdd(self.user,self.enforce_max,use_cache=False)
+        if scrmi.use_priority or not error:
+            error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False)
         
+        priority = self.user.getRegistrationPriority(section.meeting_times.all())
+
         # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
         auto_classes = []
         blocked_class = None
         cannotadd_error = ''
+
         for implication in ClassImplication.objects.filter(cls=cobj, parent__isnull=True):
-#            break;
             if implication.fails_implication(self.user):
                 for cls in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     #   Override size limits on subprogram classes (checkFull=False). -Michael P
-                    if cls.cannotAdd(self.user, checkFull=False, use_cache=False):
+                    sec = cls.default_section()
+                    if sec.cannotAdd(self.user, checkFull=False, use_cache=False):
                         blocked_class = cls
-                        cannotadd_error = cls.cannotAdd(self.user, checkFull=False, use_cache=False)
+                        cannotadd_error = sec.cannotAdd(self.user, checkFull=False, use_cache=False)
                     else:
-                        if cls.preregister_student(self.user, overridefull=True, automatic=True):
-                            auto_classes.append(cls)
+                        if sec.preregister_student(self.user, overridefull=True, automatic=True, priority=priority):
+                            auto_classes.append(sec)
                             if implication.operation != 'AND':
                                 break
                         else:
@@ -183,16 +221,18 @@ class StudentClassRegModule(ProgramModuleObj):
                     if (blocked_class is not None) and implication.operation == 'AND':
                         break
                 if implication.fails_implication(self.user):
-                    for cls in auto_classes:
-                        cls.unpreregister_student(self.user)
+                    for sec in auto_classes:
+                        sec.unpreregister_student(self.user)
                     if blocked_class is not None:
-                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url, blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
+                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
                     else:
-                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url, prog.niceName(), cannotadd_error)
+                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url(), prog.niceName(), cannotadd_error)
                     
         if error and not self.user.onsite_local:
             raise ESPError(False), error
-        if section.preregister_student(self.user, self.user.onsite_local):
+        
+        #   Desired priority level is 1 above current max
+        if section.preregister_student(self.user, self.user.onsite_local, False, priority):
             bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
             if bits.count() == 0:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
@@ -201,7 +241,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'
 
-
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')    
     def fillslot(self, request, tl, one, two, module, extra, prog):
@@ -219,18 +259,17 @@ class StudentClassRegModule(ProgramModuleObj):
 
         ts = ts[0]
 
-        prereg_url = self.program.get_learn_url + 'addclass/'
+        prereg_url = self.program.get_learn_url() + 'addclass/'
         user_grade = user.getGrade()
         user.updateOnsite(request)
         is_onsite = user.isOnsite(self.program)
         
-        classes = [c for c in ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull(timeslot=ts)) or is_onsite] 
-
         #   Override both grade limits and size limits during onsite registration
         if is_onsite:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = [c for c in ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade) if (not c.isFull(timeslot=ts))] 
+            classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+            classes = filter(lambda c: not c.isFull(timeslot=ts), classes)
 
         categories = {}
 
@@ -246,6 +285,7 @@ class StudentClassRegModule(ProgramModuleObj):
        
 
     # we can also ``changeslot'', with only minor modifications to the above code...
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')    
     def changeslot(self, request, tl, one, two, module, extra, prog):
@@ -253,7 +293,7 @@ class StudentClassRegModule(ProgramModuleObj):
         from esp.cal.models import Event
         
         user = ESPUser(request.user) 
-        prereg_url = self.program.get_learn_url + 'swapclass/' + extra
+        prereg_url = self.program.get_learn_url() + 'swapclass/' + extra
         user_grade = user.getGrade()
         is_onsite = user.isOnsite(self.program)
 
@@ -325,6 +365,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     # This function gets called and branches off to the two above depending on the user's role
+    @aux_call
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
         
@@ -334,7 +375,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             return self.catalog_student(request, tl, one, two, module, extra, prog, timeslot)
     
-
+    @aux_call
     @needs_student
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.qsdmedia.models import Media
@@ -350,71 +391,47 @@ class StudentClassRegModule(ProgramModuleObj):
         target_class = classes[0]
 
         context = {'cls': target_class, 'module': self}
-	
+        
         return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')    
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
-        v_registered = request.get_node('V/Flags/Registration/Preliminary')
-        v_auto = request.get_node('V/Flags/Registration/Preliminary/Automatic')
-        parent_program = self.program.getParentProgram()
         
-        oldsections = set( [ s for s in ClassSection.objects.filter(meeting_times=extra, classsubject__parent_program = self.program)
-                             if UserBit.objects.UserHasPerms(request.user, s.anchor, v_registered) ] )
-        old_sids = set( [ s.id for s in oldsections ] )
-        cruftsections = set()
-        cyclesections = set()
+        #   The registration verb can be anything under this.
+        v_registered_base = request.get_node('V/Flags/Registration')
         
-        enrolled_sections = [s for s in self.user.getEnrolledSections(self.program)]
-        if parent_program:
-            enrolled_sections += [s for s in self.user.getEnrolledSections(parent_program)]
-        enrolled_cids = set([s.parent_class.id for s in enrolled_sections if s.id not in old_sids])
-        dropped_cids = set( [s.parent_class.id for s in oldsections if s.parent_class.id not in enrolled_cids] )
-        
-        # Check the implications for dropped subjects to see if we can clear out any cruft
-        implied_cids = set()
-        for implication in ClassImplication.objects.filter(cls__id__in=dropped_cids, enforce=True, parent__isnull=True):
-            implied_cids |= set( implication.member_id_ints )
-        
-        for sec in ClassSection.objects.filter(classsubject__id__in=implied_cids):
-            foundcycle = False
-            if not UserBit.objects.UserHasPerms(request.user, sec.anchor, v_registered):
-                continue
-            for implication in sec.parent_class.classimplication_set.filter(enforce=True):
-                if dropped_cids & set(implication.member_id_ints):
-                    cyclesections.add(sec)
-                    foundcycle = True
-                    break
-            if foundcycle:
-                continue
-            if UserBit.objects.UserHasPerms(request.user, sec.anchor, v_auto):
-                cruftsections.add(sec)
-        
-        cycle_sids = set( [ s.id for s in oldsections|cyclesections ] )
-        enrolled_cids = set( [s.parent_class.id for s in enrolled_sections if s.id not in cycle_sids] )
-        dropped_cids = set( [s.parent_class.id for s in (oldsections|cyclesections) if s.parent_class.id not in enrolled_cids] )
-        relevant_imps = ClassImplication.objects.filter(cls__id__in=enrolled_cids, enforce=True, parent__isnull=True)
-        
-        for sec in oldsections|cyclesections:
+        #   This query just gets worse and worse.   -Michael
+        #   Maybe a little better with QTree?   -Axiak
+        oldclasses = ClassSection.objects.filter(
+            QTree(anchor__userbit_qsc__verb__below = v_registered_base),
+            meeting_times=extra,
+            classsubject__parent_program = self.program,
+            anchor__userbit_qsc__user = self.user).distinct()
+                             
+        #   Narrow this down to one class if we're using the priority system.
+        if request.GET.has_key('sec_id'):
+            oldclasses = oldclasses.filter(id=request.GET['sec_id'])
+                             
+        #classes = self.user.getEnrolledClasses()
+        class_ids = [c.parent_class.id for c in oldclasses]
+        for cls in oldclasses:
             # Make sure deletion doesn't violate any class implications before proceeding
-            for implication in relevant_imps:
-                if implication.fails_implication(self.user, without_classes=dropped_cids):
-                    raise ESPError(False), 'This class is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url, implication.cls.parent_program.niceName())
-            sec.unpreregister_student(self.user)
-        
-        # Undo auto-registrations of sections
-        for sec in cruftsections:
-            cruftsafe = True
-            for implication in relevant_imps:
-                if implication.fails_implication(self.user, without_classes=dropped_cids):
-                    cruftsafe = False
-            if cruftsafe:
-                sec.unpreregister_student(self.user)
-        
+            for implication in ClassImplication.objects.filter(cls__in=class_ids, enforce=True, parent__isnull=True):
+                if implication.fails_implication(self.user, without_classes=set([cls.id])):
+                    raise ESPError(False), 'This class is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url(), implication.cls.parent_program.niceName())
+            cls.unpreregister_student(self.user)
+            
+            # Undo auto-registrations of sections
+            for implication in ClassImplication.objects.filter(cls=cls, enforce=True):
+                for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
+                    auto_class.unpreregister_student(self.user)
+                        
         return self.goToCore(tl)
-    
+
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
     def swapclass(self, request, tl, one, two, module, extra, prog):
@@ -458,7 +475,7 @@ class StudentClassRegModule(ProgramModuleObj):
         
         # Checking if we can register for the new class
         newclass = ClassSubject.objects.filter(id=classid)[0]
-        error = newclass.cannotAdd(self.user, self.classRegInfo.enforce_max, use_cache=False)
+        error = newclass.cannotAdd(self.user, self.enforce_max, use_cache=False)
         if error and not self.user.onsite_local:
             # Undo by re-registering the old class. Theoretically "overridefull" is okay, since they were already registered for oldclass anyway.
             oldclass.preregister_student(self.user, overridefull=True, automatic=automatic)
@@ -481,7 +498,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 if implication.fails_implication(self.user):
                     newclass.unpreregister_student(self.user)
                     oldclass.preregister_student(self.user, overridefull=True, automatic=automatic)
-                    raise ESPError(False), 'The class you intended to remove is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url, implication.cls.parent_program.niceName())
+                    raise ESPError(False), 'The class you intended to remove is required for your %s class "%s"! To remove this class, please remove the one that requires it through <a href="%sstudentreg">%s Student Registration</a>.' % (implication.cls.parent_program.niceName(), implication.cls.title(), implication.cls.parent_program.get_learn_url(), implication.cls.parent_program.niceName())
         
         return self.goToCore(tl)
 

@@ -19,8 +19,8 @@ def single_blog_entry(request, entry, action):
         if form.is_valid():
             c = Comment.objects.create(entry = entry,
                                        author = request.user,
-                                       subject = form.clean_data['subject'],
-                                       content = form.clean_data['content'])
+                                       subject = form.cleaned_data['subject'],
+                                       content = form.cleaned_data['content'])
             c.save()
 
             return HttpResponseRedirect(request.path +'#comment_%s' % c.id)

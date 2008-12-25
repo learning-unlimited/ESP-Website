@@ -1,0 +1,5 @@
+Update instructions:
+    Review and run the update script: esp/db_schema/2008-12-14-ageng.py.
+
+Actions taken by the script:
+    Lengthen director_email fields for Program and ClassRegModuleInfo to 75.

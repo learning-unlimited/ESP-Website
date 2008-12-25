@@ -9,7 +9,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Student Registration"|subsection }}{% endblock %}
+{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
 
 {% block content %}
 <style type="text/css">
@@ -62,7 +62,7 @@
         {{ module.module.link_title }} 
         </a> <em>(below)</em>
     {% else %}
-        {{ module.makeLink }}
+        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
     {% endif %}
     {% if not module.module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
     </td>
@@ -71,10 +71,12 @@
     {% else %}
     <a href="#module-{{ module.id }}">
     {% endif %}
-    <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" 
-        {% if module.isCompleted %}title="Done!" alt="Done!"{% else %}
+    {% with module.isCompleted as moduleCompleted %}
+    <img src="/media/images/{% if not moduleCompleted %}no{% endif %}checkmark.gif" 
+        {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
         title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
     </a>
+    {% endwith %}
     </td>
     </tr>
     {% endif %}

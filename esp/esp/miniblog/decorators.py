@@ -1,7 +1,7 @@
 from esp.datatree.decorators import branch_find
 from django.http import Http404
 from esp.miniblog.models import Entry
-from esp.db.models import Q
+from django.db.models.query import Q
 
 __all__ = ['miniblog_find']
 

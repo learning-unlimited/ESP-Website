@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,18 +28,13 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+
 from django import forms
-from django.core import validators
-from esp.web.forms import ResizeImageUploadField
+from django.utils.translation import gettext_lazy as _
+from esp.web.forms import ResizeImageField
 
-import re
-
-class TeacherBioManipulator(forms.Manipulator):
-    def __init__(self):
-
-        self.fields = (
-            forms.TextField(field_name="slugbio", length=50, maxlength=50),
-            forms.LargeTextField(field_name="bio", rows=20, cols=60),
-            ResizeImageUploadField(field_name="picture", size=(300,300))
-        )
-
+class BioEditForm(forms.Form):
+    """ A form for editting TeacherBios """
+    slugbio = forms.CharField(required = False, max_length = 50, widget = forms.TextInput({'size': 50}))
+    bio = forms.CharField(required = False, widget = forms.Textarea({'rows':20, 'cols':60}))
+    picture = ResizeImageField(required = False, size = (300,300))

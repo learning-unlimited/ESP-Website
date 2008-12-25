@@ -4,7 +4,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,13 +30,14 @@ Email: web@esp.mit.edu
 
 import datetime
 import time
+from collections import defaultdict
 
 # django Util
 from django.db import models
+from django.db.models.query import Q
 from django.core.cache import cache
 
 # ESP Util
-from esp.db.models import Q
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.db.cache import GenericCacheHelper
@@ -46,10 +47,11 @@ from django.contrib.auth.models import User
 
 # ESP models
 from esp.miniblog.models import Entry
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
+from esp.utils.property import PropertyDict
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
@@ -57,7 +59,7 @@ class ProgramCheckItem(models.Model):
     from esp.program.models import Program
     
     program = models.ForeignKey(Program, related_name='checkitems')
-    title   = models.CharField(maxlength=512)
+    title   = models.CharField(max_length=512)
     seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
                                           help_text = 'Lower is earlier')
 
@@ -70,11 +72,8 @@ class ProgramCheckItem(models.Model):
                 self.seq = 0
         super(ProgramCheckItem, self).save(*args, **kwargs)
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s for "%s"' % (self.title, str(self.program).strip())
-
-    class Admin:
-        pass
 
     class Meta:
         ordering = ('seq',)
@@ -109,9 +108,9 @@ class ClassManager(ProcedureManager):
         select = {'category_txt': 'program_classcategories.category',
                   'media_count': 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'}
 
-        where=['program_classcategories.id = program_class.category_id']
+        where=['"program_classcategories"."id" = "program_class"."category_id"']
 
-        tables=['program_classcategories']
+        tables=['"program_classcategories"']
         
         if force_all:
             classes = self.filter(parent_program = program)
@@ -120,17 +119,17 @@ class ClassManager(ProcedureManager):
             
         if ts is not None:
             #   Make a list of all section IDs for the program
-            section_list = []
+            section_ids = []
             for c in classes:
-                section_list += [item['id'] for item in c.sections.all().values('id')]
-            #   Get the IDs of those sections that have the right timeslot
-            section_ids = [sec['id'] for sec in ClassSection.objects.filter(meeting_times=ts, id__in=section_list).values('id')]
-            #   Get the class subjects having at least one of those sections.
+                sec = c.get_section(timeslot=ts)
+                if sec:
+                    section_ids.append(sec.id)
+                #   Get the class subjects having at least one of those sections.
             classes = ClassSubject.objects.filter(sections__in=section_ids)
 
         return classes.extra(select=select,
                              where=where,
-                             tables=tables).order_by('category').distinct()
+                             order_by=('category',)).extra(tables=tables).distinct()
 
     cache = ClassCacheHelper
 
@@ -157,7 +156,7 @@ class ClassSection(models.Model):
     
     anchor = models.ForeignKey(DataTree)
     status = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted
-    duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
+    duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
 
@@ -193,21 +192,28 @@ class ClassSection(models.Model):
     title = property(_get_title)
     
     def _get_capacity(self):
+        ans = self.cache['capacity']
+        if ans is not None:
+            return ans
+
         rooms = self.initial_rooms()
         if len(rooms) == 0:
-            return self.parent_class.class_size_max
+            ans = self.parent_class.class_size_max
         else:
             rc = 0
             for r in rooms:
                 rc += r.num_students
-            return min(self.parent_class.class_size_max, rc)
+            ans = min(self.parent_class.class_size_max, rc)
+
+        self.cache['capacity'] = ans
+        return ans
     capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
         super(ClassSection, self).__init__(*args, **kwargs)
         self.cache = SectionCacheHelper(self)
 
-    def __str__(self):
+    def __unicode__(self):
         pc = self.parent_class
         return '%s: %s' % (self.emailcode(), pc.title())
 
@@ -221,10 +227,12 @@ class ClassSection(models.Model):
         if self.num_students() > 0 and not adminoverride:
             return False
         
-        if self.anchor:
-            self.anchor.delete(True)
+        self.getResourceRequests().delete()
+        self.getResourceAssignments().delete()
         self.meeting_times.clear()
         self.checklist_progress.clear()
+        if self.anchor:
+            self.anchor.delete(True)
         
         super(ClassSection, self).delete()
 
@@ -260,7 +268,7 @@ class ClassSection(models.Model):
         """ Returns the list of classroom resources assigned to this class."""
         from esp.resources.models import Resource
 
-        ra_list = [item['resource'] for item in self.classroomassignments().values('resource')]
+        ra_list = self.classroomassignments().values_list('resource', flat=True)
         return Resource.objects.filter(id__in=ra_list)
 
     def initial_rooms(self):
@@ -302,7 +310,7 @@ class ClassSection(models.Model):
             
     def already_passed(self):
         start_time = self.start_time()
-	if start_time is None:
+        if start_time is None:
             return True
         if time.time() - time.mktime(start_time.start.timetuple()) > 600:
             return True
@@ -319,15 +327,30 @@ class ClassSection(models.Model):
     def sufficient_length(self, event_list=None):
         """   This function tells if the class' assigned times are sufficient to cover the duration.
         If the duration is not set, 1 hour is assumed. """
-        duration = self.duration
+        
+        # Only cache when no event list is provided.
+        caching = False
+        if not event_list:
+            cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
+            caching = True
+            retVal = cache.get(cache_key)
+            if retVal != None:
+                return retVal
+        
+        if self.duration == 0.0:
+            duration = 1.0
+        else:
+            duration = self.duration
         
         if event_list is None:
             event_list = list(self.meeting_times.all().order_by('start'))
         #   If you're 15 minutes short that's OK.
         time_tolerance = 15 * 60
         if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
+            if caching: cache.set(cache_key, False, timeout=86400)
             return False
         else:
+            if caching: cache.set(cache_key, True, timeout=86400)
             return True
     
     def extend_timeblock(self, event, merged=True):
@@ -348,31 +371,53 @@ class ClassSection(models.Model):
             return event_list
     
     def scheduling_status(self):
+        cache_key = "CLASSSECTION__SCHEDULING_STATUS__%s" % self.id
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+        
         #   Return a little string that tells you what's up with the resource assignments.
         if not self.sufficient_length():
-            return 'Needs time'
+            retVal = 'Needs time'
         elif self.classrooms().count() < 1:
-            return 'Needs room'
+            retVal = 'Needs room'
         elif self.unsatisfied_requests().count() > 0:
-            return 'Needs resources'
+            retVal = 'Needs resources'
         else:
-            return 'Happy'
-    
+            retVal = 'Happy'
+
+        cache.set(cache_key, retVal, timeout=60)
+        return retVal
+            
     def clear_resource_cache(self):
         from django.core.cache import cache
         from esp.program.templatetags.scheduling import options_key_func
+        from esp.resources.models import increment_global_resource_rev
         cache_key1 = 'class__viable_times:%d' % self.id
         cache_key2 = 'class__viable_rooms:%d' % self.id
+        cache_key3 = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
         cache.delete(cache_key1)
         cache.delete(cache_key2)
+        cache.delete(cache_key3)
+        increment_global_resource_rev()
     
     def unsatisfied_requests(self):
+        from esp.resources.models import global_resource_rev
+        cache_key = "CLASSSECTION__UNSATISFIED_REQUESTS__%s__%s" % (self.id, global_resource_rev())
+
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+        
         if self.classrooms().count() > 0:
             primary_room = self.classrooms()[0]
-            result = primary_room.satisfies_requests(self)
-            return result[1]
+            result = primary_room.satisfies_requests(self)[1]
+            cache.set(cache_key, result, timeout=86400)
+            return result
         else:
-            return self.getResourceRequests()
+            result = self.getResourceRequests()
+            cache.set(cache_key, result, timeout=86400)
+            return result
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()
@@ -382,7 +427,7 @@ class ClassSection(models.Model):
     def assign_start_time(self, first_event):
         """ Get enough events following the first one until you have the class duration covered.
         Then add them. """
-        
+
         #   This means we have to clear the classrooms.
         #   But we will try to re-assign the same room at the new times if it is available.
         current_rooms = self.initial_rooms()
@@ -404,6 +449,9 @@ class ClassSection(models.Model):
         if availability:
             for room in current_rooms:
                 self.assign_room(room)
+
+        cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
+        cache.delete(cache_key)
     
     def assign_room(self, base_room, compromise=True, clear_others=False):
         """ Assign the classroom given, except at the times needed by this class. """
@@ -420,18 +468,22 @@ class ClassSection(models.Model):
             result = base_room.satisfies_requests(self)
             if result[0] is False:
                 status = False
-                errors.append('This room does not have all resources that the class needs (or it is too small) and you have opted not to compromise.  Try a better room.')
+                errors.append( 'Room <strong>%s</strong> does not have all resources that <strong>%s</strong> needs (or it is too small) and you have opted not to compromise.  Try a better room.' % (base_room.name, self) )
         
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
-            errors.append('This room is not available at the times requested by the class.  Bug the webmasters to find out why you were allowed to assign this room.')
+            errors.append( 'Room <strong>%s</strong> is not available at the times requested by <strong>%s</strong>.  Bug the webmasters to find out why you were allowed to assign this room.' % (base_room.name, self) )
         
         for r in rooms_to_assign:
             r.clear_schedule_cache(self.parent_program)
             result = self.assignClassRoom(r)
             if not result:
                 status = False
-                errors.append('Error: This classroom is already taken.  Please assign a different one.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.')
+                occupiers_str = ''
+                occupiers_set = base_room.assignments()
+                if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
+                    occupiers_str = ' by <strong>%s</strong>' % (occupiers_set[0].target or occupiers_set[0].target_subj)
+                errors.append( 'Error: Room <strong>%s</strong> is already taken%s.  Please assign a different one to <strong>%s</strong>.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.' % ( base_room.name, occupiers_str, self ) )
             
         return (status, errors)
     
@@ -510,7 +562,7 @@ class ClassSection(models.Model):
         
         #   This function is only meaningful if the times have already been set.  So, back out if they haven't.
         if not self.sufficient_length():
-            return None
+            return []
         
         #   Start with all rooms the program has.  
         #   Filter the ones that are available at all times needed by the class.
@@ -548,11 +600,17 @@ class ClassSection(models.Model):
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         
+        scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        if scrmi.use_priority:
+            verbs = ['/Enrolled']
+        else:
+            verbs = ['/' + scrmi.get_signup_verb().name]
+        
         # check to see if there's a conflict:
-        for sec in user.getEnrolledSections(self.parent_program):
+        for sec in user.getSections(self.parent_program, verbs=verbs):
             for time in sec.meeting_times.all():
                 if len(self.meeting_times.filter(id = time.id)) > 0:
-                    return 'This section conflicts with your schedule!'
+                    return 'This section conflicts with your schedule--check out the other sections!'
 
         # this user *can* add this class!
         return False
@@ -562,29 +620,59 @@ class ClassSection(models.Model):
         user = ESPUser(teacher)
         if user.getTaughtClasses().count() == 0:
             return False
-        
+
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
             for time in cls.meeting_times.all():
                 if self.meeting_times.filter(id = time.id).count() > 0:
                     return True
+        return False
 
-    def students(self, use_cache=True):
-        retVal = self.cache['students']
-        if retVal is not None and use_cache:
-            return retVal
+    def students_dict(self):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        result = defaultdict(list)
+        userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).distinct()
+        for u in userbits:
+            bit_str = u.verb.uri[uri_start:]
+            result[bit_str].append(ESPUser(u.user))
+        return PropertyDict(result)
 
-        v = GetNode( 'V/Flags/Registration/Preliminary' )
-
-        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
+    def students_prereg(self, use_cache=True):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        all_registration_verbs = verb_base.descendants()
+        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
         
-        list(retVal)
+        return self.students(use_cache, verbs=verb_list)
 
-        self.cache['students'] = retVal
+    def students(self, use_cache=True, verbs = ['/Enrolled']):
+        if len(verbs) == 1 and verbs[0] == '/Enrolled':
+            defaults = True
+        else:
+            defaults = False
+            
+        if defaults:
+            retVal = self.cache['students']
+            if retVal is not None and use_cache:
+                return retVal
+
+        retVal = User.objects.none()
+        for verb_str in verbs:
+            v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
+            user_ids = [a['user'] for a in UserBit.valid_objects().filter(verb=v, qsc=self.anchor).values('user')]
+            new_qs = User.objects.filter(id__in=user_ids).distinct()
+            retVal = retVal | new_qs
+            
+        retVal = [ESPUser(u) for u in retVal.distinct()]
+
+        if defaults:
+            self.cache['students'] = retVal
+            
         return retVal
     
     def clearStudents(self):
-        """ Remove all of the students that pre-registered for the section. """
-        reg_verb = DataTree.get_by_uri('V/Flags/Registration/Preliminary')
+        """ Remove all of the students that enrolled in the section. """
+        reg_verb = DataTree.get_by_uri('V/Flags/Registration/Enrolled')
         for u in self.anchor.userbit_qsc.filter(verb=reg_verb):
             u.expire()
     
@@ -616,23 +704,49 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def num_students(self, use_cache=True):
-        retVal = self.cache['num_students']
-        if retVal is not None and use_cache:
-            return retVal
+    def num_students_prereg(self, use_cache=True):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        all_registration_verbs = verb_base.descendants()
+        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        
+        return self.num_students(use_cache, verbs=verb_list)
 
-        if use_cache:
-            retValCache = self.cache['students']
-            if retValCache != None:
-                retVal = len(retValCache)
-                self.cache['num_students'] = retVal
+    def num_students(self, use_cache=True, verbs=['/Enrolled']):
+        #   Only cache the result for the default setting.
+        if len(verbs) == 1 and verbs[0] == '/Enrolled':
+            defaults = True
+        else:
+            defaults = False
+            
+        if defaults:
+            retVal = self.cache['num_students']
+            if retVal is not None and use_cache:
                 return retVal
+    
+            if use_cache:
+                retValCache = self.cache['students']
+                if retValCache != None:
+                    retVal = len(retValCache)
+                    self.cache['num_students'] = retVal
+                    return retVal
 
-        v = GetNode( 'V/Flags/Registration/Preliminary' )
 
-        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True).count()
+        qs = UserBit.objects.none()
+        for verb_str in verbs:
+            v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
+            # NOTE: This assumes that no user can be both Enrolled and Rejected
+            # from the same class. Otherwise, this is pretty silly.
+            new_qs = UserBit.objects.filter(qsc=self.anchor, verb=v)
+            new_qs = new_qs.filter(Q(enddate__gte=datetime.datetime.now())
+                    | Q(enddate__isnull=True))
+            qs = qs | new_qs
+        
+        retVal = qs.count()
 
-        self.cache['num_students'] = retVal
+        if defaults:
+            self.cache['num_students'] = retVal
+            
         return retVal            
 
     def room_capacity(self):
@@ -675,7 +789,7 @@ class ClassSection(models.Model):
         """
         events = list(self.meeting_times.all())
 
-        txtTimes = [ event.short_time() for event
+        txtTimes = [ event.pretty_time() for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
         self.cache['friendly_times'] = txtTimes
@@ -727,11 +841,19 @@ class ClassSection(models.Model):
         super(ClassSection, self).save()
         self.update_cache()
 
+    def getRegBits(self, user):
+        result = UserBit.objects.filter(QTree(qsc__below=self.anchor)).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        return result
+    
+    def getRegVerbs(self, user):
+        """ Get the list of verbs that a student has within this class's anchor. """
+        return [u.verb for u in self.getRegBits(user)]
+
     def unpreregister_student(self, user):
 
-        prereg_verbs = [ GetNode('V/Flags/Registration/Preliminary'), GetNode('V/Flags/Registration/Preliminary/Automatic') ]
+        prereg_verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
-        for ub in UserBit.objects.filter(user=user, qsc=self.anchor_id, verb__in=prereg_verbs):
+        for ub in UserBit.objects.filter(QTree(verb__below=prereg_verb_base), user=user, qsc=self.anchor_id):
             if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
                 ub.expire()
         
@@ -742,10 +864,17 @@ class ClassSection(models.Model):
         self.cache['students'] = students
         self.update_cache_students()
 
-    def preregister_student(self, user, overridefull=False, automatic=False):
-
-        prereg_verb = GetNode( 'V/Flags/Registration/Preliminary' )
-        auto_verb = GetNode( 'V/Flags/Registration/Preliminary/Automatic' )
+    def preregister_student(self, user, overridefull=False, automatic=False, priority=1):
+        
+        scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+    
+        prereg_verb_base = scrmi.get_signup_verb()
+        if scrmi.use_priority:
+            prereg_verb = DataTree.get_by_uri(prereg_verb_base.uri + '/%d' % priority, create=True)
+        else:
+            prereg_verb = prereg_verb_base
+            
+        auto_verb = DataTree.get_by_uri(prereg_verb.uri + '/Automatic', create=True)
         
         if overridefull or not self.isFull():
             #    Then, create the userbit denoting preregistration for this class.
@@ -759,11 +888,12 @@ class ClassSection(models.Model):
                                                   verb = auto_verb, startdate = datetime.datetime.now(), recursive = False)
             
             # update the students cache
-            students = list(self.students())
-            students.append(ESPUser(user))
-            self.cache['students'] = students
-            
-            self.update_cache_students()
+            if prereg_verb_base.name == 'Enrolled':
+                students = list(self.students())
+                students.append(ESPUser(user))
+                self.cache['students'] = students
+                self.update_cache_students()
+                
             return True
         else:
             #    Pre-registration failed because the class is full.
@@ -785,8 +915,7 @@ class ClassSection(models.Model):
         db_table = 'program_classsection'
         app_label = 'program'
         
-    class Admin:
-        pass
+
 
 class ClassSubject(models.Model):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
@@ -805,18 +934,21 @@ class ClassSubject(models.Model):
     class_size_max = models.IntegerField()
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
+    requested_special_resources = models.TextField(blank=True, null=True)
     directors_notes = models.TextField(blank=True, null=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
-
+    requested_room = models.TextField(blank=True, null=True)
+    
     sections = models.ManyToManyField(ClassSection, blank=True)
-
+    session_count = models.IntegerField(default=1)
+    
     objects = ClassManager()
     checklist_progress_all_cached = checklist_progress_base('ClassSubject')
 
     #   Backwards compatibility with Class database format.
     #   Please don't use. :)
     status = models.IntegerField(default=0)   
-    duration = models.FloatField(blank=True, null=True, max_digits=5, decimal_places=2)
+    duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
 
     def prettyDuration(self):
@@ -849,6 +981,42 @@ class ClassSubject(models.Model):
         super(ClassSubject, self).__init__(*args, **kwargs)
         self.cache = ClassSubject.objects.cache(self)
 
+    def get_section(self, timeslot=None):
+        """ Cache sections for a class.  Always use this function to get a class's sections. """
+        from django.core.cache import cache
+
+        if timeslot:
+            key = 'Sections_SubjectID%d_TimeslotID%d' % (self.id, timeslot.id)
+        else:
+            key = 'Sections_SubjectID%d_Default' % self.id
+
+        # Encode None as a string... silly, I know.   -Michael P
+        val = cache.get(key) 
+        if val:
+            # print 'hit cache for %s' % key
+            if val is not None:
+                if val == 'None':
+                    return None
+                else:
+                    return val
+        
+        if timeslot:
+            qs = self.sections.filter(meeting_times=timeslot)
+            if qs.count() > 0:
+                result = qs[0]
+            else:
+                result = None
+        else:
+            result = self.default_section()
+            
+        # print 'set cache for %s' % key
+        if result is not None:
+            cache.set(key, result)
+        else:
+            cache.set(key, 'None')
+
+        return result
+
     def default_section(self, create=True):
         """ Return the first section that was created for this class. """
         sec_qs = self.sections.order_by('id')
@@ -866,7 +1034,7 @@ class ClassSubject(models.Model):
         section_index = self.sections.count() + 1
         
         new_section = ClassSection()
-        new_section.duration = duration
+        new_section.duration = '%.4f' % duration
         new_section.anchor = DataTree.get_by_uri(self.anchor.uri + '/Section' + str(section_index), create=True)
         new_section.status = status
         new_section.save()
@@ -907,20 +1075,22 @@ class ClassSubject(models.Model):
             collapsed_times += s.friendly_times()
         return collapsed_times
         
-    def students(self, use_cache=True):
-        result = []
+    def students_dict(self):
+        result = PropertyDict({})
         for sec in self.sections.all():
-            result += sec.students(use_cache=use_cache)
+            result.merge(sec.students_dict())
         return result
         
-    def students_old(self):
-        v = DataTree.get_by_uri('V/Flags/Registration/Preliminary')
-        return list(UserBit.objects.bits_get_users(self.anchor, v, user_objs=True))
+    def students(self, use_cache=True, verbs=['/Enrolled']):
+        result = []
+        for sec in self.sections.all():
+            result += sec.students(use_cache=use_cache, verbs=verbs)
+        return result
         
-    def num_students(self):
+    def num_students(self, use_cache=True, verbs=['/Enrolled']):
         result = 0
         for sec in self.sections.all():
-            result += sec.num_students()
+            result += sec.num_students(use_cache, verbs)
         return result
         
     def max_students(self):
@@ -944,15 +1114,29 @@ class ClassSubject(models.Model):
         return '/'.join(str_array[-4:])
 
     def got_qsd(self):
-        return QuasiStaticData.objects.filter(path = self.anchor).values('id').count() > 0
+        """ Returns if this class has any associated QSD. """
+        if QuasiStaticData.objects.filter(path = self.anchor)[:1]:
+            return True
+        else:
+            return False
+
+    def got_index_qsd(self):
+        """ Returns if this class has an associated index.html QSD. """
+        if QuasiStaticData.objects.filter(path = self.anchor, name = "learn:index")[:1]:
+            return True
+        else:
+            return False
         
-    def __str__(self):
+    def __unicode__(self):
         if self.title() is not None:
             return "%s: %s" % (self.id, self.title())
         else:
             return "%s: (none)" % self.id
 
     def delete(self, adminoverride = False):
+        from esp.qsdmedia.models import Media
+        
+        anchor = self.anchor
         if self.num_students() > 0 and not adminoverride:
             return False
         
@@ -965,12 +1149,16 @@ class ClassSubject(models.Model):
             sec.delete()
         self.sections.clear()
         
-        if self.anchor:
-            self.anchor.delete(True)
-            
+        #   Remove indirect dependencies
+        Media.objects.filter(QTree(anchor__below=self.anchor)).delete()
+        UserBit.objects.filter(QTree(qsc__below=self.anchor)).delete()
+        
         self.checklist_progress.clear()
         
         super(ClassSubject, self).delete()
+        
+        if anchor:
+            anchor.delete(True)
         
     def cache_time(self):
         return 99999
@@ -993,7 +1181,11 @@ class ClassSubject(models.Model):
         
         v = GetNode('V/Flags/Registration/Teacher')
 
-        retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
+        # NOTE: This ignores the recursive nature of UserBits, since it's very slow and kind of pointless here.
+        # Remove the following line and replace with
+        #     retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
+        # to reenable.
+        retVal = ESPUser.objects.all().filter(Q(userbit__qsc=self.anchor, userbit__verb=v), UserBit.not_expired('userbit')).distinct()
 
         list(retVal)
         
@@ -1026,6 +1218,16 @@ class ClassSubject(models.Model):
             teachers.append(name)
         return teachers
 
+    def getTeacherNamesLast(self):
+        teachers = []
+        for teacher in self.teachers():
+            name = '%s, %s' % (teacher.last_name,
+                              teacher.first_name)
+            if name.strip() == '':
+                name = teacher.username
+            teachers.append(name)
+        return teachers
+		
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent():
@@ -1043,12 +1245,8 @@ class ClassSubject(models.Model):
 
         if request:
             verb_override = request.get_node('V/Flags/Registration/GradeOverride')
-            verb_conf = request.get_node('V/Flags/Registration/Confirmed')
-            verb_prelim = request.get_node('V/Flags/Registration/Preliminary')
         else:
             verb_override = GetNode('V/Flags/Registration/GradeOverride')
-            verb_conf = GetNode('V/Flags/Registration/Confirmed')
-            verb_prelim = GetNode('V/Flags/Registration/Preliminary')            
 
         if user.getGrade() < self.grade_min or \
                user.getGrade() > self.grade_max:
@@ -1061,19 +1259,20 @@ class ClassSubject(models.Model):
         if user.getEnrolledClasses(self.parent_program, request).count() == 0:
             return False
 
-        if user.isEnrolledInClass(self, request):
-            return 'You are already signed up for this class!'
-
-        # check to see if there's a conflict with each section of the subject
+        for section in self.sections.all():
+            if user.isEnrolledInClass(section, request):
+                return 'You are already signed up for a section of this class!'
+        
         res = False
+        # check to see if there's a conflict with each section of the subject, or if the user
+        # has already signed up for one of the sections of this class
         for section in self.sections.all():
             res = section.cannotAdd(user, checkFull, request, use_cache)
-            if not res:
-                # the user *can* add this class!
+            if not res: # if any *can* be added, then return False--we can add this class
                 return res
 
-        # the user can't add this class. Pass along the error message.
-        return res
+        # res can't have ever been False--so we must have an error. Pass it along.
+        return 'This class conflicts with your schedule!'
 
     def makeTeacher(self, user):
         v = GetNode('V/Flags/Registration/Teacher')
@@ -1134,6 +1333,7 @@ class ClassSubject(models.Model):
                     for sec in self.sections.all():
                         if sec.meeting_times.filter(id = time.id).count() > 0:
                             return True
+        return False
 
     def isAccepted(self):
         return self.status == 10
@@ -1154,6 +1354,9 @@ class ClassSubject(models.Model):
             return False # already accepted
 
         self.status = 10
+        # I do not understand the following line, but it saves us from "Cannot convert float to Decimal".
+        # Also seen in /esp/program/modules/forms/management.py -ageng 2008-11-01
+        #self.duration = Decimal(str(self.duration))
         self.save()
         #   Accept any unreviewed sections.
         for sec in self.sections.all():
@@ -1230,6 +1433,13 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             tmpnode = tmpnode.parent
         return "/".join(urllist)
 
+    def getRegBits(self, user):
+        return UserBit.objects.filter(QTree(qsc__below=self.anchor), user=user).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+    
+    def getRegVerbs(self, user):
+        """ Get the list of verbs that a student has within this class's anchor. """
+        return [u.verb for u in self.getRegBits(user)]
+
     def preregister_student(self, user, overridefull=False, automatic=False):
         """ Register the student for the least full section of the class
         that fits into their schedule. """
@@ -1255,16 +1465,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def unpreregister_student(self, user):
         """ Find the student's registration for the class and expire it. 
         Also update the cache on each of the sections.  """
-        
-        prereg_verbs = [ GetNode('V/Flags/Registration/Preliminary'), GetNode('V/Flags/Registration/Preliminary/Automatic') ]
-        section_anchors = [s['anchor'] for s in self.sections.all().values('anchor')]
-
-        for ub in UserBit.objects.filter(user=user, qsc__in=section_anchors, verb__in=prereg_verbs):
-            sections = self.sections.filter(anchor=ub.qsc)
-            for s in sections:
-                s.update_cache_students()
-            if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
-                ub.expire()
+        for s in self.sections.all():
+            s.unpreregister_student(user)
 
     def getArchiveClass(self):
         from esp.program.models import ArchiveClass
@@ -1368,9 +1570,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         db_table = 'program_class'
         app_label = 'program'
         
-    class Admin:
-        pass
-    
 
 class ClassImplication(models.Model):
     """ Indicates class prerequisites corequisites, and the like """
@@ -1378,8 +1577,8 @@ class ClassImplication(models.Model):
     parent = models.ForeignKey('self', null=True, default=None) # parent classimplication
     is_prereq = models.BooleanField(default=True) # if not a prereq, it's a coreq
     enforce = models.BooleanField(default=True)
-    member_ids = models.CommaSeparatedIntegerField(maxlength=100, blank=True, null=False) # implied classes (get implied implications with classimplication_set instead)
-    operation = models.CharField(maxlength=4, choices = ( ('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One') ))
+    member_ids = models.CommaSeparatedIntegerField(max_length=100, blank=True, null=False) # implied classes (get implied implications with classimplication_set instead)
+    operation = models.CharField(max_length=4, choices = ( ('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One') ))
 
     def member_id_ints_get(self):
         return [ int(s) for s in self.member_ids.split(',') ]
@@ -1397,7 +1596,7 @@ class ClassImplication(models.Model):
     class Admin:
         pass
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Implications for %s' % self.cls
     
     def _and(lst):
@@ -1438,7 +1637,7 @@ class ClassImplication(models.Model):
         """ Returns either False, or the ClassImplication that fails (may be self, may be a subimplication) """
         class_set = ClassSubject.objects.filter(id__in=self.member_id_ints)
         
-        class_valid_iterator = [ (student.id in [s.id for s in c.students(False)] and c.id not in without_classes) for c in class_set ]
+        class_valid_iterator = [ (student in c.students(False) and c.id not in without_classes) for c in class_set ]
         subimplication_valid_iterator = [ (not i.fails_implication(student, already_seen_implications, without_classes)) for i in self.classimplication_set.all() ]
         
         if not ClassImplication._ops[self.operation](class_valid_iterator + subimplication_valid_iterator):
@@ -1452,15 +1651,17 @@ class ClassCategories(models.Model):
 
     Categories include 'Mathematics', 'Science', 'Zocial Zciences', etc.
     """
-    category = models.TextField()
-
+    
+    category = models.TextField(blank=False)
+    symbol = models.CharField(max_length=1, default='?', blank=False)
+    
     class Meta:
         verbose_name_plural = 'Class Categories'
         app_label = 'program'
         db_table = 'program_classcategories'
 
-    def __str__(self):
-        return str(self.category)
+    def __unicode__(self):
+        return unicode(self.category)
         
         
     @staticmethod

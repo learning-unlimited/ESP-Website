@@ -28,42 +28,56 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, CoreModule
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, CoreModule, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.datatree.models import GetNode
-from esp.users.models import UserBit
-from django import newforms as forms
+from esp.datatree.models import *
+from esp.users.models import User, UserBit
+from django import forms
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.middleware import ESPError
 
-class UserBitForm( forms.form_for_model(UserBit) ):
+
+
+class UserBitForm(forms.ModelForm):
     def __init__(self, bit = None, *args, **kwargs):
-        from django import newforms as forms
+        super(UserBitForm, self).__init__(*args, **kwargs)
 
         if bit != None:
-            self.base_fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
-            self.base_fields['enddate'] = forms.DateTimeField(initial=bit.enddate, required=False)
-            self.base_fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput(), required=False)
+            self.fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
+            self.fields['enddate'] = forms.DateTimeField(initial=bit.enddate, required=False)
+            self.fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput())
+            self.fields['qsc'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.qsc.id, widget=forms.HiddenInput())
+            self.fields['verb'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.verb.id, widget=forms.HiddenInput())
         else:
-            self.base_fields['startdate'] = forms.DateTimeField(required=False)
-            self.base_fields['enddate'] = forms.DateTimeField(required=False)
+            self.fields['startdate'] = forms.DateTimeField(required=False)
+            self.fields['enddate'] = forms.DateTimeField(required=False)
+            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
 
-        self.base_fields['user'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
-        self.base_fields['qsc'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
-        self.base_fields['verb'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
-        self.base_fields['startdate'].line_group = 1
-        self.base_fields['enddate'].line_group = 1
-        self.base_fields['recursive'] = forms.BooleanField(label = 'Covers deadlines beneath it ("Recursive")', required=False) # I consider this a bug, though it makes sense in context of the form protocol: Un-checked BooleanFields are marked as having not been filled out
-        self.base_fields['recursive'].line_group = 2
-            
-        super(UserBitForm, self).__init__(*args, **kwargs)
+        self.fields['user'] = forms.ModelChoiceField(queryset=User.objects.all(), widget=forms.HiddenInput(), required=False)
+        
+        self.fields['startdate'].line_group = 1
+        self.fields['enddate'].line_group = 1
+        self.fields['recursive'] = forms.BooleanField(label = 'Covers deadlines beneath it ("Recursive")', required=False) # I consider this a bug, though it makes sense in context of the form protocol: Un-checked BooleanFields are marked as having not been filled out
+        self.fields['recursive'].line_group = 2
         
     as_table = grouped_as_table
+    
+    class Meta:
+        model = UserBit
 
 class AdminCore(ProgramModuleObj, CoreModule):
-        
+
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Program Dashboard",
+            "module_type": "manage",
+            "seq": -9999
+            }
+
+    @aux_call
     @needs_admin
     def main(self, request, tl, one, two, module, extra, prog):
         context = {}
@@ -75,6 +89,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         return render_to_response(self.baseDir()+'directory.html', request, (prog, tl), context)
 
+    @main_call
     @needs_admin
     def dashboard(self, request, tl, one, two, module, extra, prog):
         """ The administration panel showing statistics for the program, and a list
@@ -92,6 +107,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_admin
     def deadline_management(self, request, tl, one, two, module, extra, prog):
         """ View for controlling program deadlines (V/Deadline/Registration/*) """
@@ -115,7 +131,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         def mux_bit_to_dict(bit):
             return { 'startdate': bit.startdate, 'enddate': bit.enddate, 'recursive': bit.recursive }
 
-        from django import newforms as forms
+        from django import forms
         
         nodes = add_tree_nodes_to_list(deadline_verb)
 

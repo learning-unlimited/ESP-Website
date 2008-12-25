@@ -1,0 +1,92 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Student selection for {{ sec }}{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Teacher Panel"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<style type="text/css">
+
+.roster td, .roster th {
+  border: 1px solid #ccc;
+  border-collapse: collapse;
+  padding: 3px;
+}
+table.roster { 
+  border: 2px solid black;
+  border-collapse: collapse;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1>Review your students</h1>
+<br />
+<p>
+<a href="/teach/{{ program.getUrlBase }}/teacherreg">
+Back to teacher reg
+</a>
+</p>
+<br /><br />
+<h2>Students interested in &quot;{{ sec }}&quot;</h2>
+<br />
+<div id="program_form">
+<form method="POST" action="/teach/{{ prog.getUrlBase }}/select_students/{{ sec.id }}">
+<table class="roster">
+<thead>
+<tr>
+  <th class="small">Name</th>
+  <th class="small">Grade</th>
+  <th class="small">Registration Status</th>
+  <th class="small">Time signed up</th>
+  <th class="small">Enroll</th>
+  <th class="small">Reject</th>
+  <th class="small">Let directors decide</th>
+</tr>
+</thead>
+<tbody>
+{% for student in students_list %}
+  <tr>
+    <td>
+   {{ student.name }}
+    </td>
+    <td>
+   {{ student.getGrade }}
+    </td>    
+    <td>
+    {% for bit in student.bits %}
+       {{ bit }}{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+    </td>
+    <td>
+    {{ student.added_class|date:"M d, Y h:i:s" }}
+    </td>
+    <td>
+        <input type="radio" name="regstatus_{{ student.id }}_{{ sec.id }}" value="enroll" {% if student.enrolled %}checked{% endif %}/>
+    </td>    
+    <td>
+        <input type="radio" name="regstatus_{{ student.id }}_{{ sec.id }}" value="reject" {% if student.rejected %}checked{% endif %}/>
+    </td>
+    <td>    
+        <input type="radio" name="regstatus_{{ student.id }}_{{ sec.id }}" value="undecided" {% if not student.enrolled %}{% if not student.rejected %}checked{% endif %}{% endif %}/>
+    </td>
+  </tr>
+{% endfor %}
+<tr>
+<th colspan="7" align="center">
+    <input class="fancybutton" type="submit" value="Submit" />
+</th>
+</tr>
+
+</tbody>
+</table>
+</form>
+</div>
+
+{% endblock %}

@@ -31,11 +31,10 @@ Email: web@esp.mit.edu
 
 from esp.web.util.main import render_to_response
 from esp.users.models import PersistentQueryFilter, K12School, ContactInfo, ESPUser, User, ESPError, ZipCode
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
 from esp.program.modules import module_ext
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
-from django.db.models.query import QNot
 from esp.program.modules.forms.mailinglabels_schools import SchoolSelectForm
 from esp.program.modules.forms.mailinglabels_banzips import BanZipsForm
 import operator
@@ -46,13 +45,22 @@ class MailingLabels(ProgramModuleObj):
     """ This allows one to generate Mailing Labels for both schools and users. You have the option of either creating a file which can be sent to MIT mailing services or actually create printable files.
     """
 
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Generate Mailing Labels",
+            "module_type": "manage",
+            "seq": 100
+            }
+
+    @aux_call
     @needs_admin
     def badzips(self, request, tl, one, two, module, extra, prog):
         """ This function will allow someone to enter zip codes to mark as undeliverable. """
         if request.method=="POST":
             form = BanZipsForm(request.POST)
             if form.is_valid():
-                zips = form.clean_data['zips'].strip().splitlines()
+                zips = form.cleaned_data['zips'].strip().splitlines()
                 for zipc in zips:
                     if len(zipc.strip()) < 10:
                         continue
@@ -67,6 +75,7 @@ class MailingLabels(ProgramModuleObj):
         return render_to_response(self.baseDir()+"mailinglabel_badzips.html", request, (prog, tl), {'form': form})
                 
 
+    @main_call
     @needs_admin
     def mailinglabel(self, request, tl, one, two, module, extra, prog):
         """ This function will allow someone to generate mailing labels. """
@@ -95,22 +104,22 @@ class MailingLabels(ProgramModuleObj):
                     form = SchoolSelectForm(request.POST)
                     if form.is_valid():
                         try:
-                            zipc = ZipCode.objects.get(zip_code = form.clean_data['zip_code'])
+                            zipc = ZipCode.objects.get(zip_code = form.cleaned_data['zip_code'])
                         except:
-                            raise ESPError(False), 'Please enter a valid US zipcode. "%s" is not valid.' % form.clean_data['zip_code']
+                            raise ESPError(False), 'Please enter a valid US zipcode. "%s" is not valid.' % form.cleaned_data['zip_code']
 
-                        zipcodes = zipc.close_zipcodes(form.clean_data['proximity'])
+                        zipcodes = zipc.close_zipcodes(form.cleaned_data['proximity'])
 
-                        combine = form.clean_data['combine_addresses']
+                        combine = form.cleaned_data['combine_addresses']
                         
                         Q_infos = Q(k12school__id__isnull = False,
                                     address_zip__in = zipcodes)
 
-                        grades = form.clean_data['grades'].strip().split(',')
-                        if len(form.clean_data['grades_exclude'].strip()) == 0:
+                        grades = form.cleaned_data['grades'].strip().split(',')
+                        if len(form.cleaned_data['grades_exclude'].strip()) == 0:
                             grades_exclude = []
                         else:
-                            grades_exclude = form.clean_data['grades_exclude'].strip().split(',')
+                            grades_exclude = form.cleaned_data['grades_exclude'].strip().split(',')
                         
                         if len(grades) > 0:
                             Q_grade = reduce(operator.or_, [Q(k12school__grades__contains = grade) for grade in grades])
@@ -118,9 +127,9 @@ class MailingLabels(ProgramModuleObj):
 
                         if len(grades_exclude) > 0:
                             Q_grade = reduce(operator.or_, [Q(k12school__grades__contains = grade) for grade in grades_exclude])
-                            Q_infos &= QNot(Q_grade)
+                            Q_infos &= ~Q_grade
 
-                        f = PersistentQueryFilter.create_from_Q(ContactInfo, Q_infos, description="All ContactInfos for K12 schools with grades %s and %s miles from zipcode %s." % (form.clean_data['grades'], form.clean_data['proximity'], form.clean_data['zip_code']))
+                        f = PersistentQueryFilter.create_from_Q(ContactInfo, Q_infos, description="All ContactInfos for K12 schools with grades %s and %s miles from zipcode %s." % (form.cleaned_data['grades'], form.cleaned_data['proximity'], form.cleaned_data['zip_code']))
 
                         num_schools = ContactInfo.objects.filter(Q_infos).distinct().count()
 
