@@ -61,7 +61,7 @@ class OnSiteClassList(ProgramModuleObj):
             else:
                 context[key_option] = defaults[key_option]
 
-        classes = self.program.sections().filter(classsubject__status=10).order_by('classsubject__category', 'classsubject__meeting_times')
+        classes = self.program.sections().filter(parent_class__status=10).order_by('parent_class__category', 'parent_class__meeting_times')
 
         time_now = datetime.now()
         window_start = time_now + timedelta(-1, 85800)

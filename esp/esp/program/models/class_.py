@@ -162,6 +162,7 @@ class ClassSection(models.Model):
 
     cache = SectionCacheHelper
     checklist_progress_all_cached = checklist_progress_base('ClassSection')
+    parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
 
     #   Some properties for traits that are actually traits of the ClassSubjects.
     def _get_parent_class(self):
@@ -173,7 +174,7 @@ class ClassSection(models.Model):
             fresh_value = ClassSubject.objects.get(sections=self)
             self.cache['parent_class'] = fresh_value
             return fresh_value
-    parent_class = property(_get_parent_class)
+    #parent_class = property(_get_parent_class)
     
     def _get_parent_program(self):
         return self.parent_class.parent_program
@@ -939,7 +940,7 @@ class ClassSubject(models.Model):
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
     requested_room = models.TextField(blank=True, null=True)
     
-    sections = models.ManyToManyField(ClassSection, blank=True)
+    #sections = models.ManyToManyField(ClassSection, blank=True)
     session_count = models.IntegerField(default=1)
     
     objects = ClassManager()
@@ -951,6 +952,17 @@ class ClassSubject(models.Model):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
 
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        values = cls.objects.filter(anchor__friendly_name__istartswith=data).values(
+                    'id', 'anchor__friendly_name').order_by('anchor__friendly_name')
+        for v in values:
+            v['ajax_str'] = v['anchor__friendly_name']
+        return values
+    
+    def ajax_str(self):
+        return self.title()
+    
     def prettyDuration(self):
         if self.sections.all().count() <= 0:
             return "N/A"
@@ -1319,7 +1331,7 @@ class ClassSubject(models.Model):
 
     def getResourceRequests(self): # get all resource requests associated with this ClassSubject
         from esp.resources.models import ResourceRequest
-        return ResourceRequest.objects.filter(target__classsubject=self)
+        return ResourceRequest.objects.filter(target__parent_class=self)
 
     def conflicts(self, teacher):
         from esp.users.models import ESPUser

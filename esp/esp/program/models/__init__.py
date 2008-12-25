@@ -571,7 +571,7 @@ class Program(models.Model):
         return ClassSubject.objects.filter(parent_program = self).order_by('id')        
 
     def class_sections(self):
-        return ClassSection.objects.filter(classsubject__parent_program = self).order_by('id')
+        return ClassSection.objects.filter(parent_class__parent_program = self).order_by('id')
     
     def class_ids_implied(self, use_cache=True):
         """ Returns the class ids implied by classes in this program. Returns [-1] for none so the cache doesn't keep getting hit. """
@@ -590,7 +590,7 @@ class Program(models.Model):
         return retVal
 
     def sections(self, use_cache=True):
-        return ClassSection.objects.filter(classsubject__parent_program=self).distinct()
+        return ClassSection.objects.filter(parent_class__parent_program=self).distinct()
 
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')

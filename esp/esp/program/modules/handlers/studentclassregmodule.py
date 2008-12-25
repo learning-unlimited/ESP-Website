@@ -408,7 +408,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         oldclasses = ClassSection.objects.filter(
             QTree(anchor__userbit_qsc__verb__below = v_registered_base),
             meeting_times=extra,
-            classsubject__parent_program = self.program,
+            parent_class__parent_program = self.program,
             anchor__userbit_qsc__user = self.user).distinct()
                              
         #   Narrow this down to one class if we're using the priority system.
