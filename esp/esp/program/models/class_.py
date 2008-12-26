@@ -838,8 +838,8 @@ class ClassSection(models.Model):
         except:
             pass
 
-    def save(self):
-        super(ClassSection, self).save()
+    def save(self, *args, **kwargs):
+        super(ClassSection, self).save(*args, **kwargs)
         self.update_cache()
 
     def getRegBits(self, user):
@@ -1574,8 +1574,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             return 0
         return sort_fn
 
-    def save(self):
-        super(ClassSubject, self).save()
+    def save(self, *args, **kwargs):
+        super(ClassSubject, self).save(*args, **kwargs)
         self.update_cache()
 
     class Meta:

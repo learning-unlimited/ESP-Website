@@ -469,8 +469,8 @@ class UserBit(models.Model):
             return 'GRANT %s ON %s TO %s%s' % (clean_node(self.verb), clean_node(self.qsc),
                                                user, recurse)
 
-    def save(self):
-        super(UserBit, self).save()
+    def save(self, *args, **kwargs):
+        super(UserBit, self).save(*args, **kwargs)
 
         if not hasattr(self.user,'id') or self.user.id is None:
             UserBit.updateCache(None)
@@ -662,8 +662,8 @@ class UserBitImplication(models.Model):
             implication.created_bits.add(newbit)
             implication.save()
 
-    def save(self):
-        super(UserBitImplication, self).save()
+    def save(self, *args, **kwargs):
+        super(UserBitImplication, self).save(*args, **kwargs)
 
         self.apply()
     
