@@ -15,7 +15,7 @@
 {% if saved_record %}<font color="red">Record successfully saved.</font>{% endif %}
 
 <ul>
-{% for cls in prog.class_sections %}
+{% for cls in prog.sections %}
 <li><a href="?class_id={{cls.id}}">{{ cls }}</a> ({{ cls.parent_class.pretty_teachers }}; {{ cls.friendly_times|join:", " }}): {% ifequal cls.num_students 0 %}<font color="red">{% endifequal %}{{ cls.num_students }} student{{ cls.num_students|pluralize }}{% ifequal cls.num_students 0 %}</font>{% endifequal %}</li>
 {% endfor %}
 </ul>
