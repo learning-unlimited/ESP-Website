@@ -51,13 +51,13 @@ class Log(models.Model):
                self.extra             + '\n\nSTACKTRACE: ' + \
                self.stack_trace
 
-    def save(self):
+    def save(self, *args, **kwargs):
         if LOG_FILE != None:
             errfile = open(LOG_FILE, 'a')
             errfile.write( str(self) )
             errfile.close()
 
-        super(Log, self).save()
+        super(Log, self).save(*args, **kwargs)
 
     class Admin:
         pass

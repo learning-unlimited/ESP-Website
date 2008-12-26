@@ -165,7 +165,7 @@ class Resource(models.Model):
             else:
                 return '%s (%s)' % (self.name, str(self.res_type))
     
-    def save(self):
+    def save(self, *args, **kwargs):
         if self.group_id == -1:
             #   Give this a new group id.
             vals = Resource.objects.all().order_by('-group_id').values_list('group_id', flat=True)
@@ -181,7 +181,7 @@ class Resource(models.Model):
         cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.id
         cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.id
         
-        super(Resource, self).save()
+        super(Resource, self).save(*args, **kwargs)
 
         cache.delete(cache_key_QObjects)
         cache.delete(cache_key)
@@ -378,11 +378,11 @@ class ResourceAssignment(models.Model):
     target = models.ForeignKey(ClassSection, null=True)
     target_subj = models.ForeignKey(ClassSubject, null=True)
 
-    def save(self):
+    def save(self, *args, **kwargs):
         cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.resource.id
         cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.resource.id
         
-        super(ResourceAssignment, self).save()
+        super(ResourceAssignment, self).save(*args, **kwargs)
 
         cache.delete(cache_key_QObjects)
         cache.delete(cache_key)

@@ -136,10 +136,10 @@ class DataTree(models.Model):
         return super(DataTree, self).delete()
 
 
-    def save(self, create_root=False, uri_fix=False, old_save=False, start_size=None):
+    def save(self, create_root=False, uri_fix=False, old_save=False, start_size=None, *args, **kwargs):
         " This will save the tree, using the rules of a tree. "
         if old_save:
-            return models.Model.save(self)
+            return models.Model.save(self, *args, **kwargs)
 
         if not self.id:
             obj = DataTree.objects.create(name=self.name, friendly_name=self.name, parent=self.parent, start_size=start_size, uri=self.uri)

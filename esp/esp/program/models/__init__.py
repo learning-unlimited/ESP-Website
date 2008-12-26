@@ -286,9 +286,9 @@ class Program(models.Model):
     get_manage_url = _get_type_url("manage")
     get_onsite_url = _get_type_url("onsite")
 
-    def save(self):
+    def save(self, *args, **kwargs):
         
-        retVal = super(Program, self).save()
+        retVal = super(Program, self).save(*args, **kwargs)
         
         return retVal
 
@@ -571,7 +571,7 @@ class Program(models.Model):
         return ClassSubject.objects.filter(parent_program = self).order_by('id')        
 
     def class_sections(self):
-        return ClassSection.objects.filter(classsubject__parent_program = self).order_by('id')
+        return ClassSection.objects.filter(parent_class__parent_program = self).order_by('id')
     
     def class_ids_implied(self, use_cache=True):
         """ Returns the class ids implied by classes in this program. Returns [-1] for none so the cache doesn't keep getting hit. """
@@ -590,7 +590,7 @@ class Program(models.Model):
         return retVal
 
     def sections(self, use_cache=True):
-        return ClassSection.objects.filter(classsubject__parent_program=self).distinct()
+        return ClassSection.objects.filter(parent_class__parent_program=self).distinct()
 
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')
@@ -965,14 +965,14 @@ class RegistrationProfile(models.Model):
         #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now())):
         #    bit.expire()
         
-    def save(self):
+    def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
         #  TODO: make Django NOT do a db query to grab ESPUser's data
         #  probably requires manually getting the cache data, since
         #  it's not as lazily evaluated as it claims to be
         ESPUser(self.user).cache['getLastProfile'] = None
-        super(RegistrationProfile, self).save()
+        super(RegistrationProfile, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         """ clear getLastProfile cache """
@@ -1062,7 +1062,7 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
-    def save(self):
+    def save(self, *args, **kwargs):
         """ update the timestamp """
         self.last_ts = datetime.now()
         if self.program_id is None:
@@ -1071,7 +1071,7 @@ class TeacherBio(models.Model):
             except:
                 raise ESPError(), 'Error: There needs to exist an administrive program anchored at Q/Programs/Dummy_Programs/Profile_Storage.'
 
-        super(TeacherBio, self).save()
+        super(TeacherBio, self).save(*args, **kwargs)
 
     def url(self):
         return '/teach/teachers/%s/bio.html' % self.user.username
@@ -1124,13 +1124,13 @@ class FinancialAidRequest(models.Model):
         app_label = 'program'
         db_table = 'program_financialaidrequest'
 
-    def save(self):
+    def save(self, *args, **kwargs):
         """ If possible, find the student's invoice and update it to reflect the 
         financial aid that has been granted. """
         
         #   By default, the amount received is 0.  If this is the case, don't do
         #   any extra work.
-        models.Model.save(self)
+        models.Model.save(self, *args, **kwargs)
         if (not self.amount_received) or (self.amount_received <= 0):
             return
         
