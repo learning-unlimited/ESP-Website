@@ -13,7 +13,7 @@ sqllist = [
         FROM program_class_sections l
         WHERE program_classsection.id = l.classsection_id""",
     'ALTER TABLE program_classsection ALTER COLUMN parent_class_id SET NOT NULL',
-    'DROP TABLE program_class_sections',
+    #'DROP TABLE program_class_sections',
     ]
 
 cursor = connection.cursor()
