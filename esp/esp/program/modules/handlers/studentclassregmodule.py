@@ -83,9 +83,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     
     def isCompleted(self):
         self.user = ESPUser(self.user)
-        if len(self.user.getClasses(self.program)) == 0:
-            return False
-        return (len(self.user.getClasses(self.program)) > 0)
+        return self.user.getSections(self.program).count() > 0
 
     def deadline_met(self):
         #tmpModule = ProgramModuleObj()

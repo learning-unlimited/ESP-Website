@@ -420,7 +420,6 @@ class ESPUser(User, AnonymousUser):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
         here's a slightly more general function for finding who belongs where. """
         from esp.program.models import ClassSection
-        _import_userbit()
         
         if program:
             qsc_base = program.anchor

@@ -61,7 +61,7 @@ class AdminVitals(ProgramModuleObj):
         classes = self.program.classes().select_related()
         vitals = {'classtotal': classes}
 
-        vitals['classsections'] = self.program.class_sections().select_related()
+        vitals['classsections'] = self.program.sections().select_related()
         vitals['classapproved'] = classes.filter(status=10)
         vitals['classunreviewed'] = classes.filter(status=0)
         vitals['classrejected'] = classes.filter(status=-10)

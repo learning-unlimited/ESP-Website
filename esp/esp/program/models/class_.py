@@ -165,17 +165,6 @@ class ClassSection(models.Model):
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
 
     #   Some properties for traits that are actually traits of the ClassSubjects.
-    def _get_parent_class(self):
-        """ The many-to-many field should have only one ClassSubject per ClassSection. """
-        cached_value = self.cache['parent_class']
-        if cached_value is not None:
-            return cached_value
-        else:
-            fresh_value = ClassSubject.objects.get(sections=self)
-            self.cache['parent_class'] = fresh_value
-            return fresh_value
-    #parent_class = property(_get_parent_class)
-    
     def _get_parent_program(self):
         return self.parent_class.parent_program
     parent_program = property(_get_parent_program)
@@ -939,8 +928,6 @@ class ClassSubject(models.Model):
     directors_notes = models.TextField(blank=True, null=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
     requested_room = models.TextField(blank=True, null=True)
-    
-    #sections = models.ManyToManyField(ClassSection, blank=True)
     session_count = models.IntegerField(default=1)
     
     objects = ClassManager()

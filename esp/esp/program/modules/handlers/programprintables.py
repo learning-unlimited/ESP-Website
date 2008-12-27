@@ -1229,7 +1229,7 @@ Student schedule for %s:
         write_csv = csv.writer(response)
 
         # get the list of all the sections, and all the times for this program.
-        sections = prog.class_sections()
+        sections = prog.sections()
         times = prog.getTimeSlots()
         sections_possible_times = [(section, section.viable_times()) for section in sections]
 
