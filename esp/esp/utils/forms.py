@@ -29,8 +29,9 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from django.newforms.forms import Form, Field, BoundField
-from django.newforms.util import ErrorList
+from django.forms.forms import Form, Field, BoundField
+from django import forms
+from django.forms.util import ErrorList
 from django.utils.html import escape
 
 from esp.utils.widgets import CaptchaWidget
@@ -71,6 +72,18 @@ class CaptchaForm(Form):
         if local_request and not local_request.user.is_authenticated():
             self.fields['captcha'] = CaptchaField(request=local_request, required=True)
 
+class CaptchaModelForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        local_request = None
+        if 'request' in kwargs:
+            local_request = kwargs['request']
+            del kwargs['request']
+
+        forms.ModelForm.__init__(self, *args, **kwargs)
+
+        if local_request and not local_request.user.is_authenticated():
+            self.fields['captcha'] = CaptchaField(request=local_request, required=True)
+    
 
 def new_callback(exclude=None, include=None):
     """
@@ -179,7 +192,7 @@ def add_fields_to_class(target_class, new_fields):
 
 def save_instance(form, instance, additional_fields={}, commit=True):
     """
-    Saves bound Form ``form``'s clean_data into model instance ``instance``.
+    Saves bound Form ``form``'s cleaned_data into model instance ``instance``.
 
     Assumes ``form`` has a field for every non-AutoField database field in
     ``instance``. If commit=True, then the changes to ``instance`` will be
@@ -192,13 +205,13 @@ def save_instance(form, instance, additional_fields={}, commit=True):
     
     if form.errors:
         raise ValueError("The %s could not be changed because the data didn't validate." % opts.object_name)
-    clean_data = form.clean_data
+    cleaned_data = form.cleaned_data
     
     for f in opts.fields:
         if not f.editable or isinstance(f, models.AutoField):
             continue
-        if f.name in clean_data.keys():
-            setattr(instance, f.name, clean_data[f.name])
+        if f.name in cleaned_data.keys():
+            setattr(instance, f.name, cleaned_data[f.name])
         
     #   If additional fields are supplied, write them into the instance.
     #   I don't have a better way right now.
@@ -208,8 +221,8 @@ def save_instance(form, instance, additional_fields={}, commit=True):
     if commit:
         instance.save()
         for f in opts.many_to_many:
-            if f.name in clean_data.keys():
-                setattr(instance, f.attname, clean_data[f.name])
+            if f.name in cleaned_data.keys():
+                setattr(instance, f.attname, cleaned_data[f.name])
 
     # GOTCHA: If many-to-many data is given and commit=False, the many-to-many
     # data will be lost. This happens because a many-to-many options cannot be

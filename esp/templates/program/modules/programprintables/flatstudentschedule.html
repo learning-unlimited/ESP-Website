@@ -30,7 +30,7 @@ td, th {
 
 </head>
 <body>
-
+{% autoescape off %}
 <table style="border: 1px solid black; border-collapse: collapse;">
 <tr>
  <th>Num</th>
@@ -51,6 +51,6 @@ td, th {
 </tr>
 {% endfor %}
 </table>
-
+{% endautoescape %}
 </body>
 </html>

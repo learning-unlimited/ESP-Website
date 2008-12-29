@@ -1,6 +1,6 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}Edit Teacher Biography{% endblock %}
+{% block title %}{{biouser.name}}{% endblock %}
 
 {% block subsection_name %}Teacher Biography{% endblock %}
 
@@ -53,7 +53,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
   <td colspan="2">
   <h2>Brief Biographical Sketch:</h2>
   <p>
-    {{bio.bio|escape|linebreaks }}
+    {{bio.bio|linebreaks }}
   </p>
   <br />
   <br />
@@ -66,7 +66,9 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
   {% if classes|length_is:0 %}
    None found.
   {% else %}
+  {% autoescape off %}
   {{ classes|join:"<br /><br />" }}
+  {% endautoescape %}
   {% endif %}
   <br />  <br />  <br />  <br />
 

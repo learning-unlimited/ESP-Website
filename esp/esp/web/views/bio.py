@@ -28,112 +28,136 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+from django.core.files.base import ContentFile
 
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.web.util         import get_from_id, render_to_response
-from esp.datatree.models  import GetNode
-from django               import forms
-from django.http          import HttpResponseRedirect
+from esp.datatree.models  import *
+from django.http          import HttpResponseRedirect, Http404
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
 
 @login_required
-def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False):
-	""" Edits a teacher bio """
-	from esp.web.manipulators import TeacherBioManipulator
-	
-	if tl == '':
-		founduser = ESPUser(request.user)
-	else:
-		founduser = ESPUser.getUserFromNum(first, last, usernum)
+def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
+    """ Edits a teacher bio, given user and program identification information """
+    
+    try:
+        if tl == '':
+            founduser = ESPUser(request.user)
+        else:
+            if username != '':
+                founduser = ESPUser.objects.get(username=username)
+            else:
+                founduser = ESPUser.getUserFromNum(first, last, usernum)
+    except:
+        raise Http404
+    
+    foundprogram = get_from_id(progid, Program, 'program', False)
 
-	if not founduser.isTeacher():
-		raise ESPError(False), '%s is not a teacher of ESP.' % \
-		                       (founduser.name())
+    return bio_edit_user_program(request, founduser, foundprogram, external)
 
-	if request.user.id != founduser.id and request.user.is_staff != True:
-		raise ESPError(False), 'You are not authorized to edit this biography.'
-		
-	
-	foundprogram = get_from_id(progid, Program, 'program', False)
+@login_required
+def bio_edit_user_program(request, founduser, foundprogram, external=False):
+    """ Edits a teacher bio, given user and program """
 
-	lastbio      = TeacherBio.getLastBio(founduser)
-		
-	
-	manipulator = TeacherBioManipulator()
+    if founduser is None:
+        if external:
+            raise ESPError(), 'No user given.'
+        else:
+            raise Http404
 
-	
+    if not founduser.isTeacher():
+        raise ESPError(False), '%s is not a teacher of ESP.' % \
+                               (founduser.name())
 
-	# if we submitted a newly edited bio...
-	if request.method == 'POST' and request.POST.has_key('bio_submitted'):
-		new_data = request.POST.copy()
-		new_data.update(request.FILES) # Add any files that exist
+    if request.user.id != founduser.id and request.user.is_staff != True:
+        raise ESPError(False), 'You are not authorized to edit this biography.'
+        
+    lastbio      = TeacherBio.getLastBio(founduser)
+        
+    
+    # if we submitted a newly edited bio...
+    from esp.web.forms.bioedit_form import BioEditForm
+    if request.method == 'POST' and request.POST.has_key('bio_submitted'):
+        form = BioEditForm(request.POST, request.FILES)
 
-		manipulator.prepare(new_data) # make any form changes
+        if form.is_valid():
+            if foundprogram is not None:
+                # get the last bio for this program.
+                progbio = TeacherBio.getLastForProgram(founduser, foundprogram)
+            else:
+                progbio = lastbio
 
-		
-		errors = manipulator.get_validation_errors(new_data)
+            # the slug bio and bio
+            progbio.slugbio  = form.cleaned_data['slugbio']
+            progbio.bio      = form.cleaned_data['bio']
+            
+            progbio.save()
+            # save the image
+            if form.cleaned_data['picture'] is not None:
+                try:
+                    picture = form.cleaned_data['picture']
+                    picture.seek(0)
+                    progbio.picture.save(picture.name, ContentFile(picture.read()))
+                except:
+                    #   If you run into a problem processing the image, just ignore it.
+                    progbio.picture = lastbio.picture
+                    progbio.save()
+            else:
+                progbio.picture = lastbio.picture
+                progbio.save()
+            if external:
+                return True
+            return HttpResponseRedirect(progbio.url())
+        
+    else:
+        formdata = {'slugbio': lastbio.slugbio, 'bio': lastbio.bio, 'picture': lastbio.picture}
+        form = BioEditForm(formdata)
+        
+    return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/myesp'), {'form':    form,
+                                                   'user':    founduser,
+                                                   'picture_file': lastbio.picture})
 
-		if not errors:
-			if foundprogram is not None:
-				# get the last bio for this program.
-				progbio = TeacherBio.getLastForProgram(founduser, foundprogram)
-			else:
-				progbio = lastbio
+    
+    
 
-			# the slug bio and bio
-			progbio.slugbio  = new_data['slugbio']
-			progbio.bio      = new_data['bio']
-			
-			progbio.save()
-			# save the image
-			if new_data.has_key('picture'):
-				progbio.save_picture_file(new_data['picture']['filename'], new_data['picture']['content'])
-			else:
-				progbio.picture = lastbio.picture
-				progbio.save()
-			if external:
-				return True
-			return HttpResponseRedirect(progbio.url())
-		
-	else:
-		errors = {}
-		new_data = {}
+def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
+    """ Displays a teacher bio """
 
-		new_data['slugbio']      = lastbio.slugbio
-		new_data['bio']          = lastbio.bio
-		new_data['picture_file'] = lastbio.picture
-		
-	return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/myesp'), {'form':    forms.FormWrapper(manipulator, new_data, errors),
-											       'user':    founduser,
-											       'picture_file': lastbio.picture})
+    try:
+        if username != '':
+            founduser = ESPUser.objects.get(username=username)
+        else:
+            founduser = ESPUser.getUserFromNum(first, last, usernum)
+    except:
+        raise Http404
 
-	
-	
+    return bio_user(request, founduser)
 
-def bio(request, tl, last, first, usernum = 0):
-	""" Displays a teacher bio """
+def bio_user(request, founduser):
+    """ Display a teacher bio for a given user """
 
-	founduser = ESPUser.getUserFromNum(first, last, usernum)
+    if founduser is None:
+        raise Http404
 
-	if not founduser.isTeacher():
-		raise ESPError(False), '%s is not a teacher of ESP.' % \
-		                       (founduser.name())
-	
-	bio = TeacherBio.getLastBio(founduser)
-	if bio.picture is None:
-		bio.picture = 'not-available.jpg'
-		
-	if bio.slugbio is None or len(bio.slugbio.strip()) == 0:
-		bio.slugbio = 'ESP Teacher'
-	if bio.bio is None or len(bio.bio.strip()) == 0:
-		bio.bio     = 'Not Available.'
+    if not founduser.isTeacher():
+        raise ESPError(False), '%s is not a teacher of ESP.' % \
+                               (founduser.name())
+    
+    teacherbio = TeacherBio.getLastBio(founduser)
+    if teacherbio.picture is None:
+        teacherbio.picture = 'not-available.jpg'
+        
+    if teacherbio.slugbio is None or len(teacherbio.slugbio.strip()) == 0:
+        teacherbio.slugbio = 'ESP Teacher'
+    if teacherbio.bio is None or len(teacherbio.bio.strip()) == 0:
+        teacherbio.bio     = 'Not Available.'
 
 
-	classes = ArchiveClass.getForUser(founduser)
+    classes = ArchiveClass.getForUser(founduser)
 
-	return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'), {'biouser': founduser,
-											   'bio': bio,
-											   'classes': classes})
+    return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'), {'biouser': founduser,
+                                               'bio': teacherbio,
+                                               'classes': classes})
 

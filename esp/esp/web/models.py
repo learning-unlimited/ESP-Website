@@ -29,29 +29,27 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree, GetNode
+from django.db.models.query import Q
+from esp.datatree.models import *
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
 from esp.db.fields import AjaxForeignKey
-from esp.db.models import Q
-
+        
 # Create your models here.
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
     path = AjaxForeignKey(DataTree, related_name = 'navbar')
     sort_rank = models.IntegerField()
-    link = models.CharField(maxlength=256)
-    text = models.CharField(maxlength=64)
+    link = models.CharField(max_length=256)
+    text = models.CharField(max_length=64)
     indent = models.BooleanField()
-    section = models.CharField(maxlength=64,blank=True)
-
-        
+    section = models.CharField(max_length=64,blank=True)
 
     def can_edit(self, user):
         return UserBit.UserHasPerms(user, self.path, GetNode('V/Administer/Edit/QSD'))
     
-    def __str__(self):
+    def __unicode__(self):
         return self.path.full_name() + ':' + self.section + ':' + str(self.sort_rank) + ' (' + self.text + ') ' + '[' + self.link + ']' 
 
     def makeTitle(self):
@@ -60,9 +58,6 @@ class NavBarEntry(models.Model):
     def makeUrl(self):
         return self.link
     
-    class Admin:
-        pass
-
     class Meta:
         verbose_name_plural = 'Nav Bar Entries'
 
@@ -92,4 +87,5 @@ class NavBarEntry(models.Model):
                 raise NavBarEntry.DoesNotExist
             
         # Find the valid entries
-        return NavBarEntry.objects.filter(Q(path__above = branch)).order_by('sort_rank')
+        return NavBarEntry.objects.filter(QTree(path__above =branch)).order_by('sort_rank')
+

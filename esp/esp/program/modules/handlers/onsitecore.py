@@ -28,22 +28,30 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, CoreModule
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, CoreModule, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
-from esp.program.modules.manipulators import OnSiteRegManipulator
 
 
 
 class OnsiteCore(ProgramModuleObj, CoreModule):
-
-        
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "onsite",
+            "module_type": "onsite",
+            "seq": -1000,
+            "main_call": "main",
+            #"aux_calls": "reg,checkin" # These are present in the ESP DB, but, not sure where they're actually defined?
+            }
+    
+    @main_call
     @needs_onsite
     def main(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """

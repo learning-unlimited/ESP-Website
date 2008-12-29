@@ -6,11 +6,11 @@
 {% block keywords %}{{ qsdrec.keywords|default_if_none:"esp,mit esp,mit,education,educational studies program,learn,teach,high school"|escape }}{% endblock %}
 {% block description %}{{ qsdrec.description|default_if_none:""|escape }}{% endblock %}
 
-{% block subsection %}{{ title|subsection }}{% endblock %}
+{% block subsection %}{% autoescape off %}{{ title|subsection }}{% endautoescape %}{% endblock %}
 
 {% block content %}
 
 {% load render_qsd %}
-{% render_qsd qsdrec %}
+{% autoescape off %}{% render_qsd qsdrec request.user %}{% endautoescape %}
 
 {% if have_edit %}<a href="{{ edit_url }}">Edit this page</a>{% endif %}{% endblock %}

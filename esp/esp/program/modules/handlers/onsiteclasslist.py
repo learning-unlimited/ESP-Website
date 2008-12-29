@@ -30,61 +30,53 @@ Email: web@esp.mit.edu
 """
 
 from datetime import datetime, timedelta
-from esp.program.modules.base import ProgramModuleObj, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection
 from esp.web.util import render_to_response
 from esp.cal.models import Event
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 
 class OnSiteClassList(ProgramModuleObj):
+    @classmethod
+    def module_properties(cls):
+        return [ {
+            "link_title": "List of All Classes",
+            "module_type": "onsite",
+            "seq": 31
+            }, {
+            "link_title": "List of Open Classes",
+            "module_type": "onsite",
+            "seq": 31,
+            "main_call": "classList"
+            } ]
 
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """
-        def cmp_class(one, other):
-            if cmp(one.category.id, other.category.id) != 0:
-                return cmp(one.category.id, other.category.id)
-            else:
-                return cmp(one.start_time(), other.start_time())
-
-        def cmp_section(one, other):
-            p1 = one.parent_class
-            p2 = other.parent_class
-            if cmp(p1.category.id, p2.category.id) != 0:
-                return cmp(p1.category.id, p2.category.id)
-            else:
-                return cmp(one.start_time(), other.start_time())
-
         context = {}
-        defaults = {'refresh': 30, 'scrollspeed': 3}
+        defaults = {'refresh': 120, 'scrollspeed': 3}
         for key_option in defaults.keys():
             if request.GET.has_key(key_option):
                 context[key_option] = request.GET[key_option]
             else:
                 context[key_option] = defaults[key_option]
 
-        classes = list(self.program.sections())
-        classes.sort(cmp=cmp_section)
+        classes = self.program.sections().filter(parent_class__status=10).order_by('parent_class__category', 'parent_class__meeting_times')
 
         time_now = datetime.now()
         window_start = time_now + timedelta(-1, 85800)
         window_end = time_now + timedelta(0, 3000)
         curtime = Event.objects.filter(start__gte=window_start, start__lte=window_end)
-        if curtime.count() > 0:
+        if curtime:
             curtime = curtime[0]
         else:
             curtime = None
         
-        categories = {}
-        for sec in classes:
-            categories[sec.parent_class.category_id] = {'id': sec.parent_class.category_id, 'category': sec.parent_class.category.category}
-
-        printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
-
-        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
+        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
         
         return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), context)
 
+    @main_call
     @needs_onsite
     def allClassList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """

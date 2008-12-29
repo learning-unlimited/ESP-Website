@@ -44,20 +44,20 @@ class Log(models.Model):
     stack_trace = models.TextField(blank=True)
     current_date = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def __unicode__(self):
 
         return str(self.current_date) + '\n\nTEXT: ' + \
                self.text              + '\n\nEXTRA:' + \
                self.extra             + '\n\nSTACKTRACE: ' + \
                self.stack_trace
 
-    def save(self):
+    def save(self, *args, **kwargs):
         if LOG_FILE != None:
             errfile = open(LOG_FILE, 'a')
             errfile.write( str(self) )
             errfile.close()
 
-        super(Log, self).save()
+        super(Log, self).save(*args, **kwargs)
 
     class Admin:
         pass

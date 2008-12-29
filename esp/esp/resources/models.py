@@ -36,7 +36,9 @@ from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError_Log
 
 from django.db import models
-from esp.db.models import Q
+from django.db.models.query import Q
+from django.core.cache import cache
+
 import pickle
 
 ########################################
@@ -55,11 +57,26 @@ Procedures:
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
 
+GLOBAL_RESOURCE_CACHE_KEY="RESOURCE__GLOBAL_KEY"
+
+def global_resource_rev():
+    retVal = cache.get(GLOBAL_RESOURCE_CACHE_KEY)
+    if retVal:
+        return retVal
+    else:
+        return increment_global_resource_rev()
+
+def increment_global_resource_rev():
+    import random
+    val = random.randint(1,2**30)
+    cache.set(GLOBAL_RESOURCE_CACHE_KEY, val, timeout=86400)
+    return val
+
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     from esp.program.models import Program
 
-    name = models.CharField(maxlength=40)                          #   Brief name
+    name = models.CharField(max_length=40)                          #   Brief name
     description = models.TextField()                                #   What is this resource?
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(blank=True, default=-1)  #   How important is this compared to other types?
@@ -107,7 +124,7 @@ class ResourceType(models.Model):
     def global_types():
         return ResourceType.objects.filter(program__isnull=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
     
     class Admin:
@@ -121,7 +138,7 @@ class ResourceRequest(models.Model):
     target_subj = models.ForeignKey(ClassSubject, null=True)
     res_type = models.ForeignKey(ResourceType)
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Resource request of %s for %s' % (str(self.res_type), self.target.emailcode())
 
     class Admin:
@@ -131,7 +148,7 @@ class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
     res_type, attach to a user if necessary. """
     
-    name = models.CharField(maxlength=80)
+    name = models.CharField(max_length=80)
     res_type = models.ForeignKey(ResourceType)
     num_students = models.IntegerField(blank=True, default=-1)
     group_id = models.IntegerField(default=-1) # Default value of -1 means ungrouped, or at least so I'm assuming for now in grouped_resources(). -ageng 2008-05-13
@@ -139,7 +156,7 @@ class Resource(models.Model):
     user = AjaxForeignKey(User, null=True, blank=True)
     event = models.ForeignKey(Event)
     
-    def __str__(self):
+    def __unicode__(self):
         if self.user is not None:
             return 'For %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
         else:
@@ -148,20 +165,28 @@ class Resource(models.Model):
             else:
                 return '%s (%s)' % (self.name, str(self.res_type))
     
-    def save(self):
+    def save(self, *args, **kwargs):
         if self.group_id == -1:
             #   Give this a new group id.
-            vals = Resource.objects.all().order_by('-group_id').values('group_id')
+            vals = Resource.objects.all().order_by('-group_id').values_list('group_id', flat=True)
             max_id = 0
             if len(vals) > 0:
-                max_id = vals[0]['group_id']
+                max_id = vals[0]
                 
             self.group_id = max_id + 1
             self.is_unique = True
         else:
             self.is_unique = False
-            
-        super(Resource, self).save()
+
+        cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.id
+        cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.id
+        
+        super(Resource, self).save(*args, **kwargs)
+
+        cache.delete(cache_key_QObjects)
+        cache.delete(cache_key)
+
+        increment_global_resource_rev()
     
     def identical_resources(self):
         res_list = Resource.objects.filter(name=self.name)
@@ -170,21 +195,27 @@ class Resource(models.Model):
     def satisfies_requests(self, req_class):
         #   Returns a list of 2 items.  The first element is boolean and the second element is a list of the unsatisfied requests.
         #   If there are no unsatisfied requests but the room isn't big enough, the first element will be false.
-        result = [True, []]
-        request_list = req_class.getResourceRequests()
-        furnishings = self.associated_resources()
-        id_list = []
+        cache_key = "RESOURCES__SATISFIES_REQUESTS__%s__%s" % (self.id, global_resource_rev())
 
-        for req in request_list:
-            if furnishings.filter(res_type=req.res_type).count() < 1:
-                result[0] = False
-                id_list.append(req.id)
+        result = cache.get(cache_key)
+        if not result:
+            result = [True, []]
+            request_list = req_class.getResourceRequests()
+            furnishings = self.associated_resources()
+            id_list = []
+
+            for req in request_list:
+                if furnishings.filter(res_type=req.res_type).count() < 1:
+                    result[0] = False
+                    id_list.append(req.id)
+            
+            result[1] = ResourceRequest.objects.filter(id__in=id_list)
+
+            cache.set(cache_key, result, timeout=86400)
             
         if self.num_students < req_class.num_students():
             result[0] = False
-            
-        result[1] = ResourceRequest.objects.filter(id__in=id_list)
-            
+        
         return result
     
     def grouped_resources(self):
@@ -224,9 +255,16 @@ class Resource(models.Model):
             self.clear_schedule_cache(program)
             
         self.assignments().delete()
-    
+
     def assignments(self):
-        return ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
+        cache_key = "RESOURCE__ASSIGNMENTS__%s__%s" % (self.id, global_resource_rev())
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+        
+        retVal = ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
+        cache.set(cache_key, retVal, timeout=86400)
+        return retVal
     
     def cache_key(self, program):
         #   Let's make this key acceptable to memcached...
@@ -252,7 +290,7 @@ class Resource(models.Model):
         
         sequence = []
         event_list = list(program.getTimeSlots())
-        room_list = self.identical_resources().filter(event__in=event_list).order_by('event')
+        room_list = self.identical_resources().filter(event__in=event_list)
         for timeslot in event_list:
             single_room = room_list.filter(event=timeslot)
             if single_room.count() == 1:
@@ -299,15 +337,26 @@ class Resource(models.Model):
             return False
         
     def is_available(self, QObjects=False, timeslot=None):
+        if QObjects:
+            cache_key = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.id
+        else:
+            cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.id
+
+        retVal = cache.get(cache_key)
+        if retVal:
+            return retVal
+
         if timeslot is None:
             test_resource = self
         else:
             test_resource = self.identical_resources().filter(event=timeslot)[0]
         
         if QObjects:
-            return QNot(test_resource.is_taken(True))
+            return ~Q(test_resource.is_taken(True))
         else:
-            return not (test_resource.is_taken(False))
+            retVal = not (test_resource.is_taken(False))
+            cache.set(cache_key, retVal, timeout=86400)
+            return retVal
         
     def is_taken(self, QObjects=False):
         if QObjects:
@@ -328,8 +377,20 @@ class ResourceAssignment(models.Model):
                                                
     target = models.ForeignKey(ClassSection, null=True)
     target_subj = models.ForeignKey(ClassSubject, null=True)
+
+    def save(self, *args, **kwargs):
+        cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.resource.id
+        cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.resource.id
+        
+        super(ResourceAssignment, self).save(*args, **kwargs)
+
+        cache.delete(cache_key_QObjects)
+        cache.delete(cache_key)
+
+        increment_global_resource_rev()
+        
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Resource assignment for %s' % str(self.getTargetOrSubject())
     
     def getTargetOrSubject(self):

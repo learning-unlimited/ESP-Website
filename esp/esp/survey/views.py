@@ -33,7 +33,7 @@ Email: web@esp.mit.edu
 
 import datetime
 from django.db import models
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.users.models import UserBit, ESPUser
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
@@ -287,7 +287,7 @@ def top_classes(request, tl, program, instance):
             except ValueError:
                 pass
         
-        categories = ClassCategories.objects.all().order_by('category').exclude(category__contains='SAT')
+        categories = prog.class_categories.all().order_by('category')
         categories = [ x.category for x in categories ]
         
         perclass_data = []

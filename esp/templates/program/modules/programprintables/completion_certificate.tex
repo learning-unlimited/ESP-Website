@@ -1,0 +1,35 @@
+
+{% extends "outlines/letter_base.tex" %}
+
+{% block maincontent %}
+{{ block.super }}
+
+{\bf {\underline {\Large Certificate of Completion \hspace{2.5in} \normalsize {{ prog.niceName }} {{ date_range }} }}} \\
+
+\vspace{0.3in}
+
+This is to certify that \underline{ {{ user.first_name }} {{ user.last_name }} } attended {{ prog.niceName }} and completed the following classes: \\
+
+\hspace{1in} {{ schedule }}
+
+\vspace{0.25in}
+
+{{ prog.anchor.parent.name }} courses are taught by volunteers, primarily MIT students.  The content and difficulty of the subjects varies significantly, from non-academic to college-level.  We are not an accredited institution and cannot issue high-school or college credit for any class.  However, we leave it to school administrators to decide whether ESP courses can be counted as substitutes for high-school classes.  You may view the teachers' course descriptions on the attached pages.  If you would like to talk to an administrator or teacher about the content of a particular course, please e-mail us at {\tt esp@mit.edu} or call us at (617) 253-4882. \\
+
+\hspace{3in}\begin{minipage}{4in}{{ prog.niceName }} Directors \\
+MIT Educational Studies Program \end{minipage}
+
+{% endblock %}
+
+{% block additionalcontent %}
+\clearpage
+\begin{center}
+\begin{minipage}{7in}
+\vspace*{1in}
+{\bf \underline{ {{ prog.niceName }} courses taken by {{ user.first_name }} {{ user.last_name }} } } \\
+\hspace{0.5in}
+{{ descriptions }}
+\end{minipage}
+\end{center}
+{% endblock %}
+

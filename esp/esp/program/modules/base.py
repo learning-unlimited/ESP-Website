@@ -34,14 +34,19 @@ Email: web@esp.mit.edu
 """
 
 from django.db import models
+from django.utils.safestring import mark_safe
+
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser
 from esp.web.util import render_to_response
 from django.http import HttpResponseRedirect, Http404
-from django.contrib.auth import LOGIN_URL, REDIRECT_FIELD_NAME
+from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.conf import settings
 from urllib import quote
-from esp.db.models import Q
+from django.db.models.query import Q
 from django.core.cache import cache
+
+LOGIN_URL = settings.LOGIN_URL
 
 class CoreModule(object):
     """
@@ -54,7 +59,7 @@ class ProgramModuleObj(models.Model):
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
     required = models.BooleanField()
-
+        
     def program_anchor_cached(self, parent=False):
         """ We reference "self.program.anchor" quite often.  Getting it requires two DB lookups.  So, cache it. """
         CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__%d,%d" % ((parent and 1 or 0), self.id)
@@ -64,7 +69,7 @@ class ProgramModuleObj(models.Model):
                 val = self.program.getParentProgram().anchor
             else:
                 val = self.program.anchor
-            cache.set(CACHE_KEY, val, 1)
+            cache.set(CACHE_KEY, val, 60)
 
         return val
 
@@ -73,11 +78,8 @@ class ProgramModuleObj(models.Model):
             return self.doc
         return self.module.link_title
 
-    def __str__(self):
+    def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
-
-    class Admin:
-        pass
 
     def all_views(self):
         if self.module and self.module.aux_calls:
@@ -117,14 +119,6 @@ class ProgramModuleObj(models.Model):
             return Q(id = -1)
         else:
             return Q(id__in = ids)
-    
-    def save(self):
-        """ I'm doing this because DJango doesn't know what object inheritance is..."""
-        if type(self) == ProgramModuleObj:
-            return super(ProgramModuleObj, self).save()
-        baseObj = ProgramModuleObj()
-        baseObj.__dict__ = self.__dict__
-        return baseObj.save()
 
     @staticmethod
     def renderMyESP():
@@ -165,52 +159,52 @@ class ProgramModuleObj(models.Model):
         
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        modules = ProgramModule.objects.filter(main_call = call_txt,
-                                               module_type = tl)
+        cache_key = "PROGRAMMODULE_FIND_MODULE_%s_%s_%s_%s" % (tl, one, two, call_txt)
+        moduleobj = cache.get(cache_key)
+        if moduleobj == None:
 
-        module = None
+            modules = ProgramModule.objects.filter(main_call = call_txt,
+                                                   module_type = tl)[:1]
 
-        if modules.count() == 0:
-            modules = ProgramModule.objects.filter(aux_calls__contains = call_txt,
-                                                   module_type = tl)
-            for module in modules:
-                if call_txt in module.aux_calls.strip().split(','):
-                    break
+            module = None
+
+            if len(modules) == 0:
+                modules = ProgramModule.objects.filter(aux_calls__contains = call_txt,
+                                                       module_type = tl)
+                for module in modules:
+                    if call_txt in module.aux_calls.strip().split(','):
+                        break
+                if not module:
+                    raise Http404
+            else:
+                module = modules[0]
+
             if not module:
                 raise Http404
-        else:
-            module = modules[0]
-
-        if module:
-            moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog)
-            moduleobj = module.getPythonClass()()
-            if len(moduleobjs) == 0:
-                moduleobj.module = module
-                moduleobj.program = prog
-                moduleobj.seq = module.seq
-                moduleobj.required = module.required
-                moduleobj.save()
-            else:
-                moduleobj.__dict__.update(moduleobjs[0].__dict__)
-
-        else:
-            raise Http404
+            
+            moduleobj = ProgramModuleObj.getFromProgModule(prog, module)
+            cache.add(cache_key, moduleobj, timeout=60)
 
         moduleobj.request = request
         moduleobj.user    = ESPUser(request.user)
-        moduleobj.fixExtensions()
         
-        #   For core modules, redirect to the incomplete required modules in the same section first.
-        #   The pages should all redirect to the core on completion.  If none are needed, the
-        #   code here won't do anything and the page will be returned as usual.
-        if isinstance(moduleobj, CoreModule):
-            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).order_by('seq')
-            for m in other_modules:
-                m.request = request
-                m.user    = ESPUser(request.user)
-                m.__class__ = m.module.getPythonClass()
-                if m.user.is_authenticated() and not m.isCompleted() and hasattr(m, m.module.main_call):
-                    return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+        # Set this key if this user has 
+        HAS_FINISHED_REQS_CACHE_KEY = "USER_%s__PROG_%s__TYPE_%s__DONE_REG_REQS" % (request.user.id, prog.id, moduleobj.module.module_type)
+        if not cache.get(HAS_FINISHED_REQS_CACHE_KEY):
+
+            #   For core modules, redirect to the incomplete required modules in the same section first.
+            #   The pages should all redirect to the core on completion.  If none are needed, the
+            #   code here won't do anything and the page will be returned as usual.
+            if request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+                other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).select_related(depth=1).order_by('seq')
+                for m in other_modules:
+                    m.request = request
+                    m.user    = ESPUser(request.user)
+                    m.__class__ = m.module.getPythonClass()
+                    if not m.isCompleted() and hasattr(m, m.module.main_call):
+                        return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+
+            cache.set(HAS_FINISHED_REQS_CACHE_KEY, True, timeout=600)
 
         if hasattr(moduleobj, call_txt):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
@@ -223,20 +217,23 @@ class ProgramModuleObj(models.Model):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
-        ModuleObj   = mod.getPythonClass()()
-        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod)
+        
+        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module')
         if len(BaseModuleList) < 1:
-            ModuleObj.program = prog
-            ModuleObj.module  = mod
-            ModuleObj.seq     = mod.seq
-            ModuleObj.required = mod.required
-            ModuleObj.save()
+            BaseModule = ProgramModuleObj()
+            BaseModule.program = prog
+            BaseModule.module  = mod
+            BaseModule.seq     = mod.seq
+            BaseModule.required = mod.required
+            BaseModule.save()
 
         elif len(BaseModuleList) > 1:
             assert False, 'Too many module objects!'
         else:
-            ModuleObj.__dict__.update(BaseModuleList[0].__dict__)
+            BaseModule = BaseModuleList[0]
         
+        ModuleObj   = mod.getPythonClass()()
+        ModuleObj.__dict__.update(BaseModule.__dict__)
         ModuleObj.fixExtensions()
 
         return ModuleObj
@@ -272,23 +269,23 @@ class ProgramModuleObj(models.Model):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
 
     def fixExtensions(self):
+        """ Find module extensions that this program module inherits from, and 
+        incorporate those into its attributes. """
         
-        for x in self.extensions():
-            k, obj = x
-            newobj = obj.objects.filter(module = self)
-            if len(newobj) == 0 or len(newobj) > 1:
-                self.__dict__[k] = obj()
-                self.__dict__[k].module = self
-                self.__dict__[k].save()
-            else:
-                self.__dict__[k] = newobj[0]
-
+        old_id = self.id
+        old_module = self.module
+        if self.program:
+            for x in self._meta.parents:
+                if x != ProgramModuleObj:
+                    new_dict = self.program.getModuleExtension(x, module_id=old_id).__dict__
+                    self.__dict__.update(new_dict)
+            self.id = old_id
+            self.module = old_module
 
     def deadline_met(self, extension=''):
     
         from esp.users.models import UserBit
-        from esp.datatree.models import GetNode
-
+        from esp.datatree.models import GetNode, DataTree
 
         if not self.user or not self.program:
             raise ESPError(False), "There is no user or program object!"
@@ -336,11 +333,13 @@ class ProgramModuleObj(models.Model):
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
-            return '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                   (self.get_full_path(), self.module.link_title, self.module.link_title)
-
-        return '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
+            link = u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+                (self.get_full_path(), self.module.link_title, self.module.link_title)
+        else:
+            link = u'<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
                (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
+
+        return mark_safe(link)
 
 
     @classmethod
@@ -393,7 +392,66 @@ class ProgramModuleObj(models.Model):
     def extensions(self):
         return []
 
+    @classmethod
+    def module_properties(cls):
+        """
+        Specify the properties of the ProgramModule row corresponding
+        to this table.
+        This function should return a dictionary with keys matching
+        the field names of the ProgramModule table, with at least
+        "link_title" and "module_type".
+        """
+        return []
 
+    @classmethod
+    def module_properties_autopopulated(cls):
+        """
+        Return a dictionary of the ProgramModule properties of this class.
+        The dictionary will return the same dictionary as
+        self.module_properties(), with the following values added if their
+        corresponding keys don't already exist:
+        - "handler"
+        - "admin_title" (as "%(link_title)s (%(handler)s)")
+        - "seq" (as 200)
+        - "aux_calls" (based on @aux_calls decorators)
+        - "main_call" (based on the @main_call decorator)
+        """
+
+        props = cls.module_properties()
+
+        
+        def update_props(props):
+            if not "handler" in props:
+                props["handler"] = cls.__name__
+            if not "admin_title" in props:
+                props["admin_title"] = "%(link_title)s (%(handler)s)" % props
+            if not "seq" in props:
+                props["seq"] = 200
+
+            if not "aux_calls" in props:
+                NAME = 0
+                FN = 1
+                props["aux_calls"] = ",".join( [ x[NAME] for x in cls.__dict__.items()
+                                                 if getattr(x[FN], "call_tag", None) == "Aux Call" ] )
+
+            if not "main_call" in props:
+                NAME = 0
+                FN = 1
+                mainCallList = [ x[NAME] for x in cls.__dict__.items()
+                                 if getattr(x[FN], "call_tag", None) == "Main Call" ]
+                assert len(mainCallList) <= 1, "Error: You can only have one Main Call per class!: (%s: %s)" % (cls.__name__, ",".join(mainCallList))
+                props["main_call"] = ",".join(mainCallList)
+
+        if type(props) == dict:
+            props = [ props ]
+
+        for prop in props:
+            update_props(prop)
+            
+        return props
+                
+        
+            
     @classmethod
     def getSummary(cls):
         """
@@ -418,6 +476,8 @@ class ProgramModuleObj(models.Model):
         This is a stub, to be overridden by subclasses.
         """
         return context
+
+
 
 # will check and depending on the value of tl
 # will use .isTeacher or .isStudent()
@@ -458,7 +518,8 @@ def needs_admin(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
         if not moduleObj.user.isAdmin(moduleObj.program):
-            return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
+            if not ( hasattr(moduleObj.user, 'other_user') and moduleObj.user.other_user and moduleObj.user.other_user.isAdmin(moduleObj.program) ):
+                return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkAdmin
@@ -496,7 +557,7 @@ def needs_student(method):
 def meets_grade(method):
     def _checkGrade(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/wronggrade.html'
-        from esp.datatree.models import GetNode
+        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
         from esp.users.models import UserBit
 
         verb_override = GetNode('V/Flags/Registration/GradeOverride')
@@ -525,7 +586,7 @@ def meets_deadline(extension=''):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
             from esp.users.models import UserBit
-            from esp.datatree.models import GetNode
+            from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
             if tl != 'learn' and tl != 'teach':
                 return True
 
@@ -546,3 +607,19 @@ def meets_deadline(extension=''):
     return meets_deadline
 
 
+def main_call(func):
+    """
+    Tag decorator that flags 'func' as a 'Main Call' function for
+    a ProgramModuleObj.
+    Note that there must be no more than 1 Main Call per ProgramModuleObj.
+    """
+    func.call_tag = "Main Call"
+    return func
+
+def aux_call(func):
+    """
+    Tag decorator that flags 'func' as an 'Aux Call' function for
+    a ProgramModuleObj.
+    """
+    func.call_tag = "Aux Call"
+    return func

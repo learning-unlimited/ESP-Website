@@ -28,21 +28,26 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
-from esp.datatree.models import GetNode
-from django              import forms
+from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
-from esp.program.modules.manipulators import OnSiteRegManipulator
+from esp.program.modules.forms.onsite import OnSiteSATPrepRegForm
 
 
 
 class SATPrepOnSiteRegister(ProgramModuleObj):
-
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "SATPrep On-Site User Creation",
+            "module_type": "onsite",
+            "seq": 10
+            }
 
     def createBit(self, extension):
         verb = GetNode('V/Flags/Registration/'+extension)
@@ -59,18 +64,15 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
         ub.recursive = False
         ub.save()
         return True
-    
+
+    @main_call
     @needs_onsite
     def satprep_create(self, request, tl, one, two, module, extra, prog):
-        manipulator = OnSiteRegManipulator()
-	new_data = {}
 	if request.method == 'POST':
-            new_data = request.POST.copy()
+            form = OnSiteSATPrepRegForm(request.POST)
             
-            errors = manipulator.get_validation_errors(new_data)
-            
-            if not errors:
-                manipulator.do_html2python(new_data)
+            if form.is_valid():
+                new_data = form.cleaned_data
                 username = base_uname = (new_data['first_name'][0]+ \
                                          new_data['last_name']).lower()
                 if User.objects.filter(username = username).count() > 0:
@@ -128,10 +130,8 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'user': new_user})
         
         else:
-            new_data = {}
-            errors = {}
+            form = OnSiteSATPrepRegForm()
 
-	form = forms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form})
         
  

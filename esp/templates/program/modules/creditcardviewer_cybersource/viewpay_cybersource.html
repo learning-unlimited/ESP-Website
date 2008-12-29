@@ -1,0 +1,76 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+
+<style>
+
+#biglink {
+	font-size: x-large;
+}
+
+.Invoice {
+	color: red;
+}
+
+.Receipt {
+	color: blue;
+}
+
+</style>
+{% endblock %}
+
+{% block xtrajs %}
+{% endblock %}
+
+{% block content %}
+<h1>Credit Card Payments</h1>
+
+<ul>
+<li><a href="?only_incomplete">Show only "in progress"</a> (ie., user is still deciding how much stuff they want to pay for)</li>
+<li><a href="?only_completed">Show only confirmed registrations</a> (ie., user has clicked "Confirm" for their registration or has paid by credit card)</li>
+<li><a href="?">Show Unfiltered List</a></li>
+</ul>
+
+<div id="program_form">
+<table>
+
+<tr>
+<th>
+User:
+</th>
+<th>
+Payments:
+</th>
+</tr>
+{% for payment in payment_table %}
+<tr>
+<td>
+<b>{{ payment.0.get_full_name }}</b> (ID: {{ payment.0.id }}) <br />
+{{ payment.2.1 }}; {{ payment.2.2 }} owed
+</td>
+<td>
+<ul>
+{% for doc in payment.1 %}
+<li><div class="{{ doc.getDoctypeStr }}">{{ doc.getDoctypeStr }}: {{ doc.cost }}{% if not doc.txn.complete %} (in progress){% else %} (closed){% endif %}
+<ol>
+{% for item in doc.txn.lineitem_set.all %}
+<li>{{ item }}</li>
+{% endfor %}
+</ol>
+</li>
+{% endfor %}
+</ul>
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+{% endblock %}
+

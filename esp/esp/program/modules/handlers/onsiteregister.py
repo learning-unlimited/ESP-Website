@@ -28,39 +28,35 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User, ContactInfo, StudentInfo
-from esp.datatree.models import GetNode
-from django              import forms
+from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
-from esp.program.modules.manipulators import OnSiteNormalRegManipulator
-from esp.money.models   import Transaction
+from esp.program.modules.forms.onsite import OnSiteRegForm
+from esp.accounting_docs.models   import Document
 
 
 class OnSiteRegister(ProgramModuleObj):
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "New Student Registration",
+            "module_type": "onsite",
+            "seq": 30
+            }
 
     def updatePaid(self, paid=True):
-        t = Transaction.objects.filter(fbo    = self.student,
-                                       anchor = self.program_anchor_cached())
-        if t.count() > 0 and not paid:
-            for trans in t:
-                trans.delete()
-
-        if t.count() == 0 and paid:
-            trans = Transaction(anchor = self.program_anchor_cached(),
-                                fbo    = self.student,
-                                payer  = self.student,
-                                amount = 30.00,
-                                line_item = 'Onsite payment for %s' % self.program.niceName(),
-                                executed = True,
-                                payment_type_id = 6
-                                )
-            trans.save()
-            
+        """ Create an invoice for the student and, if paid is True, create a receipt showing
+        that they have paid all of the money they owe for the program. """
+        li_types = self.program.getLineItemTypes(self.student)
+        doc = Document.get_invoice(self.student, self.program_anchor_cached(), li_types)
+        Document.prepare_onsite(self.student, doc.locator)
+        if paid:
+            Document.receive_onsite(self.student, doc.locator)
 
     def createBit(self, extension):
         if extension == 'Paid':
@@ -80,18 +76,15 @@ class OnSiteRegister(ProgramModuleObj):
         ub.recursive = False
         ub.save()
         return True
-    
+
+    @main_call
     @needs_onsite
     def onsite_create(self, request, tl, one, two, module, extra, prog):
-        manipulator = OnSiteNormalRegManipulator()
-	new_data = {}
 	if request.method == 'POST':
-            new_data = request.POST.copy()
+	    form = OnSiteRegForm(request.POST)
             
-            errors = manipulator.get_validation_errors(new_data)
-            
-            if not errors:
-                manipulator.do_html2python(new_data)
+	    if form.is_valid():
+		new_data = form.cleaned_data
                 username = base_uname = (new_data['first_name'][0]+ \
                                          new_data['last_name']).lower()
                 if User.objects.filter(username = username).count() > 0:
@@ -132,6 +125,9 @@ class OnSiteRegister(ProgramModuleObj):
 
                 if new_data['paid']:
                     self.createBit('Paid')
+                    self.updatePaid(True)
+                else:
+                    self.updatePaid(False)
 
                 self.createBit('Attended')
 
@@ -156,18 +152,9 @@ class OnSiteRegister(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'student': new_user, 'retUrl': '/onsite/%s/schedule_students?extra=285&op=usersearch&userid=%s' % \
                                                                                                    (self.program.getUrlBase(), new_user.id)})
 
-
-
-                            
-
-        
         else:
-            new_data = {}
-            errors = {}
+	    form = OnSiteRegForm()
 
-	form = forms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form})
         
  
-
-

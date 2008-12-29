@@ -85,7 +85,7 @@ function switchnot(not, title) {
 
 <h1>Communications Portal</h1>
 <br />
-<p> Welcome to the communications portal &ndash; your one stop to communicate with the ESP community for your program.</p>
+<p> Welcome to the communications portal &mdash; your one stop to communicate with the ESP community for your program.</p>
 
 <br />
 <h2>Step 1:</h2>
@@ -157,4 +157,7 @@ Final  Sentence: (with parentheses for added readibility)<br />
 <input type="submit" value="Get List Instead" name="submitform" />
 <input type="hidden" name="keys" value="{{lists|join:",,"|addslashes}}" />
 </form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
 {% endblock %}

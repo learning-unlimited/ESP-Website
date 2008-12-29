@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Profile Editor"|subsection }}
+{% autoescape off %}{{ "Profile Editor"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block xtrajs %}
@@ -33,8 +33,8 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 <p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
 
-{% if form.has_errors %}
-<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2><br />
+{% if form.errors %}
+<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h2><br />
 {% endif %}
 
 <div id="program_form">

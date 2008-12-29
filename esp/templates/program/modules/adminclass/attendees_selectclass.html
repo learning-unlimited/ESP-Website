@@ -1,0 +1,23 @@
+{% extends "outlines/series-3.html" %}
+{% load subsection %}
+
+{% block title %}Select a Class{% endblock %}
+
+{% block keywords %}{% endblock %}
+{% block description %}{% endblock %}
+
+{% block subsection %}{% endblock %}
+
+{% block content %}
+
+<h1>Class Attendance</h1>
+
+{% if saved_record %}<font color="red">Record successfully saved.</font>{% endif %}
+
+<ul>
+{% for cls in prog.sections %}
+<li><a href="?class_id={{cls.id}}">{{ cls }}</a> ({{ cls.parent_class.pretty_teachers }}; {{ cls.friendly_times|join:", " }}): {% ifequal cls.num_students 0 %}<font color="red">{% endifequal %}{{ cls.num_students }} student{{ cls.num_students|pluralize }}{% ifequal cls.num_students 0 %}</font>{% endifequal %}</li>
+{% endfor %}
+</ul>
+
+{% endblock %}

@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+copyright (c) 2007 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -32,12 +32,11 @@ from esp.web.util import render_to_response
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.miniblog.models import Entry
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits
 from esp.program.models import ClassSubject
-from django import forms
 
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.auth.decorators import login_required
@@ -50,48 +49,9 @@ from esp.program.forms import ProgramCreationForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
-from esp.accounting_core.models import LineItemType
+from esp.accounting_core.models import LineItemType, CompletedTransactionException
 
-@login_required
-def updateClass(request, id):
-    """ An update-class form """
-    try:
-        manipulator = Class.ChangeManipulator(id)
-    except Class.DoesNotExist:
-	raise Http404
-
-    curUser = ESPUser(request.user)
-    if not curUser.canEdit(Class.objects.get(id=id)):
-        raise Http404
-	
-    orig_class = manipulator.original_object
-
-    #errors = None
-
-    if request.POST:
-        new_data = request.POST.copy()
-        # We're not letting users change these.  Admins only, and only via the Admin interface.
-        assert False, (new_data['anchor'], str(orig_class.anchor.id))
-        
-        new_data['anchor'] = str(orig_class.anchor.id)
-        new_data['parent_program'] = str(orig_class.parent_program.id)
-
-
-        errors = manipulator.get_validation_errors(new_data)
-
-        if not errors:
-            manipulator.do_html2python(new_data)
-
-            manipulator.save(new_data)
-
-            return HttpResponseRedirect(".")
-    else:
-        errors = {}
-        new_data = orig_class.__dict__
-
-    form = forms.FormWrapper(manipulator, new_data, errors)
-    return render_to_response('program/class_form.html', request, orig_class.parent_program, {'form': form, 'class': orig_class, 'edit': True, 'orig_class': orig_class })
-
+import pickle
 
 #def courseCatalogue(request, one, two):
 #    """ aseering 9-1-2006 : This function appears to not be used by anything; esp.web.program contains its equivalent.
@@ -200,14 +160,20 @@ def managepage(request, page):
         if 'checked' in request.GET:
             # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
             # Don't bother trying to fix the form; just re-set the anchor when we're done.
-            new_prog = Program(anchor=GetNode(request.session['prog_form'].clean_data['anchor'].uri + "/" + request.session['prog_form'].clean_data["term"]))
-            new_prog = save_instance(request.session['prog_form'], new_prog)
-            new_prog.anchor = GetNode(request.session['prog_form'].clean_data['anchor'].uri + "/" + request.session['prog_form'].clean_data["term"])
-            
-            commit_program(new_prog, request.session['datatrees'], request.session['userbits'], request.session['modules'], request.session['costs'])
-            
-            manage_url = '/manage/' + new_prog.url() + '/resources'
-            return HttpResponseRedirect(manage_url)
+            context = pickle.loads(request.session['context_str'])
+            pcf = ProgramCreationForm(context['prog_form_raw'])
+            if pcf.is_valid():
+                new_prog = Program(anchor=GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"]))
+                new_prog = save_instance(pcf, new_prog)
+                new_prog.anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
+                
+                commit_program(new_prog, context['datatrees'], context['userbits'], context['modules'], context['costs'])
+                
+                manage_url = '/manage/' + new_prog.url() + '/resources'
+                return HttpResponseRedirect(manage_url)
+            else:
+                raise ESPError(False), "Improper form data submitted."
+              
     
         #   If the form has been submitted, process it.
         if request.method == 'POST':
@@ -215,18 +181,17 @@ def managepage(request, page):
             form = ProgramCreationForm(data)
     
             if form.is_valid():
-                temp_prog = Program(anchor=form.clean_data['anchor'])
+                temp_prog = Program(anchor=form.cleaned_data['anchor'])
                 temp_prog = save_instance(form, temp_prog, commit=False)
                 datatrees, userbits, modules = prepare_program(temp_prog, form)
-                request.session['prog_form'] = form
-                request.session['datatrees'] = datatrees
-                request.session['userbits'] = userbits
-                request.session['modules'] = modules
-                request.session['costs'] = ( form.clean_data['base_cost'], form.clean_data['finaid_cost'] )
-              
-                return render_to_response('program/newprogram_review.html', request, request.get_node('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
-            
+                #   Save the form's raw data instead of the form itself, or its clean data.
+                #   Unpacking of the data happens at the next step.
+
+                context_pickled = pickle.dumps({'prog_form_raw': form.data, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules, 'costs': ( form.cleaned_data['base_cost'], form.cleaned_data['finaid_cost'] )})
+                request.session['context_str'] = context_pickled
                 
+                return render_to_response('program/newprogram_review.html', request, GetNode('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
+            
         else:
             #   Otherwise, the default view is a blank form.
             if template_prog:
@@ -234,7 +199,7 @@ def managepage(request, page):
             else:
                 form = ProgramCreationForm()
 
-        return render_to_response('program/newprogram.html', request, request.get_node('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('-id')})
+        return render_to_response('program/newprogram.html', request, GetNode('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('-id')})
         
     if page == 'submit_transaction':
         #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
@@ -248,9 +213,9 @@ def managepage(request, page):
                 post_id = request.POST['requestID']
                 
                 document = Document.receive_creditcard(request.user, post_locator, post_amount, post_id)
-                
+            except CompletedTransactionException:
+                raise
             except:
-                from esp.middleware import ESPError
                 raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:esp-webmasters@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
 
             one = document.anchor.parent.name

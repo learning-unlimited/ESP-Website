@@ -1,0 +1,14 @@
+Review the update script 2008-12-24-ageng-commit-old-scripts.py.
+This update re-runs two previous scripts that might not have made any changes
+    because I forgot to put transaction.commit() at the end.
+2008-11-27-ageng.py still worked, since Django commits when it saves stuff.
+
+The script can be run with:
+    $ ./manage.py shell
+    >>> run ../db_schema/2008-12-24-ageng-commit-old-scripts.py
+
+Actions taken by the script:
+    Run 2008-12-13-ageng.py to update ClassSubject.duration
+    Run 2008-12-14-ageng.py to update Program.director_email
+        and ClassRegModuleInfo.director_email
+    Actually commit the changes to the database this time.

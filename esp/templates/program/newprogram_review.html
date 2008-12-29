@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "ESP Management"|subsection }}
+{% autoescape off %}{{ "ESP Management"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block subsection_name %}Welcome{% endblock %}
@@ -74,6 +74,7 @@ The program you are trying to create is: <b>{{ prog.anchor.name }} {{ datatrees.
 
 <div id="program_form">
 <form method="POST" action="{{ request.path }}?checked=1">
+
 <input type="submit" class="button" value="Make Program Happen">
 </form>
 </div>

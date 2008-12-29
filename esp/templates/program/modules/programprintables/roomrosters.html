@@ -33,9 +33,21 @@ td.newday { border-width: 2px 1px 0 1px;}
 </table>
 <div id="pagebreak">&nbsp;</div>
 {% endif %}
+<!-- Layout hack: stuff in tables likes to center itself vertically. -->
+<table style="height:9in; border-width:0; border-spacing:0; padding:0; width:100%;">
+
+<!-- Layout hack: table cells expand to contain stuff. -->
+<tr><td style="height:1em; padding:1em;">
+<p align="center" style="font-size: 10pt">
+    <b>Splash! Chicago</b><br />
+    <center><div class="box"><b>{{ program.niceName }}: {{ program.date_range }} </b><br />Do not remove until conclusion of program</div></center>
+</p>
+{% autoescape off %}
 <div class="title">Room Schedule for <br /><br />
     <span>{{ scheditem.room }}</span>
 </div>
+{% endautoescape %}
+</td></tr>
 
 <div style="height: 2in;">&nbsp;</div>
 <br />
@@ -48,12 +60,19 @@ td.newday { border-width: 2px 1px 0 1px;}
     <th>Teacher(s)</th>
 </tr>
 {% endifchanged %}
+{% autoescape off %}
 <tr>
   <td>{{ scheditem.timeblock }}</td>
   <td>{{ scheditem.cls.title }}</td>
   <td>{{ scheditem.cls.getTeacherNames|join:"<br />" }}</td> 
 </tr>
+{% endautoescape %}
+
 {% endfor %}
+</table>
+</td></tr>
+
+</table>
 
 </body>
 </html>

@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.db import models
 from django.contrib.auth.models import User
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
 from esp.program.models import FinancialAidRequest
@@ -74,7 +74,7 @@ class PaymentType(models.Model):
     """ A list of payment methods: Check, Credit Card, etc. """
     description = models.TextField() # Description, ie. "Check", "Credit Card", etc.
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.description)
 
     class Admin:
@@ -86,11 +86,11 @@ class Transaction(models.Model):
     anchor = AjaxForeignKey(DataTree) # Region of ESP that receives the transaction
     payer = AjaxForeignKey(User, related_name="payer") # Source of the money
     fbo = AjaxForeignKey(User, related_name="fbo") # Payment is for the benefit of this user
-    amount = models.FloatField(max_digits=9, decimal_places=2) # Amount to be payed
+    amount = models.DecimalField(max_digits=9, decimal_places=2) # Amount to be payed
     line_item = models.TextField() # Description of the reason for this payment
     payment_type = models.ForeignKey(PaymentType) # Type of payment; ie. credit card, check, cash, etc.
 
-    transaction_id = models.CharField(maxlength=128) # Identifier of the transaction; check number, or that sort of information.  Should probably not contain credit card numbers; possibly a hash of the last four digits?, or not at all?
+    transaction_id = models.CharField(max_length=128) # Identifier of the transaction; check number, or that sort of information.  Should probably not contain credit card numbers; possibly a hash of the last four digits?, or not at all?
 
     executed = models.BooleanField() # Has this transaction taken place?
     
@@ -103,7 +103,7 @@ class Transaction(models.Model):
 	else:
 		return '$%02.2f' % self.amount
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.line_item) + ': $' + str(self.amount) + ' <' + str(self.fbo) + '>'
 
     class Admin:
@@ -111,9 +111,9 @@ class Transaction(models.Model):
     
 
 class LineItemType(models.Model):
-	value = models.FloatField(max_digits = 10, decimal_places = 2)
-	financial_aid_value = models.FloatField(max_digits=10, decimal_places=2)
-        onsite_value = models.FloatField(max_digits=10, decimal_places=2)
+	value = models.DecimalField(max_digits = 10, decimal_places = 2)
+	financial_aid_value = models.DecimalField(max_digits=10, decimal_places=2)
+        onsite_value = models.DecimalField(max_digits=10, decimal_places=2)
 	label = models.TextField()
 	anchor = AjaxForeignKey(DataTree)
 	optional = models.BooleanField(default=True)
@@ -123,7 +123,7 @@ class LineItemType(models.Model):
 	def forAnchor(cls, anchor):
 		return cls.objects.filter(anchor=anchor)
 
-	def __str__(self):
+	def __unicode__(self):
 		return str(self.label) + " : " + str(self.value) + "/" + str(self.financial_aid_value) + " (for %s)" % self.anchor
 
 	class Admin:
@@ -177,7 +177,7 @@ class LineItem(models.Model):
 		return my_costs_sum
 
 
-	def __str__(self):
+	def __unicode__(self):
 		return "%s : %s" % (str(self.user), str(self.type))
 	
 	class Admin:

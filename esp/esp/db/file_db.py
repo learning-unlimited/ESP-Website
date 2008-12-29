@@ -5,7 +5,7 @@ An example usage::
 
     class MyModel(models.Model):
         objects = FileDBManager(4, 'MyModel')
-        cool_name = models.CharField(maxlength=255)
+        cool_name = models.CharField(max_length=255)
         other_info = models.TextField()
 
         def get_file_id(self):

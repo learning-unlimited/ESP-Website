@@ -32,14 +32,14 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.views import qsd
 from django.core.exceptions import PermissionDenied
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits, ESPUser
 from esp.miniblog.models import Entry
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User, AnonymousUser
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template import loader, Context
-from icalendar import Calendar, Event as CalEvent, UTC
+#from icalendar import Calendar, Event as CalEvent, UTC
 
 import datetime
 
@@ -53,6 +53,12 @@ from esp.middleware import ESPError
 from esp.web.forms.contact_form import ContactForm, email_addresses, email_choices
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
+
+
+# get_callable might not actually be public API. Django's nice and well-documented like that.
+def my_import(name):
+    from django.core.urlresolvers import get_callable
+    return get_callable(name)
 
 
 @vary_on_headers('Cookie')
@@ -71,6 +77,9 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
+
+	if isinstance(renderer, basestring):
+		renderer = my_import(renderer)
 	
 	if filename != "":
 		url = url + "/" + filename
@@ -185,29 +194,29 @@ def contact(request, section='esp'):
 			
 			to_email = []
 
-			if len(form.clean_data['sender'].strip()) == 0:
+			if len(form.cleaned_data['sender'].strip()) == 0:
 				email = 'esp@mit.edu'
 			else:
-				email = form.clean_data['sender']
+				email = form.cleaned_data['sender']
                 
-			if form.clean_data['cc_myself']:
+			if form.cleaned_data['cc_myself']:
 				to_email.append(email)
 
 
 			try:
-				to_email.append(email_addresses[form.clean_data['topic'].lower()])
+				to_email.append(email_addresses[form.cleaned_data['topic'].lower()])
 			except KeyError:
 				to_email.append(fallback_address)
 
-			if len(form.clean_data['name'].strip()) > 0:
-				email = '%s <%s>' % (form.clean_data['name'], email)
+			if len(form.cleaned_data['name'].strip()) > 0:
+				email = '%s <%s>' % (form.cleaned_data['name'], email)
 
 
 			t = loader.get_template('email/comment')
 
-			msgtext = t.render({'form': form})
+			msgtext = t.render(Context({'form': form}))
 				
-			send_mail(SUBJECT_PREPEND + ' '+ form.clean_data['subject'],
+			send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
 				  msgtext,
 				  email, to_email, fail_silently = True)
 

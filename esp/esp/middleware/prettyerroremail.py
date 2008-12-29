@@ -203,7 +203,6 @@ else:
     """
 
     from django.conf import settings
-    from django.template.defaultfilters import smart_string as smart_str
     from email import Charset, Encoders
     from email.MIMEText import MIMEText
     from email.MIMEMultipart import MIMEMultipart
@@ -251,7 +250,7 @@ else:
     # Cache the hostname, but do it lazily: socket.getfqdn() can take a couple of
     # seconds, which slows down the restart of the server.
     class CachedDnsName(object):
-        def __str__(self):
+        def __unicode__(self):
             return self.get_fqdn()
 
         def get_fqdn(self):

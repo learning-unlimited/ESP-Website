@@ -30,16 +30,16 @@ Email: web@esp.mit.edu
 """
 from esp.web.models import NavBarEntry
 from esp.users.models import UserBit, AnonymousUser, ESPUser
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from django.http import HttpResponseRedirect, Http404, HttpResponse
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.dblog.models import error
 from esp.middleware.esperrormiddleware import ESPError
 
 from esp.program.models import Program
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
-from esp.db.models import Q
+from django.db.models.query import Q
 
 EDIT_VERB_STRING = 'V/Administer/Edit/QSD'
 
@@ -121,7 +121,7 @@ def makeNavBar(user, node, section = ''):
             #   This is disabled for the program sections, where we have lots of teach- or learn-
             #   specific nav bars that are visible to all.
             program_node = DataTree.get_by_uri('Q/Programs')
-            if not ((node.rangestart >= program_node.rangestart) and (node.rangeend <= program_node.rangeend)):
+            if not node.is_descendant_of(program_node):
                 if user.isTeacher():
                     sections += ['teach']
                 if user.isAdmin():
@@ -140,7 +140,6 @@ def makeNavBar(user, node, section = ''):
                 navBarAssociatedPrograms[i.id] = Program.objects.filter(anchor__parent__navbar=i,
                                                                         anchor__name__icontains=i.text)
 
-            from esp.db.models import QSplit
             qsdTree = list(NavBarEntry.objects.filter(path = self.node, section__in=sections).order_by('sort_rank')) + list(NavBarEntry.objects.filter(path__parent = self.node, section__in=sections).order_by('sort_rank'))
 
             if user is None or user.id is None or not user.is_authenticated():

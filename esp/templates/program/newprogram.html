@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "ESP Management"|subsection }}
+{% autoescape off %}{{ "ESP Management"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block subsection_name %}Welcome{% endblock %}
@@ -44,7 +44,7 @@ Please enter the date ranges (bottom 3 rows) in one of the following formats:
     </tr>
   </thead>
   <tbody>
-  {{ form }}
+  {% autoescape off %}{{ form }}{% endautoescape %}
   </tbody>
   <tbody>
     <tr> 

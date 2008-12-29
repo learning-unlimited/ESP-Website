@@ -1,4 +1,4 @@
-import django.newforms as forms
+import django.forms as forms
 
 
 

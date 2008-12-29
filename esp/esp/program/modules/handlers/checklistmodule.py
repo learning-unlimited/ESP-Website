@@ -28,14 +28,14 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.program.models  import Program, ProgramCheckItem
 from esp.web.util        import render_to_response
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from django.contrib.auth.decorators import login_required
-from esp.db.models import Q
-from esp.datatree.models import GetNode
+from django.db.models.query import Q
+from esp.datatree.models import *
 from esp.users.models import ESPUser, User
 from django.http import HttpResponseRedirect
 
@@ -43,7 +43,16 @@ class CheckListModule(ProgramModuleObj):
     doc = """
     If you want to manage those checklists that your program sees, come here.
     """
-    
+
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "CheckList Management",
+            "module_type": "manage",
+            "seq": 1000
+            }
+
+    @main_call
     @needs_admin
     def managecheckitems(self, request, tl, one, two, module, extra, prog):
         return HttpResponseRedirect('/admin/program/programcheckitem/')

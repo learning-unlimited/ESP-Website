@@ -1,0 +1,65 @@
+{% extends "outlines/series-3.html" %}
+{% load subsection %}
+
+{% block title %}Set Deadlines{% endblock %}
+
+{% block keywords %}{% endblock %}
+{% block description %}{% endblock %}
+
+{% block subsection %}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+#manage_form > table {
+border:0px none;
+width:100%;
+}
+#manage_form > table > tbody > tr > td {
+border:1px solid;
+padding:20px;
+}
+#manage_form > table h2 {
+color:#3366CC;
+}
+#manage_form table table td {
+padding-right:20px;
+}
+</style>
+
+<p><h1>Deadline Management</h1></p>
+
+<p>All dates must be in the format "YYYY-MM-DD hh:mm:ss"!</p>
+
+<p>Setting "Close This Deadline Now" for a deadline will cause the Enddate of that deadline to be set to the current date and time, so that the deadline passes immediately.</p>
+
+<p>Blank deadlines do not exist.  Once created, deadlines cannot be deleted; they can only be closed.  (this is so we can see when the deadline was last open, in case someone needs to know later.)</p>
+
+<p>{% ifequal saved_successfully True %}<font color="red">Update saved.</font>{% endifequal %}</p>
+<p>{% ifequal saved_successfully False %}<font color="red">Some errors were found in your input.</font>  See below.{% endifequal %}</p>
+
+<form method="post" action="" id="manage_form">
+{% for bit in userbit_forms %}
+{% autoescape off %}
+<table border="2"><tr><td>
+<p>
+<h2>{{ bit.verb }}</h2> &mdash; {% ifequal bit.verb.friendly_name "" %}(no description){% else %}{{ bit.verb.friendly_name }}{% endifequal %}
+<br />
+<table>
+<tr>
+<th><label for="delete_bit_{{ bit.verb.id }}">Close This Deadline Now:</label></th>
+<td align="left"><input type="checkbox" name="delete_bit_{{ bit.verb.id }}" /></td>
+</tr>
+{% autoescape off %}
+{{ bit.ub_form.as_table }}
+{% endautoescape %}
+</table>
+{% endautoescape %}
+</p>
+</td></tr></table>
+{% endfor %}
+<br />
+
+<p><input type="Submit" name="submit" value="Save" /></p>
+</form>
+
+{% endblock %}

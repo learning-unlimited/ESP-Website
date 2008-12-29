@@ -28,22 +28,28 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.web.util        import render_to_response
-from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
-from esp.db.models       import Q
+from django.db.models.query     import Q
 from esp.users.models    import User, ESPUser
-#from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
 from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance
 from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
 
-class CreditCardModule_Cybersource(ProgramModuleObj):
+class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModuleInfo):
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Credit Card Payment",
+            "module_type": "learn",
+            "seq": 10000
+            }
+    
     def extensions(self):
-        return [('creditCardInfo', module_ext.CreditCardModuleInfo)]
+        return []#('creditCardInfo', module_ext.CreditCardModuleInfo)]
 
     def cost(self, espuser, anchor):
         return '%s.00' % str(self.creditCardInfo.base_cost)
@@ -77,7 +83,8 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
 
     def studentDesc(self):
         return {'creditcard': """Students who have filled out the credit card form."""}
-     
+
+    @main_call
     @meets_deadline('/Payment')
     @usercheck_usetl
     def startpay_cybersource(self, request, tl, one, two, module, extra, prog):
@@ -86,6 +93,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
                     
         return render_to_response(self.baseDir() + 'cardstart.html', request, (prog, tl), {})
 
+    @aux_call
     @meets_deadline('/Payment')
     @usercheck_usetl
     def paynow_cybersource(self, request, tl, one, two, module, extra, prog):

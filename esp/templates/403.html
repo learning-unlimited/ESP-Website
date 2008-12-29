@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Forbidden"|subsection }}
+{% autoescape off %}{{ "Forbidden"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block content %}

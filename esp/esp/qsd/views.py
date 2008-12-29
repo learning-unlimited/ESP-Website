@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry
 from esp.web.util.main import render_to_response
@@ -109,7 +109,7 @@ def qsd(request, branch, name, section, action):
     EDIT_VERB = 'V/Administer/Edit/QSD'
 
     # Pages are global per-user (not unique per-user)
-    cache_id = '%s:%s' % (branch.id, name)
+    cache_id = '%s_%s' % (branch.id, name)
 
     if action == 'read':
         base_url = request.path[:-5]
@@ -163,6 +163,10 @@ def qsd(request, branch, name, section, action):
         if not have_read:
             raise Http403, 'You do not have permission to read this page.'
 
+        # This caching code is commented out
+        # My guess (Alex Dehnert, speaking as somebody who started work
+        # on ESP after this had happened) is that this was commented out
+        # when the render_qsd template tag started getting cached
         #cached_html = cache.get('quasistaticdata_html:' + cache_id)
         #if cached_html == None:
         cached_html = qsd_rec.html()
@@ -182,6 +186,9 @@ def qsd(request, branch, name, section, action):
         if not have_edit:
             raise Http403, "Sorry, you do not have permission to edit this page."
         
+        # Arguably, this should retrieve the DB object, use the .copy()
+        # method, and then update it. Doing it this way saves a DB call
+        # (and requires me to make fewer changes).
         qsd_rec_new = QuasiStaticData()
         qsd_rec_new.path = branch
         qsd_rec_new.name = name
@@ -190,39 +197,31 @@ def qsd(request, branch, name, section, action):
         qsd_rec_new.title = request.POST['title']
         qsd_rec_new.description = request.POST['description']
         qsd_rec_new.keywords    = request.POST['keywords']
-        qsd_rec_new.save()
+        qsd_rec_new.save(user=request.user)
 
         qsd_rec = qsd_rec_new
 
         # If any files were uploaded, save them
-        for FILE in request.FILES.keys():
+        for name, file in request.FILES.iteritems():
             m = Media()
 
             # Strip "media/" from FILE, and strip the file name; just return the path
-            path = dirname(FILE[9:])
+            path = dirname(name[9:])
             if path == '':
                 m.anchor = qsd_rec.path
             else:
-                m.anchor = GetNode('Q/' + dirname(FILE))
+                m.anchor = GetNode('Q/' + dirname(name))
                 
-            m.mime_type = request.FILES[FILE]['content-type']
             # Do we want a better/manual mechanism for setting friendly_name?
-            m.friendly_name = basename(FILE)
-            m.size = len(request.FILES[FILE]['content'])
+            m.friendly_name = basename(name)
             
-            splitname = basename(FILE).split('.')
-            if len(splitname) > 1:
-                m.file_extension = splitname[-1]
-            else:
-                m.file_extension = ''
-
             m.format = ''
 
-            local_filename = FILE
-            if FILE[:9] == 'qsdmedia/':
-                local_filename = FILE[9:]
+            local_filename = name
+            if name[:9] == 'qsdmedia/':
+                local_filename = name[9:]
                     
-            m.save_target_file_file(local_filename, request.FILES[FILE]['content'])
+            m.handle_file(file, local_filename)
             m.save()
 
         cache.delete(urlencode('quasistaticdata:' + cache_id))
@@ -267,16 +266,20 @@ def ajax_qsd(request):
     post_dict = request.POST.copy()
 
     if post_dict['cmd'] == "update":
-        qsd = QuasiStaticData.objects.get(id=post_dict['id'])
+        qsdold = QuasiStaticData.objects.get(id=post_dict['id'])
+        qsd = qsdold.copy()
         qsd.content = post_dict['data']
-        qsd.save()
+        qsd.load_cur_user_time(request, )
+        qsd.save(user=request.user,)
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
+        result['id'] = qsd.id
     if post_dict['cmd'] == "create":
         qsd_path = DataTree.objects.get(id=post_dict['anchor'])
         qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path)
         qsd.content = post_dict['data']
-        qsd.save()
+        qsd.author = request.user
+        qsd.save(user=request.user,)
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
         result['id'] = qsd.id

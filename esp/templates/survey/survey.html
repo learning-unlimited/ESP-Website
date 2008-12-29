@@ -1,0 +1,59 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{ program.niceName }} Survey{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+    {% autoescape off %}{{ "Survey"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block content %}
+{% load survey %}
+
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br /><br />
+<h1>Survey for {{ program.niceName }} </h1>
+
+<div id="program_form">
+<form method="post" action="{{ request.path }}">
+
+{% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
+
+{% if perclass_questions %}
+{% for class in classes %}
+    <table width="600">
+    <tr>
+        <th>Questions for {{ class.emailcode }}: {{ class.title }}</th>
+    </tr>
+    </table>
+    {% for question in perclass_questions %}
+        {{ question.render|substitute:class }}
+    {% endfor %}
+{% endfor %}
+{% endif %}
+
+<table width="600">
+    <tr>
+        <th>Submit</th>
+    </tr>
+    <tr>
+        <td align="center">
+            Click the button below to finish your survey.  Thank you so much for your time!<br /><br />
+            <input type="Submit" class="fancybutton" value="Submit Survey" /><br />
+        </td>
+    </tr>
+</table>
+</center>
+
+</form>
+</div>
+
+{% endblock %}

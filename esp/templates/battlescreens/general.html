@@ -39,7 +39,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
 {% for program in admPrograms %}
 <a href="/manage/{{program.getUrlBase}}/main"
   title="Administer {{program.niceName}}"> 
-  Administration Panel for `{{program.niceName}}'
+  {{program.niceName}}
 </a>
    <br />
 {% endfor %}

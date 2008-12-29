@@ -1,0 +1,49 @@
+
+{% load events %}
+{% load resources %}
+{% load scheduling %}
+
+<h2>List of Classes</h2>
+
+<br />
+
+<p>Some notes:
+<ol>
+<li>The feasible times for a class depend heavily on the availability of the teachers.  You will not be able to schedule a class until all of its teachers are available in a timeblock that is at least the length of the class.  <a href="/manage/{{ prog.getUrlBase }}/force_availability">Click here</a> to fix teacher availability if some classes have no feasible times.
+<li>There is a lot information contained within this table.  Hover your mouse over almost anything to find out more information about it.
+<li>You may make multiple updates and click any 'Alter' button to apply all of them.  
+<li>If you change the time of a class section that has already been assigned a room, the system may clear the room assignment if another section is in that room.  You cannot change both the time and room of a class in the same update; please see what rooms are available after changing the time.
+<li>This page does not support assigning multiple rooms to a class, but you can do that using the "manage class" page (linked from the <a href="/manage/{{ prog.getUrlBase }}/dashboard">dashboard</a>).
+</ol>
+</p>
+
+<form method="post" action="{{ request.path }}">
+<table cellpadding="2" cellspacing="0" align="center">
+<tr>
+    <th colspan="8">Class Schedule List for {{ prog.niceName }}</th>
+</tr>
+<tr>
+    <th colspan="2" class="small">Classes finished: {{ num_finished_classes }}</th>
+    <th colspan="2" class="small">Classes needing rooms: {{ num_scheduled_classes }}</th>
+    <th colspan="2" class="small">Classes needing resources: {{ num_assigned_classes }}</th>
+    <th colspan="2" class="small">Total classes: {{ num_total_classes }}</th>
+</tr>
+<tr>
+    <th class="small">Class</th>
+    <th class="small">Status</th>
+    <th class="small">Length</th>
+    <th class="small" align="right">Start Time</th>
+    <th class="small">&nbsp; <!-- assign time --></th>
+    <th class="small" align="right">Room</th>
+    <th class="small">&nbsp; <!-- assign room --></th>
+    <th class="small">Options</th>
+</tr>
+{% autoescape off %}
+{% for cls in prog.classes %}
+    {% class_options_row cls %}
+{% endfor %}
+{% endautoescape %}
+</table>
+</form>
+
+<br />

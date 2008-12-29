@@ -5,7 +5,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Junction applications"|subsection }}
+{% autoescape off %}{{ "Junction applications"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block stylesheets %}

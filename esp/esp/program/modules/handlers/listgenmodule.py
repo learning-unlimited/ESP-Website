@@ -28,15 +28,13 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
-from esp.program.manipulators import SATPrepInfoManipulator
-from django import forms
 from django.core.cache import cache
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser, User
-from esp.db.models      import Q, QNot
+from django.db.models.query      import Q
 from django.template.defaultfilters import urlencode
 from django.template import Context, Template
 from esp.miniblog.models import Entry
@@ -44,7 +42,15 @@ from esp.miniblog.models import Entry
 
 class ListGenModule(ProgramModuleObj):
     """ While far from complete, this will allow you to just generate a simple list of users matching a criteria (criteria very similar to the communications panel)."""
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Generate List of Users",
+            "module_type": "manage",
+            "seq": 500
+            }
 
+    @main_call
     @needs_admin
     def selectList(self, request, tl, one, two, module, extra, prog):
         """ Select the type of list that is requested. """

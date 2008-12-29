@@ -44,7 +44,7 @@ If you need any assistance, please email <tt>web@esp.mit.edu</tt>.
 {% for module in modules %}
 {% if module.isStep %}
   {% if not module.useTemplate %}
-    <li>{{ module.makeLink }}</li>
+    <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
   {% else %}
     <li><span onmouseover="updateDocs('{{module.docs|linebreaks|addslashes}}');"><em>{{ module.module.link_title }} (part of Dashboard)</em></span></li>
   {% endif %}

@@ -39,6 +39,8 @@ PROJECT_ROOT = '/esp/esp/'
 # log directory
 LOG_FILE="/var/log/django/esp_errlog"
 
+# rewrite URLs appropriately
+FORCE_SCRIPT_NAME=''
 
 
 ###################
@@ -50,6 +52,10 @@ TEMPLATE_DEBUG = DEBUG
 
 INTERNAL_IPS = (
     '127.0.0.1',
+    '66.31.202.119',
+    '18.208.0.164',
+    '18.208.0.160',
+    '18.187.1.236',
 )
 
 ##################
@@ -62,7 +68,7 @@ ADMINS = (
 MANAGERS = ADMINS
 
 # problem mail
-EMAIL_HOST   = 'localhost'
+EMAIL_HOST   = 'outgoing.mit.edu'
 EMAIL_PORT   = '25'
 SERVER_EMAIL = 'server@esp.mit.edu'
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
@@ -76,10 +82,8 @@ EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 #  'mysql_old', 'sqlite3' or 'ado_mssql'
 
 DATABASE_ENGINE = 'postgresql'
-DATABASE_NAME = 'django'
-#DATABASE_HOST = 'localhost'
-DATABASE_PORT = '5433'
-# passwords etc
+
+# passwords and other database settings
 from database_settings import *
 from aws_settings import *
 
@@ -100,14 +104,15 @@ ADMIN_MEDIA_PREFIX = '/media/admin/'
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.load_template_source',
     'django.template.loaders.app_directories.load_template_source',
-)
+) 
 
 MIDDLEWARE_CLASSES = (
+    'django.middleware.gzip.GZipMiddleware',
 #    'django.middleware.http.SetRemoteAddrFromForwardedFor',
 #    'esp.queue.middleware.QueueMiddleware',
-#    'esp.middleware.FixIEMiddleware',
+    'esp.middleware.FixIEMiddleware',
     'esp.datatree.middleware.DataTreeLockMiddleware',
-#    'esp.middleware.ESPErrorMiddleware',
+    'esp.middleware.ESPErrorMiddleware',
     'esp.middleware.StatsMiddleware',
 #    'esp.middleware.psycomiddleware.PsycoMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -115,8 +120,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
-#    'django.middleware.gzip.GZipMiddleware',
-#    'esp.middleware.StripWhitespaceMiddleware',
+    'esp.middleware.StripWhitespaceMiddleware',
+#    'django.middleware.transaction.TransactionMiddleware',
 )
 
 ROOT_URLCONF = 'esp.urls'
@@ -150,8 +155,6 @@ INSTALLED_APPS = (
     'esp.money',
     'esp.resources',
     'esp.gen_media',
-    'esp.poll',
-    'esp.dblog',
     'esp.membership',
     'esp.queue',
     'esp.survey',
@@ -162,8 +165,7 @@ INSTALLED_APPS = (
 
 # Not used for aws: imported from aws_settings.py
 #CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
-
-
+CACHE_PREFIX = ''
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 

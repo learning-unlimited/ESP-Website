@@ -99,6 +99,7 @@ APPEND_SLASH=False
 
 #aseering 12-15-2006: Make memcached happen
 CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=60"
+CACHE_PREFIX=""
 
 LOG_FILE="/esp/logs/django_errlog"
 
