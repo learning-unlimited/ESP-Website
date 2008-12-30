@@ -2,6 +2,7 @@
 
 from django import forms
 from django.contrib.auth.models import User
+from django.utils.html import conditional_escape
 
 __all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
 
@@ -25,7 +26,7 @@ class PasswordResetForm(forms.Form):
             else:
                 first = False
             bf = forms.forms.BoundField(self, field, name)
-            bf_errors = forms.forms.ErrorList([forms.forms.conditional_escape(error) for error in bf.errors]) # Escape and cache in local variable.
+            bf_errors = forms.util.ErrorList([conditional_escape(error) for error in bf.errors]) # Escape and cache in local variable.
             if bf.is_hidden:
                 if bf_errors:
                     top_errors.extend(['(Hidden field %s) %s' % (name, e) for e in bf_errors])
@@ -34,7 +35,7 @@ class PasswordResetForm(forms.Form):
                 if errors_on_separate_row and bf_errors:
                     output.append(error_row % bf_errors)
                 if bf.label:
-                    label = forms.forms.conditional_escape(bf.label)
+                    label = conditional_escape(bf.label)
                     # Only add a colon if the label does not end in punctuation.
                     if label[-1] not in ':?.!':
                         label += ':'
