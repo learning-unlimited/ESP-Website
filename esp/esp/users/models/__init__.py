@@ -234,9 +234,6 @@ class ESPUser(User, AnonymousUser):
             return otheruser.last_name
         elif key == 'name':
             return ESPUser(otheruser).name()
-        elif key == 'recover_url':
-            return 'myesp/recoveremail/?code=%s' % \
-                         otheruser.password
         elif key == 'username':
             return otheruser.username
         return ''
@@ -594,27 +591,21 @@ class ESPUser(User, AnonymousUser):
                     UserBit.UserHasPerms(self, program.anchor, verb)
 
     def recoverPassword(self):
-        # generate the code, send the email.
-        import string
-        import random
+        # generate the ticket, send the email.
         from esp.users.models import PersistentQueryFilter
-        from django.db.models.query import Q
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
         from django.contrib.sites.models import Site
-
-        symbols = string.ascii_uppercase + string.digits
-        code = "".join([random.choice(symbols) for x in range(30)])
 
         # get the filter object
         filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = self.id),
                                                          User,
                                                          'User %s' % self.username)
-        curuser = User.objects.get(id = self.id)
-        curuser.password = code
-        curuser.save()
+
+        ticket = PasswordRecoveryTicket.new_ticket(self)
+
         # create the variable modules
-        variable_modules = {'user': ESPUser(curuser)}
+        variable_modules = {'user': ESPUser(curuser), 'ticket': ticket}
         domainname = Site.objects.get(id=1).domain
 
 
