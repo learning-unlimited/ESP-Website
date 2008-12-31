@@ -9,7 +9,7 @@ from esp.web.util.main import render_to_response
 from esp.users.decorators import anonymous_only
 from django.contrib.auth import authenticate, login
 
-__all__ = ['initial_passwd_request','email_passwd_followup']
+__all__ = ['initial_passwd_request','email_passwd_followup','email_passwd_cancel']
 
 @anonymous_only()
 def initial_passwd_request(request, success=None):
@@ -92,3 +92,24 @@ def email_passwd_followup(request,success=None):
     return render_to_response('users/recovery_email.html', request,
                               request.get_node('Q/Web/myesp'),
                               {'form':form})
+
+def email_passwd_cancel(request,success=None):
+    """ Allow users to cancel a mis-assigned recovery code. """
+
+    if success:
+        return render_to_response('users/recovery_finished.html',
+                                  request, request.get_node('Q/Web/myesp'),{})
+    try:
+        code = request.GET['code']
+    except KeyError:
+        code = request.POST.get('code','')
+
+    ticket = PasswordRecoveryTicket.objects.filter(recover_key=code)[:1]
+    if len(ticket) == 0 or not ticket[0].is_valid():
+        return render_to_response('users/recovery_invalid_code.html',
+                                  request,request.get_node('Q/Web/myesp'),{})
+    ticket = ticket[0]
+    ticket.cancel()
+
+    return render_to_response('users/recovery_cancelled.html',
+                request, request.get_node('Q/Web/myesp'),{})

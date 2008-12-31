@@ -1423,6 +1423,11 @@ class PasswordRecoveryTicket(models.Model):
         """ The URL to recover the password. """
         return 'myesp/recoveremail/?code=%s' % self.recover_key
 
+    @property
+    def cancel_url(self):
+        """ The URL to cancel the ticket. """
+        return 'myesp/cancelrecover/?code=%s' % self.recover_key
+
     def change_password(self, username, password):
         """ If the ticket is valid, saves the password. """
         if not self.is_valid():
