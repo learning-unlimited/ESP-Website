@@ -2,6 +2,7 @@
 
 from django import forms
 from django.contrib.auth.models import User
+from esp.users.models import PasswordRecoveryTicket
 from django.utils.html import conditional_escape
 
 __all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
@@ -96,15 +97,15 @@ class NewPasswordSetForm(forms.Form):
 
     def clean_username(self):
         from esp.middleware import ESPError
+        username = self.cleaned_data['username'].strip()
         if not self.cleaned_data.has_key('code'):
             raise ESPError(False), "The form that you submitted does not contain a valid password-reset code.  If you arrived at this form from an e-mail, are you certain that you used the entire URL from the e-mail (including the bit after '?code=')?"
         try:
-            user = User.objects.get(username = self.cleaned_data['username'].strip(),
-                                    password = self.cleaned_data['code'])
-        except User.DoesNotExist:
+            ticket = PasswordRecoveryTicket.objects.get(recover_key = self.cleaned_data['code'], user__username = username)
+        except PasswordRecoveryTicket.DoesNotExist:
             raise forms.ValidationError('Invalid username.')
 
-        return self.cleaned_data['username'].strip()
+        return username
     
 
     def clean_password_confirm(self):
