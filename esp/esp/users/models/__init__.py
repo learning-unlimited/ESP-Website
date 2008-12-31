@@ -604,9 +604,10 @@ class ESPUser(User, AnonymousUser):
 
         ticket = PasswordRecoveryTicket.new_ticket(self)
 
-        # create the variable modules
-        variable_modules = {'user': ESPUser(curuser), 'ticket': ticket}
         domainname = Site.objects.get(id=1).domain
+
+        # create the variable modules
+        variable_modules = {'user': self, 'ticket': ticket, 'domainname' : domainname}
 
 
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
