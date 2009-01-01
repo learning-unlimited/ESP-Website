@@ -234,9 +234,6 @@ class ESPUser(User, AnonymousUser):
             return otheruser.last_name
         elif key == 'name':
             return ESPUser(otheruser).name()
-        elif key == 'recover_url':
-            return 'myesp/recoveremail/?code=%s' % \
-                         otheruser.password
         elif key == 'username':
             return otheruser.username
         return ''
@@ -594,28 +591,23 @@ class ESPUser(User, AnonymousUser):
                     UserBit.UserHasPerms(self, program.anchor, verb)
 
     def recoverPassword(self):
-        # generate the code, send the email.
-        import string
-        import random
+        # generate the ticket, send the email.
         from esp.users.models import PersistentQueryFilter
-        from django.db.models.query import Q
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
         from django.contrib.sites.models import Site
-
-        symbols = string.ascii_uppercase + string.digits
-        code = "".join([random.choice(symbols) for x in range(30)])
 
         # get the filter object
         filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = self.id),
                                                          User,
                                                          'User %s' % self.username)
-        curuser = User.objects.get(id = self.id)
-        curuser.password = code
-        curuser.save()
-        # create the variable modules
-        variable_modules = {'user': ESPUser(curuser)}
+
+        ticket = PasswordRecoveryTicket.new_ticket(self)
+
         domainname = Site.objects.get(id=1).domain
+
+        # create the variable modules
+        variable_modules = {'user': self, 'ticket': ticket, 'domainname' : domainname}
 
 
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
@@ -1395,6 +1387,87 @@ class ESPUser_Profile(models.Model):
     def __unicode__(self):
         return "ESPUser_Profile for user: %s" % str(self.user)
 
+class PasswordRecoveryTicket(models.Model):
+    """ A ticket for changing your password. """
+    RECOVER_KEY_LEN = 30
+    RECOVER_EXPIRE = 2 # number of days before it expires
+    SYMBOLS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+    user = models.ForeignKey(User)
+    recover_key = models.CharField(max_length=RECOVER_KEY_LEN)
+    expire = models.DateTimeField(null=True)
+
+    def __unicode__(self):
+        return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
+
+    @classmethod
+    def new_key(cls):
+        """ Generates a new random key. """
+        import random
+        key = "".join([random.choice(cls.SYMBOLS) for x in range(cls.RECOVER_KEY_LEN)])
+        return key
+
+    @classmethod
+    def new_ticket(cls, user):
+        """ Returns a new (saved) ticket for a specified user. """
+        from datetime import datetime, timedelta
+
+        ticket = cls()
+        ticket.user = user
+        ticket.recover_key = cls.new_key()
+        ticket.expire = datetime.now() + timedelta(days = cls.RECOVER_EXPIRE)
+
+        ticket.save()
+        return ticket
+
+    @property
+    def recover_url(self):
+        """ The URL to recover the password. """
+        return 'myesp/recoveremail/?code=%s' % self.recover_key
+
+    @property
+    def cancel_url(self):
+        """ The URL to cancel the ticket. """
+        return 'myesp/cancelrecover/?code=%s' % self.recover_key
+
+    def change_password(self, username, password):
+        """ If the ticket is valid, saves the password. """
+        if not self.is_valid():
+            return False
+        if self.user.username != username:
+            return False
+
+        # Change the password
+        self.user.set_password(password)
+        self.user.save()
+
+        # Invalidate all other tickets
+        self.cancel_all(self.user)
+        return True
+    change_password.alters_data = True
+
+    def is_valid(self):
+        """ Check if the ticket is still valid, kill it if not. """
+        from datetime import datetime
+        if self.id is not None and datetime.now() < self.expire:
+            return True
+        else:
+            self.cancel()
+            return False
+    ## technically alters data by calling cancel(), but templates
+    ## should be fine with calling this one I guess
+    # is_valid.alters_data = True
+
+    def cancel(self):
+        """ Cancel a ticket. """
+        if self.id is not None:
+            self.delete()
+    cancel.alters_data = True
+
+    @classmethod
+    def cancel_all(cls, user):
+        """ Cancel all tickets belong to user. """
+        cls.objects.filter(user=user).delete()
 
 class DBList(object):
     """ Useful abstraction for the list of users.

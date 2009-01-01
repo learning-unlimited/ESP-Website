@@ -58,6 +58,8 @@ MEDIA_URL = '/media/'
 
 ADMIN_MEDIA_PREFIX = '/media/admin/'
 
+LOGIN_REDIRECT_URL = '/'
+
 
 ###########################
 # Default debug settings  #
