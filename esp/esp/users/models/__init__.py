@@ -764,6 +764,7 @@ class StudentInfo(models.Model):
     studentrep_expl = models.TextField(blank=True, null=True)
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    k12school = models.ForeignKey('K12School', blank=True, null=True)
 
     class Meta:
         app_label = 'users'
@@ -998,6 +999,7 @@ class EducatorInfo(models.Model):
     grades_taught = models.CharField(max_length=16,blank=True, null=True)
     school = models.CharField(max_length=128,blank=True, null=True)
     position = models.CharField(max_length=64,blank=True, null=True)
+    k12school = models.ForeignKey('K12School', blank=True, null=True)
 
     class Meta:
         app_label = 'users'
