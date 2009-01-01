@@ -75,7 +75,6 @@ def render_class_core(cls):
             sec.num_apps = sec.num_students(verbs=['/Applied'])
 
     return {'class': cls,
-            'isfull': (cls.isFull()),
             'colorstring': colorstring,
             'show_enrollment': scrmi.visible_enrollments,
             'show_emailcodes': scrmi.show_emailcodes,

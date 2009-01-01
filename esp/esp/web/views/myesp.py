@@ -94,8 +94,6 @@ def edit_profile(request, module):
 
     curUser = ESPUser(request.user)
 
-    dummyProgram = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
-
     if curUser.isStudent():
         return profile_editor(request, None, True, 'student')
 
