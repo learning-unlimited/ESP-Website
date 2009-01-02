@@ -140,12 +140,10 @@ class AlumniInfoForm(CaptchaModelForm):
         model = AlumniInfo
         exclude = ['contactinfo']
 
-anchor_choices = (  (DataTree.get_by_uri('Q/Programs/HSSP').id, 'HSSP'),
-                    (DataTree.get_by_uri('Q/Programs/Splash').id, 'Splash'),
-                    (DataTree.get_by_uri('Q/Programs/SATPrep').id, 'SAT Prep'),
-                    (DataTree.get_by_uri('Q/Programs/Junction').id, 'Junction'),
-                    (DataTree.get_by_uri('Q/Programs').id, 'Other program'),
-                    (None, 'Other'))
+visible_programs = DataTree.get_by_uri('Q/Programs').children().exclude(name='Dummy_Programs')
+anchor_choices = [ (x.id, x.name) for x in visible_programs ]
+anchor_choices.append( [ (DataTree.get_by_uri('Q/Programs').id, 'Other program'),
+                         (None, 'Other') ] )
 
 class AlumniContactForm(CaptchaModelForm):
     """
