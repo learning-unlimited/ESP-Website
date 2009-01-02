@@ -89,20 +89,22 @@ class GenMediaBase(object):
 class GenImageBase(GenMediaBase):
     """ For use with images: provides img property. """
 
-    @property
     def _title(self):
         """ title attribute in img tag. """
-        return self._alt
+        return self._alt()
 
-    @property
     def _alt(self):
         """ alt attribute in img tag. """
         return ''
 
+    def _attrs(self):
+        """ Add attributes. """
+        return {'alt': self._alt(), 'title': self._title(), 'border': 0}
+
     @property
     def img(self):
         """ An image tag, ready to be inserted into HTML. """
-        from django.utils.html import escape
-        return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' \
-                % (self.url, escape(self._title), escape(self._alt))
+        from django.forms.util import flatatt
+        return '<img src="%s"%s />' \
+                % (self.url, flatatt(self._attrs()))
 

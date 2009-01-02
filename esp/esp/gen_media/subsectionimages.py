@@ -35,7 +35,6 @@ from esp.gen_media.base import GenImageBase
 __all__ = ['SubSectionImage']
 
 
-### FIXME: GenImageBase needs to provide arbitrary attributes... namely class
 class SubSectionImage(GenImageBase):
     """ A generated LaTeX image for use in inlining. """
 
@@ -48,7 +47,6 @@ class SubSectionImage(GenImageBase):
         self.fill = fill
         super(SubSectionImage, self).__init__(text, font_size)
 
-    @property
     def _alt(self):
         """ Define a proper alt string. """
         return self.text
@@ -56,6 +54,12 @@ class SubSectionImage(GenImageBase):
     def _key(self):
         """ image key """
         return str(self.font_size) + '|' + self.text + '|' + self.fill
+
+    def _attrs(self):
+        """ HTML attributes. """
+        attrs = super(SubSectionImage, self)._attrs()
+        attrs['class'] = 'subsection'
+        return attrs
 
     def _generate_file(self):
         """ Generates the png file. """

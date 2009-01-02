@@ -59,10 +59,16 @@ class InlineLatex(GenImageBase):
         self.dpi = dpi
         super(InlineLatex, self).__init__(content, style, dpi)
 
-    @property
     def _alt(self):
         """ Use LaTeX code as alt text. """
         return self.content
+
+    def _attrs(self):
+        """ HTML attributes. """
+        attrs = super(InlineLatex, self)._attrs()
+        attrs['class'] = 'LaTeX'
+        attrs['align'] = 'middle'
+        return attrs
 
     def _key(self):
         """ image key """
