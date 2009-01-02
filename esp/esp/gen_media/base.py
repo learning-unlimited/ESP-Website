@@ -34,7 +34,7 @@ from django.conf import settings
 import hashlib
 import os
 
-__all__ = ['GenMediaBase']
+__all__ = ['GenMediaBase', 'GenImageBase']
 
 class GenMediaBase(object):
     """ Generated content with free caching. """
@@ -84,10 +84,25 @@ class GenMediaBase(object):
     def _generate_file(self):
         """ Generates the file. """
         raise NotImplementedError("Subclass must implement _generate_file.")
+
+
+class GenImageBase(GenMediaBase):
+    """ For use with images: provides img property. """
+
+    @property
+    def _title(self):
+        """ title attribute in img tag. """
+        return self._alt
+
+    @property
+    def _alt(self):
+        """ alt attribute in img tag. """
+        return ''
+
     @property
     def img(self):
         """ An image tag, ready to be inserted into HTML. """
         from django.utils.html import escape
         return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' \
-                % (self.url, escape(self.content), escape(self.content))
+                % (self.url, escape(self._title), escape(self._alt))
 
