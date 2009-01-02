@@ -3,7 +3,6 @@ from esp.gen_media.models import SubSectionImage
 from django.core.cache import cache
 from urllib import quote
 from django.conf import settings
-from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 
 register = template.Library()
