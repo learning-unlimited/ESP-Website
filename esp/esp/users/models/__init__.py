@@ -604,7 +604,7 @@ class ESPUser(User, AnonymousUser):
 
         ticket = PasswordRecoveryTicket.new_ticket(self)
 
-        domainname = Site.objects.get(id=1).domain
+        domainname = Site.objects.get_current().domain
 
         # create the variable modules
         variable_modules = {'user': self, 'ticket': ticket, 'domainname' : domainname}
