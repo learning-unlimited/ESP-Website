@@ -1,4 +1,4 @@
-
+""" Inline LaTeX image generation code. """
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -29,7 +29,6 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from django.conf import settings
 from esp.middleware import ESPError
 from esp.gen_media.base import GenImageBase
 
@@ -62,12 +61,14 @@ class InlineLatex(GenImageBase):
 
     @property
     def _alt(self):
+        """ Use LaTeX code as alt text. """
         return self.content
 
     def _key(self):
+        """ image key """
         return self.style + '|' + str(self.dpi) + '|' + self.content
 
-    def _generate_file(self, *args, **kwargs):
+    def _generate_file(self):
         """ Generates the png file. """
 
         if self.style == 'INLINE':
