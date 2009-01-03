@@ -299,7 +299,8 @@ WHERE
             'extravals': extravals,
             }
 
-        uri = uri.strip(self.model.DELIMITER)
+        if uri:
+            uri = uri.strip(self.model.DELIMITER)
 
         params = [name, friendly_name, parent_id, uri or '', uri_correct, 0, True]
         params += [parent_id, 0, parent_id, 0, parent_id]
