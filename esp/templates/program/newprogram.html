@@ -33,7 +33,19 @@ Please enter the date ranges (bottom 3 rows) in one of the following formats:
 </ul>
 </p>
 
-<div id="program_form">
+<p>
+Use a past program as a template:
+<select name="program_choose" id="id_program_choose" onchange="window.location='?template_prog='+document.getElementById('id_program_choose').value">
+<option />
+{% for program in programs %}
+<option value="{{ program.id }}">{{ program.niceName }}</option>
+{% endfor %}
+</select>
+<br />
+<font color="red">If you use a program as a template, make sure to carefully look through and update all fields below!</font>
+</p>
+
+<div id="alumni_form">
   <form action="{{ request.path }}" method="post">
   <table class="contact" align="center" width="550">
   <thead>
@@ -50,7 +62,7 @@ Please enter the date ranges (bottom 3 rows) in one of the following formats:
     <tr> 
       <td colspan="2" class="submit" align="center">
         When finished, click here: <br /><br />
-        <input class="button" type="submit" value="Make Program Happen!" />
+        <input class="fancybutton" type="submit" value="Make Program Happen!" />
       </td>
     </tr>
   </tbody>
