@@ -40,7 +40,6 @@ from django.http import HttpResponseRedirect
 # model dependencies
 from esp.membership.models import AlumniInfo, AlumniRSVP, AlumniContact, AlumniMessage
 from esp.users.models import ContactInfo
-from esp.utils.forms import save_instance
 
 from esp.middleware import ESPError
 
@@ -138,15 +137,15 @@ def alumnilookup(request):
             form2 = AlumniInfoForm(data, request=request)
     
             if form2.is_valid() and form1.is_valid():
-                #   Save the information in the database
-                new_info = AlumniInfo()
-                
                 #   Contact info form does additional check to see if making a new one is really necessary
                 new_contact = form1.load_user()
                 
                 #   Delete previous instances of this person.
                 AlumniInfo.objects.filter(contactinfo__last_name=new_contact.last_name, contactinfo__first_name=new_contact.first_name).delete()
-                save_instance(form2, new_info, {'contactinfo_id': new_contact.id}, True)
+                #   Save the new one into the database
+                new_info = form2.save(commit = False)
+                new_info.contactinfo = new_contact
+                new_info.save()
                 
                 #   Send an e-mail to esp-membership with details.
                 SUBJECT_PREPEND = '[ESP Alumni] Information Submitted:'
