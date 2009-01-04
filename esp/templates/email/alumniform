@@ -2,34 +2,34 @@ An alumni filled a form out on the ESP web site:
 
 Contact information
 -------------------
-Name:               {{ contact_form.clean_data.first_name }} {{ contact_form.clean_data.last_name }}
-E-mail address:     {{ contact_form.clean_data.e_mail }}
-Mailing address:    {{ contact_form.clean_data.address_street }}
-                    {{ contact_form.clean_data.address_city }}, {{ contact_form.clean_data.address_state }} {{ contact_form.clean_data.address_zip }}
+Name:               {{ contact_form.cleaned_data.first_name }} {{ contact_form.cleaned_data.last_name }}
+E-mail address:     {{ contact_form.cleaned_data.e_mail }}
+Mailing address:    {{ contact_form.cleaned_data.address_street }}
+                    {{ contact_form.cleaned_data.address_city }}, {{ contact_form.cleaned_data.address_state }} {{ contact_form.cleaned_data.address_zip }}
 Phone numbers:
--   Cell:           {{ contact_form.clean_data.phone_cell }}
--   Day:            {{ contact_form.clean_data.phone_day }}
--   Evening:        {{ contact_form.clean_data.phone_even }}
+-   Cell:           {{ contact_form.cleaned_data.phone_cell }}
+-   Day:            {{ contact_form.cleaned_data.phone_day }}
+-   Evening:        {{ contact_form.cleaned_data.phone_even }}
 
 50th Anniversary information
 ----------------------------
-Were you a part of ESP?                                         {{ main_form.clean_data.partofesp }}
-From year:	                                                {{ main_form.clean_data.start_year }}
-To year:	                                                {{ main_form.clean_data.end_year }}
+Were you a part of ESP?                                         {{ main_form.cleaned_data.partofesp }}
+From year:	                                                {{ main_form.cleaned_data.start_year }}
+To year:	                                                {{ main_form.cleaned_data.end_year }}
 
-I am able to attend ESP's 50th anniversary event:	        {{ main_form.clean_data.attend_interest }}
-Send me a biannual e-mail newsletter:	                        {{ main_form.clean_data.news_interest }}
-Join our alumni advising e-mail list:	                        {{ main_form.clean_data.advising_interest }}
-I would like to volunteer at current ESP programs:	        {{ main_form.clean_data.volunteer_interest }}
-I would like to reconnect with other alumni:	                {{ main_form.clean_data.reconnect_interest }}
+I am able to attend ESP's 50th anniversary event:	        {{ main_form.cleaned_data.attend_interest }}
+Send me a biannual e-mail newsletter:	                        {{ main_form.cleaned_data.news_interest }}
+Join our alumni advising e-mail list:	                        {{ main_form.cleaned_data.advising_interest }}
+I would like to volunteer at current ESP programs:	        {{ main_form.cleaned_data.volunteer_interest }}
+I would like to reconnect with other alumni:	                {{ main_form.cleaned_data.reconnect_interest }}
 
 Involvement in ESP programs/activities:	
 
-{{ main_form.clean_data.involvement }}
+{{ main_form.cleaned_data.involvement }}
 
 Other comments:
 
-{{ main_form.clean_data.comments }}
+{{ main_form.cleaned_data.comments }}
 
 -----------
 End of form
