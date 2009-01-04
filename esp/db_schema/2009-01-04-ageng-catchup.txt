@@ -1,0 +1,22 @@
+This ought to bring Chicago's database up-to-speed with the current code:
+    * Lengthens aux_calls to allow room for more printables
+    * Adds three new options for student registration
+
+To update, you'll need to review and run:
+    $ ./manage.py shell
+    : run ../db_schema/2009-01-04-ageng-catchup.py
+
+Also make sure you've applied:
+
+2008-10-22-ageng.sql (Teacher reg fields)
+    # psql -f esp/db_schema/2008-10-22-ageng.sql uchicagosplash
+2008-11-27-ageng.py  (ClassCategories)
+2008-12-14-ageng.py  (director_email fields)
+2008-12-24-ageng-session_count.py
+2008-12-25-ageng-classes-m2m.py
+2008-12-31-davidben-passwordrecoveryticket.py
+2008-12-31-ageng-schoolkeys.py
+
+Finally, run:
+    $ ./manage.py syncdb
+...to add support for in-database receipts.
