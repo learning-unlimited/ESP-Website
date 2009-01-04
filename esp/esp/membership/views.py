@@ -34,7 +34,7 @@ from esp.datatree.models import *
 from esp.qsd.models import QuasiStaticData
 from esp.web.util.main import render_to_response
 from django.core.mail import send_mail
-from django.template import loader
+from django.template import loader, Context
 from django.http import HttpResponseRedirect
 
 # model dependencies
@@ -155,7 +155,7 @@ def alumnilookup(request):
                 
                 t = loader.get_template('email/alumniinfo')
         
-                msgtext = t.render({'contact_form': form1, 'main_form': form2})
+                msgtext = t.render(Context({'contact_form': form1, 'main_form': form2}))
                         
                 send_mail(SUBJECT_PREPEND + ' '+ form1.cleaned_data['first_name'] + ' ' + form1.cleaned_data['last_name'],
                         msgtext, from_email, to_email, fail_silently = True)
@@ -206,7 +206,7 @@ def alumnirsvp(request):
             
             t = loader.get_template('email/alumnirsvp')
     
-            msgtext = t.render({'form': form})
+            msgtext = t.render(Context({'form': form}))
                     
             send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['name'], msgtext, from_email, to_email, fail_silently = True)
     
