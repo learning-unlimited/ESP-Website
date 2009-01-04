@@ -95,8 +95,7 @@ class ContactInfoForm(forms.ModelForm):
             except:
                 pass
 
-        new_contact = ContactInfo()
-        return save_instance(self, new_contact)
+        return self.save()
 
     # use field grouping
     as_table = grouped_as_table
