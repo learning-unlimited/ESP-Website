@@ -163,9 +163,10 @@ def managepage(request, page):
             context = pickle.loads(request.session['context_str'])
             pcf = ProgramCreationForm(context['prog_form_raw'])
             if pcf.is_valid():
-                new_prog = Program(anchor=GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"]))
-                new_prog = save_instance(pcf, new_prog)
+                new_prog = pcf.save(commit = False) # don't save, we need to fix it up:
                 new_prog.anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
+                new_prog.save()
+                pcf.save_m2m()
                 
                 commit_program(new_prog, context['datatrees'], context['userbits'], context['modules'], context['costs'])
                 
