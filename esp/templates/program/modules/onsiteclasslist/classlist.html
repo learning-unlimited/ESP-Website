@@ -1,75 +1,105 @@
 
-{% extends "outlines/series-3.html" %}
+<html>
+<head>
 
-{% block title %} {{program.niceName}} {% endblock %}
+<script>
+scroll_offset = 0;
+interval_handle = -1;
 
-{% load subsection %}
+function setElementStyleById(id, propertyName, propertyValue) {
+    if (!document.getElementById) return;
+    var el = document.getElementById(id);
+    if (el) el.style[propertyName] = propertyValue;
+}
 
-{% block subsection %}
-    {{ "Open Classes"|subsection }}
-{% endblock %}
+function getElementStyleById(id, propertyName) {
+    if (!document.getElementById) return;
+    var el = document.getElementById(id);
+    return el.style[propertyName];
+}
 
-{% block stylesheets %}
-    {{ block.super }}
-    <style type="text/css">
-        #catalog table {
-        border: 1px solid #CCC;
-        border-width: 1px;
-        border-collapse: collapse;
-        }
-        
-        
-        #catalog th {
-        font-family: Arial, sans-serif;
-        padding: 5px;
-        font-size: 15px;
-        background-color: #c6def7;
-        color: #000;
-        }
-        
-        #catalog td {
-        font-family: serif;
-        padding: 2px;
-        font-size: 14px;
-        background-color: #ffffff;
-        color: #000;
-        }
+function scroll() 
+{
+    scroll_offset -= {{ scrollspeed }};
+    elt1 = document.getElementById("scroller_top");
+    if (elt1.offsetHeight + scroll_offset < 0)
+    {
+        reset();
+    }
+    setElementStyleById("scroller_top", "top", scroll_offset + "px");
+    setElementStyleById("scroller_bottom", "top", scroll_offset + elt1.offsetHeight + "px");
+}
 
-        #divmaintext h1 {
-        font-size: 22pt;
-        color: black;
-        font-family: arial;
-        text-align: center;
-        width: 100%;
-        }
-    </style>
-{% endblock %}
+function reset()
+{
+    if (interval_handle != -1)
+        clearInterval(interval_handle);
+    scroll_offset = 0;
+    scroll();
+    setTimeout("start_scrolling();", 3000);
+}
 
-{% block content %}
+function start_scrolling()
+{
+    interval_handle = setInterval("scroll();", 50);
+}
+</script>
+
+<style type="text/css">
+html, body {
+    overflow:hidden;
+}
+
+#scroller_top, #scroller_bottom {
+    position: absolute;
+    overflow: auto;
+    top: 0px;
+}
+
+.classitem {
+padding-bottom: 5px;
+}
+</style>
+
+<meta http-equiv="refresh" content="{{ refresh }}" />
+<title>On-site Class List for {{ prog.niceName }}</title>
+</head>
+
+<body bgcolor="#FFFFFF" onload="reset();">
+
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+
 <br />
-
-<h1>
-    {{ program.niceName }}: Open Classes
-</h1>
 
 {% load class_render %}
 
 <div id="catalog">
-  <table cellpadding="2" cellspacing="0" width="600">
+<table width="100%">
+<tr>
+<td width="65%" valign="top">
+  <table cellpadding="2" cellspacing="0" width="100%">
     <tr>
-        <th>Class</th>
-        <th>Meeting Time</th>
-        <th>Grades</th>
-        <th>Enrollment</th>
+        <th style="font-size: 1.5em" colspan="2">{{ prog.niceName }}: Open classes starting at {{ current_time.start|date:"D P" }}</th>
     </tr>
-    {% for class in classes %}
-        {% render_class_minimal class %}
-    {% endfor %}
+    <tr>
+        <th style="font-size: 1.2em" class="materials">Code</th>
+        <th style="font-size: 1.2em" class="materials">Class Title</th>
+    </tr>
+    {% for class in classes %}{% if class.starts_soon %}{% if not class.isFull %}{% render_class_current class %}{% endif %}{% endif %}{% endfor %}
+</table>
+</td>
+<Td valign="top">
+  <div id="scroller_top" onclick="reset();">
+    {% include "program/modules/onsiteclasslist/allclass_fragment.html" %}
+    </div>
+    <br />
+    <div id="scroller_bottom" onclick="reset();">
+    {% include "program/modules/onsiteclasslist/allclass_fragment.html" %}
+    </div>
+</td>
+</tr>
 </table>
 </div>
 
-<p align="center">
-    <a href="/onsite/{{ program.getUrlBase }}/main">Return to on-site portal</a>
-</p>
-
-{% endblock %}
+</body>
+</html>

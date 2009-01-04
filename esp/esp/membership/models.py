@@ -32,7 +32,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from esp.db.fields import AjaxForeignKey
 from esp.utils.forms import save_instance
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.program.models import ContactInfo
 import datetime
 
@@ -49,12 +49,12 @@ guest_choices = (
     )
 
 class AlumniRSVP(models.Model):
-    name = models.CharField('Your name', maxlength=30)
-    attending = models.CharField('Are you coming?', choices=rsvp_choices, maxlength=10)
+    name = models.CharField('Your name', max_length=30)
+    attending = models.CharField('Are you coming?', choices=rsvp_choices, max_length=10)
     num_guests = models.IntegerField('Number of guests', choices=guest_choices)
     comments = models.TextField('Questions or comments', null=True)   
      
-    def __str__(self):
+    def __unicode__(self):
         if self.attending == 'Yes':
             return 'RSVP for %s: Attending with %s guests' % (self.name, self.num_guests)
         else:
@@ -73,7 +73,7 @@ class AlumniInfo(models.Model):
     
     contactinfo = AjaxForeignKey(ContactInfo, blank=True, related_name='alumni_user', verbose_name='Contact Information')
     
-    def __str__(self):
+    def __unicode__(self):
         return "%s %s (%s-%s)" % (self.contactinfo.first_name, self.contactinfo.last_name, self.start_year, self.end_year)
         
     @classmethod
@@ -126,14 +126,14 @@ class AlumniInfo(models.Model):
     
 class AlumniMessage(models.Model):
     #   A simple thread posting.
-    poster = models.CharField('Who are you?', maxlength=128)
+    poster = models.CharField('Who are you?', max_length=128)
     thread = models.ForeignKey('AlumniContact')
     seq = models.IntegerField()
     content = models.TextField('Message')
     
     TEMPLATE_FILE = 'membership/single_message.html'
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Post by %s (ref: %s)' % (self.poster, self.thread.comment)
     
     def html(self):
@@ -150,9 +150,9 @@ class AlumniContact(models.Model):
     anchor = models.ForeignKey(DataTree, verbose_name='Program (if any) to associate posting with', null=True)
     year = models.IntegerField('Year[s]')
     timestamp = models.DateTimeField(default = datetime.datetime.now)
-    comment = models.CharField('Post title/note', maxlength=256, null=True)
+    comment = models.CharField('Post title/note', max_length=256, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s (year: %s)' % (self.comment, self.year)
 
     def get_reply_form(self, request):

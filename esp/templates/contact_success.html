@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Let us know"|subsection }}
+{% autoescape off %}{{ "Let us know"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block subsection_name %}Welcome{% endblock %}
@@ -15,7 +15,7 @@
 <h1>Contact ESP</h1><br />
 
 <p>
-  Thank you for contacting the Educational Studies Program. We value every
-  bit of opinions/comments we recieve.
+  Thank you for contacting the Educational Studies Program.  We will try to respond
+  to your inquiry quickly, and we value every bit of your feedback.
 </p>
 {% endblock %}

@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Create an account -- Error"|subsection }}
+{% autoescape off %}{{ "Create an account -- Error"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block content %}

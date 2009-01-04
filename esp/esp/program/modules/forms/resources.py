@@ -1,4 +1,4 @@
-from django import newforms as forms
+from django import forms
 
 from datetime import timedelta
 
@@ -25,10 +25,10 @@ class TimeslotForm(forms.Form):
         self.fields['minutes'].initial = int(length / 60 - 60 * self.fields['hours'].initial)
         
     def save_timeslot(self, program, slot):
-        slot.short_description = self.clean_data['name']
-        slot.description = self.clean_data['description']
-        slot.start = self.clean_data['start']
-        slot.end = slot.start + timedelta(hours=self.clean_data['hours'], minutes=self.clean_data['minutes'])
+        slot.short_description = self.cleaned_data['name']
+        slot.description = self.cleaned_data['description']
+        slot.start = self.cleaned_data['start']
+        slot.end = slot.start + timedelta(hours=self.cleaned_data['hours'], minutes=self.cleaned_data['minutes'])
         slot.event_type = EventType.objects.all()[0]    # default event type for now
         slot.anchor = program.anchor
         slot.save()
@@ -49,13 +49,13 @@ class ResourceTypeForm(forms.Form):
         self.fields['id'].initial = res_type.id
         
     def save_restype(self, program, res_type):
-        res_type.name = self.clean_data['name']
-        res_type.description  = self.clean_data['description']
-        if self.clean_data['is_global']:
+        res_type.name = self.cleaned_data['name']
+        res_type.description  = self.cleaned_data['description']
+        if self.cleaned_data['is_global']:
             res_type.program = None
         else:
             res_type.program = program
-        res_type.priority_default = self.clean_data['priority']
+        res_type.priority_default = self.cleaned_data['priority']
         res_type.save()
         
        
@@ -88,15 +88,15 @@ class EquipmentForm(forms.Form):
         self.fields['resource_type'].initial = resource.res_type.name
         
     def save_equipment(self, program):
-        initial_resources = list(Resource.objects.filter(name=self.clean_data['name'], event__anchor=program.anchor))
-        new_timeslots = [Event.objects.get(id=int(id_str)) for id_str in self.clean_data['times_available']]
-        new_restype = ResourceType.objects.get(id=int(self.clean_data['resource_type'][0]))
+        initial_resources = list(Resource.objects.filter(name=self.cleaned_data['name'], event__anchor=program.anchor))
+        new_timeslots = [Event.objects.get(id=int(id_str)) for id_str in self.cleaned_data['times_available']]
+        new_restype = ResourceType.objects.get(id=int(self.cleaned_data['resource_type'][0]))
         
         for t in new_timeslots:
             new_res = Resource()
             new_res.res_type = new_restype
             new_res.event = t
-            new_res.name = self.clean_data['name']
+            new_res.name = self.cleaned_data['name']
             new_res.save()
             
         for r in initial_resources:
@@ -139,11 +139,11 @@ class ClassroomForm(forms.Form):
         -   Delete old resources
         """
 
-        initial_rooms = Resource.objects.filter(name=self.clean_data['room_number'], event__anchor=program.anchor)
+        initial_rooms = Resource.objects.filter(name=self.cleaned_data['room_number'], event__anchor=program.anchor)
         initial_furnishings = [r.associated_resources() for r in initial_rooms]
         
-        new_timeslots = [Event.objects.get(id=int(id_str)) for id_str in self.clean_data['times_available']]
-        new_furnishings = [ResourceType.objects.get(id=int(id_str)) for id_str in self.clean_data['furnishings']]
+        new_timeslots = [Event.objects.get(id=int(id_str)) for id_str in self.cleaned_data['times_available']]
+        new_furnishings = [ResourceType.objects.get(id=int(id_str)) for id_str in self.cleaned_data['furnishings']]
         
         #   Evaluate the lists so the new stuff doesn't get deleted.
         initial_rooms = list(initial_rooms)
@@ -154,10 +154,10 @@ class ClassroomForm(forms.Form):
         for t in new_timeslots:
             #   Create room
             new_room = Resource()
-            new_room.num_students = self.clean_data['num_students']
+            new_room.num_students = self.cleaned_data['num_students']
             new_room.event = t
             new_room.res_type = ResourceType.get_or_create('Classroom')
-            new_room.name = self.clean_data['room_number']
+            new_room.name = self.cleaned_data['room_number']
             new_room.save()
             t.new_room = new_room
             
@@ -166,7 +166,7 @@ class ClassroomForm(forms.Form):
                 new_resource = Resource()
                 new_resource.event = t
                 new_resource.res_type = f
-                new_resource.name = f.name + ' for ' + self.clean_data['room_number']
+                new_resource.name = f.name + ' for ' + self.cleaned_data['room_number']
                 new_resource.group_id = new_room.group_id
                 new_resource.save()
                 f.new_resource = new_resource

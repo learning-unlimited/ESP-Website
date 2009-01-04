@@ -1,0 +1,11 @@
+<!-- Question Type: Instruction Text -->
+<table width="600">
+<tr>
+    <th>{{ name }}</th>
+</tr>
+{% if text %}
+<tr>
+    <td>{{ text|safe }}<br /><br /></td>
+</tr>
+{% endif %}
+</table>

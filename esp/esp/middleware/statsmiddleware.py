@@ -58,7 +58,10 @@ class StatsMiddleware(object):
             # get number of db queries before we do anything
             n = len(connection.queries)
 
-        totTime = time() - request.start_time
+        try:
+            totTime = time() - request.start_time
+        except AttributeError:
+            totTime = -1
 
         stats = {
             'totTime': totTime,
@@ -95,17 +98,16 @@ class StatsMiddleware(object):
 
         if settings.DISPLAYSQL and settings.DEBUG and \
            request.META['REMOTE_ADDR'] in settings.INTERNAL_IPS:
-            sqlcontent = "\n\n"+'<div class="sql">\n'
-            
-            for q in connection.queries:
-                sqlcontent += "\n"+'%s:&nbsp;&nbsp;%s<br />' % \
-                              (q['time'], q['sql'])
-            sqlcontent += "\n\n</div>"
 
+            sqlcontent = ''.join("\n"+'%s:&nbsp;&nbsp;%s<br />' % \
+                              (q['time'], q['sql']) for q in connection.queries)
+
+            sqlcontent = str(sqlcontent)
+            
             if '</body>' in response.content.lower():
                 pos = response.content.find('</body>')
-                response.content = response.content[:pos] + \
-                                   sqlcontent + \
-                                   response.content[pos:]
+                response.content = '%s\n\n<div class="sql">\n%s\n\n</div>%s' % \
+                                   (response.content[:pos], sqlcontent, response.content[pos:])
+
         return response
 

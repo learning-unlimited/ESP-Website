@@ -1,0 +1,68 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Login!{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Welcome Back"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+<h1>Log back in to ESP</h1>
+
+{% if next %}
+
+<p>
+After logging in below, you will return to <tt>{{ next }}</tt>.<br />
+</p>
+{% endif %}
+
+
+<div id="login_form">
+<form action="/myesp/login/" method="post">
+<table cellpadding="2" align="center">
+<thead>
+<tr>
+ <th colspan="2">Step 2: Login</th>
+</tr>
+
+{{ form }}
+
+<tr>
+  <th colspan="2" class="submit">
+    <input type="submit" value="- Login -" />
+  </th>
+</tr>
+
+<tr>
+  <td colspan="2">
+    <p>
+      Forgot your password? Head on over to the <a href="/myesp/passwdrecover/"
+       title="Click for account recovery">Account Recovery Page</a>.
+    </p>
+  </td>
+</tr>
+
+</tbody>
+</table>
+
+<input type="hidden" name="next" value="{{ next }}" />
+</form>
+</div>
+
+<script type="text/javascript">
+<!--
+document.getElementById('id_username').focus();
+//-->
+</script>
+<br />
+
+<h2>
+  Don't already have an account?  <a href="/myesp/register/">Click here</a> to create one!
+</h2>
+{% endblock %}

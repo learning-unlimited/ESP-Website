@@ -1,0 +1,65 @@
+<html>
+<head>
+<title>Student List</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; }
+.classtitle { text-align: center; font-size: 15pt; font-weight: bold; font-family: georgia; padding: .3in;}
+
+.classroster { text-align: center; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+
+.blocks { padding: 4px; font-size: 10pt; font-weight: bold; }
+.classroom { padding: 8px; font-size: 10pt; font-weight: bold; }
+.pretty {border: 1px solid black; }
+.pretty td { border: 1px solid black; }
+.pretty th { border: 1px solid black; }
+.pretty td { vertical-align: top; }
+.teachername { font-size: 9pt; }
+.teachername span { border: 1px solid black; padding: 3px;
+               width: auto; }
+.classroom { vertical-align: top; }
+.blokcs { vertical-align: top; }
+.pretty td.oldnew { border-bottom: 0; border-top: 2px; }
+.pretty td.old { border-bottom: 0;
+                      border-top: 0;}
+#pagebreak {page-break-after: always; }
+.box { width: 15px; height: 15px; border: 2px solid black; 
+   font-weight: bold; text-align: center; vertical-align: middle;
+}
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
+</style>
+<script src="/media/scripts/sorttable.js"></script>
+</head>
+<body>
+
+<table class="pretty sortable" cellspacing="0">
+<tr>
+   <th>#</th>
+   <th>ID</th>
+   <th>Name</th>
+   <th>Emerg. Contact Name</th>
+   <th>Address</th>
+   <th>Home Phone</th>
+   <th>Cell Phone</th>
+</tr>
+{% for student in students %}
+<tr>
+   <td>{{ forloop.counter }}</td>
+   <td>{{ student.id }}</td>
+   <td>{{ student.last_name }}, {{ student.first_name}}</td>
+   <td>{{ student.emerg_contact.first_name }} {{ student.emerg_contact.last_name }}</td>
+   <td>{{ student.emerg_contact.address }}</td>
+   <td>{{ student.emerg_contact.phone_day }}</td>
+   <td>{{ student.emerg_contact.phone_cell }}</td>
+</tr>
+ {% endfor %}
+</table>
+
+</body>
+</html>

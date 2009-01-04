@@ -1,4 +1,5 @@
 
+
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -28,20 +29,28 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, CoreModule
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, CoreModule, main_call, aux_call
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.users.models import ESPUser, UserBit, User
 from esp.web.util        import render_to_response
 from esp.program.models import ClassSubject, StudentApplication, StudentAppReview
 from django.contrib.auth.decorators import login_required
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from django.http import HttpResponseRedirect
-from esp.db.models import Q
+from django.db.models.query import Q
 
 __all__ = ['AdminReviewApps']
 
 class AdminReviewApps(ProgramModuleObj, CoreModule):
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Application Review for Admin",
+            "module_type": "manage",
+            "seq": 1000,
+            "main_call": "adminreviews"
+            }
 
     def students(self, QObject=False):
         accept_node = GetNode('V/Flags/Registration/Accepted')
@@ -56,7 +65,8 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
 
     def studentDesc(self):
         return {'app_accepted_to_one_program': """Students who are accepted to at least one class."""}
-    
+
+    @aux_call
     @needs_admin
     def review_students(self, request, tl, one, two, module, extra, prog):
         """ Show a roster of the students in the class, allowing the administrators
@@ -76,7 +86,7 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         students = filter(lambda x: x.studentapplication_set.filter(program=self.program).count() > 0, students)
 
         for student in students:
-            student.added_class = student.userbit_set.filter(qsc__rangestart__gte=cls.anchor.rangestart, qsc__rangeend__lte=cls.anchor.rangeend)[0].startdate
+            student.added_class = student.userbit_set.filter(QTree(qsc__below = cls.anchor))[0].startdate
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except:
@@ -101,6 +111,7 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
                                   {'class': cls,
                                    'students':students})
 
+    @aux_call
     @needs_admin
     def accept_student(self, request, tl, one, two, module, extra, prog):
         """ Accept a student into a class. """
@@ -115,7 +126,8 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         UserBit.objects.get_or_create(user=student, qsc=cls.anchor,
                                       verb=accept_node, recursive=False)
         return self.review_students(request, tl, one, two, module, extra, prog)
-    
+
+    @aux_call
     @needs_admin
     def reject_student(self, request, tl, one, two, module, extra, prog):
         """ Reject a student from a class (does not affect their
@@ -132,9 +144,10 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         
         return self.review_students(request, tl, one, two, module, extra, prog)
 
+    @aux_call
     @needs_admin
     def view_app(self, request, tl, one, two, module, extra, prog):
-        reg_node = request.get_node('V/Flags/Registration/Preliminary')
+        reg_node = request.get_node('V/Flags/Registration/Applied')
         try:
             cls = ClassSubject.objects.get(id = extra)
             section = cls.default_section()

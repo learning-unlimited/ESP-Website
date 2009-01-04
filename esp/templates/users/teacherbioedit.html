@@ -25,8 +25,8 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 Please complete the form to update your biography:
 </p>
 
-{% if form.has_errors %}
-<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
+{% if form.errors %}
+<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.<h2>
 {% endif %}
 
 

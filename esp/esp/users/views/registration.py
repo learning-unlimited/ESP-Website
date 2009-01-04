@@ -24,8 +24,8 @@ def join_emaillist(request):
 
         if form.is_valid():
             # create the user
-            User.objects.get_or_create(email    = form.clean_data['email'],
-                                       username = form.clean_data['email'],
+            User.objects.get_or_create(email    = form.cleaned_data['email'],
+                                       username = form.cleaned_data['email'],
                                        password = 'emailuser')
             return HttpResponseRedirect('/')
     else:
@@ -51,29 +51,29 @@ def user_registration(request):
 
         if form.is_valid():
             try:
-                user = User.objects.get(email=form.clean_data['email'],
+                user = User.objects.get(email=form.cleaned_data['email'],
                                         password = 'emailuser')
             except User.DoesNotExist:
-                user = User(email = form.clean_data['email'])
+                user = User(email = form.cleaned_data['email'])
 
-            user.username   = form.clean_data['username']
-            user.last_name  = form.clean_data['last_name']
-            user.first_name = form.clean_data['first_name']
+            user.username   = form.cleaned_data['username']
+            user.last_name  = form.cleaned_data['last_name']
+            user.first_name = form.cleaned_data['first_name']
 
-            user.set_password(form.clean_data['password'])
+            user.set_password(form.cleaned_data['password'])
 
             user.save()
             ESPUser_Profile.objects.get_or_create(user = user)
 
-            role_verb = request.get_node('V/Flags/UserRole/%s' % form.clean_data['initial_role'])
+            role_verb = request.get_node('V/Flags/UserRole/%s' % form.cleaned_data['initial_role'])
 
             role_bit  = UserBit.objects.create(user = user,
                                                verb = role_verb,
                                                qsc  = request.get_node('Q'),
                                                recursive = False)
 
-            user = authenticate(username=form.clean_data['username'],
-                                password=form.clean_data['password'])
+            user = authenticate(username=form.cleaned_data['username'],
+                                password=form.cleaned_data['password'])
 
             login(request, user)
 

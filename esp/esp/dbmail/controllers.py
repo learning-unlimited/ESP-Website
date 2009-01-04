@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.lib.markdown import markdown
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.users.models import UserBit
 from esp.dbmail.models import MessageRequest, TextOfEmail, EmailRequest
 

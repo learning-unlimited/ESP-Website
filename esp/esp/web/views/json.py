@@ -31,8 +31,8 @@ Email: web@esp.mit.edu
 from django.http import HttpResponse
 from django.utils import simplejson
 from esp.users.models import UserBit
-from esp.db.models import Q
-from esp.datatree.models import GetNode
+from django.db.models.query import Q
+from esp.datatree.models import *
 
 class JsonResponse(HttpResponse):
     def __init__(self, obj):

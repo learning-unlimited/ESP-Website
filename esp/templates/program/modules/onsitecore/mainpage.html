@@ -33,7 +33,7 @@ Please select from the option below to continue.
 {% for module in modules %}
 {% if module.isStep %}
   {% if not module.useTemplate %}
-    <li>{{ module.makeLink }}</li>
+    <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
   {% else %}
     <li><em>{{ module.module.link_title }} (below)</em></li>
   {% endif %}

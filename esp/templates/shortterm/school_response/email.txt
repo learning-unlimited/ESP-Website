@@ -1,0 +1,17 @@
+{{ form.contact_name}}, {{ form.position }} at  {{ form.school }}, submitted the following form:
+
+We would like the following:
+Xeroxable Filer for Summer HSSP: {{ form.xeroxable_flier_for_summer_hssp }}
+Xeroxable Flier for Junction: {{ form.xeroxable_flier_for_junction }}
+Catalog of all 2007 to 2008 ESP courses: {{ form.catalog_of_all_2007_to_2008_esp_courses }}
+Xeroxable fliers for all 2007 to 2008 ESP courses: {{ form.xeroxable_fliers_for_all_2007_to_2008_esp_courses }}
+
+Submitted applications can be reached at the following URL's, if applicable:
+{% if form.splash_on_wheels_application %}Splash On Wheels application: http://esp.mit.edu{{ form.get_splash_on_wheels_application_url }}{% endif %}
+{% if form.bulk_financial_aid_application %}Bulk Financial Aid application: http://esp.mit.edu{{ form.get_bulk_financial_aid_application_url }}{% endif %}
+
+
+They can be reached at:
+{{ form.contact_name }}
+E-mail: {{ form.email }}
+{{ form.mailing_address }}

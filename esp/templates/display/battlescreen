@@ -7,7 +7,7 @@
 {% block content %}
 <ul>
 {% for ann in announcements %}
-	<li> {{ ann }} </li>
+	<li> {% autoescape off %}{{ ann }}{% endautoescape %} </li>
 {% endfor %}
 </ul>
 

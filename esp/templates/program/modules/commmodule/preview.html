@@ -44,6 +44,11 @@ users to whom you are sending this email.
 </p>
 
 <p>
+<strong>Reply-To:</strong> {{ replyto }}
+<br />
+</p>
+
+<p>
 <strong>Subject:</strong> {{ subject }}
 <br />
 </p>
@@ -61,6 +66,7 @@ users to whom you are sending this email.
 <form action="/manage/{{program.getUrlBase}}/maincomm2" method="post" name="mainback">
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="from" value="{{from}}" />
+<input type="hidden" name="replyto" value="{{replyto}}" />
 <input type="hidden" name="subject" value="{{subject}}" />
 <input type="hidden" name="body" value="{{body}}" />
 <input type="hidden" name="listcount" value="{{listcount}}" />
@@ -69,6 +75,7 @@ users to whom you are sending this email.
 <form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="mainback">
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="from" value="{{from}}" />
+<input type="hidden" name="replyto" value="{{replyto}}" />
 <input type="hidden" name="subject" value="{{subject}}" />
 <input type="hidden" name="body" value="{{body}}" />
 <input type="submit" value="Send Message!" id="submitform" />

@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.users.models import ContactInfo, UserBit, ESPUser
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.program.models import ArchiveClass, ClassSubject, ClassCategories
 from esp.web.util.main import render_to_response
 from django.db.models.query import QuerySet
@@ -50,7 +50,7 @@ class ArchiveFilter(object):
         self.category = str(category)
         self.options  = str(options)
     
-    def __str__(self):
+    def __unicode__(self):
         return '%s, %s' % (self.category, self.options)
 
 def compute_range(postvars, num_records):
@@ -213,7 +213,7 @@ def archive_classes(request, category, options, sortorder = None):
     else:
         headings = [item.__dict__[sortorder[0]] for item in results[res_range['start']:res_range['end']]]
     
-    context['headings'] = list(set([str(h) for h in headings]))
+    context['headings'] = list(set([unicode(h) for h in headings]))
     context['headings'].sort()
     
     #    Fill in context some more

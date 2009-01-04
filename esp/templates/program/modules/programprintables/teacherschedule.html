@@ -54,12 +54,14 @@ td.newday { border-width: 2px 1px 0 1px;}
     <th>Class</th>
 </tr>
 {% endifchanged %}
+{% autoescape off %}
 <tr>
   <td>{{ scheditem.cls.friendly_times|join:"<br />" }}</td>
   <td>{% if scheditem.cls.classrooms|length_is:0 %}N/A{% else %}
       {{ scheditem.cls.prettyrooms|join:"<br />" }}{% endif %}</td>
   <td>{{ scheditem.cls.title }}</td>
 </tr>
+{% endautoescape %}
 {% endfor %}
 
 </body>

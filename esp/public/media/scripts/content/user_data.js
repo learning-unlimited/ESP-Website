@@ -17,7 +17,13 @@ for (var i=0; i < esp_user_keys.length; i++) {
     if (tmp) {
 	esp_user[esp_user_keys[i]] = tmp;
     }
+    /* These cookies are escape for potential unicode.
+     * : see esp/middleware/esperrormiddleware.py
+     */
 }
+esp_user['cur_email'] = unescape(esp_user['cur_email']);
+esp_user['cur_first_name'] = unescape(esp_user['cur_first_name']);
+esp_user['cur_last_name'] = unescape(esp_user['cur_last_name']);
 
 var esp_user_login = null;
 

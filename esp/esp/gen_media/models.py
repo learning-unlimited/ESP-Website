@@ -30,132 +30,14 @@ Email: web@esp.mit.edu
 """
 from django.db   import models
 from django.conf import settings
-from esp.users.models import User
+from django.core.files.storage import default_storage
+
 from esp.middleware   import ESPError
 import os
 import datetime
-import cStringIO as StringIO
-import md5
-from PIL import Image, ImageFont, ImageDraw, ImageFilter
+import hashlib
 
-TEXIMAGE_BASE = settings.MEDIA_ROOT+'latex'
-TEXIMAGE_URL  = '/media/uploaded/latex'
-IMAGE_TYPE    = 'png'
-LATEX_DPI     = 150
-LATEX_BG      = 'Transparent' #'white'
-
-mimes         = {'gif': 'image/gif',
-                 'png': 'image/png'}
-
-commands = {'latex'  : '/usr/texbin/latex',
-            'dvips'  : '/usr/texbin/dvips',
-            'convert': '/sw/bin/convert',
-            'dvipng' : '/usr/texbin/dvipng'}
-
-TMP      = '/tmp'
-
-class LatexImage(models.Model):
-
-    content  = models.TextField()
-    image    = models.FileField(upload_to = 'latex')
-    dpi      = models.IntegerField(blank=True, null=True)
-    style    = models.CharField(maxlength=16, choices = (('INLINE','INLINE'),('DISPLAY','DISPLAY')))
-    filetype = models.CharField(maxlength=10)
-
-    def getImage(self):
-        if not self.file_exists():
-            self.genImage()
-        return str(self)
-
-    def genImage(self):
-
-        if self.file_exists():
-            return False
-        
-        if not self.image:
-            self.image = get_rand_file_base()
-            self.filetype = IMAGE_TYPE
-        else:
-            self.image = os.path.basename(self.image)
-            self.image = self.image[:self.image.rindex('.')]
-
-        if self.style == 'INLINE':
-            style = '$'
-        elif self.style == 'DISPLAY':
-            style = '$$'
-        else:
-            raise ESPError(False), 'Unknown display style'
-
-        tex = r"""\documentclass[fleqn]{article} \usepackage{amssymb,amsmath} """ +\
-              r"""\usepackage[latin1]{inputenc} \begin{document} """ + \
-              r""" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}""" % \
-              (style, self.content, style)
-
-        fullpath = TMP+'/'+self.image
-
-        tex_file = open(fullpath + '.tex', 'w')
-        tex_file.write(tex)
-        tex_file.close()
-
-        if self.dpi is None:
-            cur_dpi = LATEX_DPI
-        else:
-            cur_dpi = self.dpi
-
-        os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
-                  (TMP, commands['latex'], self.image))
-
-        os.system( '%s -q -T tight -bg %s -D %s -o %s.png %s.dvi > /dev/null' % \
-                  (commands['dvipng'], LATEX_BG, cur_dpi, fullpath, fullpath))
-
-        if self.filetype.lower() != 'png':
-            os.system( '%s %s.png %s.%s %> /dev/null' % \
-                       (commands['convert'], fullpath, fullpath, self.filetype))
-
-        old_filename = self.image
-
-        f = open('%s.%s' % (fullpath, self.filetype))
-
-        self.save_image_file('%s.%s' % (self.image, self.filetype), f.read(), save=False)
-
-        f.close()
-        
-        #os.system('rm -f %s/%s*' % (TMP, old_filename))
-
-        self.save(super=True)
-        
-        return True
-
-    def save(self, *args, **kwargs):
-        if 'super' not in kwargs:
-            self.genImage()
-        else:
-            del kwargs['super']
-        super(LatexImage,self).save(*args, **kwargs)
-        
-
-    def __str__(self):
-        return '<img src="%s" alt="%s" title="%s" border="0" class="LaTeX" align="middle" />' % \
-               (self.get_image_url(), self.content, self.content)
-        
-
-    def file_exists(self):
-        if not self.image:
-            return False
-        return os.path.exists(self.get_image_filename())
-
-    class Admin:
-        pass
-    
-def get_rand_file_base():
-    import sha
-    from random import random
-
-    rand = sha.new(str(random())).hexdigest()
-
-    while os.path.exists('%s/%s.%s' % (TEXIMAGE_BASE, rand, IMAGE_TYPE)):
-        rand = sha.new(str(random())).hexdigest()
-    return rand
+import ImageFont, Image, ImageDraw, ImageFilter
 
 IMAGE_TYPE = 'png'
 
@@ -199,19 +81,19 @@ class SubSectionImage(models.Model):
         im = im.filter(ImageFilter.SMOOTH)
         im = im.filter(ImageFilter.SHARPEN)        
 
-        file_name = md5.new(font_string).hexdigest()
+        file_name = hashlib.md5(font_string).hexdigest()
 
-        file_name = '%s/%s.%s' %\
-                      (self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)
+        full_file_name = '%s/%s/%s.%s' %\
+                      (settings.MEDIA_ROOT, self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)
+        part_file_name = '%s/%s.%s' % (self._meta.get_field('image').upload_to, file_name, IMAGE_TYPE)
 
-        c = StringIO.StringIO()
-        im.save(c, IMAGE_TYPE)
+        file = default_storage.open(full_file_name, 'wb')
+        im.save(file, IMAGE_TYPE) 
+        file.close()
 
-        self.image = file_name
-
-        self.save_image_file(file_name, c.getvalue(), save=False)
-
-        del c
+        self.image = part_file_name
+        
+        models.Model.save(self)
 
         self.width, self.height = dim
 
@@ -219,8 +101,8 @@ class SubSectionImage(models.Model):
         self.create_image()
         models.Model.save(self, *args, **kwargs)
 
-    def __str__(self):
-        if not os.path.exists(self.get_image_filename()):
+    def __unicode__(self):
+        if not os.path.exists(self.image.path):
             self.create_image()
-        return '<img src="%s" alt="%s" border="0" title="%s" class="subsection" />' % (self.get_image_url(), self.text, self.text)
+        return '<img src="%s" alt="%s" border="0" title="%s" class="subsection" />' % (str(self.image.url), self.text, self.text)
         

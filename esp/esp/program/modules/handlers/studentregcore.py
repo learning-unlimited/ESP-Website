@@ -28,21 +28,34 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.models  import Program
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser, User
-from esp.datatree.models import GetNode
-from esp.db.models import Q
+from esp.datatree.models import *
+from django.db.models.query import Q
 from esp.middleware   import ESPError
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItemType, EmptyTransactionException
 from decimal import Decimal
 from datetime import datetime
-
+from django.db import models
+from django.contrib import admin
+from django.template import Context, Template
+from django.http import HttpResponse
+from esp.lib.markdown import markdown
 import operator
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "",
+            "admin_title": "Core Student Reg (StudentRegCore)",
+            "module_type": "learn",
+            "seq": -9999
+            }
 
     def have_paid(self):
         """ Whether the user has paid for this program or its parent program. Duplicated from creditcardmodule_cybersource. """
@@ -76,10 +89,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                 'studentrep': User.objects.filter(Q_studentrep).distinct()}
 
     def studentDesc(self):
-        return {'confirmed': """Students who have clicked on the `Confirm Pre-Registraiton' button.""",
+        return {'confirmed': """Students who have clicked on the `Confirm Pre-Registration' button.""",
                 'attended' : """Students who attended %s""" % self.program.niceName(),
                 'studentrep': """All Student Representatives of ESP"""}
 
+    @aux_call
     @needs_student
     @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
@@ -94,7 +108,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def confirmreg_forreal(self, request, tl, one, two, module, extra, prog, new_reg):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
-        
+        from esp.program.modules.module_ext import DBReceipt
+
+
         try:
             invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
         except:
@@ -134,10 +150,16 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             raise ESPError(), "You must finish all the necessary steps first, then click on the Save button to finish registration."
             
-	receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
-	return render_to_response(receipt, request, (prog, tl), context)
+        try:
+            receipt_text = DBReceipt.objects.get(program=self.program).receipt
+            context["request"] = request
+            context["program"] = prog
+            return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
+        except DBReceipt.DoesNotExist:
+            receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
+            return render_to_response(receipt, request, (prog, tl), context)
 
-
+    @aux_call
     @needs_student
     @meets_grade    
     @meets_deadline()
@@ -154,7 +176,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                 bit.expire()
 
         return self.goToCore(tl)
-  
+
+    @main_call
     @needs_student
     @meets_grade
     @meets_deadline('/MainPage')
@@ -163,7 +186,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
 	    context = {}
             modules = prog.getModules(self.user, 'learn')
-
 	    context['completedAll'] = True
             for module in modules:
                 if not module.isCompleted() and module.required:

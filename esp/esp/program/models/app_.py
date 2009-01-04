@@ -33,7 +33,7 @@ from esp.users.models import ESPUser
 
 from django.contrib.auth.models import User
 from django.db import models
-from django import newforms as forms
+from django import forms
 
 import datetime
 
@@ -61,7 +61,10 @@ class BaseAppElement:
             return None
             
         form_prefix = '%s_%d' % (self._element_name, self.id)
-        form_class = forms.models.form_for_model(self.__class__)
+        
+        class form_class(forms.ModelForm):
+            class Meta:
+                model = self.__class__
         
         #   Enlarge text fields to a reasonable size (dangit Django).
         for field in self._field_names:
@@ -87,8 +90,8 @@ class BaseAppElement:
     def update(self, form):
         self.date = datetime.datetime.now()
         for field_name in self._field_names:
-            if form.clean_data.has_key(field_name):
-                setattr(self, field_name, form.clean_data[field_name])
+            if form.cleaned_data.has_key(field_name):
+                setattr(self, field_name, form.cleaned_data[field_name])
         self.save()
 
 class StudentAppQuestion(BaseAppElement, models.Model):
@@ -105,7 +108,7 @@ class StudentAppQuestion(BaseAppElement, models.Model):
     question = models.TextField(help_text='The prompt that your students will see.')
     directions = models.TextField(help_text='Specify any additional notes (such as the length of response you desire) here.', blank=True, null=True)
     
-    def __str__(self):
+    def __unicode__(self):
         if self.subject is not None:
             return '%s (%s)' % (self.question[:80], self.subject.title())
         else:
@@ -127,7 +130,7 @@ class StudentAppResponse(BaseAppElement, models.Model):
     _element_name = 'response'
     _field_names = ['response', 'complete']
     
-    def __str__(self):
+    def __unicode__(self):
         return 'Response to %s: %s...' % (self.question.question, self.response[:80])
     
     class Meta:
@@ -151,7 +154,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     _element_name = 'review'
     _field_names = ['score', 'comments', 'reject']
     
-    def __str__(self):
+    def __unicode__(self):
         return '%s by %s: %s...' % (self.score, self.reviewer.username, self.comments[:80])
 
     class Meta:
@@ -179,7 +182,7 @@ class StudentApplication(models.Model):
     director_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
     rejected       = models.BooleanField(default=False,editable=False)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.user)
     
     def __init__(self, *args, **kwargs):

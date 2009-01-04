@@ -31,3 +31,56 @@ Email: web@esp.mit.edu
 
 from esp.program.modules.handlers import *
 
+
+#from django.contrib import admin
+#from django.db import models 
+#from esp.program.models import Program
+#
+#class DBReceipt(models.Model):
+#    """ Per-program Receipt templates """
+#    program = models.OneToOneField(Program)
+#    receipt = models.TextField()
+#
+#admin.site.register(DBReceipt)
+
+
+def updateModules(update_data, overwriteExisting=False, deleteExtra=False):
+    """
+    Given a list of key:value dictionaries containing fields from the
+    ProgramModule table, populate the table based on that list.
+    If overwriteExisting is set, modules that already have entries will
+    be updated with the specified data.
+    If deleteExtra is set, entries in the table that don't correspond
+    to modules in the list will be deleted.
+    """
+    from esp.program.models import ProgramModule
+    
+    mods = [ (datum, ProgramModule.objects.get_or_create(handler=datum["handler"], module_type=datum["module_type"], main_call=datum["main_call"], defaults=datum)) for datum in update_data if ProgramModule.objects.filter(handler=datum["handler"], module_type=datum["module_type"], main_call=datum["main_call"]).count() != 0 ]
+
+    if overwriteExisting:
+        for (datum, (mod, created)) in mods:
+            if created:
+                mod.__dict__.update(datum)
+                mod.save()
+
+    if deleteExtra:
+        ids = []
+
+        for (datum, (mod, created)) in mods:
+            ids.append(mod.id)
+
+        #ProgramModule.objects.exclude(id__in=ids).delete()
+
+    
+def install():
+    """ Install the initial ProgramModule table data for all currently-existing modules """
+    print "Installing esp.program.modules initial data..."
+    from esp.program.modules import handlers
+    modules = [ x for x in handlers.__dict__.values() if hasattr(x, "module_properties") ]
+
+    table_data = []
+    for module in modules:
+        table_data += module.module_properties_autopopulated()
+
+    updateModules(table_data)
+    

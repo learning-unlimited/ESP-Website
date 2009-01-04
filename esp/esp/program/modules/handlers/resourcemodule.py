@@ -39,7 +39,7 @@ from esp.program.models import ClassSubject, ClassSection, Program
 from esp.users.models import UserBit, ESPUser
 from esp.middleware import ESPError
 
-from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl
+from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
 from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, EquipmentForm
@@ -48,7 +48,15 @@ class ResourceModule(ProgramModuleObj):
     doc = """ Manage the resources used by a program.  This includes classrooms and LCD equipment.
     Also use this module to set up the time blocks for classes.
     """
-        
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "Manage Times and Rooms",
+            "module_type": "manage",
+            "seq": 10
+            }
+
+    @main_call
     def resources(self, request, tl, one, two, module, extra, prog):
 	context = {}
         
@@ -79,8 +87,8 @@ class ResourceModule(ProgramModuleObj):
                     #   add/edit timeslot
                     form = TimeslotForm(data)
                     if form.is_valid():
-                        if form.clean_data['id'] is not None:
-                            new_timeslot = Event.objects.get(id=form.clean_data['id'])
+                        if form.cleaned_data['id'] is not None:
+                            new_timeslot = Event.objects.get(id=form.cleaned_data['id'])
                         else:
                             new_timeslot = Event()
                             
@@ -114,8 +122,8 @@ class ResourceModule(ProgramModuleObj):
                     form = ResourceTypeForm(data)
 
                     if form.is_valid():
-                        if form.clean_data['id'] is not None:
-                            new_restype = ResourceType.objects.get(id=form.clean_data['id'])
+                        if form.cleaned_data['id'] is not None:
+                            new_restype = ResourceType.objects.get(id=form.cleaned_data['id'])
                         else:
                             new_restype = ResourceType()
                             

@@ -27,7 +27,7 @@ tion is correct?'))
 
 {% load subsection %}
 {% block subsection %}
-{{ "Student Registration"|subsection }}{% endblock %}
+{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
 
 {% block content %}
 <style type="text/css">
@@ -37,14 +37,80 @@ h1.catalog {color: #c6def7}
 <br /><br />
 <h1 class="catalog">Student registration for {{program.niceName}} </h1>
 
-<p>
-  Please complete the following steps to register for {{program.niceName}}.
-  When each step is completed, the corresponding box in the right-hand column will
-  be &#8220;checked off&#8221;.
-</p>
+{% if not request.user.onsite_local %}
+    <div id="catalog">
+    {% if program.isFull %}
+    {% if not canRegToFullProgram %}
+    <div class="errormsg">
+    This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+    {% endif %}
+    {% endif %}
+    <p>
+    Please complete the following steps to register for {{ program.niceName }}.
+    When each step is completed, the corresponding box in the right-hand column will
+    be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
+    button at the bottom of the page. -->
+    </p>
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentregheader" %}
+{% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
+
+    <center>
+    <!--
+    {% if not completedAll %}
+    <div class="errormsg">
+    Please finish the required steps listed below (they will be checked off when they are completed). Then, click on the <em>Confirm</em> button at the bottom of this page.
+    {% else %}
+    <div class="info">
+    Please finalize your registration, then <b>click <em>Confirm</em></b> below to indicate that you've finished filling out this form.  Upon clicking this you will be given a receipt with further instructions!  Note that paying with a credit card <b>does not completely confirm</b> your registration, because you can still adjust your schedule after paying. 
+    {% endif %} 
+    </div> -->
+    </center>
+    
+    <center><div class="note">
+    <b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
+    </div></center>
+    
+    <table style="text-align: center" align="center" width="400">
+    <tr><th>Steps for Registration</th><th>Done?</th></tr>
+    {% for module in modules %}
+    {% if module.isStep %}
+    <tr>
+    <td>{% if module.useTemplate %}
+    <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
+        {{ module.module.link_title }} 
+        </a> <em>(below)</em>
+    {% else %}
+        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
+    {% endif %}
+    {% if not module.module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
+    </td>
+    <td>{% if not module.useTemplate %}
+    <a href="{{ module.get_full_path }}">
+    {% else %}
+    <a href="#module-{{ module.id }}">
+    {% endif %}
+    {% with module.isCompleted as moduleCompleted %}
+    <img src="/media/images/{% if not moduleCompleted %}no{% endif %}checkmark.gif" 
+        {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
+        title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
+    </a>
+    {% endwith %}
+    </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+    <!-- <tr>
+    <td><a href="#confirmreg" title="Confirm Registration">
+            Confirm Registration</a> <em>(below)</em>
+    </td>
+    <td>
+    <a href="#confirmreg">
+        <img src="/media/images/{% if not isConfirmed %}no{% endif %}checkmark.gif" class="nocheckmark" />
+    </a>
+    </td>
+    </tr> -->   
+    </table>
 
 <p>
   After finishing all the steps, click the &#8220;{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}&#8221;
@@ -97,7 +163,8 @@ h1.catalog {color: #c6def7}
 </table>
 
 <br />
-{% render_inline_qsd program.anchor "learn:studentreg" %}
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentreg" request.user %}
 
 {% for module in modules %}
 {% if module.useTemplate %}

@@ -4,7 +4,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Welcome Back"|subsection }}
+{% autoescape off %}{{ "Welcome Back"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block stylesheets %}

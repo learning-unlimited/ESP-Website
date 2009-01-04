@@ -31,11 +31,12 @@ Email: web@esp.mit.edu
 from django.db import models, transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
 
 from datetime import datetime
+from decimal import Decimal
 
 class AccountingException(Exception):
     pass
@@ -50,14 +51,14 @@ class LineItemTypeManager(ProcedureManager):
     def forProgram(self, program):
         """ Get all LineItemTypes (currently including optional ones) for the given program. """
         a = GetNode(program.anchor.get_uri()+'/LineItemTypes')
-        return self.filter(anchor__rangestart__gte=a.rangestart, anchor__rangeend__lte=a.rangeend)
+        return self.filter(QTree(anchor__below=a))
 
 class LineItemType(models.Model):
     """ A set of default values for a line item """
     text = models.TextField() # description of line item
-    amount = models.FloatField(help_text='This should be negative for student costs charged to a program.', max_digits=9, decimal_places=2, default=0.0) # default amount
+    amount = models.DecimalField(help_text='This should be negative for student costs charged to a program.', max_digits=9, decimal_places=2, default=Decimal('0.0')) # default amount
     anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitemtype',null=True) # account to post the line item
-    finaid_amount = models.FloatField(max_digits=9, decimal_places=2, default=0.0) # amount after financial aid
+    finaid_amount = models.DecimalField(max_digits=9, decimal_places=2, default=Decimal('0.0')) # amount after financial aid
     finaid_anchor = AjaxForeignKey(DataTree,null=True,related_name='accounting_finaiditemtype')
     
     def negative_amount(self):
@@ -65,13 +66,10 @@ class LineItemType(models.Model):
 
     objects = LineItemTypeManager()
     
-    def __str__(self):
+    def __unicode__(self):
         if self.anchor: url = self.anchor.get_uri()
         else: url = 'NULL'
         return "LineItemType: %s (%.02f or %.02f for %s)" % (self.text, self.amount, self.finaid_amount, url)
-
-    class Admin:
-        pass
 
 class Balance(models.Model):
     """ A posted balance for an account.  This serves the purpose of keeping
@@ -81,7 +79,7 @@ class Balance(models.Model):
     anchor = AjaxForeignKey(DataTree, related_name='balance')
     user = AjaxForeignKey(User, related_name='balance')
     timestamp = models.DateTimeField()
-    amount = models.FloatField(max_digits=16, decimal_places=2)
+    amount = models.DecimalField(max_digits=16, decimal_places=2)
     past = models.ForeignKey('self', null=True)
 
     def negative_amount(self):
@@ -155,7 +153,7 @@ class Transaction(models.Model):
     text = models.TextField()
     complete = models.BooleanField(default=False)
 
-    def __str__(self):
+    def __unicode__(self):
         if self.complete: completion = ''
         else: completion = ' (INCOMPLETE)'
         return "T-%u (%s): %s" % (self.id, str(self.timestamp), self.text + completion)
@@ -198,7 +196,10 @@ class Transaction(models.Model):
                 fa_li.anchor = li_type.finaid_anchor
                 fa_li.amount = finaid_amount
                 fa_li.user = user
-                fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', defaults={'amount': 0.0, 'anchor': GetNode("Q"), 'finaid_amount': 0.0, 'finaid_anchor': GetNode("Q") })
+                if anchor:
+                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', anchor=anchor, defaults={'amount': Decimal('0.0'), 'anchor': GetNode("Q"), 'finaid_amount': Decimal('0.0'), 'finaid_anchor': GetNode("Q") })
+                else:
+                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', defaults={'amount': Decimal('0.0'), 'anchor': GetNode("Q"), 'finaid_amount': Decimal('0.0'), 'finaid_anchor': GetNode("Q") })
                 fa_li.text = fa_li.li_type.text
                 fa_li.save()
 
@@ -224,7 +225,7 @@ class Transaction(models.Model):
         if self.complete: raise CompletedTransactionException
 
         balance = self.get_balance()
-        li_type, unused = LineItemType.objects.get_or_create(text='Balance Posting', defaults={'amount': 0.0, 'anchor': GetNode("Q"), 'finaid_amount': 0.0, 'finaid_anchor': GetNode("Q") })
+        li_type, unused = LineItemType.objects.get_or_create(text='Balance Posting', defaults={'amount': Decimal('0.0'), 'anchor': GetNode("Q"), 'finaid_amount': Decimal('0.0'), 'finaid_anchor': GetNode("Q") })
 
         li = LineItem()
         li.transaction = self
@@ -240,18 +241,19 @@ class Transaction(models.Model):
 
         return li
 
+
 class LineItemManager(ProcedureManager):
     def forProgram(self, program):
         """ Get all LineItems (currently including optional ones) whose types are anchored in the given program. """
         a = GetNode(program.anchor.get_uri()+'/LineItemTypes')
-        return self.filter(li_type__anchor__rangestart__gte=a.rangestart, li_type__anchor__rangeend__lte=a.rangeend)
+        return self.filter(li_type__anchor__below=a)
 
 class LineItem(models.Model):
     """ A transaction line item """
     transaction = models.ForeignKey(Transaction)
     user = AjaxForeignKey(User,related_name='accounting_lineitem')
     anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitem')
-    amount = models.FloatField(max_digits=9, decimal_places=2)
+    amount = models.DecimalField(max_digits=9, decimal_places=2)
     text = models.TextField()
     li_type = models.ForeignKey(LineItemType)
     posted_to = models.ForeignKey(Balance, null=True)
@@ -261,8 +263,5 @@ class LineItem(models.Model):
     def negative_amount(self):
         return -(self.amount)
 
-    def __str__(self):
+    def __unicode__(self):
         return "L-%u (T-%u): %.02f %s - %s, %s" % (self.id, self.transaction.id, self.amount, self.anchor.uri, self.user.username, self.text)
-
-    class Admin:
-        pass

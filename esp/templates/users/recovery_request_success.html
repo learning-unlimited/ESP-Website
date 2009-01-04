@@ -7,7 +7,7 @@
 
 {% load subsection %}
 {% block subsection %}
-{{ "Reset your password"|subsection }}
+{% autoescape off %}{{ "Reset your password"|subsection }}{% endautoescape %}
 {% endblock %}
 
 
@@ -15,10 +15,10 @@
 <h1>Resetting your password</h1>
 
 <p>
-  Your password has been reset.<br />
+  A password recovery email has been sent.<br />
 
-To set a new one, you need to check your email&mdash;we have sent you a link to set your password to a new one.<br />
-We will send you an email within the next five minutes.
+To change your password, you need to check your email&mdash;we have sent you a link to set your password to a new one.<br />
+You should receive the email within the next five minutes.
 </p>
 {% endblock %}
 

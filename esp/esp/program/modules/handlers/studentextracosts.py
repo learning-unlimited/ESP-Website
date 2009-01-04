@@ -27,21 +27,20 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline
-from esp.datatree.models import GetNode, DataTree
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
-from esp.db.models       import Q
+from django.db.models.query import Q
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
-from django              import newforms as forms
+from django              import forms
 from django.contrib.auth.models import User
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItem, LineItemType
 
-#from esp.money.models import LineItemType, LineItem, RegisterLineItem, UnRegisterLineItem
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
@@ -52,6 +51,15 @@ class MultiCostItem(forms.Form):
 
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
+
+    @classmethod
+    def module_properties(cls):
+        return {
+            "link_title": "T-Shirts",
+            "module_type": "learn",
+            "seq": 30
+            }
+    
     def get_invoice(self):
         return Document.get_invoice(self.user, self.program_anchor_cached(parent=True), [], dont_duplicate=True)
 
@@ -83,6 +91,7 @@ class StudentExtraCosts(ProgramModuleObj):
     def isCompleted(self):
         return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 or self.get_invoice().txn.lineitem_set.all().count() > 0 )
 
+    @main_call
     @needs_student
     @meets_deadline('/ExtraCosts')
     def extracosts(self,request, tl, one, two, module, extra, prog):
@@ -109,16 +118,16 @@ class StudentExtraCosts(ProgramModuleObj):
                                [ { 'LineItemType': x, 
                                    'CostChoice': MultiCostItem(request.POST, prefix="%s_" % x.id) }
                                  for x in multicosts_list ] \
-                               if x['CostChoice'].is_valid() and x['CostChoice'].clean_data.has_key('cost') ]
+                               if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ]
 
             for i in costs_db:
                 if not i['CostChoice'].is_valid():
                     raise ESPError("A non-required boolean is invalid in the Cost module")               
 
-                if i['CostChoice'].clean_data['cost']:
-                    if i['CostChoice'].clean_data.has_key('count'):
+                if i['CostChoice'].cleaned_data['cost']:
+                    if i['CostChoice'].cleaned_data.has_key('count'):
                         try:
-                            count = int(i['CostChoice'].clean_data['count'])
+                            count = int(i['CostChoice'].cleaned_data['count'])
                         except ValueError:
                             raise ESPError(True), "Error: Invalid cost value"
                     else:

@@ -29,11 +29,10 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
 from datetime import datetime, timedelta
 from esp.db.fields import AjaxForeignKey
-
 
 # Create your models here.
 
@@ -41,21 +40,16 @@ class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.description)
 
-    class Admin:
-        pass
 
 class Series(models.Model):
     """ A container object for grouping Events.  Can be nested. """
     description = models.TextField()
     target = AjaxForeignKey(DataTree) # location for this Series in the datatree
 
-    class Admin:
-        pass
-
-    def __str__(self):
+    def __unicode__(self):
         return str(self.description)
 
     def is_happening(self, time=datetime.now()):
@@ -73,6 +67,7 @@ class Series(models.Model):
     class Meta:
         verbose_name_plural = 'Series'
 
+
 class Event(models.Model):
     """ A unit calendar entry.
 
@@ -87,6 +82,9 @@ class Event(models.Model):
     #    container_series = models.ForeignKey(Series, blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
 
+    def title(self):
+	return self.anchor.uri
+
     def duration(self):
         return self.end - self.start
     
@@ -96,7 +94,7 @@ class Event(models.Model):
         minutes = int(dur.seconds / 60) - hours * 60
         return '%d hr %d min' % (hours, minutes)
     
-    def __str__(self):
+    def __unicode__(self):
         return self.start.strftime('%a %b %d: %I %p') + ' to ' + self.end.strftime('%I %p')
 
     def short_time(self):
@@ -123,6 +121,8 @@ class Event(models.Model):
     @staticmethod
     def total_length(event_list):
         #   Returns the time from the start of the first event to the end of the last.
+        event_list = list(event_list)
+        event_list.sort(key=lambda x:x.start)
         if len(event_list) > 0:
             return event_list[-1].end - event_list[0].start
         else:
@@ -207,9 +207,6 @@ class Event(models.Model):
         except:
             return 0
         
-    class Admin:
-        pass
-
 class EmailReminder(models.Model):
     """ A reminder, associated with an Event, that is to be sent by e-mail """
     event = models.ForeignKey(Event)
@@ -217,11 +214,6 @@ class EmailReminder(models.Model):
     date_to_send = models.DateTimeField()
     sent = models.BooleanField(default=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.event) + ': ' + str(self.email)
-
-    class Admin:
-        pass
-
-
 

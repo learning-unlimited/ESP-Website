@@ -7,9 +7,9 @@
 
 {% for comment in entry.comment_set.all %}
 <div class="blog_comment">
-<h3>{{ comment.subject|escape }}</h3>
+<h3>{{ comment.subject }}</h3>
 
-{{ comment.content|escape }}
+{{ comment.content }}
 <a name="comment_{{ comment.id }}"></a>
 <p class="blog_attribution">
 Comment by {{ comment.author.first_name }} {{ comment.author.last_name }} &mdash; {{ comment.post_ts|date:"n/d/Y\, h:i a" }}

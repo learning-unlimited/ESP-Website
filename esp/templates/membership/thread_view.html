@@ -1,0 +1,103 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Alumni: View Posting ({{ thread.comment }}){% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Stay in touch"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block subsection_name %}Welcome{% endblock %}
+
+{% block content %}
+<h2>ESP Alumni Discussions</h1><br />
+
+{% if thread %}
+
+{% if success %}
+    <div class="info">
+    Your message has been entered.
+    </div>
+{% endif %}
+
+<p>
+This thread was originally created on {{ thread.timestamp|date:"M. j, Y" }}.  
+{% if thread.anchor %}It pertains to {{ thread.anchor.friendly_name }}, from {{ thread.year }}.
+{% else %}It pertains to events in {{ thread.year }}.{% endif %}
+</p>
+
+<h3>Participants</h3>
+<ul>
+{% for person in thread.participants.all %}
+<li>{{ person }}
+{% endfor %}
+</ul>
+
+<h3>Messages</h3>
+{% if thread.messages|length_is:0 %}
+    <p>There are no messages.  Please submit a message using the form below if you like!</p>
+{% else %}
+    {% for message in thread.messages %}
+        {{ message.html }}
+    {% endfor %}
+{% endif %}
+
+{% load alumni %}
+
+<br />
+<div id="alumniform">
+  <form action="{{ request.path }}" method="post">
+  <table class="contact" align="center" width="500">
+  <thead>
+    <tr>
+      <th colspan="2">
+        Reply to this thread
+      </th>
+    </tr>
+  {% if thread.get_reply_form.errors %}
+    <tr>
+      <td colspan="2">
+        <div class="errors">
+        There 
+        {% if thread.get_reply_form.errors|length_is:1 %}is an error{% else %}
+        are errors{% endif %} in the below form. Please fix and resubmit.<br />
+        </div>
+      </td>
+    </tr>
+  {% endif %}
+  </thead>
+  <tbody>
+  {{ request|alumni_reply_form:thread }}
+  </tbody>
+  <tbody>
+    <tr> 
+      <td colspan="2" class="submit">
+        <input type="hidden" name="method" value="lookup" />
+        <input class="fancybutton" type="submit"
+               name="sendemail" value="Submit" />
+      </td>
+    </tr>
+  </tbody>
+  </table>
+</form>
+</div>
+
+{% else %}
+
+<p>
+Invalid thread ID specified.  If you followed a real link, please bug the <a href="mailto:web@esp.mit.edu">webmasters.</a>
+</p>
+
+{% endif %}
+
+<p>
+<a href="/alumni/">Click here</a> to return to the main alumni page.
+</p>
+
+{% endblock %}
