@@ -69,14 +69,13 @@ def thread(request, extra):
         
     if request.method == 'POST':
         #   Handle submission of replies.
-        data = request.POST.copy()
+        data = request.POST
         form = AlumniMessageForm(thread, data, request=request)
         try:
             if form.is_valid():
-                new_message = AlumniMessage()
+                del form.cleaned_data['thread'] # make the form happy
+                new_message = form.save(commit = False)
                 new_message.thread = thread
-                del form.cleaned_data['thread']
-                save_instance(form, new_message, commit=False)
                 new_message.save()
                 return HttpResponseRedirect(request.path + '?success=1')
         except UnicodeDecodeError:
@@ -100,7 +99,7 @@ def alumnicontact(request):
         context['success'] = True
         
     if request.method == 'POST':
-        data = request.POST.copy()
+        data = request.POST
         form = AlumniContactForm(data, request=request)
         if form.is_valid():
             new_contact = form.load_data()
@@ -129,7 +128,7 @@ def alumnilookup(request):
     
     #   If the form has been submitted, process it.
     if request.method == 'POST':
-        data = request.POST.copy()
+        data = request.POST
         
         #   Option 1: submitted information for someone.
         method = data.get('method', 'none')
@@ -193,13 +192,12 @@ def alumnirsvp(request):
 
     #   If the form has been submitted, process it.
     if request.method == 'POST':
-        data = request.POST.copy()
+        data = request.POST
         form = AlumniRSVPForm(data)
 
         if form.is_valid():
             #   Save the information in the database
-            new_rsvp = AlumniRSVP()
-            save_instance(form, new_rsvp)
+            new_rsvp = form.save()
             
             #   Send an e-mail to esp-membership with details.
             SUBJECT_PREPEND = '[ESP Alumni] RSVP From:'
