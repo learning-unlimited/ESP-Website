@@ -33,7 +33,7 @@ from esp.membership.models import AlumniInfo, AlumniContact, AlumniRSVP, AlumniM
 from esp.users.models import User, ESPUser, ContactInfo
 from esp.datatree.models import *
 from esp.db.forms import AjaxForeignKeyNewformField
-from esp.utils.forms import CaptchaForm, CaptchaModelForm, CaptchaField, new_callback, grouped_as_table, add_fields_to_class, save_instance
+from esp.utils.forms import CaptchaForm, CaptchaModelForm, CaptchaField, new_callback, grouped_as_table, add_fields_to_class
 from esp.membership.models import rsvp_choices, guest_choices
 from django import forms
 
@@ -152,6 +152,7 @@ class AlumniContactForm(CaptchaModelForm):
     """
     def __init__(self, *args, **kwargs):
         self.base_fields['anchor'] = forms.ChoiceField(choices=anchor_choices, help_text='What program (if any) would you like to associate this posting with?', initial=None)
+        # FIXME: Can't add multiple people here...
         self.base_fields['participants'] = AjaxForeignKeyNewformField(key_type=AlumniInfo, field_name='participants', help_text='Which ESP alumni would you like to associate with this posting?', label='Participants')
         CaptchaModelForm.__init__(self, *args, **kwargs)
 
@@ -159,14 +160,16 @@ class AlumniContactForm(CaptchaModelForm):
     as_table = grouped_as_table
 
     def load_data(self):
-        #   Can't remove people... yet
-        new_contact = AlumniContact()
-        new_contact.anchor = DataTree.objects.get(id=int(self.cleaned_data['anchor']))
-        del self.cleaned_data['anchor']
-        save_instance(self, new_contact, commit=False)
+        anchor = DataTree.objects.get(id=int(self.cleaned_data['anchor']))
+        del self.cleaned_data['anchor'] # we return IDs, and AlumniContact doesn't like it
+        new_contact = self.save(commit=False)
+        new_contact.anchor = anchor
         new_contact.save()
+        # save_m2m wants a sequence, but this bit doesn't work anyway
+        print self.cleaned_data['participants']
         if self.cleaned_data['participants']:
-            new_contact.participants.add(self.cleaned_data['participants'])
+            self.cleaned_data['participants'] = ( self.cleaned_data['participants'], )
+            self.save_m2m()
         return new_contact
 
     class Meta:
@@ -176,7 +179,7 @@ class AlumniContactForm(CaptchaModelForm):
 class AlumniMessageForm(CaptchaModelForm):
 
     def __init__(self, thread=None, *args, **kwargs):
-        #   define some stuff so that save_instance does everything to save the message
+        #   define some stuff so that save does everything to save the message
         if thread:
             self.base_fields['seq'] = forms.IntegerField(initial=thread.max_seq()+1, widget=forms.HiddenInput)
             self.base_fields['thread'] = forms.IntegerField(initial=thread.id, widget=forms.HiddenInput)
