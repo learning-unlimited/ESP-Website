@@ -225,18 +225,24 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             return None
         
         try:
-            value = int(value)
+            id = int(value)
         except ValueError:
             match = get_id_re.match(value)
             if match:
-                value = int(match.groups()[0])
+                id = int(match.groups()[0])
             else:
                 #   This is equivalent to a validation error but, now that we
                 #   trust the ForeignKey field to work normally, we don't need to
                 #   cause an error.
-                value = None
+                id = None
 
         if hasattr(self, "field"):
-            value = self.field.rel.to.objects.get(id=value)
+            # If we couldn't grab an ID, ask the target's autocompleter.
+            if id == None:
+                objs = self.field.rel.to.ajax_autocomplete(value)
+                if len( objs ) == 1:
+                    id = objs[0]['id']
+            # Finally, grab the object.
+            return self.field.rel.to.objects.get(id=id)
 
-        return value
+        return id
