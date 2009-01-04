@@ -41,7 +41,7 @@ from django import forms
 add_fields_to_class(forms.CharField, {'is_long': False, 'line_group': 0})
 
 
-class AlumniRSVPForm(forms.ModelForm):
+class AlumniRSVPForm(CaptchaModelForm):
     def __init__(self, *args, **kwargs):
         self.base_fields['name'].line_group = 1
         self.base_fields['num_guests'] = \
@@ -57,7 +57,9 @@ class AlumniRSVPForm(forms.ModelForm):
 
         self.base_fields['attending'].line_group = 2
 
-        forms.ModelForm.__init__(self, *args, **kwargs)
+        CaptchaModelForm.__init__(self, *args, **kwargs)
+        if 'captcha' in self.fields:
+            self.fields['captcha'].line_group = 4
 
 
     # use field grouping

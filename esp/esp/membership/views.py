@@ -192,7 +192,7 @@ def alumnirsvp(request):
     #   If the form has been submitted, process it.
     if request.method == 'POST':
         data = request.POST
-        form = AlumniRSVPForm(data)
+        form = AlumniRSVPForm(data, request=request)
 
         if form.is_valid():
             #   Save the information in the database
@@ -213,7 +213,7 @@ def alumnirsvp(request):
 
     else:
         #   Otherwise, the default view is a blank form.
-        form = AlumniRSVPForm()
+        form = AlumniRSVPForm(request=request)
     
     return render_to_response('membership/alumnirsvp.html', request, request.get_node('Q/Web/alumni'), {'form': form})
 
