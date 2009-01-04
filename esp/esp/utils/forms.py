@@ -51,6 +51,11 @@ class CaptchaField(Field):
             kwargs['help_text'] = 'If you have an ESP user account, you can log in to make this go away.'
         if 'label' not in kwargs:
             kwargs['label'] = 'Prove you\'re human'
+
+        error_messages = {'required' : 'Please enter the two words displayed.'}
+        if 'error_messages' in kwargs:
+            error_messages = error_messages.update(kwargs['error_messages'])
+        kwargs['error_messages'] = error_messages
             
         local_request = kwargs['request']
         del kwargs['request']
