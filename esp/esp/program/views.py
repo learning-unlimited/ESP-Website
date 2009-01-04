@@ -42,7 +42,6 @@ from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.auth.decorators import login_required
 from esp.web.models import NavBarEntry
 
-from esp.utils.forms import save_instance
 from esp.program.models import Program
 from esp.program.modules.base import needs_admin
 from esp.program.forms import ProgramCreationForm
@@ -179,12 +178,10 @@ def managepage(request, page):
     
         #   If the form has been submitted, process it.
         if request.method == 'POST':
-            data = request.POST.copy()
-            form = ProgramCreationForm(data)
+            form = ProgramCreationForm(request.POST)
     
             if form.is_valid():
-                temp_prog = Program(anchor=form.cleaned_data['anchor'])
-                temp_prog = save_instance(form, temp_prog, commit=False)
+                temp_prog = form.save(commit=False)
                 datatrees, userbits, modules = prepare_program(temp_prog, form)
                 #   Save the form's raw data instead of the form itself, or its clean data.
                 #   Unpacking of the data happens at the next step.
