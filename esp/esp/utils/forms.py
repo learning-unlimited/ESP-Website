@@ -32,7 +32,7 @@ Email: web@esp.mit.edu
 from django.forms.forms import Form, Field, BoundField
 from django import forms
 from django.forms.util import ErrorList
-from django.utils.html import escape
+from django.utils.html import escape, mark_safe
 
 from esp.utils.widgets import CaptchaWidget
 
@@ -172,7 +172,7 @@ def grouped_as_table(self):
                 output.append(str_hidden)
         return u'\n'.join(output)
             
-    return new_html_output(self, u'<tr><td colspan="2"><table class="plain" width="100%"><tr>', u'<th>%(label)s</th><td width="%(field_width)d%%">%(errors)s%(field)s%(help_text)s</td>', u'<th colspan="2">%(label)s</th></tr><tr><td colspan="2">%(errors)s%(field)s%(help_text)s</td>', u'<td>%s</td>', '</tr></table></td></tr>', u'<br />%s', False)
+    return mark_safe(new_html_output(self, u'<tr><td colspan="2"><table class="plain" width="100%"><tr>', u'<th>%(label)s</th><td width="%(field_width)d%%">%(errors)s%(field)s%(help_text)s</td>', u'<th colspan="2">%(label)s</th></tr><tr><td colspan="2">%(errors)s%(field)s%(help_text)s</td>', u'<td>%s</td>', '</tr></table></td></tr>', u'<br />%s', False))
 
 
 def add_fields_to_init(init_func, new_fields):
