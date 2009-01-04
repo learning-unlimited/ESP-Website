@@ -1235,12 +1235,16 @@ class K12School(models.Model):
     """
     All the schools that we know about.
     """
-    contact = AjaxForeignKey(ContactInfo, null=True,blank=True)
-    school_type = models.TextField(blank=True,null=True)
-    grades      = models.TextField(blank=True,null=True)
-    school_id   = models.CharField(max_length=128,blank=True,null=True)
-    contact_title = models.TextField(blank=True,null=True)
     name          = models.TextField(blank=True,null=True)
+    grades      = models.TextField(blank=True,null=True,
+        help_text='i.e. "PK, K, 1, 2, 3"')
+    school_type = models.TextField(blank=True,null=True,
+        help_text='i.e. Public, Private, Charter, Magnet, ...')
+    contact_title = models.TextField(blank=True,null=True)
+    contact = AjaxForeignKey(ContactInfo, null=True,blank=True,
+        help_text='A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.')
+    school_id   = models.CharField(max_length=128,blank=True,null=True,
+        help_text='An 8-digit ID number.')
 
     class Meta:
         app_label = 'users'
@@ -1253,8 +1257,6 @@ class K12School(models.Model):
         else:
             return '"%s"' % self.name
 
-    class Admin:
-        pass
 
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
