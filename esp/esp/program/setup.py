@@ -180,9 +180,9 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
 
     l = LineItemType()
     l.text = prog.niceName() + " Admission"
-    l.amount = costs[0]
+    l.amount = -costs[0]
     l.anchor = prog.anchor["LineItemTypes"]["Required"]
-    l.finaid_amount = costs[1]
+    l.finaid_amount = -costs[1]
     l.finaid_anchor = prog.anchor["Accounts"]["FinancialAid"]
     l.save()
         
