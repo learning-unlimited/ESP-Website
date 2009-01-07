@@ -536,7 +536,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     newclass.parent_program = self.program
                     newclass.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
 
-                    newclass.anchor.save()
+                    newclass.anchor.save(old_save=True)
                     newclass.enrollment = 0
                     newclass.save()
                     newclass.anchor.delete(True)
