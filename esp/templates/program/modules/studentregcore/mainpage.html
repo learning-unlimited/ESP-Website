@@ -63,10 +63,11 @@ h1.catalog {color: #c6def7}
 
 <div id="catalog">
 
-<center><div class="note">
+<!-- (Removing for Cascade -rye 1-7-09) <center><div class="note">
 <b>Parents:</b> You should not be at this page!  Please let your kids choose their classes and fill out the registration forms.
-</div></center>
+</div></center> -->
 
+<!-- (temporarily disabling the checkbox for Cascade -rye 1-7-09)
 <table style="text-align: center" align="center" width="400">
 <tr><th>Steps for Registration</th><th>Done?</th></tr>
 {% for module in modules %}
@@ -104,11 +105,10 @@ h1.catalog {color: #c6def7}
    </a>
   </td>
  </tr>   
-</table>
+</table> -->
 
 {% endif %}
 
-<br />
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentreg" request.user %}
 
@@ -123,9 +123,9 @@ h1.catalog {color: #c6def7}
 </div>
 <br />
 
+<!-- (also removing this for Cascade -rye 1-7-09)
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
-
 
 
 {% if not completedAll %}
@@ -138,7 +138,7 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 </div>
 
 </center>
-{% endif %}
+{% endif %} -->
 <center>
 
 <a name="confirmreg"></a>
@@ -157,7 +157,7 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 {% render_inline_qsd program.anchor "learn:studentregfooter" %}
 
 <p>
-  Thanks for registering!  You can come back and change any of the above information until 2 days before {{program.niceName}} begins.  If you have any questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
+  Thanks for registering!  You can come back and change any of the above information until 5 PM on Thursday, January 22nd, a week before Cascade begins. Remember to show up at Cascade on Thursday, January 29th, at least 30 minutes before your first class, with ID, and a waiver filled out by a parent or guardian..
 </p>
 
 {% endblock %}
