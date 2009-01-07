@@ -1033,6 +1033,7 @@ class ClassSubject(models.Model):
         section_index = self.sections.count() + 1
         
         new_section = ClassSection()
+        new_section.parent_class = self
         new_section.duration = '%.4f' % duration
         new_section.anchor = DataTree.get_by_uri(self.anchor.uri + '/Section' + str(section_index), create=True)
         new_section.status = status

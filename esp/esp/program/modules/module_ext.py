@@ -60,9 +60,14 @@ class StudentClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     enforce_max          = models.BooleanField(default=True)
     
-    signup_verb          = AjaxForeignKey(DataTree, default=GetNode('V/Flags/Registration/Enrolled').id)
+    signup_verb          = AjaxForeignKey(DataTree)
     use_priority         = models.BooleanField(default=False)
     priority_limit       = models.IntegerField(default=3)
+    
+    def __init__(self, *args, **kwargs):
+        super(StudentClassRegModuleInfo, self).__init__(*args, **kwargs)
+        if 'signup_verb' not in kwargs.keys():
+            self.signup_verb = GetNode('V/Flags/Registration/Enrolled')
     
     def get_signup_verb(self, save=False):
         if self.signup_verb_id: # Trying to fetch self.signup_verb directly throws a DoesNotExist.
