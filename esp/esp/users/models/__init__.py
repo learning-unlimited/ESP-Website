@@ -244,7 +244,7 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import ClassSubject, Program # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
-        tr_node = DataTree.get_by_uri('V/Flags/Registration/Teacher')
+        tr_node = GetNode('V/Flags/Registration/Teacher')
         all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
         if program is None: # If we have no program specified
             return all_classes
@@ -421,10 +421,10 @@ class ESPUser(User, AnonymousUser):
         if program:
             qsc_base = program.anchor
         else:
-            qsc_base = DataTree.get_by_uri('Q')
+            qsc_base = GetNode('Q')
                 
         if not verbs:
-            verb_base = DataTree.get_by_uri('V/Flags/Registration')
+            verb_base = GetNode('V/Flags/Registration')
                 
             csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base,
                                                     anchor__userbit_qsc__verb__below=verb_base)
@@ -523,10 +523,10 @@ class ESPUser(User, AnonymousUser):
         from esp.accounting_core.models import LineItem, Transaction
 
         if anchor is None:
-            anchor = DataTree.get_by_uri('Q/Programs')
+            anchor = GetNode('Q/Programs')
 
-        receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable')
-        realized_parent = DataTree.get_by_uri('Q/Accounts/Realized')
+        receivable_parent = GetNode('Q/Accounts/Receivable')
+        realized_parent = GetNode('Q/Accounts/Realized')
 
         #   We have to check both complete and incomplete documents belonging to the anchor.
         docs = Document.objects.filter(user=self, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend)
