@@ -1,11 +1,10 @@
-# Django settings for esp project.
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,171 +28,23 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-######################
-# File Locations     #
-######################
+# Configure Django to support ESP
+from django_settings import *
 
-# root directory
-PROJECT_ROOT = '/home/yuri/esp-project/esp/'
+# Import system-specific settings
+from local_settings import *
 
-# log directory
-LOG_FILE="/var/log/django/esp_errlog"
+############################################
 
-
-
-###################
-# Debug settings  #
-###################
-DEBUG = True
-DISPLAYSQL = True
-TEMPLATE_DEBUG = DEBUG
-
-INTERNAL_IPS = (
-    '18.208.0.164',
-    '18.187.7.102',
-    '71.126.253.25',
-    '72.93.219.106',
-    '127.0.0.1',
-    '18.51.5.212',
-)
-
-##################
-# Admins         #
-##################
-ADMINS = (
-    ('Yuri Lin','rye@mit.edu'),
-)
+# compute some derived settings
+MEDIA_ROOT = PROJECT_ROOT + MEDIA_ROOT_DIR
 
 MANAGERS = ADMINS
-
-# problem mail
-EMAIL_HOST   = 'localhost'
-EMAIL_PORT   = '25'
-SERVER_EMAIL = 'rye@mit.edu'
-EMAIL_SUBJECT_PREFIX = '[ OOPS ] '
-
-################
-# Database     #
-################
-
-# ENGINE one of:
-#  'postgresql_psycopg2', 'postgresql', 'mysql',
-#  'mysql_old', 'sqlite3' or 'ado_mssql'
-
-DATABASE_ENGINE = 'postgresql'
-DATABASE_NAME = 'uchicagosplash'
-DATABASE_HOST = 'localhost'
-DATABASE_PORT = '5433'
-# passwords etc
-from database_settings import *
-
-
-
-TIME_ZONE = 'America/New_York'
-
-LANGUAGE_CODE = 'en-us'
-
-SITE_ID = 1
-
-MEDIA_ROOT = PROJECT_ROOT + 'public/media/'
-
-MEDIA_URL = '/media/'
-
-ADMIN_MEDIA_PREFIX = '/media/admin/'
-
-
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.load_template_source',
-    'django.template.loaders.app_directories.load_template_source',
-)
-
-MIDDLEWARE_CLASSES = (
-    'django.middleware.http.SetRemoteAddrFromForwardedFor',
-    'esp.queue.middleware.QueueMiddleware',
-    'esp.middleware.FixIEMiddleware',
-    'esp.datatree.middleware.DataTreeLockMiddleware',
-    'esp.middleware.ESPErrorMiddleware',
-    'esp.middleware.StatsMiddleware',
-#   'esp.middleware.psycomiddleware.PsycoMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.cache.CacheMiddleware',
-    'django.middleware.transaction.TransactionMiddleware',
-#    'esp.middleware.esp_sessions.SessionMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.middleware.doc.XViewMiddleware',
-    'django.middleware.gzip.GZipMiddleware',
-    'esp.middleware.StripWhitespaceMiddleware',
-)
-
-ROOT_URLCONF = 'esp.urls'
 
 TEMPLATE_DIRS = (
     PROJECT_ROOT+'templates',
 )
 
-APPEND_SLASH=False
+CACHE_BACKEND = "esp.utils.memcached_multikey://127.0.0.1:11211/?timeout=%d" % DEFAULT_CACHE_TIMEOUT
 
-INSTALLED_APPS = (
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.admin',
-    'esp.users',
-    'esp.membership',
-    'esp.miniblog',
-    'esp.web',
-    'esp.program',
-    'esp.program.modules',
-    'esp.datatree',
-    'esp.dbmail',
-    'esp.cal',
-    'esp.lib',
-    'esp.setup',
-    'esp.qsd',
-    'esp.qsdmedia',
-    'esp.money',
-    'esp.resources',
-    'esp.gen_media',
-    'esp.dblog',
-    'esp.membership',
-    'esp.queue',
-    'esp.survey',
-)
-
-
-CACHE_BACKEND="memcached://127.0.0.1:11211/?timeout=120"
-
-CACHE_PREFIX=""
-
-
-
-SESSION_EXPIRE_AT_BROWSER_CLOSE=True
-
-TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
-                               'esp.context_processors.esp_user',
-                               'esp.context_processors.test_cookie',
-                               'esp.context_processors.current_site',
-                               'esp.context_processors.index_backgrounds',
-                               'django.core.context_processors.i18n',
-                               'django.core.context_processors.request',
-                               'django.core.context_processors.auth',
-                               )  
-
-# no i18n
-USE_I18N = False
-
-AUTH_PROFILE_MODULE='users.ESPUser_Profile'
-
-SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
-
-FORCE_SCRIPT_NAME = ''
-
-DEFAULT_EMAIL_ADDRESSES = {
-    'archive': 'esparchive@gmail.com',
-    'bounces': 'esp-bounces@mit.edu'
-}
-
-SESSION_ENGINE="django.contrib.sessions.backends.db"
+MIDDLEWARE_CLASSES = [pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)]
