@@ -24,18 +24,21 @@ After logging in below, you will return to <tt>{{ next }}</tt>.<br />
 
 
 <div id="login_form">
-<form action="/myesp/login/" method="post">
+<form action="{{ action }}" method="post">
+{% if preset_username %}
+<input type="hidden" name="username" value="{{ preset_username }}">
+{% endif %}
 <table cellpadding="2" align="center">
 <thead>
 <tr>
- <th colspan="2">Step 2: Login</th>
+ <th colspan="2">Step {% if preset_username %}3: Login{% else %}2: Pick Your Name{% endif %}</th>
 </tr>
 
 {{ form }}
 
 <tr>
   <th colspan="2" class="submit">
-    <input type="submit" value="- Login -" />
+    <input type="submit" value="- {% if preset_username %}Login{% else %}Continue{% endif %} -" />
   </th>
 </tr>
 
@@ -51,13 +54,13 @@ After logging in below, you will return to <tt>{{ next }}</tt>.<br />
 </tbody>
 </table>
 
-<input type="hidden" name="next" value="{{ next }}" />
+<input type="hidden" name="{{ redirect_field_name }}" value="{{ next }}" />
 </form>
 </div>
 
 <script type="text/javascript">
 <!--
-document.getElementById('id_username').focus();
+document.getElementById('id_{% if preset_username %}password{% else %}username{% endif %}').focus();
 //-->
 </script>
 <br />
