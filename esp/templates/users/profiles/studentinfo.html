@@ -14,8 +14,8 @@
 
 <tr>
  <td><label for="id_graduation_year">Your Grade:<br />
-<em>(As of September 4, 
-      <strong>{{request.user.currentSchoolYear}}</strong>)
+<em>(As of January 8, <strong>2009</strong>{% comment %}September 4, 
+      <strong>{{request.user.currentSchoolYear}}</strong>{% endcomment %})
       </em></label></td>
  <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
@@ -32,7 +32,7 @@
 </tr>
 
 <tr>
- <td><label for="id_studentrep">I heard about Splash from: </label></td>
+ <td><label for="id_studentrep">I heard about Cascade from: </label></td>
  <td>{{ form.heard_about }} {% if form.heard_about.errors %}
    <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
    {% endif %}
@@ -41,3 +41,4 @@
 
 
 <!-- End Student Info Portion -->
+

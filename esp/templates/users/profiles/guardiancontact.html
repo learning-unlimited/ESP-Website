@@ -29,30 +29,11 @@
 </tr>
 
 <tr>
- <td><label>Phone:</label></td>
-</tr>
-
-<tr>
- <td align='right'><small><i><label for="id_guard_phone_day">day</label></i></small></td>
+ <td><small><i><label for="id_guard_phone_day">Phone number:</label></i></small></td>
  <td>{{ form.guard_phone_day }} {% if form.guard_phone_day.errors %}
    <br /><span class="form_error">{{ form.guard_phone_day.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
-<tr>
- <td align='right'><small><i><label for="id_guard_phone_even">evening</label></i></small></td>
- <td>{{ form.guard_phone_even }} {% if form.guard_phone_even.errors %}
-   <br /><span class="form_error">{{ form.guard_phone_even.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
-<tr>
- <td align='right'><small><i><label for="id_guard_phone_cell">cell</label></i></small></td>
- <td>{{ form.guard_phone_cell }} {% if form.guard_phone_cell.errors %}
-   <br /><span class="form_error">{{ form.guard_phone_cell.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
 <!-- End Guardian Contact Info -->
