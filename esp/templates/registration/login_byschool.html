@@ -12,6 +12,77 @@
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}
 
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript">
+<!--
+
+pwform = "{{ pwform|escapejs }}";
+function showPasswordEntry( e ) {
+    // Check for required functionality
+    if ( ! document.getElementById )
+        return;
+    // Check that they actually requested a student
+    val = e.target.value
+    if ( val == '-1' ) {
+        document.getElementById('id_login_submit').value = '- Proceed to Account Creation -';
+        e.target.form.action='/myesp/register';
+        e.target.form.method='get';
+        return;
+    }
+    document.getElementById('id_login_submit').value = '- Continue -';
+    e.target.form.action='/myesp/login';
+    e.target.form.method='post';
+    if ( val == '' ) { return; }
+    
+    insert3 = document.getElementById('id_insert3');
+    insert3.innerHTML = pwform;
+    insert3.style.display = 'table-row-group';
+    
+    document.getElementById('id_form_title').innerHTML = 'Step 3: Login';
+}
+
+function getStudents( e ) {
+    // Check for required functionality
+    if ( ! window.XMLHttpRequest || ! document.getElementById )
+        return;
+    // Check that they actually requested a school
+    val = e.target.value
+    if ( val == '0' ) {
+        document.getElementById('id_login_submit').value = '- Proceed to Account Creation -';
+        e.target.form.action='{{ action }}';
+        return;
+    }
+    document.getElementById('id_login_submit').value = '- Continue -';
+    e.target.form.action='/myesp/login';
+    if ( val == '' ) { return; }
+    
+    var r = new XMLHttpRequest();
+    r.open( 'GET', '/myesp/login/byschool/' + val + '/?dynamic=1', false );
+    r.send( '' );
+    
+    if ( r.status == 200 ) {
+        insert2 = document.getElementById('id_insert2');
+        insert2.innerHTML = r.responseText;
+        insert2.style.display = 'table-row-group';
+        document.getElementById('id_username').onchange = showPasswordEntry;
+    }
+    document.getElementById('id_form_title').innerHTML = 'Step 2: Find Your Name';
+}
+
+function preparePage() {
+    // Check for required functionality
+    if ( ! window.XMLHttpRequest || ! document.getElementById )
+        return;
+    document.getElementById('login_form_form').action='/myesp/login/';
+    document.getElementById('id_school').onchange = getStudents;
+}
+
+//-->
+</script>
+{% endblock %}
+
+
 {% block content %}
 <h1>Log back in to ESP</h1>
 
@@ -25,28 +96,27 @@ Please log in below.
 
 
 <div id="login_form">
-<form action="{{ request.action }}" method="post">
+<form id="login_form_form" action="{{ action }}" method="post">
 <table cellpadding="2" align="center">
 <thead>
 <tr>
- <th colspan="2">Step 1: Pick Your School</th>
+ <th colspan="2" id="id_form_title">Step 1: Pick Your School</th>
 </tr>
+</thead>
+<tbody>
 
 {{ form }}
 
+</tbody>
+<tbody id="id_insert2" style="display:none;">
+</tbody>
+<tbody id="id_insert3" style="display:none;">
+</tbody>
+<tbody>
 <tr>
   <th colspan="2" class="submit">
-    <input type="submit" value="- Continue -" />
+    <input type="submit" id="id_login_submit" value="- Continue -" />
   </th>
-</tr>
-
-<tr>
-  <td colspan="2">
-    <p>
-      Forgot your password? Head on over to the <a href="/myesp/passwdrecover/"
-       title="Click for account recovery">Account Recovery Page</a>.
-    </p>
-  </td>
 </tr>
 
 </tbody>
@@ -59,11 +129,9 @@ Please log in below.
 <script type="text/javascript">
 <!--
 document.getElementById('id_school').focus();
+preparePage();
 //-->
 </script>
 <br />
 
-<h2>
-  Don't already have an account?  <a href="/myesp/register/">Click here</a> to create one!
-</h2>
 {% endblock %}

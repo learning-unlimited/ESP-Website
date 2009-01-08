@@ -42,6 +42,7 @@ After logging in below, you will return to <tt>{{ next }}</tt>.<br />
   </th>
 </tr>
 
+{% if preset_username %}
 <tr>
   <td colspan="2">
     <p>
@@ -50,6 +51,7 @@ After logging in below, you will return to <tt>{{ next }}</tt>.<br />
     </p>
   </td>
 </tr>
+{% endif %}
 
 </tbody>
 </table>
@@ -65,7 +67,9 @@ document.getElementById('id_{% if preset_username %}password{% else %}username{%
 </script>
 <br />
 
+{% if preset_username %}
 <h2>
   Don't already have an account?  <a href="/myesp/register/">Click here</a> to create one!
 </h2>
+{% endif %}
 {% endblock %}
