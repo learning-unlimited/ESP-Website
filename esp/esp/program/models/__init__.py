@@ -994,8 +994,10 @@ class RegistrationProfile(models.Model):
                     regProf.id = None
                     regProf.save()
             else:
-                regProf = RegistrationProfile()
-                regProf.user = user
+                regProf = RegistrationProfile.getLastProfile(user)
+                if (datetime.now() - regProf.last_ts).days > 5:
+                    regProf = RegistrationProfile()
+                    regProf.user = user
                 regProf.program = program
         else:
             regProf = regProfList[0]
