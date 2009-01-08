@@ -126,11 +126,10 @@ class DataTreeManager(models.Manager):
         if not uri:
             if not isinstance(parent, self.model):
                 parent = self.get(id=parent_id)
-            if parent.uri_correct:
-                uri = self.model.DELIMITER.join((parent.uri, name))
-                uri_correct = True
-            else:
-                uri_correct = False
+
+            uri = self.model.DELIMITER.join((parent.get_uri(), name))
+            uri_correct = True
+
         else:
             uri_correct = True
 
