@@ -21,7 +21,7 @@ class StudentSelectForm(FormWithRequiredCss):
 
 class BarePasswordForm(FormWithRequiredCss):
     """ Just a password. """
-    password = forms.CharField(label='Password', widget=forms.PasswordInput())
+    password = forms.CharField(label='Password', widget=forms.PasswordInput(), help_text='If you forgot your password, email <a href="mailto:lukejoy@uchicago.edu">us</a>. Please do not create a new account.')
 
 def login_byschool(request, *args, **kwargs):
     """ Let a student pick their school. """
