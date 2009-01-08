@@ -359,13 +359,15 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 						userrole['base'] = 'teach'
 						userrole['reg'] = 'teacherreg'
 					ctxt['userrole'] = userrole
-					regverb = GetNode('V/Deadline/Registration/%s/MainPage' % ctxt['userrole']['name'])
+					regverb = GetNode('V/Deadline/Registration/%s/Classes' % ctxt['userrole']['name'])
 					progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
 					nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 					ctxt['progs'] = progs
 					ctxt['nextreg'] = list(nextreg)
-				return HttpResponseRedirect('/learn/Cascade/2009_Winter/studentreg')
-				return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+					if len(progs) == 1:
+						return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+					else:
+						return render_to_response('users/profile_complete.html', request, navnode, ctxt)
 			else:
 				return True
 
