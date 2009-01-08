@@ -45,18 +45,19 @@ h1.catalog {color: #c6def7}
     This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
     {% endif %}
     {% endif %}
+{% comment %} (removed for Cascade -rye 1-7-09)
     <p>
     Please complete the following steps to register for {{ program.niceName }}.
     When each step is completed, the corresponding box in the right-hand column will
     be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
     button at the bottom of the page. -->
-    </p>
+    </p>{% endcomment %}
 
-
+<!-- (also removed for Cascade) -rye 1-7-09)
 <p>
   After finishing all the steps, click the &#8220;{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}&#8221;
   button at the bottom of the page, and you'll be good to go.
-</p>
+</p> -->
 
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
@@ -157,7 +158,7 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 {% render_inline_qsd program.anchor "learn:studentregfooter" %}
 
 <p>
-  Thanks for registering!  You can come back and change any of the above information until 5 PM on Thursday, January 22nd, a week before Cascade begins. Remember to show up at Cascade on Thursday, January 29th, at least 30 minutes before your first class, with ID, and a waiver filled out by a parent or guardian..
+  Thanks for registering!  You can come back and change any of the above information until 5 PM on Thursday, January 22nd, a week before Cascade begins. Remember to show up at Cascade on Thursday, January 29th, at least 30 minutes before your first class, with ID, and a waiver filled out by a parent or guardian.  All students should arrive at the 59th Street door of Harper hall, which is on 59th street between Ellis Avenue and University Avenue. The address is 1116 E. 59th Street.
 </p>
 
 {% endblock %}
