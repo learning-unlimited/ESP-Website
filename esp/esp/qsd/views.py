@@ -276,7 +276,7 @@ def ajax_qsd(request):
         result['id'] = qsd.id
     if post_dict['cmd'] == "create":
         qsd_path = DataTree.objects.get(id=post_dict['anchor'])
-        qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path)
+        qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path,defaults={'author': request.user})
         qsd.content = post_dict['data']
         qsd.author = request.user
         qsd.save(user=request.user,)
