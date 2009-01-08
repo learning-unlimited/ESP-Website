@@ -116,7 +116,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         cleaned_data = self.cleaned_data
         cleaned_data['school'] = cleaned_data['school'].strip()
         if cleaned_data.has_key('k12school') and cleaned_data.has_key('school'):
-            if cleaned_data['k12school'] == '0' and len(cleaned_data['school'] == 0):
+            if cleaned_data['k12school'] == '0' and not cleaned_data['school']:
                 self._errors['school'] = forms.util.ErrorList(['Please specify the name of your school if you chose "Other".'])
                 del cleaned_data['school']
         return cleaned_data

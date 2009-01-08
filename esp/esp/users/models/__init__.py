@@ -793,6 +793,7 @@ class StudentInfo(models.Model):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
+        form_dict['k12school']       = self.k12school_id or '0'
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['shirt_size']      = self.shirt_size
@@ -817,12 +818,12 @@ class StudentInfo(models.Model):
             studentInfo = regProfile.student_info
 
         studentInfo.graduation_year = new_data['graduation_year']
+        studentInfo.k12school_id    = new_data['k12school']
         studentInfo.school          = new_data['school']
         studentInfo.dob             = new_data['dob']
         studentInfo.shirt_size      = new_data['shirt_size']
         studentInfo.shirt_type      = new_data['shirt_type']
         studentInfo.studentrep_expl = new_data['studentrep_expl']
-        studentInfo.k12school_id    = new_data['k12school']
         studentInfo.save()
         if new_data['studentrep']:
             #   E-mail membership notifying them of the student rep request.

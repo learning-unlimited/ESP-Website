@@ -322,12 +322,11 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 				regProf.dietary_restrictions = new_data['dietary_restrictions']
 
 			# Deal with school entry.
-			if new_data['k12school'] == '0':
-				new_data['k12school'] = None
-			else:
-				new_data['school'] = ''
-			if request.session.has_key('school_id'):
-				del request.session['school_id']
+			if new_data.has_key('k12school'):
+				if new_data['k12school'] == '0':
+					new_data['k12school'] = None
+				else:
+					new_data['school'] = ''
 
 			if role == 'student':
 				regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
