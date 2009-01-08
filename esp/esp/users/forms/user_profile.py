@@ -45,7 +45,7 @@ class UserContactForm(FormUnrestrictedOtherUser):
     phone_cell = PhoneNumberField(local_areacode='617', required=False)
     address_street = SizedCharField(length=40, max_length=100)
     address_city = SizedCharField(length=20, max_length=50)
-    address_state = forms.ChoiceField(choices=zip(_states,_states))
+    address_state = forms.ChoiceField(choices=zip(_states,_states), initial="IL")
     address_zip = SizedCharField(length=5, max_length=5)
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
@@ -91,7 +91,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     from esp.users.models import ESPUser
     from esp.users.models import shirt_sizes, shirt_types
 
-    graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
+    graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(9,13)])
     school = forms.CharField(max_length=128, required=False)
     dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
