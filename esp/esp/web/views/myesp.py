@@ -364,6 +364,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 					nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 					ctxt['progs'] = progs
 					ctxt['nextreg'] = list(nextreg)
+				return HttpResponseRedirect('/learn/Cascade/2009_Winter/studentreg')
 				return render_to_response('users/profile_complete.html', request, navnode, ctxt)
 			else:
 				return True
