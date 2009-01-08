@@ -1,5 +1,5 @@
 from django import forms
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.forms import SizedCharField, BlankSelectWidget, FormWithRequiredCss
 from esp.web.util.main import render_to_response
@@ -44,7 +44,7 @@ def login_byschool(request, *args, **kwargs):
         form = SchoolSelectForm()
     
     return render_to_response('registration/login_byschool.html', request, request.get_node('Q/Web/myesp'),
-        { 'form': form, 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to })
+        { 'form': form, 'action': request.get_full_path(), 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to, 'pwform': BarePasswordForm().as_table() })
 
 def login_byschool_pickname(request, school_id, *args, **kwargs):
     """ Let a student pick their name. """
@@ -74,6 +74,8 @@ def login_byschool_pickname(request, school_id, *args, **kwargs):
         form = StudentSelectForm( students=[ (s.username, '%s (%s)' % (s.name(), s.username)) for s in candidate_users ] + [('-1', 'I don\'t see my name in this list...')] )
         preset_username = ''
         action = request.get_full_path()
+        if request.REQUEST.has_key('dynamic'):
+            return HttpResponse( form.as_table() )
     
     return render_to_response('registration/login_byschool_pickname.html', request, request.get_node('Q/Web/myesp'),
         { 'form': form, 'action': action, 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to, 'preset_username': preset_username })
