@@ -83,17 +83,6 @@
 <form name="loginform" id="loginform" method="post" action="/myesp/login/">
 <input type="hidden" name="op" value="login" />
 <table border="0" cellpadding="0" cellspacing="0" summary=" ">
-  {% if not request.user.is_authenticated %}
-<tr>
-  <td width="100%"><div class="divformcol1">&nbsp;</div></td>
-  <td class="rightalign"><div class="divformcol1"><label for="id__top_username">Username:</label></div></td>
-  <td><div class="divformcol2">
-   <input style="border: 2px solid black;" type="text" id="id__top_username" class="vTextField required inputbox" name="username" size="15" value="" maxlength="30" /></div></td>
-  <td class="rightalign"><div class="divformcol3">&nbsp;&nbsp;<label for="id__top_password">Password:</label></div></td>
-  <td><div class="divformcol4"><input style="border: 2px solid black;" type="password" id="id__top_password" class="vPasswordField required inputbox" name="password" size="15" value="" maxlength="30" /></div></td>
-  <td><div class="divformcol5"><input type="image" name="gologin" id="gologin" src="{{ media_url }}images/go2.gif" class="gobutton" alt="Go" title="" /><input type="hidden" name="next" value="{{ request.path }}" /></div></td>
-</tr>
-{% endif %}
 <tr>
   <td width="100%"><div class="divformcol1">&nbsp;</div></td>
   <td style="text-align:left">
@@ -110,26 +99,11 @@ Welcome, {{ request.user.first_name }}!
 </div>
      {% endif %}
   {% else %}
-<div class="divformcol1" style="text-align:left">
-  <a href="/myesp/loginhelp.html">Login Help</a>
-</div>
   {% endif %}
 	</td>
 	<td colspan="2">
-  {% if request.user.is_authenticated %}
-	    <div class="divformcol2" style="text-align:right"><a href="/myesp/signout/">Sign Out</a></div>	
-  {% else %}
-<div class="divformcol1" style="text-align:center">
-  <a href="/myesp/register/" title="Join ESP!">Create Account</a>
-</div>
-    {% endif %}					  
 	</td>
     <td colspan="2">
-{% if not request.user.is_authenticated %}
-<div class="divformcol1" style="text-align:right;">
-  <a href="/myesp/emaillist/">Join our mailing list</a>
-</div>
-{% endif %}
 </tr>
 
 </table>
