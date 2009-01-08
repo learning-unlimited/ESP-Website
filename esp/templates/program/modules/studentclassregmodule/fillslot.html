@@ -60,7 +60,7 @@ h1.catalog {color: #c6def7}
 {% endif %}
 
 <div id="catalog">
-
+{% comment %} (removed for Cascade -rye 1-8-09)
 <table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
   <th colspan="2">
@@ -85,6 +85,7 @@ h1.catalog {color: #c6def7}
 {% endif %}
 
 </table>
+{% endcomment %}
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:catalog" request.user %}
 
@@ -102,7 +103,7 @@ There are no available classes during this time block for students of your grade
 {% for class in classes %}
 
 <div id="catalog">
-
+{% comment %} (removed for Cascade -rye 1-8-09)
 {% ifchanged class.category_id %}<hr size="1"/>
 
     <a name="cat{{class.category_id}}"></a>
@@ -122,7 +123,7 @@ There are no available classes during this time block for students of your grade
 {% endif %}
       <p class="linktop">
          <a href="#top">[ Return to Category List ]</a>
-      </p> {% endifchanged %}
+      </p> {% endifchanged %} {% endcomment %}
 
 {% render_class class request.user prereg_url request.GET.filter timeslot request %}
 
