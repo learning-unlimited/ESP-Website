@@ -26,14 +26,16 @@ function showPasswordEntry( e ) {
     val = e.target.value
     if ( val == '-1' ) {
         document.getElementById('id_login_submit').value = '- Proceed to Account Creation -';
-        e.target.form.action='/myesp/register';
-        e.target.form.method='get';
+        e.target.form.action='/myesp/login/byschool/new/';
+        document.getElementById('id_insert3').style.display = 'none'
         return;
     }
     document.getElementById('id_login_submit').value = '- Continue -';
+    if ( val == '' ) {
+        e.target.form.action='{{ action }}';
+        return;
+    }
     e.target.form.action='/myesp/login';
-    e.target.form.method='post';
-    if ( val == '' ) { return; }
     
     insert3 = document.getElementById('id_insert3');
     insert3.innerHTML = pwform;
@@ -50,12 +52,13 @@ function getStudents( e ) {
     val = e.target.value
     if ( val == '0' ) {
         document.getElementById('id_login_submit').value = '- Proceed to Account Creation -';
-        e.target.form.action='{{ action }}';
+        document.getElementById('id_insert2').style.display = 'none'
         return;
     }
     document.getElementById('id_login_submit').value = '- Continue -';
-    e.target.form.action='/myesp/login';
-    if ( val == '' ) { return; }
+    if ( val == '' ) {
+        return;
+    }
     
     var r = new XMLHttpRequest();
     r.open( 'GET', '/myesp/login/byschool/' + val + '/?dynamic=1', false );
@@ -74,7 +77,6 @@ function preparePage() {
     // Check for required functionality
     if ( ! window.XMLHttpRequest || ! document.getElementById )
         return;
-    document.getElementById('login_form_form').action='/myesp/login/';
     document.getElementById('id_school').onchange = getStudents;
 }
 

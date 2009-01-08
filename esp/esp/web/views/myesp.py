@@ -264,6 +264,7 @@ def edit_profile(request, module):
 def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
 	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
+	from esp.users.models import K12School
 	STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
 	STUDREP_QSC  = GetNode('Q')
 
@@ -320,6 +321,14 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 			if new_data.has_key('dietary_restrictions') and new_data['dietary_restrictions']:
 				regProf.dietary_restrictions = new_data['dietary_restrictions']
 
+			# Deal with school entry.
+			if new_data['k12school'] == '0':
+				new_data['k12school'] = None
+			else:
+				new_data['school'] = ''
+			if request.session.has_key('school_id'):
+				del request.session['school_id']
+
 			if role == 'student':
 				regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
 				regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
@@ -374,9 +383,11 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		new_data['first_name'] = curUser.first_name
 		new_data['last_name']  = curUser.last_name
 		new_data['e_mail']     = curUser.email
+		if request.session.has_key('school_id'):
+			new_data['k12school'] = request.session['school_id']
 		new_data = regProf.updateForm(new_data, role)
 
-                form = FormClass(curUser, new_data)
+                form = FormClass(curUser, initial=new_data)
 
 	context['request'] = request
 	context['form'] = form

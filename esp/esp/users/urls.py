@@ -13,5 +13,6 @@ urlpatterns = patterns('esp.users.views',
                        (r'^login/?$',   'login_checked',),
                        (r'^login/byschool/?$',   'login_byschool.login_byschool',),
                        (r'^login/byschool/([0-9]+)/?$',   'login_byschool.login_byschool_pickname',),
+                       (r'^login/byschool/new/?$',   'login_byschool.login_byschool_new',),
                        (r'^disableaccount/?$', 'disable_account'),
                        )

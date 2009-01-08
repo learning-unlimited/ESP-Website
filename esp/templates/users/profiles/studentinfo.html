@@ -24,7 +24,15 @@
 </tr>
 
 <tr>
- <td><label for="id_school">School Name:<br /><small>(or &quot;home-schooled&quot;)</small></label></td>
+ <td><label for="id_k12school">School:</label></td>
+ <td>{{ form.k12school }} {% if form.k12school.errors %}
+   <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr id="tr_schoolname">
+ <td><label for="id_school">School Name (if "Other" above):<br /><small>(or &quot;home-schooled&quot;)</small></label></td>
  <td>{{ form.school }} {% if form.school.errors %}
    <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
    {% endif %}

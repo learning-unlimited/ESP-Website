@@ -79,3 +79,13 @@ def login_byschool_pickname(request, school_id, *args, **kwargs):
     
     return render_to_response('registration/login_byschool_pickname.html', request, request.get_node('Q/Web/myesp'),
         { 'form': form, 'action': action, 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to, 'preset_username': preset_username })
+
+def login_byschool_new(request):
+    """ Receive a school id by POST and save it. """
+    if request.method == 'POST':
+        form = SchoolSelectForm(request.POST)
+        if form.is_valid():
+            sid = form.cleaned_data['school']
+            if sid != '0':
+                request.session['school_id'] = sid
+    return HttpResponseRedirect( '/myesp/register/' )

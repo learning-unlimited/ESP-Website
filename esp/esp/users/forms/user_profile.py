@@ -1,5 +1,5 @@
 from django import forms
-from esp.forms import SizedCharField, SplitDateWidget, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.forms import SizedCharField, BlankSelectWidget, SplitDateWidget, FormWithRequiredCss, FormUnrestrictedOtherUser
 import re
 
 # SRC: esp/program/manipulators.py
@@ -93,6 +93,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(9,13)])
     school = forms.CharField(max_length=128, required=False)
+    k12school = forms.ChoiceField(label='School', choices=[], widget=BlankSelectWidget(blank_choice=('','Pick your school from this list...')))
     dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
@@ -110,6 +111,20 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
             raise forms.ValidationError("Please enter an explanation above.")
         return expl
+
+    def clean(self):
+        cleaned_data = self.cleaned_data
+        cleaned_data['school'] = cleaned_data['school'].strip()
+        if cleaned_data.has_key('k12school') and cleaned_data.has_key('school'):
+            if cleaned_data['k12school'] == '0' and len(cleaned_data['school'] == 0):
+                self._errors['school'] = forms.util.ErrorList(['Please specify the name of your school if you chose "Other".'])
+                del cleaned_data['school']
+        return cleaned_data
+
+    def __init__(self, *args, **kwargs):
+        from esp.users.models import K12School
+        super(StudentInfoForm, self).__init__(*args, **kwargs)
+        self.fields['k12school'].choices = [(x.id, x.name) for x in K12School.objects.order_by('name')] + [('0', 'Other (please specify below)')]
 StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
 StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8

@@ -822,6 +822,7 @@ class StudentInfo(models.Model):
         studentInfo.shirt_size      = new_data['shirt_size']
         studentInfo.shirt_type      = new_data['shirt_type']
         studentInfo.studentrep_expl = new_data['studentrep_expl']
+        studentInfo.k12school_id    = new_data['k12school']
         studentInfo.save()
         if new_data['studentrep']:
             #   E-mail membership notifying them of the student rep request.
