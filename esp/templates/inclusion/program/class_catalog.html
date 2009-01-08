@@ -5,7 +5,7 @@
   <table cellpadding="5" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
     <tr>
       <th colspan="2" style="width: 70%;">
-	{% if class.got_qsd %}<a href="../Classes/{{ class.emailcode }}/index.html">{% endif %}{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}{% if class.got_qsd %}</a>{% endif %}
+	{% if class.got_qsd %}<a href="../Classes/{{ class.emailcode }}/index.html">{% endif %}{% comment %}{{ class.emailcode }}: {% endcomment %}{{ class.title|escape|teximages:150|smartypants }}{% if class.got_qsd %}</a>{% endif %}
       </th>
       <th style="width: 30%;">
        <span class="teachers">
@@ -38,10 +38,12 @@
       </td>
  
       <td style="width: 50%;" colspan="2" {% if errormsg %}style="background: #333;"{% endif %}>
-         <strong>Enrollment:{% if isfull %}<font color="#990000">Class is full!</font></strong>{% else %}</strong><br />  {% for sec in class.sections.all %}
+         {% if isfull %}<strong><font color="#990000">Class is full!</font></strong>{% else %}
+{% comment %} (this comment, and above shift of if tag, for Cascade -rye 1-7-09)
+<strong>Enrollment:</strong><br />  {% for sec in class.sections.all %}
             Section {{ sec.index }}: {% if sec.isfull %}<font color = "#990000">Section is full!</font>{% else %} {{ sec.num_students }} (max {{ class.class_size_max }}) 
         {% endif %} <br />
-        {% endfor %}
+        {% endfor %}{% endcomment %}
         {% endif %}
       </td>
     </tr>
