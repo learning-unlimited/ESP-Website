@@ -26,13 +26,11 @@ function showPasswordEntry( e ) {
     val = e.target.value
     if ( val == '-1' ) {
         document.getElementById('id_login_submit').value = '- Proceed to Account Creation -';
-        e.target.form.action='/myesp/register';
-        e.target.form.method='get';
+        e.target.form.action='/myesp/login/byschool/new/';
         return;
     }
     document.getElementById('id_login_submit').value = '- Continue -';
     e.target.form.action='/myesp/login';
-    e.target.form.method='post';
     if ( val == '' ) { return; }
     
     insert3 = document.getElementById('id_insert3');
