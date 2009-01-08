@@ -387,7 +387,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 			new_data['k12school'] = request.session['school_id']
 		new_data = regProf.updateForm(new_data, role)
 
-                form = FormClass(curUser, new_data)
+                form = FormClass(curUser, initial=new_data)
 
 	context['request'] = request
 	context['form'] = form
