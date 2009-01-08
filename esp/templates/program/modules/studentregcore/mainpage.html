@@ -144,7 +144,7 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 
 <a name="confirmreg"></a>
 
-<form action="/learn/{{one}}/{{two}}/confirmreg" {% if not completedAll %}onsubmit="return submit_check();"{% endif %} method="post">
+<form action="/learn/{{one}}/{{two}}/confirmreg" {% comment %}{% if not completedAll %}onsubmit="return submit_check();"{% endif %}{% endcomment %} method="post">
 <input class="button" type="submit" value="Save!{% if not completedAll %} (incomplete){% endif %}"/></form>
 {% if isConfirmed %}
  | 
