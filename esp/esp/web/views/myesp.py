@@ -355,7 +355,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 					nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 					ctxt['progs'] = progs
 					ctxt['nextreg'] = list(nextreg)
-				return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+					if len(progs) == 1:
+						return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+					else:
+						return render_to_response('users/profile_complete.html', request, navnode, ctxt)
 			else:
 				return True
 
