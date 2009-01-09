@@ -113,10 +113,11 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         return expl
 
     def clean(self):
+        from esp.users.models import K12School
         cleaned_data = self.cleaned_data
         cleaned_data['school'] = cleaned_data['school'].strip()
         if cleaned_data.has_key('k12school') and cleaned_data.has_key('school'):
-            if cleaned_data['k12school'] == '0' and not cleaned_data['school']:
+            if cleaned_data['k12school'] == unicode(K12School.objects.other().id) and not cleaned_data['school']:
                 self._errors['school'] = forms.util.ErrorList(['Please specify the name of your school if you chose "Other".'])
                 del cleaned_data['school']
         return cleaned_data
@@ -124,7 +125,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     def __init__(self, *args, **kwargs):
         from esp.users.models import K12School
         super(StudentInfoForm, self).__init__(*args, **kwargs)
-        self.fields['k12school'].choices = [(x.id, x.name) for x in K12School.objects.order_by('name')] + [('0', 'Other (please specify below)')]
+        self.fields['k12school'].choices = K12School.choicelist('please specify below')
 StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
 StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8

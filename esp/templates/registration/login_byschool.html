@@ -50,12 +50,6 @@ function getStudents( e ) {
         return;
     // Check that they actually requested a school
     val = e.target.value
-    if ( val == '0' ) {
-        document.getElementById('id_login_submit').value = '- Proceed to Account Creation -';
-        document.getElementById('id_insert2').style.display = 'none'
-        return;
-    }
-    document.getElementById('id_login_submit').value = '- Continue -';
     if ( val == '' ) {
         return;
     }

@@ -10,7 +10,7 @@ class SchoolSelectForm(FormWithRequiredCss):
     school = forms.ChoiceField(label='School', choices=[], widget=BlankSelectWidget(blank_choice=('','Pick your school from this list...')))
     def __init__(self, *args, **kwargs):
         super(SchoolSelectForm, self).__init__(*args, **kwargs)
-        self.fields['school'].choices = [(x.id, x.name) for x in K12School.objects.order_by('name')] + [('0', 'Other')]
+        self.fields['school'].choices = K12School.choicelist()
 
 class StudentSelectForm(FormWithRequiredCss):
     """ Form that lets a student pick themselves from a list. """    
@@ -37,8 +37,6 @@ def login_byschool(request, *args, **kwargs):
         form = SchoolSelectForm(request.POST)
         if form.is_valid():
             sid = form.cleaned_data['school']
-            if sid == '0': # Picked other
-                return HttpResponseRedirect( '/myesp/register/' )
             return HttpResponseRedirect(u'/myesp/login/byschool/%s/%s' % (sid, redirect_str))
     else:
         form = SchoolSelectForm()

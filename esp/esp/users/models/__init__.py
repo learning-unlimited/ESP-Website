@@ -793,7 +793,7 @@ class StudentInfo(models.Model):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
-        form_dict['k12school']       = self.k12school_id or '0'
+        form_dict['k12school']       = self.k12school_id
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['shirt_size']      = self.shirt_size
@@ -1234,6 +1234,12 @@ class ContactInfo(models.Model):
         search_fields = ['first_name','last_name','user__username']
 
 
+class K12SchoolManager(models.Manager):
+    def other(self):
+        return self.get_or_create(name='Other')[0]
+    def most(self):
+        return self.exclude(name='Other').order_by('name')
+
 class K12School(models.Model):
     """
     All the schools that we know about.
@@ -1249,6 +1255,8 @@ class K12School(models.Model):
     school_id   = models.CharField(max_length=128,blank=True,null=True,
         help_text='An 8-digit ID number.')
 
+    objects = K12SchoolManager()
+
     class Meta:
         app_label = 'users'
         db_table = 'users_k12school'
@@ -1259,6 +1267,15 @@ class K12School(models.Model):
                                        self.contact.address_state)
         else:
             return '"%s"' % self.name
+
+    @classmethod
+    def choicelist(cls, other_help_text=''):
+        if other_help_text:
+            other_help_text = u' (%s)' % other_help_text
+        o = cls.objects.other()
+        lst = [ ( x.id, x.name ) for x in cls.objects.most() ]
+        lst.append( (o.id, o.name + other_help_text) )
+        return lst
 
 
 

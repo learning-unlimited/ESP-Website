@@ -323,9 +323,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
 			# Deal with school entry.
 			if new_data.has_key('k12school'):
-				if new_data['k12school'] == '0':
-					new_data['k12school'] = None
-				else:
+				if new_data['k12school'] != unicode(K12School.objects.other().id):
 					new_data['school'] = ''
 
 			if role == 'student':
