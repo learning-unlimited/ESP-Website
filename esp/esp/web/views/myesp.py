@@ -28,25 +28,17 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
-from esp.cal.models import Event
-from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
-from esp.program.models import RegistrationProfile
 from esp.datatree.models import *
 from esp.miniblog.models import AnnouncementLink, Entry
-from esp.miniblog.views import preview_miniblog, create_miniblog
-from esp.program.models import Program, RegistrationProfile, ClassSection, ClassSubject, ClassCategories
-from esp.dbmail.models import MessageRequest
-from django.contrib.auth.models import User, AnonymousUser
-from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
-from django.template import loader, Context
+from esp.miniblog.views import preview_miniblog
+from esp.program.models import Program, RegistrationProfile, ClassSubject
+from django.http import Http404, HttpResponseRedirect
 #from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
-from django.contrib.auth.models import User
 from esp.middleware import ESPError
-from esp.web.models import NavBarEntry
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
 from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm

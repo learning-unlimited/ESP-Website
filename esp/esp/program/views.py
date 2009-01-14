@@ -29,21 +29,16 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.web.util import render_to_response
-from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
-from esp.miniblog.models import Entry
-from django.http import HttpResponseRedirect, HttpResponse, Http404
-from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits
-from esp.program.models import ClassSubject
+from django.http import HttpResponseRedirect, Http404
+from esp.users.models import UserBit, GetNodeOrNoBits
 
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from esp.web.models import NavBarEntry
 
 from esp.program.models import Program
-from esp.program.modules.base import needs_admin
 from esp.program.forms import ProgramCreationForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
