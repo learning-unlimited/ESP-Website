@@ -489,7 +489,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
             if not self.deadline_met():
-                return self.goToCore();
+                return self.goToCore(tl)
             
             reg_form = TeacherClassRegForm(self, request.POST)
             # Silently drop errors from section wizard when we're not using it
@@ -752,7 +752,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         # Search for teachers with names that start with search string
         if not request.GET.has_key('q'):
-            return self.goToCore()
+            return self.goToCore(tl)
 
         queryset = User.objects.filter(Q_teacher)
         
