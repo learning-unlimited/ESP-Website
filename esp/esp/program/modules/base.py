@@ -415,6 +415,7 @@ class ProgramModuleObj(models.Model):
         - "seq" (as 200)
         - "aux_calls" (based on @aux_calls decorators)
         - "main_call" (based on the @main_call decorator)
+        - "check_call" (blank, just to keep the database from yelling)
         """
 
         props = cls.module_properties()
@@ -441,6 +442,9 @@ class ProgramModuleObj(models.Model):
                                  if getattr(x[FN], "call_tag", None) == "Main Call" ]
                 assert len(mainCallList) <= 1, "Error: You can only have one Main Call per class!: (%s: %s)" % (cls.__name__, ",".join(mainCallList))
                 props["main_call"] = ",".join(mainCallList)
+            
+            if not "check_call" in props:
+                props["check_call"] = ''
 
         if type(props) == dict:
             props = [ props ]
