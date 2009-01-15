@@ -52,9 +52,6 @@ class ProgramModule(models.Model):
     #   Not all program modules have main calls!
     main_call  = models.CharField(max_length=32, blank=True, null=True)
 
-    # aseering 3-19-2007 -- ??; no idea what this is for
-    check_call = models.CharField(max_length=32, blank=True, null=True)
-
     # One of teach/learn/etc.; What is this module typically used for?
     module_type = models.CharField(max_length=32)
 
