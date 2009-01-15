@@ -165,8 +165,14 @@ class ESPUser(User, AnonymousUser):
 
     def getEditable(self, objType):
         _import_userbit()
-        ubs = UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
-        id_list = [ub.id for ub in ubs]
+
+        # Cache it at the point, since the fbap cache doesn't really work
+        key = 'getEditable__%s.%s' % (objType.__module__, objType.__name__)
+        id_list = self.cache[key]
+        if id_list is None:
+            id_list = UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit')).values_list('id', flat=True)
+            self.cache.set(key, id_list, 3600)
+
         return objType.objects.filter(id__in=id_list)
 
     def canEdit(self, object):
