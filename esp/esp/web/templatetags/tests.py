@@ -37,7 +37,7 @@ import re
 from esp.web.templatetags.latex import teximages
 from settings import MEDIA_URL
 
-_imgre = re.compile('<img src="(%s[^"]*)" alt="([^"]*)"[^>]*>' % MEDIA_URL)
+_imgre = re.compile('<img src="(%s[^"]*)"[^>]*alt="([^"]*)"[^>]*>' % MEDIA_URL)
 
 class TexImagesTest(unittest.TestCase):
     """ Tests for the inline LaTeX template tag. """

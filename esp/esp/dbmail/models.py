@@ -77,7 +77,7 @@ class ActionHandler(object):
         obj = self._obj
         
         if not hasattr(obj, 'get_msg_vars'):
-            return ''
+            return getattr(obj, key)
         
         return obj.get_msg_vars(self._user, key)
     

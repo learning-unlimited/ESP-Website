@@ -175,22 +175,14 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
     for dt_tup in datatrees:
         gen_tree_node(dt_tup)
     
-    #   Hopefully, this is not needed because the form is saved in the session
-    #   variables and save_instance(commit=True) is called before this function
-    #   for m in modules:    
-    #       prog.program_modules.add(ProgramModule.objects.get(id=m[1]))
-        
-    prog.anchor = DataTree.get_by_uri(datatrees[0][0])
-    prog.save()
-    
     for ub_tup in userbits:
         gen_userbit(ub_tup)
 
     l = LineItemType()
     l.text = prog.niceName() + " Admission"
-    l.amount = costs[0]
+    l.amount = -costs[0]
     l.anchor = prog.anchor["LineItemTypes"]["Required"]
-    l.finaid_amount = costs[1]
+    l.finaid_amount = -costs[1]
     l.finaid_anchor = prog.anchor["Accounts"]["FinancialAid"]
     l.save()
         

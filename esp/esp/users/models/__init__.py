@@ -165,8 +165,14 @@ class ESPUser(User, AnonymousUser):
 
     def getEditable(self, objType):
         _import_userbit()
-        ubs = UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
-        id_list = [ub.id for ub in ubs]
+
+        # Cache it at the point, since the fbap cache doesn't really work
+        key = 'getEditable__%s.%s' % (objType.__module__, objType.__name__)
+        id_list = self.cache[key]
+        if id_list is None:
+            id_list = UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit')).values_list('id', flat=True)
+            self.cache.set(key, id_list, 3600)
+
         return objType.objects.filter(id__in=id_list)
 
     def canEdit(self, object):
@@ -234,9 +240,6 @@ class ESPUser(User, AnonymousUser):
             return otheruser.last_name
         elif key == 'name':
             return ESPUser(otheruser).name()
-        elif key == 'recover_url':
-            return 'myesp/recoveremail/?code=%s' % \
-                         otheruser.password
         elif key == 'username':
             return otheruser.username
         return ''
@@ -247,7 +250,7 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import ClassSubject, Program # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
-        tr_node = DataTree.get_by_uri('V/Flags/Registration/Teacher')
+        tr_node = GetNode('V/Flags/Registration/Teacher')
         all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
         if program is None: # If we have no program specified
             return all_classes
@@ -424,10 +427,10 @@ class ESPUser(User, AnonymousUser):
         if program:
             qsc_base = program.anchor
         else:
-            qsc_base = DataTree.get_by_uri('Q')
+            qsc_base = GetNode('Q')
                 
         if not verbs:
-            verb_base = DataTree.get_by_uri('V/Flags/Registration')
+            verb_base = GetNode('V/Flags/Registration')
                 
             csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base,
                                                     anchor__userbit_qsc__verb__below=verb_base)
@@ -526,10 +529,10 @@ class ESPUser(User, AnonymousUser):
         from esp.accounting_core.models import LineItem, Transaction
 
         if anchor is None:
-            anchor = DataTree.get_by_uri('Q/Programs')
+            anchor = GetNode('Q/Programs')
 
-        receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable')
-        realized_parent = DataTree.get_by_uri('Q/Accounts/Realized')
+        receivable_parent = GetNode('Q/Accounts/Receivable')
+        realized_parent = GetNode('Q/Accounts/Realized')
 
         #   We have to check both complete and incomplete documents belonging to the anchor.
         docs = Document.objects.filter(user=self, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend)
@@ -594,28 +597,23 @@ class ESPUser(User, AnonymousUser):
                     UserBit.UserHasPerms(self, program.anchor, verb)
 
     def recoverPassword(self):
-        # generate the code, send the email.
-        import string
-        import random
+        # generate the ticket, send the email.
         from esp.users.models import PersistentQueryFilter
-        from django.db.models.query import Q
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
         from django.contrib.sites.models import Site
-
-        symbols = string.ascii_uppercase + string.digits
-        code = "".join([random.choice(symbols) for x in range(30)])
 
         # get the filter object
         filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = self.id),
                                                          User,
                                                          'User %s' % self.username)
-        curuser = User.objects.get(id = self.id)
-        curuser.password = code
-        curuser.save()
+
+        ticket = PasswordRecoveryTicket.new_ticket(self)
+
+        domainname = Site.objects.get_current().domain
+
         # create the variable modules
-        variable_modules = {'user': ESPUser(curuser)}
-        domainname = Site.objects.get(id=1).domain
+        variable_modules = {'user': self, 'ticket': ticket, 'domainname' : domainname}
 
 
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
@@ -1393,6 +1391,87 @@ class ESPUser_Profile(models.Model):
     def __unicode__(self):
         return "ESPUser_Profile for user: %s" % str(self.user)
 
+class PasswordRecoveryTicket(models.Model):
+    """ A ticket for changing your password. """
+    RECOVER_KEY_LEN = 30
+    RECOVER_EXPIRE = 2 # number of days before it expires
+    SYMBOLS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+    user = models.ForeignKey(User)
+    recover_key = models.CharField(max_length=RECOVER_KEY_LEN)
+    expire = models.DateTimeField(null=True)
+
+    def __unicode__(self):
+        return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
+
+    @classmethod
+    def new_key(cls):
+        """ Generates a new random key. """
+        import random
+        key = "".join([random.choice(cls.SYMBOLS) for x in range(cls.RECOVER_KEY_LEN)])
+        return key
+
+    @classmethod
+    def new_ticket(cls, user):
+        """ Returns a new (saved) ticket for a specified user. """
+        from datetime import datetime, timedelta
+
+        ticket = cls()
+        ticket.user = user
+        ticket.recover_key = cls.new_key()
+        ticket.expire = datetime.now() + timedelta(days = cls.RECOVER_EXPIRE)
+
+        ticket.save()
+        return ticket
+
+    @property
+    def recover_url(self):
+        """ The URL to recover the password. """
+        return 'myesp/recoveremail/?code=%s' % self.recover_key
+
+    @property
+    def cancel_url(self):
+        """ The URL to cancel the ticket. """
+        return 'myesp/cancelrecover/?code=%s' % self.recover_key
+
+    def change_password(self, username, password):
+        """ If the ticket is valid, saves the password. """
+        if not self.is_valid():
+            return False
+        if self.user.username != username:
+            return False
+
+        # Change the password
+        self.user.set_password(password)
+        self.user.save()
+
+        # Invalidate all other tickets
+        self.cancel_all(self.user)
+        return True
+    change_password.alters_data = True
+
+    def is_valid(self):
+        """ Check if the ticket is still valid, kill it if not. """
+        from datetime import datetime
+        if self.id is not None and datetime.now() < self.expire:
+            return True
+        else:
+            self.cancel()
+            return False
+    ## technically alters data by calling cancel(), but templates
+    ## should be fine with calling this one I guess
+    # is_valid.alters_data = True
+
+    def cancel(self):
+        """ Cancel a ticket. """
+        if self.id is not None:
+            self.delete()
+    cancel.alters_data = True
+
+    @classmethod
+    def cancel_all(cls, user):
+        """ Cancel all tickets belong to user. """
+        cls.objects.filter(user=user).delete()
 
 class DBList(object):
     """ Useful abstraction for the list of users.

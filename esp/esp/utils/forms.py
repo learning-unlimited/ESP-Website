@@ -32,7 +32,7 @@ Email: web@esp.mit.edu
 from django.forms.forms import Form, Field, BoundField
 from django import forms
 from django.forms.util import ErrorList
-from django.utils.html import escape
+from django.utils.html import escape, mark_safe
 
 from esp.utils.widgets import CaptchaWidget
 
@@ -51,6 +51,11 @@ class CaptchaField(Field):
             kwargs['help_text'] = 'If you have an ESP user account, you can log in to make this go away.'
         if 'label' not in kwargs:
             kwargs['label'] = 'Prove you\'re human'
+
+        error_messages = {'required' : 'Please enter the two words displayed.'}
+        if 'error_messages' in kwargs:
+            error_messages = error_messages.update(kwargs['error_messages'])
+        kwargs['error_messages'] = error_messages
             
         local_request = kwargs['request']
         del kwargs['request']
@@ -172,7 +177,7 @@ def grouped_as_table(self):
                 output.append(str_hidden)
         return u'\n'.join(output)
             
-    return new_html_output(self, u'<tr><td colspan="2"><table class="plain" width="100%"><tr>', u'<th>%(label)s</th><td width="%(field_width)d%%">%(errors)s%(field)s%(help_text)s</td>', u'<th colspan="2">%(label)s</th></tr><tr><td colspan="2">%(errors)s%(field)s%(help_text)s</td>', u'<td>%s</td>', '</tr></table></td></tr>', u'<br />%s', False)
+    return mark_safe(new_html_output(self, u'<tr><td colspan="2"><table class="plain" width="100%"><tr>', u'<th>%(label)s</th><td width="%(field_width)d%%">%(errors)s%(field)s%(help_text)s</td>', u'<th colspan="2">%(label)s</th></tr><tr><td colspan="2">%(errors)s%(field)s%(help_text)s</td>', u'<td>%s</td>', '</tr></table></td></tr>', u'<br />%s', False))
 
 
 def add_fields_to_init(init_func, new_fields):
@@ -187,45 +192,3 @@ def add_fields_to_init(init_func, new_fields):
 def add_fields_to_class(target_class, new_fields):
     """ Take a class and give it new attributes.  The attribute names are the keys in the new_fields dictionary and the default values are the corresponding values in the dictionary. """
     target_class.__init__ = add_fields_to_init(target_class.__init__, new_fields)
-
-
-
-def save_instance(form, instance, additional_fields={}, commit=True):
-    """
-    Saves bound Form ``form``'s cleaned_data into model instance ``instance``.
-
-    Assumes ``form`` has a field for every non-AutoField database field in
-    ``instance``. If commit=True, then the changes to ``instance`` will be
-    saved to the database. Returns ``instance``.
-    
-    Modified to override missing form keys (fields removed by formfield_callback)
-    """
-    from django.db import models
-    opts = instance.__class__._meta
-    
-    if form.errors:
-        raise ValueError("The %s could not be changed because the data didn't validate." % opts.object_name)
-    cleaned_data = form.cleaned_data
-    
-    for f in opts.fields:
-        if not f.editable or isinstance(f, models.AutoField):
-            continue
-        if f.name in cleaned_data.keys():
-            setattr(instance, f.name, cleaned_data[f.name])
-        
-    #   If additional fields are supplied, write them into the instance.
-    #   I don't have a better way right now.
-    for fname in additional_fields.keys():
-            setattr(instance, fname, additional_fields[fname])
-            
-    if commit:
-        instance.save()
-        for f in opts.many_to_many:
-            if f.name in cleaned_data.keys():
-                setattr(instance, f.attname, cleaned_data[f.name])
-
-    # GOTCHA: If many-to-many data is given and commit=False, the many-to-many
-    # data will be lost. This happens because a many-to-many options cannot be
-    # set on an object until after it's saved. Maybe we should raise an
-    # exception in that case.
-    return instance

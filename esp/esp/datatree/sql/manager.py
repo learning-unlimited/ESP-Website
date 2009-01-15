@@ -299,9 +299,13 @@ WHERE
             'extravals': extravals,
             }
 
-        uri = uri.strip(self.model.DELIMITER)
+        if uri:
+            uri = uri.strip(self.model.DELIMITER)
+        else:
+            from random import randint
+            uri = "BadURI/%d" % randint(0, 100000)
 
-        params = [name, friendly_name, parent_id, uri or '', uri_correct, 0, True]
+        params = [name, friendly_name, parent_id, uri, uri_correct, 0, True]
         params += [parent_id, 0, parent_id, 0, parent_id]
         params += [start_size, parent_id, 0, parent_id, 0, parent_id]
 

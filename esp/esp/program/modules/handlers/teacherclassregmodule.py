@@ -28,16 +28,15 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassImplication
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
 from django.utils.datastructures import MultiValueDict
-from esp.cal.models              import Event
 from django.core.mail            import send_mail
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
@@ -711,7 +710,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data['category'] = newclass.category.id
                 current_data['num_sections'] = newclass.sections.count()
                 current_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
-                current_data['resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=False).distinct().values('res_type') ]
+                current_data['resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=False).distinct().values('res_type') ] or '' # Use an empty string instead of an empty list.
                 current_data['allow_lateness'] = newclass.allow_lateness
                 current_data['has_own_space'] = False
                 current_data['title'] = newclass.anchor.friendly_name

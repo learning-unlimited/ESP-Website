@@ -32,11 +32,8 @@ from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser
-from esp.lib.markdown import markdown
-from esp.qsd.models import QuasiStaticData
 from datetime import datetime, timedelta
 from django.core.cache import cache
-from esp.miniblog.models import Entry
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
@@ -994,8 +991,10 @@ class RegistrationProfile(models.Model):
                     regProf.id = None
                     regProf.save()
             else:
-                regProf = RegistrationProfile()
-                regProf.user = user
+                regProf = RegistrationProfile.getLastProfile(user)
+                if (datetime.now() - regProf.last_ts).days > 5:
+                    regProf = RegistrationProfile()
+                    regProf.user = user
                 regProf.program = program
         else:
             regProf = regProfList[0]

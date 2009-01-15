@@ -29,22 +29,16 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.web.util import render_to_response
-from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
-from esp.miniblog.models import Entry
-from django.http import HttpResponseRedirect, HttpResponse, Http404
-from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits
-from esp.program.models import ClassSubject
+from django.http import HttpResponseRedirect, Http404
+from esp.users.models import UserBit, GetNodeOrNoBits
 
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from esp.web.models import NavBarEntry
 
-from esp.utils.forms import save_instance
 from esp.program.models import Program
-from esp.program.modules.base import needs_admin
 from esp.program.forms import ProgramCreationForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
@@ -116,13 +110,14 @@ def managepage(request, page):
             template_prog.update(tprogram.__dict__)
             del template_prog["id"]
             
-            template_prog["program_modules"] = [ x["id"] for x in tprogram.program_modules.all().values("id") ]
+            template_prog["program_modules"] = tprogram.program_modules.all().values_list("id", flat=True)
+            template_prog["class_categories"] = tprogram.class_categories.all().values_list("id", flat=True)
             template_prog["term"] = tprogram.anchor.name
             template_prog["term_friendly"] = tprogram.anchor.friendly_name
             template_prog["anchor"] = tprogram.anchor.parent.id
             
             # aseering 5/18/2008 -- List everyone who was granted V/Administer on the specified program
-            template_prog["admins"] = [ x["id"] for x in User.objects.filter(userbit__verb=GetNode("V/Administer"), userbit__qsc=tprogram.anchor).values("id") ]
+            template_prog["admins"] = User.objects.filter(userbit__verb=GetNode("V/Administer"), userbit__qsc=tprogram.anchor).values_list("id", flat=True)
 
             # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
             #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
@@ -163,9 +158,10 @@ def managepage(request, page):
             context = pickle.loads(request.session['context_str'])
             pcf = ProgramCreationForm(context['prog_form_raw'])
             if pcf.is_valid():
-                new_prog = Program(anchor=GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"]))
-                new_prog = save_instance(pcf, new_prog)
+                new_prog = pcf.save(commit = False) # don't save, we need to fix it up:
                 new_prog.anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
+                new_prog.save()
+                pcf.save_m2m()
                 
                 commit_program(new_prog, context['datatrees'], context['userbits'], context['modules'], context['costs'])
                 
@@ -177,12 +173,10 @@ def managepage(request, page):
     
         #   If the form has been submitted, process it.
         if request.method == 'POST':
-            data = request.POST.copy()
-            form = ProgramCreationForm(data)
+            form = ProgramCreationForm(request.POST)
     
             if form.is_valid():
-                temp_prog = Program(anchor=form.cleaned_data['anchor'])
-                temp_prog = save_instance(form, temp_prog, commit=False)
+                temp_prog = form.save(commit=False)
                 datatrees, userbits, modules = prepare_program(temp_prog, form)
                 #   Save the form's raw data instead of the form itself, or its clean data.
                 #   Unpacking of the data happens at the next step.
