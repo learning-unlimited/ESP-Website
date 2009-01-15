@@ -32,7 +32,6 @@ from esp.calendar.models import Event
 from esp.web.util import render_to_response
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.forms import ModelForm
-import icalendar
 
 
 class EventForm(ModelForm):
