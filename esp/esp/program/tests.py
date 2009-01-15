@@ -34,10 +34,6 @@ class ProgramHappenTest(TestCase):
     It mostly just makes sure they don't error out.
     """
     
-    def fout(self, name, s):
-        with open(name, 'w') as f:
-            f.write( s )
-    
     def loginAdmin(self):
         self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, u'Oops, login failed!' )
     def loginTeacher(self):
@@ -246,15 +242,6 @@ class ProgramHappenTest(TestCase):
         pass
     
     def runTest(self):
-        try:
-            self.makeprogram()
-            self.teacherreg()
-            self.studentreg()
-        except:
-            import sys
-            from django.views import debug
-            from django.http import HttpRequest
-            exc_info = sys.exc_info()
-            #~ with open('yorp.html', 'w') as f:
-                #~ f.write( debug.technical_500_response( HttpRequest(), *exc_info ).content )
-            raise
+        self.makeprogram()
+        self.teacherreg()
+        self.studentreg()
