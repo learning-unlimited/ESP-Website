@@ -55,11 +55,11 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False):
     """
     from esp.program.models import ProgramModule
     
-    mods = [ (datum, ProgramModule.objects.get_or_create(handler=datum["handler"], module_type=datum["module_type"], main_call=datum["main_call"], defaults=datum)) for datum in update_data if ProgramModule.objects.filter(handler=datum["handler"], module_type=datum["module_type"], main_call=datum["main_call"]).count() != 0 ]
+    mods = [ (datum, ProgramModule.objects.get_or_create(handler=datum["handler"], module_type=datum["module_type"], main_call=datum["main_call"], defaults=datum)) for datum in update_data ]
 
     if overwriteExisting:
         for (datum, (mod, created)) in mods:
-            if created:
+            if not created:
                 mod.__dict__.update(datum)
                 mod.save()
 

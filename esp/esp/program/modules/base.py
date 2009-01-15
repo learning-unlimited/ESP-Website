@@ -441,7 +441,7 @@ class ProgramModuleObj(models.Model):
                                  if getattr(x[FN], "call_tag", None) == "Main Call" ]
                 assert len(mainCallList) <= 1, "Error: You can only have one Main Call per class!: (%s: %s)" % (cls.__name__, ",".join(mainCallList))
                 props["main_call"] = ",".join(mainCallList)
-
+            
         if type(props) == dict:
             props = [ props ]
 

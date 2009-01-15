@@ -42,7 +42,6 @@ class RegProfileModule(ProgramModuleObj):
             "link_title": "Update Your Profile",
             "module_type": "teach",
             "seq": 1,
-            "check_call": "profile_check",
             "required": True
             }
 

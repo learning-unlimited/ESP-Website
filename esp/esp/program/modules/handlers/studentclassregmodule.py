@@ -54,7 +54,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             }, {
             "link_title": "Sign up for Classes",
             "admin_title": "Sign up for Classes, SoW (StudentClassRegModule)",
-            "module_type": "learn",
+            "module_type": "learn2",
             "seq": 10,
             "required": True,
             "main_call": "sowclass"

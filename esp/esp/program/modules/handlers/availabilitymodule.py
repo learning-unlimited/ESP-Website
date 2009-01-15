@@ -70,7 +70,7 @@ class AvailabilityModule(ProgramModuleObj):
         for a in available_slots:
             available_time = available_time + a.duration()
         
-        if (total_time > available_time) or (available_time == 0):
+        if (total_time > available_time) or (available_time == timedelta()):
             return False
         else:
             return True

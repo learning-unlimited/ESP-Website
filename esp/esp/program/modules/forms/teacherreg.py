@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2008 MIT ESP
+Copyright (c) 2009 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -32,9 +32,11 @@ Email: web@esp.mit.edu
 from django import forms
 from esp.forms import SizedCharField, BlankSelectWidget, SplitDateWidget, FormWithRequiredCss, FormUnrestrictedOtherUser
 import re
-from esp.datatree.models import *
+from esp.datatree.models import DataTree, GetNode
+from esp.users.models import UserBit
 from esp.program.models import ClassCategories, ClassSubject, ClassSection
-
+from esp.cal.models import Event
+from datetime import datetime
 
 class TeacherClassRegForm(FormWithRequiredCss):
     location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Comments to Director' below."),
@@ -164,4 +166,45 @@ class TeacherClassRegForm(FormWithRequiredCss):
         
         # Return cleaned data
         return cleaned_data
+
+
+class TeacherEventSignupForm(FormWithRequiredCss):
+    """ Form for teachers to pick interview and teacher training times. """
+    interview = forms.ChoiceField( label='Interview', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick an interview timeslot...')) )
+    training  = forms.ChoiceField( label='Teacher Training', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick a teacher training session...')) )
+    
+    def _slot_is_taken(self, anchor):
+        """ Determine whether an interview slot is taken. """
+        return self.module.bitsBySlot(anchor).exclude(user=self.user).count() > 0
+    
+    def _get_datatree(self, id):
+        """ Given an ID, get the datatree node with that ID. """
+        try:
+            return DataTree.objects.get(id=id)
+        except (DoesNotExist, ValueError):
+            raise forms.ValidationError('The time you selected seems not to exist. Please try a different one.')
+    
+    def __init__(self, module, *args, **kwargs):
+        super(TeacherEventSignupForm, self).__init__(*args, **kwargs)
+        self.module = module
+        self.user = module.user
+        self.fields['interview'].choices = [ (x.anchor.id, x.description) for x in module.getTimes('interview') if not self._slot_is_taken(x.anchor) ]
+        self.fields['training'].choices = [ (x.anchor.id, x.description) for x in module.getTimes('training') ]
+    
+    def clean_interview(self):
+        data = self.cleaned_data['interview']
+        if not data:
+            return data
+        data = self._get_datatree( data )
+        if self._slot_is_taken(data):
+            raise forms.ValidationError('That time is taken; please select a different one.')
+        return data
+    
+    def clean_training(self):
+        data = self.cleaned_data['training']
+        if not data:
+            return data
+        return self._get_datatree( data )
+
+
 
