@@ -136,7 +136,7 @@ Welcome, {{ request.user.first_name }}!
 	</td>
 	<td colspan="2">
   {% if request.user.is_authenticated %}
-	    <div class="divformcol2" style="text-align:right"><a href="/myesp/signout/">Sign Out</a>  {% if request.program %}<a href="http://esp.mit.edu/wiki/index.php?title=WikiHelp:{{ request.tl }}/PerProgram/{{ request.module }}">WikiHelp</a>{% else %}<a href="http://esp.mit.edu/wiki/index.php?title=WikiHelp:{{ request.path }}">WikiHelp</a>{% endif %}</div>
+	    <div class="divformcol2" style="text-align:right"><a href="/myesp/signout/">Sign Out</a>  {% if request.user.isAdministrator %}{% if request.program %}<a href="http://esp.mit.edu/wiki/index.php?title=WikiHelp:{{ request.tl }}/PerProgram/{{ request.module }}">WikiHelp</a>{% else %}<a href="http://esp.mit.edu/wiki/index.php?title=WikiHelp:{{ request.path }}">WikiHelp</a>{% endif %}{% endif %}</div>
   {% else %}
 <div class="divformcol1" style="text-align:center">
   <a href="/myesp/register/" title="Join ESP!">Create Account</a>
