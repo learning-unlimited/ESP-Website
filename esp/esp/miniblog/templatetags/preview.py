@@ -4,13 +4,20 @@ from esp.datatree.models import *
 from esp.users.models import UserBit
 from django.db.models.query import Q
 from esp.miniblog.models import Entry, AnnouncementLink
-from django.core.cache import cache
+
+from esp.cache.bulkdelete import BulkDeleteCache
+
 import re
 import datetime
 arg_re_num = re.compile('\s*(\S+)\s+as\s+(\S+)\s+(\d+)\s*')
 arg_re     = re.compile('\s*(\S+)\s+as\s+(\S+)\s*')
 
 register = template.Library()
+
+class miniblog_user_cache(BulkDeleteCache):
+    prefix = 'miniblog_for_user'
+miniblog_user_cache.depend_on_model(Entry)
+miniblog_user_cache.depend_on_model(AnnouncementLink)
 
 @register.tag
 def miniblog_for_user(parser, token):
@@ -41,9 +48,9 @@ def miniblog_for_user(parser, token):
 
 
             # Now we check the cache
-            self.cache_key = 'miniblog_%s_%s' % (self.user.id, limit)
+            self.cache_key = '%s_%s' % (self.user.id, limit)
 
-            retVal = cache.get(self.cache_key)
+            retVal = miniblog_user_cache.get(self.cache_key)
 
             if retVal is not None:
                 context[self.var_name] = retVal
@@ -75,11 +82,7 @@ def miniblog_for_user(parser, token):
                       'overflowed':       overflowed,
                       'total':            grand_total}
 
-            if self.user.id is not None:
-                # cache for only 1 hour if it's an actual user.
-                cache.set(self.cache_key, retVal, 3600)
-            else:
-                cache.set(self.cache_key, retVal, 86400)
+            miniblog_user_cache.set(self.cache_key, retVal, 86400)
 
             context[self.var_name] = retVal
             
