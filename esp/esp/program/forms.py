@@ -54,8 +54,8 @@ class ProgramCreationForm(forms.ModelForm):
     student_reg_end   = forms.DateTimeField()
     publish_start     = forms.DateTimeField(label = 'Program-Visible-on-Website Date')
     publish_end       = forms.DateTimeField(label = 'Program-Completely-Over Archive Date')
-    base_cost         = forms.IntegerField( label = 'Cost of Program Admission $')
-    finaid_cost       = forms.IntegerField( label = 'Cost to Students who receive Financial Aid $')
+    base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
+    finaid_cost       = forms.IntegerField( label = 'Cost to Students who receive Financial Aid $', min_value = 0 )
     anchor            = forms.ModelChoiceField(anchor_choices, label = "Program Type")
     program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
 
