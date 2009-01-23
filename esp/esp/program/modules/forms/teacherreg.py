@@ -188,8 +188,18 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         super(TeacherEventSignupForm, self).__init__(*args, **kwargs)
         self.module = module
         self.user = module.user
-        self.fields['interview'].choices = [ (x.anchor.id, x.description) for x in module.getTimes('interview') if not self._slot_is_taken(x.anchor) ]
-        self.fields['training'].choices = [ (x.anchor.id, x.description) for x in module.getTimes('training') ]
+        
+        interview_times = module.getTimes('interview')
+        if interview_times.count() > 0:
+            self.fields['interview'].choices = [ (x.anchor.id, x.description) for x in interview_times if not self._slot_is_taken(x.anchor) ]
+        else:
+            self.fields['interview'].widget = forms.HiddenInput()
+        
+        training_times = module.getTimes('training')
+        if training_times.count() > 0:
+            self.fields['training'].choices = [ (x.anchor.id, x.description) for x in training_times ]
+        else:
+            self.fields['training'].widget = forms.HiddenInput()
     
     def clean_interview(self):
         data = self.cleaned_data['interview']
