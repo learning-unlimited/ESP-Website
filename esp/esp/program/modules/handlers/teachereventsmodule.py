@@ -70,7 +70,7 @@ class TeacherEventsModule(ProgramModuleObj):
             'required': False,
             'main_call': 'teacher_events',
             'admin_title': 'Manage Teacher Training and Interviews',
-            'link_title': 'Manage Teacher Training and Interviews',
+            'link_title': 'Teacher Training and Interviews',
         } ]
     
     def teachers(self, QObject = False):
@@ -151,13 +151,18 @@ class TeacherEventsModule(ProgramModuleObj):
             if bits['training'].count() > 0:
                 data['training'] = bits['training'][0].qsc.id
             form = TeacherEventSignupForm(self, initial=data)
-        return render_to_response( self.baseDir()+'event_signup.html', request, (prog, tl), {'form': form} )
+        return render_to_response( self.baseDir()+'event_signup.html', request, (prog, tl), {'prog':prog, 'form': form} )
     
     @needs_admin
     @main_call
     def teacher_events(self, request, tl, one, two, module, extra, prog):
-        # Not implemented yet.
-        pass
-    
+        interview_times = self.getTimes('interview').select_related('anchor__userbit_qsc__user')
+        training_times = self.getTimes('training').select_related('anchor__userbit_qsc__user')
+        
+        for ts in list( interview_times ) + list( training_times ):
+            ts.teachers = [ x.user.first_name + ' ' + x.user.last_name for x in self.bitsBySlot( ts.anchor ) ]
+        
+        return render_to_response( self.baseDir()+'teacher_events.html', request, (prog, tl), {'prog': prog, 'interview_times': interview_times, 'training_times': training_times} )
+
 
 

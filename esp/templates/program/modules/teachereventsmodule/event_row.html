@@ -1,0 +1,14 @@
+{% for timeslot in timeslots %}
+    <tr>
+        <td>{{ timeslot.description }}</td>
+        <td>{{ timeslot.start|date:"D, M j f A" }}</td>
+        <td>{{ timeslot.end|date:"f A" }}</td>
+        <td>
+            {% if timeslot.teachers %}
+                {{ timeslot.teachers|join:",<br />" }}
+            {% else %}
+                <em>(None)</em>
+            {% endif %}
+        </td>
+    </tr>
+{% endfor %}
