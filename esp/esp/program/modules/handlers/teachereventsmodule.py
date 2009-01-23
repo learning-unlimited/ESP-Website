@@ -50,8 +50,8 @@ class TeacherEventsModule(ProgramModuleObj):
     def qscs(self):
         if not hasattr(self, '_qscs'):
             self._qscs = {
-                'interview': GetNode( self.program_anchor_cached().uri + '/TeacherInterview' ),
-                'training': GetNode( self.program_anchor_cached().uri + '/TeacherTraining' )
+                'interview': GetNode( self.program_anchor_cached().uri + '/TeacherEvents/Interview' ),
+                'training': GetNode( self.program_anchor_cached().uri + '/TeacherEvents/Training' )
             }
         return self._qscs
     
