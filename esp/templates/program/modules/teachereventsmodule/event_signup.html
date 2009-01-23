@@ -1,0 +1,34 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Teacher Preparation Events for {{ prog.niceName }}{% endblock %}
+
+{% block subsection_name %}Teacher Preparation Events{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+
+<h1>Teacher Preparation Events for {{ prog.niceName }}</h1>
+
+<div id="program_form">
+
+<p>
+Please let us know which events you will attend.
+</p>
+
+<br />
+
+<form method="post" action="{{ request.path }}">
+<table cellpadding="4" cellspacing="0" align="center" width="300">
+    {{ form }}
+    <tr>
+        <td align="center" colspan="2"><input type="submit" class="fancybutton" value="Submit" /></td>
+    </tr>
+</table>
+</form>
+
+<br />
+
+</div>
+
+{% endblock %}
