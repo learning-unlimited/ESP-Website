@@ -178,8 +178,7 @@ def contact(request, section='esp'):
 		
 	
 	if request.method == 'POST':
-		data = request.POST.copy()
-		form = ContactForm(data)
+		form = ContactForm(request.POST)
 		SUBJECT_PREPEND = '[ ESP WEB ]'
 		
 		if form.is_valid():
