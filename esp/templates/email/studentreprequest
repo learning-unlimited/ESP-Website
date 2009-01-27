@@ -1,3 +1,4 @@
+{% autoescape off %}
 Dear Membership Coordinator[s],
 
 An ESP student has requested to become a student representative{% if prog %} while editing their profile for {{ prog.niceName }}{% else %} in the online profile editor{% endif %}.
@@ -17,3 +18,4 @@ By default, {{ user.first_name }} is not automatically registered as a student r
 
 Thanks!
 - ESP Web Site
+{% endautoescape %}
