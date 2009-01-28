@@ -63,20 +63,15 @@ class UserRegForm(forms.Form):
         if len(email_parts) != 2:
             raise forms.ValidationError('E-mail addresses must be of the form "name@host"')
 
-        email_host = email_parts[1]
+        email_host = email_parts[1].encode('ascii')
         
-        #import socket
-        # aseering 9/10/2007 -- Oh, MX records; yeah...
-        #socket.gethostbyname(email_host)
-
-	# -- aseering 3/5/2008: This copy of the site has to work offline; we can't resolve DNS stuffs
-        #import DNS
-        #DNS.ParseResolvConf() # May or may not work on systems without a resolv.conf file
-        #r = DNS.Request(qtype='mx')
-        #res = r.req(email_host)
-	#
-        #if len(res.answers) == 0:
-        #    raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
+        import DNS
+        DNS.ParseResolvConf() # May or may not work on systems without a resolv.conf file
+        r = DNS.Request(qtype='mx')
+        res = r.req(email_host)
+        
+        if len(res.answers) == 0:
+            raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
 
         return email
 
@@ -92,12 +87,14 @@ class EmailUserForm(forms.Form):
         if len(email_parts) != 2:
             raise forms.ValidationError('E-mail addresses must be of the form "name@host"')
 
-        email_host = email_parts[1]
+        email_host = email_parts[1].encode('ascii')
         
-        import socket
-        try:
-            socket.gethostbyname(email_host)
-        except socket.gaierror:
+        import DNS
+        DNS.ParseResolvConf() # May or may not work on systems without a resolv.conf file
+        r = DNS.Request(qtype='mx')
+        res = r.req(email_host)
+        
+        if len(res.answers) == 0:
             raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
 
         return email
