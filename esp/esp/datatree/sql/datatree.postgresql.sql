@@ -147,7 +147,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION class__get_enrolled(integer, integer) OWNER TO esp;
 
 
 -- Function: userbit__bits_get_qsc(integer, integer, timestamp with time zone, timestamp with time zone)
@@ -197,7 +196,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_qsc(integer, integer, timestamp with time zone, timestamp with time zone) OWNER TO esp;
 
 -- Function: userbit__bits_get_qsc_root(integer, integer, timestamp with time zone, timestamp with time zone, integer)
 
@@ -261,7 +259,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_qsc_root(integer, integer, timestamp with time zone, timestamp with time zone, integer) OWNER TO esp;
 
 -- Function: userbit__bits_get_user(integer, integer, timestamp with time zone, timestamp with time zone)
 
@@ -315,7 +312,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_user(integer, integer, timestamp with time zone, timestamp with time zone) OWNER TO esp;
 
 -- Function: userbit__bits_get_user_real(integer, integer, timestamp with time zone, timestamp with time zone)
 
@@ -373,7 +369,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_user_real(integer, integer, timestamp with time zone, timestamp with time zone) OWNER TO esp;
 
 -- Function: userbit__bits_get_verb(integer, integer, timestamp with time zone, timestamp with time zone)
 
@@ -422,7 +417,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_verb(integer, integer, timestamp with time zone, timestamp with time zone) OWNER TO esp;
 
 -- Function: userbit__bits_get_verb_root(integer, integer, timestamp with time zone, timestamp with time zone, integer)
 
@@ -471,7 +465,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_verb_root(integer, integer, timestamp with time zone, timestamp with time zone, integer) OWNER TO esp;
 
 -- Function: userbit__user_has_perms(integer, integer, integer, timestamp with time zone, boolean)
 
@@ -595,4 +588,3 @@ BEGIN
     END IF;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__user_has_perms(integer, integer, integer, timestamp with time zone, boolean) OWNER TO esp;
