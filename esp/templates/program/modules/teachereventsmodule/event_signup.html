@@ -16,7 +16,8 @@
 Please let us know which events you will attend.
 </p>
 
-<br />
+{% load render_qsd %}
+{% render_inline_qsd prog.anchor "teach:eventsignupheader" request.user %}
 
 <form method="post" action="{{ request.path }}">
 <table cellpadding="4" cellspacing="0" align="center" width="300">

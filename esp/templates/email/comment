@@ -1,3 +1,4 @@
+{% autoescape off %}
 Someone filled a form out on the web site:
 
 Name: {{ form.cleaned_data.name }}
@@ -10,3 +11,4 @@ Subject: {{ form.cleaned_data.subject }}
 Message:
 
 {{ form.cleaned_data.message }}
+{% endautoescape %}

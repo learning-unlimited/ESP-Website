@@ -47,8 +47,8 @@ class ArchiveFilter(object):
     category = ""
     options = ""
     def __init__(self, category = "", options = ""):
-        self.category = str(category)
-        self.options  = str(options)
+        self.category = unicode(category)
+        self.options  = unicode(options)
     
     def __unicode__(self):
         return '%s, %s' % (self.category, self.options)
