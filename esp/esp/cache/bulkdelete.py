@@ -57,9 +57,9 @@ class BulkDeleteCache(object):
     def _global_prefix(cls):
         key = cls._global_key()
         global_prefix = cache.get(key)
-        while global_prefix is None:
-            cache.add(key, _random_string(7), cls.global_cache_time)
-            global_prefix = cache.get(key)
+        if global_prefix is None:
+            global_prefix = _random_string(7)
+            cache.add(key, global_prefix, cls.global_cache_time)
         return global_prefix
 
     @classmethod
