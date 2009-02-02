@@ -1,5 +1,6 @@
 from django import forms
-from esp.forms import SizedCharField, SplitDateWidget, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.utils.widgets import SplitDateWidget
 import re
 
 # SRC: esp/program/manipulators.py

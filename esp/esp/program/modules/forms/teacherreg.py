@@ -30,7 +30,8 @@ Email: web@esp.mit.edu
 """
 
 from django import forms
-from esp.forms import SizedCharField, BlankSelectWidget, SplitDateWidget, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit
