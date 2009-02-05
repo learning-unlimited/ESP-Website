@@ -347,11 +347,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
 
-        # Sort classes
-        classes = list(classes)
-        classes = sorted(classes, key=lambda cls: cls.num_students())
-        classes = sorted(classes, key=lambda cls: cls.friendly_times()[0] if len(cls.friendly_times()) > 0 else [])
-
         categories = {}
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
