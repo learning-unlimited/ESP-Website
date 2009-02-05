@@ -45,7 +45,7 @@ class SubSectionImage(GenImageBase):
         self.text = text
         self.font_size = font_size
         self.fill = fill
-        super(SubSectionImage, self).__init__(text, font_size)
+        super(SubSectionImage, self).__init__(text, font_size, fill)
 
     def _alt(self):
         """ Define a proper alt string. """
