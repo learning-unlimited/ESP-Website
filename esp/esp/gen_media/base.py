@@ -58,7 +58,7 @@ class GenMediaBase(object):
             # Make directory if it doesn't exist
             save_dir = os.path.dirname(self.local_path)
             if not os.path.exists(save_dir):
-                os.mkdir(save_dir)
+                os.makedirs(save_dir)
             # Generate the file
             self._generate_file()
     
