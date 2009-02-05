@@ -270,14 +270,11 @@ class AdminClass(ProgramModuleObj):
         sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in sections]
         
         if request.method == 'POST':
-            data = request.POST.copy()
-            #   assert False, data
-            
-            cls_form.data = data
+            cls_form.data = request.POST
             cls_form.is_bound = True
             valid = cls_form.is_valid()
             for sf in sec_forms:
-                sf.data = data
+                sf.data = request.POST
                 sf.is_bound = True
                 valid = (valid and sf.is_valid())
             

@@ -222,7 +222,7 @@ def managepage(request, page):
     #   QSD management
     if page == 'pages':
         if request.method == 'POST':
-            data = request.POST.copy()
+            data = request.POST
             if request.GET['cmd'] == 'bulk_move':
                 if data.has_key('confirm'):
                     form = QSDBulkMoveForm(data)
