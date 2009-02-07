@@ -175,7 +175,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     training  = forms.ChoiceField( label='Teacher Training', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick a teacher training session...')) )
     
     def _slot_is_taken(self, anchor):
-        """ Determine whether an interview slot is taken. """
+        """ Determine whether an interview slot is taken by someone else. """
         return self.module.bitsBySlot(anchor).exclude(user=self.user).count() > 0
     
     def _get_datatree(self, id):
