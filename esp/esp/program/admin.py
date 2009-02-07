@@ -29,6 +29,7 @@ Email: web@esp.mit.edu
 """
 
 from django.contrib import admin
+from django.db.models import ManyToManyField
 
 from esp.program.models import ProgramModule, ArchiveClass, Program, BusSchedule
 from esp.program.models import TeacherParticipationProfile, SATPrepRegInfo, RegistrationProfile
@@ -46,8 +47,19 @@ class ArchiveClassAdmin(admin.ModelAdmin):
     search_fields = ['description', 'title', 'program', 'teacher', 'category']
     pass
 admin.site.register(ArchiveClass, ArchiveClassAdmin)
-    
-admin.site.register(Program)
+
+class ProgramAdmin(admin.ModelAdmin):
+    class Media:
+        css = { 'all': ( 'styles/admin.css', ) }
+    formfield_overrides = { ManyToManyField: { 'widget': admin.widgets.FilteredSelectMultiple(verbose_name='', is_stacked=False) } }
+    # formfield_overrides will work once we move past Django r9760.
+    # At that time we should cut out formfield_for_dbfield.
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        if isinstance( db_field, ManyToManyField ):
+            kwargs['widget'] = admin.widgets.FilteredSelectMultiple(verbose_name='', is_stacked=False)
+        return super(ProgramAdmin, self).formfield_for_dbfield(db_field,**kwargs)
+admin.site.register(Program, ProgramAdmin)
+
 admin.site.register(BusSchedule)
 admin.site.register(TeacherParticipationProfile)
     
