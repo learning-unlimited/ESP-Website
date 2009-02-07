@@ -534,15 +534,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # datatree maintenance
                 if newclass_isnew:
                     newclass.parent_program = self.program
-                    newclass.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-
-                    newclass.anchor.save(old_save=True)
-                    newclass.enrollment = 0
+                    newclass.anchor = self.program.classes_node()
                     newclass.save()
-                    newclass.anchor.delete(True)
                 
                     nodestring = newclass.category.category[:1].upper() + str(newclass.id)
-                    newclass.anchor = self.program.classes_node().tree_create([nodestring])
+                    newclass.anchor = newclass.anchor.tree_create([nodestring])
                     newclass.anchor.tree_create(['TeacherEmail'])
                     
                 newclass.anchor.friendly_name = newclass.title

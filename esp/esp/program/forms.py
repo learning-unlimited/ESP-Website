@@ -33,6 +33,7 @@ from esp.users.models import ESPUser, UserBit
 from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
+from esp.utils.widgets import DateTimeWidget
 from django.db.models import Q
 from django import forms
 
@@ -48,12 +49,12 @@ class ProgramCreationForm(forms.ModelForm):
     term_friendly = forms.CharField(label='Term, in English (i.e. "Fall 07")', widget=forms.TextInput(attrs={'size': '40'}))
     
     admins            = forms.MultipleChoiceField(choices = [], label = 'Administrators')
-    teacher_reg_start = forms.DateTimeField()
-    teacher_reg_end   = forms.DateTimeField()
-    student_reg_start = forms.DateTimeField()
-    student_reg_end   = forms.DateTimeField()
-    publish_start     = forms.DateTimeField(label = 'Program-Visible-on-Website Date')
-    publish_end       = forms.DateTimeField(label = 'Program-Completely-Over Archive Date')
+    teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
+    teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
+    student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
+    student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
+    publish_start     = forms.DateTimeField(label = 'Program-Visible-on-Website Date', widget = DateTimeWidget())
+    publish_end       = forms.DateTimeField(label = 'Program-Completely-Over Archive Date', widget = DateTimeWidget())
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
     finaid_cost       = forms.IntegerField( label = 'Cost to Students who receive Financial Aid $', min_value = 0 )
     anchor            = forms.ModelChoiceField(anchor_choices, label = "Program Type")

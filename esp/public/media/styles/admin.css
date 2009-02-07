@@ -1,0 +1,33 @@
+/* Make CheckboxSelectMultiple and FilteredSelectMultiple render sanely. */
+
+li {
+    list-style-type: none;
+}
+
+li label {
+    float: none !important;
+    width: auto !important;
+}
+
+div.form-row {
+    margin-top: 8px;
+    border-bottom: none;
+    border-top-width: 1px;
+    border-top-style: solid;
+    border-top-color: #eeeeee;
+    clear: both;
+}
+
+div.form-row:first-child {
+    margin-top: 0px;
+}
+
+/* Control FilteredSelectMultiple widths */
+
+div.selector, div.selector-available, div.selector-chosen {
+    width: auto;
+}
+
+div.selector select {
+    width: 100%;
+}
