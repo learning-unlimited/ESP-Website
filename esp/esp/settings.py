@@ -48,3 +48,13 @@ TEMPLATE_DIRS = (
 CACHE_BACKEND = "esp.utils.memcached_multikey://127.0.0.1:11211/?timeout=%d" % DEFAULT_CACHE_TIMEOUT
 
 MIDDLEWARE_CLASSES = [pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)]
+
+# set tempdir so that we don't have to worry about collision
+import tempfile
+import os
+if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
+    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX)
+    if not os.path.exists(tempdir):
+        os.makedirs(tempdir)
+    tempfile.tempdir = tempdir
+    tempfile.alreadytwiddled = True
