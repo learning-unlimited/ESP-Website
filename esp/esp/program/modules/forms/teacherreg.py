@@ -220,7 +220,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         if not data:
             return data
         data = self._get_datatree( data )
-        if self._slot_is_taken(data):
+        if not self._slot_is_available(data):
             raise forms.ValidationError('That time is taken; please select a different one.')
         return data
     
