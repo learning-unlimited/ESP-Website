@@ -194,7 +194,6 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
     ubi.verb_implied = DataTree.get_by_uri('V/Deadline/Registration')
     ubi.recursive = True
     ubi.save()
-    ubi.apply()
         
     return prog
 
