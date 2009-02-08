@@ -714,7 +714,6 @@ class UserBitImplication(models.Model):
             if len(bits.values('id')[:1]) == 0:
                 newbit.save()
                 self.created_bits.add(newbit)
-                self.save()
         
     @staticmethod
     def applyAllImplications():
