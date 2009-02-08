@@ -660,7 +660,6 @@ class UserBitImplication(models.Model):
             newbit.save()
 
             implication.created_bits.add(newbit)
-            implication.save()
 
     def save(self, *args, **kwargs):
         super(UserBitImplication, self).save(*args, **kwargs)
