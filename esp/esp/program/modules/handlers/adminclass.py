@@ -172,11 +172,11 @@ class AdminClass(ProgramModuleObj):
                 except ValueError:
                     usernames.append( id.strip() )
                     
-            Q_Users = Q()
-            if usernames != []:
+            Q_Users = Q(id=-1) # in case usernames and ids are both empty
+            if usernames:
                 Q_Users |= Q(username__in = usernames)
 
-            if ids != []:
+            if ids:
                 Q_Users |= Q(id__in = ids)
                     
             users = User.objects.filter( Q_Users )
