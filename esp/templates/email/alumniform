@@ -1,3 +1,4 @@
+{% autoescape off %}
 An alumni filled a form out on the ESP web site:
 
 Contact information
@@ -34,4 +35,4 @@ Other comments:
 -----------
 End of form
 
-
+{% endautoescape %}

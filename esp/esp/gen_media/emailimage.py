@@ -32,56 +32,47 @@ Email: web@esp.mit.edu
 from django.conf import settings
 from esp.gen_media.base import GenImageBase
 
-__all__ = ['SubSectionImage']
+__all__ = ['EmailImage']
 
 
-class SubSectionImage(GenImageBase):
+class EmailImage(GenImageBase):
     """ A generated LaTeX image for use in inlining. """
 
-    DIR = 'subsection_images'
+    DIR = 'email_images'
     EXT = 'png'
 
-    def __init__(self, text, font_size=24, fill='#333333'):
-        self.text = text
+    def __init__(self, address, font_size=12, fill='#000000'):
+        self.address = address
         self.font_size = font_size
         self.fill = fill
-        super(SubSectionImage, self).__init__(text, font_size, fill)
+        super(EmailImage, self).__init__(address, font_size, fill)
 
     def _alt(self):
         """ Define a proper alt string. """
-        return self.text
+        return 'Email hidden for privacy'
+
+    def _title(self):
+        return ''
 
     def _key(self):
         """ image key """
-        return str(self.font_size) + '|' + self.text + '|' + self.fill
-
-    def _attrs(self):
-        """ HTML attributes. """
-        attrs = super(SubSectionImage, self)._attrs()
-        attrs['class'] = 'subsection'
-        return attrs
+        return str(self.font_size) + '|' + self.address + '|' + self.fill
 
     def _generate_file(self):
         """ Generates the png file. """
 
         import ImageFont, Image, ImageDraw, ImageFilter
 
-        font_path = settings.MEDIA_ROOT + 'BOOKOS.TTF'
+        font_path = settings.MEDIA_ROOT + 'DroidSansMono.ttf'
         font = ImageFont.truetype(font_path, self.font_size)
-        font_string = self.text
 
-        dim = font.getsize(font_string)
-        dim = (350, dim[1],)
+        dim = font.getsize(self.address)
 
-        image = Image.new('RGB', dim, 'white')
+        image = Image.new('RGBA', dim, (255,255,255,0))
 
         draw = ImageDraw.Draw(image)
-        draw.text((0, 0), font_string, font=font, fill=self.fill)
+        draw.text((0, 0), self.address, font=font, fill=self.fill)
         del draw
-
-        image = image.rotate(270)
-        image = image.filter(ImageFilter.SMOOTH)
-        image = image.filter(ImageFilter.SHARPEN)
 
         from django.core.files.storage import default_storage
         output = default_storage.open(self.local_path, 'wb')

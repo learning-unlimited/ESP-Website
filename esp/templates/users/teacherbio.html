@@ -17,7 +17,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 #divmaintext table td { vertical-align: top; }
 
 #divmaintext hr { border: 1px solid black; }
-#divmaintext img { border: 1px solid black; }
+img.biophoto { border: 1px solid black; }
 
 </style>
 {% endblock %}
@@ -42,13 +42,14 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
   <strong>Major:</strong> {{biouser.getLastProfile.teacher_info.major|default:"Not available."}} <br /><br />
   <strong>College:</strong> {{biouser.getLastProfile.teacher_info.college|default:"Not available."}} <br /><br />
   <strong>Year of Graduation:</strong> {{biouser.getLastProfile.teacher_info.graduation_year|default:"Not available."}} <br /><br />
-  <strong>Email Address:</strong> <tt style="text-size: 130%;">{{biouser.username}}@esp.mit.edu</tt>
+  {% load mask_email %}
+  <strong>Email Address:</strong> <tt style="text-size: 130%;">{{biouser.username|mask_email_concat:"esp.mit.edu"}}</tt>
       
 
   </td>
   <td>
    <img src="/media/{{bio.picture}}" title="Picture of {{biouser.name}}"  
-        alt="Picture of {{biouser.name}}" align="right" />
+        alt="Picture of {{biouser.name}}" align="right" class="biophoto" />
   </td>
 </tr>
 <tr>

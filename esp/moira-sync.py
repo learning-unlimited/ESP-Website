@@ -1,4 +1,3 @@
-#!/sw/bin/python
 #!/usr/bin/python
 
 path_to_esp = '/esp/web/esp.mit.edu/'

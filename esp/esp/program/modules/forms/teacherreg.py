@@ -30,13 +30,14 @@ Email: web@esp.mit.edu
 """
 
 from django import forms
-from esp.forms import SizedCharField, BlankSelectWidget, SplitDateWidget, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit
 from esp.program.models import ClassCategories, ClassSubject, ClassSection
 from esp.cal.models import Event
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class TeacherClassRegForm(FormWithRequiredCss):
     location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Comments to Director' below."),
@@ -175,7 +176,20 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     
     def _slot_is_taken(self, anchor):
         """ Determine whether an interview slot is taken. """
-        return self.module.bitsBySlot(anchor).exclude(user=self.user).count() > 0
+        return self.module.bitsBySlot(anchor).count() > 0
+
+    def _slot_is_mine(self, anchor):
+        """ Determine whether an interview slot is taken by you. """
+        return self.module.bitsBySlot(anchor).filter(user=self.user).count() > 0
+
+    def _slot_too_late(self, anchor):
+        """ Determine whether it is too late to register for a time slot. """
+        # Don't allow signing up for a spot less than 3 days in advance
+        return Event.objects.get(anchor=anchor).start - datetime.now() < timedelta(days=3)
+
+    def _slot_is_available(self, anchor):
+        """ Determine whether a time slot is available. """
+        return self._slot_is_mine(anchor) or (not self._slot_is_taken(anchor) and not self._slot_too_late(anchor))
     
     def _get_datatree(self, id):
         """ Given an ID, get the datatree node with that ID. """
@@ -191,7 +205,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         
         interview_times = module.getTimes('interview')
         if interview_times.count() > 0:
-            self.fields['interview'].choices = [ (x.anchor.id, x.description) for x in interview_times if not self._slot_is_taken(x.anchor) ]
+            self.fields['interview'].choices = [ (x.anchor.id, x.description) for x in interview_times if self._slot_is_available(x.anchor) ]
         else:
             self.fields['interview'].widget = forms.HiddenInput()
         
@@ -206,7 +220,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         if not data:
             return data
         data = self._get_datatree( data )
-        if self._slot_is_taken(data):
+        if not self._slot_is_available(data):
             raise forms.ValidationError('That time is taken; please select a different one.')
         return data
     

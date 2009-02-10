@@ -33,6 +33,7 @@ from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
 from django.db.models.query import Q
 from esp.miniblog.models import Entry
 from esp.datatree.models import GetNode
@@ -133,6 +134,14 @@ class TeacherEventsModule(ProgramModuleObj):
                 # Register for interview
                 if data['interview']:
                     ub, created = UserBit.objects.get_or_create( user=request.user, qsc=data['interview'], verb=self.reg_verb, defaults={'recursive':False} )
+                    # Send the directors an e-mail
+                    if self.program.director_email and (created or ub.enddate is not None):
+                        event_names = ' '.join([x.description for x in data['interview'].event_set.all()])
+                        send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_names, \
+                              """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
+                              (self.user.first_name, self.user.last_name, event_names) , \
+                              ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
+                              [self.program.director_email], True)
                     if not created:
                         ub.enddate = None
                         ub.save()

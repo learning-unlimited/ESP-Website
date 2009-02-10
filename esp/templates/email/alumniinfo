@@ -1,3 +1,4 @@
+{% autoescape off %}
 An alumni filled a form out on the ESP web site:
 
 {% if contact_form.cleaned_data.alt_user %}
@@ -30,4 +31,4 @@ Involvement in ESP programs/activities:
 -----------
 End of form
 
-
+{% endautoescape %}

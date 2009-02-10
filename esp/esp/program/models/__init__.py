@@ -930,6 +930,8 @@ class RegistrationProfile(models.Model):
 
     @staticmethod
     def getLastProfile(user):
+        if not isinstance(user, ESPUser):
+            user = ESPUser(user)
         regProf = user.cache['getLastProfile']
         if regProf is not None:
             return regProf

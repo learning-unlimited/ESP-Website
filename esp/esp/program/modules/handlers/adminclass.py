@@ -172,11 +172,11 @@ class AdminClass(ProgramModuleObj):
                 except ValueError:
                     usernames.append( id.strip() )
                     
-            Q_Users = Q()
-            if usernames != []:
+            Q_Users = Q(id=-1) # in case usernames and ids are both empty
+            if usernames:
                 Q_Users |= Q(username__in = usernames)
 
-            if ids != []:
+            if ids:
                 Q_Users |= Q(id__in = ids)
                     
             users = User.objects.filter( Q_Users )
@@ -270,14 +270,11 @@ class AdminClass(ProgramModuleObj):
         sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in sections]
         
         if request.method == 'POST':
-            data = request.POST.copy()
-            #   assert False, data
-            
-            cls_form.data = data
+            cls_form.data = request.POST
             cls_form.is_bound = True
             valid = cls_form.is_valid()
             for sf in sec_forms:
-                sf.data = data
+                sf.data = request.POST
                 sf.is_bound = True
                 valid = (valid and sf.is_valid())
             

@@ -76,7 +76,7 @@ class ResourceModule(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'timeslot_delete.html', request, (prog, tl), context)
             
             if request.method == 'POST':
-                data = request.POST.copy()
+                data = request.POST
                 
                 if data['command'] == 'reallyremove':
                     #   delete timeslot
@@ -110,7 +110,7 @@ class ResourceModule(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'restype_delete.html', request, (prog, tl), context)
                 
             if request.method == 'POST':
-                data = request.POST.copy()
+                data = request.POST
                 
                 if data['command'] == 'reallyremove':
                     #   delete restype
@@ -145,7 +145,7 @@ class ResourceModule(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'classroom_delete.html', request, (prog, tl), context)
                 
             if request.method == 'POST':
-                data = request.POST.copy()
+                data = request.POST
                 self.program.clear_classroom_cache()
                 
                 if data['command'] == 'reallyremove':
@@ -175,7 +175,7 @@ class ResourceModule(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'equipment_delete.html', request, (prog, tl), context)
                 
             if request.method == 'POST':
-                data = request.POST.copy()
+                data = request.POST
                 
                 if data['command'] == 'reallyremove':
                     #   delete this resource for all time blocks within the program

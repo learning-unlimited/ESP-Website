@@ -534,15 +534,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # datatree maintenance
                 if newclass_isnew:
                     newclass.parent_program = self.program
-                    newclass.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-
-                    newclass.anchor.save(old_save=True)
-                    newclass.enrollment = 0
+                    newclass.anchor = self.program.classes_node()
                     newclass.save()
-                    newclass.anchor.delete(True)
                 
                     nodestring = newclass.category.category[:1].upper() + str(newclass.id)
-                    newclass.anchor = self.program.classes_node().tree_create([nodestring])
+                    newclass.anchor = newclass.anchor.tree_create([nodestring])
                     newclass.anchor.tree_create(['TeacherEmail'])
                     
                 newclass.anchor.friendly_name = newclass.title
@@ -702,11 +698,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data = newclass.__dict__
                 # Duration can end up with rounding errors. Pick the closest.
                 old_delta = None
+                current_duration = current_data['duration'] or 0
                 for k, v in self.getDurations() + [(0,'')]:
                     new_delta = abs( k - current_data['duration'] )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
-                        current_data['duration'] = k
+                        current_duration = k
+                current_data['duration'] = current_duration
                 current_data['category'] = newclass.category.id
                 current_data['num_sections'] = newclass.sections.count()
                 current_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]

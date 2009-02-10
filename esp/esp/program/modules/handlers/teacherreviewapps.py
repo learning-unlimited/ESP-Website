@@ -113,7 +113,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
                     question_list.append(q)
         
         if request.method == 'POST':
-            data = request.POST.copy()
+            data = request.POST
             for q in question_list:
                 form = q.get_form(data)
                 if form.is_valid():
@@ -171,8 +171,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
             student.app.reviews.add(this_review)
 
         if request.method == 'POST':
-            data = request.POST.copy()
-            form = this_review.get_form(data)
+            form = this_review.get_form(request.POST)
             if form.is_valid():
                 form.target.update(form)
         else:

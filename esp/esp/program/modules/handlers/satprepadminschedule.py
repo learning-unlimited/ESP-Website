@@ -73,7 +73,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
         
         if request.method == 'POST':
             #   Receive the data and create a series of rooms in the specified timeslot.
-            data = request.POST.copy()
+            data = request.POST
             timeslot_id = int(data.get('timeslot'))
             empty_rooms = data.get('empty_rooms')
             rooms = data.get('rooms')
@@ -474,7 +474,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
         dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
         dummy_anchor.save()
         
-        data = request.POST.copy()
+        data = request.POST
         
         #   Pull the timeslots from the multiselect field on the form.
         timeslots = []

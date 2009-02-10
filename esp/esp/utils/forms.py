@@ -37,6 +37,36 @@ from django.utils.html import escape, mark_safe
 from esp.utils.widgets import CaptchaWidget
 
 
+class SizedCharField(forms.CharField):
+    """ Just like CharField, but you can set the width of the text widget. """
+    def __init__(self, length=None, *args, **kwargs):
+        forms.CharField.__init__(self, *args, **kwargs)
+        self.widget.attrs['size'] = length
+
+#### NOTE: Python super() does weird things (it's the next in the MRO, not a superclass).
+#### DO NOT OMIT IT if overriding __init__() when subclassing these forms
+
+class FormWithRequiredCss(forms.Form):
+    """ Form that adds the "required" class to every required widget, to restore oldforms behavior. """
+    def __init__(self, *args, **kwargs):
+        super(FormWithRequiredCss, self).__init__(*args, **kwargs)
+        for field in self.fields.itervalues():
+            if field.required:
+                field.widget.attrs['class'] = 'required'
+
+class FormUnrestrictedOtherUser(FormWithRequiredCss):
+    """ Form that implements makeRequired for the old form --- disables required fields at in some cases. """
+
+    def __init__(self, user=None, *args, **kwargs):
+        super(FormUnrestrictedOtherUser, self).__init__(*args, **kwargs)
+        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+            pass
+        else:
+            for field in self.fields.itervalues():
+                if field.required:
+                    field.required = False
+                    field.widget.attrs['class'] = None # GAH!
+
 class CaptchaField(Field):
     """ A Captcha form element which evaluates to True or raises a validation
     error depending on whether the user entered the correct text. """

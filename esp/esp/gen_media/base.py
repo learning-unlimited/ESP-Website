@@ -58,7 +58,7 @@ class GenMediaBase(object):
             # Make directory if it doesn't exist
             save_dir = os.path.dirname(self.local_path)
             if not os.path.exists(save_dir):
-                os.mkdir(save_dir)
+                os.makedirs(save_dir)
             # Generate the file
             self._generate_file()
     
@@ -105,6 +105,7 @@ class GenImageBase(GenMediaBase):
     def img(self):
         """ An image tag, ready to be inserted into HTML. """
         from django.forms.util import flatatt
-        return '<img src="%s"%s />' \
-                % (self.url, flatatt(self._attrs()))
+        from django.utils.safestring import mark_safe
+        return mark_safe('<img src="%s"%s />' \
+                % (self.url, flatatt(self._attrs())))
 
