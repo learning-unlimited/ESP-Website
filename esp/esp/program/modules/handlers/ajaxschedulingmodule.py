@@ -77,13 +77,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_sections(self, request, tl, one, two, module, extra, prog):
-        sections = prog.sections()
+        sections = prog.sections().select_related('category')
 
         rrequests = ResourceRequest.objects.filter(target__in = sections)
 
         rrequest_dict = defaultdict(list)
         for r in rrequests:
-            rrequest_dict[r.target_id].append(r)
+            rrequest_dict[r.target_id].append(r.id)
 
 
         teacher_bits = UserBit.objects.filter(verb=GetNode('V/Flags/Registration/Teacher'), qsc__in = [s.anchor_id for s in sections], user__isnull=False).distinct()
@@ -95,13 +95,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
         sections_dicts = [
             {   'id': s.id,
                 'text': s.title,
-                'category': s.category,
-                'length': s.duration,
+                'category': s.category.category,
+                'length': float(s.duration),
                 'teachers':  list( teacher_dict[s.anchor_id] ),
                 'resource_requests': rrequest_dict[s.id]
             } for s in sections ]
 
-        response = HttpResponse(content_type="text/html")
+        response = HttpResponse(content_type="text/x-json")
         simplejson.dump(sections_dicts, response)
         return response
 
