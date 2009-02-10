@@ -36,6 +36,7 @@ from esp.program.models import ClassSubject, ClassSection, Program
 from esp.users.models import UserBit, ESPUser, shirt_sizes, shirt_types
 from django.contrib.auth.models import User
 from django.core.cache import cache
+import math
 
 class KeyDoesNotExist(Exception):
     pass
@@ -146,6 +147,12 @@ class AdminVitals(ProgramModuleObj):
         context['shirt_sizes'] = adminvitals_shirt['shirt_sizes']
         context['shirt_types'] = adminvitals_shirt['shirt_types']
         context['shirts'] = adminvitals_shirt['shirts']
+
+        shours = 0
+        for section in self.program.sections():
+            shours += math.ceil(section.parent_class.duration)*section.parent_class.class_size_max
+        
+        context['classpersonhours'] = shours
         
         return context
     
