@@ -581,7 +581,7 @@ class Program(models.Model):
         return retVal
 
     def sections(self, use_cache=True):
-        return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id')
+        return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')
