@@ -1107,7 +1107,7 @@ class ClassSubject(models.Model):
 
         The ``emailcode`` is defined as 'first letter of category' + id.
         """
-        return self.category.category[0].upper()+str(self.id)
+        return self.category.symbol+str(self.id)
 
     def url(self):
         str_array = self.anchor.tree_encode()

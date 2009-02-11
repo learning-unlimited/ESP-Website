@@ -537,7 +537,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     newclass.anchor = self.program.classes_node()
                     newclass.save()
                 
-                    nodestring = newclass.category.category[:1].upper() + str(newclass.id)
+                    nodestring = newclass.category.symbol + str(newclass.id)
                     newclass.anchor = newclass.anchor.tree_create([nodestring])
                     newclass.anchor.tree_create(['TeacherEmail'])
                     
@@ -617,7 +617,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                             section.anchor.delete(True)
                             
                             # set up the class's actual location on the data tree
-                            nodestring = section.category.category[:1].upper() + str(section.id)
+                            nodestring = section.category.symbol + str(section.id)
                             section.anchor = subprogram.classes_node().tree_create([nodestring])
                             section.anchor.tree_create(['TeacherEmail'])
                             section.anchor.friendly_name = section.title
