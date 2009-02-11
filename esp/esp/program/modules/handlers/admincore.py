@@ -114,27 +114,13 @@ class AdminCore(ProgramModuleObj, CoreModule):
         """ View for controlling program deadlines (V/Deadline/Registration/*) """
         deadline_verb = GetNode("V/Deadline/Registration")
         
-        def add_tree_nodes_to_list(node):
-            retVal = []
-
-            for i in node.children():
-                retVal.append(i)
-                retVal += add_tree_nodes_to_list(i)
-
-            return retVal
-
         def try_else(fn1, fn2):
             try:
                 return fn1()
             except:
                 return fn2()
 
-        def mux_bit_to_dict(bit):
-            return { 'startdate': bit.startdate, 'enddate': bit.enddate, 'recursive': bit.recursive }
-
-        from django import forms
-        
-        nodes = add_tree_nodes_to_list(deadline_verb)
+        nodes = deadline_verb.descendants().exclude(id = deadline_verb.id)
 
         saved_successfully = "not_saving"
         
