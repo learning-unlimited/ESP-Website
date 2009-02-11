@@ -39,6 +39,7 @@ from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserBit
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest
+from esp.datatree.models         import DataTree
 from datetime                    import timedelta
 from django.utils                import simplejson
 from collections                 import defaultdict
@@ -86,18 +87,18 @@ class AJAXSchedulingModule(ProgramModuleObj):
             rrequest_dict[r.target_id].append(r.id)
 
 
-        teacher_bits = UserBit.objects.filter(verb=GetNode('V/Flags/Registration/Teacher'), qsc__in = [s.anchor_id for s in sections], user__isnull=False).distinct()
+        teacher_bits = UserBit.objects.filter(verb=GetNode('V/Flags/Registration/Teacher'), qsc__in = (s.parent_class.anchor_id for s in sections), user__isnull=False).values("qsc_id", "user_id").distinct()
 
-        teacher_dict = defaultdict(set)
+        teacher_dict = defaultdict(list)
         for b in teacher_bits:
-            teacher_dict[b.qsc_id].add(b.user_id)
-        
+            teacher_dict[b["qsc_id"]].append(b["user_id"])
+
         sections_dicts = [
             {   'id': s.id,
                 'text': s.title,
                 'category': s.category.category,
                 'length': float(s.duration),
-                'teachers':  list( teacher_dict[s.anchor_id] ),
+                'teachers': teacher_dict[s.anchor_id],
                 'resource_requests': rrequest_dict[s.id]
             } for s in sections ]
 
