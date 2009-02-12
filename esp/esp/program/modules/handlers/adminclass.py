@@ -105,7 +105,7 @@ class AdminClass(ProgramModuleObj):
         
     def prepare(self, context=None):
         if context is None: context = {}
-        classes = self.getClasses()
+        classes = self.getClasses().order_by('id')
         context['noclasses'] = (len(classes) == 0)
         context['classes']   = classes
         return context
