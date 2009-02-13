@@ -52,6 +52,7 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
 from esp.utils.property import PropertyDict
+from esp.middleware              import ESPError
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
@@ -1137,6 +1138,11 @@ class ClassSubject(models.Model):
         from esp.qsdmedia.models import Media
         
         anchor = self.anchor
+        # SQL's cascading delete thing is sketchy --- if the anchor's corrupt,
+        # we want webmin manual intervention
+        if anchor and not anchor.name.endswith(str(self.id)):
+            raise ESPError("Tried to delete class %d with corrupt anchor." % self.id)
+
         if self.num_students() > 0 and not adminoverride:
             return False
         
