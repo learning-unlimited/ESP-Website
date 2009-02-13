@@ -40,7 +40,7 @@ from esp.cal.models import Event
 from datetime import datetime, timedelta
 
 class TeacherClassRegForm(FormWithRequiredCss):
-    location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Comments to Director' below."),
+    location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Message for Directors' below."),
                             (False, "I would like a classroom to be provided for my class.")]
     lateness_choices = [    (True, "Students may join this class up to 20 minutes after the official start time."),
                             (False, "My class is not suited to late additions.")]                                
@@ -70,11 +70,11 @@ class TeacherClassRegForm(FormWithRequiredCss):
     
     global_resources = forms.MultipleChoiceField( label='Equipment and Classroom Options',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False,
-                                                  help_text='Check all that apply. We can usually supply some common resources ("equipment/classroom options") at your request. But if your class is truly uncommon, Splash may also have access to unusual rooms and supplies. These can be entered in the second section, "special requests."' )
+                                                  help_text="Check all that apply. We can usually supply these common resources at your request. But if your class is truly uncommon, ESP may also have access to unusual rooms and supplies. These can be entered in the next section, 'Special Requests.'" )
     resources        = forms.MultipleChoiceField( label='Other Resources',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False )
     requested_special_resources = forms.CharField( label='Special Requests', widget=forms.Textarea(), required=False,
-                                                   help_text='Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the comments to the directors box! ' )
+                                                   help_text="Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the 'Message for Directors' box! " )
     
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
