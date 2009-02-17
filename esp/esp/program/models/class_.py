@@ -905,7 +905,7 @@ class ClassSection(models.Model):
     class Meta:
         db_table = 'program_classsection'
         app_label = 'program'
-        
+        ordering = ['anchor__name']
 
 
 class ClassSubject(models.Model):
