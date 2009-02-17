@@ -9,10 +9,10 @@
 <h1>Congratulations</h1>
 
 <p>
-Your profile has now been successfully completed.
+Your profile has now been successfully completed.  Don't lose track of your username and password; you will need them to log into this site if you want to edit or confirm your registration later.
 </p>
 
-{% if userrole %}
+{% if userrole %}{% if progs %}
 <p>
 Continue on to:<br />
 {% for prog in progs %}
@@ -22,15 +22,15 @@ Continue on to:<br />
 <br />
 {% endfor %}
 
-{% endif %}
+{% endif %}{% endif %}
 <br />
 <br />
 </p>
 
 <div class="note">
-<strong>Note:</strong> Registering for an account <u>does not</u> register you for a program.<br />
-Please head over to our <a href="/teach/index.html" title="Teach a class!">Teach</a> or 
-<a href="/learn/index.html" title="Take a Class!">Learn</a> section to join a program.
+<strong>Note:</strong> You have registered an account, but you <u>have not</u> finished registering for a program!<br />
+Please click a link above (if available), or head over to our <a href="/teach/index.html" title="Teach a class!">Teach</a> or 
+<a href="/learn/index.html" title="Take a Class!">Learn</a> section, to join a program.
 </div>
 
 

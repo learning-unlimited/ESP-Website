@@ -13,30 +13,34 @@
 {% endblock %}
 
 {% block content %}
-<h1>Log back in to ESP</h1>
+<h1>Log in to ESP</h1>
 
-{% if next %}
+<br />
 
-<p>
-You need to log in before you can access <tt>{{ next }}</tt>.<br />
-Please log in below.
-</p>
-{% endif %}
+<div id="login_form">
+<table cellpadding="1" align="center">
+<thead>
+<tr><th><h2>Don't already have an account?</h2></th></tr>
+<tr><td><center><font size="+2"><a href="/myesp/register/">Click here</a> to create one</font><br />
+and start registering for classes!</center></td></tr>
+</thead>
+</table>
+</div>
 
+<br />
+<br />
 
 <div id="login_form">
 <form action="{{ request.action }}" method="post">
-<table cellpadding="2" align="center">
+<table cellpadding="1" align="center">
 <thead>
 <tr>
  <th colspan="2">Login</th>
 </tr>
 <tr>
  <td colspan="2">
-{% if form.username.errors %}
-   <div class="errors">
-     {{ form.username.errors|last }}
-   </div>
+{% if form.errors %}
+<p><font color="red">Your username and password didn't match. Please try again.</font></p>
 {% endif %}
 </thead>
 <tbody>
@@ -50,11 +54,6 @@ Please log in below.
 <tr>
  <th><label class="required" for="id_password">Password:</label></th>
  <td>
-   {% if form.password.errors %}
-   <ul class="errorlist">
-     {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
-   </ul>
-   {% endif %}
    {{ form.password }}
  </td>
 </tr>
@@ -69,7 +68,7 @@ Please log in below.
   <td colspan="2">
     <p>
       Forgot your password? Head on over to the <a href="/myesp/passwdrecover/"
-       title="Click for account recovery">Account Recovery Page</a>.
+       title="Click for password recovery">Password Recovery Page</a>.
     </p>
   </td>
 </tr>
@@ -88,7 +87,4 @@ document.getElementById('id_username').focus();
 </script>
 <br />
 
-<h2>
-  Don't already have an account?  <a href="/myesp/register/">Click here</a> to create one!
-</h2>
 {% endblock %}
