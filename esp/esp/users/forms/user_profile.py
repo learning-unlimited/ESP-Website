@@ -97,8 +97,9 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
-    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
-    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
+    heardofesp = forms.CharField(required=False)
+#    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
+#    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
 
     studentrep_error = True
 
