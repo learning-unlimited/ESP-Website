@@ -72,7 +72,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False )
     requested_special_resources = forms.CharField( label='Special Requests', widget=forms.Textarea(), required=False,
                                                    help_text='Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the comments to the directors box! ' )
-    
+
+    purchase_requests = forms.CharField( label='Planned Purchases', widget=forms.Textarea(), required=False,
+                                         help_text='If you plan to purchase anything for your class, please indicate here what you plan to purchase and how much it will cost.  Please talk with the program directors first before buying materials for your class!' )
+
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
     
