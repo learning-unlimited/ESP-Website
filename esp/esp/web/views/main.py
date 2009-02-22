@@ -140,7 +140,14 @@ def program(request, tl, one, two, module, extra = None):
 		prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
 	except Program.DoesNotExist:
 		raise Http404("Program not found.")
-        
+
+        setattr(request, "program", prog)
+        setattr(request, "tl", tl)
+        if extra:
+            setattr(request, "module", "%s/%s" % (module, extra))
+        else:
+            setattr(request, "module", module)
+            
 	from esp.program.modules.base import ProgramModuleObj
 	newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
 

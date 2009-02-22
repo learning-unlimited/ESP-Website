@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.contrib import admin
 
-from esp.dbmail.models import MessageVars, EmailList, PlainRedirect
+from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail
 
 
 class MessageVarsAdmin(admin.ModelAdmin):
@@ -46,3 +46,11 @@ class PlainRedirectAdmin(admin.ModelAdmin):
     list_display = ('original', 'destination')
     pass
 admin.site.register(PlainRedirect, PlainRedirectAdmin)
+
+class MessageRequestAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(MessageRequest, MessageRequestAdmin)
+
+class TextOfEmailAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(TextOfEmail, TextOfEmailAdmin)

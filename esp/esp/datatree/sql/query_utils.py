@@ -152,7 +152,7 @@ class QTree(Q):
         datatree_id = getattr(value, 'id', value)
 
         if not hasattr(where, 'children'):
-            where.children = []
+            return
         for child in where.children:
             # We go through each of the children, and look for the ones with:
             #  (i) At least 1 parameter.
@@ -165,7 +165,11 @@ class QTree(Q):
                 new_children.append(child)
                 continue
 
-            table_alias, name, db_type, lookup_type, value_annot, params = child
+            if len(child) == 6: # Django 1.0 data-structure format
+                table_alias, name, db_type, lookup_type, value_annot, params = child
+            else: # Django 1.1 data format
+                (table_alias, name, db_type), lookup_type, value_annot, params = child
+
             if params:
                 for i in range(len(COLUMNS)):
                     if child[1] == COLUMNS[i] and child[5][0] == TOKENS[i]:

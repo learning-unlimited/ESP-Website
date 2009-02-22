@@ -47,6 +47,8 @@ table.sortable thead {
    <th>Grade</th>
    <th>Parent's Cellphone</th>
    <th>ID</th>
+   <th>Shirt Size</th>
+   <th>Shirt Type</th>
 </tr>
 {% for student in students %}
 <tr>
@@ -57,6 +59,8 @@ table.sortable thead {
    <td>{{ student.getGrade }}</td>
    <td>{{ student.getLastProfile.contact_guardian.phone_cell }}&nbsp;</td>
    <td>{{ student.id }}</td>
+   <td>{{ student.getLastProfile.student_info.shirt_size }}</td>
+   <td>{{ student.getLastProfile.student_info.shirt_type }}</td>
 </tr>
  {% endfor %}
 </table>
