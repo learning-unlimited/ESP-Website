@@ -1,0 +1,41 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Manage Resources for {{ prog.niceName }}{% endblock %}
+
+{% block subsection_name %}Resource Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Resources for {{ prog.niceName }}</h1>
+
+<h2>Confirm Equipment Deletion</h2>
+
+<p>
+You have chosen to delete the equipment resource: {{ equipment }}, for {{ prog.niceName }}.  Please confirm this below.
+</p>
+
+<div id="program_form">
+<form method="post" action="{{ request.path }}">
+<input type="hidden" name="command" value="reallyremove" />
+<input type="hidden" name="id" value="{{ equipment.id }}" />
+<table align="center" width="550" cellpadding="4" cellspacing="0">
+    <tr><th colspan="2">
+        Information
+    </th></tr>
+    <tr><th class="small">Name:</th><td>{{ equipment.name }}</td></tr>
+    <tr><th class="small">Resource type:</th><td>{{ equipment.res_type }}</td></tr>
+    <tr><th class="small">Times Available:</th><td>{% for t in equipment.matching_times %}{{ t.short_description }}<br />{% endfor %}</td></tr>
+    <tr><th class="small">Options:</th>
+        <td align="center"><a href="/manage/{{ prog.getUrlBase }}/resources">Return to resource editor</a>, or click here:
+        <input class="fancybutton" value="Delete" type="submit" /></td>
+    </tr>
+</table>
+</form>
+</div>
+
+{% endblock %}

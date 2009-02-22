@@ -1,0 +1,56 @@
+{% ifequal open_section "classroom" %}
+<!-- Not in a dspcont div. The section below always shows -->
+<h2>Step 3: Classrooms</h2>
+<br />
+{% else %}
+<p class="dspsection">
+<a href="javascript:void(0)" class="dsphead" onclick="expand_disp(this)">
+   <span class="dspchar">+</span> <b>Step 3: Classrooms</b> (click to expand/contract)
+</a>
+
+<div class="dspcont">
+{% endifequal %}
+
+<p>Resources may be grouped or may remain floating.  For example, an LCD projector built into the classroom would be grouped with that classroom, whereas one of the projectors that we can carry around would not be grouped with anything.  When you create a classroom, please select the types of resources that it has built in.  These resources will be created and grouped with the classroom itself.</p>
+
+<div id="program_form">
+<form method="post" action="/manage/{{ prog.url }}/resources/classroom">
+<input type="hidden" name="command" value="addedit" />
+<table align="center" cellpadding="0" cellspacing="0" width="550">
+    <tr><th colspan="2">Classrooms for {{ prog.niceName }}</th></tr>
+    <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td class="underline"><b>Room</b></td>
+        <td class="underline"><b>Capacity</b></td>
+        <td class="underline"><b>Timeslots</b></td>
+        <td class="underline"><b>Furnishings</b></td>
+    </tr>
+    {% for c in prog.groupedClassrooms %}
+    <tr>
+        <td class="underline">
+            {{ c.name }}
+            <br />
+                <a href="/manage/{{ prog.url }}/resources/classroom?op=edit&id={{ c.id }}">[Edit]</a>
+                <a href="/manage/{{ prog.url }}/resources/classroom?op=delete&id={{ c.id }}">[Delete]</a>
+        </td>
+        <td class="underline">{{ c.num_students }}</td>
+        <td class="underline">{% for t in c.timegroup %}{{ t }}<br />{% endfor %}</td>
+        <td class="underline">{% for f in c.furnishings %}{{ f.res_type.name }}<br />{% endfor %}</td>
+    </tr>
+    {% endfor %}
+    </table></td></tr>
+    <tr><th colspan="2" class="small">Add a new classroom</th></tr>
+    {{ classroom_form }}
+    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Classroom" /></td></tr>
+</table>
+</form>
+</div>
+
+{% ifequal open_section "classroom" %}
+<!-- Not in a dspcont div. -->
+{% else %}
+</div>
+</p>
+{% endifequal %}
+
+<br />
