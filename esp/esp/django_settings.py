@@ -137,6 +137,7 @@ MIDDLEWARE_GLOBAL = [
     (1200, 'django.middleware.gzip.GZipMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
+    (1500, 'django.middleware.transaction.TransactionMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
