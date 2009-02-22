@@ -74,7 +74,14 @@ class TeacherClassRegForm(FormWithRequiredCss):
     resources        = forms.MultipleChoiceField( label='Other Resources',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False )
     requested_special_resources = forms.CharField( label='Special Requests', widget=forms.Textarea(), required=False,
+<<<<<<< Updated upstream:esp/esp/program/modules/forms/teacherreg.py
                                                    help_text="Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the 'Message for Directors' box! " )
+=======
+                                                   help_text='Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the comments to the directors box! ' )
+
+    purchase_requests = forms.CharField( label='Planned Purchases', widget=forms.Textarea(), required=False,
+                                         help_text='We give all teachers a $30 budget per class section for their classes; we can reimburse you if you turn in an itemized receipt with attached reimbursement form before the end of the program.  If you would like to exceed this budget, please type a budget proposal here stating what you would like to buy, what it will cost, and why you would like to purchase it.' )
+>>>>>>> Stashed changes:esp/esp/program/modules/forms/teacherreg.py
     
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
