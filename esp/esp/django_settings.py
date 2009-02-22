@@ -174,7 +174,7 @@ INSTALLED_APPS = (
     'esp.accounting_docs',
     'esp.shortterm',
 #    'django_evolution',
-    'django_command_extensions',
+#    'django_command_extensions',
 )
 
 
