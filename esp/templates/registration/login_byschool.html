@@ -82,14 +82,6 @@ function preparePage() {
 {% block content %}
 <h1>Register for Cascade!</h1>
 
-{% if next %}
-
-<p>
-You need to log in before you can access <tt>{{ next }}</tt>.<br />
-Please log in below.
-</p>
-{% endif %}
-
 
 <div id="login_form">
 <form id="login_form_form" action="{{ action }}" method="post">
