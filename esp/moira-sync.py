@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-path_to_esp = '/esp/web/esp.mit.edu/'
+path_to_esp = '/esp/web/mit/'
 
 # Generic setup code to be able to import esp stuff
 import sys

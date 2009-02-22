@@ -26,7 +26,7 @@ class ValidHostEmailField(forms.EmailField):
             DNS.DiscoverNameServers()
             if len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
                 raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
-        except (ImportError, IOError):
+        except (ImportError, IOError, DNS.DNSError):
             # (no PyDNS, no resolv.conf, no nameservers)
             pass
 
