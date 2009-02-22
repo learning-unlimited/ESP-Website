@@ -74,6 +74,7 @@
 <div id="program_form">
 <table>
 
+{% comment %} (removed, as students don't have t-shirt info anymore --rye 02-18-09)
 <tr><th colspan="{{ shirt_sizes|length|add:1 }}">Students registered for at least one class</th></tr>
 <tr>
     <td></td>
@@ -88,7 +89,7 @@
         <td>{{ count }}</td>
     {% endfor %}
 </tr>
-{% endfor %}
+{% endfor %}{% endcomment %}
 
 <tr><th colspan="{{ shirt_sizes|length|add:1 }}">Teachers teaching at least one class</th></tr>
 <tr>
