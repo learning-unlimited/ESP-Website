@@ -930,6 +930,8 @@ class ClassSubject(models.Model):
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
     requested_room = models.TextField(blank=True, null=True)
     session_count = models.IntegerField(default=1)
+
+    purchase_requests = models.TextField(blank=True, null=True)
     
     objects = ClassManager()
     checklist_progress_all_cached = checklist_progress_base('ClassSubject')
