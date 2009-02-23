@@ -4,6 +4,7 @@ from django import forms
 from django.contrib.auth.models import User
 from esp.users.models import PasswordRecoveryTicket
 from django.utils.html import conditional_escape
+from esp.utils.forms import FormWithRequiredCss, SizedCharField
 
 __all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
 
@@ -118,17 +119,10 @@ class NewPasswordSetForm(forms.Form):
             raise forms.ValidationError('Password and confirmation are not equal.')
         return new_passwd
 
-class UserPasswdForm(forms.Form):
-    password = forms.CharField(max_length=32, widget=forms.PasswordInput())
-    newpasswd = forms.CharField(max_length=32, widget=forms.PasswordInput())
-    newpasswdconfirm = forms.CharField(max_length=32, widget=forms.PasswordInput())
-
-    def __init__(self, *args, **kwargs):
-        for k,v in self.base_fields.items():
-            if v.required:
-                v.widget.attrs['class'] = 'required'
-            v.widget.attrs['size'] = 12
-        forms.Form.__init__(self, *args, **kwargs)
+class UserPasswdForm(FormWithRequiredCss):
+    password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
+    newpasswd = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
+    newpasswdconfirm = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
 
     def clean_newpasswdconfirm(self):
         new_passwd = self.cleaned_data['newpasswdconfirm'].strip()
