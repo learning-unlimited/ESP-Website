@@ -3,7 +3,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from esp.users.models import PasswordRecoveryTicket
-from django.utils.html import conditional_escape
+from django.utils.html import conditional_escape, mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
 
 __all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
@@ -123,6 +123,18 @@ class UserPasswdForm(FormWithRequiredCss):
     password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
     newpasswd = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
     newpasswdconfirm = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super(UserPasswdForm, self).__init__(*args, **kwargs)
+
+    def clean_password(self):
+        if self.user is None:
+            raise forms.ValidationError('Error: Not logged in.')
+        current_passwd = self.cleaned_data['password']
+        if not self.user.check_password(current_passwd):
+            raise forms.ValidationError(mark_safe('As a security measure, please enter your <strong>current</strong> password.'))
+        return current_passwd
 
     def clean_newpasswdconfirm(self):
         new_passwd = self.cleaned_data['newpasswdconfirm'].strip()
