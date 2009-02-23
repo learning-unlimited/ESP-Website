@@ -2,6 +2,8 @@
 from django import forms
 from django.contrib.auth.models import User
 
+from esp.utils.forms import CaptchaForm
+
 role_choices = (
     ('Student', 'Student (up through 12th grade)'),
     ('Teacher', 'Volunteer Teacher'),
@@ -79,6 +81,6 @@ class UserRegForm(forms.Form):
         return self.cleaned_data['confirm_password']
 
 
-class EmailUserForm(forms.Form):
+class EmailUserForm(CaptchaForm):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
 
