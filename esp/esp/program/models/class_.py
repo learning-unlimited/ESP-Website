@@ -1149,7 +1149,7 @@ class ClassSubject(models.Model):
 
         for sec in self.sections.all():
             sec.delete()
-        self.sections.clear()
+
         
         #   Remove indirect dependencies
         Media.objects.filter(QTree(anchor__below=self.anchor)).delete()
