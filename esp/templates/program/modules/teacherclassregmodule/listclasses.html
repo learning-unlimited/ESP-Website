@@ -39,19 +39,9 @@ If you have any questions regarding the program, <br /> please email the
        Manage Your Classes
     </th>
   </tr>
-  {% if teacherclsmodule.noclasses %}
-  <tr>
-    <td class="clsleft classname">
-      <em>(None available)</em>
-    </td>
-    <td> &nbsp; </td>
-    <td> &nbsp; </td>
-    <td> &nbsp; </td>
-   </tr>
-  {% endif %}
-
-  <tr>
+  {% if not teacherclsmodule.noclasses %}
     <td colspan="6">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; e-mail the directors if you believe there is a problem with your time or room assignment.  Also, e-mail the directors immediately if you need to cancel a class.</td>
+  {% endif %}
    </tr>
   {% for cls in teacherclsmodule.clslist %}
   <tr>
@@ -141,10 +131,8 @@ If you have any questions regarding the program, <br /> please email the
    {% if module.deadline_met %}
    <tr>
    <td colspan="4">
-It's past the deadline to add new classes for Splash! 2008, so we can't necessarily accommodate classes
-submitted after September 1st, but we'll try. Click
-     <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
- here </a> to submit a new class, and we'll let you know right away whether we can accommodate it.
+
+<font size="+1">Click <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">here</a> to submit a class for {{ program.niceName }}</font>
 <!--       Add a new class for {{ program.niceName }}! -->
      </a>
    </td>

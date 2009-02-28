@@ -39,7 +39,12 @@
     font-style: italic !important;
     color: #c00 !important;
 }
-#divmaintext form table label {
+#divmaintext form table {
+    cursor: pointer;
+    color: #000000;
+}
+
+#divmaintext label {
     cursor: pointer;
     color: #FFFFFF;
 }
@@ -173,7 +178,7 @@
     border: none;
     font-weight: normal;
     font-style: normal;
-    color: black;
+    color: white;
     font-size: 12px;
 }
 
@@ -185,8 +190,8 @@
    font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-weight: bold;
-   background-color: #c6def7;
-   color: #000;
+   //background-color: #c6def7;
+   color: #FFF;
     text-align: center;
 }
 
@@ -194,8 +199,8 @@
    font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-size: 0.9em;
-   background-color: #ffffff;
-   color: #000000;
+   //background-color: #ffffff;
+   //color: #000000;
    text-align: left;
    vertical-align: top;
 }

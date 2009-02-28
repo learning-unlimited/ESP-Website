@@ -63,21 +63,21 @@ class TeacherClassRegForm(FormWithRequiredCss):
     
     has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect() )
     requested_room = forms.CharField(   label='Room Request', required=False,
-                                        help_text='If you have a specific room or type of room in mind, name a room at MIT that would be ideal for you.' )
+                                        help_text='If you have a specific room or type of room in mind, name a room in Harper, Stuart, Wieboldt, Classics or Social Sciences that would be ideal for you.' )
     
-    global_resources = forms.MultipleChoiceField( label='Equipment and Classroom Options',
+    global_resources = forms.MultipleChoiceField( label='Equipment',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False,
-                                                  help_text='Check all that apply. We can usually supply some common resources ("equipment/classroom options") at your request. But if your class is truly uncommon, Splash may also have access to unusual rooms and supplies. These can be entered in the second section, "special requests."' )
-    resources        = forms.MultipleChoiceField( label='Other Resources',
+                                                  help_text="Check the box next to any basic resources you need for your class, and then list any other resources you need in the text box below.")
+    resources        = forms.MultipleChoiceField( label='Basic Resources',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False )
     requested_special_resources = forms.CharField( label='Special Requests', widget=forms.Textarea(), required=False,
-                                                   help_text='Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the comments to the directors box! ' )
+                                                   help_text="Write in any special resources you need, like a piano, a dalmatian puppy, or a kitchen. Please be as specific as possible. We will probably be able to accommodate your requests, but we need to know what they are before we can guarantee anything." )
 
     purchase_requests = forms.CharField( label='Planned Purchases', widget=forms.Textarea(), required=False,
                                          help_text='If you plan to purchase anything for your class, please indicate here what you plan to purchase and how much it will cost.  Please talk with the program directors first before buying materials for your class!' )
 
-    message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
-                                                   help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
+    message_for_directors       = forms.CharField( label='Other Notes', widget=forms.Textarea(), required=False,
+                                                   help_text='' )
     
     
     def __init__(self, module, *args, **kwargs):
@@ -88,7 +88,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
         section_numbers = range( 1, prog.getTimeSlots().count()+1 )
         section_numbers = zip(section_numbers, section_numbers)
         
-        class_sizes = module.getClassSizes()
+        #class_sizes = module.getClassSizes()
+        class_sizes = range(4,25)
         class_sizes = zip(class_sizes, class_sizes)
         
         class_grades = module.getClassGrades()
