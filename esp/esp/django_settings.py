@@ -180,7 +180,7 @@ INSTALLED_APPS = (
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
-SESSION_ENGINE="django.contrib.sessions.backends.cache"
+#SESSION_ENGINE="django.contrib.sessions.backends.cache"
 
 TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
                                'esp.context_processors.esp_user',
