@@ -587,6 +587,7 @@ class ProgramPrintables(ProgramModuleObj):
             classes.sort()            
             for cls in classes:
                 scheditems.append({'name': teacher.name(),
+                                   'teacherid': teacher.id,
                                    'cls' : cls})
 
         context['scheditems'] = scheditems
