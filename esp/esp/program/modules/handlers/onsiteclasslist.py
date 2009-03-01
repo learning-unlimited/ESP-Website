@@ -61,16 +61,15 @@ class OnSiteClassList(ProgramModuleObj):
             else:
                 context[key_option] = defaults[key_option]
 
-        classes = self.program.sections().filter(status=10, parent_class__status=10).order_by('parent_class__category', 'meeting_times')
-
         time_now = datetime.now()
-        window_start = time_now + timedelta(-1, -85800)
-        window_end = time_now + timedelta(0, 3000)
-        curtime = Event.objects.filter(start__gte=window_start, start__lte=window_end)
+        window_start = time_now + timedelta(-1, 85800)
+        curtime = Event.objects.filter(start__gte=window_start).order_by('start')
         if curtime:
             curtime = curtime[0]
+            classes = self.program.sections().filter(parent_class__status=10, meeting_times=curtime).order_by('parent_class__category', 'meeting_times')
         else:
             curtime = None
+            classes = []
         
         context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
         
