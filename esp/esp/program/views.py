@@ -98,23 +98,6 @@ def classTemplateEditor(request, program, session):
                                                             'have_create': have_create })
 
 @login_required
-def managepage(request, page):
-    if page == 'programs':
-        return manage_programs(request)
-
-    if page == 'newprogram':
-        return newprogram(request)
-        
-    if page == 'submit_transaction':
-        return submit_transaction(request)
-
-    #   QSD management
-    if page == 'pages':
-        return manage_pages(request)
-
-    raise Http404
-
-@login_required
 def manage_programs(request):
     if not request.user.isAdmin():
         raise Http404
