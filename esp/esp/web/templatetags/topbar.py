@@ -154,7 +154,7 @@ sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/i
             'archivesresources': ('archives',   'ESP Archives',        '/archives/index.html',   ['takeaclass','getinvolved','volunteertoteach'], True),
             'myesp'            : ('myesp',      'myESP',               '/myesp/home/',           ['takeaclass','getinvolved','volunteertoteach'], True),
             'contactinfo'      : ('about',      'Contact Us!',         '/about/contact.html',    [], False),
-            'admin'            : ('admin',      'Admin Section',       '/myesp/admin/',          [], False),
+            'admin'            : ('admin',      'Admin Section',       '/manage/programs/',          [], False),
             'onsite'           : ('onsite',     'Onsite Registration', '/myesp/onsite/',         [], False)}
 
 
