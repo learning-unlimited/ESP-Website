@@ -864,6 +864,11 @@ class TeacherInfo(models.Model):
     bio = models.TextField(blank=True, null=True)
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    
+    full_legal_name = models.CharField(max_length=128, blank=True, null=True)
+    university_email = models.EmailField(blank=True, null=True)
+    student_id = models.CharField(max_length=128, blank=True, null=True)
+    mail_reimbursement = models.NullBooleanField(blank=True, null=True)
 
     class Meta:
         app_label = 'users'
@@ -894,11 +899,15 @@ class TeacherInfo(models.Model):
         return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
-        form_dict['graduation_year'] = self.graduation_year
-        form_dict['school']          = self.college
-        form_dict['major']           = self.major
-        form_dict['shirt_size']      = self.shirt_size
-        form_dict['shirt_type']      = self.shirt_type
+        form_dict['graduation_year']    = self.graduation_year
+        form_dict['school']             = self.college
+        form_dict['major']              = self.major
+        form_dict['shirt_size']         = self.shirt_size
+        form_dict['shirt_type']         = self.shirt_type
+        form_dict['full_legal_name']    = self.full_legal_name
+        form_dict['university_email']   = self.university_email
+        form_dict['student_id']         = self.student_id
+        form_dict['mail_reimbursement'] = self.mail_reimbursement
         return form_dict
 
     @staticmethod
@@ -909,11 +918,15 @@ class TeacherInfo(models.Model):
             teacherInfo.user = curUser
         else:
             teacherInfo = regProfile.teacher_info
-        teacherInfo.graduation_year = new_data['graduation_year']
-        teacherInfo.college         = new_data['school']
-        teacherInfo.major           = new_data['major']
-        teacherInfo.shirt_size      = new_data['shirt_size']
-        teacherInfo.shirt_type      = new_data['shirt_type']
+        teacherInfo.graduation_year    = new_data['graduation_year']
+        teacherInfo.college            = new_data['school']
+        teacherInfo.major              = new_data['major']
+        teacherInfo.shirt_size         = new_data['shirt_size']
+        teacherInfo.shirt_type         = new_data['shirt_type']
+        teacherInfo.full_legal_name    = new_data['full_legal_name']
+        teacherInfo.university_email   = new_data['university_email']
+        teacherInfo.student_id         = new_data['student_id']
+        teacherInfo.mail_reimbursement = new_data['mail_reimbursement']
         teacherInfo.save()
         return teacherInfo
 

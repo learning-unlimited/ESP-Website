@@ -37,6 +37,45 @@
  </td>
 </tr>
 
+<tr>
+ <td colspan="2"><div class="info">
+ <b>If you plan to request reimbursements</b> for class supplies, we also need to know the following. If you are not comfortable sending this information through a web form, please contact us by e-mail or phone.
+ </div></td>
+</tr>
+
+<tr>
+ <td><label for="id_full_legal_name">Full legal name:</label></td>
+ <td>{{ form.full_legal_name }} {% if form.full_legal_name.errors %}
+   <br /><span class="form_error">{{ form.full_legal_name.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_university_email">University e-mail address:</label></td>
+ <td>{{ form.university_email }} {% if form.university_email.errors %}
+   <br /><span class="form_error">{{ form.university_email.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_student_id">Student ID number:</label></td>
+ <td>{{ form.student_id }} {% if form.student_id.errors %}
+   <br /><span class="form_error">{{ form.student_id.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_mail_reimbursement">For reimbursement checks:</label></td>
+ <td>{{ form.mail_reimbursement }} {% if form.mail_reimbursement.errors %}
+   <br /><span class="form_error">{{ form.mail_reimbursement.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
 <!-- <tr>
  <td colspan="2"><p>
     <div class="info"><b>Shirts for teachers!</b> If you teach for ESP, you're entitled to at least a free T-shirt (along with all of the free food).  If you would like a shirt, please enter your preferred size and shape below.  This information is optional.

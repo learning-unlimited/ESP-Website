@@ -136,12 +136,19 @@ class TeacherInfoForm(FormWithRequiredCss):
     """ Extra teacher-specific information """
 
     from esp.users.models import shirt_sizes, shirt_types
-
+    reimbursement_choices = [(False, 'I will pick up my reimbursement in RC 001.'),
+                             (True,  'Please mail me my reimbursement.')]
+    
     graduation_year = forms.IntegerField(required=False)
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
+    # Reimbursement-related fields...
+    full_legal_name = SizedCharField(length=24, max_length=128, required=False)
+    university_email = forms.EmailField(required=False)
+    student_id = SizedCharField(length=24, max_length=128, required=False)
+    mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 
 TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
 TeacherInfoForm.base_fields['graduation_year'].widget.attrs['maxlength'] = 4
