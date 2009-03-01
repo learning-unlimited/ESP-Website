@@ -313,13 +313,14 @@ def manage_pages(request):
             return render_to_response('qsd/move.html', request, DataTree.get_by_uri('Q/Web'), {'qsd': qsd, 'form': form})
             
     #   Show QSD listing 
-    qsd_list = []
-    qsds = QuasiStaticData.objects.all().order_by('-create_date')
-    url_list = []
+    qsd_ids = []
+    qsds = QuasiStaticData.objects.all().order_by('-create_date').values_list('id', 'path', 'name')
+    dup_detect = {}
     for qsd in qsds:
-        url = qsd.url()
-        if url not in url_list:
-            qsd_list.append(qsd)
-            url_list.append(url)
+        key = qsd[1], qsd[2]
+        if not dup_detect.has_key(key):
+            qsd_ids.append(qsd[0])
+            dup_detect[key] = qsd
+    qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
     qsd_list.sort(key=lambda q: q.url())
     return render_to_response('qsd/list.html', request, DataTree.get_by_uri('Q/Web'), {'qsd_list': qsd_list})
