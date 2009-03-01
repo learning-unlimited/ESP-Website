@@ -17,6 +17,21 @@
 <h1>Checkin &mdash; For &quot;{{module.student.name}}&quot;</h1>
 
 <p style="text-align: center">
+Welcome to student check-in for {{module.student.name}}.  Make sure that the student has:
+<ul>
+<li> handed in Medical and Liability Form
+<li> paid
+</ul>
+<br />
+<br />
+<form name="checkin" method="POST" action="{{request.path}}">
+<input type="hidden" name="Attended" id="attended" value="True">
+<input type="hidden" name="MedicalFiled" id="medical" value="True">
+<input type="hidden" name="LiabilityFiled" id="liability" value="True">
+<input type="hidden" name="Paid" id="paid" value="True">
+
+
+{% comment %} old checkin form: changed for Spark '09 for simplicity --rye
 Welcome to the student check-in for {{module.student.name}}. Please checkoff that the following has been completed:
 </p>
 <br />
@@ -35,9 +50,9 @@ Welcome to the student check-in for {{module.student.name}}. Please checkoff tha
 <label for="paid"><strong>Paid?</strong></label> &nbsp;&nbsp;
    <input type="checkbox" name="Paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} />
   <br />
-<br />
+<br />{% endcomment %}
 <input type="hidden" name="userid" value="{{module.student.id}}" />
-<input type="submit" value="Save Check-In" />
+<input type="submit" value="Check-In Student" />
 </form>
 <br />
 
