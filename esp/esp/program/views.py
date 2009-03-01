@@ -34,7 +34,7 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect, Http404
 from django.core.mail import send_mail
-from esp.users.models import UserBit, GetNodeOrNoBits
+from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits
 
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -97,8 +97,20 @@ def classTemplateEditor(request, program, session):
     return render_to_response('display/qsd_listing.html', request, program, {'qsd_pages': qsd_pages,
                                                             'have_create': have_create })
 
+def manage_programs(request):
+    if not request.user or not request.user.isAdmin():
+        raise Http404
+
+    admPrograms = ESPUser(request.user).getEditable(Program).order_by('-id')
+
+    return render_to_response('program/manage_programs.html', request, GetNode('Q/Web/myesp'), {'admPrograms': admPrograms})
+
+
 @login_required
 def managepage(request, page):
+    if page == 'programs':
+        return manage_programs(request)
+
     if page == 'newprogram':
 
         template_prog = None
