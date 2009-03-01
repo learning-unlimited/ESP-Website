@@ -262,11 +262,17 @@ def ajax_qsd(request):
     from esp.web.templatetags.latex import teximages
     from esp.web.templatetags.smartypants import smartypants
 
+    EDIT_VERB = 'V/Administer/Edit/QSD'
+
     result = {}
     post_dict = request.POST.copy()
 
+    if ( request.user.id is None ):
+        return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=500)
     if post_dict['cmd'] == "update":
         qsdold = QuasiStaticData.objects.get(id=post_dict['id'])
+        if not UserBit.UserHasPerms(request.user, qsdold.path, EDIT_VERB):
+            return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=500)
         qsd = qsdold.copy()
         qsd.content = post_dict['data']
         qsd.load_cur_user_time(request, )
@@ -276,6 +282,8 @@ def ajax_qsd(request):
         result['id'] = qsd.id
     if post_dict['cmd'] == "create":
         qsd_path = DataTree.objects.get(id=post_dict['anchor'])
+        if not UserBit.UserHasPerms(request.user, qsd_path, EDIT_VERB):
+            return HttpResponse(content="Sorry, you do not have permission to edit this page.", status=500)
         qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path,defaults={'author': request.user})
         qsd.content = post_dict['data']
         qsd.author = request.user
