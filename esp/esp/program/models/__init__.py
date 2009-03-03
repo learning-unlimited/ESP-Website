@@ -504,7 +504,6 @@ class Program(models.Model):
             return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
     
     def getAvailableClassrooms(self, timeslot):
-        from esp.resources.models import ResourceType
         #   Filters down classrooms to those that are not taken.
         return filter(lambda x: x.is_available(), self.getClassrooms(timeslot))
     
@@ -536,7 +535,6 @@ class Program(models.Model):
         cache.delete(cache_key)
     
     def groupedClassrooms(self):
-        from esp.resources.models import ResourceType
         from django.core.cache import cache
         
         cache_key = self.classroom_group_key()
