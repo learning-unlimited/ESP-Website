@@ -587,6 +587,7 @@ class ProgramPrintables(ProgramModuleObj):
             classes.sort()            
             for cls in classes:
                 scheditems.append({'name': teacher.name(),
+                                   'teacherid': teacher.id,
                                    'cls' : cls})
 
         context['scheditems'] = scheditems
@@ -834,7 +835,7 @@ Student schedule for %s:
             # attach payment information to student
             student.invoice_id = invoice.locator
             student.itemizedcosts = invoice.get_items()
-            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')
+            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')  # not just meals, but all BuyOne LineItems (for Spark 2009, included t-shirt, photo, etc)
             student.itemizedcosttotal = invoice.cost()
             student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
             if student.has_financial_aid:

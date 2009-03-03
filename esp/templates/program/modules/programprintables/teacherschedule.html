@@ -28,7 +28,7 @@ td.newday { border-width: 2px 1px 0 1px;}
 <body>
 {% for scheditem in scheditems %}
 
-{% ifchanged %}
+{% ifchanged scheditem.teacherid %}
 {% if not forloop.first %}
 </table>
 <div id="pagebreak">&nbsp;</div>

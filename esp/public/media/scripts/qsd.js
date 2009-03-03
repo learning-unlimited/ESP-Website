@@ -34,11 +34,18 @@ function qsd_send_command(qsd_id, postdata)
     request.onreadystatechange = function ()
     {
         //  alert("Received " + request.readyState + ", " + request.status)
-        if (request.readyState == 4 && request.status == 200)
+        if (request.readyState == 4)
         {
-            if (request.responseText)
+            if (request.status == 200)
             {
-                qsd_inline_update(qsd_id, request.responseText);
+                if (request.responseText)
+                {
+                    qsd_inline_update(qsd_id, request.responseText);
+                }
+            }
+            else
+            {
+                alert(request.responseText);
             }
         }
         /*
