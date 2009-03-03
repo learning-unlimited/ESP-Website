@@ -40,23 +40,27 @@ table.sortable thead {
 
 <table class="sortable" style="border: 1px solid black; border-collapse: collapse;">
 <tr>
- <th>#</th>
+ <!-- <th>#</th> -->
  <th>Class Code</th>
  <th>Class Title</th>
  <th>Description (short)</th>
  <th>Teachers</th>
+ <th>Teacher Phone #s</th>
  <th>Room(s)</th>
  <th>Time(s)</th>
+ <th>Allow Late?</th>
 </tr>
 {% for cls in classes %}
 <tr>
- <td>{{ forloop.counter }}</td>
+ <!-- <td>{{ forloop.counter }}</td> -->
  <td>{{ cls.emailcode }}</td>
  <td>{{ cls.title }}</td>
  <td>{{ cls.class_info|truncatewords_html:10 }}
  <td>{{ cls.getTeacherNamesLast|join:"; " }}</td>
+ <td>{% for teacher in cls.teachers %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
  <td width="170">{% for sec in cls.sections.all %}Section {{ sec.index }}: {% if not sec.prettyrooms|length_is:0 %}{{ sec.prettyrooms|join:", "}}{% else %} Unassigned{% endif %}<br />{% endfor %}</td>
  <td width="260">{% for sec in cls.sections.all %}Section {{ sec.index }}: {% if not sec.prettyrooms|length_is:0 %}{{ sec.friendly_times|join:", "}}{% else %} Unassigned{% endif %}<br />{% endfor %}</td>
+ <td>{% if cls.allow_lateness %} Y {% else %} N {% endif %}</td>
 </tr>
 {% endfor %}
 </table>
