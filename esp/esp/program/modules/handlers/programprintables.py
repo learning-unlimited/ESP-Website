@@ -190,12 +190,12 @@ class ProgramPrintables(ProgramModuleObj):
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list) })
 
         
-        classes = ClassSubject.objects.filter(parent_program = self.program)
+        classes = list(ClassSubject.objects.filter(parent_program = self.program, status=10))
 
-        classes = [cls for cls in classes
-                   if cls.isAccepted()    ]
-
-        classes.sort(ClassSubject.catalog_sort)
+        sort_list_reversed = sort_list
+        sort_list_reversed.reverse()
+        for sort_fn in sort_list_reversed:
+            classes.sort(sort_fn)
 
         clsids = ','.join([str(cls.id) for cls in classes])
 
@@ -225,7 +225,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         if request.GET.has_key('sort_name_list'):
             sort_name_list = request.GET['sort_name_list'].split(',')
-            first_sort = sort_name_list[0]
+            first_sort = sort_name_list[0] or 'category'
         else:
             first_sort = "category"
 

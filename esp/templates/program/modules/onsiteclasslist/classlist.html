@@ -84,13 +84,21 @@ font-size: 1.7em;
 <td width="65%" valign="top">
   <table cellpadding="2" cellspacing="0" width="100%">
     <tr>
-        <th style="font-size: 2.0em" colspan="2">{{ prog.niceName }}: Open classes for the upcoming hour:{# starting at {{ current_time.start|date:"D P" }} #}</th>
+        <th style="font-size: 2.0em" colspan="2">{{ prog.niceName }}: Open classes for the upcoming hour: starting at {{ current_time.start|date:"D P" }}</th>
     </tr>
     <tr>
         <th style="font-size: 1.7em" class="materials">Code</th>
         <th style="font-size: 1.7em" class="materials">Class Title</th>
     </tr>
-    {% for class in classes %}{% ifequal class.start_time current_time %}{% if not class.isFull %}{% render_class_current class %}{% endif %}{% endifequal %}{% endfor %}
+    {% for class in classes %}
+        {% ifequal class.start_time current_time %}
+        {% if not class.isFull %}
+        {% if not class.already_passed %}
+            {% render_class_current class %}
+        {% endif %}
+        {% endif %}
+        {% endifequal %}
+    {% endfor %}
 </table>
 </td>
 <Td valign="top">
