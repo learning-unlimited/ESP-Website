@@ -514,11 +514,12 @@ class Program(models.Model):
                 #   Make a dictionary with some helper variables for each resource.
                 result[c.name] = c
                 result[c.name].timeslots = [c.event]
+
+                result[c.name].furnishings = c.associated_resources()
+                result[c.name].sequence = c.schedule_sequence(self)
+                result[c.name].prog_available_times = c.available_times(self.anchor)
             else:
                 result[c.name].timeslots.append(c.event)
-            result[c.name].furnishings = c.associated_resources()
-            result[c.name].sequence = c.schedule_sequence(self)
-            result[c.name].prog_available_times = c.available_times(self.anchor)
             
         for c in result:
             result[c].timegroup = Event.collapse(result[c].timeslots)
