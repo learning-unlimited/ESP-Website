@@ -225,7 +225,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         if request.GET.has_key('sort_name_list'):
             sort_name_list = request.GET['sort_name_list'].split(',')
-            first_sort = sort_name_list[0]
+            first_sort = sort_name_list[0] or 'category'
         else:
             first_sort = "category"
 
