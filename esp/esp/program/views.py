@@ -342,13 +342,24 @@ def submit_transaction(request):
             document = Document.receive_creditcard(request.user, post_locator, post_amount, post_id)
         except CompletedTransactionException:
             from django.conf import settings
-            # Send e-mail notification of duplicate postback.
             invoice = Document.get_by_locator(post_locator)
-            send_mail('[ ESP CC ] Duplicate Postback for #' + post_locator + ' by ' + invoice.user.first_name + ' ' + invoice.user.last_name, \
-                  """Duplicate Postback Notification\n--------------------------------- \n\nDocument: %s\n\nUser: %s %s (%s)\n\nProgram anchor: %s\n\nRequest: %s\n\n""" % \
-                  (invoice.locator, invoice.user.first_name, invoice.user.last_name, invoice.user.id, invoice.anchor.get_uri(), request) , \
-                  settings.SERVER_EMAIL, \
-                  [contact[1] for contact in settings.ADMINS], True)
+            # Look for duplicate payment by checking old receipts for different cc_ref.
+            cc_receipts = invoice.docs_next.filter(cc_ref__isnull=False).exclude(cc_ref=post_id)
+            # Prepare to send e-mail notification of duplicate postback.
+            # This should be cleaned up sometime. And we shouldn't hardcode esp-treasurer@mit.edu.
+            recipient_list = [contact[1] for contact in settings.ADMINS]
+            refs = 'Cybersource request ID: %s' % post_id
+            if cc_receipts:
+                recipient_list.append('esp-treasurer@mit.edu')
+                subject = 'DUPLICATE PAYMENT'
+                refs += '\n\nPrevious payments\' Cybersource IDs: ' + ( u', '.join([x.cc_ref for x in cc_receipts]) )
+            else:
+                subject = 'Duplicate Postback'
+            # Send mail!
+            send_mail('[ ESP CC ] ' + subject + ' for #' + post_locator + ' by ' + invoice.user.first_name + ' ' + invoice.user.last_name, \
+                  """%s Notification\n--------------------------------- \n\nDocument: %s\n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s, %s\n\nProgram anchor: %s\n\nRequest: %s\n\n""" % \
+                  (subject, invoice.locator, refs, invoice.user.first_name, invoice.user.last_name, invoice.user.id, request.POST.get('billTo_lastName', '--'), request.POST.get('billTo_firstName', '--'), invoice.anchor.get_uri(), request) , \
+                  settings.SERVER_EMAIL, recipient_list, True)
             # Get the document that would've been created instead
             document = invoice.docs_next.all()[0]
         except:
