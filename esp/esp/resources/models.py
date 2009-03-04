@@ -327,7 +327,7 @@ class Resource(models.Model):
     
     def matching_times(self):
         #   Find all times for which a resource of the same name is available.
-        event_list = [item['event'] for item in self.identical_resources().values('event')]
+        event_list = self.identical_resources().values_list('event', flat=True)
         return Event.objects.filter(id__in=event_list).order_by('start')
     
     def is_independent(self):
