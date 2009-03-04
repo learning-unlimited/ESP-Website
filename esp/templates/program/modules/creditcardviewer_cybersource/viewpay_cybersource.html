@@ -57,7 +57,7 @@ Payments:
 <td>
 <ul>
 {% for doc in payment.1 %}
-<li><div class="{{ doc.getDoctypeStr }}">{{ doc.getDoctypeStr }}: {{ doc.cost }}{% if not doc.txn.complete %} (in progress){% else %} (closed){% endif %}
+<li><div class="{{ doc.getDoctypeStr }}">{{ doc.getDoctypeStr }} #{{ doc.locator }}: {{ doc.cost }}{% if not doc.txn.complete %} (in progress){% else %} (closed){% endif %}{% if doc.cc_ref %} &mdash; [{{ doc.cc_ref }}]{% endif %}
 <ol>
 {% for item in doc.txn.lineitem_set.all %}
 <li>{{ item }}</li>

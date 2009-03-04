@@ -504,7 +504,6 @@ class Program(models.Model):
             return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
     
     def getAvailableClassrooms(self, timeslot):
-        from esp.resources.models import ResourceType
         #   Filters down classrooms to those that are not taken.
         return filter(lambda x: x.is_available(), self.getClassrooms(timeslot))
     
@@ -515,11 +514,12 @@ class Program(models.Model):
                 #   Make a dictionary with some helper variables for each resource.
                 result[c.name] = c
                 result[c.name].timeslots = [c.event]
+
+                result[c.name].furnishings = c.associated_resources()
+                result[c.name].sequence = c.schedule_sequence(self)
+                result[c.name].prog_available_times = c.available_times(self.anchor)
             else:
                 result[c.name].timeslots.append(c.event)
-            result[c.name].furnishings = c.associated_resources()
-            result[c.name].sequence = c.schedule_sequence(self)
-            result[c.name].prog_available_times = c.available_times(self.anchor)
             
         for c in result:
             result[c].timegroup = Event.collapse(result[c].timeslots)
@@ -536,7 +536,6 @@ class Program(models.Model):
         cache.delete(cache_key)
     
     def groupedClassrooms(self):
-        from esp.resources.models import ResourceType
         from django.core.cache import cache
         
         cache_key = self.classroom_group_key()
