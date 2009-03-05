@@ -53,7 +53,7 @@ table.sortable thead {
 {% for cls in classes %}
 <tr>
  <!-- <td>{{ forloop.counter }}</td> -->
- <td>{{ cls.emailcode }}</td>
+ <td sorttable_customkey="{{ cls.id }}">{{ cls.emailcode }}</td>
  <td>{{ cls.title }}</td>
  <td>{{ cls.class_info|truncatewords_html:10 }}
  <td>{{ cls.getTeacherNamesLast|join:"; " }}</td>
