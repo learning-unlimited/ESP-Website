@@ -122,7 +122,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
                             request, (prog, tl), {'students': students})
 
             # set the refresh rate
-            response['Refresh'] = '0'
+            response['Refresh'] = '2'
 
         return response
 
