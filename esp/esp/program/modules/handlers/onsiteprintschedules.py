@@ -70,7 +70,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
         Q_qsc  = Q(qsc  = qsc.id)
         Q_verb = Q(verb__in = [ verb.id ] + list( verb.children() ) )
         
-        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')[0]
+        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')[:1]
         
         for ubit in ubits:
             ubit.enddate = datetime.now()
