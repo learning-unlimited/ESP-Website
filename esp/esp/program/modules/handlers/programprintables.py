@@ -72,12 +72,12 @@ class ProgramPrintables(ProgramModuleObj):
                 single_select = False
 
             if ids == None:
-                lineitems = LineItem.objects.forProgram(prog).order_by('li_type_id','user_id').select_related()
+                lineitems = LineItem.objects.forProgram(prog).order_by('li_type','user').select_related()
             else:
-                lineitems = LineItem.objects.forProgram(prog).filter(li_type__id__in=ids).order_by('li_type_id','user_id').select_related()
+                lineitems = LineItem.objects.forProgram(prog).filter(li_type__id__in=ids).order_by('li_type','user').select_related()
         else:
             single_select = False
-            lineitems = LineItem.objects.forProgram(prog).order_by('li_type_id','user_id').select_related()
+            lineitems = LineItem.objects.forProgram(prog).order_by('li_type','user').select_related()
         
         for lineitem in lineitems:
             lineitem.has_financial_aid = ESPUser(lineitem.user).hasFinancialAid(prog.anchor)
