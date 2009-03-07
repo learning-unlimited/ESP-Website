@@ -3,7 +3,7 @@
 <table align="center" width="100%">
 <tr>
     <td valign="top" align="center" width="25%">
-        {% if student.payment_info %}
+        {% comment %}{% if student.payment_info %}
             {% if student.meals %}
             <ul class="meals">
             {% for item in student.meals %}
@@ -14,20 +14,20 @@
 			<b>No meals preordered</b>
             {% endif %}
         {% else %}&nbsp;
-        {% endif %}
+        {% endif %}{% endcomment %}
     </td>
     <td valign="top" width="40%" align="center">
         <div class="title">Student Schedule for <br />
             <span>{{ student.name }}</span>
         </div>
 		<br />
-        {% if student.payment_info %}
+        {% comment %}{% if student.payment_info %}
         <b>Amount owed: </b> 
         <div style="border: 1px solid black; padding: 5px; font-size: 1.2em; font-weight: bold; text-align: center; width: 50%; margin: 0 auto;">
             ${{ student.itemizedcosttotal|floatformat:"-2" }}
         </div>
         {% else %}&nbsp;
-        {% endif %}
+        {% endif %}{% endcomment %}
     </td>
     <td valign="top" align="center" width="25%">
         <div style="font-weight:bold; text-align:left; text-indent:-3em;">
