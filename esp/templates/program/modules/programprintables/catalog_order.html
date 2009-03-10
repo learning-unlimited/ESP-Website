@@ -43,7 +43,7 @@ Get Catalog:
         Sort by
         <select name="first_sort">
         {% for op in sorting_options %}
-        <option value="{{ op }}">{{ op }}</option>
+        <option value="{{ op }}"{% ifequal op sort_name_list_orig.0 %} selected="selected"{% endifequal %}>{{ op }}</option>
         {% endfor %}
         </select>
         
@@ -51,7 +51,7 @@ Get Catalog:
         
         <select name="second_sort">
         {% for op in sorting_options %}
-        <option value="{{ op }}">{{ op }}</option>
+        <option value="{{ op }}"{% ifequal op sort_name_list_orig.1 %} selected="selected"{% endifequal %}>{{ op }}</option>
         {% endfor %}
         </select>
         
@@ -59,7 +59,7 @@ Get Catalog:
         
         <select name="third_sort">
         {% for op in sorting_options %}
-        <option value="{{ op }}">{{ op }}</option>
+        <option value="{{ op }}"{% ifequal op sort_name_list_orig.2 %} selected="selected"{% endifequal %}>{{ op }}</option>
         {% endfor %}
         </select>
         
