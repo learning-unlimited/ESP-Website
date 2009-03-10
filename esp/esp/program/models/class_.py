@@ -464,11 +464,11 @@ class ClassSection(models.Model):
             result = base_room.satisfies_requests(self)
             if result[0] is False:
                 status = False
-                errors.append( 'Room <strong>%s</strong> does not have all resources that <strong>%s</strong> needs (or it is too small) and you have opted not to compromise.  Try a better room.' % (base_room.name, self) )
+                errors.append( u'Room <strong>%s</strong> does not have all resources that <strong>%s</strong> needs (or it is too small) and you have opted not to compromise.  Try a better room.' % (base_room.name, self) )
         
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
-            errors.append( 'Room <strong>%s</strong> is not available at the times requested by <strong>%s</strong>.  Bug the webmasters to find out why you were allowed to assign this room.' % (base_room.name, self) )
+            errors.append( u'Room <strong>%s</strong> is not available at the times requested by <strong>%s</strong>.  Bug the webmasters to find out why you were allowed to assign this room.' % (base_room.name, self) )
         
         for r in rooms_to_assign:
             r.clear_schedule_cache(self.parent_program)
@@ -478,8 +478,8 @@ class ClassSection(models.Model):
                 occupiers_str = ''
                 occupiers_set = base_room.assignments()
                 if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
-                    occupiers_str = ' by <strong>%s</strong>' % (occupiers_set[0].target or occupiers_set[0].target_subj)
-                errors.append( 'Error: Room <strong>%s</strong> is already taken%s.  Please assign a different one to <strong>%s</strong>.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.' % ( base_room.name, occupiers_str, self ) )
+                    occupiers_str = u' by <strong>%s</strong>' % (occupiers_set[0].target or occupiers_set[0].target_subj)
+                errors.append( u'Error: Room <strong>%s</strong> is already taken%s.  Please assign a different one to <strong>%s</strong>.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.' % ( base_room.name, occupiers_str, self ) )
             
         return (status, errors)
     
@@ -910,7 +910,7 @@ class ClassSection(models.Model):
     class Meta:
         db_table = 'program_classsection'
         app_label = 'program'
-        
+        ordering = ['anchor__name']
 
 
 class ClassSubject(models.Model):
