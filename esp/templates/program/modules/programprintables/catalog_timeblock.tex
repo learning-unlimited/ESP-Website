@@ -31,7 +31,7 @@
 \vspace{.1in}
 \begin{multicols}{2} 
  {%endifchanged %}
-\rhead{% templatetag openbrace %}{{cls.category.category }} }
+\rhead{% templatetag openbrace %}{{cls.category.category|texescape }} }
 %\begin{tabular}{p{.45\textwidth} }
 \textbf{% templatetag openbrace %}{{cls.emailcode}}: {{ cls.title|texescape }} } \\
 \textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
@@ -39,7 +39,7 @@
 \textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
 \textit{Maximum Size: {{cls.class_size_max }} } \\
 \textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\ \textbf{" }} } \\
-{% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}
+{% comment %}{% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}{% endcomment %}
 %\end{tabular}
 \vspace{.1in}
 {% endfor %}

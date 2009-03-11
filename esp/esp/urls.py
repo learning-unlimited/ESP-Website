@@ -72,6 +72,11 @@ urlpatterns += patterns('django.views.generic',
                         (r'.php$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
                         )
 
+# program stuff
+urlpatterns += patterns('',
+                        (r'^',  include('esp.program.urls')),
+                        )
+
 urlpatterns += patterns('esp.web.views.bio',
 
                         # bios
@@ -161,7 +166,3 @@ urlpatterns += patterns('esp.web.views.main',
 urlpatterns += patterns('esp.web.views.navBar',
     # Update navbar
     (r'^navbar/edit.scm', 'updateNavBar') )
-
-urlpatterns += patterns('esp.program.views',
-                    (r'^manage/([-A-Za-z0-9_ ]+)/?', 'managepage'),
-                    )

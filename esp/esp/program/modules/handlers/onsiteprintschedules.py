@@ -70,7 +70,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
         Q_qsc  = Q(qsc  = qsc.id)
         Q_verb = Q(verb__in = [ verb.id ] + list( verb.children() ) )
         
-        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')
+        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')[:5]
         
         for ubit in ubits:
             ubit.enddate = datetime.now()
@@ -122,7 +122,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
                             request, (prog, tl), {'students': students})
 
             # set the refresh rate
-            response['Refresh'] = '0'
+            response['Refresh'] = '2'
 
         return response
 

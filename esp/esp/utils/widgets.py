@@ -24,6 +24,14 @@ calbtn = u"""<img src="%simages/calbutton.gif" alt="calendar" id="%s_btn" style=
 
 class DateTimeWidget(forms.widgets.TextInput):
     dformat = '%Y-%m-%d %H:%M'
+
+    class Media:
+        css = {
+            'all':  ('calendar/calendar-blue.css',)
+        }
+        js = ('calendar/calendar.js',
+              'calendar/lang/calendar-en.js',
+              'calendar/calendar-setup.js',)
     
     def render(self, name, value, attrs=None):
         

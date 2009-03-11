@@ -2,6 +2,8 @@
 from django import forms
 from django.contrib.auth.models import User
 
+from esp.utils.forms import CaptchaForm
+
 role_choices = (
     ('Student', 'Student (up through 12th grade)'),
     ('Teacher', 'Volunteer Teacher'),
@@ -23,11 +25,13 @@ class ValidHostEmailField(forms.EmailField):
 
         try:
             import DNS
-            DNS.DiscoverNameServers()
-            if len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
-                raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
-        except (ImportError, IOError):
-            # (no PyDNS, no resolv.conf, no nameservers)
+            try:
+                DNS.DiscoverNameServers()
+                if len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
+                    raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
+            except (IOError, DNS.DNSError): # (no resolv.conf, no nameservers)
+                pass
+        except ImportError: # no PyDNS
             pass
 
         return email
@@ -79,6 +83,6 @@ class UserRegForm(forms.Form):
         return self.cleaned_data['confirm_password']
 
 
-class EmailUserForm(forms.Form):
+class EmailUserForm(CaptchaForm):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
 

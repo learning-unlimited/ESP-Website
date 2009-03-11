@@ -303,8 +303,13 @@ class ClassSection(models.Model):
         start_time = self.start_time()
         if start_time is None:
             return True
-        if time.time() - time.mktime(start_time.start.timetuple()) > 600:
-            return True
+        time_passed = datetime.now() - start_time.start
+        if self.allow_lateness:
+            if time_passed > timedelta(0, 1200):
+                return True
+        else:
+            if time_passed > timedelta(0):
+                return True
         return False
    
     def start_time(self):
@@ -931,7 +936,7 @@ class ClassSubject(models.Model):
     requested_room = models.TextField(blank=True, null=True)
     session_count = models.IntegerField(default=1)
 
-    purchase_requests = models.TextField(blank=True, null=True)
+    #purchase_requests = models.TextField(blank=True, null=True)
     
     objects = ClassManager()
     checklist_progress_all_cached = checklist_progress_base('ClassSubject')
@@ -1548,7 +1553,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     @staticmethod
     def class_sort_by_teachers(one, other):
-        return cmp(one.getTeacherNames().sort(), other.getTeacherNames().sort())
+        return cmp( sorted(one.getTeacherNames()), sorted(other.getTeacherNames()) )
     
     @staticmethod
     def class_sort_by_title(one, other):

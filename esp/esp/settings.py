@@ -45,6 +45,7 @@ TEMPLATE_DIRS = (
     PROJECT_ROOT+'templates',
 )
 
+#CACHE_BACKEND = "esp.utils.memcached_multikey://174.129.184.116:11211/?timeout=%d" % DEFAULT_CACHE_TIMEOUT
 CACHE_BACKEND = "esp.utils.memcached_multikey://127.0.0.1:11211/?timeout=%d" % DEFAULT_CACHE_TIMEOUT
 
 MIDDLEWARE_CLASSES = [pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)]
