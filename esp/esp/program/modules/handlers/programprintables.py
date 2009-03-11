@@ -845,7 +845,15 @@ Student schedule for %s:
             student.classes = classes
             
         context['students'] = students
-        return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+        
+        if extra:
+            file_type = extra.strip()
+        else:
+            file_type = 'pdf'
+
+        from esp.web.util.latex import render_to_latex
+        return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
+        return render_to_latex(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin
