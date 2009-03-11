@@ -85,7 +85,7 @@ class ProgramHappenTest(TestCase):
         from esp.accounting_core.models import LineItemType
         from decimal import Decimal
         # Imports for the HttpRequest hack
-        from esp.program.views import managepage
+        from esp.program.views import newprogram
         from django.http import HttpRequest
         
         # Make stuff that a program needs
@@ -137,7 +137,7 @@ class ProgramHappenTest(TestCase):
         h.path = '/manage/newprogram'
         h.user = self.admin
         h.session = self.client.session
-        managepage(h, 'newprogram')
+        newprogram(h)
         
         # Now test correctness...
         self.prog = Program.by_prog_inst('Prubbogrubbam', prog_dict['term'])

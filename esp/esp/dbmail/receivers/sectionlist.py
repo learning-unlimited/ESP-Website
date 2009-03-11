@@ -13,7 +13,8 @@ class SectionList(BaseHandler):
         except:
             return
 
-        self.recipients = []
+        program = cls.parent_program
+        self.recipients = ['%s Directors <%s>' % (program.niceName(), program.director_email)]
 
         user_type = user_type.strip().lower()
 

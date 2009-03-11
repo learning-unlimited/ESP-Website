@@ -1,0 +1,50 @@
+{% extends "outlines/series-3.html" %}
+
+{% block stylesheets %}
+{{block.super}}
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+{% endblock %}
+
+{% block title %}Administrate a Program{% endblock %}
+
+{% block content %}
+
+<div id="battlescreen">
+
+<table class="welcomebox" width="100%" cellpadding="0" cellspacing="0" align="center">
+<thead>
+  <tr class="welcomebox">
+    <th align="center" class="welcomebox">
+        Welcome, {{ request.user.first_name }}!
+    </th>
+  </tr>
+</thead>
+<tbody>
+  <tr class="welcomebox">
+    <td bgcolor="#FFFFFF" class="welcomebox">
+Select a program to administrate it.
+    </td>
+  </tr>
+</tbody>
+
+</table>
+
+
+<br />
+
+<br />
+<h3>Programs you are an Administrator of:</h3>
+<br />
+{% for program in admPrograms %}
+<a href="/manage/{{program.getUrlBase}}/main"
+  title="Administer {{program.niceName}}"> 
+  {{program.niceName}}
+</a>
+   <br />
+{% endfor %}
+<br />
+<b><a href="/manage/newprogram" title="Create a New Program">
+   Create a New Program...
+</a></b>
+
+{% endblock %}

@@ -4,7 +4,7 @@
 <tr>
     <td valign="top" align="center" width="25%">
         {% if student.payment_info %}
-            {% comment %}{% if student.meals %}
+            {% if student.meals %}
             <ul class="meals">
             {% for item in student.meals %}
                 <li>{{ item.li_type.text }}
@@ -12,7 +12,7 @@
             </ul>
 			{% else %}
 			<b>No meals preordered</b>
-            {% endif %}{% endcomment %}
+            {% endif %}
         {% else %}&nbsp;
         {% endif %}
     </td>
@@ -21,11 +21,11 @@
             <span>{{ student.name }}</span>
         </div>
 		<br />
-        {% if student.payment_info %}{% comment %}
+        {% if student.payment_info %}
         <b>Amount owed: </b> 
         <div style="border: 1px solid black; padding: 5px; font-size: 1.2em; font-weight: bold; text-align: center; width: 50%; margin: 0 auto;">
             ${{ student.itemizedcosttotal|floatformat:"-2" }}
-        </div>{% endcomment %}
+        </div>
         {% else %}&nbsp;
         {% endif %}
     </td>
@@ -74,9 +74,8 @@ If you have any questions or would like to switch classes, please go to the prog
 </table>
 </div>
 
-<table class="perforate" cellpadding="4px">
+<table class="perforate" cellpadding="4px">{% comment %}
 <tr><td>&nbsp;</td></tr>
-{% comment %}
  <tr>
   <td width="40%" align="center">
    <image src="http://esp.scripts.mit.edu/barcodegen/html/image.php?code=code39&o=1&t=50&r=1&text={{ student.invoice_id }}&f1=Arial.ttf&f2=8&a1=&a2=&a3=" />

@@ -698,13 +698,17 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data = newclass.__dict__
                 # Duration can end up with rounding errors. Pick the closest.
                 old_delta = None
-                current_duration = current_data['duration'] or 0
+                # Technically, this is a "backwards compatibility" field, so we put in a hack
+                # for the "correct" usage. This feels silly. Why are ClassSections allowed different
+                # durations when every interface assumes they're identical?
+                current_duration = current_data['duration'] or newclass.sections.all()[0].duration
+                rounded_duration = 0
                 for k, v in self.getDurations() + [(0,'')]:
-                    new_delta = abs( k - current_data['duration'] )
+                    new_delta = abs( k - current_duration )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
-                        current_duration = k
-                current_data['duration'] = current_duration
+                        rounded_duration = k
+                current_data['duration'] = rounded_duration
                 current_data['category'] = newclass.category.id
                 current_data['num_sections'] = newclass.sections.count()
                 current_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]

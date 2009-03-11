@@ -53,7 +53,7 @@ def myesp_passwd(request, module):
                 raise ESPError(False), "Sorry, you're not allowed to change the password of this user. It's special."
 
         if request.method == "POST":
-                form = UserPasswdForm(request.POST)
+                form = UserPasswdForm(user=request.user, data=request.POST)
                 if form.is_valid():
                         new_data = form.cleaned_data
                         user = authenticate(username=request.user.username,
@@ -64,7 +64,7 @@ def myesp_passwd(request, module):
                         login(request, user)
                         return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Success': True})
         else:
-                form = UserPasswdForm()
+                form = UserPasswdForm(user=request.user)
                 
         return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
                                                     'form': form,

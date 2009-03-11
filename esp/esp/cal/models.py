@@ -95,24 +95,23 @@ class Event(models.Model):
         return '%d hr %d min' % (hours, minutes)
     
     def __unicode__(self):
-        return self.start.strftime('%a %b %d: %I %p') + ' to ' + self.end.strftime('%I %p')
+        return self.start.strftime('%a %b %d: ') + self.short_time()
 
     def short_time(self):
         day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         
         start_minutes = ''
         end_minutes = ''
+        start_ampm = ''
         if self.start.minute != 0:
             start_minutes = ':%02d' % self.start.minute
         if self.end.minute != 0:
             end_minutes = ':%02d' % self.end.minute
-            
-        if self.start.hour >= 12 and self.end.hour >= 12:
-            return '%d%s to %d%s PM' % ((self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
-        elif self.start.hour < 12 and self.end.hour >= 12:
-            return '%d%s AM to %d%s PM' % ((self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
-        else:
-            return '%d%s to %d%s AM' % ((self.start.hour - 1) % 12 + 1, start_minutes, (self.end.hour - 1) % 12 + 1, end_minutes)
+        if (self.start.hour < 12) != (self.end.hour < 12):
+            start_ampm = self.start.strftime(' %p')
+        
+        return u'%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
+            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p') )
 
     def is_happening(self, time=datetime.now()):
         """ Return True if the specified time is between start and end """
