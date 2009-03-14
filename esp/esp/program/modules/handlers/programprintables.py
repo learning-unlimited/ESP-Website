@@ -783,12 +783,12 @@ Student schedule for %s:
 
     @aux_call
     @needs_admin
-    def studentschedules(self, request, tl, one, two, module, extra, prog):
+    def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
         """ generate student schedules """
         
         context = {'module': self }
 
-        if extra == 'onsite':
+        if onsite:
             students = [ESPUser(User.objects.get(id=request.GET['userid']))]
         else:
             filterObj, found = get_user_list(request, self.program.getLists(True))
