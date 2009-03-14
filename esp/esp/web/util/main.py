@@ -88,12 +88,14 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
             else:
                 context['navbar_list'] = makeNavBar(request.user, prog, section)
 
-        if 'qsd.html' in template.lower():
-            context['randquote'] = ESPQuotations.getQuotation()
-            if context['randquote'] == None:
-                context['randquote'] = False
-        else:
-            context['randquote'] = False
+        #if 'qsd.html' in template.lower():
+            #context['randquote'] = ESPQuotations.getQuotation()
+            #if context['randquote'] == None:
+                #context['randquote'] = False
+        #else:
+            #context['randquote'] = False
+        # We don't use quotes anymore...
+        context['randquote'] = False
             
         # get the preload_images list
         if not context.has_key('preload_images'):
