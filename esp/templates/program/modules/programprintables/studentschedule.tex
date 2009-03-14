@@ -10,7 +10,7 @@
 \usepackage{graphicx}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
 \usepackage[left=.5in,top=1cm,right=.5in]{geometry}
-\graphicspath{% templatetag openbrace %}{{ PROJECT_ROOT }}/templates/program/modules/programprintables/{% templatetag closebrace %}
+\graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
 
 \pagestyle{fancy}
 \fancyhead[C]{\includegraphics[scale = 1]{header-top}\includegraphics[scale = 1]{header-line}}

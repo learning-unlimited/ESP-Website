@@ -76,8 +76,14 @@ class OnsiteClassSchedule(ProgramModuleObj):
         module.user = self.user
         module.program = self.program
         
-        kwargs = {'tl': args[0], 'one': args[1], 'two': args[2], 'module': args[3], 'extra': 'onsite', 'prog': args[5]}
-        return module.studentschedules(request, **kwargs)
+        new_kwargs = {}
+
+        if 'extra' in kwargs:
+            extra = kwargs['extra']
+        else:
+            extra = 'pdf'
+
+        return module.studentschedules(request, args[0], args[1], args[2], args[3], extra, args[5], onsite=True)
 
 
     @main_call
