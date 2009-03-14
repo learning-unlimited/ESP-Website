@@ -118,8 +118,12 @@ class OnsitePrintSchedules(ProgramModuleObj):
             # set the refresh rate
             response['Refresh'] = '2'
         else:
-            response =  render_to_response(self.baseDir()+'studentschedules.html',
-                            request, (prog, tl), {'students': students})
+            from django.conf import settings
+            from esp.web.util.latex import render_to_latex
+
+            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, 'pdf')
+            #response =  render_to_response(self.baseDir()+'studentschedules.html',
+            #                request, (prog, tl), {'students': students})
 
             # set the refresh rate
             response['Refresh'] = '2'
