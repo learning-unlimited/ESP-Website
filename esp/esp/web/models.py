@@ -65,7 +65,7 @@ class NavBarEntry(models.Model):
     path = AjaxForeignKey(DataTree, related_name = 'navbar', blank=True, null=True)
     
     sort_rank = models.IntegerField()
-    link = models.CharField(max_length=256)
+    link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)
     indent = models.BooleanField()
 
@@ -82,6 +82,9 @@ class NavBarEntry(models.Model):
 
     def makeUrl(self):
         return self.link
+    
+    def is_link(self):
+        return (self.link is not None) and (len(self.link) > 0)
     
     class Meta:
         verbose_name_plural = 'Nav Bar Entries'

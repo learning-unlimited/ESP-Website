@@ -3,11 +3,16 @@
 
 {% for nav_entry in navbar_list.qsdTree %}
   <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}{% if nav_entry.has_bits %} movable{% endif %} " id="nav_entry__{{nav_entry.entry.id}}"> 
+    {% if nav_entry.entry.is_link %}
       <a href="{{ nav_entry.entry.makeUrl }}"
         title="Click for `{{ nav_entry.entry.makeTitle }}'">
        <span class="bullet">- </span>
         {{ nav_entry.entry.makeTitle }}
       </a>
+    {% else %}
+        <span class="bullet">- </span>{{ nav_entry.entry.makeTitle }}
+    {% endif %}
+
 {% if nav_entry.has_bits %}
 <tt>
 <span id="nav_entry__control__{{nav_entry.entry.id}}">
