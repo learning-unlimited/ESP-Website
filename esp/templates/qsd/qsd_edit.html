@@ -37,18 +37,29 @@
 
 {% block content %}
 <form method="post" action="{{ request.path }}" enctype="multipart/form-data">
-  <h1>Title</h1>
+
+<h1>Static Page Editing</h1>
+<p>Current URL path: <tt>{{ qsdrec.url }}</tt> <br />
+<a href="{{ return_to_view }}">Back to Page View</a></p>
+
+  <h2>Title</h2>
   <input type="text" name="title" value="{{ title|escape }}" size="64" />
   <br /><br />
 
-  <h1>Metadata</h1>
+  <h2>Metadata</h2>
   <p>
     <strong>Keywords</strong><input type="text" name="keywords" value="{{ keywords|default_if_none:""|escape }}" size="128" /> <br />
     <strong>Description</strong><br />
-    <textarea name="description" rows="5" cols="85">{{ description|default_if_none:""|escape }}</textarea>
+    <textarea name="description" rows="5" cols="85">{{ description|default_if_none:""|escape }}</textarea><br />
+    <strong>Navigation Category: </strong>
+    <select name="nav_category" value="{{ nav_category }}"/>
+    {% for category in nav_categories %}
+        <option value="{{ category.id }}" {% ifequal category.id nav_category.id %}selected{% endifequal %}>{{ category.name }} - {{ category.long_explanation|truncatewords:8 }}</option>
+    {% endfor %}
+    </select> <br />
   </p>
 
-  <h1>Content</h1>
+  <h2>Content</h2>
   <p>Please use <a href="http://daringfireball.net/projects/markdown/syntax">
      Markdown</a> whenever possible. (Although HTML will work.)
   </p>

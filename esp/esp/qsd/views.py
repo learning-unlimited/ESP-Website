@@ -33,7 +33,7 @@ from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
 from esp.datatree.models import *
 from esp.web.views.navBar import makeNavBar
-from esp.web.models import NavBarEntry
+from esp.web.models import NavBarEntry, NavBarCategory
 from esp.web.util.main import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
@@ -139,6 +139,7 @@ def qsd(request, branch, name, section, action):
                 qsd_rec = QuasiStaticData()
                 qsd_rec.path = branch
                 qsd_rec.name = name
+                qsd_rec.nav_category = NavBarCategory.default()
                 qsd_rec.title = 'New Page'
                 qsd_rec.content = 'Please insert your text here'
                 qsd_rec.create_date = datetime.now()
@@ -175,6 +176,7 @@ def qsd(request, branch, name, section, action):
         # Render response
         return render_to_response('qsd/qsd.html', request, (branch, section), {
             'title': qsd_rec.title,
+            'nav_category': qsd_rec.nav_category, 
             'content': cached_html,
             'qsdrec': qsd_rec,
             'have_edit': have_edit,
@@ -193,6 +195,7 @@ def qsd(request, branch, name, section, action):
         qsd_rec_new.path = branch
         qsd_rec_new.name = name
         qsd_rec_new.author = request.user
+        qsd_rec_new.nav_category = NavBarCategory.objects.get(id=request.POST['nav_category'])
         qsd_rec_new.content = request.POST['content']
         qsd_rec_new.title = request.POST['title']
         qsd_rec_new.description = request.POST['description']
@@ -245,6 +248,8 @@ def qsd(request, branch, name, section, action):
             'content'      : qsd_rec.content,
             'keywords'     : qsd_rec.keywords,
             'description'  : qsd_rec.description,
+            'nav_category' : qsd_rec.nav_category, 
+            'nav_categories': NavBarCategory.objects.all(),
             'qsdrec'       : qsd_rec,
             'qsd'          : True,
             'missing_files': m.BrokenLinks(),

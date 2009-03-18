@@ -245,18 +245,19 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
             try:
                 if request.GET.has_key('userid'):
-                    userid = int(request.GET['userid'])
+                    userid_str = request.GET['userid']
                 if request.POST.has_key('userid'):
-                    userid = int(request.POST['userid'])
+                    userid_str = request.POST['userid']
 
+                userid = userid_str.split(',')
+    
             except:
-                raise ESPError(False), 'User id invalid, please enter a number.'
+                raise ESPError(False), 'User id invalid, please enter a number or comma-separated list of numbers.'
 
-            
             if request.GET.has_key('userid__not'):
-                Q_exclude &= Q(id = userid)
+                Q_exclude &= Q(id__in = userid)
             else:
-                Q_include &= Q(id = userid)
+                Q_include &= Q(id__in = userid)
             update = True
 
         else:
