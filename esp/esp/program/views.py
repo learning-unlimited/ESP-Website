@@ -108,6 +108,9 @@ def manage_programs(request):
 
 @login_required
 def newprogram(request):
+    if not request.user.isAdmin():
+        raise Http404
+
     template_prog = None
 
     if 'template_prog' in request.GET:
@@ -239,6 +242,9 @@ def submit_transaction(request):
 
 @login_required
 def manage_pages(request):
+    if not request.user.isAdmin():
+        raise Http404
+
     if request.method == 'POST':
         data = request.POST
         if request.GET['cmd'] == 'bulk_move':
