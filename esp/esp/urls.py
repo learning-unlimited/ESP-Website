@@ -33,16 +33,7 @@ from esp.settings import PROJECT_ROOT, MEDIA_ROOT
 
 admin.autodiscover()
 
-section_redirect_keys = {
-    'teach':   'Programs',
-    'manage':  'Programs',
-    'onsite':  'Programs',    
-    'learn':   'Programs',
-    'programs':'Programs',
-    None:      'Web',
-    }
-
-section_prefix_keys = {'teach': 'teach', 'learn': 'learn', 'programs': ''}
+from esp.section_data import section_redirect_keys, section_prefix_keys
 
 # Static media
 urlpatterns = patterns('django.views.static',
