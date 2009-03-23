@@ -332,21 +332,19 @@ class ESPUser(User, AnonymousUser):
         if result is not None:
             return result
 
-        res_list = [item['event'] for item in Resource.objects.filter(user=self).values('event')]
+        valid_events = Event.objects.filter(resource__user=self, anchor=program.anchor)
 
-        #   Subtract out the times that they are already teaching.
-        other_classes = self.getTaughtSections(program)
-
-        other_times = [[mt['id'] for mt in cls.meeting_times.values('id')] for cls in other_classes]
-        result = program.getTimeSlots().filter(id__in=res_list)
         if ignore_classes:
+            #   Subtract out the times that they are already teaching.
+            other_classes = self.getTaughtSections(program)
+
+            other_times = [cls.meeting_times.values_list('id', flat=True) for cls in other_classes]
             for lst in other_times:
-                result = result.exclude(id__in=lst)
+                valid_events = valid_events.exclude(id__in=lst)
 
         #   Finally, convert from a query set down to a list for caching
-        listed_result = list(result)
-        cache.set(cache_key, listed_result)
-        return listed_result
+        cache.set(cache_key, valid_events)
+        return valid_events
 
     def clearAvailableTimes(self, program):
         """ Clear all resources indicating this teacher's availability for a program """
