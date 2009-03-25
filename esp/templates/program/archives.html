@@ -222,10 +222,10 @@ disabled
 </td>
 </tr>
 <tr><td colspan="2" class="classheading" bgcolor="#a6cedf">
-	{% for item in entry.heading %}
-	<b>{{ item.label }}:</b> {{ item.value }}
-	<br />
-	{% endfor %}
+	<b>Teacher:</b> {{ entry.teacher }} <br />
+	<b>Year:</b> {{ entry.year }}{% if entry.date %} ({{ entry.date }}){% endif %} <br />
+	<b>Program:</b> {{ entry.program }} <br />
+	<b>Category:</b> {{ entry.category }} <br />
 </td></tr>
 <tr><td colspan="2" class="classdesc">
 <p>

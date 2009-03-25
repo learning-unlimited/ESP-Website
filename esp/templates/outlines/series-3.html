@@ -1,22 +1,16 @@
 {% extends "elements/html" %}
 
-
 {% block javascript %}
 {{ block.super }}
 {% if request.user.is_authenticated %}
-
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/yahoo/yahoo-min.js"></script>
-
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/event/event-min.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/dom/dom-min.js"></script>
-
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/connection/connection-min.js"></script>
-
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/logger/logger-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/logger/logger-min.js"></script>
 <script type="text/javascript" src="{{ media_url }}scripts/yui/dragdrop/dragdrop-debug.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/animation/animation-min.js"></script>
+<script type="text/javascript" src="{{ media_url }}scripts/yui/animation/animation-min.js"></script>
 <script type="text/javascript" src="{{ media_url }}scripts/ddlist.js"></script>
-
 {% endif %}
 {% endblock %}
 
@@ -24,131 +18,42 @@
 {% block stylesheets %}
 <link rel="stylesheet" href="{{ media_url }}styles/print_basic.css" type="text/css" media="print" />
 <link rel="stylesheet" href="{{ media_url }}styles/level3.css" type="text/css" media="screen" />
-
-<STYLE type="text/css"><!--
-//--></STYLE>
+<link rel="stylesheet" href="{{ media_url }}styles/uchicago_main.css" type="text/css" />
 {% endblock %}
 
 {% block body %}
+<div id="content">
+<div id="topleft"><img src="/media/images/splogo.gif" alt="Splash! Chicago" /></div>
 
-<!-- skip link -->
-<div class="offscreen">
-</div>
+<div id="nav_buttons"><img src="/media/images/linkf_01.gif" onmouseover="this.src='/media/images/linkr_01.gif'" onmouseout="this.src='/media/images/linkf_01.gif'" id="btn1" /><img src="/media/images/linkf_02.gif" onmouseover="this.src='/media/images/linkr_02.gif'" onmouseout="this.src='/media/images/linkf_02.gif'" id="btn2" /><img src="/media/images/linkf_03.gif" onmouseover="this.src='/media/images/linkr_03.gif'" onmouseout="this.src='/media/images/linkf_03.gif'" id="btn3" /><img src="/media/images/linkf_04.gif" onmouseover="this.src='/media/images/linkr_04.gif'" onmouseout="this.src='/media/images/linkf_04.gif'" id="btn4" /></div>
 
-<!-- backgrounds  at top of page -->
-{% block banner_backgrounds %}
-<div id="top_banner">
-<!--
-<div id="divbkg1">
-</div>
-<div id="divbkg2">
-</div>
-<div id="divbkg3">
-</div>
-<div id="divbkg4">
-</div>
--->
-</div>
-{% endblock %}
+<div id="navbar_header"><img src="/media/images/news.gif" alt="RECENT NEWS" /></div>
 
-<!-- site title -->
-<div id="divtitle">
-{% block section_title %}<!-- Stick an image here and it'll be placed at the top of your page and used as a title -->{% endblock %}
+<div id="main_header"><!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. --><table width="600px" height="30px"><tr><td valign="middle">Welcome to Splash! Chicago, a student-run organization at the University of Chicago</td></tr></table></div>
+
+<div id="navbar">
+
+
+{% load preview %}
+{% miniblog_for_user request.user as announcements 6 %}
+
+{% for announce in announcements.announcementList %}
+<p>
+<span class="announcementlink_title">{{ announce.makeTitle }}</span><br />
+<span class="announcementlink">{{ announce.content }}</span>
+</p>
+{% endfor %}
+
+<!-- more announcements -->
+{% if announcements.overflowed %}
+<div id="divannouncemore">
+  <a href="/myesp/home/">More Notices...</a>
 </div>
-
-<!-- image size may vary -->
-{% block banner_nav %}
-
-<div id="divnavh">
-</div>
-
-{% load topbar %}
-{% endblock %}
- 
-<!-- image sizes may vary -->
-
-{% block secondary_nav %}
-{% comment %}{% load navbar %}
-{% navbar_gen %}{% endcomment %}
-{% endblock %}
-
-{% block search %}
-<!-- search -->
-<div id="divsearch">
-</div>
-{% endblock %}
-
-{% block login %}
-<div id="divlogin">
-<form name="loginform" id="loginform" method="post" action="/myesp/login/">
-<input type="hidden" name="op" value="login" />
-<table border="0" cellpadding="0" cellspacing="0" summary=" ">
-<tr>
-  <td width="100%"><div class="divformcol1">&nbsp;</div></td>
-  <td style="text-align:left">
-  {% if request.user.is_authenticated %}
-     {% if request.user.other_user %}
-         <div class="divformcol1" style="text-align:left">
-         <a href="/myesp/switchback/">Go back to {{ request.session.user_morph.retTitle }}</a>
-         </div>
-     {% else %}
-<div class="divformcol1" style="text-align:left">
-Welcome, {{ request.user.first_name }}! 
-<!-- <a href="/myesp/manage/">Manage Subscriptions</a> -->
+{% endif %}
 
 </div>
-     {% endif %}
-  {% else %}
-  {% endif %}
-	</td>
-	<td colspan="2">
-	</td>
-    <td colspan="2">
-</tr>
 
-</table>
-</form>
-</div>
-{% endblock %}
+<div id="main"><div id="main_content">{% block content %}{% endblock %}</div></div>
 
-<!-- subsection name -->
-{% comment %}
-<div id="divsubsectionname">
-{% block subsection %}
-{% endblock %}
-{% endcomment %}
-</div>
-<!-- image sizes may vary -->
-
-<!-- content, quote, and footer -->
-<div id="divmain">
-  <a name="startcontent" id="startcontent"></a>
-  <table border="0" cellpadding="0" cellspacing="0" summary=" " id="maintable">
-    <!-- skip row 1 - no longer needed -->
-    <tr id="tableheader"><!-- alignment and space -->
-      <td><div class="row2 col1"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col2"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col3"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col4"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col5"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
-    </tr> 
-    <tr><!-- content -->
-      <td align="right" class="notmaintd" valign="bottom"><img src="{{ media_url }}images/spacer.gif" width="28" height="46" alt="" /></td>
-      <td align="left" valign="bottom" class="paper notmaintd"><img src="{{ media_url }}images/spacer.gif" width="43" height="35" alt="" /></td>
-      <td align="left" valign="top" class="paper">
-        <div id="divmaintext">
-{% block content %}{% endblock %}
-        </div>
-      </td>
-      <td class="paper"><div class="row3 col5"><img src="{{ media_url }}images/spacer.gif" width="1" height="1" alt="" /></div></td>
-    </tr>
-    <tr>
-      <td colspan="3">
-<div class="statistics">
-<!-- STATS: Page served in %(totTime).2fs%(dbInfo)s. -->
-</div>
-      </td>
-     </tr>
-  </table>
 </div>
 {% endblock %}

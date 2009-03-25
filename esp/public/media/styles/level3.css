@@ -9,7 +9,6 @@ html, body {
   background-color: #000000;
   margin: 0px;
   font-family:heletica;
-  color:#EEEEEE;
   font-size:10pt;
 }
 /* for div containing skip links and other content that should never be seen by visual browsers */
@@ -23,16 +22,13 @@ html, body {
 /* default link characteristics */
 a,
 a:link {
-  color: #99BBEE;
   text-decoration: none;
 }
 a:visited {
-  color: #99BBEE;
   text-decoration: none;
 }
 a:active,
 a:hover {
-  color:#EEEE22;
   text-decoration: none;
 }
 

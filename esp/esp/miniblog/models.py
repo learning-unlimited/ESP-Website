@@ -69,6 +69,9 @@ class AnnouncementLink(models.Model):
     def html(self):
         return '<p><a href="%s">%s</a></p>' % (self.href, self.title)
 
+    def content(self):
+        return '<a href="%s">Click Here</a> for details' % self.href
+
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     anchor = AjaxForeignKey(DataTree)
