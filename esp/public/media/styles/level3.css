@@ -6,10 +6,9 @@
 /* GENERAL */
 
 html, body {
-  background-color: #000000;
   margin: 0px;
   font-family:heletica;
-  font-size:10pt;
+  font-size: 12pt;
 }
 /* for div containing skip links and other content that should never be seen by visual browsers */
 .offscreen {
@@ -356,7 +355,6 @@ form {
   font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 1.3em;
   font-weight: bold;
-  color: #3366cc;
   margin-top: 0px;
 }
 #divmaintext h2 {

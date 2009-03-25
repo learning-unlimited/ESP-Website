@@ -32,10 +32,10 @@ tion is correct?'))
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
-h1.catalog {color: #c6def7}
+h1 { text-align: center; margin: 5pt; }
 </style>
-<br /><br />
-<h1 class="catalog">Student registration for {{program.niceName}} </h1>
+<h1>Student registration</h1>
+<h1 class="catalog">{{program.niceName}} </h1>
 
 {% if not request.user.onsite_local %}
     <div id="catalog">
@@ -155,10 +155,6 @@ Please click <em>Save</em> below to confirm your registration into {{program.nic
 </center>
 
 <br />
-{% render_inline_qsd program.anchor "learn:studentregfooter" %}
-
-<p>
-  Thanks for registering!  You can come back and change any of the above information until 5 PM on Thursday, January 22nd, a week before Cascade begins. Remember to show up at Cascade on Thursday, January 29th, at least 30 minutes before your first class, with ID, and a waiver filled out by a parent or guardian.  All students should arrive at the 59th Street door of Harper hall, which is on 59th street between Ellis Avenue and University Avenue. The address is 1116 E. 59th Street.
-</p>
+{% render_inline_qsd program.anchor "learn:studentregfooter" request.user %}
 
 {% endblock %}

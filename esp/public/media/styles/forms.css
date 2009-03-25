@@ -178,7 +178,6 @@
     border: none;
     font-weight: normal;
     font-style: normal;
-    color: white;
     font-size: 12px;
 }
 
@@ -190,17 +189,15 @@
    font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-weight: bold;
-   //background-color: #c6def7;
-   color: #FFF;
-    text-align: center;
+   background-color: #c6def7;
+   text-align: center;
 }
 
 #program_form th.smaller {
    font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-size: 0.9em;
-   //background-color: #ffffff;
-   //color: #000000;
+   background-color: #ffffff;
    text-align: left;
    vertical-align: top;
 }

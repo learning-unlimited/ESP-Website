@@ -4,7 +4,7 @@
 
 {% block content %}
 {% load render_qsd %}
-{% render_inline_qsd "Q/Web" "homepage_qsdpart" %}
+{% render_inline_qsd "Q/Web" "homepage_qsdpart" request.user %}
 
 {% if request.user.get_profile.prof.isAdministrator %}
 <div id="divnav7">
