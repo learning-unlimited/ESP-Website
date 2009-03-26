@@ -606,16 +606,16 @@ div.note, div.info, div.errormsg, div.question {
   width: 450px;
 }
 div.note {
-  background: #555 url('/media/images/note.gif') no-repeat 4px 50%;
+  background: #BBB url('/media/images/note.gif') no-repeat 4px 50%;
 }
 div.info {
-  background: #555 url('/media/images/information.gif') no-repeat 4px 10%;
+  background: #BBB url('/media/images/information.gif') no-repeat 4px 10%;
 }
 div.errormsg {
-  background: #555 url('/media/images/error.gif') no-repeat 4px 50%;
+  background: #BBB url('/media/images/error.gif') no-repeat 4px 50%;
 }
 div.question {
-  background: #555 url('/media/images/questionmark.gif') no-repeat 4px 50%;
+  background: #BBB url('/media/images/questionmark.gif') no-repeat 4px 50%;
 }
 
 .monospace {

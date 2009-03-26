@@ -22,14 +22,20 @@
 {% endblock %}
 
 {% block body %}
+<style type="text/css">
+#content {
+  border-color: {% block content_color %}#141414{% endblock %};
+}
+</style>
+
 <div id="content">
-<div id="topleft"><img src="/media/images/splogo.gif" alt="Splash! Chicago" /></div>
+<div id="topleft"><a href="/"><img src="/media/images/splogo.gif" alt="Splash! Chicago" /></a></div>
 
 <div id="nav_buttons"><a href="/learn/index.html"><img src="/media/images/linkf_01.gif" onmouseover="this.src='/media/images/linkr_01.gif'" onmouseout="this.src='/media/images/linkf_01.gif'" id="btn1" /></a><a href="/teach/index.html"><img src="/media/images/linkf_02.gif" onmouseover="this.src='/media/images/linkr_02.gif'" onmouseout="this.src='/media/images/linkf_02.gif'" id="btn2" /></a><a href="/volunteer/index.html"><img src="/media/images/linkf_03.gif" onmouseover="this.src='/media/images/linkr_03.gif'" onmouseout="this.src='/media/images/linkf_03.gif'" id="btn3" /></a><a href="/more_info/index.html"><img src="/media/images/linkf_04.gif" onmouseover="this.src='/media/images/linkr_04.gif'" onmouseout="this.src='/media/images/linkf_04.gif'" id="btn4" /></a></div>
 
 <div id="navbar_header"><img src="/media/images/news.gif" alt="RECENT NEWS" /></div>
 
-<div id="main_header"><!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. --><table width="600px" height="30px"><tr><td valign="middle">Welcome to Splash! Chicago, a student-run organization at the University of Chicago</td></tr></table></div>
+<div id="main_header">{% block welcome_message %}<!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. --><table width="600px" height="30px"><tr><td valign="middle">Welcome to Splash! Chicago, a student-run organization at the University of Chicago</td></tr></table>{% endblock %}</div>
 
 <div id="navbar">
 <div id="navbar_content">

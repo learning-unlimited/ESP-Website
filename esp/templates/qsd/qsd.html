@@ -8,6 +8,8 @@
 
 {% block subsection %}{% autoescape off %}{{ title|subsection }}{% endautoescape %}{% endblock %}
 
+{% block content_color %}{% ifequal qsdrec.description "learn" %}#A1CD4A{% else %}{% ifequal qsdrec.description "teach" %}#FCD221{% else %}{% ifequal qsdrec.description "volunteer" %}#ED1C24{% else %}{% ifequal qsdrec.description "more_info" %}#CC66FF{% else %}#000000{% endifequal %}{% endifequal %}{% endifequal %}{% endifequal %}{% endblock %}
+
 {% block content %}
 
 {% load render_qsd %}
