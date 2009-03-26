@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.db import models
 from esp.datatree.models import *
+from esp.web.models import NavBarCategory
 from esp.lib.markdown import markdown
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -66,6 +67,8 @@ class QuasiStaticData(models.Model):
     name = models.SlugField()
     title = models.CharField(max_length=256)
     content = models.TextField()
+    
+    nav_category = models.ForeignKey(NavBarCategory)
 
     create_date = models.DateTimeField(default=datetime.now, editable=False)
     author = AjaxForeignKey(User)
@@ -100,6 +103,7 @@ class QuasiStaticData(models.Model):
         qsd_new.content = self.content
         qsd_new.title   = self.title
         qsd_new.description  = self.description
+        qsd_new.nav_category = self.nav_category
         qsd_new.keywords     = self.keywords
         qsd_new.disabled     = self.disabled
         qsd_new.create_date  = self.create_date

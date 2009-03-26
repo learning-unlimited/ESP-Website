@@ -53,7 +53,6 @@ def get_from_id(id, module, strtype = 'object', error = True):
     return foundobj
     
 
-
 def render_response(req, *args, **kwargs):
     kwargs['context_instance'] = RequestContext(req)
     return django.shortcuts.render_to_response(*args, **kwargs)
@@ -65,7 +64,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
 
     # if there are only two arguments
     if context is None and prog is None:
-        return django.shortcuts.render_to_response(template, requestOrContext, {'navbar_list': default_navbar_data})
+        return django.shortcuts.render_to_response(template, requestOrContext, {'navbar_list': []})
     
     if context is not None:
         request = requestOrContext
@@ -79,21 +78,27 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         if not context.has_key('program'):  
             if type(prog) == Program:
                 context['program'] = prog
-            # create nav bar list
+                
+        # create nav bar list
         if not context.has_key('navbar_list'):
+            category = None
+            if context.has_key('nav_category'):
+                category = context['nav_category']
             if prog is None:
-                context['navbar_list'] = default_navbar_data
+                context['navbar_list'] = []
             elif type(prog) == Program:
-                context['navbar_list'] = makeNavBar(request.user, prog.anchor, section)
+                context['navbar_list'] = makeNavBar(request.user, prog.anchor, section, category)
             else:
-                context['navbar_list'] = makeNavBar(request.user, prog, section)
+                context['navbar_list'] = makeNavBar(request.user, prog, section, category)
 
-        if 'qsd.html' in template.lower():
-            context['randquote'] = ESPQuotations.getQuotation()
-            if context['randquote'] == None:
-                context['randquote'] = False
-        else:
-            context['randquote'] = False
+        #if 'qsd.html' in template.lower():
+            #context['randquote'] = ESPQuotations.getQuotation()
+            #if context['randquote'] == None:
+                #context['randquote'] = False
+        #else:
+            #context['randquote'] = False
+        # We don't use quotes anymore...
+        context['randquote'] = False
             
         # get the preload_images list
         if not context.has_key('preload_images'):
@@ -110,14 +115,6 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         return render_response(request, template, context)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
-
-#   The data we used to have here was bogus.
-navbar_data = []
-
-class DefaultNavBarData(object):
-    value = navbar_data
-
-default_navbar_data = DefaultNavBarData()
 
 preload_images = [
 	settings.MEDIA_URL+'images/level3/nav/home_ro.gif',

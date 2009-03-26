@@ -21,10 +21,10 @@
 <form method="post" action="{{ request.path }}?cmd=bulk_move">
 <table width="600">
 <tr>
-    <th colspan="5">List of Pages</th>
+    <th colspan="6">List of Pages</th>
 </tr>
 <tr>
-    <td colspan="5">
+    <td colspan="6">
         To move all of the checked pages together: &nbsp;&nbsp;&nbsp;
         <input type="submit" class="fancybutton" value="Bulk Move" />
     </td>
@@ -32,6 +32,7 @@
 <tr>
     <th class="small" width="70">Move?</th>
     <th class="small" width="300">Path (click to view/edit)</th>
+    <th class="small">Nav. category</th>
     <th class="small">Title</th>
     <th class="small" colspan="2">Options</th>
 </tr>
@@ -39,6 +40,7 @@
 <tr>
     <td><input type="checkbox" name="check_{{ qsd.id }}" /></td>
     <td><a href="{{ qsd.url }}">{{ qsd.url }}</a></td>
+    <td>{{ qsd.nav_category.name }}</td>
     <td>{{ qsd.title }}</td>
     <td><a href="{{ request.path }}?cmd=move&id={{ qsd.id }}" class="abutton">Move</a></td>
     <td>{% if qsd.disabled %}
