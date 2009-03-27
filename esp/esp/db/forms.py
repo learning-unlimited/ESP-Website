@@ -103,13 +103,13 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
         css = """
 <style type="text/css">
     /* Taken from Yahoo... */
-    #id_%s__yui_autocomplete {position:relative;width:%s;margin-bottom:1em;}/* set width of widget here*/
+    #id_%s__yui_autocomplete {position:relative;width:%sem;margin-bottom:1em;}/* set width of widget here*/
     #id_%s__yui_autocomplete {z-index:0} /* for IE z-index of absolute divs inside relative divs issue */
     #id_%s__yui_autocomplete input {_position:absolute;width:100%%;height:1.4em;z-index:0;} /* abs for ie quirks */
     #id_%s__container {position:relative; width:100%%;top:-.1em;}
     #id_%s__container .yui-ac-content {position:absolute;width:100%%;border:1px solid #ccc;background:#fff;overflow:hidden;z-index:9050;}
     #id_%s__container .yui-ac-shadow {position:absolute;margin:.3em;width:100%%;background:#eee;z-index:8000;}
-    #id_%s__container ul {padding:5px 0;width:100%%; list-item-type: none;margin-left: 0; padding-left: 0;z-index:9000;}
+    #id_%s__container ul {padding:5px 0;width:100%%; list-style-type: none;margin-left: 0; padding-left: 0;z-index:9000;}
     #id_%s__container li {padding:0 5px;cursor:default;white-space:nowrap;padding-left: 0; margin-left: 0;}
     #id_%s__container li.yui-ac-highlight {background:#9cf;z-index:9000;}
     #id_%s__container li.yui-ac-prehighlight {background:#CCFFFF;z-index:9000;}
