@@ -34,6 +34,14 @@ class CacheClass(BaseCache):
             ans[self.unmake_key(k)] = v
         return ans
 
+    # Django 1.1 feature
+    def incr(self, key, delta=1):
+        return self._wrapped_cache.incr(self.make_key(key), delta)
+
+    # Django 1.1 feature
+    def decr(self, key, delta=1):
+        return self._wrapped_cache.decr(self.make_key(key), delta)
+
     def close(self, **kwargs):
         self._wrapped_cache.close()
 
