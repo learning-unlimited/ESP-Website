@@ -240,6 +240,7 @@ def submit_transaction(request):
         
     return render_to_response( 'accounting_docs/credit_rejected.html', request, GetNode('Q/Accounting'), {} )
 
+# This really should go in qsd
 @login_required
 def manage_pages(request):
     if not request.user.isAdmin():
@@ -304,12 +305,12 @@ def manage_pages(request):
     #   Show QSD listing 
     qsd_ids = []
     qsds = QuasiStaticData.objects.all().order_by('-create_date').values_list('id', 'path', 'name')
-    dup_detect = {}
-    for qsd in qsds:
-        key = qsd[1], qsd[2]
-        if not dup_detect.has_key(key):
-            qsd_ids.append(qsd[0])
-            dup_detect[key] = qsd
+    seen_keys = set()
+    for id, path, name in qsds:
+        key = path, name
+        if key not in seen_keys:
+            qsd_ids.append(id)
+            seen_keys.add(key)
     qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
     qsd_list.sort(key=lambda q: q.url())
     return render_to_response('qsd/list.html', request, DataTree.get_by_uri('Q/Web'), {'qsd_list': qsd_list})
