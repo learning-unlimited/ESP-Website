@@ -9,6 +9,7 @@ html, body {
   margin: 0px;
   //font-family:heletica;
   font-size: 11pt;
+  color: #141414;
 }
 /* for div containing skip links and other content that should never be seen by visual browsers */
 .offscreen {

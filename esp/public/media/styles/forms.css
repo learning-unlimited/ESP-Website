@@ -122,12 +122,14 @@
 /* LOGIN FORM */
 #login_form table {
    width: 300px;
-   border: 2px solid black !important;
+   border: 0px solid black !important;
    border-collapse: collapse;
 }
 
 #login_form table td, #login_form table th {
    border: 0 !important;
+   background-color: #BCCAF5;
+   font-weight: normal;
 }
 
 #login_form tbody th, #login_form tbody th {
@@ -135,9 +137,10 @@
 }
 
 #login_form thead th {
-  background-color: #e8f0f7;
   text-align: center;
-  border: 2px solid black !important;
+  background-color: #141414;
+  border: 0px solid black !important;
+  color: #FFFFFF;
 }
 /* END OF LOGIN FORM */
 
@@ -166,8 +169,6 @@
 /* Program specific forms (look kind of like the catalog) */
 
 #program_form table {
-   border: 1px solid #CCC;
-   border-width: 1px;
    border-collapse: collapse;
 }
 
@@ -189,8 +190,9 @@
    //font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-weight: bold;
-   background-color: #c6def7;
+   background-color: #141414;
    text-align: center;
+   color: #ffffff;
 }
 
 #program_form th.smaller {
@@ -218,7 +220,7 @@
 }
 
 #program_form input.button {
-    background-color: #c6def7;
+    background-color: #BCCAF5;
     border: 1px solid black;
     font-weight: bold;
     font-size: 13px;
@@ -226,7 +228,7 @@
 }
 
 #program_form a.button {
-    background-color: #c6def7;
+    background-color: #BCCAF5;
     padding: 2px 5px 2px 5px;
     border: 1px solid black;
     font-weight: bold;
@@ -237,13 +239,13 @@
 
 #program_form input.button:hover {
     background-color: #333399;
-    color: #c6def7;
+    color: #BCCAF5;
 }
 
 #program_form a.button:hover {
     background-color: #333399;
     text-decoration: none;
-    color: #c6def7;
+    color: #BCCAF5;
 }
 
 #program_form td.underline {

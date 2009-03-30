@@ -35,11 +35,12 @@ color: #006600;
 
 #battlescreen a.abutton {
    color: #000000;
-   border: #cccccc 1px solid;
    background-color: #cccccc;
    cursor: default;
    padding: 2px 5px 2px 5px;
    text-decoration: none;
+   font-weight: bold;
+   font-family: arial;
 }
 
 #battlescreen a.abutton:hover
@@ -51,7 +52,7 @@ color: #006600;
 
 #battlescreen input.button
 {
-   border: #cccccc 1px solid;
+   border: #cccccc 0px solid;
    background-color: #cccccc;
    text-decoration: none;
 }
@@ -112,8 +113,7 @@ color: #006600;
 
 #battlescreen table {
    background-color: #554;
-   border: 2px solid #BCCAF5;
-   border-width: 0 2px 6px 2px;
+   border: 0;
 }
 
 #battlescreen table.welcomebox {

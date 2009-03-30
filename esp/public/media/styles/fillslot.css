@@ -22,7 +22,7 @@ span.error {
 }
 
 input.addbutton {
-    background-color: #c6def7;
+    background-color: #BCCAF5;
     border: 1px solid black;
     font-weight: bold;
     font-size: 0.9em;
@@ -31,5 +31,5 @@ input.addbutton {
 
 input.addbutton:hover {
     background-color: #333399;
-    color: #c6def7;
+    color: #BCCAF5;
 }

@@ -32,10 +32,8 @@ tion is correct?'))
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
-h1 { text-align: center; margin: 5pt; }
 </style>
-<h1>Student registration</h1>
-<h1 class="catalog">{{program.niceName}} </h1>
+<h1 class="catalog">Pick Classes, {{program.niceName}} </h1>
 
 {% if not request.user.onsite_local %}
     <div id="catalog">
