@@ -5,7 +5,7 @@
 }
 
 #catalog th {
-   font-family: Arial, sans-serif;
+   ////font-family: Arial, sans-serif;
    padding: 5px;
    font-size: 15px;
    background-color: #C6DEF7;
@@ -13,7 +13,7 @@
 }
 
 #catalog th.materials {
-   font-family: Arial, sans-serif;
+   ////font-family: Arial, sans-serif;
    padding: 5px;
    font-size: 12px;
    font-weight: normal;
@@ -22,7 +22,7 @@
 }
 
 #catalog td {
-   font-family: serif;
+   ////font-family: serif;
    padding: 5px;
    font-size: 14px;
    background-color: #333333;
@@ -30,14 +30,14 @@
 }
 
 .doclist {
-   font-family: sans-serif;
+   ////font-family: sans-serif;
    text-indent: 20px;
    font-size: 12px;
    color: #000;
 }
 
 p.category {
-   font-family: arial;
+   ////font-family: arial;
    font-size: 2em;
    text-align: center;
    margin-bottom: 0;
@@ -45,7 +45,7 @@ p.category {
 }
 
 .linktop {
-   font-family: serif;
+   ////font-family: serif;
    font-size: 12px;
    text-align: center;
 }
@@ -60,7 +60,7 @@ p.category {
 }
 .teachers {
    font-size: 13px;
-   font-family: serif;
+   ////font-family: serif;
    font-style: italic;
    font-weight: normal;
    text-align: right;
@@ -76,7 +76,7 @@ p.category {
 #divmaintext h1 {
   font-size: 22pt;
   color: white;
-  font-family: arial;
+  ////font-family: arial;
   text-align: center;
   width: 100%;
 }
@@ -98,7 +98,7 @@ input.button {
     border: 1px solid black;
     font-weight: bold;
     font-size: 13px;
-    font-family: Arial, Helvetica, sans-serif;
+    ////font-family: Arial, Helvetica, sans-serif;
 }
 
 input.button:hover {

@@ -220,7 +220,7 @@ form {
   padding-right: 6px;
   padding-bottom: 1px;
 
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   color: #000000;
   line-height: 100%;
@@ -235,7 +235,7 @@ form {
 }
 
 #divlogout p {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   color: #000000;
   line-height: 100%;
@@ -251,14 +251,14 @@ form {
 
 /* input box */
 .inputbox {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   width: 92px;
   border: solid 2px #000000;
 }
 /* select box */
 .selectbox {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 12px;
   width: 92px;
 }
@@ -314,7 +314,7 @@ form {
   list-style: none;
 }
 #divannouncements li {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   color: #000000;
   line-height: 133%;
@@ -338,7 +338,7 @@ form {
 }
 
 #divfooter p {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.70em;
   color: #000000;
   line-height: 135%;

@@ -5,7 +5,7 @@ textarea.qsd_editor {
     border: 1px dashed #cccccc;
     border-top: none;
     margin: 0px;
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
 }
 
@@ -16,7 +16,7 @@ textarea.qsd_editor:focus {
 
 div.qsd_header
 {
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
     color: #cccccc;
     padding: 0px;
@@ -35,7 +35,7 @@ div.qsd_edit_hidden
 
 div.qsd_edit_visible
 {
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
     color: #cccccc;
     padding: 0px;
