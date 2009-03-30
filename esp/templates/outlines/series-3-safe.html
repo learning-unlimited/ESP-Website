@@ -1,136 +1,72 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<title>MIT ESP - {% block title %}{% endblock %}</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="description" content="" />
-<meta name="keywords" content="" lang="en-us" xml:lang="en-us" />
-<!-- Copyright (C) 2005 Massachusetts Institute of Technology -->
+{% extends "elements/html" %}
 
-<script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
+{% block javascript %}
+{{ block.super }}
+{% if request.user.is_authenticated %}
+<script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/logger/logger-min.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-debug.js"></script>
+<script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script>
+<script type="text/javascript" src="/media/scripts/ddlist.js"></script>
+{% endif %}
+{% endblock %}
 
 
-
-
+{% block stylesheets %}
 <link rel="stylesheet" href="/media/styles/print_basic.css" type="text/css" media="print" />
 <link rel="stylesheet" href="/media/styles/level3.css" type="text/css" media="screen" />
-
-
-
-
-
-
-</head>
-<body onload="MM_preloadImages( )">
-
-
-{% comment %}
-
-<!-- skip link -->
-<div class="offscreen">
-
-<a href="#startcontent" accesskey="x"><img src="/media/images/spacer.gif" width="1" height="1" alt="Skip to content" /></a>
-
-</div>
-
-<!-- backgrounds  at top of page -->
-<div id="top_banner">
-<div id="divbkg1">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
-</div>
-<div id="divbkg2">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
-</div>
-<div id="divbkg3">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
-
-</div>
-<div id="divbkg4">
-  <img src="/media/images/spacer.gif" width="1" height="1" alt="" />
-</div>
-</div>
-
-
-<!-- site title -->
-
-<!-- image size may vary -->
-<link rel="stylesheet" href="/media/styles/myesp2.css" type="text/css" media="screen" />
-
-<!-- section name -->
-<div id="divsectionname">
-</div>
- 
-<!-- image sizes may vary -->
-
-<!-- secondary nav -->
-
-<ul id="secondarynav">
-
-<li class="divsecondarynavlink">&nbsp;</li>
-</ul>
-
-<!-- search -->
-{% endcomment %}
-<!-- subsection name -->
-{% comment %}<div id="divsubsectionname">
-{% block subsection %}
+<link rel="stylesheet" href="/media/styles/uchicago_main.css" type="text/css" />
 {% endblock %}
-</div>{% endcomment %}
-<!-- image sizes may vary -->
 
-<!-- image sizes may vary -->
+{% block body %}
+<style type="text/css">
+body {
+  background: {% block content_color %}#FFFFFF{% endblock %};
+}
+</style>
 
-<!-- content, quote, and footer -->
-<div id="divmain2">
-  <a name="startcontent" id="startcontent"></a>
-  <table border="0" cellpadding="0" cellspacing="0" summary=" " id="maintable">
-    <!-- skip row 1 - no longer needed -->
-    <tr id="tableheader"><!-- alignment and space -->
-      <td><div class="row2 col1"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col2"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col3"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
+<div id="content">
+<div id="topleft"><a href="/"><img src="/media/images/splogo.gif" alt="Splash! Chicago" /></a></div>
 
-      <td class="paper"><div class="row2 col4"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td class="paper"><div class="row2 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-    </tr> 
-    <tr><!-- content -->
-      <td align="right" class="notmaintd" valign="bottom"></td>
-      <td align="left" valign="bottom" class="paper notmaintd"></td>
-      <td align="left" valign="top" class="paper">
-        <div id="divmaintext">
-{% block content %}
-{% endblock %}
-        </div>
-      </td>
-      <td align="left" valign="bottom" class="paper notmaintd">
-        <div id="divquotenone"><!-- table required for bottom vertical alignment of text -->
-          <table border="0" cellpadding="0" cellspacing="0" summary=" "><tr><td>
-          <div id="divquotetext"> 
-          
-          </div>
+<div id="nav_buttons"><a href="/learn/index.html"><img src="/media/images/linkf_01.gif" onmouseover="this.src='/media/images/linkr_01.gif'" onmouseout="this.src='/media/images/linkf_01.gif'" id="btn1" /></a><a href="/teach/index.html"><img src="/media/images/linkf_02.gif" onmouseover="this.src='/media/images/linkr_02.gif'" onmouseout="this.src='/media/images/linkf_02.gif'" id="btn2" /></a><a href="/volunteer/index.html"><img src="/media/images/linkf_03.gif" onmouseover="this.src='/media/images/linkr_03.gif'" onmouseout="this.src='/media/images/linkf_03.gif'" id="btn3" /></a><a href="/more_info/index.html"><img src="/media/images/linkf_04.gif" onmouseover="this.src='/media/images/linkr_04.gif'" onmouseout="this.src='/media/images/linkf_04.gif'" id="btn4" /></a></div>
 
-          </td></tr></table>
-        </div>
-      </td> 
-      <td class="paper"><div class="row3 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-    </tr>
-    <tr><!-- footer -->
-      <td colspan="3" align="left" valign="top">
-		<!-- footer -->
+<div id="navbar_header"><img src="/media/images/news.gif" alt="RECENT NEWS" /></div>
 
-<div id="divfooter">
+<div id="main_header">{% block welcome_message %}<!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. --><table width="600px" height="30px"><tr><td valign="middle">Welcome to Splash! Chicago, a student-run organization at the University of Chicago</td></tr></table>{% endblock %}</div>
 
-</div>      </td>
-      <td><div id="divquotenonebot"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-      <td><div class="row4 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
-    </tr>
-    <tr>
-      <td colspan="3">
-      </td>
-     </tr>
-  </table>
+<div id="navbar">
+<div id="navbar_content">
+
+{% if request.user.is_staff %}
+<a href="/admin/miniblog/entry/">Edit Links</a>
+{% endif %}
+
+{% load preview %}
+{% miniblog_for_user request.user as announcements 6 %}
+
+{% load smartypants %}
+{% load markdown %}
+{% for announce in announcements.announcementList %}
+<p>
+<span class="announcementlink_title{% if announce.section %} {{ announce.section }}{% endif %}">{{ announce.makeTitle }}</span><br />
+<span class="announcementlink">{% autoescape off %}{{ announce.content|markdown|smartypants }}{% endautoescape %}</span>
+</p>
+{% endfor %}
+
+<!-- more announcements -->
+{% if announcements.overflowed %}
+<div id="divannouncemore">
+  <a href="/myesp/home/">More Notices...</a>
+</div>
+{% endif %}
+
+</div>
 </div>
 
-</body>
-</html>
+<div id="main"><div id="main_content">{% block content %}{% endblock %}</div></div>
+
+</div>
+{% endblock %}
