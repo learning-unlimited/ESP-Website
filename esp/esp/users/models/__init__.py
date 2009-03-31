@@ -278,25 +278,6 @@ class ESPUser(User, AnonymousUser):
                 total_time = total_time + timedelta(hours=float(s.duration))
         return total_time
 
-    def getUserNum(self):
-        """ Returns the "number" of a user, which is distinct from id.
-            It's like the index if you search by lsat and first name."""
-
-        retVal = self.cache['getUserNum']
-
-        if retVal is not None: return retVal
-        users = User.objects.filter(last_name__iexact = self.last_name,
-                                    first_name__iexact = self.first_name).order_by('id')
-        i = 0
-        for user in users:
-            if user.id == self.id:
-                break
-            i += 1
-
-        retVal = (i and i or '')
-        self.cache['getUserNum'] = retVal
-        return retVal
-
     @staticmethod
     def getUserFromNum(first, last, num):
         if num == '':
