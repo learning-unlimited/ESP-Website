@@ -579,7 +579,6 @@ class ESPUser(User, AnonymousUser):
 
     def recoverPassword(self):
         # generate the ticket, send the email.
-        from esp.users.models import PersistentQueryFilter
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
         from django.contrib.sites.models import Site
