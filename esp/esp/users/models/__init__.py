@@ -370,17 +370,6 @@ class ESPUser(User, AnonymousUser):
         r.res_type = ResourceType.get_or_create('Teacher Availability')
         r.save()
 
-    def enrollment_cache_key(self, program):
-        if program is not None:
-            return 'EnrolledClasses__%s' % program.id
-        else:
-            return 'EnrolledClasses__noprogram'
-
-    def clear_enrollment_cache(self, program):
-        _import_userbit()
-        cache = UserBit.objects.cache(self)
-        cache[self.enrollment_cache_key(program)] = None
-
     def getClasses(self, program=None, verbs=None):
         from esp.program.models import ClassSubject
         csl = self.getSections(program, verbs)
