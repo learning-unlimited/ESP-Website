@@ -16,10 +16,6 @@ from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
 from esp.datatree.models import *
 
-# Cache introspection
-from django.core.cache.backends.memcached import CacheClass as MemcachedClass
-
-
 
 __all__ = ['UserBit','UserBitImplication']
 
