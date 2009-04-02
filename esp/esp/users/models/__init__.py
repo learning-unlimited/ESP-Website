@@ -272,10 +272,19 @@ class ESPUser(User, AnonymousUser):
     #
     # A: We could subclass DataTree, lolz
 
+    @cache_function
     def getTaughtSections(self, program = None):
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program))
         return ClassSection.objects.filter(parent_class__in=classes)
+    getTaughtSections.get_or_create_token(('program',))
+    # FIXME: Would be REALLY nice to kill it only for the teachers of this section
+    # ...key_set specification needs more work...
+    getTaughtSections.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
+    getTaughtSections.depend_on_cache(getTaughtClasses, lambda self=wildcard, program=wildcard, **kwargs:
+                                                              {'self':self, 'program':program})
+    # FIXME: depend on ClassSection (ids vs values thing again)
+    #   This one's important... if ClassSubject data changes...
 
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
@@ -1518,3 +1527,4 @@ def install():
 
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit
+from esp.program.models import ClassSection
