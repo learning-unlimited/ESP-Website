@@ -49,13 +49,6 @@ from django.template import loader
 from django.core.mail import send_mail
 from django.template import Context
 
-UserBit = None
-
-def _import_userbit():
-    global UserBit
-    if UserBit is None:
-        from esp.users.models.userbits import UserBit
-
 try:
     import cPickle as pickle
 except ImportError:
@@ -161,7 +154,6 @@ class ESPUser(User, AnonymousUser):
         return self.getOld().is_authenticated()
 
     def getVisible(self, objType):
-        _import_userbit()
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
 
     def getLastProfile(self):
@@ -171,7 +163,6 @@ class ESPUser(User, AnonymousUser):
         return RegistrationProfile.getLastProfile(self)
 
     def getEditable(self, objType):
-        _import_userbit()
 
         # Cache it at the point, since the fbap cache doesn't really work
         key = 'getEditable__%s.%s' % (objType.__module__, objType.__name__)
@@ -183,7 +174,6 @@ class ESPUser(User, AnonymousUser):
         return objType.objects.filter(id__in=id_list)
 
     def canEdit(self, object):
-        _import_userbit()
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
 
     def updateOnsite(self, request):
@@ -308,7 +298,6 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
-        _import_userbit()
         types = ['Student', 'Teacher','Guardian','Educator']
 
         if strType not in types:
@@ -478,7 +467,6 @@ class ESPUser(User, AnonymousUser):
         return priority
 
     def isEnrolledInClass(self, clsObj, request=None):
-        _import_userbit()
         verb_str = 'V/Flags/Registration/Enrolled'
         if request:
             verb = request.get_node(verb_str)
@@ -488,11 +476,9 @@ class ESPUser(User, AnonymousUser):
         return UserBit.UserHasPerms(self, clsObj.anchor, verb)
 
     def canAdminister(self, nodeObj):
-        _import_userbit()
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
     def canRegToFullProgram(self, nodeObj):
-        _import_userbit()
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
     def hasFinancialAid(self, anchor):
@@ -575,7 +561,6 @@ class ESPUser(User, AnonymousUser):
     line_items = lambda x, y: x.paymentStatus(y)[3]
 
     def isOnsite(self, program = None):
-        _import_userbit()
         verb = GetNode('V/Registration/OnSite')
         if program is None:
             return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
@@ -615,7 +600,6 @@ class ESPUser(User, AnonymousUser):
 
 
     def isAdministrator(self, anchor_object = None):
-        _import_userbit()
         if anchor_object is None:
             return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
         else:
@@ -639,7 +623,6 @@ class ESPUser(User, AnonymousUser):
         Creates the methods such as isTeacher that determins whether
         or not the user is a member of that user class.
         """
-        _import_userbit()
         user_classes = ('Teacher','Guardian','Educator','Officer','Student')
         overrides = {'Officer': 'Administrator'}
         for user_class in user_classes:
@@ -662,13 +645,11 @@ class ESPUser(User, AnonymousUser):
 
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
-        _import_userbit()
         # Axiak
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer/Edit'))
 
     def getMiniBlogEntries(self):
         """Return all miniblog posts this person has V/Subscribe bits for"""
-        _import_userbit()
         # Axiak 12/17
         from esp.miniblog.models import Entry
         return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe')).order_by('-timestamp')
@@ -782,7 +763,6 @@ class StudentInfo(models.Model):
         return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
 
     def updateForm(self, form_dict):
-        _import_userbit()
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
@@ -800,7 +780,6 @@ class StudentInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
-        _import_userbit()
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
 
@@ -1254,7 +1233,6 @@ class K12School(models.Model):
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
-    _import_userbit()
 
     DEFAULT_VERB = 'V/Administer/Edit'
 
@@ -1539,3 +1517,6 @@ def install():
                             "recursive": False } )
 
         populateInitialUserBits(AdminUserBits)
+
+# We can't import these earlier because of circular stuff...
+from esp.users.models.userbits import UserBit
