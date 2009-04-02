@@ -82,6 +82,10 @@ urlpatterns += patterns('',
                         (r'^myesp/', include('esp.users.urls'),)
                         )
 
+urlpatterns += patterns('',
+                        (r'^cache/', include('esp.cache.urls'),)
+                        )
+
 urlpatterns += patterns('esp.qsd.views',
                         (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/(?P<url>.*).html$', 'qsd'),
                         (r'^(?P<url>.*)\.html$', 'qsd'),

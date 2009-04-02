@@ -1,0 +1,33 @@
+{% extends "outlines/series-3.html" %}
+
+{% block stylesheets %}
+{{block.super}}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block javascript %}
+{{block.super}}
+<script src="/media/scripts/sorttable.js"></script>
+{% endblock %}
+
+{% block title %}All Caches{% endblock %}
+
+{% block content %}
+
+<div id="program_form">
+<table class="sortable">
+<thead>
+<tr>
+<th>Cache</th><th>Hits</th><th>Misses</th>
+</tr>
+</thead>
+<tbody>
+{% for cache in caches %}
+<tr><td>{{ cache.pretty_name }}</td> <td>{{ cache.hit_count }}</td> <td>{{ cache.miss_count }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% endblock %}
+
