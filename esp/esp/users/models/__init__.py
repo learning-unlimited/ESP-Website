@@ -28,26 +28,29 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from django.db import models
-from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
-from django.core.exceptions import PermissionDenied
-from django.contrib.auth.models import User, AnonymousUser
-from esp.datatree.models import *
+
 from datetime import datetime, timedelta
-from django.db.models.query import Q
-from esp.dblog.models import error
-from django.db.models.query import QuerySet
-from django.core.cache import cache
-from esp.middleware import ESPError
-from django.template.defaultfilters import urlencode
+
 from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
+from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
+from django.core.mail import send_mail
+from django.db import models
+from django.db.models.query import Q, QuerySet
+from django.http import HttpRequest
+from django.template import Context, loader
+from django.template.defaultfilters import urlencode
+
+from esp.cache import cache_function, wildcard
+from esp.datatree.models import *
+from esp.db.cache import GenericCacheHelper
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
-from esp.db.cache import GenericCacheHelper
-from django.http import HttpRequest
-from django.template import loader
-from django.core.mail import send_mail
-from django.template import Context
+from esp.dblog.models import error
+from esp.middleware import ESPError
+
 
 try:
     import cPickle as pickle
