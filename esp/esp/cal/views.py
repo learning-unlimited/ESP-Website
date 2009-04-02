@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.calendar.models import Event
+from esp.cal.models import Event
 from esp.web.util import render_to_response
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.forms import ModelForm
@@ -45,7 +45,7 @@ def createevent(request):
     if request.method == 'POST':
         f = EventForm(request.POST)
         if f.is_valid():
-            new_event = f.save():
+            new_event = f.save()
             return HttpResponseRedirect('/events/edit/?%i', new_event.id)
 
     # Otherwise, generate a blank new-page form
