@@ -1531,5 +1531,5 @@ def install():
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit
 from esp.cal.models import Event
-from esp.program.models import ClassSection, Program
+from esp.program.models import ClassSubject, ClassSection, Program
 from esp.resources.models import Resource
