@@ -29,3 +29,6 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+# Convenience imports
+from esp.cache.argcache import cache_function
+from esp.cache.key_set import wildcard
