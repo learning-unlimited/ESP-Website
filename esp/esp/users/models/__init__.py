@@ -334,53 +334,52 @@ class ESPUser(User, AnonymousUser):
         else:
             return User.objects.filter(Q_useroftype)
 
-    def availability_cache_key(self, program, ignore_classes=False):
-        if ignore_classes:
-            return 'espuser__availabletimes_all:%d,%d' % (self.id, program.id)
-        else:
-            return 'espuser__availabletimes:%d,%d' % (self.id, program.id)
-
+    @cache_function
     def getAvailableTimes(self, program, ignore_classes=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.resources.models import Resource
         from esp.cal.models import Event
 
-        #   This is such a common operation that I think it should be cached.
-        cache_key = self.availability_cache_key(program, ignore_classes)
-        result = cache.get(cache_key)
-        if result is not None:
-            return result
-
         valid_events = Event.objects.filter(resource__user=self, anchor=program.anchor)
 
         if ignore_classes:
             #   Subtract out the times that they are already teaching.
-            other_classes = self.getTaughtSections(program)
+            other_sections = self.getTaughtSections(program)
 
-            other_times = [cls.meeting_times.values_list('id', flat=True) for cls in other_classes]
+            other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections]
             for lst in other_times:
                 valid_events = valid_events.exclude(id__in=lst)
 
-        #   Finally, convert from a query set down to a list for caching
-        cache.set(cache_key, valid_events)
         return valid_events
+    getAvailableTimes.get_or_create_token(('self', 'program',))
+    getAvailableTimes.depend_on_cache(getTaughtSections,
+            lambda self=wildcard, program=wildcard, **kwargs:
+                 {'self':self, 'program':program, 'ignore_classes':True})
+    # FIXME: Really should take into account section's teachers...
+    # even though that shouldn't change often
+    getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
+    getAvailableTimes.depend_on_row(lambda:Resource, lambda resource:
+                                        # FIXME: What if resource.event.anchor somehow isn't a program?
+                                        # Probably want a helper method return a special "nothing" object (XXX: NOT None)
+                                        # and have key_sets discarded if they contain it
+                                        {'program': Program.objects.get(anchor=resource.event.anchor),
+                                            'self': resource.user})
+    # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
+    # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
         """ Clear all resources indicating this teacher's availability for a program """
         from esp.resources.models import Resource
-        from django.core.cache import cache
 
-        cache_key = self.availability_cache_key(program)
-        cache.delete(cache_key)
         Resource.objects.filter(user=self, event__anchor=program.anchor).delete()
 
     def addAvailableTime(self, program, timeslot):
         from esp.resources.models import Resource, ResourceType
-        from django.core.cache import cache
 
-        cache_key = self.availability_cache_key(program)
-        cache.delete(cache_key)
+        # if program.anchor is not timeslot.anchor:
+        #    BADNESS
+
         r = Resource()
         r.user = self
         r.event = timeslot
@@ -1527,4 +1526,6 @@ def install():
 
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit
-from esp.program.models import ClassSection
+from esp.cal.models import Event
+from esp.program.models import ClassSection, Program
+from esp.resources.models import Resource
