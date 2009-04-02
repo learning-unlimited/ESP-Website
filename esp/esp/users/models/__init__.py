@@ -74,6 +74,13 @@ def user_get_key(user):
 def userBitCacheTime():
     return 300
 
+def admin_required(func):
+    def wrapped(request, *args, **kwargs):
+        if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator():
+            raise PermissionDenied
+        return func(request, *args, **kwargs)
+    return wrapped
+
 class CacheHelper(GenericCacheHelper):
     @staticmethod
     def get_key(user):
