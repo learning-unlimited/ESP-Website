@@ -68,6 +68,7 @@ DEBUG = False
 DISPLAYSQL = False
 TEMPLATE_DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
+DEBUG_CACHE_DUMP = False
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -173,6 +174,7 @@ INSTALLED_APPS = (
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
+    'esp.cache',
 #    'django_evolution',
 #    'django_command_extensions',
 )
