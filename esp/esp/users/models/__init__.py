@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2009 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -260,10 +260,7 @@ class ESPUser(User, AnonymousUser):
     def getTaughtSections(self, program = None):
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program))
-        section_ids = []
-        for c in classes:
-            section_ids += [v['id'] for v in c.sections.all().values('id')]
-        return ClassSection.objects.filter(id__in=section_ids)
+        return ClassSection.objects.filter(parent_class__in=classes)
 
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
@@ -324,7 +321,6 @@ class ESPUser(User, AnonymousUser):
             can teach for a particular program. """
         from esp.resources.models import Resource
         from esp.cal.models import Event
-        from django.core.cache import cache
 
         #   This is such a common operation that I think it should be cached.
         cache_key = self.availability_cache_key(program, ignore_classes)
