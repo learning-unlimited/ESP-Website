@@ -264,6 +264,8 @@ class ESPUser(User, AnonymousUser):
                                                     lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id)
     # FIXME: depend on ClassSubject (ids vs values thing again)
     #   This one's important... if ClassSubject data changes...
+    # kinda works, but a bit too heavy handed:
+    getTaughtClasses.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program})
 
     # This is not as good fidelity as we'd like, ideally we'd incorporate the program
     # We can take parent of parent of node and then find the program like
@@ -285,6 +287,8 @@ class ESPUser(User, AnonymousUser):
                                                               {'self':self, 'program':program})
     # FIXME: depend on ClassSection (ids vs values thing again)
     #   This one's important... if ClassSubject data changes...
+    # kinda works, but a bit too heavy handed:
+    getTaughtClasses.depend_on_row(lambda:ClassSection, lambda sec: {'program': sec.parent_program})
 
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
