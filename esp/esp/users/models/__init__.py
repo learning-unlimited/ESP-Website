@@ -244,6 +244,7 @@ class ESPUser(User, AnonymousUser):
             return otheruser.username
         return ''
 
+    @cache_function
     def getTaughtClasses(self, program = None):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
@@ -259,6 +260,17 @@ class ESPUser(User, AnonymousUser):
                 error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
             else:
                 return all_classes.filter(parent_program = program)
+    getTaughtClasses.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
+                                                    lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id)
+    # FIXME: depend on ClassSubject (ids vs values thing again)
+    #   This one's important... if ClassSubject data changes...
+
+    # This is not as good fidelity as we'd like, ideally we'd incorporate the program
+    # We can take parent of parent of node and then find the program like
+    # that...  I think, at this point, we really want to be able to make tokens
+    # by anchors... this seems important enough. How to do it sanely?
+    #
+    # A: We could subclass DataTree, lolz
 
     def getTaughtSections(self, program = None):
         from esp.program.models import ClassSection
