@@ -33,7 +33,6 @@ import traceback
 
 from django.core.mail import mail_admins
 
-from esp.middleware.serverloaded import ServerLoadedMiddleware
 from esp.cache.registry import caches_locked
 
 __all__ = ['warn_if_loaded']
@@ -59,7 +58,7 @@ things around so that you don't.
 """
 
 def warn_if_loaded(subject=DEFAULT_SUBJECT, message=DEFAULT_MESSAGE):
-    if caches_locked() or ServerLoadedMiddleware.server_loaded:
+    if caches_locked():
         message += '\n--------\n'
         for line in traceback.format_stack():
             message += line

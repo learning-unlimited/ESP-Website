@@ -124,7 +124,6 @@ TEMPLATE_LOADERS = (
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
-    (   0, 'esp.middleware.serverloaded.ServerLoadedMiddleware'),
     ( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
    #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
