@@ -260,6 +260,7 @@ class ESPUser(User, AnonymousUser):
                 error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
             else:
                 return all_classes.filter(parent_program = program)
+    # FIXME: What if the Program query gives nothing?
     getTaughtClasses.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
                                                     lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id)
     # FIXME: depend on ClassSubject (ids vs values thing again)
@@ -267,12 +268,6 @@ class ESPUser(User, AnonymousUser):
     # kinda works, but a bit too heavy handed:
     getTaughtClasses.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program})
 
-    # This is not as good fidelity as we'd like, ideally we'd incorporate the program
-    # We can take parent of parent of node and then find the program like
-    # that...  I think, at this point, we really want to be able to make tokens
-    # by anchors... this seems important enough. How to do it sanely?
-    #
-    # A: We could subclass DataTree, lolz
 
     @cache_function
     def getTaughtSections(self, program = None):
@@ -285,10 +280,6 @@ class ESPUser(User, AnonymousUser):
     getTaughtSections.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
     getTaughtSections.depend_on_cache(getTaughtClasses, lambda self=wildcard, program=wildcard, **kwargs:
                                                               {'self':self, 'program':program})
-    # FIXME: depend on ClassSection (ids vs values thing again)
-    #   This one's important... if ClassSubject data changes...
-    # kinda works, but a bit too heavy handed:
-    getTaughtClasses.depend_on_row(lambda:ClassSection, lambda sec: {'program': sec.parent_program})
 
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
