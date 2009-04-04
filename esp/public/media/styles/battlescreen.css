@@ -11,7 +11,7 @@ font-weight: bold;
 color: #000000;
 }
 #battlescreen .header {
-//font-family: Arial;
+//font-family: Georgia;
 font-size: 13px;
 font-weight: bold;
 color: #000000;
@@ -21,12 +21,12 @@ padding-bottom: 2px;
 
 #battlescreen .class_stuff {
 text-indent: 20px;
-//font-family: Arial;
+//font-family: Georgia;
 font-size: 12px;
 }
 #battlescreen .admin_options {
 text-indent: 0px;
-//font-family: Arial;
+//font-family: Georgia;
 font-size: 12px;
 }
 #battlescreen .class_title {
@@ -40,7 +40,7 @@ color: #006600;
    padding: 2px 5px 2px 5px;
    text-decoration: none;
    font-weight: bold;
-   font-family: arial;
+   font-family: Georgia;
 }
 
 #battlescreen a.abutton:hover
@@ -59,17 +59,17 @@ color: #006600;
 
 #battlescreen input.button:hover
 {
-   color:#0000cc;
+   color:#497CCA;
    border: #000000 1px solid;
    background-color: #ccffcc;
 }
 
 #battlescreen input.button:disabled
 {
-   color: #666;
+   color: #BCCAF5;
    font-weight:normal;
    border: black 1px solid;
-   background-color: #DFD;
+   background-color: #141414;
 }
 
 #battlescreen .bordertop2
@@ -83,13 +83,13 @@ color: #006600;
 	border: gray 1px solid;
 	font-size: 11pt;
 	font-weight: normal;
-	//font-family: Arial, Helvetica, sans-serif;
+	//font-family: Georgia, Helvetica, sans-serif;
 }
 
 #battlescreen input.text
 {
    color:#000000;
-   //font-family:Arial,helvetica,sans-serif;
+   //font-family:Georgia,helvetica,sans-serif;
    font-size:11pt;
    border-width: 1px;
    border-color: #000000;
@@ -108,11 +108,11 @@ color: #006600;
 }
 
 #battlescreen .classname {
-   //font-family: Arial;
+   //font-family: Georgia;
 }
 
 #battlescreen table {
-   background-color: #554;
+   background-color: #BCCAF5;
    border: 0;
 }
 
@@ -124,12 +124,12 @@ color: #006600;
    padding: 5px;
    text-align: center;
    font-size: 1.1em;
-   background-color: #339;
+   background-color: #141414;
    color: #FFC;
 }
 
 #battlescreen .welcomebox th {
-   background-color: #CCF;
+   background-color: #BCCAF5;
    color: black;
 }
 
@@ -139,7 +139,7 @@ color: #006600;
 }
 
 #battlescreen a:hover {
-   background: #FFF;
+   background: #FFFFFF;
    text-decoration: none;
 }
 
@@ -149,12 +149,12 @@ color: #006600;
 }
 
 #divmaintext a:visited {
-   color:#FF44FF;
+   color:#497CCA;
    text-decoration:underline;
 }
 
 #divmaintext a:link {
-   color:#4444FF;
+   color:#497CCA;
    text-decoration:underline;
 }
 
@@ -177,11 +177,11 @@ color: #006600;
 }
 
 #battlescreen .borderTop {
-   border: 1px groove #999; border-width: 4px 0 0 0;
+   border: 1px groove #141414; border-width: 4px 0 0 0;
 }
 
 #battlescreen .borderTopRight {
-   border: 1px groove #999; border-width: 4px 0 0 0;
+   border: 1px groove #141414; border-width: 4px 0 0 0;
    text-align: right;
    font-size: 75%;
 }
@@ -191,7 +191,7 @@ color: #006600;
 }
 
 #battlescreen h2 {
-  //font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Georgia, Lucida, Helvetica, sans-serif;
   font-size: .9em;
   font-weight: bold;
   color: #000000;
@@ -199,7 +199,7 @@ color: #006600;
   margin-bottom: 0px;
 }
 #battlescreen h3 {
-  //font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Georgia, Lucida, Helvetica, sans-serif;
   font-size: .85em;
   font-weight: bold;
   color: #000000;
