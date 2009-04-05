@@ -399,7 +399,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                         scheduling_log.append('Added %s to %s at %s' % (user, cls['cls'], cls['cls'].meeting_times.all()[0]))
 
                         if not dry_run:
-                            cls['cls'].preregister_student(user)
+                            cls['cls'].preregister_student(user, overridefull=True)
                             cls['cls'].update_cache_students()
                             
                         for ts in cls['cls'].meeting_times.all():
@@ -471,8 +471,8 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
             cur_classes = ClassSubject.objects.filter(parent_program = self.program)
             [cls.delete() for cls in cur_classes]
 
-        dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-        dummy_anchor.save()
+        #dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
+        #dummy_anchor.save()
         
         data = request.POST
         
@@ -505,7 +505,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                 newclass.class_size_max = room_capacity
                 
                 newclass.category = ClassCategories.objects.get(category = 'SATPrep')
-                newclass.anchor = dummy_anchor
+                newclass.anchor = self.program.classes_node()
     
                 newclass.save()
                                 
@@ -536,7 +536,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                     sec.meeting_times.add(ts)
                     sec.assign_room(new_room)
         
-        dummy_anchor.delete()
+        #dummy_anchor.delete()
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
 
     @aux_call

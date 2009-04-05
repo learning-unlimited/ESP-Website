@@ -7,12 +7,14 @@
 \usepackage{pst-barcode}
 \usepackage{textpos}
 \usepackage{tabularx}
+\usepackage{graphicx}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
 \usepackage[left=.5in,top=1cm,right=.5in]{geometry}
+\graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
 
 \pagestyle{fancy}
-\fancyhead[C]{Insert Fancy Header Here}
-\setlength\headheight{42pt}
+\fancyhead[C]{\includegraphics[scale = 1]{header-top}\includegraphics[scale = 1]{header-line}}
+\setlength\headheight{80pt}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt} 
 \fancyfoot{}
@@ -73,7 +75,7 @@ If you have any questions or would like to switch classes, please go to the prog
 
 \vspace{0.25cm}
 
-\begin{tabularx}{20cm}{|l|c|lX|X|}
+\begin{tabularx}{18cm}{|l|c|lX|X|}
 \hline
 \textbf{Time} & \textbf{Room} & \textbf{Class} & & \textbf{Teacher(s)} \\
 {% for cls in student.classes %}\hline
@@ -84,10 +86,13 @@ If you have any questions or would like to switch classes, please go to the prog
 \end{center}
 
 \vfill
-\begin{pspicture}(3.0, 0.5in)
-\psbarcode{% templatetag openbrace %}{{ student.id|stringformat:"08d" }}{% templatetag closebrace %}{includetext height=0.4}{upce}
-\end{pspicture}
-\vspace{1cm}
+\begin{pspicture}(3.0, 0.7in)
+\psbarcode{% templatetag openbrace %}{{ student.invoice_id }}{% templatetag closebrace %}{includetext height=0.4}{code39}
+\end{pspicture} \\
+\vspace{0pt} \\
+{{ student.name }} ({{ student.id }}) \\
+Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
+\vspace{2.5cm}
 {% if not forloop.last %}\pagebreak{% endif %}
 {% endfor %}
 

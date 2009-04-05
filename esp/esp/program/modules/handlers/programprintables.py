@@ -783,12 +783,12 @@ Student schedule for %s:
 
     @aux_call
     @needs_admin
-    def studentschedules(self, request, tl, one, two, module, extra, prog):
+    def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
         """ generate student schedules """
         
-        context = {'module': self     }
+        context = {'module': self }
 
-        if extra == 'onsite':
+        if onsite:
             students = [ESPUser(User.objects.get(id=request.GET['userid']))]
         else:
             filterObj, found = get_user_list(request, self.program.getLists(True))
@@ -796,7 +796,7 @@ Student schedule for %s:
             if not found:
                 return filterObj
 
-            students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
+            students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
         students.sort()
         
@@ -814,8 +814,7 @@ Student schedule for %s:
             student.updateOnsite(request)
             # get list of valid classes
             classes = [ cls for cls in student.getEnrolledSections()
-                                if cls.parent_program == self.program
-                                and cls.isAccepted()                       ]
+                                if cls.parent_program == self.program and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
             
@@ -852,9 +851,11 @@ Student schedule for %s:
         else:
             file_type = 'pdf'
 
+        from django.conf import settings
+        context['PROJECT_ROOT'] = settings.PROJECT_ROOT
+            
         from esp.web.util.latex import render_to_latex
         return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
-        return render_to_latex(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin
@@ -865,8 +866,8 @@ Student schedule for %s:
         if not found:
             return filterObj
 
-        context = {'module': self     }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
+        context = {'module': self }
+        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct() ]
 
         students.sort()
         
@@ -885,6 +886,9 @@ Student schedule for %s:
                                    'cls' : cls})
 
         context['scheditems'] = scheditems
+
+        from django.conf import settings
+        context['PROJECT_ROOT'] = settings.PROJECT_ROOT
         
         return render_to_response(self.baseDir()+'flatstudentschedule.html', request, (prog, tl), context)
 
