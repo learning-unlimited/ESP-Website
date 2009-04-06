@@ -45,7 +45,6 @@ from django.template.defaultfilters import urlencode
 
 from esp.cache import cache_function, wildcard
 from esp.datatree.models import *
-from esp.db.cache import GenericCacheHelper
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
@@ -77,14 +76,10 @@ def admin_required(func):
         return func(request, *args, **kwargs)
     return wrapped
 
-class CacheHelper(GenericCacheHelper):
-    @staticmethod
-    def get_key(user):
-        return 'ESPUserCache__%s' % user._get_pk_val()
 
 class ESPUserManager(ProcedureManager):
 
-    cache = CacheHelper
+    pass
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -115,7 +110,6 @@ class ESPUser(User, AnonymousUser):
             User.__init__(self, userObj, *args, **kwargs)
             
         self.other_user = False
-        self.cache = ESPUser.objects.cache(self)
 
     @classmethod
     def ajax_autocomplete(cls, data):
