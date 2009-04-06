@@ -497,6 +497,21 @@ class UserBit(models.Model):
         else:
             UserBit.updateCache(self.user.id)
 
+    def applies_to_user(self, user):
+        if isinstance(user, User):
+            user = user._get_pk_val()
+        return self.user_id == user or self.user_id == None
+
+    def applies_to_verb(self, verb):
+        if isinstance(verb, str):
+            verb = GetNode(verb)
+        return self.verb_id == verb.id or (self.recursive and self.verb.is_ancestor_of(verb))
+
+    def applies_to_qsc(self, qsc):
+        if isinstance(qsc, str):
+            qsc = GetNode(qsc)
+        return self.qsc_id == qsc.id or (self.recursive and self.qsc.is_ancestor_of(qsc))
+
     def updateCache(cls, user_id):
         cls.objects.cache(user_id).update()
     updateCache = classmethod(updateCache)
