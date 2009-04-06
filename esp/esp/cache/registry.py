@@ -29,6 +29,8 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+from django.conf import settings
+
 __all__ = ['register_cache', 'cache_by_uid', 'dump_all_caches', 'caches_locked']
 
 all_caches = {}
@@ -46,7 +48,8 @@ def dump_all_caches():
 def _finalize_caches():
     for c in all_caches.values():
         c.run_all_delayed()
-        print c.pretty_name
+        if settings.CACHE_DEBUG:
+            print "Initialized cache", c.pretty_name
 
 _caches_locked = False
 def caches_locked():

@@ -215,6 +215,16 @@ class ArgCache(WithDelayableMethods):
         
         self.register()
 
+    def _hit_hook(self, arg_list):
+        if settings.CACHE_DEBUG:
+            print "Cache Hit! %s on %s" % (self.name, arg_list)
+        self.hit_count += 1
+
+    def _miss_hook(self, arg_list):
+        if settings.CACHE_DEBUG:
+            print "Cache Miss! %s on %s" % (self.name, arg_list)
+        self.miss_count += 1
+
     @property
     def pretty_name(self):
         return '%s(%s)' % (self.name, ', '.join(self.params))
@@ -315,7 +325,7 @@ class ArgCache(WithDelayableMethods):
         ans_dict = self.cache.get_many(keys_to_get)
         wrapped_value = ans_dict.get(key, None)
         if wrapped_value is None:
-            self.miss_count += 1
+            self._miss_hook(arg_list)
             return None
         
         try:
@@ -323,7 +333,7 @@ class ArgCache(WithDelayableMethods):
             if len(wrapped_value) != len(keys_to_get):
                 # shhhh... that value wasn't really there
                 self.cache.delete(key)
-                self.miss_count += 1
+                self._miss_hook(arg_list)
                 return None
             for tvalue, tkey in zip(wrapped_value[1:], keys_to_get[1:]):
                 saved_value = ans_dict.get(tkey, None)
@@ -331,15 +341,15 @@ class ArgCache(WithDelayableMethods):
                 if not saved_value or saved_value != tvalue:
                     # shhhh... that value wasn't really there
                     self.cache.delete(key)
-                    self.miss_count += 1
+                    self._miss_hook(arg_list)
                     return None
 
             # okay, it's good
-            self.hit_count += 1
+            self._hit_hook(arg_list)
             return wrapped_value[0]
 
         except Exception: # Don't die on errors, e.g. if wrapped_value is not a tuple/list
-            self.miss_count += 1
+            self._miss_hook(arg_list)
             return None
 
     def set(self, arg_list, value, timeout_seconds=None):
@@ -380,7 +390,7 @@ class ArgCache(WithDelayableMethods):
     def delete_key_set(_self, **key_set):
         """ Delete everything in this key_set, rounding up if necessary. """
 
-        if settings.DEBUG_CACHE_DUMP:
+        if settings.CACHE_DEBUG:
             print "Dumping from", _self.name, "keyset", key_set
 
         # TODO: Would be nicer if we could just make a
