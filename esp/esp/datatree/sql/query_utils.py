@@ -172,15 +172,27 @@ class QTree(Q):
 
             if params:
                 for i in range(len(COLUMNS)):
-                    if child[1] == COLUMNS[i] and child[5][0] == TOKENS[i]:
-                        new_child = list(child)
-                        where_query = WHERE_QUERY % (connection.operators[child[3]][:-3])
+                    if len(child) == 6: # Django 1.0 data-structure format
+                        if child[1] == COLUMNS[i] and child[5][0] == TOKENS[i]:
+                            new_child = list(child)
+                            where_query = WHERE_QUERY % (connection.operators[child[3]][:-3])
+                            
+                            symbols = (child[0], child[1], child[1],
+                                       DataTree._meta.db_table,
+                                       DataTree._meta.pk.column)
+                            new_children.append(SubWhereNode(where_query, symbols, [datatree_id]))
+                            break
+                    else: # Django 1.1 data format
+                        if child[0][1] == COLUMNS[i] and child[3][0] == TOKENS[i]:
+                            new_child = list(child)
+                            where_query = WHERE_QUERY % (connection.operators[child[1]][:-3])
+                            
+                            symbols = (child[0][0], child[0][1], child[0][1],
+                                       DataTree._meta.db_table,
+                                       DataTree._meta.pk.column)
+                            new_children.append(SubWhereNode(where_query, symbols, [datatree_id]))
+                            break
                         
-                        symbols = (child[0], child[1], child[1],
-                                   DataTree._meta.db_table,
-                                   DataTree._meta.pk.column)
-                        new_children.append(SubWhereNode(where_query, symbols, [datatree_id]))
-                        break
                 else:
                     self._update_where(query, child, value)
                     new_children.append(child)
