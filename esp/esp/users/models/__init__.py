@@ -165,16 +165,16 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.getLastProfile(self)
 
+    @cache_function
+    def getEditable_ids(self, objType):
+        # As far as I know, fbap's cache is still screwy, so we'll retain this cache at a higher level for now --davidben, 2009-04-06
+        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit')).values_list('id', flat=True)
+    getEditable_ids.get_or_create_token(('self',)) # Currently very difficult to determine type, given anchor
+    getEditable_ids.depend_on_row(lambda:UserBit, lambda bit: {} if bit.user_id is None else {'self': bit.user},
+                                                  lambda bit: bit.applies_to_verb('V/Administer/Edit'))
+
     def getEditable(self, objType):
-
-        # Cache it at the point, since the fbap cache doesn't really work
-        key = 'getEditable__%s.%s' % (objType.__module__, objType.__name__)
-        id_list = self.cache[key]
-        if id_list is None:
-            id_list = UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit')).values_list('id', flat=True)
-            self.cache.set(key, id_list, 3600)
-
-        return objType.objects.filter(id__in=id_list)
+        return objType.objects.filter(id__in=self.getEditable_ids(objType))
 
     def canEdit(self, object):
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
