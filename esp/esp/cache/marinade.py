@@ -32,6 +32,8 @@ Email: web@esp.mit.edu
 from django.db.models import Model
 from django.contrib.auth.models import AnonymousUser
 
+from esp.cache.function import describe_class
+
 def marinade_dish(arg):
     if isinstance(arg, Model):
         if not isinstance(arg, AnonymousUser) and arg.id is None:
@@ -41,6 +43,8 @@ def marinade_dish(arg):
             # Do the right thing anyway
             return str(random.randint(0,999999))
         return str(arg.id)
+    if isinstance(arg, type):
+        return describe_class(arg)
     if hasattr(arg, '__marinade__'):
         return arg.__marinade__()
     return str(arg)
