@@ -68,7 +68,6 @@ class StatsMiddleware(object):
         if debug:
             # compute the db time for the queries just run
             queries = len(connection.queries) - request._num_queries
-            print queries, connection.queries
             if queries:
                 dbTime = reduce(add, [float(q['time']) 
                                       for q in connection.queries[request._num_queries:]])
