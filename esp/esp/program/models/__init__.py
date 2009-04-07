@@ -925,13 +925,19 @@ class RegistrationProfile(models.Model):
 
     @cache_function
     def getLastProfile(user):
-        try:
-            regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
-        except:
-            # Create a new one if it doesn't exist
-            # This is fine cache-wise because it'll still die on save()
-            regProf = RegistrationProfile()
-            regProf.user = user
+        regProf = None
+        
+        if isinstance(user.id, int):
+            try:
+                regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
+            except:
+                pass
+
+        if regProf != None:
+            return regProf
+        
+        regProf = RegistrationProfile()
+        regProf.user = user
 
         return regProf
     getLastProfile.depend_on_row(lambda:RegistrationProfile, lambda profile: {'user': profile.user})
