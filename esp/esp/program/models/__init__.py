@@ -263,18 +263,13 @@ class Program(models.Model):
         app_label = 'program'
         db_table = 'program_program'
 
+    @cache_function
     def checkitems_all_cached(self):
         """  The main Manage page requests checkitems.all() O(n) times in
         the number of classes in the program.  Minimize the number of these
         calls that actually hit the db. """
-        CACHE_KEY = "PROGRAM__CHECKITEM__CACHE__%d" % self.id
-        val = cache.get(CACHE_KEY)
-        if val == None:
-            val = self.checkitems.all()
-            len(val)
-            cache.set(CACHE_KEY, val, 1)
-        
-        return val
+        return self.checkitems.all()
+    checkitems_all_cached.depend_on_row(lambda:ProgramCheckItem, lambda item: {'self': item.program})
 
     get_teach_url = _get_type_url("teach")
     get_learn_url = _get_type_url("learn")
