@@ -37,6 +37,7 @@ from django.core.cache import cache
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
+from esp.cache import cache_function
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -927,23 +928,19 @@ class RegistrationProfile(models.Model):
         app_label = 'program'
         db_table = 'program_registrationprofile'
 
-    @staticmethod
+    @cache_function
     def getLastProfile(user):
-        if not isinstance(user, ESPUser):
-            user = ESPUser(user)
-        regProf = user.cache['getLastProfile']
-        if regProf is not None:
-            return regProf
-
         try:
             regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
         except:
             # Create a new one if it doesn't exist
+            # This is fine cache-wise because it'll still die on save()
             regProf = RegistrationProfile()
             regProf.user = user
 
-        user.cache['getLastProfile'] = regProf
         return regProf
+    getLastProfile.depend_on_row(lambda:RegistrationProfile, lambda profile: {'user': profile.user})
+    getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
     def confirmStudentReg(self, user):
         """ Confirm the specified user's registration in the program """
@@ -960,19 +957,7 @@ class RegistrationProfile(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
-        #  TODO: make Django NOT do a db query to grab ESPUser's data
-        #  probably requires manually getting the cache data, since
-        #  it's not as lazily evaluated as it claims to be
-        ESPUser(self.user).cache['getLastProfile'] = None
         super(RegistrationProfile, self).save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        """ clear getLastProfile cache """
-        #  TODO: make Django NOT do a db query to grab ESPUser's data
-        #  probably requires manually getting the cache data, since
-        #  it's not as lazily evaluated as it claims to be
-        ESPUser(self.user).cache['getLastProfile'] = None
-        super(RegistrationProfile, self).delete(*args, **kwargs)
         
     @staticmethod
     def getLastForProgram(user, program):
