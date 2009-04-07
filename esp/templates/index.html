@@ -107,14 +107,14 @@ html, body { background-image: url("{{ backgrounds|random }}"); }
 <img src="/media/images/home/nav/contactinfo.gif" border="0" alt="Contact Info" title="" name="contactinfo" id="contactinfo" />
 </a>
 </div>
-{% if request.user.get_profile.prof.isAdministrator %}
+{% if request.user.isAdministrator %}
 <div id="divnav7">
    <a href="/manage/programs" onmouseover="MM_swapImage('admin','','/media/images/level3/nav/admin_ro.gif',1)" onmouseout="MM_swapImgRestore()">
    <img src="/media/images/level3/nav/admin.gif" border="0" alt="Admin" title="" name="admin" id="admin" />
    </a>
 </div>
 {% endif %}
-{% if request.user.get_profile.prof.isOnsite %}
+{% if request.user.isOnsite %}
 <div id="divnav8">
    <a href="/myesp/onsite/" onmouseover="MM_swapImage('onsite','','/media/images/level3/nav/onsite_ro.gif',1)" onmouseout="MM_swapImgRestore()">
    <img src="/media/images/level3/nav/onsite.gif" border="0" alt="Onsite Registration" title="" name="onsite" id="onsite" />
