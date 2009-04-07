@@ -23,10 +23,21 @@
 -- Email: web@esp.mit.edu
 
 
+-- ***
+-- Table indices for the DataTree table
+-- ***
+
+-- Indices to facilitate range queries
+CREATE INDEX datatree__rangestart ON datatree_datatree USING btree (rangestart);
+CREATE INDEX datatree__rangeend ON datatree_datatree USING btre (rangeend);
+
+-- Speeds up get_by_uri queries
+CREATE INDEX datatree_uri ON datatree_datatree USING btree (uri) WHERE uri_correct = true;
+
 
 -- ***
 -- ESP plpgpsql functions
--- **
+-- ***
 -- Written by Mike Axiak.
 
 
