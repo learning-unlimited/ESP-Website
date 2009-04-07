@@ -16,6 +16,9 @@ from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
 from esp.datatree.models import *
 
+import operator
+from esp.datatree.sql.query_utils import QTree
+
 
 __all__ = ['UserBit','UserBitImplication']
 
@@ -228,41 +231,22 @@ class UserBitManager(ProcedureManager):
         if retVal is not None: return retVal
 
         q_list = self.bits_get_qsc( user, verb )
-
-        res = None
-
+        #q_list = self.filter(id__in=(x.id for x in q_list)).select_related('qsc')
+        query_list = []
         for bit in q_list:
-            try:
-                q = bit.qsc
-            except DataTree.DoesNotExist, e:
-                bit.delete()
-                continue
-
             if bit.recursive:
-                qsc_children_ids = [q.id] + [x['id'] for x in q.descendants(False).values('id')]
-                query = Model.objects.filter(anchor__in = qsc_children_ids)
+                query_list.append(QTree(anchor__below=bit.qsc_id))
             else:
-                query = Model.objects.filter(anchor=q)
-                
-            if qsc is not None:
-                query = query.filter(QTree(anchor__below = qsc))
+                query_list.append(Q(anchor=bit.qsc_id))
 
-            if res == None:
-                res = query
-            else:
-                res = res | query
+        query = Model.objects.filter(reduce(operator.or_, query_list)).distinct()
+        if qsc is not None:
+            query = query.filter(QTree(anchor__below = qsc))
 
-        if res != None:
-            retVal = res.distinct()
-
-        if res == None:
-            retVal = Model.objects.none().distinct()
-
-        list(retVal) # force retVal to evaluate itself
-        self.cache(user)[user_cache_key] = retVal
+        self.cache(user)[user_cache_key] = query
 
 	# Operation Complete!
-	return retVal
+	return query
 
     def UserHasPerms(self, user, qsc, verb, now = None, recursive_required = False):
         """ Given a user, a permission, and a subject, return True if the user, or all users,
