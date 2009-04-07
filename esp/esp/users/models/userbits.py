@@ -414,8 +414,8 @@ class UserBit(models.Model):
     qsc = AjaxForeignKey(DataTree, related_name='userbit_qsc') # Controller to grant access to
     verb = AjaxForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
 
-    startdate = models.DateTimeField(blank=True, null=True, default = datetime.datetime.now)
-    enddate = models.DateTimeField(blank=True, null=True)
+    startdate = models.DateTimeField(blank=True, default = datetime.datetime.now)
+    enddate = models.DateTimeField(blank=True, default = datetime.datetime(9999,1,1))
     recursive = models.BooleanField(default=True)
 
     objects = UserBitManager()
@@ -527,8 +527,8 @@ class UserBit(models.Model):
             when = datetime.datetime.now()
         if prefix is not '' and not prefix.endswith('__'):
             prefix += '__'
-        q = Q(**{prefix+'startdate__isnull': True}) | Q(**{prefix+'startdate__lte': when})
-        q = q & (Q(**{prefix+'enddate__isnull': True}) | Q(**{prefix+'enddate__gte': when}))
+        q = Q(**{prefix+'startdate__lte': when})
+        q = q & Q(**{prefix+'enddate__gte': when})
         return q
 
     @staticmethod

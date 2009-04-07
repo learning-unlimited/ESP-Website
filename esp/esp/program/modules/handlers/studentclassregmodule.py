@@ -71,7 +71,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
         Reg = QTree(userbit__verb__below = verb_base)
-        Unexpired = Q(userbit__enddate__isnull=True) | Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
+        Unexpired = Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
         
         if QObject:
             return {'classreg': self.getQForUser(Par & Unexpired & Reg)}
@@ -231,7 +231,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         #   Desired priority level is 1 above current max
         if section.preregister_student(self.user, self.user.onsite_local, False, priority):
-            bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
+            bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
             if bits.count() == 0:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
 

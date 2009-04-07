@@ -627,7 +627,7 @@ class ClassSection(models.Model):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.uri)
         result = defaultdict(list)
-        userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).distinct()
+        userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(enddate__gte=datetime.datetime.now()).distinct()
         for u in userbits:
             bit_str = u.verb.uri[uri_start:]
             result[bit_str].append(ESPUser(u.user))
@@ -734,8 +734,7 @@ class ClassSection(models.Model):
             # NOTE: This assumes that no user can be both Enrolled and Rejected
             # from the same class. Otherwise, this is pretty silly.
             new_qs = UserBit.objects.filter(qsc=self.anchor, verb=v)
-            new_qs = new_qs.filter(Q(enddate__gte=datetime.datetime.now())
-                    | Q(enddate__isnull=True))
+            new_qs = new_qs.filter(enddate__gte=datetime.datetime.now())
             qs = qs | new_qs
         
         retVal = qs.count()
@@ -838,7 +837,7 @@ class ClassSection(models.Model):
         self.update_cache()
 
     def getRegBits(self, user):
-        result = UserBit.objects.filter(QTree(qsc__below=self.anchor)).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        result = UserBit.objects.filter(QTree(qsc__below=self.anchor)).filter(enddate__gte=datetime.datetime.now()).order_by('verb__name')
         return result
     
     def getRegVerbs(self, user):
@@ -1449,7 +1448,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return "/".join(urllist)
 
     def getRegBits(self, user):
-        return UserBit.objects.filter(QTree(qsc__below=self.anchor), user=user).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        return UserBit.objects.filter(QTree(qsc__below=self.anchor), user=user).filter(enddate__gte=datetime.datetime.now()).order_by('verb__name')
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """

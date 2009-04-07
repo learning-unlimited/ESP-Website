@@ -97,7 +97,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @needs_student
     @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now())).count() > 0:
+        if UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now()).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
     

@@ -406,16 +406,14 @@ class ESPUser(User, AnonymousUser):
                 
             csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base,
                                                     anchor__userbit_qsc__verb__below=verb_base)
-                                              & Q( Q(anchor__userbit_qsc__user=self),
-                                                   Q(anchor__userbit_qsc__enddate__gte=datetime.now()) |
-                                                   Q(anchor__userbit_qsc__enddate__isnull=True))).distinct()
+                                              & Q( anchor__userbit_qsc__user=self,
+                                                   anchor__userbit_qsc__enddate__gte=datetime.now())).distinct()
 
         else:            
             verb_uris = ('V/Flags/Registration' + verb_str for verb_str in verbs)
             
             csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base)
-                                              & Q(Q(anchor__userbit_qsc__enddate__gte=datetime.now()) |
-                                                  Q(anchor__userbit_qsc__enddate__isnull=True)),
+                                              & Q(anchor__userbit_qsc__enddate__gte=datetime.now()),
                                               Q(anchor__userbit_qsc__user=self,
                                                 anchor__userbit_qsc__verb__uri__in=verb_uris)
                                               ).distinct()

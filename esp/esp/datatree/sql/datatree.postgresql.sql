@@ -110,9 +110,9 @@ BEGIN
       AND
       ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
       AND
-      ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now())
+      ("users_userbit"."startdate" <= now())
       AND
-      ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= now())
+      ("users_userbit"."enddate" >= now())
       AND
       (
         ("users_userbit"."recursive" = True AND
@@ -178,9 +178,9 @@ BEGIN
       (
         ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -235,7 +235,7 @@ BEGIN
         AND
         ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -293,9 +293,9 @@ BEGIN
     WHERE
     (
       (
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
       )
       AND
       (
@@ -350,9 +350,9 @@ BEGIN
     WHERE
     (
       (
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
       )
       AND
       (
@@ -399,9 +399,9 @@ BEGIN
       (
         ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -447,9 +447,9 @@ BEGIN
       (
         ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -498,9 +498,9 @@ BEGIN
              ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
              AND 
              (
-               ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now_ts)
+               ("users_userbit"."startdate" <= now_ts)
                AND
-               ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" > now_ts)
+               ("users_userbit"."enddate" > now_ts)
              )
           )
           AND
@@ -529,9 +529,9 @@ BEGIN
              ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
              AND 
              (
-               ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now_ts)
+               ("users_userbit"."startdate" <= now_ts)
                AND
-               ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" > now_ts)
+               ("users_userbit"."enddate" > now_ts)
              )
           )
           AND
@@ -560,9 +560,9 @@ BEGIN
                  ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
                  AND 
                  (
-                   ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now_ts)
+                   ("users_userbit"."startdate" <= now_ts)
                    AND
-                   ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" > now_ts)
+                   ("users_userbit"."enddate" > now_ts)
                  )
               )
               AND

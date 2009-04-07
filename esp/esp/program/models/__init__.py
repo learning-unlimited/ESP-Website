@@ -477,7 +477,7 @@ class Program(models.Model):
         userbits = UserBit.objects.filter(verb = v, user = espuser,
                          qsc = self.anchor.tree_create(['Confirmation']))
 
-        userbits = userbits.filter(Q(enddate__isnull=True) | Q(enddate__gte=datetime.now()))
+        userbits = userbits.filter(enddate__gte=datetime.now())
 
         if len(userbits) < 1:
             return False
@@ -945,14 +945,14 @@ class RegistrationProfile(models.Model):
 
     def confirmStudentReg(self, user):
         """ Confirm the specified user's registration in the program """
-        bits = UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
+        bits = UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
         if bits.count() == 0:
             bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
 
     def cancelStudentRegConfirmation(self, user):
         """ Cancel the registration confirmation for the specified student """
         raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
-        #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now())):
+        #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc__parent=self.anchor, qsc__name="Confirmation").filter(enddate__gte=datetime.now()):
         #    bit.expire()
         
     def save(self, *args, **kwargs):
