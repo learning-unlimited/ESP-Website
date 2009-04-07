@@ -150,14 +150,15 @@ def get_visible_announcements(user, limit):
     overflowed = False
     for model in models_to_search:
         result = UserBit.find_by_anchor_perms(model, user, verb).order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.now()) | Q(highlight_expire__isnull = True))
-        total = result.count()
 
         if limit:
-            overflowed = ((total - limit) > 0)
+            overflowed = ((len(result) - limit) > 0)
+            total = len(result)
             result = result[:limit]
         else:
             overflowed = False
-            result = result
+            total = len(result)
+
         results += result
         grand_total += total
 
