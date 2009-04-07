@@ -211,7 +211,7 @@ class ClassSection(models.Model):
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
         pc = self.parent_class
-        pc_sec_ids = [p['id'] for p in pc.sections.all().order_by('id').values('id')]
+        pc_sec_ids = pc.sections.all().order_by('id').values_list('id', flat=True)
         return pc_sec_ids.index(self.id) + 1
 
     def delete(self, adminoverride=False):
@@ -655,7 +655,7 @@ class ClassSection(models.Model):
         retVal = User.objects.none()
         for verb_str in verbs:
             v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            user_ids = [a['user'] for a in UserBit.valid_objects().filter(verb=v, qsc=self.anchor).values('user')]
+            user_ids = UserBit.valid_objects().filter(verb=v, qsc=self.anchor).values_list('user', flat=True)
             new_qs = User.objects.filter(id__in=user_ids).distinct()
             retVal = retVal | new_qs
             
@@ -976,7 +976,7 @@ class ClassSubject(models.Model):
     def _get_meeting_times(self):
         timeslot_id_list = []
         for s in self.sections.all():
-            timeslot_id_list += [item['id'] for item in s.meeting_times.all().values('id')]
+            timeslot_id_list += s.meeting_times.all().values_list('id', flat=True)
         return Event.objects.filter(id__in=timeslot_id_list).order_by('start')
     all_meeting_times = property(_get_meeting_times)
 
