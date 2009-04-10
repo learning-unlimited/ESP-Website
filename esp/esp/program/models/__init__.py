@@ -380,7 +380,6 @@ class Program(models.Model):
                 desc.update(tmpdict)
         for module in teachmodules:
             tmpdict = module.teacherDesc()
-            print tmpdict
             if tmpdict is not None:
                 desc.update(tmpdict)
 
@@ -394,6 +393,18 @@ class Program(models.Model):
             lists['all_'+usertype.lower()+'s'] = {'description':
                                    usertype+'s in all of ESP',
                                    'list' : ESPUser.getAllOfType(usertype)}
+        # Filtering by students is a really bad idea
+        students_Q = lists['all_students']['list']
+        # We can restore this one later if someone really needs it. As it is, I wouldn't mind killing
+        # lists['all_former_students'] as well.
+        del lists['all_students']
+        yog_12 = ESPUser.YOGFromGrade(12)
+        # This technically has a bug because of copy-on-write, but the other code has it too, and
+        # our copy-on-write system isn't good enough yet to make checking duplicates feasible
+        lists['all_current_students'] = {'description': 'Current students in all of ESP',
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__lte = yog_12)}
+        lists['all_former_students'] = {'description': 'Former students in all of ESP',
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__gt = yog_12)}
 
         lists['emaillist'] = {'description':
                       """All users in our mailing list without an account.""",
