@@ -287,7 +287,9 @@ class Program(models.Model):
         return '/'.join(str_array[-2:])
     
     def __unicode__(self):
-        return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+        if not hasattr(self, "_nice_name"):
+            self._nice_name = str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+        return self._nice_name
 
     def parent(self):
         return self.anchor.parent
@@ -778,6 +780,9 @@ class Program(models.Model):
         return extension
 
     def getColor(self):
+        if hasattr(self, "_getColor"):
+            return self._getColor
+        
         cache_key = 'PROGRAM__COLOR_%s' % self.id
         retVal = cache.get(cache_key)
         
@@ -792,6 +797,8 @@ class Program(models.Model):
                     cache.set(cache_key, retVal, 9999)
         if retVal == -1:
             return None
+
+        self._getColor = retVal
         return retVal
     
     def visibleEnrollments(self):
@@ -799,6 +806,8 @@ class Program(models.Model):
         Returns whether class enrollments should show up in the catalog.
         Current policy is that after everybody can sign up for one class, this returns True.
         """
+        if hasattr(self, "_visibleEnrollments"):
+            return self._visibleEnrollments
         
         cache_key = 'PROGRAM_VISIBLEENROLLMENTS_%s' % self.id
         retVal = cache.get(cache_key)
@@ -812,6 +821,8 @@ class Program(models.Model):
                 if UserBit.objects.filter(QTree(qsc__above=self.anchor_id, verb__above=reg_verb), user__isnull=True, recursive=True, startdate__lte=datetime.now()).count() > 0:
                     retVal = True
             cache.set(cache_key, retVal, 9999)
+
+        self._visibleEnrollments = retVal
         return retVal
     
     def archive(self):
@@ -963,7 +974,7 @@ class RegistrationProfile(models.Model):
     @staticmethod
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')
+        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
             # Has this user already filled out a profile for the parent program?
             parent_program = program.getParentProgram()

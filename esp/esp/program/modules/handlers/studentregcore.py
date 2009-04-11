@@ -192,19 +192,21 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                     context['completedAll'] = False
 
                 context = module.prepare(context)
-
-            context['canRegToFullProgram'] = ESPUser(request.user).canRegToFullProgram(prog)
+                
+            context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
                     
+            
 	    context['modules'] = modules
 	    context['one'] = one
 	    context['two'] = two
             context['coremodule'] = self
-            context['isConfirmed'] = self.program.isConfirmed(self.user)
+            context['isConfirmed'] = self.program.isConfirmed(self.user)            
             context['have_paid'] = self.have_paid()
-
+            
+            
             context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
-	    return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
     def isStep(self):
         return False
