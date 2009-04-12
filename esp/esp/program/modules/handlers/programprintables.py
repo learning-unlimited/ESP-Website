@@ -28,14 +28,14 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import GetNode
 #from esp.money.models    import Transaction
-from esp.program.models  import ClassSubject, ClassSection
+from esp.program.models  import ClassSubject, ClassSection, SplashInfo
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
 #from esp.money.models import LineItem, LineItemType
@@ -46,22 +46,13 @@ from esp.middleware import ESPError
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
     Things from checklists to rosters to attendance sheets can be found here. """
-    @classmethod
-    def module_properties(cls):
-        return {
-            "link_title": "Program Printables",
-            "module_type": "manage",
-            "seq": 5
-            }
 
-    @aux_call
     @needs_admin
     def paid_list_filter(self, request, tl, one, two, module, extra, prog):
         lineitemtypes = LineItemType.objects.forProgram(prog)
         context = { 'lineitemtypes': lineitemtypes }
         return render_to_response(self.baseDir()+'paid_list_filter.html', request, (prog, tl), context)
 
-    @aux_call
     @needs_admin
     def paid_list(self, request, tl, one, two, module, extra, prog):
 
@@ -218,10 +209,12 @@ class ProgramPrintables(ProgramModuleObj):
             sort_name_list = request.GET['sort_name_list'].split(',')
             first_sort = sort_name_list[0]
         else:
-            first_sort = "category"
+            first_sort = "timeblock"
 
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
+
+        classes.sort(ClassSubject.catalog_sort)
 
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
@@ -802,7 +795,8 @@ Student schedule for %s:
             
             student.payment_info = True
             student.classes = classes
-            
+            student.splashinfo = SplashInfo.getForUser(student)
+
         context['students'] = students
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
@@ -867,12 +861,64 @@ Student schedule for %s:
             rooms[room_name].sort(key=lambda x: x['timeblock'])
             for val in rooms[room_name]:
                 scheditems.append(val)
-                
+
+
+        rmap = {"110-111A": "Building 110, Floor 1, Room 111A",
+                "20-21B": "Building 20, Floor 1, Room 21B",
+                "20-21G": "Building 20, Floor 1, Room 21G",
+                "20-22K": "Building 20, Floor 2, Room 22K",
+                "200-002": "Building 200, Basement, Room 002",
+                "200-013": "Building 200, Basement, Room 013",
+                "200-015": "Building 200, Basement, Room 015",
+                "200-030": "Building 200, Basement, Room 030",
+                "200-032": "Building 200, Basement, Room 032",
+                "200-034": "Building 200, Basement, Room 034",
+                "200-105": "Building 200, Floor 1, Room 105",
+                "200-107": "Building 200, Floor 1, Room 107",
+                "200-124": "Building 200, Floor 1, Room 124",
+                "200-201": "Building 200, Floor 2, Room 201",
+                "200-202": "Building 200, Floor 2, Room 202",
+                "200-203": "Building 200, Floor 2, Room 203",
+                "200-205": "Building 200, Floor 2, Room 205",
+                "200-217": "Building 200, Floor 2, Room 217",
+                "200-219": "Building 200, Floor 2, Room 219",
+                "200-230": "Building 200, Floor 2, Room 230",
+                "200-303": "Building 200, Floor 3, Room 303",
+                "200-305": "Building 200, Floor 3, Room 305",
+                "240-101": "Building 240, Floor 1, Room 101",
+                "240-110": "Building 240, Floor 1, Room 110",
+                "240-202": "Building 240, Floor 2, Room 202",
+                "250-108": "Building 250, Floor 1, Room 108",
+                "250-201": "Building 250, Floor 2, Room 201",
+                "370-370": "Building 370, Floor 1, Room 370",
+                "380-380D": "Building 380, Basement, Room 380D",
+                "380-380F": "Building 380, Basement, Room 380F",
+                "380-380W": "Building 380, Basement, Room 380W",
+                "380-380X": "Building 380, Basement, Room 380X",
+                "380-380Y": "Building 380, Basement, Room 380Y",
+                "420-041": "Building 420, Basement, Room 41",
+                "420-048": "Building 420, Basement, Room 48",
+                "420-050": "Building 420, Basement, Room 50",
+                "460-301": "Building 460, Floor 3, Room 301",
+                "460-334": "Building 460, Floor 3, Room 334",
+                "50-51B": "Building 50, Floor 1, Room 51B",
+                "50-51P": "Building 50, Floor 1, Room 51P",
+                "50-52E": "Building 50, Floor 2, Room 52E",
+                "50-52H": "Building 50, Floor 2, Room 52H",
+                "80-113": "Building 80, Floor 1, Room 113",
+                "80-115": "Building 80, Floor 1, Room 115"}
+        for scheditem in scheditems:
+            if 'room' in scheditem:
+                if scheditem['room'] in rmap:
+                    scheditem['awesomeroom'] = rmap[scheditem['room']]
+                else:
+                    scheditem['awesomeroom'] = scheditem['room']
+
         context['scheditems'] = scheditems
 
         return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
         
-    @aux_call
+
     @needs_admin
     def satprepreceipt(self, request, tl, one, two, module, extra, prog):
         from esp.money.models import Transaction

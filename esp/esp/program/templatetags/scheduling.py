@@ -63,7 +63,7 @@ def class_options_row(cls):
         context['code'] = sec.emailcode()
         context['id'] = sec.id
         context['index'] = sec.index()
-        context['title'] = str(sec)
+        context['title'] = unicode(sec)
         total_minutes = sec.duration * 60
         hours = int(total_minutes / 60)
         minutes = total_minutes - hours * 60

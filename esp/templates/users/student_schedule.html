@@ -6,7 +6,7 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
 <p>Your classes are saved immediately when you click the "Add this Class!" button.  You do not need to confirm or save your entire registration 
 to save your spot in classes.</p>
 
-<p><b>Please note:</b> You must take a one hour lunch break, either from 12 to 1 PM, or from 1 to 2 PM.</p>
+<p><b>Please note:</b> You must take a one hour lunch break on each day, either from 12 to 1 PM, or from 1 to 2 PM.</p>
 
 {% if not module.deadline_met %}
     <center>
@@ -29,9 +29,6 @@ to save your spot in classes.</p>
 {% for timeslot in timeslots %}
     {% ifchanged timeslot.0.start.day %}
         <tr><th class="small" colspan="3" height="3" style="text-align: center;">{{ timeslot.0.pretty_date }}</th></tr>
-    {% endifchanged %}
-    {% ifchanged timeslot.2 %}
-        <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
     {% endifchanged %}
     <tr>
         <td width="25%" valign="top" align="center"> {{ timeslot.0.short_description }}</td>

@@ -209,6 +209,10 @@ class ClassSection(models.Model):
         pc = self.parent_class
         return '%s: %s' % (self.emailcode(), pc.title())
 
+    def __unicode__(self):
+        pc = self.parent_class
+        return '%s: %s' % (self.emailcode(), pc.title())
+
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
         pc = self.parent_class
@@ -269,6 +273,61 @@ class ClassSection(models.Model):
             return self.classrooms().filter(event=self.meeting_times.order_by('start')[0]).order_by('id')
         else:
             return Resource.objects.none()
+
+    def awesomeroom(self):
+        rmap = {"110-111A": "Building 110, Floor 1, Room 111A",
+                "20-21B": "Building 20, Floor 1, Room 21B",
+                "20-21G": "Building 20, Floor 1, Room 21G",
+                "20-22K": "Building 20, Floor 2, Room 22K",
+                "200-002": "Building 200, Basement, Room 002",
+                "200-013": "Building 200, Basement, Room 013",
+                "200-015": "Building 200, Basement, Room 015",
+                "200-030": "Building 200, Basement, Room 030",
+                "200-032": "Building 200, Basement, Room 032",
+                "200-034": "Building 200, Basement, Room 034",
+                "200-105": "Building 200, Floor 1, Room 105",
+                "200-107": "Building 200, Floor 1, Room 107",
+                "200-124": "Building 200, Floor 1, Room 124",
+                "200-201": "Building 200, Floor 2, Room 201",
+                "200-202": "Building 200, Floor 2, Room 202",
+                "200-203": "Building 200, Floor 2, Room 203",
+                "200-205": "Building 200, Floor 2, Room 205",
+                "200-217": "Building 200, Floor 2, Room 217",
+                "200-219": "Building 200, Floor 2, Room 219",
+                "200-230": "Building 200, Floor 2, Room 230",
+                "200-303": "Building 200, Floor 3, Room 303",
+                "200-305": "Building 200, Floor 3, Room 305",
+                "240-101": "Building 240, Floor 1, Room 101",
+                "240-110": "Building 240, Floor 1, Room 110",
+                "240-202": "Building 240, Floor 2, Room 202",
+                "250-108": "Building 250, Floor 1, Room 108",
+                "250-201": "Building 250, Floor 2, Room 201",
+                "370-370": "Building 370, Floor 1, Room 370",
+                "380-380D": "Building 380, Basement, Room 380D",
+                "380-380F": "Building 380, Basement, Room 380F",
+                "380-380W": "Building 380, Basement, Room 380W",
+                "380-380X": "Building 380, Basement, Room 380X",
+                "380-380Y": "Building 380, Basement, Room 380Y",
+                "420-041": "Building 420, Basement, Room 41",
+                "420-048": "Building 420, Basement, Room 48",
+                "420-050": "Building 420, Basement, Room 50",
+                "460-301": "Building 460, Floor 3, Room 301",
+                "460-334": "Building 460, Floor 3, Room 334",
+                "50-51B": "Building 50, Floor 1, Room 51B",
+                "50-51P": "Building 50, Floor 1, Room 51P",
+                "50-52E": "Building 50, Floor 2, Room 52E",
+                "50-52H": "Building 50, Floor 2, Room 52H",
+                "80-113": "Building 80, Floor 1, Room 113",
+                "80-115": "Building 80, Floor 1, Room 115"}
+
+        prooms = self.prettyrooms()
+        if len(prooms) > 0:
+          room = prooms[0]
+        else:
+          room = 'N/A'
+        if room in rmap:
+            return rmap[room]
+        return room
 
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
@@ -550,12 +609,32 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
-        
+
+        # Lunch hack
+        has25 = False        
+        has26 = False        
+        has35 = False        
+        has36 = False        
+
         # check to see if there's a conflict:
         for sec in user.getEnrolledSections(self.parent_program):
             for time in sec.meeting_times.all():
+                # pdox: Lunch Hack
+                if time.id == 25: has25 = True
+                if time.id == 26: has26 = True
+                if time.id == 35: has35 = True
+                if time.id == 36: has36 = True
                 if len(self.meeting_times.filter(id = time.id)) > 0:
                     return 'This section conflicts with your schedule!'
+
+        if (has25 and len(self.meeting_times.filter(id = 26)) > 0):
+            return 'This section conflicts with your schedule!'
+        if (has26 and len(self.meeting_times.filter(id = 25)) > 0):
+            return 'This section conflicts with your schedule!'
+        if (has35 and len(self.meeting_times.filter(id = 36)) > 0):
+            return 'This section conflicts with your schedule!'
+        if (has36 and len(self.meeting_times.filter(id = 35)) > 0):
+            return 'This section conflicts with your schedule!'
 
         # this user *can* add this class!
         return False
@@ -735,7 +814,7 @@ class ClassSection(models.Model):
         """
         events = list(self.meeting_times.all())
 
-        txtTimes = [ event.short_time() for event
+        txtTimes = [ event.mit_time() for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
         self.cache['friendly_times'] = txtTimes
@@ -1393,6 +1472,12 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         cmp1 = cmp(one.category.category, other.category.category)
         if cmp1 != 0:
             return cmp1
+        cmp2 = ClassSubject.class_sort_by_timeblock(one, other)
+        if cmp2 != 0:
+            return cmp2
+        cmp3 = ClassSubject.class_sort_by_title(one, other)
+        if cmp3 != 0:
+            return cmp3
         return cmp(one, other)
     
     @staticmethod

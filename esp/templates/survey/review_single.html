@@ -44,7 +44,7 @@
         <table width="600">
         <tr>
             <td width="35%" valign="top"><b>{{ answer.question.name }}</b></td>
-            <td>{{ answer.answer|list_classes }}</td>
+            <td>{{ answer.answer|list_classes|safe }}</td>
         </tr>
         </table>
     {% endfor %}

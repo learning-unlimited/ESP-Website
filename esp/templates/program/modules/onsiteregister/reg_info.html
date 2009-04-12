@@ -58,14 +58,6 @@ Please enter the information for the new student:
 </tr>
 
 <tr>
- <td><label for="id_medical">Handed Medical Form In?:</label></td>
- <td>{{ form.medical }} {% if form.medical.errors %}
-   <br /><span class="form_error">{{ form.medical.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
-<tr>
  <td><label for="id_liability">Handed Liability Form In?:
 </label></td>
  <td>{{ form.liability }} {% if form.liability.errors %}
@@ -75,7 +67,7 @@ Please enter the information for the new student:
 </tr>
 
 <tr>
- <td><label for="id_paid">Has Paid?:
+ <td><label for="id_paid">Has Paid or Financial Aid?:
           </label></td>
  <td>{{ form.paid }} {% if form.paid.errors %}
    <br /><span class="form_error">{{ form.paid.errors|join:", " }}</span>

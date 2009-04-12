@@ -4,11 +4,6 @@
 
 {% block subsection_name %}Printing Options{% endblock %}
 
-{% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-{% endblock %}
-
 {% block content %}
 <style type="text/css">
 #divmaintext table, #divmaintext th, #divmaintext td {
@@ -21,53 +16,23 @@
 <br /><br />
 <h1>Catalog order for {{program.niceName}}</h1>
 
-<p>
-Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. (Sometimes it will look unbalanced, etc.)
+<p style="text-align: center">
+Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. 
+<br />
+(Sometimes it will look unbalanced etc.).
 </p>
 <p>
 <a href="{{request.path}}">Reset Order</a> (default is by catagory, timeblock, title)
 <br /><br />
 Get Catalog: 
-(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">dvi</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">ps</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
+(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?clsids={{clsids}}">pdf</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?clsids={{clsids}}">dvi</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?clsids={{clsids}}">ps</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?clsids={{clsids}}">tex</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?clsids={{clsids}}">log</a>)
 
-<div id="program_form">
+</p>
 <table cellspacing="0" cellpadding="0">
-
-<tr>
-    <td colspan="6">
-        <form action="" method="get">
-        Sort by
-        <select name="first_sort">
-        {% for op in sorting_options %}
-        <option value="{{ op }}">{{ op }}</option>
-        {% endfor %}
-        </select>
-        
-        then
-        
-        <select name="second_sort">
-        {% for op in sorting_options %}
-        <option value="{{ op }}">{{ op }}</option>
-        {% endfor %}
-        </select>
-        
-        then
-        
-        <select name="third_sort">
-        {% for op in sorting_options %}
-        <option value="{{ op }}">{{ op }}</option>
-        {% endfor %}
-        </select>
-        
-        <input type="submit" value="Go!"/>
-        </form>
-    </td>
-</tr>
-
 <tr>
   <th>#</th>
   <th>ID</th>
@@ -85,10 +50,10 @@ Get Catalog:
   <td>{{cls.title|truncatewords:3}}</td>
   <td>
     {% if not forloop.first %}
-    <a href="{{request.path}}?sort_name_list={{ sort_name_list }}&clsid={{cls.id}}&op=up&ids={{clsids|urlencode}}"
+    <a href="{{request.path}}?clsid={{cls.id}}&op=up&ids={{clsids|urlencode}}"
       title="Move Class up one!">[up]</a>
     {% endif %} {% if not forloop.last %}
-    <a href="{{request.path}}?sort_name_list={{ sort_name_list }}&op=down&ids={{clsids|urlencode}}&clsid={{cls.id}}"
+    <a href="{{request.path}}?op=down&ids={{clsids|urlencode}}&clsid={{cls.id}}"
      title="Move Class down one!">[down]</a>
     {% endif %}
   </td>
@@ -96,15 +61,13 @@ Get Catalog:
 {% endfor %}
 
 </table>
-</div>
-
 <p>
 Get Catalog: 
-(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">dvi</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">ps</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
+(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?clsids={{clsids}}">pdf</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?clsids={{clsids}}">dvi</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?clsids={{clsids}}">ps</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?clsids={{clsids}}">tex</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?clsids={{clsids}}">log</a>)
 </p>
 
 

@@ -98,10 +98,15 @@ class Event(models.Model):
     
     def __str__(self):
         return self.start.strftime('%a %b %d: %I %p') + ' to ' + self.end.strftime('%I %p')
-
+    
+    def mit_time(self):
+        s = Event(start=self.start + timedelta(minutes=0), end=self.end - timedelta(minutes=10))
+        return s.short_time()
+    
     def short_time(self):
         day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        
+
+        dayname = day_list[self.start.weekday()]
         start_minutes = ''
         end_minutes = ''
         if self.start.minute != 0:

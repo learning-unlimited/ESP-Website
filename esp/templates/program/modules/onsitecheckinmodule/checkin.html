@@ -24,15 +24,12 @@ Welcome to the student check-in for {{module.student.name}}. Please checkoff tha
 <label for="attended"><strong>Attending? (i.e. here right now?)</strong></label> &nbsp;&nbsp;
    <input type="checkbox" name="Attended" id="attended" {% if module.hasAttended %}checked="checked"{% endif %} />
   <br />
-<label for="medical"><strong>Medical Form?</strong></label> &nbsp;&nbsp;
-   <input type="checkbox" name="MedicalFiled" id="medical" {% if module.hasMedical %}checked="checked"{% endif %} />
-  <br />
 
 <label for="liability"><strong>Liability Form?</strong></label> &nbsp;&nbsp;
    <input type="checkbox" name="LiabilityFiled" id="liability" {% if module.hasLiability %}checked="checked"{% endif %} />
   <br />
 
-<label for="paid"><strong>Paid?</strong></label> &nbsp;&nbsp;
+<label for="paid"><strong>Paid or Financial Aid?</strong></label> &nbsp;&nbsp;
    <input type="checkbox" name="Paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} />
   <br />
 <br />

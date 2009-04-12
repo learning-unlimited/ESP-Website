@@ -36,6 +36,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
+from esp.program.models import SplashInfo
 from esp.db.models       import Q
 from django.template.loader import get_template
 from esp.cal.models import Event
@@ -119,33 +120,92 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     timeslot_dict[mt['id']].append(section_dict)
                 else:
                     timeslot_dict[mt['id']] = [section_dict]
-        has12to1 = False
-        has1to2 = False
-        if 15 in timeslot_dict:
-          has12to1 = True
-        if 16 in timeslot_dict:
-          has1to2 = True
+
 
         for timeslot in timeslots:
+            daybreak = False
             if prevTimeSlot != None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
+                    daybreak = True
 
+            # For Splash 2009, lunch blocks are 25/26 and 35/36
             islunch = False
-            if (timeslot.id == 15) and has1to2:
-                islunch = True
-            if (timeslot.id == 16) and has12to1:
-                islunch = True
+            if timeslot.id == 25 and 26 in timeslot_dict: islunch = True
+            if timeslot.id == 26 and 25 in timeslot_dict: islunch = True
+            if timeslot.id == 35 and 36 in timeslot_dict: islunch = True
+            if timeslot.id == 36 and 35 in timeslot_dict: islunch = True
 
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user.getRegistrationPriority([timeslot]), islunch))
+                schedule.append((timeslot, cls_list, blockCount + 1, user.getRegistrationPriority([timeslot]), islunch, daybreak))
             else:
-                schedule.append((timeslot, [], blockCount + 1, user.getRegistrationPriority([timeslot]), islunch))
+                schedule.append((timeslot, [], blockCount + 1, user.getRegistrationPriority([timeslot]), islunch, daybreak))
 
             prevTimeSlot = timeslot
-                
+
+        # Condense schedule
+        schedule_collapsed = []
+        laststart = None
+        lastend = None
+        lastsec = None
+        lastblk = None
+        lastpri = None
+        lastdaybreak = None
+
+        for e in schedule:
+            if laststart is None or len(e[1]) == 0 or lastsec['section']._get_parent_class().id != e[1][0]['section']._get_parent_class().id:
+                if laststart is not None:
+                    schedule_collapsed.append((Event(start=laststart, end=lastend), [lastsec], lastblk, lastpri, False, lastdaybreak))
+                    laststart = None
+
+                if len(e[1]) == 0: 
+                  schedule_collapsed.append(e)
+                  continue
+
+                laststart = e[0].start
+                lastend = e[0].end
+                lastsec = e[1][0]
+                lastblk = e[2]
+                lastpri = e[3]
+                lastdaybreak = e[5]
+            else:
+                lastend = e[0].end
+        if laststart is not None:
+            schedule_collapsed.append((Event(start=laststart, end=lastend), [lastsec], lastblk, lastpri, False, lastdaybreak))
+
+        # Calculate invoice
+        charges = []
+        charges_total = 0
+
+        spi = SplashInfo.getForUser(self.user)
+        if spi.siblingdiscount:
+          charges.append(('Splash Enrollment w/ discount', '20'))
+          charges_total += 20
+        else:
+          charges.append(('Splash Enrollment', '40'))
+          charges_total += 40
+
+        foodmap = {}
+        foodmap['classic_club'] = 'Classic Club (turkey/bacon/ham/cheddar)'
+        foodmap['honey_chicken'] = 'Honey Chicken (chicken/honey mustard)'
+        foodmap['veggie'] = 'Veggie (guacamole/olives/mozzarella/cheddar)'
+        foodmap['cheese'] = 'Cheese Pizza'
+        foodmap['pepperoni'] = 'Pepperoni Pizza'
+
+        if spi.lunchsat and spi.lunchsat != 'no':
+          charges.append(('Lunch on Saturday: '+foodmap[spi.lunchsat], '5'))
+          charges_total += 5
+
+        if spi.lunchsun and spi.lunchsun != 'no':
+          charges.append(('Lunch on Sunday: '+foodmap[spi.lunchsun], '5'))
+          charges_total += 5
+
+        context['charges'] = charges
+        context['charges_total'] = charges_total
+
         context['timeslots'] = schedule
+        context['timeslots_collapsed'] = schedule_collapsed
         context['use_priority'] = scrmi.use_priority
         
 	return context

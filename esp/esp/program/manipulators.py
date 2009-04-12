@@ -32,6 +32,25 @@ from django import oldforms as forms
 from django.core import validators
 import re
 
+class SplashInfoManipulator(forms.Manipulator):
+    def __init__(self, user=None):
+        satchoices = [('no', 'No thanks; I will bring my own lunch'), 
+                      ('classic_club', 'Yes, Classic Club (turkey/bacon/ham/cheddar)'), 
+                      ('honey_chicken', 'Yes, Honey Chicken (chicken/honey mustard)'),
+                      ('veggie', 'Yes, Veggie (guacamole/olives/mozzarella/cheddar)')]
+
+        sunchoices = [('no', 'No thanks; I will bring my own lunch'),
+                      ('cheese', 'Yes, Cheese Pizza'),
+                      ('pepperoni', 'Yes, Pepperoni Pizza')]
+
+        discount_choices = [(False, 'I am the first in my household enrolling in Splash (+ $40)'),
+                            (True, 'I have a brother/sister already enrolled in Splash  (+ $20).')]
+        self.fields = (
+            forms.SelectField(field_name="lunchsat", is_required=True, choices=satchoices),
+            forms.SelectField(field_name="lunchsun", is_required=True, choices=sunchoices),
+            forms.RadioSelectField(field_name="siblingdiscount", is_required=True, choices=discount_choices),
+            forms.TextField(field_name="siblingname", length=24, max_length=128))
+
 class UserContactManipulator(forms.Manipulator):
     """Manipulator for User Contact information """
     def __init__(self, user=None):

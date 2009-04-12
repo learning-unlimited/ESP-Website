@@ -877,7 +877,76 @@ class TeacherParticipationProfile(models.Model):
         return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
 
 admin.site.register(TeacherParticipationProfile)
-    
+
+class SplashInfo(models.Model):
+    student = AjaxForeignKey(User)
+    lunchsat = models.CharField(max_length=32, blank=True, null = True)
+    lunchsun = models.CharField(max_length=32, blank=True, null = True)
+    siblingdiscount = models.BooleanField(default=False, blank=True, null=True)
+    siblingname = models.CharField(max_length=64, blank=True, null=True)
+    submitted = models.BooleanField(default=False, blank=True, null = True)
+
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_splashinfo'
+
+    def __str__(self):
+        return 'SplashInfo for ' + str(self.student) + ' in ' + str(self.program)
+
+    @staticmethod
+    def hasForUser(user):
+        q = SplashInfo.objects.filter(student=user)
+        return (q.count() > 0) and q[0].submitted
+
+    @staticmethod
+    def getForUser(user):
+        q = SplashInfo.objects.filter(student=user)
+        if q.count() > 0:
+            return q[0]
+        else:
+            n = SplashInfo(student=user)
+            n.save()
+            return n
+
+    def updateForm(self, new_data):
+        new_data['lunchsat'] = self.lunchsat
+        new_data['lunchsun'] = self.lunchsun
+        new_data['siblingdiscount'] = self.siblingdiscount
+        new_data['siblingname'] = self.siblingname
+        return new_data
+
+    def addOrUpdate(self, new_data):
+        self.lunchsat = new_data['lunchsat']
+        self.lunchsun = new_data['lunchsun']
+        self.siblingdiscount = (new_data['siblingdiscount'] == 'True')
+        self.siblingname = new_data['siblingname']
+        self.submitted = True
+
+    def pretty_satlunch(self):
+        foodmap = {}
+        foodmap['no'] = ''
+        foodmap['none'] = ''
+        foodmap[''] = ''
+        foodmap[None] = ''
+        foodmap['classic_club'] = 'Classic Club Sandwich'
+        foodmap['honey_chicken'] = 'Honey Chicken Sandwich'
+        foodmap['veggie'] = 'Veggie Sandwich'
+        foodmap['cheese'] = 'Cheese Pizza'
+        foodmap['pepperoni'] = 'Pepperoni Pizza'
+        return foodmap[self.lunchsat]
+
+    def pretty_sunlunch(self):
+        foodmap = {}
+        foodmap['no'] = ''
+        foodmap['none'] = ''
+        foodmap[None] = ''
+        foodmap[''] = ''
+        foodmap['classic_club'] = 'Classic Club Sandwich'
+        foodmap['honey_chicken'] = 'Honey Chicken Sandwich'
+        foodmap['veggie'] = 'Veggie Sandwich'
+        foodmap['cheese'] = 'Cheese Pizza'
+        foodmap['pepperoni'] = 'Pepperoni Pizza'
+        return foodmap[self.lunchsun]
 
 class SATPrepRegInfo(models.Model):
     """ SATPrep Registration Info """

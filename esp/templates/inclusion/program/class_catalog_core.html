@@ -42,8 +42,12 @@
          <strong>Grades:</strong>
            {{ class.grade_min }}--{{ class.grade_max }} 
          {% if show_enrollment %} <br />
-         <strong>Enrollment: {% if isfull %}<font color="#990000">Class is full!</font></strong>{% else %}</strong>{{ class.num_students }}{% endif %}
-           (max {{ class.class_size_max }})
+         <strong>Enrollment</strong> (max {{ class.class_size_max }} per section)
+           <br />{% if isfull %}<strong><font color="#990000">Class is full!</font></strong>{% else %}
+           {% for sec in class.sections.all %}
+             Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %} {{ sec.num_students }} {% endif %}<br />
+           {% endfor %}
+           {% endif %}
         {% endif %}
       </td>
     </tr>

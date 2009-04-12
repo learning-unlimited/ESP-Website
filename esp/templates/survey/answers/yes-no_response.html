@@ -5,7 +5,7 @@
 <tr>
     <td width="35%"><b>{{ name }}</b></td>
     <td>
-        {% templatetag openvariable %} lst|boolean_stats {% templatetag closevariable %}
+        {% templatetag openvariable %} lst|boolean_stats|safe {% templatetag closevariable %}
     </td>
 </tr>
 </table>

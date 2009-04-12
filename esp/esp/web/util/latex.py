@@ -36,6 +36,7 @@ from random import random
 from md5    import md5
 from esp.middleware import ESPError
 from django.http import HttpResponse
+import codecs
 
 TEX_TEMP = '/tmp/'
 TEX_EXT  = '.tex'
@@ -70,7 +71,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
 def gen_latex(texcode, type='pdf'):
     """ Generate the latex code. """
 
-    remove_files = True
+    remove_files = False
     file_base = TEX_TEMP + get_rand_file_base()
 
     if type == 'tex':
@@ -78,7 +79,8 @@ def gen_latex(texcode, type='pdf'):
     
 
     # write to the LaTeX file
-    texfile   = open(file_base+'.tex', 'w')
+    texcode = unicode(texcode)
+    texfile   = codecs.open(file_base+'.tex', 'wb', 'utf-8')
     texfile.write(texcode)
     texfile.close()
     

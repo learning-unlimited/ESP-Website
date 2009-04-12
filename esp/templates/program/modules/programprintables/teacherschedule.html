@@ -21,7 +21,7 @@ body { font-family: georgia; margin: 0; font-size: 12px;}
                       border-top: 0;}
 td.newday { border-width: 2px 1px 0 1px;}
 #pagebreak {page-break-after: always; }
-.description { text-align: center; padding: .2in 0 .2in 0; }
+.description { text-align: center; padding: .2in 0 .2in 0; font-size: 12pt }
 </style>
 
 </head>
@@ -39,10 +39,12 @@ td.newday { border-width: 2px 1px 0 1px;}
 </div>
 <div class="description">Here is your schedule.
   Please show up to class on-time.<br />
-  If you have any questions, please visit the ESP help desk in the main Lobby.
+  If you have any questions, please visit the ESP help desk in the main quad.<br/><br/>
+  If you have an emergency or immediate concern, please call:<br/>
+ <b>(925)-348-9342</b>
 </div>
 
-<div style="height: 2in;">&nbsp;</div>
+<div style="height: 1in;">&nbsp;</div>
 <br />
 <br />
 <table align="center" cellspacing="0" cellpadding="2px" class="schedule">
@@ -59,7 +61,7 @@ td.newday { border-width: 2px 1px 0 1px;}
 <tr>
   <td>{{ scheditem.cls.friendly_times|join:"<br />" }}</td>
   <td>{% if scheditem.cls.classrooms|length_is:0 %}N/A{% else %}
-      {{ scheditem.cls.prettyrooms|join:"<br />" }}{% endif %}</td>
+      {{ scheditem.cls.awesomeroom }}{% endif %}</td>
   <td>{{ scheditem.cls.title }}</td>
 </tr>
 {% endfor %}

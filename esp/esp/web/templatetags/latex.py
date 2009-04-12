@@ -40,8 +40,11 @@ register = template.Library()
 def texescape(value):
     """ This will escape a string according to the rules of LaTeX """
 
-    value = str(value).strip()
-
+    value = value.encode('ascii', 'replace')
+    value = str(value)
+    value = value.strip()
+    value = value.replace('&#39;', "'")
+    value = value.replace('10^11', '$$10^11$$')
     special_backslash = '!**ABCDEF**!' # something unlikely to be repeated
 
 

@@ -38,7 +38,7 @@
             <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
             <td>
                 {% if not q.answers|length_is:0 %}
-                    {{ q.answers|unpack_answers|histogram:"html"|safe }} 
+                    {% autoescape off %}{{ q.answers|unpack_answers|histogram:"html"|safe }}{% endautoescape %}
                 {% else %} 
                     There are no responses to this question.
                 {% endif %}
@@ -56,7 +56,7 @@
         </tr>
         </table>
         {% else %}
-            {{ q.question.dump|uselist:q.answers|safe }}
+            {% autoescape off %}{{ q.question.dump|uselist:q.answers }}{% endautoescape %}
         {% endif %}
     {% endfor %}
 {% endfor %}

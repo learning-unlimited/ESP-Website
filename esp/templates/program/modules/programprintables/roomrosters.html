@@ -45,13 +45,14 @@ td.newday { border-width: 2px 1px 0 1px;}
 
 <!-- Layout hack: table cells expand to contain stuff. -->
 <tr><td style="height:1em; padding:1em;">
-<p align="center" style="font-size: 10pt">
-    <b>MIT Educational Studies Program</b> (617) 253-4882<br />
-    <center><div class="box"><b>{{ program.niceName }}: {{ program.date_range }} </b><br />Do not remove until conclusion of program</div></center>
+<p align="center" style="font-size: 12pt">
+    <b>Stanford Educational Studies Program</b><br/>(925) 348-9342<br />
+    <center><div class="box"><b>{{ program.niceName }}: {{ program.date_range }} </b><br />Please do not remove until conclusion of program</div></center>
 </p>
 
 <div class="title">Room Schedule for <br /><br />
-    <span>{{ scheditem.room }}</span>
+    <span>{{ scheditem.awesomeroom }}<br/></span>
+    <span>({{ scheditem.room }})</span>
 </div>
 </td></tr>
 
@@ -67,7 +68,9 @@ td.newday { border-width: 2px 1px 0 1px;}
 <tr>
   <td>{{ scheditem.timeblock.short_time }}</td>
   <td>{{ scheditem.cls.title }}</td>
+{% autoescape off %}
   <td>{{ scheditem.cls.parent_class.getTeacherNames|join:"<br />" }}</td> 
+{% endautoescape %}
 </tr>
 {% endfor %}
 </table>

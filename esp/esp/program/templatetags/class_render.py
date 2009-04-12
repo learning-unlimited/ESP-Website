@@ -67,6 +67,10 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
         sections = cls.sections.filter(meeting_times=timeslot)
         if sections.count() > 0:
             section = sections[0]
+            if not errormsg:
+                errormsg = section.cannotAdd(user, True, request=request)
+                if errormsg: show_class = (not filter) or (not errormsg)
+                
     
     return {'class':      cls,
             'section':    section,

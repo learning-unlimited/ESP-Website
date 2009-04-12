@@ -40,6 +40,7 @@ from esp.users.models import UserBit
 from datetime         import datetime
 from esp.db.models    import Q
 from esp.money.models import LineItemType, RegisterLineItem, LineItem
+from esp.program.models import SplashInfo
 
 class OnsitePrintSchedules(ProgramModuleObj):
     @classmethod
@@ -103,9 +104,10 @@ class OnsitePrintSchedules(ProgramModuleObj):
             student.itemizedcosttotal = LineItem.purchasedTotalCost(prog.anchor, student)
             student.has_paid = ( student.itemizedcosttotal == 0 )
                     
-            student.payment_info = True
+            student.payment_info = False
             student.classes = classes
-                
+            student.splashinfo = SplashInfo.getForUser(student)
+
             students.append(student)
 
         if len(students) == 0:
