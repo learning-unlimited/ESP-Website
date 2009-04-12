@@ -56,8 +56,6 @@ from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models import Program
 
-from django.db.models import Count, Sum
-
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
 class ProgramCheckItem(models.Model):
