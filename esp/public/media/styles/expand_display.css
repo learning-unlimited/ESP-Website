@@ -18,7 +18,7 @@ a:hover
 
 a.dsphead span.dspchar
 {
-   font-family:monospace;
+   //font-family:monospace;
    font-weight:normal;
 }
 

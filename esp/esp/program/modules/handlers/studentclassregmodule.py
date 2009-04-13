@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -186,7 +185,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     else:
                         datestring = d.strftime(' on %B %d')
                 # the below was changed for Cascade; CHANGE BACK AFTER -rye 1-7-09
-                raise ESPError(False), "Currently, you are only allowed to register for one %s class.  If you want to add a second class, please return to this website between January 14th and January 22nd." % (prog.niceName())
+                raise ESPError(False), "Currently, you are only allowed to register for one %s class. If you want to add a second class, please return to this website after April 6th." % (prog.niceName())
 
 #                raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
 

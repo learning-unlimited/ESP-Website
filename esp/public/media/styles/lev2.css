@@ -182,7 +182,7 @@ form {
   background-image: url(/media/images/dashedline.gif);
   background-repeat: no-repeat;
   padding: 6px 20px 5px 36px;
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   color: #3366cc;
   line-height: 133%;
@@ -195,7 +195,7 @@ form {
 /* tertiary navigation */
 .divtertiarynav {
   padding: 0px 20px 4px 56px;
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   color: #3366cc;
   line-height: 133%;
@@ -283,7 +283,7 @@ form {
 .divformcol1, .divformcol2, .divformcol3, .divformcol4, .divformcol5 {
   padding: 0px 6px 10px 0px;
 
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   color: #000000;
   line-height: 100%;
@@ -291,7 +291,7 @@ form {
   white-space: nowrap;
 }
 #divlogout p {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   color: #000000;
   line-height: 100%;
@@ -301,7 +301,7 @@ form {
 
 /* input box */
 .inputbox {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   width: 92px;
   border: solid 2px #000000;
@@ -310,7 +310,7 @@ form {
 }
 /* select box */
 .selectbox {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 12px;
   width: 92px;
 }
@@ -387,21 +387,21 @@ form {
   padding: 0px 66px 20px 0px;
 }
 #divmaintext p, #divmaintext li {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   line-height: 160%;
   color: #000000;
   margin-top: 0px;
 }
 #divmaintext h1 {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.90em;
   font-weight: bold;
   color: #3366cc;
   margin-top: 0px;
 }
 #divmaintext h2 {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.90em;
   font-weight: bold;
   color: #000000;
@@ -409,7 +409,7 @@ form {
   margin-bottom: 0px;
 }
 #divmaintext h3 {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   font-weight: bold;
   color: #000000;
@@ -417,7 +417,7 @@ form {
   margin-bottom: 0px;
 }
 #divmaintext h4 {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   font-weight: bold;
   font-style: italic;
@@ -455,7 +455,7 @@ form {
   padding-right: 2.0em;
   text-align: left;
   vertical-align: top;
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.75em;
   font-weight: bold;
   color: #000000;
@@ -463,7 +463,7 @@ form {
 }
 #divmaintext form table td input.textfield,
 #divmaintext form table td textarea {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   width: 100%;
   color: #000000;
 }
@@ -533,7 +533,7 @@ form {
 }
 
 #divquotetext {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 1.0em;
   line-height: 125%;
   font-weight: bold;
@@ -561,7 +561,7 @@ form {
   margin: 30px 0px 20px 170px;
 }
 #divfooter p {
-  font-family: Arial, Lucida, Helvetica, sans-serif;
+  //font-family: Arial, Lucida, Helvetica, sans-serif;
   font-size: 0.70em;
   color: #000000;
   line-height: 135%;

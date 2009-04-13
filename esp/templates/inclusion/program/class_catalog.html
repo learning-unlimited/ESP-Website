@@ -18,7 +18,7 @@
        </th>
      </tr>
      <tr>
-       <td colspan="3" class="info" {% if errormsg %}style="background: #333;"{% endif %}>
+       <td colspan="3" class="info{% if errormsg %} errormsg{% endif %}">
          {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
        {% if class.prereqs %}
        <br /><br />
@@ -29,15 +29,15 @@
        {% endif %}
        </td>
      </tr>
-    <tr {% if errormsg %}style="background: #333;"{% endif %}>
-      <td style="width: 50%;" valign="top" {% if errormsg %}style="background: #333;"{% endif %}>
+    <tr {% if errormsg %}class="errormsg"{% endif %}>
+      <td style="width: 50%;" valign="top" {% if errormsg %}class="errormsg"{% endif %}>
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
 	  {{ class.friendly_times|join:"<br />" }}
         <br />
       </td>
  
-      <td style="width: 50%;" colspan="2" {% if errormsg %}style="background: #333;"{% endif %}>
+      <td style="width: 50%;" colspan="2" {% if errormsg %}class="errormsg"{% endif %}>
          {% if class.isFull %}<strong><font color="#990000">Class is full!</font></strong>{% else %}
 {% comment %} (this comment, and above shift of if tag, for Cascade -rye 1-7-09)
 <strong>Enrollment:</strong><br />  {% for sec in class.sections.all %}

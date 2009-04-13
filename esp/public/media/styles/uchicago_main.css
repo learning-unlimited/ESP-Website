@@ -1,9 +1,42 @@
+#main p {
+  color: #141414;
+  font-family: georgia;
+  font-size: 11pt;
+  line-height: 125%;
+}
+
+a img {
+  border: 0;
+}
+
+a:link {
+  color: #497CCA;
+  text-decoration: none;
+}
+
+a:visited {
+  color: #497CCA
+}
+
+a:hover {
+  color: #CC66FF
+}
+
+a:active {
+  color: #497CCA
+}
+
+h1 {
+  font-size: 18pt;
+  color: #00003C;
+  font-family: georgia;
+  font-style: bold;
+}
+
 body {
   margin: 0;
   padding: 0;
   font-family: georgia, serif;
-  background: #FFFFFF;
-  background-color: #FFFFFF;
 }
 
 #content {
@@ -39,31 +72,34 @@ body {
   background: #497CCA;
   float: right;
   width: 600px;
-  height: 30px;
+  min-height: 30px;
   color: #FFFFFF;
   font-family: georgia;
   font-style: italic;
   font-size: 11pt;
   text-align: center;
   vertical-align: middle;
+  margin: 0;
 }
 
 #navbar {
   float: left;  
   width: 200px;
   background: #141414;
-  margin-bottom: -10000cm;
-  padding-bottom: 10000cm;
+  margin-bottom: -250cm;
+  padding-bottom: 250cm;
 }
 
 #navbar_content {
-  margin: 10px;
+  margin: 15px;
 }
 
 #main {
   background: white;
   float: right;
   width: 600px;
+  margin-bottom: -250cm;
+  padding-bottom: 250cm;
 }
 
 #main_content {
@@ -71,25 +107,43 @@ body {
 }
 
 .announcementlink_title {
-  color: tan;
+  color: #BCCAF5;
   font-size: 11pt;
   line-height: 140%;
   font-weight: bold;
 }
 
-.announcementlink {
+#navbar {
   color: #FFFFFF;
-  font-size: 10pt;
+  font-size: 80%;
   line-height: 130%;
 }
 
-.announcementlink p {
+#navbar p {
   color: #FFFFFF;
-  margin-top: 2pt;
+  margin: 0pt;
+//  margin-bottom: pt;
+}
+
+#navbar a:link {
+  color: #BCCAF5;
+  text-decoration: none;
+}
+
+#navbar a:visited {
+  color: #BCCAF5;
+}
+
+#navbar a:hover {
+  color: #497CCA;
+}
+
+#navbar a:active {
+  color: #BCCAF5;
 }
 
 .learn {
-  color: #A1CD4A;
+  color: #4DCE3D;
 }
 
 .teach {
@@ -104,29 +158,3 @@ body {
   color: #CC66FF;
 }
 
-p {
-  color: #141414;
-  font-family: georgia;
-  line-height: 125%;
-}
-
-a img {
-  border: 0;
-}
-
-a:link {
-  color: #497CCA;
-  text-decoration: none;
-}
-
-a:visited {
-  color: #497CCA
-}
-
-a:hover {
-  color: #CC66FF
-}
-
-a:active {
-  color: #497CCA
-}

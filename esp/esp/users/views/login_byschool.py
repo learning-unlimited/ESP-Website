@@ -27,8 +27,8 @@ def login_byschool(request, *args, **kwargs):
     """ Let a student pick their school. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/learn/Cascade/2009_Winter/studentreg')
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Winter/studentreg')
+        return HttpResponseRedirect('/learn/Cascade/2009_Spring/studentreg')
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Spring/studentreg')
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
@@ -48,8 +48,8 @@ def login_byschool_pickname(request, school_id, *args, **kwargs):
     """ Let a student pick their name. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/learn/Cascade/2009_Winter/studentreg')
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Winter/studentreg')
+        return HttpResponseRedirect('/learn/Cascade/2009_Spring/studentreg')
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Spring/studentreg')
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)

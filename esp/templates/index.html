@@ -2,7 +2,18 @@
 
 {% block title %}Splash! Chicago{% endblock %}
 
+{% block welcome_message %}<img src="/media/images/homewelc.gif" alt="Welcome to Splash! Chicago" />{% endblock %}
+
+{% block content_color %}#FFFFFF{% endblock %}
+
 {% block content %}
+
+<style type="text/css">
+#main {
+  background: #BCCAF5;
+}
+</style>
+
 {% load render_qsd %}
 {% render_inline_qsd "Q/Web" "homepage_qsdpart" request.user %}
 

@@ -13,7 +13,7 @@
 /*   border: 1px solid #ccc;*/
     border-top: 1px dashed #369;
     font-weight: normal;
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
 }
 
 #divmaintext form table thead th {
@@ -84,7 +84,7 @@
 #divmaintext form input.fancybutton
 {
    color:#000;
-   font-family:Arial,helvetica,sans-serif;
+   //font-family:Arial,helvetica,sans-serif;
    font-size:12px;
    font-weight:bold;
    border: #ccc 1px solid;
@@ -101,7 +101,7 @@
 
 #divmaintext form a.abutton {
    color: #000000;
-   font-family:Arial,helvetica,sans-serif;
+   //font-family:Arial,helvetica,sans-serif;
    font-size:12px;
    font-weight:bold;
    border: #cccccc 1px solid;
@@ -122,12 +122,14 @@
 /* LOGIN FORM */
 #login_form table {
    width: 300px;
-   border: 2px solid black !important;
+   border: 0px solid black !important;
    border-collapse: collapse;
 }
 
 #login_form table td, #login_form table th {
    border: 0 !important;
+   background-color: #BCCAF5;
+   font-weight: normal;
 }
 
 #login_form tbody th, #login_form tbody th {
@@ -135,9 +137,10 @@
 }
 
 #login_form thead th {
-  background-color: #e8f0f7;
   text-align: center;
-  border: 2px solid black !important;
+  background-color: #141414;
+  border: 0px solid black !important;
+  color: #FFFFFF;
 }
 /* END OF LOGIN FORM */
 
@@ -166,13 +169,11 @@
 /* Program specific forms (look kind of like the catalog) */
 
 #program_form table {
-   border: 1px solid #CCC;
-   border-width: 1px;
    border-collapse: collapse;
 }
 
 #program_form td {
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
     vertical-align: middle;
     padding: 5px;
     border: none;
@@ -186,15 +187,16 @@
 }
 
 #program_form th {
-   font-family: Arial, Helvetica, sans-serif;
+   //font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-weight: bold;
-   background-color: #c6def7;
+   background-color: #141414;
    text-align: center;
+   color: #ffffff;
 }
 
 #program_form th.smaller {
-   font-family: Arial, Helvetica, sans-serif;
+   //font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-size: 0.9em;
    background-color: #ffffff;
@@ -203,47 +205,47 @@
 }
 
 #program_form input {
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
 }
 
 #program_form textarea {
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
 }
 
 #program_form select {
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
 }
 
 #program_form input.button {
-    background-color: #c6def7;
+    background-color: #BCCAF5;
     border: 1px solid black;
     font-weight: bold;
     font-size: 13px;
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
 }
 
 #program_form a.button {
-    background-color: #c6def7;
+    background-color: #BCCAF5;
     padding: 2px 5px 2px 5px;
     border: 1px solid black;
     font-weight: bold;
     font-size: 12px;
     text-decoration: none;
-    font-family: Arial, Helvetica, sans-serif;
+    //font-family: Arial, Helvetica, sans-serif;
 }
 
 #program_form input.button:hover {
     background-color: #333399;
-    color: #c6def7;
+    color: #BCCAF5;
 }
 
 #program_form a.button:hover {
     background-color: #333399;
     text-decoration: none;
-    color: #c6def7;
+    color: #BCCAF5;
 }
 
 #program_form td.underline {
