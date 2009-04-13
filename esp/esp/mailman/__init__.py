@@ -1,9 +1,12 @@
 from subprocess import call, Popen, PIPE
+from esp.settings import USE_MAILMAN
+from esp.utils.decorators import enable_with_setting
 from esp.database_settings import MAILMAN_PASSWORD
 from esp.users.models import ESPUser, User
 
 ## Functions for Mailman interop
 
+@enable_with_setting(USE_MAILMAN)
 def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
     """
     Create the specified mailing list in the local Mailman installation,
@@ -16,7 +19,7 @@ def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
 
     return call(["newlist", "-q", list, owner, admin_password])
 
-
+@enable_with_setting(USE_MAILMAN)
 def add_list_member(list, member):
     """
     Add the e-mail address 'member' to the local Mailman mailing list 'list'
@@ -35,7 +38,7 @@ def add_list_member(list, member):
 
     return Popen(["add_members", "--regular-members-file=-", list], stdin=PIPE).communicate(member)
 
-
+@enable_with_setting(USE_MAILMAN)
 def remove_list_member(list, member):
     """
     Remove the e-mail address 'member' from the local Mailman mailing list 'list'
@@ -54,12 +57,12 @@ def remove_list_member(list, member):
 
     return Popen(["remove_members", "--file=-", list], stdin=PIPE).communicate(member)
 
-
+@enable_with_setting(USE_MAILMAN)
 def list_contents(list):
     """ Return the list of e-mail addresses on the specified mailing list """
     return Popen(["list_members", list]).communicate()[0].split('\n')
 
-
+@enable_with_setting(USE_MAILMAN)
 def list_members(list):
     """ Return the list (QuerySet) of ESPUsers who are on this mailing list """
     return ESPUser.objects.filter(email__in=list_contents(list))

@@ -767,7 +767,7 @@ class StudentInfo(models.Model):
 
 
     def save(self, *args, **kwargs):
-        super(self, StudentInfo).save(*args, **kwargs)
+        super(StudentInfo, self).save(*args, **kwargs)
         from esp.mailman import add_list_member
         add_list_member('students', self.user)
         add_list_member('announcements', self.user)

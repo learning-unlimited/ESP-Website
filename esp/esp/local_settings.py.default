@@ -57,6 +57,10 @@ PROJECT_ROOT = '/path/to/website/code/'
 # log directory
 LOG_FILE = '/path/to/website/log'
 
+###################
+# Plugin settings #
+###################
+USE_MAILMAN = True
 
 ###################
 # Debug settings  #
