@@ -3,6 +3,7 @@
 from esp.users.models import User, UserBit, ESPUser_Profile
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm
 from esp.web.util.main import render_to_response
+from esp.mailman import add_list_member
 from django.contrib.auth import login, authenticate
 from django.http import HttpResponseRedirect
 
@@ -27,9 +28,12 @@ def join_emaillist(request):
             User.objects.get_or_create(email    = form.cleaned_data['email'],
                                        username = form.cleaned_data['email'],
                                        password = 'emailuser')
+
+            add_list_member('announcements', form.cleaned_data['email'])
+
             return HttpResponseRedirect('/')
     else:
-        form = EmailUserForm(request=request)
+        form = EmailUserForm(request=request)    
 
     return render_to_response('registration/emailuser.html',
                               request, request.get_node('Q/Web/myesp'), {'form':form})

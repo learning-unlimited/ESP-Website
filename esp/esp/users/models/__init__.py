@@ -765,6 +765,13 @@ class StudentInfo(models.Model):
 #    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
 #    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
+
+    def save(self, *args, **kwargs):
+        super(self, StudentInfo).save(*args, **kwargs)
+        from esp.mailman import add_list_member
+        add_list_member('students', self.user)
+        add_list_member('announcements', self.user)
+
     class Meta:
         app_label = 'users'
         db_table = 'users_studentinfo'
@@ -871,6 +878,12 @@ class TeacherInfo(models.Model):
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
+    def save(*args, **kwargs):
+        super(self, TeacherInfo).save(*args, **kwargs)
+        from esp.mailman import add_list_member
+        add_list_member('teachers', self.user)
+        
+
     class Meta:
         app_label = 'users'
         db_table = 'users_teacherinfo'
@@ -942,6 +955,11 @@ class GuardianInfo(models.Model):
         app_label = 'users'
         db_table = 'users_guardianinfo'
 
+    def save(*args, **kwargs):
+        super(self, GuardianInfo).save(*args, **kwargs)
+        from esp.mailman import add_list_member
+        add_list_member('announcements', self.user)
+
     @classmethod
     def ajax_autocomplete(cls, data):
         names = data.strip().split(',')
@@ -1004,6 +1022,11 @@ class EducatorInfo(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_educatorinfo'
+
+    def save(*args, **kwargs):
+        super(self, EducatorInfo).save(*args, **kwargs)
+        from esp.mailman import add_list_member
+        add_list_member('announcements', self.user)
 
     @classmethod
     def ajax_autocomplete(cls, data):
