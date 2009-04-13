@@ -5,16 +5,16 @@
 -- modify it under the terms of the GNU General Public License
 -- as published by the Free Software Foundation; either version 2
 -- of the License, or (at your option) any later version.
--- 
+--
 -- This program is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU General Public License
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
--- 
+--
 -- Contact Us:
 -- ESP Web Group
 -- MIT Educational Studies Program,
@@ -23,10 +23,41 @@
 -- Email: web@esp.mit.edu
 
 
+-- ***
+-- Table indices for the DataTree table
+-- ***
+
+-- Indices to facilitate range queries
+CREATE INDEX datatree__rangestart ON datatree_datatree USING btree (rangestart);
+CREATE INDEX datatree__rangeend ON datatree_datatree USING btree (rangeend);
+
+-- Speeds up get_by_uri queries
+CREATE INDEX datatree_uri ON datatree_datatree USING btree (uri) WHERE uri_correct = true;
+
+--- ***
+--- "List" aggregate
+--- ***
+
+CREATE OR REPLACE FUNCTION comma_cat (text, text)
+  RETURNS text AS
+  'SELECT CASE
+    WHEN $2 is null or $2 = '''' THEN $1
+    WHEN $1 is null or $1 = '''' THEN $2
+    ELSE $1 || '','' || $2
+  END'
+LANGUAGE sql;
+
+CREATE AGGREGATE list (
+       BASETYPE = text,
+       SFUNC = comma_cat,
+       STYPE = text,
+       INITCOND = ''
+);
+
 
 -- ***
 -- ESP plpgpsql functions
--- **
+-- ***
 -- Written by Mike Axiak.
 
 
@@ -108,11 +139,11 @@ BEGIN
       ("program_class__anchor".rangestart >= program_anchor_rec.rangestart AND
        "program_class__anchor".rangeend   <= program_anchor_rec.rangeend)
       AND
-      ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
+      ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
       AND
-      ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now())
+      ("users_userbit"."startdate" <= now())
       AND
-      ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= now())
+      ("users_userbit"."enddate" >= now())
       AND
       (
         ("users_userbit"."recursive" = True AND
@@ -147,7 +178,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION class__get_enrolled(integer, integer) OWNER TO esp;
 
 
 -- Function: userbit__bits_get_qsc(integer, integer, timestamp with time zone, timestamp with time zone)
@@ -177,11 +207,11 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -197,7 +227,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_qsc(integer, integer, timestamp with time zone, timestamp with time zone) OWNER TO esp;
 
 -- Function: userbit__bits_get_qsc_root(integer, integer, timestamp with time zone, timestamp with time zone, integer)
 
@@ -233,11 +262,11 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
         AND
         ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -261,7 +290,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_qsc_root(integer, integer, timestamp with time zone, timestamp with time zone, integer) OWNER TO esp;
 
 -- Function: userbit__bits_get_user(integer, integer, timestamp with time zone, timestamp with time zone)
 
@@ -281,7 +309,7 @@ BEGIN
     SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = qsc_id;
 
     FOR output IN
-    SELECT DISTINCT 
+    SELECT DISTINCT
     "users_userbit"."id","users_userbit"."user_id","users_userbit"."qsc_id","users_userbit"."verb_id",
     "users_userbit"."startdate","users_userbit"."enddate","users_userbit"."recursive"
 
@@ -296,9 +324,9 @@ BEGIN
     WHERE
     (
       (
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
       )
       AND
       (
@@ -315,7 +343,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_user(integer, integer, timestamp with time zone, timestamp with time zone) OWNER TO esp;
 
 -- Function: userbit__bits_get_user_real(integer, integer, timestamp with time zone, timestamp with time zone)
 
@@ -354,9 +381,9 @@ BEGIN
     WHERE
     (
       (
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
       )
       AND
       (
@@ -373,7 +400,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_user_real(integer, integer, timestamp with time zone, timestamp with time zone) OWNER TO esp;
 
 -- Function: userbit__bits_get_verb(integer, integer, timestamp with time zone, timestamp with time zone)
 
@@ -402,11 +428,11 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -422,7 +448,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_verb(integer, integer, timestamp with time zone, timestamp with time zone) OWNER TO esp;
 
 -- Function: userbit__bits_get_verb_root(integer, integer, timestamp with time zone, timestamp with time zone, integer)
 
@@ -451,11 +476,11 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -471,7 +496,6 @@ BEGIN
     END LOOP;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__bits_get_verb_root(integer, integer, timestamp with time zone, timestamp with time zone, integer) OWNER TO esp;
 
 -- Function: userbit__user_has_perms(integer, integer, integer, timestamp with time zone, boolean)
 
@@ -503,11 +527,11 @@ BEGIN
         (
           (
              ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
-             AND 
+             AND
              (
-               ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now_ts)
+               ("users_userbit"."startdate" <= now_ts)
                AND
-               ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" > now_ts)
+               ("users_userbit"."enddate" > now_ts)
              )
           )
           AND
@@ -534,18 +558,18 @@ BEGIN
         (
           (
              ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
-             AND 
+             AND
              (
-               ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now_ts)
+               ("users_userbit"."startdate" <= now_ts)
                AND
-               ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" > now_ts)
+               ("users_userbit"."enddate" > now_ts)
              )
           )
           AND
             ("users_userbit"."verb_id" = verb_id AND "users_userbit"."qsc_id" = qsc_id)
         )
         LIMIT 1;
-    
+
         IF NOT FOUND THEN
             -- Now we have to use verb recursion
             -- Select qsc
@@ -565,11 +589,11 @@ BEGIN
             (
               (
                  ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
-                 AND 
+                 AND
                  (
-                   ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now_ts)
+                   ("users_userbit"."startdate" <= now_ts)
                    AND
-                   ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" > now_ts)
+                   ("users_userbit"."enddate" > now_ts)
                  )
               )
               AND
@@ -595,4 +619,3 @@ BEGIN
     END IF;
 END;$BODY$
   LANGUAGE 'plpgsql' STABLE;
-ALTER FUNCTION userbit__user_has_perms(integer, integer, integer, timestamp with time zone, boolean) OWNER TO esp;

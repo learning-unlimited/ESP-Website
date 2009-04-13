@@ -113,7 +113,7 @@ def genTemplate():
 
     Returns a list of DataTree nodes corresponding exactly (in order, target, etc.) to the names in templates """
     
-    from esp.datatree.models import DataTree
+    from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
     node_list = [ DataTree.get_by_uri(i, create=True) for i in tree_template ]
     
     #   Special URI changes to override default tree structure (i.e. URIs start with '/')

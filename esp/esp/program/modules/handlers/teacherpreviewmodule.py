@@ -65,7 +65,7 @@ class TeacherPreviewModule(ProgramModuleObj):
             context['scheditems'] = scheditems
             return render_to_response(pmo.baseDir()+template_file, request, (prog, tl), context)
         else:
-            raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.' 
+            raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.'
 
     @aux_call
     def teacherschedule(self, request, tl, one, two, module, extra, prog):
@@ -82,7 +82,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         if context is None: context = {}
 
         classes = ClassSubject.objects.catalog(self.program, None, True)
-        
+
         #   First, the already-registered classes.
         categories = {}
         for cls in classes:
@@ -90,19 +90,16 @@ class TeacherPreviewModule(ProgramModuleObj):
                 categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category_txt, 'classes': [cls]}
             else:
                 categories[cls.category_id]['classes'].append(cls)
-        
+
         context['categories'] = [categories[cat_id] for cat_id in categories]
         context['prog'] = self.program
-        
+
         #   Then, the printables.
-        
+
         handout_dict = self.get_handouts()
         context['handouts'] = [{'url': key, 'title': handout_dict[key]} for key in handout_dict]
-        
+
         return context
 
     def isStep(self):
-        return True
-
-    def isCompleted(self):
-        return True
+        return False

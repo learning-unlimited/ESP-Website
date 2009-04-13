@@ -29,37 +29,63 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree, GetNode
+from django.db.models.query import Q
+from esp.datatree.models import *
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
 from esp.db.fields import AjaxForeignKey
-from esp.db.models import Q
-from esp.datatree.util import tree_filter_kwargs
-from django.contrib import admin
-        
+
 # Create your models here.
+
+class NavBarCategory(models.Model):
+    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
+    include_auto_links = models.BooleanField()
+    name = models.CharField(max_length=64)
+    long_explanation = models.TextField()
+
+    def get_navbars(self):
+        return self.navbarentry_set.all().select_related('category').order_by('sort_rank')
+
+    @classmethod
+    def default(cls):
+        """ Default navigation category.  For now, the one with the lowest ID. """
+        return cls.objects.all().order_by('id')[0]
+
+    def __unicode__(self):
+        if self.anchor:
+            return u'%s at %s' % (self.name, unicode(self.anchor))
+        else:
+            return u'%s' % self.name
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
-    path = AjaxForeignKey(DataTree, related_name = 'navbar')
+
+    #   ONLY the program related nav bars (i.e. "Splash Registration pages") should be anchored.
+    #   This is to allow automatically generated links to appear.
+    path = AjaxForeignKey(DataTree, related_name = 'navbar', blank=True, null=True)
+
     sort_rank = models.IntegerField()
-    link = models.CharField(max_length=256)
+    link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)
     indent = models.BooleanField()
-    section = models.CharField(max_length=64,blank=True)
+
+    category = models.ForeignKey(NavBarCategory)
 
     def can_edit(self, user):
         return UserBit.UserHasPerms(user, self.path, GetNode('V/Administer/Edit/QSD'))
-    
-    def __str__(self):
-        return self.path.full_name() + ':' + self.section + ':' + str(self.sort_rank) + ' (' + self.text + ') ' + '[' + self.link + ']' 
+
+    def __unicode__(self):
+        return unicode(self.category) + ':' + str(self.sort_rank) + ' (' + self.text + ') ' + '[' + self.link + ']'
 
     def makeTitle(self):
         return self.text
 
     def makeUrl(self):
         return self.link
-    
+
+    def is_link(self):
+        return (self.link is not None) and (len(self.link) > 0)
+
     class Meta:
         verbose_name_plural = 'Nav Bar Entries'
 
@@ -67,19 +93,19 @@ class NavBarEntry(models.Model):
         from django.core.cache import cache
 
         super(NavBarEntry, self).save(*args, **kwargs)
-        
+
         cache.delete('LEFTBAR')
 
-    
+
     @staticmethod
     def find_by_url_parts(parts):
         """ Fetch a QuerySet of NavBarEntry objects by the url parts """
         # Get the Q_Web root
         Q_Web = GetNode('Q/Web')
-        
+
         # Remove the last component
         parts.pop()
-        
+
         # Find the branch
         try:
             branch = Q_Web.tree_decode( parts )
@@ -87,8 +113,7 @@ class NavBarEntry(models.Model):
             branch = ex.anchor
             if branch is None:
                 raise NavBarEntry.DoesNotExist
-            
-        # Find the valid entries
-        return NavBarEntry.objects.filter(**tree_filter_kwargs(path__above = branch)).order_by('sort_rank')
 
-admin.site.register(NavBarEntry)
+        # Find the valid entries
+        return NavBarEntry.objects.filter(QTree(path__above =branch)).order_by('sort_rank')
+

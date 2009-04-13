@@ -1,6 +1,5 @@
-from django.core import validators
 from django.db import models
-from django import oldforms, forms
+from django import forms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
 import re
@@ -12,7 +11,7 @@ class AjaxForeignKeyFieldBase:
     def render(self, *args, **kwargs):
         """
         Renders the actual ajax widget.
-        """            
+        """
         if len(args) == 1:
             data = args[0]
         else:
@@ -23,7 +22,7 @@ class AjaxForeignKeyFieldBase:
         if type(data) == int:
             if hasattr(self, "field"):
                 query_objects = self.field.rel.to.objects
-                
+
             objects = query_objects.filter(pk = data)
             if objects.count() == 1:
                 obj = objects[0]
@@ -36,7 +35,7 @@ class AjaxForeignKeyFieldBase:
             data = init_val = ''
 
         fn = str(self.field.name)
-        
+
         related_model = self.field.rel.to
         # espuser hack
         if related_model == User:
@@ -45,7 +44,7 @@ class AjaxForeignKeyFieldBase:
         else:
             model_module = related_model.__module__
             model_name   = related_model.__name__
-        
+
         javascript = """
 <script type="text/javascript">
 <!--
@@ -65,7 +64,7 @@ autocomp__%s.allowBrowserAutocomplete = false;
 //autocomp__%s.typeAhead = true;
 autocomp__%s.animVert = true;
 autocomp__%s.queryDelay = 0;
-autocomp__%s.maxCacheEntries = 60; 
+autocomp__%s.maxCacheEntries = 60;
 autocomp__%s.animSpeed = .5;
 autocomp__%s.useShadow = true;
 autocomp__%s.useIFrame = true;
@@ -104,13 +103,13 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
         css = """
 <style type="text/css">
     /* Taken from Yahoo... */
-    #id_%s__yui_autocomplete {position:relative;width:%s;margin-bottom:1em;}/* set width of widget here*/
+    #id_%s__yui_autocomplete {position:relative;width:%sem;margin-bottom:1em;}/* set width of widget here*/
     #id_%s__yui_autocomplete {z-index:0} /* for IE z-index of absolute divs inside relative divs issue */
     #id_%s__yui_autocomplete input {_position:absolute;width:100%%;height:1.4em;z-index:0;} /* abs for ie quirks */
     #id_%s__container {position:relative; width:100%%;top:-.1em;}
     #id_%s__container .yui-ac-content {position:absolute;width:100%%;border:1px solid #ccc;background:#fff;overflow:hidden;z-index:9050;}
     #id_%s__container .yui-ac-shadow {position:absolute;margin:.3em;width:100%%;background:#eee;z-index:8000;}
-    #id_%s__container ul {padding:5px 0;width:100%%; list-item-type: none;margin-left: 0; padding-left: 0;z-index:9000;}
+    #id_%s__container ul {padding:5px 0;width:100%%; list-style-type: none;margin-left: 0; padding-left: 0;z-index:9000;}
     #id_%s__container li {padding:0 5px;cursor:default;white-space:nowrap;padding-left: 0; margin-left: 0;}
     #id_%s__container li.yui-ac-highlight {background:#9cf;z-index:9000;}
     #id_%s__container li.yui-ac-prehighlight {background:#CCFFFF;z-index:9000;}
@@ -133,18 +132,18 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 </div>
 <div class="raw_id_admin">
   <a href="../" class="related-lookup" id="lookup_%s" onclick="return showRelatedObjectLookupPopup(this);">
-  <img src="/media/admin/img/admin/selector-search.gif" border="0" width="16" height="16" alt="Lookup" /></a>   
+  <img src="/media/admin/img/admin/selector-search.gif" border="0" width="16" height="16" alt="Lookup" /></a>
    &nbsp;<strong>%s</strong>
 </div>
 """ % (fn,fn,fn,self.field.blank and ' required' or '',addslashes(data or ''),fn,
        fn,old_init_val)
 
         return css + html + javascript
-    
+
 class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
     choices = ()
-    
-    def __init__(self, attrs=None, *args, **kwargs):    
+
+    def __init__(self, attrs=None, *args, **kwargs):
         super(AjaxForeignKeyWidget, self).__init__(attrs, *args, **kwargs)
 
         if attrs.has_key('field'):
@@ -161,21 +160,36 @@ class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
         if attrs.has_key('ajax_func'):
             self.ajax_func = attrs["ajax_func"]
 
-    #   render function is provided by AjaxForeignKeyFieldBase    
-    
+    #   render function is provided by AjaxForeignKeyFieldBase
+
 class AjaxForeignKeyNewformField(forms.IntegerField):
     """ An Ajax autocompletion field that works like the other fields in django.forms.
         You need to initialize it in one of two ways:
         -   [name] = AjaxForeignKeyNewformField(key_type=[model], field_name=[name])
         -   [name] = AjaxForeignKeyNewformField(field=[field])
-            where [field] is the field in a model (i.e. ForeignKey) 
+            where [field] is the field in a model (i.e. ForeignKey)
     """
-    def __init__(self, field_name='', field=None, key_type=None, required=False, label='', initial=None, widget=None, help_text='', ajax_func=None, queryset=None, error_messages=None):
+    def __init__(self, field_name='', field=None, key_type=None, to_field=None,
+                 to_field_name=None, required=False, label='', initial=None,
+                 widget=None, help_text='', ajax_func=None, queryset=None,
+                 error_messages=None, show_hidden_initial=False):
 
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'
         else:
             self.widget.ajax_func = ajax_func
+
+        # ---
+        # We don't do anything with these arguments, but maybe we should.
+        # As of now we just assume we're looking for the id. -ageng 2008-12-22
+        if to_field_name is None:
+            to_field_name = 'id'
+        if to_field_name != 'id':
+            raise NotImplementedException
+        if to_field is not None:
+            raise NotImplementedException
+        self.show_hidden_initial = show_hidden_initial
+        # ---
 
         if field:
             self.widget = AjaxForeignKeyWidget(attrs={'field': field, 'width': 35, 'ajax_func': ajax_func})
@@ -192,8 +206,8 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             widget.attrs.update(extra_attrs)
 
         self.creation_counter = forms.Field.creation_counter
-        forms.Field.creation_counter += 1                                                        
-        
+        forms.Field.creation_counter += 1
+
         self.required = required
         self.help_text = help_text
         self.initial = initial
@@ -205,83 +219,30 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             self.label = label
         if field is not None: # Note: DO NOT use "!=" here!  It will get translated to field.__cmp__(None); field.__cmp__ assumes that its only argument is another field.
             self.field = field
-            
+
     def clean(self, value):
         if (value is None or value == '') and not self.required:
             return None
-        
+
         try:
-            value = int(value)
+            id = int(value)
         except ValueError:
             match = get_id_re.match(value)
             if match:
-                value = int(match.groups()[0])
+                id = int(match.groups()[0])
             else:
                 #   This is equivalent to a validation error but, now that we
                 #   trust the ForeignKey field to work normally, we don't need to
                 #   cause an error.
-                value = None
+                id = None
 
         if hasattr(self, "field"):
-            value = self.field.rel.to.objects.get(id=value)
+            # If we couldn't grab an ID, ask the target's autocompleter.
+            if id == None:
+                objs = self.field.rel.to.ajax_autocomplete(value)
+                if len( objs ) == 1:
+                    id = objs[0]['id']
+            # Finally, grab the object.
+            return self.field.rel.to.objects.get(id=id)
 
-        return value
-            
-class AjaxForeignKeyFormField(AjaxForeignKeyFieldBase, oldforms.FormField):
-    def __init__(self, field_name, field,queryset=None,
-                 is_required=False, validator_list=None,
-                 member_name=None, ajax_func = None, width=None):
-        self.queryset    = queryset
-        self.field_name  = field_name
-        self.field       = field
-        self.is_required = is_required
-
-        if width is None:
-            self.width = '25em'
-        else:
-            self.width = width
-
-        if ajax_func is None:
-            self.ajax_func = 'ajax_autocomplete'
-        else:
-            self.ajax_func = ajax_func
-        
-        if validator_list is None:
-            validator_list = []
-
-        self.validator_list = [self.isProperPost] + validator_list
-
-    def extract_data(self, data):
-        try:
-            value = data[self.field_name]
-        except KeyError:
-            value = data.get(self.field.attname, '')
-
-        try:
-            return int(str(value))
-        except ValueError:
-            return ''
-
-    def prepare(self, data):
-        try:
-            new_data =  self.isProperPost(self, data)
-            data[self.field_name] = new_data
-        except validators.ValidationError:
-            return
-
-    def isProperPost(self, field, data):
-        try:
-            data = data[self.field_name]
-        except:
-            pass
-            
-        try:
-            data = int(data)
-        except ValueError:
-            match = get_id_re.match(data)
-            if match:
-                data = match.groups()[0]
-            else:
-                raise validators.ValidationError, "Invalid text sent for key."
-#        form[self.field_name] = data
-        return data
+        return id

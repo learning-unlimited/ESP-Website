@@ -5,7 +5,7 @@
         <td>
        <span class="teachers">
        {% for teacher in class.teachers %}
-       <a href="/teach/teachers/{{ teacher.last_name|urlencode }}/{{ teacher.first_name|urlencode }}{{ teacher.getUserNum }}/bio.html" 
+       <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html"
           title="Click for the biography of {{teacher.first_name }} {{teacher.last_name }}">
           {{ teacher.first_name }} {{teacher.last_name }}
        </a>{% if not forloop.last %}<br />{% endif %}{% endfor %}
@@ -15,6 +15,6 @@
             {{ class.class_info }}
         </td>
         <td>
-            {{ class.grade_min }}--{{ class.grade_max }}
+            {{ class.grade_min }}-{{ class.grade_max }}
         </td>
     </tr>

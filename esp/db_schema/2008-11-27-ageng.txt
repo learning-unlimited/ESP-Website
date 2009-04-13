@@ -1,0 +1,11 @@
+Update instructions:
+    Review and run the update script: esp/db_schema/2008-11-27-ageng.py
+    Then make sure that:
+        * Each class category has the right abbreviation (symbol).
+        * Each program's class categories are what they should be.
+
+Actions taken by the script:
+    Add single character field ClassCategories.symbol
+	Add many-to-many between Programs and ClassCategories
+	Initialize each category's symbol to its first letter
+    Initialize each program's class_categories to include all categories

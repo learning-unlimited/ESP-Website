@@ -28,124 +28,48 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
-from esp.cal.models import Event
-from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, UserBit, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
-from esp.program.models import RegistrationProfile
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.miniblog.models import AnnouncementLink, Entry
-from esp.miniblog.views import preview_miniblog, create_miniblog
-from esp.program.models import Program, RegistrationProfile, ClassSection, ClassSubject, ClassCategories
-from esp.dbmail.models import MessageRequest
-from django.contrib.auth.models import User, AnonymousUser
-from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
-from django.template import loader, Context
-from icalendar import Calendar, Event as CalEvent, UTC
+from esp.miniblog.views import preview_miniblog
+from esp.program.models import Program, RegistrationProfile, ClassSubject
+from django.http import Http404, HttpResponseRedirect
+#from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
-from django.contrib.auth.models import User
 from esp.middleware import ESPError
-from esp.web.models import NavBarEntry
-from esp.users.manipulators import UserRegManipulator, UserPasswdManipulator, UserRecoverForm, SetPasswordForm
+from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
-from django import oldforms
-from esp.program.manipulators import StudentProfileManipulator, TeacherProfileManipulator, GuardianProfileManipulator, EducatorProfileManipulator, UserContactManipulator
-from esp.db.models import Q
+from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm
+from django.db.models.query import Q
 
 
 
 @login_required
 def myesp_passwd(request, module):
-	""" Change password """
-	if request.user.username == 'onsite':
-		raise ESPError(), "Sorry, you're not allowed to change the password of this user. It's special."
-	new_data = request.POST.copy()
-	manipulator = UserPasswdManipulator(request.user)
-	if request.method == "POST":
-		errors = manipulator.get_validation_errors(new_data)
-		if not errors:
-			manipulator.do_html2python(new_data)
-			user = authenticate(username=new_data['username'].lower(),
-					    password=new_data['password'])
-			
-			user.set_password(new_data['newpasswd'])
-			user.save()
-			login(request, user)
-			return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Success': True})
-	else:
-		errors = {}
-		
-	return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
-						    'form':           oldforms.FormWrapper(manipulator, new_data, errors),
-											 'Success': False})
+        """ Change password """
+        if request.user.username == 'onsite':
+                raise ESPError(False), "Sorry, you're not allowed to change the password of this user. It's special."
 
+        if request.method == "POST":
+                form = UserPasswdForm(user=request.user, data=request.POST)
+                if form.is_valid():
+                        new_data = form.cleaned_data
+                        user = authenticate(username=request.user.username,
+                                            password=new_data['password'])
 
-def myesp_passrecover(request, module):
-	""" Recover the password for a user """
-	from esp.users.models import PersistentQueryFilter
-	from django.template import loader
-	from esp.db.models import Q
-	
-	new_data = request.POST.copy()
-	manipulator = UserRecoverForm()
-	
-	
-	if request.method == 'POST' and request.POST.has_key('prelim'):
-		errors = manipulator.get_validation_errors(new_data)
-		if not errors:
-			try:
-				user = User.objects.get(username = new_data['username'])
-			except:
-				raise ESPError(), 'Could not find user %s.' % new_data['username']
+                        user.set_password(new_data['newpasswd'])
+                        user.save()
+                        login(request, user)
+                        return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Success': True})
+        else:
+                form = UserPasswdForm(user=request.user)
 
-			user = ESPUser(user)
-			user.recoverPassword()
+        return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
+                                                    'form': form,
+                                                    'Success': False})
 
-			return render_to_response('users/requestrecover.html', request, GetNode('Q/Web/myesp'),{'Success': True})
-
-	else:
-		errors = {}
-
-	return render_to_response('users/requestrecover.html', request, GetNode('Q/Web/myesp'),
-				  {'form': oldforms.FormWrapper(manipulator, new_data, errors)})
-
-def myesp_passemailrecover(request, module):
-	new_data = request.POST.copy()
-	manipulator = SetPasswordForm()
-
-	success = False
-	code = ''
-
-	if request.GET.has_key('code'):
-		code = request.GET['code']
-	if request.POST.has_key('code'):
-		code = request.POST['code']
-	
-	numusers = User.objects.filter(password = code).count()
-	if numusers == 0:
-		code = False
-	
-      	
-	
-	if request.method == 'POST':
-		errors = manipulator.get_validation_errors(new_data)
-		if not errors:
-			user = User.objects.get(username = new_data['username'].lower())
-			user.set_password(new_data['newpasswd'])
-			user.save()
-			auth_user = authenticate(username = new_data['username'].lower(), password = new_data['newpasswd'])
-			login(request, auth_user)
-			success = True
-			
-	else:
-		errors = {}
-		
-	return render_to_response('users/emailrecover.html', request, GetNode('Q/Web/myesp'),
-				  {'form': oldforms.FormWrapper(manipulator, new_data, errors),
-				   'code': code,
-				   'Success': success})
-	
 
 def myesp_home(request, module):
 	""" Draw the ESP home page """
@@ -165,7 +89,7 @@ def myesp_home(request, module):
 
 #	Each variable in the blocks array has:
 #	-	title
-#	-	array of 'header' html strings 
+#	-	array of 'header' html strings
 #		(in case you don't want to use separate sections)
 #	-	array of sections
 
@@ -179,7 +103,7 @@ def myesp_home(request, module):
 #	The wide cell is like the name of some object to deal with,
 #	and the narrow cell is like the administrative actions that can be applied to the object.
 #	For example, the wide cell might have "Michael Price: Audio and Speakerbuilding" and the narrow cell
-#	might be "Approve / Reject". 
+#	might be "Approve / Reject".
 
 #	An input item is a plain array of 4 containing
 #	-	label text
@@ -188,7 +112,7 @@ def myesp_home(request, module):
 #	-	form action (what URL the data is submitted to)
 
 #	A list item is a plain array of 3 to 5 containing
-#	-	left-hand (wide) cell text 
+#	-	left-hand (wide) cell text
 #	-	left-hand (wide) cell url
 #	-	right-hand (narrow) cell html
 #	-	OPTIONAL: command string
@@ -224,7 +148,7 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 				two  = prog.anchor.name
 				one  = prog.anchor.parent.name
 				return program_teacherreg2(request, 'teach', one, two, 'teacherreg', '', prog, clsobj)
-	
+
 	# I have no idea what structure this is, but at its simplest level,
 	# it's a dictionary
 	announcements = preview_miniblog(request)
@@ -238,7 +162,7 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 		clslist = currentUser.getEditable(ClassSubject)
 
 	fullclslist = {}
-	
+
 	# not the most direct way of doing it,
 	# but hey, it's O(n) in class #, which
 	# is nice.
@@ -247,7 +171,7 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 			fullclslist[cls.parent_program.id].append(cls)
 		else:
 			fullclslist[cls.parent_program.id] = [cls]
-	
+
 	# I don't like adding this second structure...
 	# but django templates made me do it!
 	responseProgs = []
@@ -256,7 +180,7 @@ def myesp_battlescreen(request, module, admin_details = False, student_version =
 		admPrograms = currentUser.getEditable(Program).order_by('-id')
 	else:
 		admPrograms = []
-	
+
 	for prog in usrPrograms:
 		if not fullclslist.has_key(prog.id):
 			curclslist = []
@@ -312,18 +236,18 @@ def edit_profile(request, module):
 	curUser = ESPUser(request.user)
 
 	dummyProgram = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
-	
+
 	if curUser.isStudent():
-		return profile_editor(request, None, True, 'Student')
-	
+		return profile_editor(request, None, True, 'student')
+
 	elif curUser.isTeacher():
-		return profile_editor(request, None, True, 'Teacher')
-	
+		return profile_editor(request, None, True, 'teacher')
+
 	elif curUser.isGuardian():
-		return profile_editor(request, None, True, 'Guardian')
-	
+		return profile_editor(request, None, True, 'guardian')
+
 	elif curUser.isEducator():
-		return profile_editor(request, None, True, 'Educator')	
+		return profile_editor(request, None, True, 'educator')
 
 	else:
 		return profile_editor(request, None, True, '')
@@ -335,41 +259,38 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 	STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
 	STUDREP_QSC  = GetNode('Q')
 
-	
+
 	if prog_input is None:
 		prog = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
 		navnode = GetNode('Q/Web/myesp')
 	else:
 		prog = prog_input
 		navnode = prog
-		
+
 	curUser = request.user
-	role = role.lower();
 	context = {'logged_in': request.user.is_authenticated() }
 	context['user'] = request.user
-	
+
 	curUser = ESPUser(curUser)
 	curUser.updateOnsite(request)
-	
-	manipulator = {'': UserContactManipulator(curUser),
-		       'student': StudentProfileManipulator(curUser),
-		       'teacher': TeacherProfileManipulator(curUser),
-		       'guardian': GuardianProfileManipulator(curUser),
-		       'educator': EducatorProfileManipulator(curUser)}[role]
+
+	FormClass = {'': UserContactForm,
+		       'student': StudentProfileForm,
+		       'teacher': TeacherProfileForm,
+		       'guardian': GuardianProfileForm,
+		       'educator': EducatorProfileForm}[role]
 	context['profiletype'] = role
 
 	if request.method == 'POST' and request.POST.has_key('profile_page'):
-		new_data = request.POST.copy()
-		manipulator.prepare(new_data)
-		errors = manipulator.get_validation_errors(new_data)
-		
+                form = FormClass(curUser, request.POST)
+
 		# Don't suddenly demand an explanation from people who are already student reps
 		if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
-			if errors.has_key('studentrep_expl'):
-				del errors['studentrep_expl']
-		
-		if not errors:
-			manipulator.do_html2python(new_data)
+                        if hasattr(form, 'repress_studentrep_expl_error'):
+                            form.repress_studentrep_expl_error()
+
+                if form.is_valid():
+                        new_data = form.cleaned_data
 
 			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 
@@ -421,15 +342,19 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 						userrole['base'] = 'teach'
 						userrole['reg'] = 'teacherreg'
 					ctxt['userrole'] = userrole
-					regverb = GetNode('V/Deadline/Registration/%s' % ctxt['userrole']['name'])
+					regverb = GetNode('V/Deadline/Registration/%s/MainPage' % ctxt['userrole']['name'])
 					progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
+					nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 					ctxt['progs'] = progs
-				return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+					ctxt['nextreg'] = list(nextreg)
+					if len(progs) == 1:
+						return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+					else:
+						return render_to_response('users/profile_complete.html', request, navnode, ctxt)
 			else:
 				return True
 
 	else:
-		errors = {}
 		if prog_input is None:
 			regProf = RegistrationProfile.getLastProfile(curUser)
 		else:
@@ -446,18 +371,20 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		new_data['e_mail']     = curUser.email
 		new_data = regProf.updateForm(new_data, role)
 
+                form = FormClass(curUser, initial=new_data)
+
 	context['request'] = request
-	context['form'] = oldforms.FormWrapper(manipulator, new_data, errors)
+	context['form'] = form
 	return render_to_response('users/profile.html', request, navnode, context)
 
 @login_required
 def myesp_onsite(request, module):
-	
+
 	user = ESPUser(request.user)
 	if not user.isOnsite():
 		raise ESPError(False), 'You are not a valid on-site user, please go away.'
 	verb = GetNode('V/Registration/OnSite')
-	
+
 	progs = UserBit.find_by_anchor_perms(Program, user = user, verb = verb)
 
 	if len(progs) == 1:
@@ -472,7 +399,7 @@ def myesp_battlescreen_teacher(request, module):
 	if qscs.count() > 0:
 		return myesp_battlescreen(request, module)
 	else:
-		raise Http404	
+		raise Http404
 
 
 myesp_handlers = {
@@ -480,8 +407,6 @@ myesp_handlers = {
 		   'switchback': myesp_switchback,
 		   'onsite': myesp_onsite,
 		   'passwd': myesp_passwd,
-		   'passwdrecover': myesp_passrecover,
-		   'recoveremail': myesp_passemailrecover,
 		   'student': myesp_battlescreen_student,
 		   'teacher': myesp_battlescreen_teacher,
 		   'admin': myesp_battlescreen_admin,

@@ -28,22 +28,21 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.miniblog.models import Entry
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.users.models    import ESPUser, User
-from esp.users.views import search_for_user, get_user_list
+from esp.users.views import get_user_list
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo, ClassSubject, ClassCategories
 from esp.cal.models import Event
 from esp.resources.models import Resource, ResourceType
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 
 
-class SATPrepAdminSchedule(ProgramModuleObj):
+class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
     """ This allows SATPrep directors to schedule their programs using
         an algorithm. """
     @classmethod
@@ -74,7 +73,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         
         if request.method == 'POST':
             #   Receive the data and create a series of rooms in the specified timeslot.
-            data = request.POST.copy()
+            data = request.POST
             timeslot_id = int(data.get('timeslot'))
             empty_rooms = data.get('empty_rooms')
             rooms = data.get('rooms')
@@ -181,7 +180,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
 
 
     @aux_call
-    @needs_admin
+    @login_required
     def enter_scores(self, request, tl, one, two, module, extra, prog):
         """ Allow bulk entry of scores from a spreadsheet.  This works for either the diagnostic or
         practice exams. """
@@ -209,10 +208,11 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                 #   Copy over the content from the text box, then the file.
                 if len(form.cleaned_data['text']) > 3:
                     content = form.cleaned_data['text']
-                elif form.cleaned_data['file'].has_key('content'):
+                elif form.cleaned_data['file'] and form.cleaned_data['file'].has_key('content'):
                     content = form.cleaned_data['file']['content']
                 else:
-                    return ESPError(False), 'You need to upload a file or enter score information in the box.  Please go back and do so.'
+                    from esp.middleware import ESPError
+                    raise ESPError(False), 'You need to upload a file or enter score information in the box.  Please go back and do so.'
                 
                 lines = content.split('\n')
                 error_lines = []
@@ -223,9 +223,12 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                 for line in lines:
                     error_flag = False
                     entry = line.split(',')
+                    # Clean up a bit
+                    entry = [s.strip() for s in entry]
+                    entry = [s for s in entry if s != ""]
                     
                     #   Test the input data and report the error if there is one
-                    if len(entry) < 4:
+                    if len(entry) < 3:
                         error_flag = True
                         error_lines.append(line)
                         error_reasons.append('Insufficient information in line.')
@@ -234,6 +237,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                     try:
                         id_num = int(entry[0])
                         student = User.objects.get(id=id_num)
+                        del entry[0]
                     except ValueError:
                         student = prog.students()['confirmed'].filter(first_name__icontains=entry[1], last_name__icontains=entry[0])
                         if student.count() != 1:
@@ -242,20 +246,43 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                             error_reasons.append('Found %d matching students in program.' % student.count())
                         else:
                             student = student[0]
+			    del entry[0:2]
                     except User.DoesNotExist:
                         error_flag = True
                         error_lines.append(line)
                         error_reasons.append('Invalid user ID of %d.' % id_num)
-                        
+
                     if not error_flag:
-                        #   Add the student's score into the database
-                        score = int(entry[3])
-                        category = entry[2].lower()[0]
-                        field_name = reginfo_fields[prefix+category]
                         reginfo = SATPrepRegInfo.getLastForProgram(student, prog)
-                        reginfo.__dict__[field_name] = score
-                        reginfo.save()
-                        n += 1
+                        got_some = False
+                        while len(entry) > 1:
+                            try:
+                                category = entry[0].lower()[0]
+                                score = int(entry[1])
+                                field_name = reginfo_fields[prefix+category]
+                                reginfo.__dict__[field_name] = score
+                                got_some = True
+                                entry = entry[2:] # pop entries
+                            except KeyError, IndexError:
+                                error_flag = True
+                                error_lines.append(line)
+                                error_reasons.append('Invalid category name: %s.' % entry[0])
+                                break
+                            except ValueError:
+                                error_flag = True
+                                error_lines.append(line)
+                                error_reasons.append('Not an integer score: %s.' % entry[1])
+                                break
+
+                        if not error_flag:
+                            if got_some:
+                                #   Add the student's scores into the database
+                                reginfo.save()
+                                n += 1
+                            else:
+                                error_flag = True
+                                error_lines.append(line)
+                                error_reasons.append('Insufficient information in line.')
                         
                 #   Summary information to display on completion
                 context['errors'] = error_lines
@@ -290,7 +317,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
         if not request.method == 'POST' and not request.POST.has_key('schedule_confirm'):
             return render_to_response(self.baseDir()+'schedule_confirm.html', request, (prog, tl), {})
 
-        num_divisions = self.satprepInfo.num_divisions
+        num_divisions = self.num_divisions
 
         filterObj, found = get_user_list(request, self.program.getLists(True))
         if not found:
@@ -372,7 +399,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                         scheduling_log.append('Added %s to %s at %s' % (user, cls['cls'], cls['cls'].meeting_times.all()[0]))
 
                         if not dry_run:
-                            cls['cls'].preregister_student(user)
+                            cls['cls'].preregister_student(user, overridefull=True)
                             cls['cls'].update_cache_students()
                             
                         for ts in cls['cls'].meeting_times.all():
@@ -444,10 +471,10 @@ class SATPrepAdminSchedule(ProgramModuleObj):
             cur_classes = ClassSubject.objects.filter(parent_program = self.program)
             [cls.delete() for cls in cur_classes]
 
-        dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-        dummy_anchor.save()
+        #dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
+        #dummy_anchor.save()
         
-        data = request.POST.copy()
+        data = request.POST
         
         #   Pull the timeslots from the multiselect field on the form.
         timeslots = []
@@ -478,7 +505,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                 newclass.class_size_max = room_capacity
                 
                 newclass.category = ClassCategories.objects.get(category = 'SATPrep')
-                newclass.anchor = dummy_anchor
+                newclass.anchor = self.program.classes_node()
     
                 newclass.save()
                                 
@@ -509,7 +536,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
                     sec.meeting_times.add(ts)
                     sec.assign_room(new_room)
         
-        dummy_anchor.delete()
+        #dummy_anchor.delete()
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
 
     @aux_call
@@ -557,8 +584,7 @@ class SATPrepAdminSchedule(ProgramModuleObj):
 
         retList.sort(sorter)
                 
-            
-        sections = list(string.ascii_uppercase[:self.satprepInfo.num_divisions])
+        sections = list(string.ascii_uppercase[:self.num_divisions])
 
         context = {'users': retList, 'sections': sections }
 

@@ -30,17 +30,14 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser
-from esp.lib.markdown import markdown
-from esp.qsd.models import QuasiStaticData
 from datetime import datetime, timedelta
 from django.core.cache import cache
-from esp.miniblog.models import Entry
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
-from django.contrib import admin
+from esp.cache import cache_function
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -56,9 +53,6 @@ class ProgramModule(models.Model):
     #   Not all program modules have main calls!
     main_call  = models.CharField(max_length=32, blank=True, null=True)
 
-    # aseering 3-19-2007 -- ??; no idea what this is for
-    check_call = models.CharField(max_length=32, blank=True, null=True)
-
     # One of teach/learn/etc.; What is this module typically used for?
     module_type = models.CharField(max_length=32)
 
@@ -70,7 +64,7 @@ class ProgramModule(models.Model):
     seq = models.IntegerField()
 
     # Secondary view functions associated with this ProgramModule
-    aux_calls = models.CharField(max_length=512, blank=True, null=True)
+    aux_calls = models.CharField(max_length=1024, blank=True, null=True)
 
     # Summary view functions, that summarize data for all instances of this ProgramModule
     summary_calls = models.CharField(max_length=512, blank=True, null=True)
@@ -100,7 +94,7 @@ class ProgramModule(models.Model):
         calls = []
         myClass = this.getPythonClass()
 
-             
+
 
         for i in callNames:
             try:
@@ -133,15 +127,13 @@ class ProgramModule(models.Model):
         def __init__(self, msg):
             self.msg = msg
 
-        def __str__(self):
+        def __unicode__(self):
             return self.msg
-    
-    def __str__(self):
+
+    def __unicode__(self):
         return 'Program Module: %s' % self.admin_title
 
-admin.site.register(ProgramModule)
-    
-    
+
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
     program = models.CharField(max_length=256)
@@ -154,14 +146,15 @@ class ArchiveClass(models.Model):
     teacher_ids = models.CharField(max_length=256, blank=True, null=True)
     student_ids = models.TextField()
     original_id = models.IntegerField(blank=True, null=True)
-    
+
     num_old_students = models.IntegerField(default=0)
 
     class Meta:
         app_label = 'program'
         db_table = 'program_archiveclass'
+        verbose_name_plural = 'archive classes'
 
-    #def __str__(self):
+    #def __unicode__(self):
     #    return '"%s" taught by "%s"' % (self.title, self.teacher)
 
     def __cmp__(self, other):
@@ -175,18 +168,18 @@ class ArchiveClass(models.Model):
         if test != 0:
             return test
         return 0
-    
+
     def heading(self):
         if len(self.date) > 1:
             year_display = self.year + ' (%s)' % self.date
         else:
             year_display = self.year
-            
+
         return ({'label': 'Teacher', 'value': self.teacher},
             {'label': 'Year', 'value': year_display},
             {'label': 'Program', 'value': self.program},
             {'label': 'Category', 'value': self.category})
-    
+
     def content(self):
         return self.description
 
@@ -194,8 +187,6 @@ class ArchiveClass(models.Model):
         from django.template import loader, Context
         t = loader.get_template('models/ArchiveClass.html')
         return t.render(Context({'class': self}, autoescape=True))
-
-    __str__ = __unicode__
 
     def num_students(self):
         if self.student_ids is not None:
@@ -208,36 +199,33 @@ class ArchiveClass(models.Model):
             self.student_ids += '%s|' % '|'.join([str(u.id) for u in users])
         else:
             self.student_ids = '|%s|' % '|'.join([str(u.id) for u in users])
-            
+
     def add_teachers(self, users):
         if self.teacher_ids is not None:
             self.teacher_ids += '%s|' % '|'.join([str(u.id) for u in users])
         else:
             self.teacher_ids = '|%s|' % '|'.join([str(u.id) for u in users])
-        
+
     def students(self):
         from esp.users.models import ESPUser
         useridlist = [int(x) for x in self.student_ids.strip('|').split('|')]
         return ESPUser.objects.filter(id__in = useridlist)
-    
+
     def teachers(self):
         from esp.users.models import ESPUser
         useridlist = [int(x) for x in self.teacher_ids.strip('|').split('|')]
         return User.objects.filter(id__in = useridlist)
-    
+
     @staticmethod
     def getForUser(user):
         """ Get a list of archive classes for a specific user. """
-        from esp.db.models import Q
+        from django.db.models.query import Q
         Q_ClassTeacher = Q(teacher__icontains = (user.first_name + ' ' + user.last_name)) |\
                Q(teacher_ids__icontains = ('|%s|' % user.id))
         Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
         return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')
-
-admin.site.register(ArchiveClass)
-    
 
 def _get_type_url(type):
     def _really_get_type_url(self):
@@ -252,62 +240,68 @@ def _get_type_url(type):
         return self._type_url[type]
 
     return _really_get_type_url
-        
-    
 
-    
+
+
+
 class Program(models.Model):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
 
     anchor = AjaxForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
-    director_email = models.CharField(max_length=64)
+    director_email = models.EmailField()
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
     program_size_max = models.IntegerField(null=True)
     program_modules = models.ManyToManyField(ProgramModule)
+    class_categories = models.ManyToManyField('ClassCategories')
 
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
 
+    @cache_function
     def checkitems_all_cached(self):
         """  The main Manage page requests checkitems.all() O(n) times in
         the number of classes in the program.  Minimize the number of these
         calls that actually hit the db. """
-        CACHE_KEY = "PROGRAM__CHECKITEM__CACHE__%d" % self.id
-        val = cache.get(CACHE_KEY)
-        if val == None:
-            val = self.checkitems.all()
-            len(val)
-            cache.set(CACHE_KEY, val, 1)
-        
-        return val
+        return self.checkitems.all()
+    checkitems_all_cached.depend_on_row(lambda:ProgramCheckItem, lambda item: {'self': item.program})
 
     get_teach_url = _get_type_url("teach")
     get_learn_url = _get_type_url("learn")
     get_manage_url = _get_type_url("manage")
     get_onsite_url = _get_type_url("onsite")
 
-    def save(self):
-        
-        retVal = super(Program, self).save()
-        
+    def save(self, *args, **kwargs):
+
+        retVal = super(Program, self).save(*args, **kwargs)
+
         return retVal
 
     def url(self):
         str_array = self.anchor.tree_encode()
         return '/'.join(str_array[-2:])
-    
-    def __str__(self):
-        return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+
+    def __unicode__(self):
+        if not hasattr(self, "_nice_name"):
+            self._nice_name = str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+        return self._nice_name
 
     def parent(self):
         return self.anchor.parent
 
     def niceName(self):
-        return str(self).replace("_", " ")
+        # Cache niceName, because otherwise it takes a couple of queries
+        # to sort it out
+        CACHE_KEY = "PROGRAM__NICENAME__%s" % self.id
+
+        retVal = cache.get(CACHE_KEY)
+        if not retVal:
+            retVal = str(self).replace("_", " ")
+            cache.set(CACHE_KEY, retVal, timeout=86400)
+        return retVal
 
     def niceSubName(self):
         return self.anchor.name.replace('_', ' ')
@@ -321,13 +315,13 @@ class Program(models.Model):
             urllist.insert(0,tmpnode.name)
             tmpnode = tmpnode.parent
         return "/".join(urllist)
-                      
+
 
     def teacherSubscribe(self, user):
         v = GetNode('V/Subscribe')
         qsc = self.anchor.tree_create(['Announcements',
                            'Teachers'])
-        
+
         if UserBit.objects.filter(user = user,
                       qsc = qsc,
                       verb = v).count() > 0:
@@ -347,7 +341,7 @@ class Program(models.Model):
                 return retVal
 
         return ''
-    
+
     def teachers(self, QObjects = False):
         modules = self.getModules(None)
         teachers = {}
@@ -368,13 +362,13 @@ class Program(models.Model):
 
     def getLists(self, QObjects=False):
         from esp.users.models import ESPUser
-        
+
         lists = self.students(QObjects)
         lists.update(self.teachers(QObjects))
         learnmodules = self.getModules(None)
         teachmodules = self.getModules(None)
 
-        
+
         for k, v in lists.items():
             lists[k] = {'list': v,
                         'description':''}
@@ -394,7 +388,7 @@ class Program(models.Model):
             lists[k]['description'] = v
         usertypes = ['Student', 'Teacher', 'Guardian', 'Educator']
 
-        
+
 
         for usertype in usertypes:
             lists['all_'+usertype.lower()+'s'] = {'description':
@@ -404,7 +398,7 @@ class Program(models.Model):
         lists['emaillist'] = {'description':
                       """All users in our mailing list without an account.""",
                       'list': Q(password = 'emailuser')}
-            
+
         return lists
 
     def students_union(self, QObject = False):
@@ -414,7 +408,7 @@ class Program(models.Model):
                 return Q(id = -1)
             else:
                 return User.objects.filter(id = -1)
-                    
+
         union = reduce(operator.or_, [x for x in self.students(True).values() ])
         if QObject:
             return union
@@ -430,7 +424,7 @@ class Program(models.Model):
         if QObject:
             return union
         else:
-            return User.objects.filter(union).distinct()    
+            return User.objects.filter(union).distinct()
 
     def num_students(self):
         modules = self.getModules(None, 'learn')
@@ -451,7 +445,6 @@ class Program(models.Model):
         CACHE_DURATION = 10
 
         if use_cache:
-            from django.core.cache import cache
             isfull = cache.get(CACHE_KEY)
             if isfull != None:
                 return isfull
@@ -484,33 +477,32 @@ class Program(models.Model):
         userbits = UserBit.objects.filter(verb = v, user = espuser,
                          qsc = self.anchor.tree_create(['Confirmation']))
 
-        userbits = userbits.filter(Q(enddate__isnull=True) | Q(enddate__gte=datetime.now()))
+        userbits = userbits.filter(enddate__gte=datetime.now())
 
         if len(userbits) < 1:
             return False
-        
+
         return True
-    
+
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
-    "Classrooms."  So, if you try to call the old functions (which have no point anymore), then 
+    "Classrooms."  So, if you try to call the old functions (which have no point anymore), then
     you'll get an error and you'll notice that you need to change the call and its associated
     code.               -Michael P
-    
+
     """
     def getClassrooms(self, timeslot=None):
         #   Returns the resources themselves.  See the function below for grouped-by-room.
         from esp.resources.models import ResourceType
-        
+
         if timeslot is not None:
             return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom'))
         else:
             return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
-    
+
     def getAvailableClassrooms(self, timeslot):
-        from esp.resources.models import ResourceType
         #   Filters down classrooms to those that are not taken.
         return filter(lambda x: x.is_available(), self.getClassrooms(timeslot))
-    
+
     def collapsed_dict(self, resources):
         result = {}
         for c in resources:
@@ -518,37 +510,37 @@ class Program(models.Model):
                 #   Make a dictionary with some helper variables for each resource.
                 result[c.name] = c
                 result[c.name].timeslots = [c.event]
+
+                result[c.name].furnishings = c.associated_resources()
+                result[c.name].sequence = c.schedule_sequence(self)
+                result[c.name].prog_available_times = c.available_times(self.anchor)
             else:
                 result[c.name].timeslots.append(c.event)
-            result[c.name].furnishings = c.associated_resources()
-            result[c.name].sequence = c.schedule_sequence(self)
-            result[c.name].prog_available_times = c.available_times(self.anchor)
-            
+
         for c in result:
             result[c].timegroup = Event.collapse(result[c].timeslots)
-        
+
         return result
-    
+
     def classroom_group_key(self):
         return 'program__groupedclassrooms:%d' % self.id
-    
+
     def clear_classroom_cache(self):
         from django.core.cache import cache
-        
+
         cache_key = self.classroom_group_key()
         cache.delete(cache_key)
-    
+
     def groupedClassrooms(self):
-        from esp.resources.models import ResourceType
         from django.core.cache import cache
-        
+
         cache_key = self.classroom_group_key()
         result = cache.get(cache_key)
         if result is not None:
             return result
-        
+
         classrooms = self.getClassrooms()
-        
+
         result = self.collapsed_dict(list(classrooms))
         key_list = result.keys()
         key_list.sort()
@@ -556,20 +548,17 @@ class Program(models.Model):
         ans = [result[key] for key in key_list]
         cache.set(cache_key, ans)
         return ans
-        
+
     def addClassroom(self, classroom_form):
         from esp.program.modules.forms.resources import ClassroomForm
-        
+
         #   Parse classroom form to create classroom and associated resources, group them,
         #   and save them.
         assert False, 'todo'
-        
-    def classes(self):
-        return ClassSubject.objects.filter(parent_program = self).order_by('id')        
 
-    def class_sections(self):
-        return ClassSection.objects.filter(classsubject__parent_program = self).order_by('id')
-    
+    def classes(self):
+        return ClassSubject.objects.filter(parent_program = self).order_by('id')
+
     def class_ids_implied(self, use_cache=True):
         """ Returns the class ids implied by classes in this program. Returns [-1] for none so the cache doesn't keep getting hit. """
         cache_key = 'PROGRAM__CLASS_IDS_IMPLIED__%s' % self.id
@@ -586,12 +575,8 @@ class Program(models.Model):
         cache.set(cache_key, retVal, 9999)
         return retVal
 
-    def sections(self):
-        all_classes = self.classes()
-        section_ids = []
-        for c in all_classes:
-            section_ids += [item['id'] for item in c.sections.all().values('id')]
-        return ClassSection.objects.filter(id__in=section_ids).order_by('id')        
+    def sections(self, use_cache=True):
+        return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')
@@ -620,31 +605,31 @@ class Program(models.Model):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
         exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
-        
+
         Q_filters = Q(program=self) | Q(program__isnull=True)
-        
+
         #   Inherit resource types from parent programs.
         parent_program = self.getParentProgram()
         if parent_program is not None:
             Q_parent = Q(id__in=[rt.id for rt in parent_program.getResourceTypes()])
             Q_filters = Q_filters | Q_parent
-        
+
         return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types])
 
     def getResources(self):
         from esp.resources.models import Resource
         return Resource.objects.filter(event__anchor=self.anchor)
-    
+
     def getFloatingResources(self, timeslot=None, queryset=False):
         from esp.resources.models import ResourceType
         #   Don't include classrooms and teachers in the floating resources.
         exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
-        
+
         if timeslot is not None:
             res_list = self.getResources().filter(event=timeslot, is_unique=True).exclude(res_type__in=exclude_types)
         else:
             res_list = self.getResources().filter(is_unique=True).exclude(res_type__in=exclude_types)
-            
+
         if queryset:
             return res_list
         else:
@@ -658,7 +643,8 @@ class Program(models.Model):
     def getDurations(self, round=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
         from esp.program.modules.module_ext import ClassRegModuleInfo
-        
+        from decimal import Decimal
+
         times = Event.group_contiguous(list(self.getTimeSlots()))
         info_list = ClassRegModuleInfo.objects.filter(module__program=self)
         if info_list.count() == 1 and type(info_list[0].class_max_duration) == int:
@@ -667,7 +653,7 @@ class Program(models.Model):
             max_seconds = None
 
         durationDict = {}
-        
+
         #   I hope this isn't too terribly slow... not bothering with a faster way
         for t_list in times:
             n = len(t_list)
@@ -681,10 +667,10 @@ class Program(models.Model):
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
-                        durationDict[durationSeconds / 3600.0] = \
+                        durationDict[Decimal(durationSeconds) / 3600] = \
                                         str(rounded_seconds / 3600) + ':' + \
                                         str((rounded_seconds / 60) % 60).rjust(2,'0')
-            
+
         durationList = durationDict.items()
 
         return durationList
@@ -692,12 +678,12 @@ class Program(models.Model):
     def getSurveys(self):
         from esp.survey.models import Survey
         return Survey.objects.filter(anchor=self.anchor)
-    
+
     def getSubprograms(self):
         if not self.anchor.has_key('Subprograms'):
             return Program.objects.filter(id=-1)
         return Program.objects.filter(anchor__parent__in=self.anchor['Subprograms'].children())
-    
+
     def getParentProgram(self):
         #   Ridiculous syntax is actually correct for our subprograms scheme.
         pl = []
@@ -707,12 +693,15 @@ class Program(models.Model):
             return pl[0]
         else:
             return None
-        
-    def getLineItemTypes(self, user=None):
+
+    def getLineItemTypes(self, user=None, required=True):
         from esp.accounting_core.models import LineItemType, Balance
-        
-        li_types = list(LineItemType.objects.filter(anchor=GetNode(self.anchor.get_uri()+'/LineItemTypes/Required')))
-        
+
+        if required:
+            li_types = list(LineItemType.objects.filter(anchor=GetNode(self.anchor.get_uri()+'/LineItemTypes/Required')))
+        else:
+            li_types = list(LineItemType.objects.filter(anchor__parent=GetNode(self.anchor.get_uri()+'/LineItemTypes/Optional')))
+
         #   OK, nevermind... Add in *parent program* line items that have not been paid for.
         parent_li_types = []
         cur_anchor = self.anchor
@@ -725,9 +714,9 @@ class Program(models.Model):
             li.bal = Balance.get_current_balance(user, li)
             if Balance.get_current_balance(user, li)[0] == 0:
                 li_types.append(li)
-                
+
         return li_types
-    
+
     def getModules(self, user = None, tl = None):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base
@@ -756,23 +745,23 @@ class Program(models.Model):
             cache.set(cache_key, modules, 9999)
         else:
             modules = retVal
-        
+
         if user:
             for module in modules:
                 module.setUser(user)
         return modules
-    
+
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
         This avoids actually looking up the program module first. """
-        
+
         ext_cls = None
         if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
             mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
             ext_cls = getattr(mod, ext_name_or_cls)
         else:
             ext_cls = ext_name_or_cls
-            
+
         if module_id:
             try:
                 extension = ext_cls.objects.filter(module__id=module_id)[0]
@@ -785,13 +774,16 @@ class Program(models.Model):
                 extension = ext_cls.objects.filter(module__program__id=self.id)[0]
             except:
                 extension = None
-                
+
         return extension
 
     def getColor(self):
+        if hasattr(self, "_getColor"):
+            return self._getColor
+
         cache_key = 'PROGRAM__COLOR_%s' % self.id
         retVal = cache.get(cache_key)
-        
+
         if not retVal:
             mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
             if mod.count() == 1:
@@ -803,28 +795,34 @@ class Program(models.Model):
                     cache.set(cache_key, retVal, 9999)
         if retVal == -1:
             return None
+
+        self._getColor = retVal
         return retVal
-    
+
     def visibleEnrollments(self):
         """
         Returns whether class enrollments should show up in the catalog.
         Current policy is that after everybody can sign up for one class, this returns True.
         """
-        
+        if hasattr(self, "_visibleEnrollments"):
+            return self._visibleEnrollments
+
         cache_key = 'PROGRAM_VISIBLEENROLLMENTS_%s' % self.id
         retVal = cache.get(cache_key)
-        
+
         if retVal is None:
             reg_verb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
             retVal = False
-            if UserBit.objects.filter(user__isnull=True, qsc=self.anchor, verb=reg_verb, startdate__lte=datetime.now()).count() > 0:
+            if UserBit.objects.filter(user__isnull=True, qsc=self.anchor_id, verb=reg_verb, startdate__lte=datetime.now()).count() > 0:
                 retVal = True
             else:
-                if UserBit.objects.filter(user__isnull=True, qsc__rangestart__lte=self.anchor.rangestart, qsc__rangeend__gte=self.anchor.rangeend, verb__rangestart__lte=reg_verb.rangestart, verb__rangeend__gte=reg_verb.rangeend, recursive=True, startdate__lte=datetime.now()).count() > 0:
+                if UserBit.objects.filter(QTree(qsc__above=self.anchor_id, verb__above=reg_verb), user__isnull=True, recursive=True, startdate__lte=datetime.now()).count() > 0:
                     retVal = True
             cache.set(cache_key, retVal, 9999)
+
+        self._visibleEnrollments = retVal
         return retVal
-    
+
     def archive(self):
         archived_classes = []
         #   I think we should delete resources and user bits, but I'm afraid to.
@@ -832,9 +830,9 @@ class Program(models.Model):
         for c in self.classes():
             archived_classes.append(c.archive())
             print 'Archived: %s' % c.title()
-        
+
         return archived_classes
-    
+
     @staticmethod
     def find_by_perms(user, verb):
         """ Fetch a list of relevant programs for a given user and verb """
@@ -842,11 +840,16 @@ class Program(models.Model):
 
     @classmethod
     def by_prog_inst(cls, program, instance):
-        return Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
+        CACHE_KEY = "PROGRAM__BY_PROG_INST__%s__%s" % (program, instance)
+        prog_inst = cache.get(CACHE_KEY)
+        if prog_inst:
+            return prog_inst
+        else:
+            prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
+            cache.add(CACHE_KEY, prog_inst, timeout=86400)
+            return prog_inst
 
-admin.site.register(Program)
-    
-    
+
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """
     program = models.ForeignKey(Program)
@@ -858,9 +861,7 @@ class BusSchedule(models.Model):
         app_label = 'program'
         db_table = 'program_busschedule'
 
-admin.site.register(BusSchedule)
 
-    
 class TeacherParticipationProfile(models.Model):
     """ Profile properties associated with a teacher in a program """
     teacher = AjaxForeignKey(User)
@@ -873,10 +874,10 @@ class TeacherParticipationProfile(models.Model):
         app_label = 'program'
         db_table = 'program_teacherparticipationprofile'
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
 
-admin.site.register(TeacherParticipationProfile)
+
 
 class SplashInfo(models.Model):
     student = AjaxForeignKey(User)
@@ -948,6 +949,7 @@ class SplashInfo(models.Model):
         foodmap['pepperoni'] = 'Pepperoni Pizza'
         return foodmap[self.lunchsun]
 
+
 class SATPrepRegInfo(models.Model):
     """ SATPrep Registration Info """
     old_math_score = models.IntegerField(blank=True, null=True)
@@ -958,7 +960,7 @@ class SATPrepRegInfo(models.Model):
     diag_writ_score = models.IntegerField(blank=True, null=True)
     prac_math_score = models.IntegerField(blank=True, null=True)
     prac_verb_score = models.IntegerField(blank=True, null=True)
-    prac_writ_score = models.IntegerField(blank=True, null=True)    
+    prac_writ_score = models.IntegerField(blank=True, null=True)
     heard_by = models.CharField(max_length=128, blank=True, null=True)
     user = AjaxForeignKey(User)
     program = models.ForeignKey(Program)
@@ -966,21 +968,10 @@ class SATPrepRegInfo(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_satprepreginfo'
+        verbose_name = 'SATPrep Registration Info'
 
-    def __str__(self):
+    def __unicode__(self):
         return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
-    def updateForm(self, new_data):
-        for i in self.__dict__.keys():
-            if i != 'user_id' and i != 'id' and i != 'program_id':
-                new_data[i] = self.__dict__[i]
-        return new_data
-
-    
-    def addOrUpdate(self, new_data, curUser, program):
-        for i in self.__dict__.keys():
-            if i != 'user_id' and i != 'id' and i != 'program_id' and new_data.has_key(i):
-                self.__dict__[i] = new_data[i]
-        self.save()
 
     @staticmethod
     def getLastForProgram(user, program):
@@ -992,8 +983,6 @@ class SATPrepRegInfo(models.Model):
         else:
             satPrep = satPrepList[0]
         return satPrep
-
-admin.site.register(SATPrepRegInfo)
 
 
 class RegistrationProfile(models.Model):
@@ -1015,37 +1004,47 @@ class RegistrationProfile(models.Model):
         app_label = 'program'
         db_table = 'program_registrationprofile'
 
-    @staticmethod
+    @cache_function
     def getLastProfile(user):
-        regProfList = RegistrationProfile.objects.filter(user__exact=user).order_by('-last_ts','-id')
-        if len(regProfList) < 1:
-            regProf = RegistrationProfile()
-            regProf.user = user
-        else:
-            regProf = regProfList[0]
+        regProf = None
+
+        if isinstance(user.id, int):
+            try:
+                regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
+            except:
+                pass
+
+        if regProf != None:
+            return regProf
+
+        regProf = RegistrationProfile()
+        regProf.user = user
+
         return regProf
+    getLastProfile.depend_on_row(lambda:RegistrationProfile, lambda profile: {'user': profile.user})
+    getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
     def confirmStudentReg(self, user):
         """ Confirm the specified user's registration in the program """
-        bits = UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
+        bits = UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
         if bits.count() == 0:
             bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
 
     def cancelStudentRegConfirmation(self, user):
         """ Cancel the registration confirmation for the specified student """
         raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
-        #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now())):
+        #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc__parent=self.anchor, qsc__name="Confirmation").filter(enddate__gte=datetime.now()):
         #    bit.expire()
-        
-    def save(self):
-        """ update the timestamp """
+
+    def save(self, *args, **kwargs):
+        """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
-        super(RegistrationProfile, self).save()
-        
+        super(RegistrationProfile, self).save(*args, **kwargs)
+
     @staticmethod
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')
+        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
             # Has this user already filled out a profile for the parent program?
             parent_program = program.getParentProgram()
@@ -1057,14 +1056,16 @@ class RegistrationProfile(models.Model):
                     regProf.id = None
                     regProf.save()
             else:
-                regProf = RegistrationProfile()
-                regProf.user = user
+                regProf = RegistrationProfile.getLastProfile(user)
+                if (datetime.now() - regProf.last_ts).days > 5:
+                    regProf = RegistrationProfile()
+                    regProf.user = user
                 regProf.program = program
         else:
             regProf = regProfList[0]
         return regProf
-            
-    def __str__(self):
+
+    def __unicode__(self):
         if self.program is None:
             return '<Registration for '+str(self.user)+'>'
         if self.user is not None:
@@ -1087,16 +1088,14 @@ class RegistrationProfile(models.Model):
         if self.contact_emergency is not None:
             form_data = self.contact_emergency.updateForm(form_data, 'emerg_')
         return form_data
-    
+
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self):
         return ESPUser(self.user).getSections(program=self.program)
-    
+
     def registered_classes(self):
         return ESPUser(self.user).getEnrolledSections(program=self.program)
 
-admin.site.register(RegistrationProfile)
-    
 
 class TeacherBio(models.Model):
     """ This is the biography of a teacher."""
@@ -1108,7 +1107,7 @@ class TeacherBio(models.Model):
     picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/",blank=True, null=True)
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
-    last_ts = models.DateTimeField(auto_now = True)    
+    last_ts = models.DateTimeField(auto_now = True)
 
     class Meta:
         app_label = 'program'
@@ -1124,7 +1123,7 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
-    def save(self):
+    def save(self, *args, **kwargs):
         """ update the timestamp """
         self.last_ts = datetime.now()
         if self.program_id is None:
@@ -1133,19 +1132,15 @@ class TeacherBio(models.Model):
             except:
                 raise ESPError(), 'Error: There needs to exist an administrive program anchored at Q/Programs/Dummy_Programs/Profile_Storage.'
 
-        super(TeacherBio, self).save()
+        super(TeacherBio, self).save(*args, **kwargs)
 
     def url(self):
-        from esp.users.models import ESPUser    
-        return '/teach/teachers/%s/%s%s/bio.html' % \
-               (self.user.last_name, self.user.first_name, ESPUser(self.user).getUserNum())
+        return '/teach/teachers/%s/bio.html' % self.user.username
 
 
 
     def edit_url(self):
-        from esp.users.models import ESPUser    
-        return '/teach/teachers/%s/%s%s/bio.edit.html' % \
-               (self.user.last_name, self.user.first_name, ESPUser(self.user).getUserNum())
+        return '/teach/teachers/%s/bio.edit.html' % self.user.username
 
     @staticmethod
     def getLastForProgram(user, program):
@@ -1159,8 +1154,6 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
-admin.site.register(TeacherBio)
-    
 
 class FinancialAidRequest(models.Model):
     """
@@ -1192,20 +1185,20 @@ class FinancialAidRequest(models.Model):
         app_label = 'program'
         db_table = 'program_financialaidrequest'
 
-    def save(self):
-        """ If possible, find the student's invoice and update it to reflect the 
+    def save(self, *args, **kwargs):
+        """ If possible, find the student's invoice and update it to reflect the
         financial aid that has been granted. """
-        
+
         #   By default, the amount received is 0.  If this is the case, don't do
         #   any extra work.
-        models.Model.save(self)
+        models.Model.save(self, *args, **kwargs)
         if (not self.amount_received) or (self.amount_received <= 0):
             return
-        
+
         from esp.accounting_docs.models import Document
         from esp.accounting_core.models import LineItemType
         from decimal import Decimal
-        
+
         #   Take the 'root' program for the tree anchors.
         pp = self.program.getParentProgram()
         if pp:
@@ -1215,37 +1208,37 @@ class FinancialAidRequest(models.Model):
 
         inv = Document.get_invoice(self.user, anchor)
         txn = inv.txn
-        
         funding_node = anchor['Accounts']
-        
+
         #   Find the amount we're charging the student for the program and ensure
         #   that we don't award more financial aid than charges.
-        charges = txn.lineitem_set.filter(anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, anchor__parent__name='LineItemTypes')
+        charges = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='LineItemTypes',)
+
         chg_amt = 0
         for li in charges:
             chg_amt += li.amount
         if self.amount_received > (-chg_amt):
             self.amount_received = -chg_amt
-        
+
         #   Reverse all financial aid awards and add a new line item for this one.
-        finaids = txn.lineitem_set.filter(anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend, anchor__parent__name='Accounts')
+        finaids = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='Accounts')
         rev_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid Reversal',anchor=funding_node['FinancialAid'])
         fwd_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid',anchor=funding_node['FinancialAid'])
         for li in finaids:
             if li.amount != 0:
                 txn.add_item(self.user, rev_li_type, amount=-(li.amount))
         txn.add_item(self.user, fwd_li_type, amount=Decimal(str(self.amount_received)))
-        
-        
 
-    def __str__(self):
+
+
+    def __unicode__(self):
         """ Represent this as a string. """
         accepted_verb = GetNode('V/Flags/Registration/Accepted')
         if self.reduced_lunch:
             reducedlunch = "(Free Lunch)"
         else:
             reducedlunch = ''
-            
+
         explanation = self.extra_explaination
         if explanation is None:
             explanation = ''
@@ -1263,8 +1256,6 @@ class FinancialAidRequest(models.Model):
             string += " (REVIEWED)"
 
         return string
-
-admin.site.register(FinancialAidRequest)
 
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *

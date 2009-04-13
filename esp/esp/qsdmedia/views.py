@@ -31,7 +31,8 @@ Email: web@esp.mit.edu
 from esp.qsdmedia.models import Media
 from django.http import HttpResponseRedirect, Http404
 from esp.users.models import UserBit
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
+from django.core.exceptions import MultipleObjectsReturned
 
 def qsdmedia(request, branch, section, url_name, url_verb, base_url):
     """ Return a redirect to a media file """
@@ -44,8 +45,8 @@ def qsdmedia(request, branch, section, url_name, url_verb, base_url):
         media_rec = Media.objects.get(anchor=branch, friendly_name=filename)
     except Media.DoesNotExist:
         raise Http404
-    except AssertionError: # We get an AssertionError if 'get' fails because of multiple Media entries.  If there exist multiple Media entries, we want the first one
-        media_rec = Media.objects.filter(anchor=branch, friendly_name=filename).order_by('-id')[0]
+    except MultipleObjectsReturned: # If there exist multiple Media entries, we want the first one
+        media_rec = Media.objects.filter(anchor=branch, friendly_name=filename).latest('id')
 
     
     # aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Flags/Public on this node

@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from django.db import models, transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
 
@@ -51,7 +51,7 @@ class LineItemTypeManager(ProcedureManager):
     def forProgram(self, program):
         """ Get all LineItemTypes (currently including optional ones) for the given program. """
         a = GetNode(program.anchor.get_uri()+'/LineItemTypes')
-        return self.filter(anchor__rangestart__gte=a.rangestart, anchor__rangeend__lte=a.rangeend)
+        return self.filter(QTree(anchor__below=a))
 
 class LineItemType(models.Model):
     """ A set of default values for a line item """
@@ -66,13 +66,10 @@ class LineItemType(models.Model):
 
     objects = LineItemTypeManager()
     
-    def __str__(self):
+    def __unicode__(self):
         if self.anchor: url = self.anchor.get_uri()
         else: url = 'NULL'
         return "LineItemType: %s (%.02f or %.02f for %s)" % (self.text, self.amount, self.finaid_amount, url)
-
-    class Admin:
-        pass
 
 class Balance(models.Model):
     """ A posted balance for an account.  This serves the purpose of keeping
@@ -156,7 +153,7 @@ class Transaction(models.Model):
     text = models.TextField()
     complete = models.BooleanField(default=False)
 
-    def __str__(self):
+    def __unicode__(self):
         if self.complete: completion = ''
         else: completion = ' (INCOMPLETE)'
         return "T-%u (%s): %s" % (self.id, str(self.timestamp), self.text + completion)
@@ -200,9 +197,9 @@ class Transaction(models.Model):
                 fa_li.amount = finaid_amount
                 fa_li.user = user
                 if anchor:
-                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', anchor=anchor, defaults={'amount': 0.0, 'anchor': GetNode("Q"), 'finaid_amount': 0.0, 'finaid_anchor': GetNode("Q") })
+                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', anchor=anchor, defaults={'amount': Decimal('0.0'), 'anchor': GetNode("Q"), 'finaid_amount': Decimal('0.0'), 'finaid_anchor': GetNode("Q") })
                 else:
-                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', defaults={'amount': 0.0, 'anchor': GetNode("Q"), 'finaid_amount': 0.0, 'finaid_anchor': GetNode("Q") })
+                    fa_li.li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid', defaults={'amount': Decimal('0.0'), 'anchor': GetNode("Q"), 'finaid_amount': Decimal('0.0'), 'finaid_anchor': GetNode("Q") })
                 fa_li.text = fa_li.li_type.text
                 fa_li.save()
 
@@ -244,11 +241,12 @@ class Transaction(models.Model):
 
         return li
 
+
 class LineItemManager(ProcedureManager):
     def forProgram(self, program):
         """ Get all LineItems (currently including optional ones) whose types are anchored in the given program. """
         a = GetNode(program.anchor.get_uri()+'/LineItemTypes')
-        return self.filter(li_type__anchor__rangestart__gte=a.rangestart, li_type__anchor__rangeend__lte=a.rangeend)
+        return self.filter(QTree(li_type__anchor__below=a))
 
 class LineItem(models.Model):
     """ A transaction line item """
@@ -265,6 +263,5 @@ class LineItem(models.Model):
     def negative_amount(self):
         return -(self.amount)
 
-    def __str__(self):
+    def __unicode__(self):
         return "L-%u (T-%u): %.02f %s - %s, %s" % (self.id, self.transaction.id, self.amount, self.anchor.uri, self.user.username, self.text)
-

@@ -1,0 +1,100 @@
+{% autoescape off %}
+\documentclass[letterpaper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage{pst-barcode}
+\usepackage{textpos}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{amsfonts, amsmath, amsthm, amssymb}
+\usepackage[left=.5in,top=1cm,right=.5in]{geometry}
+\graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
+
+\pagestyle{fancy}
+\fancyhead[C]{\includegraphics[scale = 1]{header-top}\includegraphics[scale = 1]{header-line}}
+\setlength\headheight{80pt}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyfoot{}
+
+\begin{document}
+{% for student in students %}
+\begin{multicols}{3}
+
+\begin{center}
+\vspace{1cm}
+\begin{tabular}{ c }
+Amount Owed: \\
+\fbox{\textbf{ \${{ student.itemizedcosttotal|floatformat:"-2" }} } } \\
+\end{tabular}
+
+\vspace{0.5cm}
+
+\begin{tabular}{ | c | }
+{% for item in student.meals %}\hline
+{{ item.li_type.text|texescape }} \\
+{% endfor %}\hline
+\end{tabular}
+
+\end{center}
+
+\columnbreak
+\begin{center}
+$ $ \\
+\vspace{0.5cm}
+Student Schedule for \\
+\vspace{0.5cm}
+
+{\setlength{\baselineskip}{1.5\baselineskip} \LARGE \textbf{ {{ student.name|texescape }} } }
+\end{center}
+
+\columnbreak
+
+\begin{flushleft}
+\textbf{
+Name: {{ student.name|texescape }} \\
+Username: {{ student.username|texescape }} \\
+User ID: {{ student.id }} \\
+}
+\end{flushleft}
+
+\end{multicols}
+
+\begin{center}
+
+\vspace{1cm}
+
+For help finding your classrooms, please consult the directions and map on your Student Info sheet. \\
+If you have any questions or would like to switch classes, please go to the program office. \\
+
+\vspace{1cm}
+
+{\large \textbf{Schedule} \\}
+
+\vspace{0.25cm}
+
+\begin{tabularx}{18cm}{|l|c|lX|X|}
+\hline
+\textbf{Time} & \textbf{Room} & \textbf{Class} & & \textbf{Teacher(s)} \\
+{% for cls in student.classes %}\hline
+{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} } : & {{ cls.title|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\
+{% endfor %}\hline
+\end{tabularx}
+
+\end{center}
+
+\vfill
+\begin{pspicture}(3.0, 0.7in)
+\psbarcode{% templatetag openbrace %}{{ student.invoice_id }}{% templatetag closebrace %}{includetext height=0.4}{code39}
+\end{pspicture} \\
+\vspace{0pt} \\
+{{ student.name }} ({{ student.id }}) \\
+Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
+\vspace{2.5cm}
+{% if not forloop.last %}\pagebreak{% endif %}
+{% endfor %}
+
+\end{document}
+{% endautoescape %}

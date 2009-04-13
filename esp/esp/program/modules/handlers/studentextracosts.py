@@ -28,12 +28,13 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
-from esp.db.models       import Q
+from django.db.models.query import Q
+from esp.datatree.sql.query_utils import QTree
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
@@ -41,7 +42,6 @@ from django.contrib.auth.models import User
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItem, LineItemType
 
-#from esp.money.models import LineItemType, LineItem, RegisterLineItem, UnRegisterLineItem
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
@@ -70,8 +70,8 @@ class StudentExtraCosts(ProgramModuleObj):
     def studentDesc(self):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
-
-        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached(parent=True)):
+        treeq = QTree(anchor__below=self.program_anchor_cached(parent=True))
+        for i in LineItemType.objects.filter(treeq):
             student_desc[i.text] = """Students who have opted for '%s'""" % i.text
 
         return student_desc
@@ -80,8 +80,10 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return the useful lists of students for the Extra Costs module. """
 
         student_lists = {}
+        treeq = QTree(anchor__below=self.program_anchor_cached(parent=True))
+
         # Get all the line item types for this program.
-        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached(parent=True)):
+        for i in LineItemType.objects.filter(treeq):
             if QObject:
                 student_lists[i.text] = self.getQForUser(Q(accounting_lineitem__li_type = i))
             else:

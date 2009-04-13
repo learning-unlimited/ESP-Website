@@ -16,7 +16,8 @@
  <td><label for="id_graduation_year">Your Grade:<br />
 <em>(As of September 15, 
       <strong>{{request.user.currentSchoolYear}}</strong>)
-      </em></label></td>
+      </em>
+<br /> <br />A correct grade really matters to us!  <a href="/learn/age.html">Here's why.</a></label></td>
  <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
    {% endif %}
@@ -27,6 +28,15 @@
  <td><label for="id_school">School Name:<br /><small>(or &quot;home-schooled&quot;)</small></label></td>
  <td>{{ form.school }} {% if form.school.errors %}
    <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+
+<tr>
+ <td><label for="id_heardofesp">How did you hear of ESP?</label></td>
+ <td>{{ form.heardofesp }} {% if form.heardofesp.errors %}
+   <br /><span class="form_error">{{ form.heardofesp.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -52,7 +62,7 @@ contact you soon! <br />
  </td>
 </tr>
 
-
+{% comment %}
 <tr>
  <td colspan="2"><p>
     <div class="info">T-shirts are available at some ESP programs. When you reserve a t-shirt, this is the shirt size and type that will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!</div>
@@ -74,5 +84,8 @@ contact you soon! <br />
    {% endif %}
  </td>
 </tr>
+
+{% endcomment %}
+
 
 <!-- End Student Info Portion -->

@@ -33,8 +33,8 @@ from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser, User
-from esp.datatree.models import GetNode
-from esp.db.models import Q
+from esp.datatree.models import *
+from django.db.models.query import Q
 from esp.middleware   import ESPError
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItemType, EmptyTransactionException
@@ -71,7 +71,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         verb2 = GetNode('V/Flags/Registration/Attended')
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
         STUDREP_QSC  = GetNode('Q')
-        
+
         qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Confirmation")
 
         Q_studentrep = Q(userbit__qsc = STUDREP_QSC) & Q(userbit__verb = STUDREP_VERB)
@@ -81,8 +81,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                     'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached()) &\
                                                   Q(userbit__verb = verb2)),
                     'studentrep': self.getQForUser(Q_studentrep)}
-        
-        
+
+
         return {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct(),
                 'attended' : User.objects.filter(userbit__qsc = self.program_anchor_cached(), \
                                                     userbit__verb = verb2).distinct(),
@@ -97,14 +97,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @needs_student
     @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now())).count() > 0:
+        if UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now()).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
-    
+
     @meets_deadline("/Confirm")
     def confirmreg_new(self, request, tl, one, two, module, extra, prog):
         return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=True)
-    
+
     def confirmreg_forreal(self, request, tl, one, two, module, extra, prog, new_reg):
 	""" The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
@@ -131,7 +131,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context['balance'] = Decimal("%0.2f" % invoice.cost())
         except EmptyTransactionException:
             context['balance'] = Decimal("0.0")
-            
+
         context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
         if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog):
@@ -143,13 +143,13 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             if not module.isCompleted() and module.required:
                 completedAll = False
             context = module.prepare(context)
-	
+
 	if completedAll:
             if new_reg:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
             raise ESPError(), "You must finish all the necessary steps first, then click on the Save button to finish registration."
-            
+
         try:
             receipt_text = DBReceipt.objects.get(program=self.program).receipt
             context["request"] = request
@@ -161,12 +161,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @aux_call
     @needs_student
-    @meets_grade    
+    @meets_grade
     @meets_deadline()
     def cancelreg(self, request, tl, one, two, module, extra, prog):
         if self.have_paid():
             raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
-        
+
         bits = UserBit.objects.filter(user = self.user,
                                       verb = GetNode('V/Flags/Public'),
                                       qsc  = GetNode('/'.join(prog.anchor.tree_encode())+'/Confirmation'))
@@ -193,8 +193,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
                 context = module.prepare(context)
 
-            context['canRegToFullProgram'] = ESPUser(request.user).canRegToFullProgram(prog)
-                    
+            context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
+
+
 	    context['modules'] = modules
 	    context['one'] = one
 	    context['two'] = two
@@ -202,9 +203,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context['isConfirmed'] = self.program.isConfirmed(self.user)
             context['have_paid'] = self.have_paid()
 
+
             context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
-	    return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
     def isStep(self):
         return False
@@ -223,4 +225,4 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                              'section': 'learn'})
 
         return nav_bars
-    
+

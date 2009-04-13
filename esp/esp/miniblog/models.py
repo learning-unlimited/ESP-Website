@@ -29,15 +29,14 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.db.models import Q
-from esp.datatree.models import DataTree, GetNode
+from django.db.models.query import Q
+from esp.datatree.models import *
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
 from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User
 from esp.db.fields import AjaxForeignKey
 from django.core.cache import cache
-from django.contrib import admin
 import datetime
 
 # Create your models here.
@@ -50,7 +49,7 @@ class AnnouncementLink(models.Model):
     section = models.CharField(max_length=32,blank=True,null=True, help_text="e.g. 'teach' or 'learn' or blank")
     href = models.URLField(help_text="The URL the link should point to.")
 
-    def __str__(self):
+    def __unicode__(self):
         return "%s (links to %s)" % (self.title, self.href)
 
     def get_absolute_url(self):
@@ -70,8 +69,6 @@ class AnnouncementLink(models.Model):
     def html(self):
         return '<p><a href="%s">%s</a></p>' % (self.href, self.title)
 
-admin.site.register(AnnouncementLink)
-
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     anchor = AjaxForeignKey(DataTree)
@@ -90,7 +87,7 @@ class Entry(models.Model):
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
     section = models.CharField(max_length=32,blank=True,null=True,help_text="e.g. 'teach' or 'learn' or blank")
 
-    def __str__(self):
+    def __unicode__(self):
         if self.slug:
             return "%s (%s)" % (self.slug, self.anchor.uri)
         else:
@@ -168,15 +165,6 @@ class Entry(models.Model):
         ordering = ['-timestamp']
 
 
-class EntryAdmin(admin.ModelAdmin):
-    search_fields = ['content','title','anchor__uri']
-    class Media:
-        js = (
-            '/media/scripts/admin_miniblog.js',
-            )
-
-admin.site.register(Entry, EntryAdmin)
-
 
 class Comment(models.Model):
 
@@ -190,15 +178,9 @@ class Comment(models.Model):
 
     content = models.TextField(help_text="HTML not allowed.")
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Comment for %s by %s on %s' % (self.entry, self.author,
                                                self.post_ts.date())
     
     class Meta:
         ordering = ['-post_ts']
-
-class CommentAdmin(admin.ModelAdmin):
-    search_fields = ['author__first_name','author__last_name',
-                     'subject','entry__title']
-
-admin.site.register(Comment, CommentAdmin)

@@ -2,15 +2,18 @@
 {% load smartypants %}
     <tr>
       <th colspan="2" style="width: 70%;{{ colorstring }}">
-	{% if class.got_qsd %}<a href="Classes/{{ class.emailcode }}/index.html">{% endif %}{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}{% if class.got_qsd %}</a>{% endif %}
+          {% if class.got_index_qsd %}
+           <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
+          {% else %}
+           {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}
+          {% endif %}
       </th>
       <th style="width: 30%;{{ colorstring }}">
        <span class="teachers">
        {% for teacher in class.teachers %}
-       <a href="/teach/teachers/{{ teacher.last_name|urlencode }}/{{ teacher.first_name|urlencode }}{{ teacher.getUserNum }}/bio.html" 
-          title="Click for the biography of {{teacher.first_name }} {{teacher.last_name }}">
-          {{ teacher.first_name }} {{teacher.last_name }}
-       </a>{% if not forloop.last %},{% endif %}{% endfor %}
+       <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html"
+          title="The biography of {{teacher.first_name }} {{teacher.last_name }}">{{ teacher.first_name }} {{teacher.last_name }}</a>{% if not forloop.last %},{% endif %}
+       {% endfor %}
        </span>
        </th>
      </tr>
@@ -32,32 +35,30 @@
       <td style="width: 50%;" valign="top">
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
-	  {% for sec in class.sections.all %}
-           Section {{ sec.index }}: {% if not sec.friendly_times|length_is:0 %}{{ sec.friendly_times|join:", " }}{% else %}Unassigned{% endif %} <br />
+	  {% for sec in class.get_sections %}
+           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "|smartypants }} <br />{% endif %}
           {% endfor %}
         <br />
       </td>
- 
+
       <td style="width: 50%;" colspan="2">
          <strong>Grades:</strong>
-           {{ class.grade_min }}--{{ class.grade_max }} 
+           {{ class.grade_min }}-{{ class.grade_max }}
          {% if show_enrollment %} <br />
-         <strong>Enrollment</strong> (max {{ class.class_size_max }} per section)
-           <br />{% if isfull %}<strong><font color="#990000">Class is full!</font></strong>{% else %}
-           {% for sec in class.sections.all %}
-             Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %} {{ sec.num_students }} {% endif %}<br />
+         <strong>Enrollment</strong><br />
+           {% for sec in class.get_sections %}
+              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />{% endif %}
            {% endfor %}
-           {% endif %}
         {% endif %}
       </td>
     </tr>
     {% if class.media_count %}
     <tr>
       <th colspan="3" class="materials">
-       <b>Materials for this class include:</b> 
+       <b>Materials for this class include:</b>
 	<span class="doclist">
 	{% for doc in class.docs_summary %}
-	<a href="{{ doc.get_target_file_url}}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %} 
+	<a href="{{ doc.get_target_file_url}}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
 	{% endfor %}
 	</span>
 	<br /><b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">Click here to view all {{ class.media_count }} documents for {{ class.title }}</a></b>

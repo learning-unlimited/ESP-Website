@@ -31,12 +31,11 @@ Email: web@esp.mit.edu
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
-from esp.program.manipulators import SATPrepInfoManipulator
-from django import oldforms
+from esp.program.modules.forms.satprep import SATPrepInfoForm
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser
 from django.contrib.auth.models import User
-from esp.db.models      import Q
+from django.db.models.query     import Q
 
 
 
@@ -54,10 +53,10 @@ class SATPrepModule(ProgramModuleObj):
         user = ESPUser(user)
         if key == 'diag_sat_scores' or key == 'old_sat_scores' or key == 'prac_sat_scores':
             test_type = key.split('_')[0]
-            
+
             if user.isStudent():
                 foo = SATPrepRegInfo.getLastForProgram(user, self.program)
-                
+
                 scores = 'Your %s SAT scores:\n' % {'prac': 'practice',
                                                     'diag': 'diagnostic',
                                                     'old':  'original'}[test_type]
@@ -70,10 +69,14 @@ class SATPrepModule(ProgramModuleObj):
                 return scores
 
         return ''
-    
+
     def students(self,QObject = False):
         if QObject:
             return {'satprepinfo': self.getQForUser(Q(satprepreginfo__program = self.program)),
+                    'satprep_diag_current': self.getQForUser(Q(satprepreginfo__program = self.program) &
+                                                             (Q(satprepreginfo__diag_math_score__isnull=False) |
+                                                              Q(satprepreginfo__diag_verb_score__isnull=False) |
+                                                              Q(satprepreginfo__diag_writ_score__isnull=False))),
                     'satprep_mathdiag': self.getQForUser(Q(satprepreginfo__diag_math_score__isnull = False)),
                     'satprep_mathprac': self.getQForUser(Q(satprepreginfo__prac_math_score__isnull = False)),
                     'satprep_mathold' : self.getQForUser(Q(satprepreginfo__old_math_score__isnull = False)),
@@ -84,11 +87,11 @@ class SATPrepModule(ProgramModuleObj):
                     'satprep_writprac': self.getQForUser(Q(satprepreginfo__prac_writ_score__isnull = False)),
                     'satprep_verbprac': self.getQForUser(Q(satprepreginfo__prac_verb_score__isnull = False)),
                     }
-        
+
         studentswritold = User.objects.filter(Q(satprepreginfo__old_writ_score__isnull = False)).distinct()
         studentsmathold = User.objects.filter(Q(satprepreginfo__old_math_score__isnull = False)).distinct()
         studentsverbold = User.objects.filter(Q(satprepreginfo__old_verb_score__isnull = False)).distinct()
-        
+
         studentswritdiag = User.objects.filter(Q(satprepreginfo__diag_writ_score__isnull = False)).distinct()
         studentsmathdiag = User.objects.filter(Q(satprepreginfo__diag_math_score__isnull = False)).distinct()
         studentsverbdiag = User.objects.filter(Q(satprepreginfo__diag_verb_score__isnull = False)).distinct()
@@ -98,8 +101,13 @@ class SATPrepModule(ProgramModuleObj):
         studentsverbprac = User.objects.filter(Q(satprepreginfo__prac_verb_score__isnull = False)).distinct()
 
         students = User.objects.filter(satprepreginfo__program = self.program).distinct()
+        students_diag_current = User.objects.filter(Q(satprepreginfo__program = self.program) &
+                                                             (Q(satprepreginfo__diag_math_score__isnull=False) |
+                                                              Q(satprepreginfo__diag_verb_score__isnull=False) |
+                                                              Q(satprepreginfo__diag_writ_score__isnull=False)))
 
         return {'satprepinfo': students,
+                'satprep_diag_current': students_diag_current,
                 'satprep_mathold': studentsmathold,
                 'satprep_verbold': studentsverbold,
                 'satprep_writold': studentswritold,
@@ -110,10 +118,11 @@ class SATPrepModule(ProgramModuleObj):
                 'satprep_verbprac': studentsverbprac,
                 'satprep_writprac': studentswritprac,
                 }
-    
+
 
     def studentDesc(self):
         return {'satprepinfo': """Students who have filled out the SAT Prep information.""",
+                'satprep_diag_current': """Students who have current diagnostic exam scores.""",
                 'satprep_mathdiag': """Students who have an SAT math diagnostic score.""",
                 'satprep_writdiag': """Students who have an SAT writing diagnostic score.""",
                 'satprep_verbdiag': """Students who have an SAT verbal diagnostic score.""",
@@ -124,35 +133,28 @@ class SATPrepModule(ProgramModuleObj):
                 'satprep_verbprac': """Students who have a practice SAT verbal score.""",
                 'satprep_writprac': """Students who have a practice SAT writing score.""",
                 }
-    
+
     def isCompleted(self):
-        
+
 	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
 	return satPrep.id is not None
 
     @main_call
     @needs_student
     def satprepinfo(self, request, tl, one, two, module, extra, prog):
-	manipulator = SATPrepInfoManipulator()
-	new_data = {}
 	if request.method == 'POST':
-		new_data = request.POST.copy()
-		
-		errors = manipulator.get_validation_errors(new_data)
-		
-		if not errors:
-			manipulator.do_html2python(new_data)
-			new_reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-			new_reginfo.addOrUpdate(new_data, request.user, prog)
+            form = SATPrepInfoForm(request.POST)
 
-                        return self.goToCore(tl)
+            if form.is_valid():
+                reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
+                form.instance = reginfo
+                form.save()
+
+                return self.goToCore(tl)
 	else:
-		satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
-		
-		new_data = satPrep.updateForm(new_data)
-		errors = {}
+            satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
+            form = SATPrepInfoForm(instance = satPrep)
 
-	form = oldforms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
 
 

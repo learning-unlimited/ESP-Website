@@ -32,29 +32,33 @@ from django.db import models
 from django.contrib.auth.models import User
 from esp.middleware import ESPError
 from datetime import datetime
-from esp.lib.markdown import markdown
 from esp.db.fields import AjaxForeignKey
 
-from django.contrib import admin
-import django.core.mail
+from esp.datatree.models import *
+from esp.users.models import PersistentQueryFilter, ESPUser #, UserBit
+from django.template import Template #, VariableNode, TextNode
 
-from esp.datatree.models import DataTree, GetNode, StringToPerm, PermToString
-from esp.users.models import UserBit, PersistentQueryFilter, ESPUser
-from django.template import Template, VariableNode, TextNode
+from django.conf import settings
 
-def send_mail(subject, message, from_email, recipient_list,
-              fail_silently=False, *args, **kwargs):
+from django.core.mail import SMTPConnection
+
+
+
+def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=settings.DEFAULT_EMAIL_ADDRESSES['archive'],
+              return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
+              *args, **kwargs):
     if type(recipient_list) == str or type(recipient_list) == unicode:
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
-    new_list.append('esparchive@gmail.com')
 
-    from django.core.mail import send_mail as django_send_mail
+    from django.core.mail import EmailMessage #send_mail as django_send_mail
     print "Sent mail to %s" % str(new_list)
-    django_send_mail(subject, message, from_email, new_list,
-                               fail_silently, *args, **kwargs)
-    
+
+    # The below stolen from send_mail in django.core.mail
+    connection = CustomSMTPConnection(username=None, password=None, fail_silently=fail_silently, return_path=return_path)
+    EmailMessage(subject, message, from_email, new_list, bcc=(bcc,), connection=connection, headers=extra_headers).send()
+
 
 
 class ActionHandler(object):
@@ -62,38 +66,51 @@ class ActionHandler(object):
     def __init__(self, obj, user):
         self._obj  = obj
         self._user = user
-        
+
     def __getattribute__(self, key):
-        
+
         # get the object, can't use self.obj since we're doing fun stuff
         if key == '_obj' or key == '_user':
             # use the parent's __getattribute__
             return super(ActionHandler, self).__getattribute__(key)
 
         obj = self._obj
-        
+
         if not hasattr(obj, 'get_msg_vars'):
-            return ''
-        
+            return getattr(obj, key)
+
         return obj.get_msg_vars(self._user, key)
-    
+
 
 class MessageRequest(models.Model):
     """ An initial request to broadcast an e-mail message """
     id = models.AutoField(primary_key=True)
-    subject = models.TextField(null=True,blank=True) 
-    msgtext = models.TextField(blank=True, null=True) 
-    special_headers = models.TextField(blank=True, null=True) 
+    subject = models.TextField(null=True,blank=True)
+    msgtext = models.TextField(blank=True, null=True)
+    special_headers = models.TextField(blank=True, null=True)
     recipients = models.ForeignKey(PersistentQueryFilter) # We will get the user from a query filter
-    sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string 
+    sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string
     creator = AjaxForeignKey(User) # the person who sent this message
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
     email_all = models.BooleanField(default=True) # do we just want to create an emailrequest for each user?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
-    def __str__(self):
-        return str(self.subject)
+    def __unicode__(self):
+        return unicode(self.subject)
+
+    # Access special_headers as a dictionary
+    def special_headers_dict_get(self):
+        if not self.special_headers:
+            return {}
+        import cPickle as pickle
+        return pickle.loads(str(self.special_headers)) # We call str here because pickle hates unicode. -ageng 2008-11-18
+    def special_headers_dict_set(self, value):
+        import cPickle as pickle
+        if type(value) is not dict:
+            value = {}
+        self.special_headers = pickle.dumps(value)
+    special_headers_dict = property( special_headers_dict_get, special_headers_dict_set )
 
     @staticmethod
     def createRequest(var_dict = None, *args, **kwargs):
@@ -110,10 +127,10 @@ class MessageRequest(models.Model):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
 
         # prepare variables
-        text = str(text)
+        text = unicode(text)
         user = ESPUser(user)
 
-        
+
 
         context = MessageVars.getContext(self, user)
 
@@ -122,8 +139,8 @@ class MessageRequest(models.Model):
 
         return template.render(context)
 
-                
-        
+
+
 
     def process(self, processoverride = False):
         """ Process this request...if it's an email, create all the necessary email requests. """
@@ -155,13 +172,13 @@ class MessageRequest(models.Model):
             users = users.distinct()
         except:
             pass
-        
+
         # go through each user and parse the text...then create the proper
         # emailrequest and textofemail object
         for user in users:
             user = ESPUser(user)
             newemailrequest = EmailRequest(target = user, msgreq = self)
-            
+
             newtxt = TextOfEmail(send_to   = '%s <%s>' % (user.name(), user.email),
                                  send_from = send_from,
                                  subject   = self.parseSmartText(self.subject, user),
@@ -174,8 +191,8 @@ class MessageRequest(models.Model):
 
             newemailrequest.save()
 
-            
-            
+
+
 
 
     class Admin:
@@ -191,8 +208,8 @@ class TextOfEmail(models.Model):
     sent = models.DateTimeField(blank=True, null=True)
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
 
-    def __str__(self):
-        return str(self.subject) + ' <' + str(self.send_to) + '>'
+    def __unicode__(self):
+        return unicode(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self):
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
@@ -200,21 +217,29 @@ class TextOfEmail(models.Model):
         # this might be the source of trouble
         #if self.sent != None:
         #    return False
-        
+
+        parent_request = None
+        if self.emailrequest_set.count() > 0:
+            parent_request = self.emailrequest_set.all()[0].msgreq
+
+        if parent_request is not None:
+            extra_headers = parent_request.special_headers_dict
+
         now = datetime.now()
-        
+
         send_mail(self.subject,
                   self.msgtext,
                   self.send_from,
                   self.send_to,
-                  True)
+                  True,
+                  extra_headers=extra_headers)
 
         #send_mail(str(self.subject),
         #          str(self.msgtext),
         #          str(self.send_from),
         #          [ str(self.send_to) ],
         #          fail_silently=False )
-        
+
         #message = MIMEMultipart()
         #message['To'] = str(self.send_to)
         #message['From'] = str(self.send_from)
@@ -229,7 +254,7 @@ class TextOfEmail(models.Model):
 
         self.sent = now
         self.save()
-        
+
     class Admin:
         pass
 
@@ -241,13 +266,13 @@ class MessageVars(models.Model):
     messagerequest = models.ForeignKey(MessageRequest)
     pickled_provider = models.TextField() # Object which must have obj.get_message_var(key)
     provider_name    = models.CharField(max_length=128)
-    
+
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
-        import pickle
+        import cPickle as pickle
 
-        
+
         newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
         newMessageVar.pickled_provider = pickle.dumps(obj)
 
@@ -256,7 +281,7 @@ class MessageVars(models.Model):
         return newMessageVar
 
     def getDict(self, user):
-        import pickle
+        import cPickle as pickle
         #try:
         provider = pickle.loads(str(self.pickled_provider))
         #except:
@@ -264,12 +289,12 @@ class MessageVars(models.Model):
 
         actionhandler = ActionHandler(provider, user)
 
-        
+
         return {self.provider_name: actionhandler}
 
     def getVar(self, key, user):
         """ Get a variable from this object. """
-        import pickle
+        import cPickle as pickle
 
         try:
             provider = pickle.loads(str(self.pickled_provider))
@@ -288,7 +313,7 @@ class MessageVars(models.Model):
 
         context = {}
         msgvars = msgrequest.messagevars_set.all()
-        
+
         for msgvar in msgvars:
             context.update(msgvar.getDict(user))
         return Context(context)
@@ -300,16 +325,16 @@ class MessageVars(models.Model):
             Where a variable like {{Program.schedule}} should have:
             {'Program':   programObj ...} and programObj needs to have
             get_msg_vars(userObj, 'schedule') to work
-        """    
+        """
 
         # for each module in the dictionary, create a corresponding
         # MessageVar object
         for key, obj in var_dict.items():
             MessageVars.createVar(msgrequest, key, obj)
-        
+
 
         return True
-            
+
     @staticmethod
     def getModuleVar(msgrequest, varstring, user):
         """ This is used to get the module variable from a string representation. """
@@ -325,7 +350,7 @@ class MessageVars(models.Model):
             #raise ESPError(False), "Could not get the variable provider... %s is an invalid variable module." % module
             # instead of erroring, I'm just going to ignore it.
             return '{{%s}}' % varstring
-    
+
 
         result = msgVar.getVar(varname, user)
 
@@ -337,10 +362,6 @@ class MessageVars(models.Model):
     class Meta:
         verbose_name_plural = 'Message Variables'
 
-class MessageVarsAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(MessageVars, MessageVarsAdmin)
-
 
 class EmailRequest(models.Model):
     """ Each e-mail is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
@@ -348,8 +369,8 @@ class EmailRequest(models.Model):
     msgreq = models.ForeignKey(MessageRequest)
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)
 
-    def __str__(self):
-        return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'
+    def __unicode__(self):
+        return unicode(self.msgreq.subject) + ' <' + unicode(self.target.username) + '>'
 
     class Admin:
         pass
@@ -394,13 +415,9 @@ class EmailList(models.Model):
 
         super(EmailList, self).save(*args, **kwargs)
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s (%s)' % (self.description, self.regex)
 
-class EmailListAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(EmailList, EmailListAdmin)
-    
 class PlainRedirect(models.Model):
     """
     A simple catch-all for mail redirection.
@@ -410,12 +427,31 @@ class PlainRedirect(models.Model):
 
     destination = models.CharField(max_length=512)
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s --> %s'  % (self.original, self.destination)
 
     class Meta:
         ordering=('original',)
 
-class PlainRedirectAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(PlainRedirect, PlainRedirectAdmin)
+
+# Taken from http://www.djangosnippets.org/snippets/735/
+class CustomSMTPConnection(SMTPConnection):
+    """Simple override of SMTPConnection to allow a Return-Path to be specified"""
+    def __init__(self, return_path=None, **kwargs):
+        self.return_path = return_path
+        super(CustomSMTPConnection, self).__init__(**kwargs)
+
+    def _send(self, email_message):
+        """A helper method that does the actual sending."""
+        if not email_message.to:
+            return False
+        try:
+            return_path = self.return_path or email_message.from_email
+            self.connection.sendmail(return_path,
+                    email_message.recipients(),
+                    email_message.message().as_string())
+        except:
+            if not self.fail_silently:
+                raise
+            return False
+        return True

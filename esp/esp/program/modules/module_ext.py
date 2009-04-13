@@ -29,11 +29,10 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 
-from django.contrib import admin
 from esp.program.models import Program
 
 class DBReceipt(models.Model):
@@ -41,32 +40,47 @@ class DBReceipt(models.Model):
     program = models.OneToOneField(Program)
     receipt = models.TextField()
 
-admin.site.register(DBReceipt)
+    def __unicode__(self):
+        return 'Registration receipt for %s' % self.program
 
 
 class SATPrepAdminModuleInfo(models.Model):
     module        = models.ForeignKey(ProgramModuleObj)
     num_divisions = models.IntegerField(blank=True, null=True)
-    
+
+    def __unicode__(self):
+        return 'SATPrep admin settings for %s' % self.module.program
+
     class Admin:
         pass
 
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
-    
+
     module               = models.ForeignKey(ProgramModuleObj)
     enforce_max          = models.BooleanField(default=True)
-    
+
     signup_verb          = AjaxForeignKey(DataTree)
     use_priority         = models.BooleanField(default=False)
     priority_limit       = models.IntegerField(default=3)
-    
-    def __str__(self):
+
+    def __init__(self, *args, **kwargs):
+        super(StudentClassRegModuleInfo, self).__init__(*args, **kwargs)
+        if 'signup_verb' not in kwargs.keys():
+            self.signup_verb = GetNode('V/Flags/Registration/Enrolled')
+
+    def get_signup_verb(self, save=False):
+        if self.signup_verb_id: # Trying to fetch self.signup_verb directly throws a DoesNotExist.
+            return self.signup_verb
+        # If it's not set, return a sensible default.
+        v = GetNode('V/Flags/Registration/Enrolled')
+        if save:
+            self.signup_verb = v
+            self.save()
+        return v
+
+    def __unicode__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
-    
-#class SCRMIAdmin(admin.ModelAdmin):
-#    pass
-#admin.site.register(StudentClassRegModuleInfo, SCRMIAdmin)
 
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
@@ -74,22 +88,22 @@ class ClassRegModuleInfo(models.Model):
     set_prereqs          = models.BooleanField(blank=True, null=True)
     display_times        = models.BooleanField(blank=True, null=True)
     times_selectmultiple = models.BooleanField(blank=True, null=True)
-    
+
     #   The maximum length of a class, in minutes.
     class_max_duration   = models.IntegerField(blank=True, null=True)
-    
+
     class_max_size       = models.IntegerField(blank=True, null=True)
-    
+
     class_size_step      = models.IntegerField(blank=True, null=True)
-    director_email       = models.CharField(max_length=64, blank=True, null=True)
+    director_email       = models.EmailField(blank=True, null=True)
     class_durations      = models.CharField(max_length=128, blank=True, null=True)
     teacher_class_noedit = models.DateTimeField(blank=True, null=True)
-    
+
     session_counts       = models.CommaSeparatedIntegerField(max_length=100, blank=True)
-    
+
     num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True)
     num_class_choices    = models.PositiveIntegerField(default=1, blank=True, null=True)
-    
+
     #   An HTML color code for the program.  All classes will appear in some variant
     #   of this color in the catalog and registration pages.  If null, the default
     #   ESP colors will be used.
@@ -104,23 +118,19 @@ class ClassRegModuleInfo(models.Model):
 
     def session_counts_ints_set(self, value):
         self.session_counts = ",".join([ str(n) for n in value ])
-    
+
     session_counts_ints = property( session_counts_ints_get, session_counts_ints_set )
-    
+
     class_durations_any = models.BooleanField(blank=True, null=True)
-    def __str__(self):
+    def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
-    
-#class CRMIAdmin(admin.ModelAdmin):
-#    pass
-#admin.site.register(ClassRegModuleInfo, CRMIAdmin)
-    
+
 
 class CreditCardModuleInfo(models.Model):
     module = models.ForeignKey(ProgramModuleObj)
     base_cost        = models.IntegerField(blank=True, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Credit Card Ext. for %s' % str(self.module)
 
     class Admin:
@@ -142,10 +152,10 @@ class RemoteProfile(models.Model):
                                              related_name='teacher_volunteer_set',
                                              blank=True)
 
-    
-    def __str__(self):
+
+    def __unicode__(self):
         return 'Remote participation info for teacher %s in %s' % \
-                 (str(self.user), str(self.program))      
+                 (str(self.user), str(self.program))
 
     class Admin:
         pass
@@ -160,11 +170,13 @@ class SATPrepTeacherModuleInfo(models.Model):
         ('V', 'Verbal'),
         ('W', 'Writing')
         )
-        
+
     SUBJECT_DICT = {'M': 'Math', 'V': 'Verbal', 'W': 'Writing'}
-    #   This is the unanimous decision of the ESP office, as of 11:30pm Friday Feb 22, 2008.
+    #   This is the unanimous decision of the ESP office, as of 9:30pm Thursday Feb 20, 2009.
     #   Old category labels are kept commented below.   -Michael P
-    SECTION_DICT = {'A': 'Helium', 'B': 'Neon', 'C': 'Argon', 'D': 'Krypton', 'E': 'Xenon', 'F': 'Radon'}
+    SECTION_DICT = {'A': 'Java', 'B': 'Python', 'C': 'QB', 'D': 'C++', 'E': 'MATLAB', 'F': 'Scheme'}
+    #    SECTION_DICT = {'A': 'Libra', 'B': 'Scorpio', 'C': 'Sagittarius', 'D': 'Capricorn', 'E': 'Aquarius', 'F': 'Pisces'}
+    #   SECTION_DICT = {'A': 'Helium', 'B': 'Neon', 'C': 'Argon', 'D': 'Krypton', 'E': 'Xenon', 'F': 'Radon'}
     #   SECTION_DICT = {'A': 'Mercury', 'B': 'Venus', 'C': 'Mars', 'D': 'Jupiter', 'E': 'Saturn', 'F': 'Neptune'}
     #   SECTION_DICT = {'A': 'Red', 'B': 'Orange', 'C': 'Yellow', 'D': 'Green', 'E': 'Blue', 'F': 'Violet'}
 
@@ -179,26 +191,26 @@ class SATPrepTeacherModuleInfo(models.Model):
     user     = AjaxForeignKey(User,blank=True, null=True)
     program  = models.ForeignKey(Program,blank=True, null=True)
     section  = models.CharField(max_length=5)
-   
-    def __str__(self):
+
+    def __unicode__(self):
         return 'SATPrep Information for teacher %s in %s' % \
                  (str(self.user), str(self.program))
 
     class Admin:
         pass
-    
+
     def get_subject_display(self):
         if self.subject in SATPrepTeacherModuleInfo.SUBJECT_DICT:
             return SATPrepTeacherModuleInfo.SUBJECT_DICT[self.subject]
         else:
             return 'Unknown'
-        
+
     def get_section_display(self):
         if self.section in SATPrepTeacherModuleInfo.SECTION_DICT:
             return SATPrepTeacherModuleInfo.SECTION_DICT[self.section]
         else:
             return 'Unknown'
-        
+
     @staticmethod
     def subjects():
         return SATPrepTeacherModuleInfo.SAT_SUBJECTS

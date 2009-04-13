@@ -48,15 +48,12 @@ class StatsMiddleware(object):
 
     def process_request(self, request):
         request.start_time = time()
+        request._num_queries = len(connection.queries)
 
     def process_response(self, request, response):
 
         from django.conf import settings
         debug = settings.DEBUG
-
-        if debug:
-            # get number of db queries before we do anything
-            n = len(connection.queries)
 
         try:
             totTime = time() - request.start_time
@@ -70,10 +67,10 @@ class StatsMiddleware(object):
 
         if debug:
             # compute the db time for the queries just run
-            queries = len(connection.queries) - n
+            queries = len(connection.queries) - request._num_queries
             if queries:
-                dbTime = reduce(add, [float(q['time']) 
-                                      for q in connection.queries[n:]])
+                dbTime = reduce(add, [float(q['time'])
+                                      for q in connection.queries[request._num_queries:]])
             else:
                 dbTime = 0.0
 
@@ -86,7 +83,7 @@ class StatsMiddleware(object):
                                   'queries':queries}
 
 
-        # replace the comment if found            
+        # replace the comment if found
         if response and response.content:
             s = response.content
             match = regexp.search(s)
@@ -98,17 +95,16 @@ class StatsMiddleware(object):
 
         if settings.DISPLAYSQL and settings.DEBUG and \
            request.META['REMOTE_ADDR'] in settings.INTERNAL_IPS:
-            sqlcontent = "\n\n"+'<div class="sql">\n'
-            
-            for q in connection.queries:
-                sqlcontent += "\n"+'%s:&nbsp;&nbsp;%s<br />' % \
-                              (q['time'], q['sql'])
-            sqlcontent += "\n\n</div>"
+
+            sqlcontent = ''.join("\n"+'%s:&nbsp;&nbsp;%s<br />' % \
+                              (q['time'], q['sql']) for q in connection.queries)
+
+            sqlcontent = str(sqlcontent)
 
             if '</body>' in response.content.lower():
                 pos = response.content.find('</body>')
-                response.content = response.content[:pos] + \
-                                   sqlcontent + \
-                                   response.content[pos:]
+                response.content = '%s\n\n<div class="sql">\n%s\n\n</div>%s' % \
+                                   (response.content[:pos], sqlcontent, response.content[pos:])
+
         return response
 

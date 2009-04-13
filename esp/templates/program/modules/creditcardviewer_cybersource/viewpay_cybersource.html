@@ -37,6 +37,7 @@
 <li><a href="?">Show Unfiltered List</a></li>
 </ul>
 
+<div id="program_form">
 <table>
 
 <tr>
@@ -50,18 +51,26 @@ Payments:
 {% for payment in payment_table %}
 <tr>
 <td>
-{{ payment.0.get_full_name }}
+<b>{{ payment.0.get_full_name }}</b> (ID: {{ payment.0.id }}) <br />
+{{ payment.2.1 }}; {{ payment.2.2 }} owed
 </td>
 <td>
 <ul>
 {% for doc in payment.1 %}
-<li><div class="{{ doc.getDoctypeStr }}">{{ doc.getDoctypeStr }}: {{ doc.cost }}{% if not doc.txn.complete %} (in progress){% endif %}</li>
+<li><div class="{{ doc.getDoctypeStr }}">{{ doc.getDoctypeStr }} #{{ doc.locator }}: {{ doc.cost }}{% if not doc.txn.complete %} (in progress){% else %} (closed){% endif %}{% if doc.cc_ref %} &mdash; [{{ doc.cc_ref }}]{% endif %}
+<ol>
+{% for item in doc.txn.lineitem_set.all %}
+<li>{{ item }}</li>
+{% endfor %}
+</ol>
+</li>
 {% endfor %}
 </ul>
 </td>
 </tr>
 {% endfor %}
 </table>
+</div>
 
 {% endblock %}
 

@@ -30,13 +30,11 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.web.util        import render_to_response
-from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
-from esp.db.models       import Q
+from django.db.models.query     import Q
 from esp.users.models    import User, ESPUser
-#from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
 from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance
 from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
@@ -60,12 +58,12 @@ class CreditCardViewer_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
 
         if request.GET.has_key('only_completed'):
             student_list = student_list.filter(document__txn__complete=True)
-            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=True)) for student in student_list ]
+            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=True), ESPUser(student).paymentStatus(self.program_anchor_cached())) for student in student_list ]
         elif request.GET.has_key('only_incomplete'):
             student_list = student_list.filter(document__txn__complete=False)
-            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=False)) for student in student_list ]
+            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=False), ESPUser(student).paymentStatus(self.program_anchor_cached())) for student in student_list ]
         else:
-            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached())) for student in student_list ]
+            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached()), ESPUser(student).paymentStatus(self.program_anchor_cached())) for student in student_list ]
 
         context = { 'payment_table': payment_table }
         

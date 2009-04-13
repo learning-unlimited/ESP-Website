@@ -1,0 +1,10 @@
+Review the script 2008-12-25-ageng-classes-m2m.py. It can be run using:
+    $ ./manage.py shell
+    : run ../db_schema/2008-12-25-ageng-classes-m2m.py
+
+Actions taken by the script:
+    Add a new column, program_classsubject.parent_class.
+    Create an index for it (all the other foreign keys have one too, I guess).
+    Copy data from the many-to-many table.
+    Set NOT NULL on the column.
+    Drop the old many-to-many table.

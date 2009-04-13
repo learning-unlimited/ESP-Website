@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2009 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,27 +28,28 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from django.db import models
-from django.core.exceptions import PermissionDenied
-from django.contrib.auth.models import User, AnonymousUser
-from esp.datatree.models import DataTree, PermToString, GetNode, StringToPerm, get_lowest_parent
+
 from datetime import datetime, timedelta
-from esp.db.models import Q
-from esp.dblog.models import error
-from django.db.models.query import QuerySet
-from django.core.cache import cache
-from datetime import datetime
-from esp.middleware import ESPError
-from django.template.defaultfilters import urlencode
+
 from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
+from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
+from django.core.mail import send_mail
+from django.db import models
+from django.db.models.query import Q, QuerySet
+from django.http import HttpRequest
+from django.template import Context, loader
+from django.template.defaultfilters import urlencode
+
+from esp.cache import cache_function, wildcard
+from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
-from esp.db.cache import GenericCacheHelper
-from esp.users.models.userbits import UserBit
-from django.http import HttpRequest
-from django.template import loader
-from django.core.mail import send_mail
-from django.template import Context
+from esp.dblog.models import error
+from esp.middleware import ESPError
+
 
 try:
     import cPickle as pickle
@@ -68,14 +69,17 @@ def user_get_key(user):
 def userBitCacheTime():
     return 300
 
-class CacheHelper(GenericCacheHelper):
-    @staticmethod
-    def get_key(user):
-        return 'ESPUserCache__%s' % user._get_pk_val()
+def admin_required(func):
+    def wrapped(request, *args, **kwargs):
+        if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator():
+            raise PermissionDenied
+        return func(request, *args, **kwargs)
+    return wrapped
+
 
 class ESPUserManager(ProcedureManager):
 
-    cache = CacheHelper
+    pass
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -89,7 +93,7 @@ class ESPUser(User, AnonymousUser):
             super(self, Meta).__init__()
             self.pk.attname = "id"
             self.local_fields[0].column = "id"
-        
+
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:
     #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
@@ -103,10 +107,9 @@ class ESPUser(User, AnonymousUser):
             self.__olduser = userObj
 
         else:
-            models.Model.__init__(self, userObj, *args, **kwargs)
-            
+            User.__init__(self, userObj, *args, **kwargs)
+
         self.other_user = False
-        self.cache = ESPUser.objects.cache(self)
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -151,15 +154,21 @@ class ESPUser(User, AnonymousUser):
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
 
     def getLastProfile(self):
-        if hasattr(self, '_reg_profile'):
-            return self._reg_profile
+        # caching is handled in RegistrationProfile.getLastProfile
+        # for coherence w.r.t clearing and more caching
         from esp.program.models import RegistrationProfile
-        self._reg_profile = RegistrationProfile.getLastProfile(self)
+        return RegistrationProfile.getLastProfile(self)
 
-        return self._reg_profile
+    @cache_function
+    def getEditable_ids(self, objType):
+        # As far as I know, fbap's cache is still screwy, so we'll retain this cache at a higher level for now --davidben, 2009-04-06
+        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit')).values_list('id', flat=True)
+    getEditable_ids.get_or_create_token(('self',)) # Currently very difficult to determine type, given anchor
+    getEditable_ids.depend_on_row(lambda:UserBit, lambda bit: {} if bit.user_id is None else {'self': bit.user},
+                                                  lambda bit: bit.applies_to_verb('V/Administer/Edit'))
 
     def getEditable(self, objType):
-        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'))
+        return objType.objects.filter(id__in=self.getEditable_ids(objType))
 
     def canEdit(self, object):
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
@@ -186,13 +195,14 @@ class ESPUser(User, AnonymousUser):
                       'retTitle': retTitle,
                       'onsite'  : onsite}
 
-        request.session['user_morph'] = user_morph
-
         if type(user) == ESPUser:
             user = user.getOld()
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         login(request, user)
+
+        request.session['user_morph'] = user_morph
+
 
     def get_old(self, request):
         if not 'user_morph' in request.session:
@@ -211,6 +221,7 @@ class ESPUser(User, AnonymousUser):
         if type(new_user) == ESPUser:
             old_user = new_user.getOld()
         old_user.backend = 'django.contrib.auth.backends.ModelBackend'
+
         login(request, old_user)
 
         return retUrl
@@ -232,13 +243,14 @@ class ESPUser(User, AnonymousUser):
             return otheruser.username
         return ''
 
+    @cache_function
     def getTaughtClasses(self, program = None):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         from esp.program.models import ClassSubject, Program # Need the Class object.
-        
+
         #   Why is it that we had a find_by_anchor_perms function again?
-        tr_node = DataTree.get_by_uri('V/Flags/Registration/Teacher')
+        tr_node = GetNode('V/Flags/Registration/Teacher')
         all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
         if program is None: # If we have no program specified
             return all_classes
@@ -247,14 +259,26 @@ class ESPUser(User, AnonymousUser):
                 error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
             else:
                 return all_classes.filter(parent_program = program)
+    # FIXME: What if the Program query gives nothing?
+    getTaughtClasses.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
+                                                    lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id)
+    # FIXME: depend on ClassSubject (ids vs values thing again)
+    #   This one's important... if ClassSubject data changes...
+    # kinda works, but a bit too heavy handed:
+    getTaughtClasses.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program})
 
+
+    @cache_function
     def getTaughtSections(self, program = None):
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program))
-        section_ids = []
-        for c in classes:
-            section_ids += [v['id'] for v in c.sections.all().values('id')]
-        return ClassSection.objects.filter(id__in=section_ids)
+        return ClassSection.objects.filter(parent_class__in=classes)
+    getTaughtSections.get_or_create_token(('program',))
+    # FIXME: Would be REALLY nice to kill it only for the teachers of this section
+    # ...key_set specification needs more work...
+    getTaughtSections.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
+    getTaughtSections.depend_on_cache(getTaughtClasses, lambda self=wildcard, program=wildcard, **kwargs:
+                                                              {'self':self, 'program':program})
 
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
@@ -265,25 +289,6 @@ class ESPUser(User, AnonymousUser):
             if include_scheduled or (s.start_time() is None):
                 total_time = total_time + timedelta(hours=float(s.duration))
         return total_time
-
-    def getUserNum(self):
-        """ Returns the "number" of a user, which is distinct from id.
-            It's like the index if you search by lsat and first name."""
-
-        retVal = self.cache['getUserNum']
-
-        if retVal is not None: return retVal
-        users = User.objects.filter(last_name__iexact = self.last_name,
-                                    first_name__iexact = self.first_name).order_by('id')
-        i = 0
-        for user in users:
-            if user.id == self.id:
-                break
-            i += 1
-
-        retVal = (i and i or '')
-        self.cache['getUserNum'] = retVal
-        return retVal
 
     @staticmethod
     def getUserFromNum(first, last, num):
@@ -308,10 +313,6 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
-        now = datetime.now()
-        Q_after_start = Q(userbit__startdate__isnull = True) | Q(userbit__startdate__lte = now)
-        Q_before_end = Q(userbit__enddate__isnull = True) | Q(userbit__enddate__gte = now)
-
         types = ['Student', 'Teacher','Guardian','Educator']
 
         if strType not in types:
@@ -319,8 +320,7 @@ class ESPUser(User, AnonymousUser):
 
         Q_useroftype      = Q(userbit__verb = GetNode('V/Flags/UserRole/'+strType)) &\
                             Q(userbit__qsc = GetNode('Q'))                          &\
-                            Q_after_start                                  &\
-                            Q_before_end
+                            UserBit.not_expired('userbit')
 
         if QObject:
             return Q_useroftype
@@ -328,56 +328,52 @@ class ESPUser(User, AnonymousUser):
         else:
             return User.objects.filter(Q_useroftype)
 
-    def availability_cache_key(self, program, ignore_classes=False):
-        if ignore_classes:
-            return 'espuser__availabletimes_all:%d,%d' % (self.id, program.id)
-        else:
-            return 'espuser__availabletimes:%d,%d' % (self.id, program.id)
-
+    @cache_function
     def getAvailableTimes(self, program, ignore_classes=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.resources.models import Resource
         from esp.cal.models import Event
-        from django.core.cache import cache
 
-        #   This is such a common operation that I think it should be cached.
-        cache_key = self.availability_cache_key(program, ignore_classes)
-        result = cache.get(cache_key)
-        if result is not None:
-            return result
+        valid_events = Event.objects.filter(resource__user=self, anchor=program.anchor)
 
-        res_list = [item['event'] for item in Resource.objects.filter(user=self).values('event')]
-
-        #   Subtract out the times that they are already teaching.
-        other_classes = self.getTaughtSections(program)
-
-        other_times = [[mt['id'] for mt in cls.meeting_times.values('id')] for cls in other_classes]
-        result = program.getTimeSlots().filter(id__in=res_list)
         if ignore_classes:
-            for lst in other_times:
-                result = result.exclude(id__in=lst)
+            #   Subtract out the times that they are already teaching.
+            other_sections = self.getTaughtSections(program)
 
-        #   Finally, convert from a query set down to a list for caching
-        listed_result = list(result)
-        cache.set(cache_key, listed_result)
-        return listed_result
+            other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections]
+            for lst in other_times:
+                valid_events = valid_events.exclude(id__in=lst)
+
+        return valid_events
+    getAvailableTimes.get_or_create_token(('self', 'program',))
+    getAvailableTimes.depend_on_cache(getTaughtSections,
+            lambda self=wildcard, program=wildcard, **kwargs:
+                 {'self':self, 'program':program, 'ignore_classes':True})
+    # FIXME: Really should take into account section's teachers...
+    # even though that shouldn't change often
+    getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
+    getAvailableTimes.depend_on_row(lambda:Resource, lambda resource:
+                                        # FIXME: What if resource.event.anchor somehow isn't a program?
+                                        # Probably want a helper method return a special "nothing" object (XXX: NOT None)
+                                        # and have key_sets discarded if they contain it
+                                        {'program': Program.objects.get(anchor=resource.event.anchor),
+                                            'self': resource.user})
+    # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
+    # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
         """ Clear all resources indicating this teacher's availability for a program """
         from esp.resources.models import Resource
-        from django.core.cache import cache
 
-        cache_key = self.availability_cache_key(program)
-        cache.delete(cache_key)
         Resource.objects.filter(user=self, event__anchor=program.anchor).delete()
 
     def addAvailableTime(self, program, timeslot):
         from esp.resources.models import Resource, ResourceType
-        from django.core.cache import cache
 
-        cache_key = self.availability_cache_key(program)
-        cache.delete(cache_key)
+        # if program.anchor is not timeslot.anchor:
+        #    BADNESS
+
         r = Resource()
         r.user = self
         r.event = timeslot
@@ -385,25 +381,15 @@ class ESPUser(User, AnonymousUser):
         r.res_type = ResourceType.get_or_create('Teacher Availability')
         r.save()
 
-    def enrollment_cache_key(self, program):
-        if program is not None:
-            return 'EnrolledClasses__%s' % program.id
-        else:
-            return 'EnrolledClasses__noprogram'
-
-    def clear_enrollment_cache(self, program):
-        cache = UserBit.objects.cache(self)
-        cache[self.enrollment_cache_key(program)] = None
-
     def getClasses(self, program=None, verbs=None):
         from esp.program.models import ClassSubject
         csl = self.getSections(program, verbs)
         pc_ids = [c.parent_class.id for c in csl]
         return ClassSubject.objects.filter(id__in=pc_ids)
-    
+
     def getAppliedClasses(self, program=None):
         return self.getClasses(program, verbs=['/Applied'])
-       
+
     def getEnrolledClasses(self, program=None, request=None):
         """ A new version of getEnrolledClasses that accepts arbitrary registration
         verbs.  If it's too slow we can implement caching like in previous SVN
@@ -414,24 +400,29 @@ class ESPUser(User, AnonymousUser):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
         here's a slightly more general function for finding who belongs where. """
         from esp.program.models import ClassSection
-        
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        if not program:
-            qsc_base = DataTree.get_by_uri('Q')
-        else:
+
+        if program:
             qsc_base = program.anchor
-        
-        if not verbs:
-            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.rangestart, qsc__rangeend__lte=qsc_base.rangeend, verb__rangestart__gte=verb_base.rangestart, verb__rangeend__lte=verb_base.rangeend, user=self)
         else:
-            verb_uris = ['V/Flags/Registration' + verb_str for verb_str in verbs]
-            verb_ids = [v['id'] for v in DataTree.objects.filter(uri__in=verb_uris).values('id')]
-            ubl = UserBit.objects.filter(qsc__rangestart__gte=qsc_base.rangestart, qsc__rangeend__lte=qsc_base.rangeend, verb__id__in=verb_ids, user=self)
-            
-        ubl = ubl.filter(Q(enddate__gte=datetime.now()) | Q(enddate__isnull=True))
-        
-        cs_anchor_ids = [u['qsc'] for u in ubl.values('qsc')]
-        csl = ClassSection.objects.filter(anchor__id__in=cs_anchor_ids) 
+            qsc_base = GetNode('Q')
+
+        if not verbs:
+            verb_base = GetNode('V/Flags/Registration')
+
+            csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base,
+                                                    anchor__userbit_qsc__verb__below=verb_base)
+                                              & Q( anchor__userbit_qsc__user=self,
+                                                   anchor__userbit_qsc__enddate__gte=datetime.now())).distinct()
+
+        else:
+            verb_uris = ('V/Flags/Registration' + verb_str for verb_str in verbs)
+
+            csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base)
+                                              & Q(anchor__userbit_qsc__enddate__gte=datetime.now()),
+                                              Q(anchor__userbit_qsc__user=self,
+                                                anchor__userbit_qsc__verb__uri__in=verb_uris)
+                                              ).distinct()
+
 
         return csl
 
@@ -441,17 +432,17 @@ class ESPUser(User, AnonymousUser):
     def getRegistrationPriority(self, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. """
         from esp.program.models import Program, RegistrationProfile
-        
+
         if len(timeslots) < 1:
             return 1
-        
+
         prog = Program.objects.get(anchor=timeslots[0].anchor)
         prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
-        
+
         priority_dict = {}
         for t in timeslots:
             priority_dict[t.id] = []
-            
+
         for sec in prereg_sections:
             cv = sec.getRegVerbs(self)
             smt = sec.meeting_times.all()
@@ -466,7 +457,7 @@ class ESPUser(User, AnonymousUser):
         all_priorities = []
         for key in priority_dict:
             all_priorities += priority_dict[key]
-            
+
         priority = 1
         while priority in all_priorities:
             priority += 1
@@ -498,24 +489,25 @@ class ESPUser(User, AnonymousUser):
         return False
 
     def paymentStatus(self, anchor=None):
-        """ Returns a tuple of (has_paid, status_str, line_items) to indicate
+        """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate
         the user's payment obligations to ESP:
         -   has_paid: True or False, indicating whether any money is owed to
             the accounts under the specified anchor
         -   status: A string briefly explaining the status of the transactions
+        -   amount_owed: A Decimal for the amount they need to pay
         -   line_items: A list of the relevant line items
         """
         from esp.accounting_docs.models import Document
         from esp.accounting_core.models import LineItem, Transaction
 
         if anchor is None:
-            anchor = DataTree.get_by_uri('Q/Programs')
+            anchor = GetNode('Q/Programs')
 
-        receivable_parent = DataTree.get_by_uri('Q/Accounts/Receivable')
-        realized_parent = DataTree.get_by_uri('Q/Accounts/Realized')
+        receivable_parent = GetNode('Q/Accounts/Receivable')
+        realized_parent = GetNode('Q/Accounts/Realized')
 
-        #   We have to check both complete and incomplete documents.
-        docs = Document.objects.filter(user=self)
+        #   We have to check both complete and incomplete documents belonging to the anchor.
+        docs = Document.objects.filter(user=self, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend)
 
         li_list = []
         for d in docs:
@@ -546,17 +538,25 @@ class ESPUser(User, AnonymousUser):
         has_paid = False
         status = 'Unknown'
         if amt_charged == 0:
-            status = 'Empty'
+            status = 'No charges'
         elif amt_expected != 0:
             if amt_paid == 0:
                 status = 'Pending/Unpaid'
             else:
                 status = 'Partially paid'
+        elif amt_charged > 0 and amt_paid == 0:
+            status = 'Unpaid'
         else:
             status = 'Fully paid'
             has_paid = True
+
         amt_owed = amt_charged - amt_paid
         return (has_paid, status, amt_owed, li_list)
+
+    has_paid = lambda x, y: x.paymentStatus(y)[0]
+    payment_status_str = lambda x, y: x.paymentStatus(y)[1]
+    amount_owed = lambda x, y: x.paymentStatus(y)[2]
+    line_items = lambda x, y: x.paymentStatus(y)[3]
 
     def isOnsite(self, program = None):
         verb = GetNode('V/Registration/OnSite')
@@ -568,28 +568,22 @@ class ESPUser(User, AnonymousUser):
                     UserBit.UserHasPerms(self, program.anchor, verb)
 
     def recoverPassword(self):
-        # generate the code, send the email.
-        import string
-        import random
-        from esp.users.models import PersistentQueryFilter
-        from esp.db.models import Q
+        # generate the ticket, send the email.
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
         from django.contrib.sites.models import Site
-
-        symbols = string.ascii_uppercase + string.digits
-        code = "".join([random.choice(symbols) for x in range(30)])
 
         # get the filter object
         filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = self.id),
                                                          User,
                                                          'User %s' % self.username)
-        curuser = User.objects.get(id = self.id)
-        curuser.password = code
-        curuser.save()
+
+        ticket = PasswordRecoveryTicket.new_ticket(self)
+
+        domainname = Site.objects.get_current().domain
+
         # create the variable modules
-        variable_modules = {'user': ESPUser(curuser)}
-        domainname = Site.objects.get(id=1).domain
+        variable_modules = {'user': self, 'ticket': ticket, 'domainname' : domainname}
 
 
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
@@ -712,6 +706,7 @@ class ESPUser(User, AnonymousUser):
 
         return schoolyear + 12 - grade
 
+
 ESPUser.create_membership_methods()
 
 ESPUser._meta.pk.name = "id"
@@ -731,8 +726,10 @@ class StudentInfo(models.Model):
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, null=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    heardofesp = models.TextField(blank=True, null=True)
+# removing shirt information, because this confused people.
+#    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
+#    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
     class Meta:
         app_label = 'users'
@@ -769,8 +766,9 @@ class StudentInfo(models.Model):
         form_dict['graduation_year'] = self.graduation_year
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
-        form_dict['shirt_size']      = self.shirt_size
-        form_dict['shirt_type']      = self.shirt_type
+#        form_dict['shirt_size']      = self.shirt_size
+#        form_dict['shirt_type']      = self.shirt_type
+        form_dict['heardofesp']      = self.heardofesp
         form_dict['studentrep_expl'] = self.studentrep_expl
         form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
                                                             qsc  = STUDREP_QSC,
@@ -792,8 +790,9 @@ class StudentInfo(models.Model):
         studentInfo.graduation_year = new_data['graduation_year']
         studentInfo.school          = new_data['school']
         studentInfo.dob             = new_data['dob']
-        studentInfo.shirt_size      = new_data['shirt_size']
-        studentInfo.shirt_type      = new_data['shirt_type']
+        studentInfo.heardofesp      = new_data['heardofesp']
+#        studentInfo.shirt_size      = new_data['shirt_size']
+#        studentInfo.shirt_type      = new_data['shirt_type']
         studentInfo.studentrep_expl = new_data['studentrep_expl']
         studentInfo.save()
         if new_data['studentrep']:
@@ -817,7 +816,7 @@ class StudentInfo(models.Model):
                                    qsc  = STUDREP_QSC).delete()
         return studentInfo
 
-    def __str__(self):
+    def __unicode__(self):
         username = "N/A"
         if self.user != None:
             username = self.user.username
@@ -884,11 +883,11 @@ class TeacherInfo(models.Model):
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
         teacherInfo.shirt_size      = new_data['shirt_size']
-        #teacherInfo.shirt_type      = new_data['shirt_type']
+        teacherInfo.shirt_type      = new_data['shirt_type']
         teacherInfo.save()
         return teacherInfo
 
-    def __str__(self):
+    def __unicode__(self):
         username = ""
         if self.user != None:
             username = self.user.username
@@ -948,7 +947,7 @@ class GuardianInfo(models.Model):
         guardianInfo.save()
         return guardianInfo
 
-    def __str__(self):
+    def __unicode__(self):
         username = ""
         if self.user != None:
             username = self.user.username
@@ -1015,7 +1014,7 @@ class EducatorInfo(models.Model):
         educatorInfo.save()
         return educatorInfo
 
-    def __str__(self):
+    def __unicode__(self):
         username = ""
         if self.user != None:
             username = self.user.username
@@ -1085,7 +1084,7 @@ class ZipCode(models.Model):
         newsearch.save()
         return winners
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s (%s, %s)' % (self.zip_code,
                                 self.longitude,
                                 self.latitude)
@@ -1101,7 +1100,7 @@ class ZipCodeSearches(models.Model):
         app_label = 'users'
         db_table = 'users_zipcodesearches'
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
@@ -1111,15 +1110,15 @@ class ContactInfo(models.Model):
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('E-mail address', blank=True, null=True)
-    phone_day = models.PhoneNumberField('Home phone',blank=True, null=True)
-    phone_cell = models.PhoneNumberField('Cell phone',blank=True, null=True, core=True)
-    phone_even = models.PhoneNumberField('Alternate phone',blank=True, null=True)
-    address_street = models.CharField('Street address',max_length=100,blank=True, null=True, core=True)
-    address_city = models.CharField('City',max_length=50,blank=True, null=True, core=True)
-    address_state = models.USStateField('State',blank=True, null=True, core=True)
-    address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True, core=True)
+    phone_day = PhoneNumberField('Home phone',blank=True, null=True)
+    phone_cell = PhoneNumberField('Cell phone',blank=True, null=True)
+    phone_even = PhoneNumberField('Alternate phone',blank=True, null=True)
+    address_street = models.CharField('Street address',max_length=100,blank=True, null=True)
+    address_city = models.CharField('City',max_length=50,blank=True, null=True)
+    address_state = USStateField('State',blank=True, null=True)
+    address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
     address_postal = models.TextField(blank=True,null=True)
-    undeliverable = models.BooleanField(default=False, core=True)
+    undeliverable = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'users'
@@ -1189,7 +1188,7 @@ class ContactInfo(models.Model):
 
         super(ContactInfo, self).save(*args, **kwargs)
 
-    def __str__(self):
+    def __unicode__(self):
         username = ""
         last_name, first_name = '', ''
         if self.user != None:
@@ -1219,7 +1218,7 @@ class K12School(models.Model):
         app_label = 'users'
         db_table = 'users_k12school'
 
-    def __str__(self):
+    def __unicode__(self):
         if self.contact_id:
             return '"%s" in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
@@ -1277,11 +1276,11 @@ class PersistentQueryFilter(models.Model):
     @staticmethod
     def create_from_Q(item_model, q_filter, description = ''):
         """ The main constructor, please call this. """
-        import sha
+        import hashlib
         dumped_filter = pickle.dumps(q_filter)
         foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                    q_filter = dumped_filter,
-                                                                   sha1_hash = sha.new(dumped_filter).hexdigest())
+                                                                   sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
         foo.useful_name = description
         foo.save()
         return foo
@@ -1324,13 +1323,13 @@ class PersistentQueryFilter(models.Model):
         """ This function will get the filter from the Q object. It will either create one
             or use an old one depending on whether it's been used. """
 
-        import sha
+        import hashlib
         try:
             qobject_string = pickle.dumps(QObject)
         except:
             qobject_string = ''
         try:
-            filterObj = PersistentQueryFilter.objects.get(sha1_hash = sha.new(qobject_string).hexdigest())#    pass
+            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
         except:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,
@@ -1339,7 +1338,7 @@ class PersistentQueryFilter(models.Model):
 
         return filterObj
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.useful_name)
 
 
@@ -1356,9 +1355,90 @@ class ESPUser_Profile(models.Model):
     class Admin:
         pass
 
-    def __str__(self):
+    def __unicode__(self):
         return "ESPUser_Profile for user: %s" % str(self.user)
 
+class PasswordRecoveryTicket(models.Model):
+    """ A ticket for changing your password. """
+    RECOVER_KEY_LEN = 30
+    RECOVER_EXPIRE = 2 # number of days before it expires
+    SYMBOLS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+    user = models.ForeignKey(User)
+    recover_key = models.CharField(max_length=RECOVER_KEY_LEN)
+    expire = models.DateTimeField(null=True)
+
+    def __unicode__(self):
+        return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
+
+    @classmethod
+    def new_key(cls):
+        """ Generates a new random key. """
+        import random
+        key = "".join([random.choice(cls.SYMBOLS) for x in range(cls.RECOVER_KEY_LEN)])
+        return key
+
+    @classmethod
+    def new_ticket(cls, user):
+        """ Returns a new (saved) ticket for a specified user. """
+        from datetime import datetime, timedelta
+
+        ticket = cls()
+        ticket.user = user
+        ticket.recover_key = cls.new_key()
+        ticket.expire = datetime.now() + timedelta(days = cls.RECOVER_EXPIRE)
+
+        ticket.save()
+        return ticket
+
+    @property
+    def recover_url(self):
+        """ The URL to recover the password. """
+        return 'myesp/recoveremail/?code=%s' % self.recover_key
+
+    @property
+    def cancel_url(self):
+        """ The URL to cancel the ticket. """
+        return 'myesp/cancelrecover/?code=%s' % self.recover_key
+
+    def change_password(self, username, password):
+        """ If the ticket is valid, saves the password. """
+        if not self.is_valid():
+            return False
+        if self.user.username != username:
+            return False
+
+        # Change the password
+        self.user.set_password(password)
+        self.user.save()
+
+        # Invalidate all other tickets
+        self.cancel_all(self.user)
+        return True
+    change_password.alters_data = True
+
+    def is_valid(self):
+        """ Check if the ticket is still valid, kill it if not. """
+        from datetime import datetime
+        if self.id is not None and datetime.now() < self.expire:
+            return True
+        else:
+            self.cancel()
+            return False
+    ## technically alters data by calling cancel(), but templates
+    ## should be fine with calling this one I guess
+    # is_valid.alters_data = True
+
+    def cancel(self):
+        """ Cancel a ticket. """
+        if self.id is not None:
+            self.delete()
+    cancel.alters_data = True
+
+    @classmethod
+    def cancel_all(cls, user):
+        """ Cancel all tickets belong to user. """
+        cls.objects.filter(user=user).delete()
 
 class DBList(object):
     """ Useful abstraction for the list of users.
@@ -1406,7 +1486,7 @@ class DBList(object):
         """ We are going to order by the size of our lists. """
         return cmp(self.count(), other.count())
 
-    def __str__(self):
+    def __unicode__(self):
         return self.key
 
 
@@ -1417,8 +1497,8 @@ def install():
     Installs some initial useful UserBits.
     This function should be idempotent: if run more than once consecutively,
     subsequent runnings should have no effect on the db.
-    """    
-        
+    """
+
     # Populate UserBits from the stored list in initial_userbits.py
     from esp.users.initial_userbits import populateInitialUserBits
     populateInitialUserBits()
@@ -1435,3 +1515,9 @@ def install():
                             "recursive": False } )
 
         populateInitialUserBits(AdminUserBits)
+
+# We can't import these earlier because of circular stuff...
+from esp.users.models.userbits import UserBit
+from esp.cal.models import Event
+from esp.program.models import ClassSubject, ClassSection, Program
+from esp.resources.models import Resource

@@ -1,7 +1,8 @@
-\documentclass[letterpaper,9pt]{article}
+{% autoescape off %}\documentclass[letterpaper,9pt]{article}
 
 \usepackage{multicol}
 \usepackage{fullpage}
+\usepackage{amsfonts, amsmath, amsthm, amssymb}
 \usepackage{fancyhdr}
 \usepackage[left=.5in,top=1cm,right=.5in]{geometry}
 
@@ -33,8 +34,8 @@
   {% ifchanged %}
 \end{multicols}
 \newpage
-\cat{\Huge Course Catalog -- \textit{ {{ cls.category.category }} } }
-\rhead{% templatetag openbrace %}{{cls.category.category }} }
+\cat{\Huge Course Catalog --- \textit{ {{ cls.category.category|texescape }} } }
+\rhead{% templatetag openbrace %}{{cls.category.category|texescape }} }
 \vspace{.1in}
 \begin{multicols}{2} 
  {%endifchanged %}
@@ -53,3 +54,4 @@
 {% endfor %}
 \end{multicols}
 \end{document}
+{% endautoescape %}

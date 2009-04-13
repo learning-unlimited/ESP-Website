@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from django.core.cache import cache
-from esp.db.models import Q
+from django.db.models.query import Q
 from django.template.defaultfilters import urlencode
 from esp.middleware import ESPError
 
@@ -170,7 +170,7 @@ class DataTree(models.Model):
         """ Returns the full, slash-delimited name of a node """
         return ( '/'.join(self.tree_encode()))
 
-    def __str__(self):
+    def __unicode__(self):
         """ Returns a string """
 	#res = str(self.rangestart) + ' .. ' + str(self.rangeend) + ' '*self.depth() + ' <' + str(self.full_name()) + '>'
         res = str(self.full_name()) 
@@ -373,7 +373,7 @@ class DataTree(models.Model):
 	    This shouldn't currently be possible, but it's kept around for good measure. """
 	    def __init__(self, value):
 	        self.value = value
-	    def __str__(self):
+	    def __unicode__(self):
 	        return repr(self.value)
 
     class NoSuchNodeException(Exception):
@@ -382,7 +382,7 @@ class DataTree(models.Model):
 	    self.anchor = anchor
 	    self.remainder = remainder
 
-        def __str__(self):
+        def __unicode__(self):
             return "Node not found: " + repr(self.remainder[0])
 
     class DuplicateNodeException(Exception):
@@ -390,7 +390,7 @@ class DataTree(models.Model):
 	    def __init__(self, value, anchor):
 		    self.value = "duplicate node: " + str(value)
 		    self.anchor = anchor
-	    def __str__(self):
+	    def __unicode__(self):
 		    return repr(self.value)
 
     class NoRootNodeException(NoSuchNodeException):
@@ -399,7 +399,7 @@ class DataTree(models.Model):
         def __init__(self, NumOfRootNodes):
            DataTree.NoSuchNodeException.__init__(self, None, ['ROOT'])
            self.value = str(NumOfRootNodes) + " ROOT nodes in the DataTree"
-	def __str__(self):
+	def __unicode__(self):
 		return repr(self.value)
 
 def GetNode(nodename):

@@ -28,21 +28,28 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from django.db import models
-from esp.datatree.models import DataTree, GetNode
-from esp.lib.markdown import markdown
-from django.contrib.auth.models import User
-from django.core.cache import cache
 from datetime import datetime
-from django.contrib import admin
-import md5
+import hashlib
 
+from django.db import models
+from django.core.cache import cache
+from django.contrib.auth.models import User
+
+from esp.datatree.models import *
+from esp.lib.markdown import markdown
 from esp.db.fields import AjaxForeignKey
 from esp.db.file_db import *
+from esp.cache import cache_function
+from esp.web.models import NavBarCategory
 
 class QSDManager(FileDBManager):
     def get_by_path__name(self, path, name):
-        file_id = md5.new(path.uri + '-' + name).hexdigest()
+        # This writes to file_db, and caches the *data retrieval*
+        # It exists because the kernel filesystem caches are possibly better
+        # for retrieving large (>=4KB) data chunks than PostgreSQL
+        # See Mike Axiak's email to esp-webmasters@mit.edu on 2008-09-27 (around 12:35)
+        # No user ID --- this caches simple DB access, so user-invariant
+        file_id = qsd_cache_key(path, name, None)
         retVal = self.get_by_id(file_id)
         if retVal is not None:
             return retVal
@@ -63,6 +70,8 @@ class QuasiStaticData(models.Model):
     title = models.CharField(max_length=256)
     content = models.TextField()
 
+    nav_category = models.ForeignKey(NavBarCategory)
+
     create_date = models.DateTimeField(default=datetime.now, editable=False)
     author = AjaxForeignKey(User)
     disabled = models.BooleanField(default=False)
@@ -70,47 +79,99 @@ class QuasiStaticData(models.Model):
     description = models.TextField(blank=True, null=True)
 
     def get_file_id(self):
-        return md5.new(self.path.uri + '-' + self.name).hexdigest()
+        """Get the file_id of the object.
 
-    def save(self, *args, **kwargs):
+        This is used by the FileDBManager as a cache key, so be careful when updating.
+        Changes here *may* cause caching to break in annoying ways elsewhere. We
+        recommend grepping through any related files for "cache".
+
+        In particular, IF you change this, update qsd/models.py's QSDManager class
+        Otherwise, the cache *may* be used wrong elsewhere."""
+        return qsd_cache_key(self.path, self.name, None) # DB access cache --- user invariant
+
+    def copy(self,):
+        """Returns a copy of the current QSD.
+
+        This could be used for versioning QSDs, for example. It will not be
+        saved to the DB until .save is called.
+
+        Note that this method maintains the author and created date.
+        Client code should probably reset the author to request.user
+        and date to datetime.now (possibly with load_cur_user_time)"""
+        qsd_new = QuasiStaticData()
+        qsd_new.path    = self.path
+        qsd_new.name    = self.name
+        qsd_new.author  = self.author
+        qsd_new.content = self.content
+        qsd_new.title   = self.title
+        qsd_new.description  = self.description
+        qsd_new.nav_category = self.nav_category
+        qsd_new.keywords     = self.keywords
+        qsd_new.disabled     = self.disabled
+        qsd_new.create_date  = self.create_date
+        return qsd_new
+
+    def load_cur_user_time(self, request, ):
+        self.author = request.user
+        self.create_date = datetime.now()
+
+    def save(self, user=None, *args, **kwargs):
+        # Invalidate the file cache of the render_qsd template tag
         from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func, render_qsd_cache
         render_qsd_cache.delete(cache_key_func(self))
+
+        # Invalidate per user cache entry --- really, we should do this for
+        # all users, but just this one is easy and almost as good
+        render_qsd_cache.delete(cache_key_func(self, user))
+
         retVal = super(QuasiStaticData, self).save(*args, **kwargs)
         QuasiStaticData.objects.obj_to_file(self)
-        
-        from django.core.cache import cache
-        cache_key = 'QSD_URL_%d' % self.id
-        cache.delete(cache_key)
-        
+
         return retVal
 
+    # Really, I think the correct solution here is to key it by path.get_uri and name
+    # is_descendant_of is slightly more expensive, but whatever.
+    @cache_function
     def url(self):
         """ Get the relative URL of a page (i.e. /learn/Splash/eligibility.html) """
-        from django.core.cache import cache
-        cache_key = 'QSD_URL_%d' % self.id
-        result = cache.get(cache_key)
-        if result:
-            return result
-        
+
         my_path = self.path
         path_parts = self.path.get_uri().split('/')
         program_top = DataTree.get_by_uri('Q/Programs')
         web_top = DataTree.get_by_uri('Q/Web')
-        if (my_path.rangestart >= program_top.rangestart) and (my_path.rangeend <= program_top.rangeend):
+        if my_path.is_descendant_of(program_top):
             name_parts = self.name.split(':')
             if len(name_parts) > 1:
                 result =  '/' + name_parts[0] + '/' + '/'.join(path_parts[2:]) + '/' + name_parts[1] + '.html'
             else:
                 result = '/programs/' + '/'.join(path_parts[2:]) + '/' + name_parts[0] + '.html'
-        elif (my_path.rangestart >= web_top.rangestart) and (my_path.rangeend <= web_top.rangeend):
+        elif my_path.is_descendant_of(web_top):
             result = '/' + '/'.join(path_parts[2:]) + '/' + self.name + '.html'
         else:
             result = '/' + '/'.join(path_parts[1:]) + '/' + self.name + '.html'
-        
-        cache.set(cache_key, result)
+
         return result
-            
-    def __str__(self):
+    url.depend_on_row(lambda:QuasiStaticData, 'self')
+    # This never really happens in this case, still... something to think about:
+    #
+    #    We can either do a query on Datatree modification and then delete the
+    #    relevant cache, or we could add a Token to the cache and then we can
+    #    delete by DataTree nodes. Although this is offloaded work from data
+    #    modification to data retrieval, the modified form of work is also MUCH
+    #    cheaper. As in, we can just grab qsd.path_id and not incur any
+    #    database load, whereas the current setup is going to force us to do a
+    #    database query AND do it at times a DataTree node is deleted... many
+    #    of these aren't relevant.
+    #
+    #    That said, how can we propogate stuff then? With fully general Tokens,
+    #    mapping functions are hard to write. Something more like the old
+    #    partitions idea?
+    #
+    #    Special-case DataTree?? :-(
+    #
+    # url.depend_on_row(lambda:DataTree, lambda instance: {'self': QuasiStaticData.objects.blahbalh})
+
+    def __unicode__(self):
         return (self.path.full_name() + ':' + self.name + '.html' )
 
     def html(self):
@@ -136,10 +197,17 @@ class QuasiStaticData(models.Model):
         # Operation Complete!
         return qsd[0]
 
-class QuasiStaticDataAdmin(admin.ModelAdmin):
-    search_fields = ['title','name','keywords','description']
+def qsd_cache_key(path, name, user=None,):
+    # IF you change this, update qsd/models.py's QSDManager class
+    # Otherwise, the wrong cache path will be invalidated
+    # Also, make sure the qsd/models.py's get_file_id method
+    # is also updated. Otherwise, other things might break.
+    if user and user.is_authenticated():
+        return hashlib.md5('%s-%s-%s' % (path.uri, name, user.id)).hexdigest()
+    else:
+        return hashlib.md5('%s-%s' % (path.uri, name)).hexdigest()
 
-    
+
 class ESPQuotations(models.Model):
     """ Quotation about ESP """
 
@@ -167,10 +235,7 @@ class ESPQuotations(models.Model):
 
         return random.choice(current_pool)
 
-        
+
     class Meta:
         verbose_name_plural = 'ESP Quotations'
 
-    
-admin.site.register(QuasiStaticData, QuasiStaticDataAdmin)
-admin.site.register(ESPQuotations)

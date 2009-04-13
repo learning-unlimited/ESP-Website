@@ -29,16 +29,11 @@ Email: web@esp.mit.edu
 """
 from django.conf.urls.defaults import *
 from django.contrib import admin
-from esp.program.models import ClassSubject
-from esp.datatree.decorators import section_redirect_keys
-from esp.qsd.views import qsd
-from esp.qsdmedia.views import qsdmedia
-from esp.settings import PROJECT_ROOT
-from esp.settings import MEDIA_ROOT
+from esp.settings import PROJECT_ROOT, MEDIA_ROOT
 
 admin.autodiscover()
 
-section_prefix_keys = {'teach': 'teach', 'learn': 'learn', 'programs': ''}
+from esp.section_data import section_redirect_keys, section_prefix_keys
 
 # Static media
 urlpatterns = patterns('django.views.static',
@@ -52,11 +47,8 @@ urlpatterns += patterns('',
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/(.*)', admin.site.root),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
-                     (r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
-                     (r'^[Ss][Pp][Ll][Aa][Ss][Hh]08/?$', 'django.views.generic.simple.redirect_to', {'url': '/flyer.pdf'}),
+                     #(r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$','django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
-                     (r'^flyer.pdf$','django.views.generic.simple.redirect_to', {'url':'/media/uploaded/08_03/student_flyer.pdf'} ),
-                     (r'^splash-fall08/?$','django.views.generic.simple.redirect_to', {'url':'/media/uploaded/08_03/student_flyer.pdf'} ),
                         )
 
 urlpatterns += patterns('esp.shortterm.views',
@@ -71,16 +63,27 @@ urlpatterns += patterns('django.views.generic',
                         (r'.php$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
                         )
 
+# program stuff
+urlpatterns += patterns('',
+                        (r'^',  include('esp.program.urls')),
+                        )
+
 urlpatterns += patterns('esp.web.views.bio',
 
                         # bios
-                        (r'^(teach|learn)/teachers/([-A-Za-z0-9_ \.]+)/([-A-Za-z_ \.]+)([0-9]*)/bio.html$', 'bio'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ \.]+)/(?P<first>[-A-Za-z_ \.]+)(?P<usernum>[0-9]*)/bio.html$', 'bio'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.html$', 'bio'),
                         (r'^myesp/teacherbio/?$', 'bio_edit'),
-                        (r'^(teach|learn)/teachers/([-A-Za-z0-9_ ]+)/([-A-Za-z_ ]+)([0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ ]+)/(?P<first>[-A-Za-z_ ]+)(?P<usernum>[0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.edit.html/?(.*)$', 'bio_edit'),
                         )
 
 urlpatterns += patterns('',
                         (r'^myesp/', include('esp.users.urls'),)
+                        )
+
+urlpatterns += patterns('',
+                        (r'^cache/', include('esp.cache.urls'),)
                         )
 
 urlpatterns += patterns('esp.qsd.views',
@@ -88,9 +91,9 @@ urlpatterns += patterns('esp.qsd.views',
                         (r'^(?P<url>.*)\.html$', 'qsd'),
                         )
 
-urlpatterns += patterns('',
-                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', 'django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
-                        )
+#urlpatterns += patterns('',
+#                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', 'django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
+#                        )
 
 # logging in and out
 urlpatterns += patterns('django.contrib.auth.views',
@@ -99,8 +102,8 @@ urlpatterns += patterns('django.contrib.auth.views',
 
 # other apps
 urlpatterns += patterns('',
-                        (r'^alumni/', include('esp.membership.alumni_urls')),
-                        (r'^membership/', include('esp.membership.urls')),
+#                        (r'^alumni/', include('esp.membership.alumni_urls')),
+#                        (r'^membership/', include('esp.membership.urls')),
                         (r'^',  include('esp.miniblog.urls')),
                         (r'^',  include('esp.survey.urls')),
                         )
@@ -116,13 +119,13 @@ urlpatterns += patterns('esp.web.views.main',
 
     # Possibly overspecific, possibly too general.
     (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'section_prefix_keys': section_prefix_keys }),
+        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'section_prefix_keys': section_prefix_keys }),
     (r'^(?P<subsection>(learn|teach|program|help))/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'section_prefix_keys': section_prefix_keys, 'url': ''}),
+        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'section_prefix_keys': section_prefix_keys, 'url': ''}),
     (r'^(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia }),
+        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia' }),
     (r'^qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': qsdmedia, 'url': '' }),
+        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'url': '' }),
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
@@ -158,7 +161,3 @@ urlpatterns += patterns('esp.web.views.main',
 urlpatterns += patterns('esp.web.views.navBar',
     # Update navbar
     (r'^navbar/edit.scm', 'updateNavBar') )
-
-urlpatterns += patterns('esp.program.views',
-                    (r'^manage/([-A-Za-z0-9_ ]+)/?', 'managepage'),
-                    )                    

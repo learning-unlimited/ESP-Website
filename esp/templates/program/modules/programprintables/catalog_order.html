@@ -17,22 +17,54 @@
 <h1>Catalog order for {{program.niceName}}</h1>
 
 <p style="text-align: center">
-Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. 
+Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can.
 <br />
 (Sometimes it will look unbalanced etc.).
 </p>
 <p>
 <a href="{{request.path}}">Reset Order</a> (default is by catagory, timeblock, title)
 <br /><br />
-Get Catalog: 
-(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?clsids={{clsids}}">dvi</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?clsids={{clsids}}">ps</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?clsids={{clsids}}">tex</a>, 
+Get Catalog:
+(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?clsids={{clsids}}">pdf</a>,
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?clsids={{clsids}}">dvi</a>,
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?clsids={{clsids}}">ps</a>,
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?clsids={{clsids}}">tex</a>,
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/log?clsids={{clsids}}">log</a>)
 
 </p>
 <table cellspacing="0" cellpadding="0">
+
+<tr>
+    <td colspan="6">
+        <form action="" method="get">
+        Sort by
+        <select name="first_sort">
+        {% for op in sorting_options %}
+        <option value="{{ op }}"{% ifequal op sort_name_list_orig.0 %} selected="selected"{% endifequal %}>{{ op }}</option>
+        {% endfor %}
+        </select>
+
+        then
+
+        <select name="second_sort">
+        {% for op in sorting_options %}
+        <option value="{{ op }}"{% ifequal op sort_name_list_orig.1 %} selected="selected"{% endifequal %}>{{ op }}</option>
+        {% endfor %}
+        </select>
+
+        then
+
+        <select name="third_sort">
+        {% for op in sorting_options %}
+        <option value="{{ op }}"{% ifequal op sort_name_list_orig.2 %} selected="selected"{% endifequal %}>{{ op }}</option>
+        {% endfor %}
+        </select>
+
+        <input type="submit" value="Go!"/>
+        </form>
+    </td>
+</tr>
+
 <tr>
   <th>#</th>
   <th>ID</th>
@@ -62,11 +94,11 @@ Get Catalog:
 
 </table>
 <p>
-Get Catalog: 
-(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?clsids={{clsids}}">dvi</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?clsids={{clsids}}">ps</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?clsids={{clsids}}">tex</a>, 
+Get Catalog:
+(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?clsids={{clsids}}">pdf</a>,
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?clsids={{clsids}}">dvi</a>,
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?clsids={{clsids}}">ps</a>,
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?clsids={{clsids}}">tex</a>,
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/log?clsids={{clsids}}">log</a>)
 </p>
 

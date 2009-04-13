@@ -28,15 +28,11 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, aux_call
 from esp.web.util        import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.miniblog.models import Entry
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.users.views import search_for_user
-from esp.program.manipulators import SATPrepDiagManipulator
-from django import oldforms
+from esp.program.modules.forms.satprep import SATPrepDiagForm
 from esp.program.models import SATPrepRegInfo
 
 
@@ -60,33 +56,21 @@ class SATPrepTeacherInput(ProgramModuleObj):
             return response
         user = response
         
-        manipulator = SATPrepDiagManipulator()
-        new_data = {}
         if request.method == 'POST':
-                new_data = request.POST.copy()
+            form = SATPrepDiagForm(request.POST)
 
-                errors = manipulator.get_validation_errors(new_data)
+            if form.is_valid():
+                reginfo = SATPrepRegInfo.getLastForProgram(user, prog)
+                form.instance = reginfo
+                form.save()
 
-                if not errors:
-                        manipulator.do_html2python(new_data)
-                        new_reginfo = SATPrepRegInfo.getLastForProgram(user, prog)
-                        new_reginfo.addOrUpdate(new_data, user, prog)
-
-                        return self.goToCore(tl)
+                return self.goToCore(tl)
         else:
-                satPrep = SATPrepRegInfo.getLastForProgram(user, prog)
+            reginfo = SATPrepRegInfo.getLastForProgram(user, prog)
+            form = SATPrepDiagForm(instance = reginfo)
 
-                new_data = satPrep.updateForm(new_data)
-                errors = {}
-
-        form = oldforms.FormWrapper(manipulator, new_data, errors)
         return render_to_response(self.baseDir()+'satprep_diag.html', request, (prog, tl), {'form':form,
                                                                                             'user':user})
-
-
-        
-
-        
 
     def isStep(self):
         return False

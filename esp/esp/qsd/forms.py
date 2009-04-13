@@ -1,20 +1,23 @@
 from django import forms
 
+from esp.web.models import NavBarCategory
 from esp.qsd.models import QuasiStaticData
 from esp.program.models import Program
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.forms import AjaxForeignKeyNewformField
 
 class QSDMoveForm(forms.Form):
     id = forms.IntegerField(widget=forms.HiddenInput)
-    destination_path = AjaxForeignKeyNewformField(field=AjaxForeignKey(DataTree), label='Destination path', field_name='destination_path', help_text='Begin to type the tree location of the destination (starting with \'Q/\') and select the proper choice from the list that appears.')
+    destination_path = AjaxForeignKeyNewformField(field=AjaxForeignKey(DataTree, name='destination_path'), label='Destination path', field_name='destination_path', help_text='Begin to type the tree location of the destination (starting with \'Q/\') and select the proper choice from the list that appears.')
+    nav_category = forms.ChoiceField(choices=[(n.id, n.name) for n in NavBarCategory.objects.all()], label='Navigation category')
     destination_name = forms.CharField(help_text='The file name that comes before the \'.html\' in the URL.  Preface with \'learn:\', \'teach:\', etc. to place under the corresponding section of the site.')
     
     def load_data(self, qsd):
         self.fields['id'].initial = qsd.id
         self.fields['destination_path'].initial = qsd.path.id
         self.fields['destination_name'].initial = qsd.name
+        self.fields['nav_category'].initial = qsd.nav_category
         
     def save_data(self):
         #   Find all matching QSDs
@@ -22,8 +25,9 @@ class QSDMoveForm(forms.Form):
         other_qsds = QuasiStaticData.objects.filter(path=main_qsd.path, name=main_qsd.name)
         for qsd in other_qsds:
             #   Move them over
-            qsd.path = DataTree.objects.get(id=self.cleaned_data['destination_path'])
+            qsd.path = self.cleaned_data['destination_path']
             qsd.name = self.cleaned_data['destination_name']
+            qsd.nav_category = NavBarCategory.objects.get(id=self.cleaned_data['nav_category'])
             qsd.save()
 
 def destination_path(qsd_list):
@@ -67,7 +71,7 @@ class QSDBulkMoveForm(forms.Form):
             #   Find its URI relative to the original anchor
             uri_relative = uri_orig[(len(orig_anchor.get_uri())):]
             #   Add that URI to that of the new anchor
-            dest_tree = DataTree.objects.get(id=self.cleaned_data['destination_path'])
+            dest_tree = self.cleaned_data['destination_path']
             uri_new = dest_tree.get_uri() + uri_relative
             #   Set the path
             other_qsds = QuasiStaticData.objects.filter(path=main_qsd.path, name=main_qsd.name)

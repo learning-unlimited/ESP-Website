@@ -1,8 +1,5 @@
-from django.conf import settings
 from django import template
-from esp.users.models import ESPUser
 from urllib import quote as urlencode
-from django.core.cache import cache
 from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
 
@@ -27,10 +24,9 @@ def navbar_gen(context):
         request = {}
 
     try:
-        navbar = context['navbar_list']
+        navbar = context['navbar_list'].value
     except:
-        from esp.web.util.main import default_navbar_data
-        navbar = default_navbar_data
+        navbar = None
     
-    return {'navbar_list': navbar.value,
+    return {'navbar_list': navbar,
             'request':     request}

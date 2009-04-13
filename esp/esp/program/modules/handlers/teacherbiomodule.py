@@ -29,10 +29,9 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.web.views.myesp import profile_editor
 from esp.program.models import TeacherBio
 from esp.users.models   import ESPUser, User
-from esp.db.models      import Q
+from django.db.models.query   import Q
 
 # reg profile module
 class TeacherBioModule(ProgramModuleObj):
@@ -59,8 +58,8 @@ class TeacherBioModule(ProgramModuleObj):
     @needs_teacher
     def biography(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
-        from esp.web.views.bio import bio_edit
-        result = bio_edit(request, tl, self.user.last_name, self.user.first_name, self.user.getUserNum(), self.program.id, True)
+        from esp.web.views.bio import bio_edit_user_program
+        result = bio_edit_user_program(request, self.user, self.program, external=True)
 
         if result is not True:
             return result

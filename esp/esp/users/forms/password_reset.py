@@ -2,15 +2,18 @@
 
 from django import forms
 from django.contrib.auth.models import User
+from esp.users.models import PasswordRecoveryTicket
+from django.utils.html import conditional_escape, mark_safe
+from esp.utils.forms import FormWithRequiredCss, SizedCharField
 
-__all__ = ['PasswordResetForm','NewPasswordSetForm']
+__all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
 
 class PasswordResetForm(forms.Form):
 
-    email     = forms.EmailField(max_length=64, required=False,
+    email     = forms.EmailField(max_length=75, required=False,
                                  help_text="(e.g. johndoe@example.org)")
 
-    username  = forms.CharField(max_length=64, required=False,
+    username  = forms.CharField(max_length=30, required=False,
                                 help_text = '(Case sensitive)')
 
 
@@ -25,7 +28,7 @@ class PasswordResetForm(forms.Form):
             else:
                 first = False
             bf = forms.forms.BoundField(self, field, name)
-            bf_errors = forms.forms.ErrorList([forms.forms.escape(error) for error in bf.errors]) # Escape and cache in local variable.
+            bf_errors = forms.util.ErrorList([conditional_escape(error) for error in bf.errors]) # Escape and cache in local variable.
             if bf.is_hidden:
                 if bf_errors:
                     top_errors.extend(['(Hidden field %s) %s' % (name, e) for e in bf_errors])
@@ -34,7 +37,7 @@ class PasswordResetForm(forms.Form):
                 if errors_on_separate_row and bf_errors:
                     output.append(error_row % bf_errors)
                 if bf.label:
-                    label = forms.forms.escape(bf.label)
+                    label = conditional_escape(bf.label)
                     # Only add a colon if the label does not end in punctuation.
                     if label[-1] not in ':?.!':
                         label += ':'
@@ -95,23 +98,50 @@ class NewPasswordSetForm(forms.Form):
 
     def clean_username(self):
         from esp.middleware import ESPError
+        username = self.cleaned_data['username'].strip()
         if not self.cleaned_data.has_key('code'):
             raise ESPError(False), "The form that you submitted does not contain a valid password-reset code.  If you arrived at this form from an e-mail, are you certain that you used the entire URL from the e-mail (including the bit after '?code=')?"
         try:
-            user = User.objects.get(username = self.cleaned_data['username'].strip(),
-                                    password = self.cleaned_data['code'])
-        except User.DoesNotExist:
+            ticket = PasswordRecoveryTicket.objects.get(recover_key = self.cleaned_data['code'], user__username = username)
+        except PasswordRecoveryTicket.DoesNotExist:
             raise forms.ValidationError('Invalid username.')
 
-        return self.cleaned_data['username'].strip()
+        return username
     
 
     def clean_password_confirm(self):
-        new_passwd= self.cleaned_data['password_confirm'].strip()
+        new_passwd = self.cleaned_data['password_confirm'].strip()
 
         if not self.cleaned_data.has_key('password'):
             raise forms.ValidationError('Invalid password; confirmation failed')
 
         if self.cleaned_data['password'] != new_passwd:
+            raise forms.ValidationError('Password and confirmation are not equal.')
+        return new_passwd
+
+class UserPasswdForm(FormWithRequiredCss):
+    password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
+    newpasswd = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
+    newpasswdconfirm = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super(UserPasswdForm, self).__init__(*args, **kwargs)
+
+    def clean_password(self):
+        if self.user is None:
+            raise forms.ValidationError('Error: Not logged in.')
+        current_passwd = self.cleaned_data['password']
+        if not self.user.check_password(current_passwd):
+            raise forms.ValidationError(mark_safe('As a security measure, please enter your <strong>current</strong> password.'))
+        return current_passwd
+
+    def clean_newpasswdconfirm(self):
+        new_passwd = self.cleaned_data['newpasswdconfirm'].strip()
+
+        if not self.cleaned_data.has_key('newpasswd'):
+            raise forms.ValidationError('Invalid password; confirmation failed')
+
+        if self.cleaned_data['newpasswd'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
         return new_passwd

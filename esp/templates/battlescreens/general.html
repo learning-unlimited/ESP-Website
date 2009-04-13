@@ -38,8 +38,8 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
 <br />
 {% for program in admPrograms %}
 <a href="/manage/{{program.getUrlBase}}/main"
-  title="Administer {{program.niceName}}"> 
-  Administration Panel for `{{program.niceName}}'
+  title="Administer {{program.niceName}}">
+  {{program.niceName}}
 </a>
    <br />
 {% endfor %}
@@ -81,7 +81,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
       {% endfor %}
     </div>
   </td>
-</tr>    
+</tr>
 
   <tr>
     <th colspan="4">
@@ -136,7 +136,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
       <a href="/learn/{{cls.getUrlBase}}/index.html"
          title="{{ cls }}...">Visit web page</a>
       {% else %}
-		{% if student_version %} {% else %} 
+		{% if student_version %} {% else %}
 		  <a href="/learn/{{cls.getUrlBase}}/index.edit.html"
 			 title="Create `{{ cls }}'...">Create web page</a>
 		{% endif %}
@@ -148,7 +148,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
      <td colspan="3" style="font-weight: bold;">
     {% if student_version %}{% else %}
      {% if progDict.shortened %}
-     {{ progDict.totalclsnum }} total.... 
+     {{ progDict.totalclsnum }} total....
      <a href="/teach/{{progDict.prog.getUrlBase}}/selectclass"
         title="Select from all your editable classes">
 	     see all
@@ -160,7 +160,7 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
         title="Teach for ESP!" class="addclass">
 	    Add New Class for {{progDict.prog}}
      </a>
-     </span> 
+     </span>
      <br /><br />
      {% endif %}
      </td>

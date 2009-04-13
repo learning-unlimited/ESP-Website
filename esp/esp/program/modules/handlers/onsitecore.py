@@ -33,11 +33,10 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
-from esp.program.modules.manipulators import OnSiteRegManipulator
 
 
 

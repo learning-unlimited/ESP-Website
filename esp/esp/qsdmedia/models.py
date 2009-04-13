@@ -29,10 +29,9 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models
-from django.contrib import admin
 from django.core.files import File
 
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from esp.settings import MEDIA_ROOT, MEDIA_URL
 from esp.db.fields import AjaxForeignKey
 from time import strftime
@@ -56,24 +55,34 @@ class Media(models.Model):
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]
 
-    def handle_file(self, file, filename, save=True):
-        new_target_filename = '%s%s/%s' % (MEDIA_ROOT, strftime(root_file_path), filename)
-        dest_file = open(str(new_target_filename), 'wb')
-        for chunk in file.chunks():
-            dest_file.write(chunk)
-        dest_file.close()
-        self.target_file = File(dest_file)
-        self.target_file._name = '%s%s/%s' % (MEDIA_URL, strftime(root_file_path), filename)
+    def handle_file(self, file, filename):
+        """ Saves a file from request.FILES. """
+        from os.path import basename, dirname
+
+        # Do we actually need this?
+        splitname = basename(filename).split('.')
+        if len(splitname) > 1:
+            self.file_extension = splitname[-1]
+        else:
+            self.file_extension = ''
+
         self.mime_type = file.content_type
         self.size = file.size
-        extension_list = file.name.split('.')
-        extension_list.reverse()
-        self.file_extension = extension_list[0]
-        if save:
-            self.save()
+        self.target_file.save(filename, file)
 
-    def __str__(self):
-        return str(self.friendly_name)
+    def delete(self, *args, **kwargs):
+        """ Delete entry; provide hack to fix old absolute-path-storing. """
+        import os
+        # If needby, strip URL prefix
+        if os.path.isabs(self.target_file._name) and self.target_file._name.startswith(MEDIA_URL):
+            self.target_file._name = self.target_file._name[len(MEDIA_URL):]
+            # In case trailing slash missing
+            if self.target_file._name[0] is '/':
+                self.target_file._name = self.target_file._name[1:]
+        super(Media, self).delete(*args, **kwargs)
+
+    def __unicode__(self):
+        return unicode(self.friendly_name)
 
     @staticmethod
     def find_by_url_parts(parts, filename):
@@ -95,10 +104,6 @@ class Media(models.Model):
         # Operation Complete!
         return media[0]
 
-class MediaAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(Media, MediaAdmin)
-
 class Video(models.Model):
     """ Video media object
     
@@ -115,7 +120,7 @@ class Video(models.Model):
 
     duration = models.IntegerField(blank=True, null=True) # length of the video, in seconds; this may become some sort of duration field at some point
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.media)
 
     class Admin:
@@ -134,7 +139,7 @@ class Picture(models.Model):
     x_resolution = models.IntegerField(blank=True, null=True) # Horizontal width of the Picture, in pixels
     y_resolution = models.IntegerField(blank=True, null=True) # Vertical height of the Picture, in pixels
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.media)
 
     class Admin:
@@ -144,7 +149,7 @@ class PaperType(models.Model):
     """ A list of possible types of papers.  Each conference will typically have a set of types of papers that it accepts. """
     type_description = models.TextField(blank=True, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.type_description)
     
     class Admin:
@@ -162,7 +167,7 @@ class Paper(models.Model):
 
     media = models.ForeignKey(Media, unique=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.media)
 
     class Admin:

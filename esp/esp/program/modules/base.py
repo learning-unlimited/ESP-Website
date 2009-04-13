@@ -43,9 +43,8 @@ from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
 from urllib import quote
-from esp.db.models import Q
+from django.db.models.query import Q
 from django.core.cache import cache
-from django.contrib import admin
 
 LOGIN_URL = settings.LOGIN_URL
 
@@ -60,7 +59,7 @@ class ProgramModuleObj(models.Model):
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
     required = models.BooleanField()
-        
+
     def program_anchor_cached(self, parent=False):
         """ We reference "self.program.anchor" quite often.  Getting it requires two DB lookups.  So, cache it. """
         CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__%d,%d" % ((parent and 1 or 0), self.id)
@@ -70,7 +69,7 @@ class ProgramModuleObj(models.Model):
                 val = self.program.getParentProgram().anchor
             else:
                 val = self.program.anchor
-            cache.set(CACHE_KEY, val, 1)
+            cache.set(CACHE_KEY, val, 60)
 
         return val
 
@@ -79,7 +78,7 @@ class ProgramModuleObj(models.Model):
             return self.doc
         return self.module.link_title
 
-    def __str__(self):
+    def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
     def all_views(self):
@@ -113,7 +112,7 @@ class ProgramModuleObj(models.Model):
     def getQForUser(self, QRestriction):
         # Let's not do anything and say we did...
         return QRestriction
-    
+
         from esp.users.models import User
         ids = [ x['id'] for x in User.objects.filter(QRestriction).values('id')]
         if len(ids) == 0:
@@ -126,7 +125,7 @@ class ProgramModuleObj(models.Model):
         """
         Returns a rendered myESP home template, with content from all relevant modules
 
-        Renders the page based on content from all 
+        Renders the page based on content from all
         """
         all_modules = []
         context = {}
@@ -141,12 +140,12 @@ class ProgramModuleObj(models.Model):
                 except:
                     page = None
 
-                
+
                     subpages = [ { 'name': i.__name__, 'link_title': i.__doc__.split('\n')[0], 'function': i } for i in thisClass.getSummaryCalls() ]
                     if subpages == []:
                         subpages = None
 
-               
+
                     all_modules.append({ 'module': thisClass,
                                          'page': page,
                                          'subpages': subpages })
@@ -155,60 +154,57 @@ class ProgramModuleObj(models.Model):
 
         context['modules'] = all_modules
         return render_to_response("myesp/mainpage.html", context)
-            
-        
-        
+
+
+
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        modules = ProgramModule.objects.filter(main_call = call_txt,
-                                               module_type = tl)
+        cache_key = "PROGRAMMODULE_FIND_MODULE_%s_%s_%s_%s" % (tl, one, two, call_txt)
+        moduleobj = cache.get(cache_key)
+        if moduleobj == None:
 
-        module = None
+            modules = ProgramModule.objects.filter(main_call = call_txt,
+                                                   module_type = tl)[:1]
 
-        if modules.count() == 0:
-            modules = ProgramModule.objects.filter(aux_calls__contains = call_txt,
-                                                   module_type = tl)
-            for module in modules:
-                if call_txt in module.aux_calls.strip().split(','):
-                    break
+            module = None
+
+            if len(modules) == 0:
+                modules = ProgramModule.objects.filter(aux_calls__contains = call_txt,
+                                                       module_type = tl)
+                for module in modules:
+                    if call_txt in module.aux_calls.strip().split(','):
+                        break
+                if not module:
+                    raise Http404
+            else:
+                module = modules[0]
+
             if not module:
                 raise Http404
-        else:
-            module = modules[0]
 
-        if module:
-            moduleobjs = ProgramModuleObj.objects.filter(module = module, program = prog)
-            moduleobj = module.getPythonClass()()
-            if len(moduleobjs) == 0:
-                #   Deal with the fact that our database is not set up with a table for every program module.
-                moduleobj = ProgramModuleObj()
-
-                moduleobj.module = module
-                moduleobj.program = prog
-                moduleobj.seq = module.seq
-                moduleobj.required = module.required
-                moduleobj.save()
-            else:
-                moduleobj.__dict__.update(moduleobjs[0].__dict__)
-
-        else:
-            raise Http404
+            moduleobj = ProgramModuleObj.getFromProgModule(prog, module)
+            cache.add(cache_key, moduleobj, timeout=60)
 
         moduleobj.request = request
         moduleobj.user    = ESPUser(request.user)
-        moduleobj.fixExtensions()
-        
-        #   For core modules, redirect to the incomplete required modules in the same section first.
-        #   The pages should all redirect to the core on completion.  If none are needed, the
-        #   code here won't do anything and the page will be returned as usual.
-        if isinstance(moduleobj, CoreModule):
-            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).order_by('seq')
-            for m in other_modules:
-                m.request = request
-                m.user    = ESPUser(request.user)
-                m.__class__ = m.module.getPythonClass()
-                if m.user.is_authenticated() and not m.isCompleted() and hasattr(m, m.module.main_call):
-                    return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+
+        # Set this key if this user has
+        HAS_FINISHED_REQS_CACHE_KEY = "USER_%s__PROG_%s__TYPE_%s__DONE_REG_REQS" % (request.user.id, prog.id, moduleobj.module.module_type)
+        if not cache.get(HAS_FINISHED_REQS_CACHE_KEY):
+
+            #   For core modules, redirect to the incomplete required modules in the same section first.
+            #   The pages should all redirect to the core on completion.  If none are needed, the
+            #   code here won't do anything and the page will be returned as usual.
+            if request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+                other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).select_related(depth=1).order_by('seq')
+                for m in other_modules:
+                    m.request = request
+                    m.user    = ESPUser(request.user)
+                    m.__class__ = m.module.getPythonClass()
+                    if not m.isCompleted() and hasattr(m, m.module.main_call):
+                        return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+
+            cache.set(HAS_FINISHED_REQS_CACHE_KEY, True, timeout=600)
 
         if hasattr(moduleobj, call_txt):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
@@ -221,20 +217,23 @@ class ProgramModuleObj(models.Model):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
-        ModuleObj   = mod.getPythonClass()()
-        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod)
+
+        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module')
         if len(BaseModuleList) < 1:
-            ModuleObj.program = prog
-            ModuleObj.module  = mod
-            ModuleObj.seq     = mod.seq
-            ModuleObj.required = mod.required
-            ModuleObj.save()
+            BaseModule = ProgramModuleObj()
+            BaseModule.program = prog
+            BaseModule.module  = mod
+            BaseModule.seq     = mod.seq
+            BaseModule.required = mod.required
+            BaseModule.save()
 
         elif len(BaseModuleList) > 1:
             assert False, 'Too many module objects!'
         else:
-            ModuleObj.__dict__.update(BaseModuleList[0].__dict__)
-        
+            BaseModule = BaseModuleList[0]
+
+        ModuleObj   = mod.getPythonClass()()
+        ModuleObj.__dict__.update(BaseModule.__dict__)
         ModuleObj.fixExtensions()
 
         return ModuleObj
@@ -252,9 +251,9 @@ class ProgramModuleObj(models.Model):
             clsid = int(clsid)
         except:
             return (False, True)
-        
+
         classes = ClassSubject.objects.filter(id = clsid)
-            
+
         if len(classes) == 1:
             if not self.user.canEdit(classes[0]):
                 from esp.middleware import ESPError
@@ -264,15 +263,15 @@ class ProgramModuleObj(models.Model):
                 Found = True
                 return (classes[0], True)
         return (False, False)
-            
+
 
     def baseDir(self):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
 
     def fixExtensions(self):
-        """ Find module extensions that this program module inherits from, and 
+        """ Find module extensions that this program module inherits from, and
         incorporate those into its attributes. """
-        
+
         old_id = self.id
         old_module = self.module
         if self.program:
@@ -284,16 +283,15 @@ class ProgramModuleObj(models.Model):
             self.module = old_module
 
     def deadline_met(self, extension=''):
-    
-        from esp.users.models import UserBit
-        from esp.datatree.models import GetNode
 
+        from esp.users.models import UserBit
+        from esp.datatree.models import GetNode, DataTree
 
         if not self.user or not self.program:
             raise ESPError(False), "There is no user or program object!"
 
 
-            
+
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True
 
@@ -324,10 +322,10 @@ class ProgramModuleObj(models.Model):
         'function' must be a member of 'cls'.  Both 'cls' and 'function' must
         not be anonymous (ie., they musht have __name__ defined).
         """
-        
+
         url = '/myesp/modules/' + cls.__name__ + '/' + function.__name__
         return url
-    
+
     def setUser(self, user):
         self.user = user
         self.curUser = user
@@ -354,7 +352,7 @@ class ProgramModuleObj(models.Model):
         try:
             function_pretty_name = function.__doc__.split('\n')[0]
         except AttributeError: # Someone forgot to define a docstring!
-            function_pretty_name = "[%s.%s]" % (cls.__name__, function.__name__)        
+            function_pretty_name = "[%s.%s]" % (cls.__name__, function.__name__)
 
         return '<a href="%s" class="vModuleLink" onmouseover="updateDocs(\'<p>%s</p>\')">%s</a>' % \
                (cls.get_summary_path(function), function.__doc__, function_pretty_name, )
@@ -421,7 +419,7 @@ class ProgramModuleObj(models.Model):
 
         props = cls.module_properties()
 
-        
+
         def update_props(props):
             if not "handler" in props:
                 props["handler"] = cls.__name__
@@ -449,11 +447,11 @@ class ProgramModuleObj(models.Model):
 
         for prop in props:
             update_props(prop)
-            
+
         return props
-                
-        
-            
+
+
+
     @classmethod
     def getSummary(cls):
         """
@@ -480,23 +478,21 @@ class ProgramModuleObj(models.Model):
         return context
 
 
-admin.site.register(ProgramModuleObj)
-
 
 # will check and depending on the value of tl
 # will use .isTeacher or .isStudent()
 def usercheck_usetl(method):
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/nota'+tl+'.html'
-    
+
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         if tl == 'learn' and not moduleObj.user.isStudent():
             return render_to_response(errorpage, {})
-        
+
         if tl == 'teach' and not moduleObj.user.isTeacher():
             return render_to_response(errorpage, {})
-        
+
         if tl == 'manage' and not moduleObj.user.isAdmin(moduleObj.program):
             return render_to_response(errorpage, {})
 
@@ -507,7 +503,7 @@ def usercheck_usetl(method):
 
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
-        
+
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         if not moduleObj.user.isTeacher() and not moduleObj.user.isAdmin(moduleObj.program):
@@ -518,11 +514,17 @@ def needs_teacher(method):
 
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
+        if request.session.has_key('user_morph'):
+            morpheduser=request.session['user_morph']['olduser']
+        else:
+            morpheduser=None
+
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if not moduleObj.user.isAdmin(moduleObj.program):
-            return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
+        if not (moduleObj.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
+            if not ( hasattr(moduleObj.user, 'other_user') and moduleObj.user.other_user and moduleObj.user.other_user.isAdmin(moduleObj.program) ):
+                return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkAdmin
@@ -554,13 +556,13 @@ def needs_student(method):
             return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
 
-    return _checkStudent        
+    return _checkStudent
 
 
 def meets_grade(method):
     def _checkGrade(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/wronggrade.html'
-        from esp.datatree.models import GetNode
+        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
         from esp.users.models import UserBit
 
         verb_override = GetNode('V/Flags/Registration/GradeOverride')
@@ -570,7 +572,7 @@ def meets_grade(method):
                                   qsc  = moduleObj.program.anchor_id,
                                   verb = verb_override):
             return method(moduleObj, request, tl, *args, **kwargs)
-        
+
         # now we have to use the grade..
 
         # get the last grade...
@@ -580,7 +582,7 @@ def meets_grade(method):
             return render_to_response(errorpage, request, (moduleObj.program, tl), {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
-    
+
     return _checkGrade
 
 # Anything you can do, I can do meta
@@ -589,7 +591,7 @@ def meets_deadline(extension=''):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
             from esp.users.models import UserBit
-            from esp.datatree.models import GetNode
+            from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
             if tl != 'learn' and tl != 'teach':
                 return True
 

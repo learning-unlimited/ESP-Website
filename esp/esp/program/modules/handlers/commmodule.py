@@ -28,18 +28,13 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
-from esp.program.manipulators import SATPrepInfoManipulator
-from django import oldforms
-from django.core.cache import cache
+from esp.program.modules.forms.satprep import SATPrepInfoForm
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser, User
-from esp.db.models      import Q
-from django.template.defaultfilters import urlencode
+from django.db.models.query   import Q
 from django.template import Context, Template
-from esp.miniblog.models import Entry
 from esp.middleware import ESPError
 
 class CommModule(ProgramModuleObj):
@@ -55,7 +50,7 @@ class CommModule(ProgramModuleObj):
             "module_type": "manage",
             "seq": 10
             }
-    
+
     def students(self,QObject = False):
         if QObject:
             return {'satprepinfo': Q(satprepreginfo__program = self.program)}
@@ -63,25 +58,34 @@ class CommModule(ProgramModuleObj):
         return {'satprepinfo': students }
 
     def isCompleted(self):
-        
-	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
-	return satPrep.id is not None
+
+        satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
+        return satPrep.id is not None
 
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
         from esp.users.models import PersistentQueryFilter
+        from django.conf import settings
 
         filterid, listcount, subject, body = [request.POST['filterid'],
                                               request.POST['listcount'],
                                               request.POST['subject'],
                                               request.POST['body']    ]
 
+        # Set From address
         if request.POST.has_key('from') and \
            len(request.POST['from'].strip()) > 0:
             fromemail = request.POST['from']
         else:
-            fromemail = self.user.email
+            # String together an address like username@esp.mit.edu
+            fromemail = '%s@%s' % (self.user.username, settings.SITE_INFO[1])
+
+        # Set Reply-To address
+        if request.POST.has_key('replyto') and len(request.POST['replyto'].strip()) > 0:
+            replytoemail = request.POST['replyto']
+        else:
+            replytoemail = fromemail
 
         try:
             filterid = int(filterid)
@@ -103,6 +107,7 @@ class CommModule(ProgramModuleObj):
                                                'listcount': listcount,
                                                'subject': subject,
                                                'from': fromemail,
+                                               'replyto': replytoemail,
                                                'body': body,
                                                'renderedtext': renderedtext})
 
@@ -112,18 +117,14 @@ class CommModule(ProgramModuleObj):
     def commfinal(self, request, tl, one, two, module, extra, prog):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
-        
+
         announcements = self.program_anchor_cached().tree_create(['Announcements'])
-        filterid, subject, body  = [request.POST['filterid'],
+        filterid, fromemail, replytoemail, subject, body = [
+                                    request.POST['filterid'],
+                                    request.POST['from'],
+                                    request.POST['replyto'],
                                     request.POST['subject'],
                                     request.POST['body']    ]
-
-
-        if request.POST.has_key('from') and \
-           len(request.POST['from'].strip()) > 0:
-            fromemail = request.POST['from']
-        else:
-            fromemail = self.user.email
 
         try:
             filterid = int(filterid)
@@ -139,7 +140,9 @@ class CommModule(ProgramModuleObj):
                                                       recipients = filterobj,
                                                       sender     = fromemail,
                                                       creator    = self.user,
-                                                      msgtext    = body)
+                                                      msgtext    = body,
+                                                      special_headers_dict
+                                                                 = { 'Reply-To': replytoemail, }, )
 
         newmsg_request.save()
 
@@ -157,7 +160,7 @@ class CommModule(ProgramModuleObj):
             est_time = settings.EMAILTIMEOUT * len(users)
         else:
             est_time = 1.5 * numusers
-            
+
 
         #        assert False, self.baseDir()+'finished.html'
         return render_to_response(self.baseDir()+'finished.html', request,
@@ -169,7 +172,7 @@ class CommModule(ProgramModuleObj):
     def commstep2(self, request, tl, one, two, module, extra, prog):
         pass
 
-    
+
     @main_call
     @needs_admin
     def maincomm(self, request, tl, one, two, module, extra, prog):
@@ -191,9 +194,11 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def maincomm2(self, request, tl, one, two, module, extra, prog):
 
-        filterid, listcount, fromemail, subject, body = [request.POST['filterid'],
+        filterid, listcount, fromemail, replytoemail, subject, body = [
+                                                         request.POST['filterid'],
                                                          request.POST['listcount'],
                                                          request.POST['from'],
+                                                         request.POST['replyto'],
                                                          request.POST['subject'],
                                                          request.POST['body']    ]
 
@@ -201,31 +206,25 @@ class CommModule(ProgramModuleObj):
                                   (prog, tl), {'listcount': listcount,
                                                'filterid': filterid,
                                                'from': fromemail,
+                                               'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body})
 
     @needs_student
     def satprepinfo(self, request, tl, one, two, module, extra, prog):
-	manipulator = SATPrepInfoManipulator()
-	new_data = {}
-	if request.method == 'POST':
-		new_data = request.POST.copy()
-		
-		errors = manipulator.get_validation_errors(new_data)
-		
-		if not errors:
-			manipulator.do_html2python(new_data)
-			new_reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-			new_reginfo.addOrUpdate(new_data, request.user, prog)
+        if request.method == 'POST':
+            form = SATPrepInfoForm(request.POST)
 
-                        return self.goToCore(tl)
-	else:
-		satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
-		
-		new_data = satPrep.updateForm(new_data)
-		errors = {}
+            if form.is_valid():
+                reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
+                form.instance = reginfo
+                form.save()
 
-	form = oldforms.FormWrapper(manipulator, new_data, errors)
-	return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
+                return self.goToCore(tl)
+        else:
+            satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
+            form = SATPrepInfoForm(instance = satPrep)
+
+        return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
 
 

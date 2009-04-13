@@ -17,8 +17,8 @@
 While none of this information is required, it will greatly enhance our ability to help you.</p>
 
 <div id="program_form">
-{% if form.has_errors %}
-<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.<h2>
+{% if form.errors %}
+<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.<h2>
 {% endif %}
 
 

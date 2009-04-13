@@ -29,6 +29,7 @@ Email: web@esp.mit.edu
 """
 
 from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
+from django.core.cache import cache
 
 __all__ = ('ESPAuthMiddleware',)
 
@@ -39,10 +40,23 @@ class ESPLazyUser(LazyUser):
     def __get__(self, request, obj_type=None):
         global get_user, ESPUser
         if not hasattr(request, '_cached_user'):
-            if get_user is None or ESPUser is None:
-                from django.contrib.auth import get_user
-                from esp.users.models import ESPUser
-            request._cached_user = ESPUser(get_user(request))
+            SESSION_KEY = '_auth_user_id'
+            user = None
+            CACHE_KEY = None
+            if request.session.has_key(SESSION_KEY):
+                user_id = request.session[SESSION_KEY]
+                CACHE_KEY = "CACHED_USER_OBJ__%s" % user_id
+                user = cache.get(CACHE_KEY)
+            if not user:
+                if get_user is None or ESPUser is None:
+                    from django.contrib.auth import get_user
+                    from esp.users.models import ESPUser
+                request._cached_user = ESPUser(get_user(request))
+                if CACHE_KEY:
+                    cache.add(CACHE_KEY, request._cached_user)
+            else:
+                request._cached_user = user
+
         return request._cached_user
 
 class ESPAuthMiddleware(object):

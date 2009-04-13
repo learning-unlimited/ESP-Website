@@ -33,11 +33,10 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
-from esp.datatree.models import GetNode
-from django              import oldforms
+from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
-from esp.program.modules.manipulators import OnSiteRegManipulator
+from esp.program.modules.forms.onsite import OnSiteSATPrepRegForm
 
 
 
@@ -69,15 +68,11 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
     @main_call
     @needs_onsite
     def satprep_create(self, request, tl, one, two, module, extra, prog):
-        manipulator = OnSiteRegManipulator()
-	new_data = {}
 	if request.method == 'POST':
-            new_data = request.POST.copy()
+            form = OnSiteSATPrepRegForm(request.POST)
             
-            errors = manipulator.get_validation_errors(new_data)
-            
-            if not errors:
-                manipulator.do_html2python(new_data)
+            if form.is_valid():
+                new_data = form.cleaned_data
                 username = base_uname = (new_data['first_name'][0]+ \
                                          new_data['last_name']).lower()
                 if User.objects.filter(username = username).count() > 0:
@@ -135,10 +130,8 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'user': new_user})
         
         else:
-            new_data = {}
-            errors = {}
+            form = OnSiteSATPrepRegForm()
 
-	form = oldforms.FormWrapper(manipulator, new_data, errors)
 	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form})
         
  

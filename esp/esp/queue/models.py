@@ -11,7 +11,7 @@ class UserQueue(models.Model):
     time_since_last_refresh = models.DateTimeField(auto_now=True)
     in_site = models.BooleanField(default=False)
 
-    def __str__(self):
+    def __unicode__(self):
         if self.in_site:
             return "In:     (%s) (%s) %s" % (self.time_since_last_refresh, self.time_in_queue, self.browser)
         else:

@@ -1,7 +1,10 @@
 
 {% block xtrajs %}
-<script type="text/javascript" src="http://yui.yahooapis.com/2.2.2/build/container/container-min.js">
-</script>
+
+{# These includes are not consistent with our local copy of the yahoo apis, but it doesn't seem to break anything yet... -ageng 2008-11-01 #}
+<script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/event/event-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/connection/connection-min.js"></script>
 
 <script type="text/javascript">
 /* <![CDATA[ */
@@ -64,7 +67,7 @@ function dialog_init() {
           { text:"Submit", handler:handleSubmit, isDefault:true },
           { text:"Cancel", handler:handleCancel }
      ];
-    
+
      manage_container = new YAHOO.widget.Dialog("classmanager",
 	{ width : "600px",
 /*          fixedcenter : true,*/
@@ -108,12 +111,12 @@ function manage_class(clsid) {
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 <style type="text/css">
-  .unapproved { 
+  .unapproved {
       text-decoration: underline;
       text-style: italic;
       color: #009;
    }
-.class_checkitem { 
+.class_checkitem {
    padding:0 !important;
    margin: 0 !important;
 }
@@ -232,14 +235,14 @@ function manage_class(clsid) {
 	float:left;
 }
 
-.yui-dialog .ft, 
+.yui-dialog .ft,
 .yui-simple-dialog .ft {
 	padding-bottom:5px;
 	padding-right:5px;
 	text-align:right;
 }
 
-.yui-dialog form, 
+.yui-dialog form,
 .yui-simple-dialog form {
 	margin:0;
 }

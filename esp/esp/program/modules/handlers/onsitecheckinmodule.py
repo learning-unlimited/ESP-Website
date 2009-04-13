@@ -36,13 +36,12 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo
 from esp.users.views    import search_for_user
-from esp.program.modules.manipulators import OnSiteRegManipulator
-from esp.money.models   import Transaction
+from esp.accounting_docs.models   import Document
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
@@ -55,32 +54,14 @@ class OnSiteCheckinModule(ProgramModuleObj):
             }
 
     def updatePaid(self, paid=True):
-        t = Transaction.objects.filter(fbo    = self.student,
-                                       anchor = self.program_anchor_cached())
-        if t.count() > 0 and not paid:
-            for trans in t:
-                trans.delete()
+        """ Close off the student's invoice and, if paid is True, create a receipt showing
+        that they have paid all of the money they owe for the program. """
+        if not self.hasPaid():
+            doc = Document.get_invoice(self.student, self.program_anchor_cached())
+            Document.prepare_onsite(self.student, doc.locator)
+            if paid:
+                Document.receive_onsite(self.student, doc.locator)
 
-        if t.count() == 0 and paid:
-            payment_amount = 30.00
-            module_list = self.program.getModules()
-            module_class = CreditCardModule
-            for m in module_list:
-                if type(m) == module_class:
-                    info = CreditCardModuleInfo.objects.filter(module=m)
-                    if info.count() == 1:
-                        payment_amount = info[0].base_cost
-            
-            trans = Transaction(anchor = self.program_anchor_cached(),
-                                fbo    = self.student,
-                                payer  = self.student,
-                                amount = payment_amount,
-                                line_item = 'Onsite payment for %s' % self.program.niceName(),
-                                executed = True,
-                                payment_type_id = 6
-                                )
-            trans.save()
-            
 
     def createBit(self, extension):
         if extension == 'Paid':
@@ -120,12 +101,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     def hasPaid(self):
         verb = GetNode('V/Flags/Registration/Paid')
+        ps = self.student.paymentStatus(self.program_anchor_cached())
         return UserBit.UserHasPerms(self.student,
                                     self.program_anchor_cached(),
-                                    verb) or \
-               Transaction.objects.filter(fbo = self.student,
-                                          anchor = self.program_anchor_cached()).count() > 0
-    
+                                    verb) or self.student.has_paid(self.program_anchor_cached())
+
     def hasMedical(self):
         verb = GetNode('V/Flags/Registration/MedicalFiled')
         return UserBit.UserHasPerms(self.student,
@@ -137,7 +117,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                     self.program_anchor_cached(),
                                     verb)
 
-        
+
 
     @main_call
     @needs_onsite
@@ -146,16 +126,16 @@ class OnSiteCheckinModule(ProgramModuleObj):
         user, found = search_for_user(request, self.program.students_union())
         if not found:
             return user
-        
+
         self.student = user
-            
+
         if request.method == 'POST':
             for key in ['Attended','Paid','LiabilityFiled','MedicalFiled']:
                 if request.POST.has_key(key):
                     self.createBit(key)
                 else:
                     self.deleteBit(key)
-                
+
 
             return self.goToCore(tl)
 

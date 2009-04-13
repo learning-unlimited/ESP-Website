@@ -14,33 +14,11 @@
 <h1>Manage Class {{ class.id }}: {{ class.title }}</h1>
 
 <p>
-This page lets you alter the registration status of {{ class.title }}.  
-</p>
-
-<p>
-First, here is the current distribution of classes across the timeslots in the program.  It may be helpful if you are trying to schedule this class.
+<tt>{{ class.class_info }}</tt>
 </p>
 
 <div id="program_form">
 <form name="classmanage" action="{{ request.path }}" method="POST">
-<table align="center" width="400">
-    <tr>
-        <th class="smaller">Timeslot: </th>
-        <th class="smaller"># of classes</th>
-    </tr>
-    {% if 1 %}
-        {% for timeslot in module.timeslot_counts %}
-            <tr>
-                <td>{{ timeslot.slotname }}</td>
-                <td>{{ timeslot.classcount }}</td>
-            </tr>
-        {% endfor %}
-    {% else %}
-        <tr>
-            <td colspan="2">No timeslots found.</td>
-        </tr>
-    {% endif %}
-</table>
 
 <br />
 
@@ -77,7 +55,7 @@ First, here is the current distribution of classes across the timeslots in the p
         <td>
             {% for sec in sections %}
                 Section {{ sec.index }}: {{ sec.num_students }} (<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">View section list</a>) <br />
-            {% endfor %} 
+            {% endfor %}
             <b>Total: </b> {{ class.num_students }} (<a href="/teach/{{ program.getUrlBase }}/class_students/{{ class.id }}">View class list</a>)
         </td>
     </tr>
@@ -88,6 +66,14 @@ First, here is the current distribution of classes across the timeslots in the p
             Teachers: <a href="mailto:{{ class.emailcode }}-teachers@esp.mit.edu">{{ class.emailcode }}-teachers@esp.mit.edu</a><br />
             Students: <a href="mailto:{{ class.emailcode }}-students@esp.mit.edu">{{ class.emailcode }}-students@esp.mit.edu</a>
         </td>
+    </tr>
+    <tr>
+        <th class="smaller">Enrollment control: </th>
+        <td>
+            {% for sec in sections %}
+                Section {{ sec.index }}: {{ sec.num_students }} / {{ sec.num_students_prereg }} enrolled.  <a href="/teach/{{ program.getUrlBase }}/select_students/{{ sec.id }}">Enroll and reject students here.</a> <br />
+            {% endfor %}
+        <td>
     </tr>
 </table>
 

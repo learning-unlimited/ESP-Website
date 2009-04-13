@@ -1,0 +1,6 @@
+Update instructions:
+    Review and run the update script: esp/db_schema/2008-12-13-ageng.py.
+
+Actions taken by the script:
+    Replace ClassSubject.duration (float) with a numeric (5,2) column.
+	Cast the old values to numeric and use them to fill the new column.

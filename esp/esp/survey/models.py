@@ -35,7 +35,6 @@ import datetime
 from django.db import models
 from django.template import loader
 from django.core.cache import cache
-from django.contrib import admin
 
 try:
     import cPickle as pickle
@@ -45,7 +44,7 @@ except ImportError:
 from esp.db.fields import AjaxForeignKey
 
 # Models to depend on.
-from esp.datatree.models import DataTree
+from esp.datatree.models import *
 from esp.middleware import ESPError
 from esp.program.models import ClassSubject, ClassSection, Program
 
@@ -63,7 +62,7 @@ class ListField(object):
         c.a = ('a','b','c')
 
         print c.b
-        >>> "a|b|c"
+        > "a|b|c"
 
         c.save()
 
@@ -95,7 +94,7 @@ class Survey(models.Model):
 
     category = models.CharField(max_length=32) # teach|learn|etc
     
-    def __str__(self):
+    def __unicode__(self):
         return '%s (%s) for %s' % (self.name, self.category, str(self.anchor))
     
     def num_participants(self):
@@ -113,10 +112,6 @@ class Survey(models.Model):
         else:
             return 0
         
-class SurveyAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(Survey, SurveyAdmin)
-
 class SurveyResponse(models.Model):
     """ A single survey taken by a person. """
     time_filled = models.DateTimeField(default=datetime.datetime.now)
@@ -175,14 +170,10 @@ class SurveyResponse(models.Model):
 
         return answers
     
-    def __str__(self):
+    def __unicode__(self):
         return "Survey for %s filled out at %s" % (self.survey.anchor,
                                                    self.time_filled)
                                                    
-class SurveyResponseAdmin(admin.ModelAdmin):
-    pass
-admin.site.register(SurveyResponse, SurveyResponseAdmin)
-    
     
 class QuestionType(models.Model):
     """ A type of question.
@@ -208,9 +199,8 @@ class QuestionType(models.Model):
     def answers_template_file(self):
         return 'survey/answers/%s.html' % self.name.replace(' ', '_').lower()
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
-
 
 
 class Question(models.Model):
@@ -234,7 +224,7 @@ class Question(models.Model):
 
         return params
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s, %d: "%s" (%s)' % (self.survey.name, self.seq, self.name, self.question_type.name)
 
     def get_value(self, data_dict):
@@ -335,12 +325,6 @@ class Question(models.Model):
     class Meta:
         ordering = ['seq']
         
-class QuestionAdmin(admin.ModelAdmin):
-    list_display = ['seq', 'name', 'question_type', 'survey']
-    list_display_links = ['name']
-    list_filter = ['survey']
-admin.site.register(Question, QuestionAdmin)
-
 class Answer(models.Model):
     """ An answer for a single question for a single survey response. """
 
@@ -358,7 +342,7 @@ class Answer(models.Model):
 
         if self.value[0] == '+':
             try:
-                value = pickle.loads(self.value[1:])
+                value = pickle.loads(str(self.value[1:]))
             except:
                 value = self.value[1:]
         else:
@@ -370,5 +354,5 @@ class Answer(models.Model):
     class Admin:
         pass
 
-    def __str__(self):
+    def __unicode__(self):
         return "Answer for question #%d: %s" % (self.question.id, self.value)

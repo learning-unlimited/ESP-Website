@@ -28,31 +28,29 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.cal.models import Event
-from esp.qsd.models import QuasiStaticData
 from esp.qsd.views import qsd
 from django.core.exceptions import PermissionDenied
-from esp.datatree.models import GetNode, DataTree
-from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits, ESPUser
-from esp.miniblog.models import Entry
-from esp.dbmail.models import MessageRequest
-from django.contrib.auth.models import User, AnonymousUser
-from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
+from esp.datatree.models import *
+from esp.users.models import GetNodeOrNoBits
+from django.http import Http404, HttpResponseRedirect
 from django.template import loader, Context
-from icalendar import Calendar, Event as CalEvent, UTC
+#from icalendar import Calendar, Event as CalEvent, UTC
 
 import datetime
 
-from django.contrib.auth.models import User
-from esp.web.models import NavBarEntry
 from esp.web.util.main import render_to_response
 from esp.web.views.myesp import myesp_handlers
 from esp.web.views.archives import archive_handlers
-from esp.miniblog.views import preview_miniblog
 from esp.middleware import ESPError
-from esp.web.forms.contact_form import ContactForm, email_addresses, email_choices
+from esp.web.forms.contact_form import ContactForm, email_addresses
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
+
+
+# get_callable might not actually be public API. Django's nice and well-documented like that.
+def my_import(name):
+    from django.core.urlresolvers import get_callable
+    return get_callable(name)
 
 
 @vary_on_headers('Cookie')
@@ -71,7 +69,10 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 
 	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
 	"""
-	
+
+	if isinstance(renderer, basestring):
+		renderer = my_import(renderer)
+
 	if filename != "":
 		url = url + "/" + filename
 
@@ -110,7 +111,7 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 		#return render_to_response('qsd/qsd_nopage_edit.html', request, (branch, section), {'edit_link': edit_link})
 	except PermissionDenied:
 		raise Http404
-		
+
 	if url_parts:
 		root_url = "/" + "/".join(url_parts) + "/" + qsd_name
 	else:
@@ -126,20 +127,27 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 		if section_prefix_keys.has_key(subsection):
 			section = section_prefix_keys[subsection]
 			qsd_name = section + ':' + qsd_name
-	
+
 	return renderer(request, branch, section, qsd_name, qsd_verb, root_url)
-	
+
 @vary_on_headers('Cookie')
 @cache_control(private=True)
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
         from esp.program.models import Program
-        
+
 	try:
 		prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
 	except Program.DoesNotExist:
 		raise Http404("Program not found.")
-        
+
+        setattr(request, "program", prog)
+        setattr(request, "tl", tl)
+        if extra:
+            setattr(request, "module", "%s/%s" % (module, extra))
+        else:
+            setattr(request, "module", module)
+
 	from esp.program.modules.base import ProgramModuleObj
 	newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
 
@@ -151,7 +159,7 @@ def program(request, tl, one, two, module, extra = None):
 
 def archives(request, selection, category = None, options = None):
 	""" Return a page with class archives """
-	
+
 	sortparams = []
 	if request.POST and request.POST.has_key('newparam'):
 		if request.POST['newparam']:
@@ -162,7 +170,7 @@ def archives(request, selection, category = None, options = None):
 	#	classes, programs, teachers, etc.
 	if archive_handlers.has_key(selection):
 		return archive_handlers[selection](request, category, options, sortparams)
-	
+
 	return render_to_response('users/construction', request, GetNode('Q/Web'), {})
 
 def contact(request, section='esp'):
@@ -173,23 +181,22 @@ def contact(request, section='esp'):
 
 	if request.GET.has_key('success'):
 		return render_to_response('contact_success.html', request, GetNode('Q/Web/about'), {})
-	
-		
-	
+
+
+
 	if request.method == 'POST':
-		data = request.POST.copy()
-		form = ContactForm(data)
+		form = ContactForm(request.POST)
 		SUBJECT_PREPEND = '[ ESP WEB ]'
-		
+
 		if form.is_valid():
-			
+
 			to_email = []
 
 			if len(form.cleaned_data['sender'].strip()) == 0:
 				email = 'esp@mit.edu'
 			else:
 				email = form.cleaned_data['sender']
-                
+
 			if form.cleaned_data['cc_myself']:
 				to_email.append(email)
 
@@ -206,14 +213,14 @@ def contact(request, section='esp'):
 			t = loader.get_template('email/comment')
 
 			msgtext = t.render(Context({'form': form}))
-				
+
 			send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
 				  msgtext,
 				  email, to_email, fail_silently = True)
 
 			return HttpResponseRedirect(request.path + '?success')
 
-        
+
 	else:
 		initial = {'topic': 'stanford'}
 		if request.user.is_authenticated():
@@ -224,7 +231,7 @@ def contact(request, section='esp'):
 			initial['topic'] = section.lower()
 		"""
 		form = ContactForm(initial = initial)
-			
+
 	return render_to_response('contact.html', request, GetNode('Q/Web/about'),
 						 {'contact_form': form})
 

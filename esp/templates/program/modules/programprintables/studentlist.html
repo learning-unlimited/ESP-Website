@@ -27,14 +27,18 @@ body { font-family: georgia; }
 .box { width: 15px; height: 15px; border: 2px solid black; 
    font-weight: bold; text-align: center; vertical-align: middle;
 }
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
 </style>
+<script src="/media/scripts/sorttable.js"></script>
 </head>
 <body>
-<div class="title" style="text-align: center;">
-<span>Student List for {{program.niceName}}</span>
-</div>
 
-<table class="pretty" cellspacing="0">
+<table class="pretty sortable" cellspacing="0">
 <tr>
    <th>#</th>
    <th>Name</th>
@@ -43,16 +47,20 @@ body { font-family: georgia; }
    <th>Grade</th>
    <th>Parent's Cellphone</th>
    <th>ID</th>
+   <th>Shirt Size</th>
+   <th>Shirt Type</th>
 </tr>
 {% for student in students %}
 <tr>
    <td>{{ forloop.counter }}</td>
-   <td>{{ student.name }}</td>
+   <td>{{ student.last_name }}, {{ student.first_name}}</td>
    <td>{{ student.email}}</td>
    <td>{{ student.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
    <td>{{ student.getGrade }}</td>
    <td>{{ student.getLastProfile.contact_guardian.phone_cell }}&nbsp;</td>
    <td>{{ student.id }}</td>
+   <td>{{ student.getLastProfile.student_info.shirt_size }}</td>
+   <td>{{ student.getLastProfile.student_info.shirt_type }}</td>
 </tr>
  {% endfor %}
 </table>

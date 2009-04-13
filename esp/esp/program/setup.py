@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.users.models import ESPUser, User, UserBit
 from esp.users.models.userbits import UserBitImplication
 from esp.program.Lists_ClassCategories import populate as populate_LCC
@@ -175,22 +175,14 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
     for dt_tup in datatrees:
         gen_tree_node(dt_tup)
     
-    #   Hopefully, this is not needed because the form is saved in the session
-    #   variables and save_instance(commit=True) is called before this function
-    #   for m in modules:    
-    #       prog.program_modules.add(ProgramModule.objects.get(id=m[1]))
-        
-    prog.anchor = DataTree.get_by_uri(datatrees[0][0])
-    prog.save()
-    
     for ub_tup in userbits:
         gen_userbit(ub_tup)
 
     l = LineItemType()
     l.text = prog.niceName() + " Admission"
-    l.amount = costs[0]
+    l.amount = -costs[0]
     l.anchor = prog.anchor["LineItemTypes"]["Required"]
-    l.finaid_amount = costs[1]
+    l.finaid_amount = -costs[1]
     l.finaid_anchor = prog.anchor["Accounts"]["FinancialAid"]
     l.save()
         
@@ -202,7 +194,6 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
     ubi.verb_implied = DataTree.get_by_uri('V/Deadline/Registration')
     ubi.recursive = True
     ubi.save()
-    ubi.apply()
         
     return prog
 

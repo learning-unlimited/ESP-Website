@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models import ESPUser, User
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.users.views  import get_user_list
 from esp.middleware import ESPError
 from esp.web.util.latex import render_to_latex
@@ -66,17 +66,17 @@ class NameTagModule(ProgramModuleObj):
             format = request.GET["format"]
         else:
             format = "pdf"
-            
+
         zipped_list = []
 
         students = list(students)
-        
+
         while students != []:
             zipped_list.append(students[:3])
             students = students[3:]
 
         context['zipped_list'] = zipped_list
-            
+
         return render_to_latex(self.baseDir()+'stickers.tex', context, format)
 
     @aux_call
@@ -91,7 +91,7 @@ class NameTagModule(ProgramModuleObj):
 
         users = []
 
-        
+
         if idtype == 'students':
             student_dict = self.program.students(QObjects = True)
             if 'classreg' in student_dict:
@@ -105,12 +105,12 @@ class NameTagModule(ProgramModuleObj):
             students = filter(lambda x: len(x.first_name+x.last_name), students)
             students.sort()
 
-            
+
             for student in students:
                 users.append({'title': 'Student',
                               'name' : '%s %s' % (student.first_name, student.last_name),
                               'id'   : student.id})
-                
+
         elif idtype == 'teacher':
             teachers = []
             teacher_dict = self.program.teachers(QObjects=True)
@@ -131,24 +131,25 @@ class NameTagModule(ProgramModuleObj):
             volunteers = request.POST['volunteers']
             for user in volunteers.split("\n"):
                 arruser = user.split(",", 1)
+
                 if len(arruser) >= 2:
                     users.append({'title': arruser[1].strip(),
                                   'name' : arruser[0].strip(),
                                   'id'   : ''})
-                
-                
+
+
         elif idtype == 'blank':
             users = []
             for i in range(int(request.POST['number'])):
                 users.append({'title': request.POST['blanktitle'],
                               'name' : '',
                               'id'   : ''})
-                
+
         context = {'module': self,
-                   'programname': request.POST['progname']                   
+                   'programname': request.POST['progname']
                    }
 
-        
+
         numperpage = 6
 
 
@@ -169,7 +170,7 @@ class NameTagModule(ProgramModuleObj):
                     users.append(expanded[j][i])
 
         context['users'] = users
-            
+
         return render_to_response(self.baseDir()+'ids.html', request, (prog, tl), context)
-        
+
 

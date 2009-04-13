@@ -1,6 +1,6 @@
 {% extends "outlines/series-3.html" %}
 
-{% block title %}Edit Teacher Biography{% endblock %}
+{% block title %}{{biouser.name}}{% endblock %}
 
 {% block subsection_name %}Teacher Biography{% endblock %}
 
@@ -17,7 +17,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 #divmaintext table td { vertical-align: top; }
 
 #divmaintext hr { border: 1px solid black; }
-#divmaintext img { border: 1px solid black; }
+img.biophoto { border: 1px solid black; }
 
 </style>
 {% endblock %}
@@ -48,7 +48,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
   </td>
   <td>
    <img src="/media/{{bio.picture}}" title="Picture of {{biouser.name}}"  
-        alt="Picture of {{biouser.name}}" align="right" />
+        alt="Picture of {{biouser.name}}" align="right" class="biophoto" />
   </td>
 </tr>
 <tr>

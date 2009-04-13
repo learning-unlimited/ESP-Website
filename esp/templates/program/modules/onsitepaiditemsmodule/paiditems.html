@@ -1,0 +1,41 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+{{ program.mainteacherreg }}
+
+<br /><br />
+<h1>View Puchased Items for {{student.name}}</h1>
+
+<p>
+Here is a list of the items that were reserved online for {{student.name}}:
+</p>
+
+<table border="1">
+<tr>
+<td>Reserved Item</td>
+<td>Amount Owed</td>
+</tr>
+{% for item in reserveditems %}
+<tr>
+<td>{{ item.text }}</td>
+<td>{{ item.negative_amount }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<br />
+<br />
+<br />
+<a href="/onsite/{{ program.getUrlBase }}/main">Back to Onsite Registration</a>
+
+{% endblock %}

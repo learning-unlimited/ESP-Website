@@ -30,13 +30,11 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.web.util        import render_to_response
-from esp.money.models    import PaymentType, Transaction
 from datetime            import datetime        
-from esp.db.models       import Q
+from django.db.models.query     import Q
 from esp.users.models    import User, ESPUser
-#from esp.money.models    import RegisterLineItem, UnRegisterLineItem, PayForLineItems, LineItem, LineItemType
 from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance
 from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
@@ -71,14 +69,12 @@ class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
         # this should be fixed...this is the best I can do for now - Axiak
         # I think this is substantially better; it's the same thing, but in one query. - Adam
         #transactions = Transaction.objects.filter(anchor = self.program_anchor_cached())
-        #userids = [ x.fbo_id for x in transactions ]
-        QObj = Q(fbo__anchor=self.program_anchor_cached())
+        #userids = [ x.document_id for x in documents ]
+        QObj = Q(document__anchor=self.program_anchor_cached(), document__doctype=3, document__cc_ref__gt='')
 
         if QObject:
             return {'creditcard': QObj}
         else:
-            from esp.users.models import ESPUser
-            
             return {'creditcard':User.objects.filter(QObj).distinct()}
 
 

@@ -1,7 +1,8 @@
-\documentclass[letterpaper,9pt]{article}
+{% autoescape off %}\documentclass[letterpaper,9pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{multicol}
 \usepackage{fullpage}
+\usepackage{amsfonts, amsmath, amsthm, amssymb}
 \usepackage{fancyhdr}
 \usepackage{amsfonts}
 \usepackage[left=.5in,top=1cm,right=.5in]{geometry}
@@ -29,12 +30,12 @@
 \newpage
 \begin{multicols}{2} 
  {%endifchanged %}
-\rhead{% templatetag openbrace %}{{cls.category.category }} }
+\rhead{% templatetag openbrace %}{{cls.category.category|texescape }} }
 %\begin{tabular}{p{.45\textwidth} }
 {% autoescape off %}
 \textbf{% templatetag openbrace %}{{cls.emailcode}}: {{ cls.title|texescape }} } \\
 \textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
-{{ cls.class_info|texescape }} \\
+{{ cls.ascii_info|texescape }} \\
 \textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
 \textit{Maximum Size: {{cls.class_size_max }} } \\
 \textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\ \textbf{" }} } \\
@@ -45,3 +46,4 @@
 {% endfor %}
 \end{multicols}
 \end{document}
+{% endautoescape %}

@@ -30,26 +30,19 @@ Email: web@esp.mit.edu
 """
 
 from esp.users.models    import GetNodeOrNoBits, PermissionDenied
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import *
 from django.http import Http404
 from esp.web.util.main import render_to_response
 from django.core.cache import cache
 
 # Where to start our tree search.
 
-section_redirect_keys = {
-    'teach':   'Programs',
-    'manage':  'Programs',
-    'onsite':  'Programs',    
-    'learn':   'Programs',
-    'programs':'Programs',
-    None:      'Web',
-    }
-    
+from esp.section_data import section_redirect_keys
+
 subsection_map = {
     'programs': '',
-    }    
-    
+    }
+
 def branch_find(view_func):
     """
     A decorator to be used on a view.
@@ -68,16 +61,15 @@ def branch_find(view_func):
 
     def _new_func(request, url='index', subsection=None, filename=None, *args, **kwargs):
 
-        
+        # Cache which tree node corresponds to this URL
         cache_key = 'qsdeditor_%s_%s_%s_%s' % (request.user.id,
                                                url, subsection, filename)
-
         cache_key = cache_key.replace(' ', '')
-
         retVal = cache.get(cache_key)
-
         if retVal is not None:
             return view_func(*((request,) + retVal + args), **kwargs)
+
+        # If we didn't find it in the cache, keep looking
 
         # function "constants"
         READ_VERB = GetNode('V/Flags/Public')
@@ -88,7 +80,7 @@ def branch_find(view_func):
 
         # the root of the datatree
         section = section_redirect_keys[subsection]
-        
+
         #   Rewrite 'subsection' if we want to.
         if subsection_map.has_key(subsection):
             subsection = subsection_map[subsection]

@@ -17,7 +17,7 @@ class ResponseForm(models.Model):
     splash_on_wheels_application = models.FileField(upload_to="uploaded/sow_apps/%y/", blank=True, null=True)
     bulk_financial_aid_application = models.FileField(upload_to="uploaded/bulk_finaid_form/%y/", blank=True, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Survey Response: %s (%s)' % (self.school, self.contact_name)
 
     def send_mail(self):

@@ -2,25 +2,22 @@
 from django.core.cache import cache
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
-from django.contrib import admin
 import datetime
 import random
 import string
-
+import time
 
 # esp dependencies
-from esp.db.models import Q
+from django.db.models.query import Q
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 
 # model dependencies
-from esp.datatree.models import DataTree
+from esp.users.models import ESPUser
+from esp.datatree.models import *
 
-# Cache introspection
-from django.core.cache.backends.memcached import CacheClass as MemcachedClass
-
-# Parsing "__above" tree queries
-from esp.datatree.util import tree_filter_kwargs, tree_filter
+import operator
+from esp.datatree.sql.query_utils import QTree
 
 
 __all__ = ['UserBit','UserBitImplication']
@@ -63,16 +60,11 @@ class UserBitManager(ProcedureManager):
         def get_global_key(self):
             """ Return the global userbit key. """
             new_key = 'UB_%s' % self._get_random_string()
-            if isinstance(cache, MemcachedClass):
-                # Using .add here is much safer than set.
-                cache._cache.add('UserBit_global', new_key, 86400)
-                global_key = cache.get('UserBit_global')
-            else:
-                global_key = cache.get('UserBit_global')
-                if global_key == 'None':
-                    global_key = None
-                if global_key is None:
-                    cache.set('UserBit_global', new_key, 86400)
+
+            # Using .add here is much safer than set.
+            KEY = 'UserBit_global'
+            cache.add(KEY, new_key, 86400)
+            global_key = cache.get(KEY)
 
             return global_key or new_key
 
@@ -101,14 +93,9 @@ class UserBitManager(ProcedureManager):
             """
             user_key = self.get_key_to_get_user_key()
             new_key = 'UB_u_%s' % self._get_random_string()
-            if isinstance(cache, MemcachedClass):
-                # Using .add here is much safer than set.
-                cache._cache.add(user_key, new_key, 86400)
-                current_key = cache.get(user_key)
-            else:
-                current_key = cache.get(user_key)
-                if current_key is None:
-                    cache.set(user_key, new_key, 86400)
+            # Using .add here is much safer than set.
+            cache.add(user_key, new_key, 86400)
+            current_key = cache.get(user_key)
             return current_key or new_key
 
         def update(self):
@@ -140,17 +127,17 @@ class UserBitManager(ProcedureManager):
         """
         Returns true if the user has the verb anywhere. False otherwise.
         """
+        node_id = getattr(node, 'id', node)
         col_filter = '%s__above' % node_type
-        cache_key  = 'has_%s__%s' % (node_type, node.id)
+        cache_key  = 'has_%s__%s' % (node_type, node_id)
 
-        retVal = self.cache(user)['has_%s__%s' % (node_type, node.id)]
+        retVal = self.cache(user)['has_%s__%s' % (node_type, node_id)]
 
         if retVal is not None:
             return retVal
         else:
             
-            retVal = bool(self.filter(**tree_filter({'user':user,
-                                                     col_filter: node})))
+            retVal = bool(self.filter(QTree(**{col_filter: node_id}), user = user))
             self.cache(user)[cache_key] = retVal
 
         return retVal
@@ -244,40 +231,22 @@ class UserBitManager(ProcedureManager):
         if retVal is not None: return retVal
 
         q_list = self.bits_get_qsc( user, verb )
-
-        res = None
-
+        #q_list = self.filter(id__in=(x.id for x in q_list)).select_related('qsc')
+        query_list = []
         for bit in q_list:
-            try:
-                q = bit.qsc
-            except DataTree.DoesNotExist, e:
-                bit.delete()
-                continue
-
             if bit.recursive:
-                qsc_children_ids = [q.id] + [x['id'] for x in q.descendants(False).values('id')]
-                query = Model.objects.filter(anchor__in = qsc_children_ids)
+                query_list.append(QTree(anchor__below=bit.qsc_id))
             else:
-                query = Model.objects.filter(anchor=q)
-                
-            if qsc is not None:
-                query = query.filter(Q(**tree_filter_kwargs(anchor__below = qsc)))
+                query_list.append(Q(anchor=bit.qsc_id))
 
-            if res == None:
-                res = query
-            else:
-                res = res | query
+        query = Model.objects.filter(reduce(operator.or_, query_list)).distinct()
+        if qsc is not None:
+            query = query.filter(QTree(anchor__below = qsc))
 
-        if res != None:
-            retVal = res.distinct()
-
-        if res == None:
-            retVal = Model.objects.none().distinct()
-
-        self.cache(user)[user_cache_key] = retVal
+        self.cache(user)[user_cache_key] = query
 
 	# Operation Complete!
-	return retVal
+	return query
 
     def UserHasPerms(self, user, qsc, verb, now = None, recursive_required = False):
         """ Given a user, a permission, and a subject, return True if the user, or all users,
@@ -338,7 +307,7 @@ class UserBitManager(ProcedureManager):
 
         if isinstance(qsc_id, basestring):
             try:
-                qsc_id = DataTree.get_by_uriL(qsc_id).id
+                qsc_id = DataTree.get_by_uri(qsc_id).id
             except DataTree.NoSuchNodeException:
                 retVal = False
 
@@ -441,12 +410,12 @@ class UserBit(models.Model):
     >>> UserBit.objects.bits_get_qsc(user=ringo,verb=GetNode('V/Purchase'),qsc_root=GetNode('Q/Albums'))
     []
     """
-    user = AjaxForeignKey(User, blank=True, null=True, default=None) # User to give this permission
+    user = AjaxForeignKey(User, 'id', blank=True, null=True, default=None) # User to give this permission
     qsc = AjaxForeignKey(DataTree, related_name='userbit_qsc') # Controller to grant access to
     verb = AjaxForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
 
-    startdate = models.DateTimeField(blank=True, null=True, default = datetime.datetime.now)
-    enddate = models.DateTimeField(blank=True, null=True)
+    startdate = models.DateTimeField(blank=True, default = datetime.datetime.now)
+    enddate = models.DateTimeField(blank=True, default = datetime.datetime(9999,1,1))
     recursive = models.BooleanField(default=True)
 
     objects = UserBitManager()
@@ -455,7 +424,7 @@ class UserBit(models.Model):
         app_label = 'users'
         db_table = 'users_userbit'
 
-    def __str__(self):
+    def __unicode__(self):
         
         
         def clean_node(node):
@@ -480,8 +449,8 @@ class UserBit(models.Model):
             return 'GRANT %s ON %s TO %s%s' % (clean_node(self.verb), clean_node(self.qsc),
                                                user, recurse)
 
-    def save(self):
-        super(UserBit, self).save()
+    def save(self, *args, **kwargs):
+        super(UserBit, self).save(*args, **kwargs)
 
         if not hasattr(self.user,'id') or self.user.id is None:
             UserBit.updateCache(None)
@@ -506,6 +475,27 @@ class UserBit(models.Model):
         self.enddate = datetime.datetime.now()
         self.save()
 
+        # when we expire a userbit, we want to update the userbit cache
+        if not hasattr(self.user,'id') or self.user.id is None:
+            UserBit.updateCache(None)
+        else:
+            UserBit.updateCache(self.user.id)
+
+    def applies_to_user(self, user):
+        if isinstance(user, User):
+            user = user._get_pk_val()
+        return self.user_id == user or self.user_id == None
+
+    def applies_to_verb(self, verb):
+        if isinstance(verb, str):
+            verb = GetNode(verb)
+        return self.verb_id == verb.id or (self.recursive and self.verb.is_ancestor_of(verb))
+
+    def applies_to_qsc(self, qsc):
+        if isinstance(qsc, str):
+            qsc = GetNode(qsc)
+        return self.qsc_id == qsc.id or (self.recursive and self.qsc.is_ancestor_of(qsc))
+
     def updateCache(cls, user_id):
         cls.objects.cache(user_id).update()
     updateCache = classmethod(updateCache)
@@ -513,8 +503,6 @@ class UserBit(models.Model):
     @classmethod
     def time_cache(cls):
         from django.contrib.auth.models import User
-        from esp.datatree.models import DataTree, GetNode
-        import time
 
         axiak = User.objects.get(username='axiak')
         splash = GetNode('Q/Programs/Splash/2007')
@@ -532,18 +520,27 @@ class UserBit(models.Model):
         """ Returns False if there are no elements in queryset """
         return ( len(queryset.values('id')[:1]) > 0 )
 
+    @staticmethod
+    def not_expired(prefix='', when=None):
+        """ Returns a Q object for field prefix being valid at time when """
+        if when is None:
+            when = datetime.datetime.now()
+        if prefix is not '' and not prefix.endswith('__'):
+            prefix += '__'
+        q = Q(**{prefix+'startdate__lte': when})
+        q = q & Q(**{prefix+'enddate__gte': when})
+        return q
+
+    @staticmethod
+    def valid_objects(when=None):
+        """ Returns a QuerySet consisting of unexpired UserBits (at time when) """
+        return UserBit.objects.filter(UserBit.not_expired(when=when))
+
     UserHasPerms   = classmethod(lambda cls,*args,**kwargs: cls.objects.UserHasPerms(*args,**kwargs))
     bits_get_qsc   = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_qsc(*args,**kwargs))
     bits_get_users = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_users(*args,**kwargs))
     bits_get_verb  = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_verb(*args,**kwargs))
     find_by_anchor_perms = classmethod(lambda cls,*args,**kwargs: cls.objects.find_by_anchor_perms(*args,**kwargs))
-
-
-class UserBitAdmin(admin.ModelAdmin):
-    search_fields = ['user__last_name','user__first_name',
-                     'qsc__uri','verb__uri']
-
-admin.site.register(UserBit, UserBitAdmin)
 
 
 #######################################
@@ -569,7 +566,7 @@ class UserBitImplication(models.Model):
         db_table = 'users_userbitimplication'
 
 
-    def __str__(self):
+    def __unicode__(self):
         var = {}
         for k in ['verb_original_id', 'qsc_original_id',
                   'verb_implied_id',  'qsc_implied_id' ]:
@@ -599,9 +596,9 @@ class UserBitImplication(models.Model):
             Q_qsc  = Q(qsc_original  = userbit.qsc)
             Q_verb = Q(verb_original = userbit.verb)
         else:
-            Q_qsc  = Q(**tree_filter_kwargs(qsc_original__below = userbit.qsc))
+            Q_qsc  = QTree(qsc_original__below = userbit.qsc_id)
 
-            Q_verb = Q(**tree_filter_kwargs(verb_original__below = userbit.verb))
+            Q_verb = QTree(verb_original__below = userbit.verb_id)
 
         # if one of the two are null, the other one can match and it'd be fine.
         Q_match = (Q_qsc & Q_verb) | (Q_qsc_null & Q_verb) | (Q_qsc & Q_verb_null)
@@ -658,10 +655,9 @@ class UserBitImplication(models.Model):
             newbit.save()
 
             implication.created_bits.add(newbit)
-            implication.save()
 
-    def save(self):
-        super(UserBitImplication, self).save()
+    def save(self, *args, **kwargs):
+        super(UserBitImplication, self).save(*args, **kwargs)
 
         self.apply()
     
@@ -678,13 +674,13 @@ class UserBitImplication(models.Model):
         if self.qsc_original_id is None and self.verb_original_id is None:
             return
         if self.qsc_original_id is not None:
-            Q_qsc = (Q(**tree_filter_kwargs(qsc__above = self.qsc_original)) &\
+            Q_qsc = (QTree(qsc__above = self.qsc_original) &\
                      Q(recursive       = True)) \
                      | \
                      Q(qsc = self.qsc_original_id)
             
         if self.verb_original_id is not None:
-            Q_verb = (Q(**tree_filter_kwargs(verb__above = self.verb_original)) &\
+            Q_verb = (QTree(verb__above = self.verb_original) &\
                       Q(recursive       = True)) \
                       | \
                       Q(verb = self.verb_original_id)
@@ -712,7 +708,6 @@ class UserBitImplication(models.Model):
             if len(bits.values('id')[:1]) == 0:
                 newbit.save()
                 self.created_bits.add(newbit)
-                self.save()
         
     @staticmethod
     def applyAllImplications():
@@ -721,6 +716,4 @@ class UserBitImplication(models.Model):
         """
         for implication in UserBitImplication.objects.all():
             implication.apply()
-    
-admin.site.register(UserBitImplication)
 

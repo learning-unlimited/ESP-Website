@@ -2,12 +2,39 @@
 from django import forms
 from django.contrib.auth.models import User
 
+from esp.utils.forms import CaptchaForm
+
 role_choices = (
     ('Student', 'Student (up through 12th grade)'),
     ('Teacher', 'Volunteer Teacher'),
     ('Guardian', 'Guardian of Student'),
     ('Educator', 'K-12 Educator'),
     )
+
+class ValidHostEmailField(forms.EmailField):
+    """ An EmailField that runs a DNS query to make sure the host is valid. """
+
+    def clean(self, value):
+        """ Make sure the e-mail address is sane """
+        email = super(ValidHostEmailField, self).clean(value)
+        email_parts = email.split("@")
+        if len(email_parts) != 2:
+            raise forms.ValidationError('E-mail addresses must be of the form "name@host"')
+
+        email_host = email_parts[1].encode('ascii')
+
+        try:
+            import DNS
+            try:
+                DNS.DiscoverNameServers()
+                if len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
+                    raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
+            except (IOError, DNS.DNSError): # (no resolv.conf, no nameservers)
+                pass
+        except ImportError: # no PyDNS
+            pass
+
+        return email
 
 class UserRegForm(forms.Form):
     """
@@ -28,7 +55,7 @@ class UserRegForm(forms.Form):
 
     initial_role = forms.ChoiceField(choices = role_choices)
 
-    email = forms.EmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=30)
+    email = ValidHostEmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75)
 
 
     def clean_username(self):
@@ -56,48 +83,6 @@ class UserRegForm(forms.Form):
         return self.cleaned_data['confirm_password']
 
 
-    def clean_email(self):
-        """ Make sure the e-mail address is sane """
-        email = self.cleaned_data['email']
-        email_parts = email.split("@")
-        if len(email_parts) != 2:
-            raise forms.ValidationError('E-mail addresses must be of the form "name@host"')
+class EmailUserForm(CaptchaForm):
+    email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
 
-        email_host = email_parts[1]
-        
-        #import socket
-        # aseering 9/10/2007 -- Oh, MX records; yeah...
-        #socket.gethostbyname(email_host)
-
-	# -- aseering 3/5/2008: This copy of the site has to work offline; we can't resolve DNS stuffs
-        #import DNS
-        #DNS.ParseResolvConf() # May or may not work on systems without a resolv.conf file
-        #r = DNS.Request(qtype='mx')
-        #res = r.req(email_host)
-	#
-        #if len(res.answers) == 0:
-        #    raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
-
-        return email
-
-class EmailUserForm(forms.Form):
-
-
-    email = forms.EmailField(help_text = '(e.g. johndoe@domain.xyz)')
-
-    def clean_email(self):
-        """ Make sure the e-mail address is sane """
-        email = self.cleaned_data['email']
-        email_parts = email.split("@")
-        if len(email_parts) != 2:
-            raise forms.ValidationError('E-mail addresses must be of the form "name@host"')
-
-        email_host = email_parts[1]
-        
-        import socket
-        try:
-            socket.gethostbyname(email_host)
-        except socket.gaierror:
-            raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
-
-        return email

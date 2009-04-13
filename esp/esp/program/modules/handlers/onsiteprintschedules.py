@@ -35,11 +35,11 @@ from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from datetime         import datetime
 from esp.web.util     import render_to_response
-from esp.datatree.models import GetNode
+from esp.datatree.models import *
 from esp.users.models import UserBit
 from datetime         import datetime
-from esp.db.models    import Q
-from esp.money.models import LineItemType, RegisterLineItem, LineItem
+from django.db.models.query   import Q
+from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.program.models import SplashInfo
 
 class OnsitePrintSchedules(ProgramModuleObj):
@@ -67,17 +67,12 @@ class OnsitePrintSchedules(ProgramModuleObj):
 
         verb  = GetNode(verb_path)
         qsc   = self.program_anchor_cached().tree_create(['Schedule'])
-        Q_after_start = Q(startdate__isnull = True) | Q(startdate__lte = datetime.now())
-        Q_before_end = Q(enddate__isnull = True) | Q(enddate__gte = datetime.now())
 
         Q_qsc  = Q(qsc  = qsc.id)
         Q_verb = Q(verb__in = [ verb.id ] + list( verb.children() ) )
-        
-        ubits = UserBit.objects.filter(Q_qsc & \
-                                       Q_verb & \
-                                       Q_after_start & \
-                                       Q_before_end).order_by('startdate')
-        
+
+        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')[:5]
+
         for ubit in ubits:
             ubit.enddate = datetime.now()
             ubit.save()
@@ -90,20 +85,30 @@ class OnsitePrintSchedules(ProgramModuleObj):
         for student in old_students:
             student.updateOnsite(request)
             # get list of valid classes
-            classes = [ cls for cls in student.getEnrolledClasses()
+            classes = [ cls for cls in student.getEnrolledSections()
                         if cls.parent_program == self.program
                         and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
-                
-            #   add financial aid information
-            for i in LineItemType.objects.filter(anchor=prog.anchor, optional=False):
-                RegisterLineItem(student, i)
-                    
-            student.itemizedcosts = LineItem.purchased(prog.anchor, student, filter_already_paid=False)
-            student.itemizedcosttotal = LineItem.purchasedTotalCost(prog.anchor, student)
+
+
+            # get payment information
+            li_types = prog.getLineItemTypes(student)
+            try:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+            except MultipleDocumentError:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+
+            # attach payment information to student
+            student.invoice_id = invoice.locator
+            student.itemizedcosts = invoice.get_items()
+            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')
+            student.itemizedcosttotal = invoice.cost()
+            student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
+            if student.has_financial_aid:
+                student.itemizedcosttotal = 0
             student.has_paid = ( student.itemizedcosttotal == 0 )
-                    
+
             student.payment_info = False
             student.classes = classes
             student.splashinfo = SplashInfo.getForUser(student)
@@ -115,22 +120,26 @@ class OnsitePrintSchedules(ProgramModuleObj):
             # set the refresh rate
             response['Refresh'] = '2'
         else:
-            response =  render_to_response(self.baseDir()+'studentschedules.html',
-                            request, (prog, tl), {'students': students})
+            from django.conf import settings
+            from esp.web.util.latex import render_to_latex
+
+            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, 'pdf')
+            #response =  render_to_response(self.baseDir()+'studentschedules.html',
+            #                request, (prog, tl), {'students': students})
 
             # set the refresh rate
-            response['Refresh'] = '0'
+            response['Refresh'] = '2'
 
         return response
 
-        
-    
-        
-        
 
-            
-            
-        
+
+
+
+
+
+
+
     def studentschedule(self, request, *args, **kwargs):
         request.GET = {'extra': str(285), 'op':'usersearch',
                        'userid': str(self.user.id) }
@@ -142,5 +151,5 @@ class OnsitePrintSchedules(ProgramModuleObj):
         module.program = self.program
         return module.studentschedules(request, *args, **kwargs)
 
-        
+
 

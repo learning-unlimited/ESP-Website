@@ -36,6 +36,7 @@ def prefix_cache_object(cache_prefix, cache_obj):
     cache_class._PREFIXED = True
     cache_class.get = prefix_key(cache_class.get)
     cache_class.set = prefix_key(cache_class.set)
+    cache_class.add = prefix_key(cache_class.add)
     cache_class.delete = prefix_key(cache_class.delete)
     cache_class.has_key = prefix_key(cache_class.has_key)
     cache_class.get_many = prefix_many(cache_class.get_many)

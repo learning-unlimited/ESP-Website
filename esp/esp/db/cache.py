@@ -32,14 +32,19 @@ class GenericCacheHelper(object):
         else:
             return None
 
-    def __setitem__(self, key, value):
+    def set(self, key, value, timeout_seconds=None):
+        if timeout_seconds is None:
+            timeout_seconds = self.cache_time
         global_key = self.get_key_for_item()
         cache_dict = cache.get(global_key)
         if cache_dict is None:
             cache_dict = {}
         cache_dict[key] = value
 
-        cache.set(global_key, cache_dict, self.cache_time)
+        cache.set(global_key, cache_dict, timeout_seconds)
+
+    def __setitem__(self, key, value):
+        self.set(key, value)
 
     def __delitem__(self, key):
         global_key = self.get_key_for_item()

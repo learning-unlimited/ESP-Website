@@ -5,6 +5,7 @@
     {% if request.user.is_authenticated %}
         <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script> 
         <script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
         <script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script> 
         <script type="text/javascript" src="/media/scripts/yui/calendar/calendar-min.js"></script> 
         <script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-min.js"></script> 
@@ -120,9 +121,8 @@
          </div>
      {% else %}
 <div class="divformcol1" style="text-align:left">
-Welcome, {{ request.user.first_name }}! 
+Welcome, {{ request.user.first_name }}!
 <!-- <a href="/myesp/manage/">Manage Subscriptions</a> -->
-
 </div>
      {% endif %}
   {% else %}
@@ -133,12 +133,13 @@ Welcome, {{ request.user.first_name }}!
 	</td>
 	<td colspan="2">
   {% if request.user.is_authenticated %}
-	    <div class="divformcol2" style="text-align:right"><a href="/myesp/signout/">Sign Out</a></div>	
+	    <div class="divformcol2" style="text-align:right"><a href="/myesp/signout/">Sign Out</a>  {% if request.user.isAdministrator %}{% if request.program %}<a href="http://esp.mit.edu/wiki/index.php?title=WikiHelp:{{ request.tl }}/PerProgram/{{ request.module }}">WikiHelp</a>{% else %}<a href="http://esp.mit.edu/wiki/index.php?title=WikiHelp:{{ request.path }}">WikiHelp</a>{% endif %}{% endif %}</div>
   {% else %}
 <div class="divformcol1" style="text-align:center">
   <a href="/myesp/register/" title="Join ESP!">Create Account</a>
 </div>
     {% endif %}					  
+
 	</td>
     <td colspan="2">
 {% if not request.user.is_authenticated %}

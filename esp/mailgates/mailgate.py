@@ -6,8 +6,8 @@
 import sys, os, operator, email, re, smtplib, socket, sha, random
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
-sys.path.insert(0, "/esp/web/stanfordesp.org/django")
-sys.path.insert(0, "/esp/web/stanfordesp.org/esp")
+sys.path.insert(0, "/esp/web/stanford/django")
+sys.path.insert(0, "/esp/web/stanford/esp")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 from esp.dbmail.models import EmailList

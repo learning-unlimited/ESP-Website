@@ -32,16 +32,21 @@ from django import template
 from django.template import loader
 from esp.program.models.class_ import ClassSubject
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
 register = template.Library()
 
 @register.filter
 def intrange(min_val, max_val):
     return range(int(min_val), int(max_val) + 1)
-    
+
 @register.filter
 def field_width(min_val, max_val):
     return '%d%%' % (70 / (int(max_val) - int(min_val) + 1))
-    
+
 @register.filter
 def substitute(input_str, item):
     #   Puts all of the attributes of the given item in the context dictionary
@@ -87,7 +92,7 @@ def weighted_avg(dct):
                 weight = 1
         s += weight * dct[key]
         n += dct[key]
-    
+
     if n == 0:
         return 0
     else:
@@ -111,6 +116,7 @@ def makelist(lst):
 @register.filter
 def list_answers(lst):
     #   Takes a list of Answer objects and makes an unordered list, with special links!
+    #   This isn't HTML-safe. I think this is dead code by now anyway, seeing as we only really uesd it for text-entry answers. -ageng 2008-10-20
     newlist = [ item for item in lst if len(str(item.answer).strip()) > 0 ]
 
     if len(newlist) == 0:
@@ -161,7 +167,7 @@ def average(lst):
         return str(round(sum / len(lst), 2))
     except:
         return 'N/A'
-    
+
 @register.filter
 def stdev(lst):
     if len(lst) == 0:
@@ -177,7 +183,7 @@ def stdev(lst):
         return str(round(std_sum / len(lst), 2))
     except:
         return 'N/A'
-    
+
 @register.filter
 def histogram(answer_list, format='html'):
     """ Generate Postscript code for a histogram of the provided results, save it and return a string pointing to it. """
@@ -186,12 +192,10 @@ def histogram(answer_list, format='html'):
     HISTOGRAM_DIR = MEDIA_ROOT + HISTOGRAM_PATH
     from esp.web.util.latex import get_rand_file_base
     import os
-    
-    template_file = TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
-    file_base = get_rand_file_base()
-    file_name = '/tmp/%s.eps' % file_base
+    import tempfile
+
     image_width = 2.75
-    
+
     processed_list = []
     for ans in answer_list:
         if isinstance(ans, list):
@@ -199,13 +203,12 @@ def histogram(answer_list, format='html'):
         else:
             processed_list.append(ans)
     answer_list = processed_list
-    
+
     #   Place results in key, value pairs where keys contain values and values contain frequencies.
     context = {}
-    context['file_name'] = file_name
     context['title'] = 'Results of survey'
     context['num_responses'] = len(answer_list)
-    
+
     context['results'] = []
     max_answer_length = 0
     for ans in answer_list:
@@ -216,9 +219,9 @@ def histogram(answer_list, format='html'):
             context['results'].append({'value': ans, 'freq': 1})
         if len(ans) > max_answer_length:
             max_answer_length = len(ans)
-    
+
     context['results'].sort(key=lambda x: x['value'])
-    
+
     #   Compute simple stats so postscript doesn't have to
     max_freq = 0
     context['num_keys'] = len(context['results'])
@@ -226,26 +229,36 @@ def histogram(answer_list, format='html'):
         if item['freq'] > max_freq:
             max_freq = item['freq']
             context['max_freq'] = max_freq
-    
+
     #   Might we have trouble making text not overlap? 36 is an arbitrary limit.
     if context['num_keys'] * max_answer_length > 36:
         context['crowded'] = True
     else:
         context['crowded'] = False
-    
+
+    import hashlib
+    file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
+    file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
+    template_file = TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
+
+    context['file_name'] = file_name # This guy depends on the SHA-1
+
+    #  No point in SHA-1 caching these guys; they're in /tmp
     file_contents = loader.render_to_string(template_file, context)
     file_obj = open(file_name, 'w')
     file_obj.write(file_contents)
     file_obj.close()
-    
+
     #   We have the necessary EPS file, now we do any necessary conversions and include
     #   it into the output.
     if format == 'tex':
         return '\includegraphics[width=%fin]{%s}' % (image_width, file_name)
     elif format == 'html':
-        os.system('gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s%s.png %s' % (HISTOGRAM_DIR, file_base, file_name))
+        image_path = '%s%s.png' % (HISTOGRAM_DIR, file_base)
+        if not os.path.exists(image_path):
+            os.system('gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s %s' % (image_path, file_name))
         return '<img src="%s.png" />' % ('/media/' + HISTOGRAM_PATH + file_base)
-    
+
 @register.filter
 def list_classes(ans):
     # If the answer is a list of classes, render a shiny list of their titles.
@@ -272,9 +285,9 @@ def favorite_classes(answer_list, limit):
     result_header = '<ol>\n'
     result_footer = '</ol>\n'
     result_body = ''
-    
+
     class_dict = {}
-    
+
     for a in answer_list:
         for i in a:
             try:
@@ -285,16 +298,16 @@ def favorite_classes(answer_list, limit):
                     class_dict[ind] = 1
             except ValueError:
                 pass
-               
+
     key_list = class_dict.keys()
     key_list.sort(key=lambda x: -class_dict[x])
-   
+
     max_count = min(limit, len(key_list))
-   
+
     for key in key_list[:max_count]:
         cl = ClassSubject.objects.filter(id=key)
         if cl.count() == 1:
             result_body += '<li>%s: %s (%d votes)\n' % (cl[0].emailcode(), cl[0].title(), class_dict[key])
 
     return result_header + result_body + result_footer
-        
+

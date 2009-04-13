@@ -49,11 +49,12 @@ td.newday { border-width: 2px 1px 0 1px;}
     <b>Stanford Educational Studies Program</b><br/>(925) 348-9342<br />
     <center><div class="box"><b>{{ program.niceName }}: {{ program.date_range }} </b><br />Please do not remove until conclusion of program</div></center>
 </p>
-
+{% autoescape off %}
 <div class="title">Room Schedule for <br /><br />
     <span>{{ scheditem.awesomeroom }}<br/></span>
     <span>({{ scheditem.room }})</span>
 </div>
+{% endautoescape %}
 </td></tr>
 
 <tr><td>
@@ -65,6 +66,7 @@ td.newday { border-width: 2px 1px 0 1px;}
     <th>Teacher(s)</th>
 </tr>
 {% endifchanged %}
+{% autoescape off %}
 <tr>
   <td>{{ scheditem.timeblock.short_time }}</td>
   <td>{{ scheditem.cls.title }}</td>
@@ -72,6 +74,8 @@ td.newday { border-width: 2px 1px 0 1px;}
   <td>{{ scheditem.cls.parent_class.getTeacherNames|join:"<br />" }}</td> 
 {% endautoescape %}
 </tr>
+{% endautoescape %}
+
 {% endfor %}
 </table>
 </td></tr>

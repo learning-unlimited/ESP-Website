@@ -31,13 +31,13 @@ Email: web@esp.mit.edu
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories
-from esp.datatree.models         import DataTree, GetNode
+from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django                      import forms
 from django.http                 import HttpResponseRedirect
 from esp.cal.models              import Event
 from django.core.cache           import cache
-from esp.db.models               import Q
+from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.middleware              import ESPError
 from esp.resources.models        import ResourceRequest, ResourceType, Resource, ResourceAssignment
@@ -77,8 +77,8 @@ class SchedulingModule(ProgramModuleObj):
                 for sec in cls.sections.all():
                     sec.clear_resource_cache()
                 for teacher in cls.teachers():
-                    cache_key = teacher.availability_cache_key(self.program)
-                    cache.delete(cache_key)
+                    # This probably isn't needed anymore, but oh well
+                    ESPUser.getAvailableTimes.delete_key_set(self=teacher, program=self.program)
             for room in self.program.getClassrooms():
                 room.clear_schedule_cache(self.program)
             return HttpResponseRedirect(self.get_full_path())
@@ -93,6 +93,10 @@ class SchedulingModule(ProgramModuleObj):
   
             key_list = new_dict.keys()
             key_list = filter(lambda a: a.endswith('new'), key_list)
+            key_list.sort()
+            # assert False, '\n'.join([str((k, new_dict[k])) for k in key_list])
+            # sec_update_list = []
+            # assert False, section_ids_to_process
             for key in key_list:
                 #   Find the variables that differ from existing data (something_new vs. something_old).
                 commands = key.split('_')
@@ -114,8 +118,8 @@ class SchedulingModule(ProgramModuleObj):
                     
                     #   Clear the availability cache for the teachers.
                     for teacher in cls.teachers():
-                        cache_key = teacher.availability_cache_key(self.program)
-                        cache.delete(cache_key)
+                        # This probably isn't needed anymore, but oh well
+                        ESPUser.getAvailableTimes.delete_key_set(self=teacher, program=self.program)
                     
                     #   Clear the cached data for the rooms that the class has, so the class is removed from those.
                     if (sec.initial_rooms().count() > 0):
@@ -139,7 +143,7 @@ class SchedulingModule(ProgramModuleObj):
                             new_room = Resource.objects.get(id=int(new_dict[key]))
                             (status, errors) = sec.assign_room(new_room, compromise=True, clear_others=True)
                             if status is False:
-                                raise ESPError(False), 'Classroom assignment errors: %s' % errors
+                                raise ESPError(False), 'Classroom assignment errors: <ul><li>%s</li></ul>' % '</li><li>'.join(errors)
 
                     #   Clear the cache for this class and its new room.
                     sec.clear_resource_cache()

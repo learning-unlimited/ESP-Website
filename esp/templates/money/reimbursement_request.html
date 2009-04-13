@@ -8,8 +8,8 @@
 
 <br /><br />
 
-{% if form.has_errors %}
-<p><h2><font color="red">Please correct the following error{{ form.error_dict|pluralize }}:</font></h2></p>
+{% if form.errors %}
+<p><h2><font color="red">Please correct the following error{{ form.errors|pluralize }}:</font></h2></p>
 <br /><br />
 {% endif %}
 
@@ -17,7 +17,7 @@
 
 <p>
     <label for="id_amount">Amount Paid:</label> {{ form.amount }}
-    {% if form.amount.errors %}<font color="red">{{ form.amunt.errors|join:", " }}</font>{% endif %}
+    {% if form.amount.errors %}<font color="red">{{ form.amount.errors|join:", " }}</font>{% endif %}
 </p>
 
 <p>

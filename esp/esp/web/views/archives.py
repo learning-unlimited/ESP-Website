@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.users.models import ContactInfo, UserBit, ESPUser
-from esp.datatree.models import GetNode, DataTree
+from esp.datatree.models import *
 from esp.program.models import ArchiveClass, ClassSubject, ClassCategories
 from esp.web.util.main import render_to_response
 from django.db.models.query import QuerySet
@@ -47,10 +47,10 @@ class ArchiveFilter(object):
     category = ""
     options = ""
     def __init__(self, category = "", options = ""):
-        self.category = str(category)
-        self.options  = str(options)
+        self.category = unicode(category)
+        self.options  = unicode(options)
     
-    def __str__(self):
+    def __unicode__(self):
         return '%s, %s' % (self.category, self.options)
 
 def compute_range(postvars, num_records):

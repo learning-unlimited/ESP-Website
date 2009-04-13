@@ -52,26 +52,25 @@ class AdminMaterials(ProgramModuleObj):
     @main_call
     @needs_admin
     def get_materials(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm_Admin    
+        from esp.web.forms.fileupload_form import FileUploadForm_Admin
         from esp.qsdmedia.models import Media
-        from esp.datatree.models import DataTree
-            
+        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
         context_form = FileUploadForm_Admin()
-        new_choices = [(a.anchor.id, a.emailcode() + ': ' + str(a)) for a in prog.classes()]
+        new_choices = [(a.anchor.id, a.emailcode() + ': ' + unicode(a)) for a in prog.classes()]
         new_choices.append((prog.anchor.id,'Document pertains to program'))
         new_choices.reverse()
         context_form.set_choices(new_choices)
-    
+
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
                 docid = request.POST['docid']
                 media = Media.objects.get(id = docid)
                 media.delete()
-            	
+
             elif request.POST['command'] == 'add':
                 form = FileUploadForm_Admin(request.POST, request.FILES)
                 form.set_choices(new_choices)
-                
+
                 if form.is_valid():
                     ufile = form.cleaned_data['uploadedfile']
                     #	Append the class code on the filename if necessary
@@ -83,17 +82,17 @@ class AdminMaterials(ProgramModuleObj):
 
                     media = Media(friendly_name=form.cleaned_data['title'], anchor=DataTree.objects.get(id = form.cleaned_data['target_obj']))
                     media.handle_file(ufile, desired_filename)
-                    
+
                     media.format = ''
                     media.save()
                 else:
                     context_form = form
 
         context = {'prog': self.program, 'module': self, 'uploadform': context_form}
-        
+
         classes = ClassSubject.objects.filter(parent_program = prog)
-    
+
         return render_to_response(self.baseDir()+'listmaterials.html', request, (prog, tl), context)
-    
+
 
 

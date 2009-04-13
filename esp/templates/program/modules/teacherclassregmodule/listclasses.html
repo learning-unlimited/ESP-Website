@@ -21,11 +21,11 @@ function deleteClass() {
 
 {% if not module.deadline_met %}
 <div class="info">
-<b>Note:</b> Class registration is closed. 
+<b>Note:</b> Class registration is closed.
 You are welcome to use this page to view your classes' status and upload documents related to it.
 
 {% if module.classRegInfo.director_email %}<br />
-If you have any questions regarding the program, <br /> please email the 
+If you have any questions regarding the program, <br /> please email the
 <a href="mailto:{{module.classRegInfo.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{module.classRegInfo.director_email }}</span>).
 {% endif %}
 </div>
@@ -80,7 +80,7 @@ If you have any questions regarding the program, <br /> please email the
       </form>
    </td>
    <td class="clsmiddle bordertop2">
-      <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
+      <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}"
         title="View Class' Students" class="abutton">
        View Students
       </a>
@@ -133,7 +133,7 @@ If you have any questions regarding the program, <br /> please email the
         </td>
         <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}</td>
         <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
-            <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>)</td>
+            <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>) {% comment %}(<a href="/teach/{{ one }}/{{ two }}/select_students/{{ sec.id }}">enroll/reject</a>){% endcomment %}</td>
         <td class="clsright" valign="top"><a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ request.META.HTTP_HOST }}">E-mail students</a></td>
     </tr>
     {% endfor %}

@@ -12,7 +12,16 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/calendar/calendar-blue.css" />
 {% endblock %}
+
+{% block xtrajs %}
+    <!-- The calendar date/time selector. -->
+    <script type="text/javascript" src="/media/calendar/calendar.js"></script>
+    <script type="text/javascript" src="/media/calendar/lang/calendar-en.js"></script>
+    <script type="text/javascript" src="/media/calendar/calendar-setup.js"></script>
+{% endblock %}
+
 
 {% block content %}
 <h1>Program Creation Form</h1>

@@ -6,9 +6,12 @@
 {% block keywords %}{% endblock %}
 {% block description %}{% endblock %}
 
-{% block subsection %}{% endblock %}
+{% block subsection %}
+{% autoescape off %}{{ "ESP Management"|subsection }}{% endautoescape %}
+{% endblock %}
 
-{% block content %}
+{% block stylesheets %}
+{{ block.super }}
 <style type="text/css">
 #manage_form > table {
 border:0px none;
@@ -25,6 +28,18 @@ color:#3366CC;
 padding-right:20px;
 }
 </style>
+<link rel="stylesheet" type="text/css" href="/media/calendar/calendar-blue.css" />
+{% endblock %}
+
+{% block xtrajs %}
+    <!-- The calendar date/time selector. -->
+    <script type="text/javascript" src="/media/calendar/calendar.js"></script>
+    <script type="text/javascript" src="/media/calendar/lang/calendar-en.js"></script>
+    <script type="text/javascript" src="/media/calendar/calendar-setup.js"></script>
+{% endblock %}
+
+
+{% block content %}
 
 <p><h1>Deadline Management</h1></p>
 
@@ -42,7 +57,7 @@ padding-right:20px;
 {% autoescape off %}
 <table border="2"><tr><td>
 <p>
-<h2>{{ bit.verb }}</h2> -- {% ifequal bit.verb.friendly_name "" %}(no description){% else %}{{ bit.verb.friendly_name }}{% endifequal %}
+<h2>{{ bit.verb }}</h2> &mdash; {% ifequal bit.verb.friendly_name "" %}(no description){% else %}{{ bit.verb.friendly_name }}{% endifequal %}
 <br />
 <table>
 <tr>
