@@ -179,6 +179,10 @@ INSTALLED_APPS = (
 #    'django_evolution',
 #    'django_command_extensions',
 )
+import os
+for app in ('django_evolution', 'django_command_extensions'):
+    if os.path.exists(app):
+        INSTALLED_APPS += (app,)
 
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
