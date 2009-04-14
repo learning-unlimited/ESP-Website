@@ -301,7 +301,7 @@ def navBarNew(request, navbar, node, section):
     
 def navBarDelete(request, navbar, node, section):
     if not UserBit.UserHasPerms(request.user, navbar.path, GetNode(EDIT_VERB_STRING)):
-        raise PermissionDenied, "You don't have permisssion to do that!"
+        raise PermissionDenied, "You don't have permission to do that!"
 
     navbar.delete()
 
