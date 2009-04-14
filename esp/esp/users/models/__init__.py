@@ -979,7 +979,7 @@ class GuardianInfo(models.Model):
         app_label = 'users'
         db_table = 'users_guardianinfo'
 
-    def save(*args, **kwargs):
+    def save(self, *args, **kwargs):
         super(self, GuardianInfo).save(*args, **kwargs)
         from esp.mailman import add_list_member
         add_list_member('announcements', self.user)
@@ -1047,7 +1047,7 @@ class EducatorInfo(models.Model):
         app_label = 'users'
         db_table = 'users_educatorinfo'
 
-    def save(*args, **kwargs):
+    def save(self, *args, **kwargs):
         super(self, EducatorInfo).save(*args, **kwargs)
         from esp.mailman import add_list_member
         add_list_member('announcements', self.user)
