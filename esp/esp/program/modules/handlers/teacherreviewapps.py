@@ -63,7 +63,11 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
         if not self.user.canEdit(cls):
             raise ESPError(False), 'You cannot edit class "%s"' % cls
 
-        students = cls.students()
+        #   Fetch any student even remotely related to the class.
+        students_dict = cls.students_dict()
+        students = []
+        for key in students_dict:
+            students += students_dict[key]
 
         for student in students:
             student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
@@ -127,7 +131,8 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
     @meets_deadline("/AppReview")
     @needs_teacher
     def review_student(self, request, tl, one, two, module, extra, prog):
-        reg_node = request.get_node('V/Flags/Registration/Applied')
+        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        reg_nodes = scrmi.reg_verbs()
 
         try:
             cls = ClassSubject.objects.get(id = extra)
@@ -146,11 +151,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
         except ESPUser.DoesNotExist:
             raise ESPError(False), 'Cannot find student, %s' % student
 
-        section_anchors = [s.anchor for s in cls.sections.all()]
-        not_registered = True
-        for s in section_anchors:
-            if UserBit.objects.UserHasPerms(user=student, qsc=s, verb=reg_node):
-                not_registered = False
+        not_registered = (student.userbit_set.filter(qsc__parent=cls.anchor, verb__in=reg_nodes).count() == 0)
         if not_registered:
             raise ESPError(False), 'Student not a student of this class.'
 
@@ -158,7 +159,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
             student.app = student.studentapplication_set.get(program = self.program)
         except:
             student.app = None
-            raise ESPError(False), 'Error: Student did not apply. Student is automatically rejected.'
+            raise ESPError(False), 'Error: Student did not start an application.'
 
         student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
 

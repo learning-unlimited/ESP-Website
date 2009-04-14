@@ -73,7 +73,7 @@ class BaseAppElement:
                 form_class.base_fields[field] = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': 80, 'rows': 8}))
         
         if len(args) > 0:
-            initial_dict = args[0]
+            initial_dict = args[0].copy()
             args = args[1:]
         else:
             initial_dict = {}

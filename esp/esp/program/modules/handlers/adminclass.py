@@ -279,13 +279,13 @@ class AdminClass(ProgramModuleObj):
                 valid = (valid and sf.is_valid())
             
             if valid:
-                cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
-                cls_form.save_data(cls_alter)
                 for sf in sec_forms:
                     sec_alter = ClassSection.objects.get(id=sf.cleaned_data['secid'])
                     sf.save_data(sec_alter)
+                cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
+                cls_form.save_data(cls_alter)
                 return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))
-        
+            
         context['class'] = cls
         context['sections'] = sections
         context['cls_form'] = cls_form
