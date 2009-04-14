@@ -404,6 +404,23 @@ class ESPUser(User, AnonymousUser):
         cache = UserBit.objects.cache(self)
         cache[self.enrollment_cache_key(program)] = None
 
+    def getApplication(self, program, create=True):
+        from esp.program.models.app_ import StudentApplication
+        
+        apps = StudentApplication.objects.filter(user=self, program=program)
+        print 'Count: %d' % apps.count()
+        if apps.count() > 1:
+            raise ESPError(True), '%d applications found for user %s in %s' % (apps.count(), self.username, program.niceName())
+        elif apps.count() == 0:
+            if create:
+                app = StudentApplication(user=self, program=program)
+                app.save()
+                return app
+            else:
+                return None
+        else:
+            return apps[0]
+
     def getClasses(self, program=None, verbs=None):
         from esp.program.models import ClassSubject
         csl = self.getSections(program, verbs)
@@ -411,7 +428,14 @@ class ESPUser(User, AnonymousUser):
         return ClassSubject.objects.filter(id__in=pc_ids)
     
     def getAppliedClasses(self, program=None):
-        return self.getClasses(program, verbs=['/Applied'])
+        #   If priority registration is enabled, add in more verbs.
+        if program:
+            scrmi = program.getModuleExtension('StudentClassRegModuleInfo')
+            verb_list = scrmi.reg_verbs(uris=True)
+        else:
+            verb_list = ['/Applied']
+            
+        return self.getClasses(program, verbs=verb_list)
        
     def getEnrolledClasses(self, program=None, request=None):
         """ A new version of getEnrolledClasses that accepts arbitrary registration
@@ -878,8 +902,8 @@ class TeacherInfo(models.Model):
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
-    def save(*args, **kwargs):
-        super(self, TeacherInfo).save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        super(TeacherInfo, self).save(*args, **kwargs)
         from esp.mailman import add_list_member
         add_list_member('teachers', self.user)
         

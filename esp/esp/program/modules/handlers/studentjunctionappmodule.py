@@ -71,8 +71,39 @@ class StudentJunctionAppModule(ProgramModuleObj):
                 'studentapps':          """Students who have started the student application."""}
     
     def isCompleted(self):
-        return self.user.studentapplication_set.all().filter(program = self.program, done = True).count() > 0
-
+        """ This step is completed if the student has marked their application as complete or answered questions for
+        all of their classes.  I know this is slow sometimes.  -Michael P"""
+        
+        app = self.user.getApplication(self.program)
+        
+        #   Check if the application is empty or marked as completed.
+        if app.done:
+            return True 
+        app.set_questions()
+        if app.questions.all().count() == 0:
+            return True
+            
+        #   Code below here may be unnecessary; it's just to save students the trouble 
+        #   of clicking through to mark their application complete before they can confirm.
+            
+        #   Get the student's responses to application questions.
+        responses = app.responses.all()
+        response_question_ids = [x.question.id for x in responses]
+        response_dict = {}
+        for i in range(len(responses)):
+            response_dict[response_question_ids[i]] = responses[i]
+        print 'Responses to questions: %s' % response_question_ids
+        
+        #   Check that they responded to everything.
+        classes = self.user.getAppliedClasses(self.program)
+        for cls in classes:
+            for i in [x['id'] for x in cls.studentappquestion_set.all().values('id')]:
+                if i not in response_question_ids:
+                    return False
+                elif not response_dict[i].complete:
+                    return False
+        return True
+        
     def deadline_met(self):
         return super(StudentClassRegModule, self).deadline_met('/Applications')
 
@@ -80,7 +111,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Applications')
     def application(self,request, tl, one, two, module, extra, prog):
-        app, created = StudentApplication.objects.get_or_create(user=self.user, program=self.program)
+        app = self.user.getApplication(self.program)
         app.set_questions()
         form = None
         if request.method == 'POST':

@@ -600,7 +600,7 @@ class ClassSection(models.Model):
         if scrmi.use_priority:
             verbs = ['/Enrolled']
         else:
-            verbs = ['/' + scrmi.get_signup_verb().name]
+            verbs = ['/' + scrmi.signup_verb.name]
         
         # check to see if there's a conflict:
         for sec in user.getSections(self.parent_program, verbs=verbs):
@@ -864,7 +864,7 @@ class ClassSection(models.Model):
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     
-        prereg_verb_base = scrmi.get_signup_verb()
+        prereg_verb_base = scrmi.signup_verb
         if scrmi.use_priority:
             prereg_verb = DataTree.get_by_uri(prereg_verb_base.uri + '/%d' % priority, create=True)
         else:
@@ -889,6 +889,14 @@ class ClassSection(models.Model):
                 students.append(ESPUser(user))
                 self.cache['students'] = students
                 self.update_cache_students()
+                
+            #   Clear completion bit on the student's application if the class has app questions.
+            app = user.getApplication(self.parent_program, create=False)
+            if app:
+                app.set_questions()
+                if app.questions.count() > 0:
+                    app.done = False
+                    app.save()
                 
             return True
         else:

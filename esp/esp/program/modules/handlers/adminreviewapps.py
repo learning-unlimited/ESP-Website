@@ -82,7 +82,12 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         if not self.user.canEdit(cls):
             raise ESPError(False), 'You cannot edit class "%s"' % cls
 
-        students = list(cls.students())
+        #   Fetch any student even remotely related to the class.
+        students_dict = cls.students_dict()
+        students = []
+        for key in students_dict:
+            students += students_dict[key]
+            
         students = filter(lambda x: x.studentapplication_set.filter(program=self.program).count() > 0, students)
 
         for student in students:
@@ -147,7 +152,9 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def view_app(self, request, tl, one, two, module, extra, prog):
-        reg_node = request.get_node('V/Flags/Registration/Applied')
+        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        reg_nodes = scrmi.reg_verbs()
+        
         try:
             cls = ClassSubject.objects.get(id = extra)
             section = cls.default_section()
@@ -163,9 +170,7 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
         except ESPUser.DoesNotExist:
             raise ESPError(False), 'Cannot find student, %s' % student
 
-        if not UserBit.objects.UserHasPerms(user = student,
-                                            qsc  = section.anchor,
-                                            verb = reg_node):
+        if student.userbit_set.filter(qsc__parent=cls.anchor, verb__in=reg_nodes).count() == 0:
             raise ESPError(False), 'Student not a student of this class.'
         
         try:
