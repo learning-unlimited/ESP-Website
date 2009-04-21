@@ -1,6 +1,12 @@
 <hr />
 <h2>Review your classes' students...</h2>
 <br />
+{% if num_teacher_questions %}
+    First, <a href="/teach/{{ program.getUrlBase }}/app_questions/">establish application questions</a> for your students. Then proceed to score the applications for each of your classes.
+{% else %}
+    Here you can review and score the applications for each of your classes.
+{% endif %}
+<br />
 <ul>
 {% for cls in classes %}
 <li>

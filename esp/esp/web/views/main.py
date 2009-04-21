@@ -28,29 +28,21 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.cal.models import Event
-from esp.qsd.models import QuasiStaticData
 from esp.qsd.views import qsd
 from django.core.exceptions import PermissionDenied
 from esp.datatree.models import *
-from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits, ESPUser
-from esp.miniblog.models import Entry
-from esp.dbmail.models import MessageRequest
-from django.contrib.auth.models import User, AnonymousUser
-from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
+from esp.users.models import GetNodeOrNoBits
+from django.http import Http404, HttpResponseRedirect
 from django.template import loader, Context
 #from icalendar import Calendar, Event as CalEvent, UTC
 
 import datetime
 
-from django.contrib.auth.models import User
-from esp.web.models import NavBarEntry
 from esp.web.util.main import render_to_response
 from esp.web.views.myesp import myesp_handlers
 from esp.web.views.archives import archive_handlers
-from esp.miniblog.views import preview_miniblog
 from esp.middleware import ESPError
-from esp.web.forms.contact_form import ContactForm, email_addresses, email_choices
+from esp.web.forms.contact_form import ContactForm, email_addresses
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 
@@ -148,7 +140,14 @@ def program(request, tl, one, two, module, extra = None):
 		prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
 	except Program.DoesNotExist:
 		raise Http404("Program not found.")
-        
+
+        setattr(request, "program", prog)
+        setattr(request, "tl", tl)
+        if extra:
+            setattr(request, "module", "%s/%s" % (module, extra))
+        else:
+            setattr(request, "module", module)
+            
 	from esp.program.modules.base import ProgramModuleObj
 	newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
 
@@ -186,8 +185,7 @@ def contact(request, section='esp'):
 		
 	
 	if request.method == 'POST':
-		data = request.POST.copy()
-		form = ContactForm(data)
+		form = ContactForm(request.POST)
 		SUBJECT_PREPEND = '[ ESP WEB ]'
 		
 		if form.is_valid():

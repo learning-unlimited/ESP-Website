@@ -43,19 +43,11 @@ import operator
 class SurveyManagement(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
-        return [ {
+        return {
             "link_title": "Surveys",
             "module_type": "manage",
             "seq": 25
-            }, {
-            "link_title": "Survey",
-            "module_type": "teach",
-            "seq": 15
-            }, {
-            "link_title": "Surveys",
-            "module_type": "learn",
-            "seq": 20
-            } ]
+            }
                  
     def isStep(self):
         return False

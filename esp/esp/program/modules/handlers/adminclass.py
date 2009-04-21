@@ -105,7 +105,7 @@ class AdminClass(ProgramModuleObj):
         
     def prepare(self, context=None):
         if context is None: context = {}
-        classes = self.getClasses()
+        classes = self.getClasses().order_by('id')
         context['noclasses'] = (len(classes) == 0)
         context['classes']   = classes
         return context
@@ -172,11 +172,11 @@ class AdminClass(ProgramModuleObj):
                 except ValueError:
                     usernames.append( id.strip() )
                     
-            Q_Users = Q()
-            if usernames != []:
+            Q_Users = Q(id=-1) # in case usernames and ids are both empty
+            if usernames:
                 Q_Users |= Q(username__in = usernames)
 
-            if ids != []:
+            if ids:
                 Q_Users |= Q(id__in = ids)
                     
             users = User.objects.filter( Q_Users )
@@ -270,25 +270,22 @@ class AdminClass(ProgramModuleObj):
         sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in sections]
         
         if request.method == 'POST':
-            data = request.POST.copy()
-            #   assert False, data
-            
-            cls_form.data = data
+            cls_form.data = request.POST
             cls_form.is_bound = True
             valid = cls_form.is_valid()
             for sf in sec_forms:
-                sf.data = data
+                sf.data = request.POST
                 sf.is_bound = True
                 valid = (valid and sf.is_valid())
             
             if valid:
-                cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
-                cls_form.save_data(cls_alter)
                 for sf in sec_forms:
                     sec_alter = ClassSection.objects.get(id=sf.cleaned_data['secid'])
                     sf.save_data(sec_alter)
+                cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
+                cls_form.save_data(cls_alter)
                 return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))
-        
+            
         context['class'] = cls
         context['sections'] = sections
         context['cls_form'] = cls_form

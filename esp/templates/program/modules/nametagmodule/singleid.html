@@ -9,7 +9,7 @@
      </td>
      <td class="right url">{% if user.id %}
       <span class="studentid">{{user.username}}</span>
-      <br />{% endif  %}       http://esp.mit.edu
+      <br />{% endif  %}       http://{{ request.META.HTTP_HOST }}
      </td>
   </tr>
   </table>
@@ -18,9 +18,9 @@
     <table class="top">
     <tr>
       <td class="left company">
-         MIT Educational Studies Program
+         Splash! Chicago
       </td>
-      <td class="right phone">(617)253-4882</td>
+      <td class="right phone"><!-- insert phone number here --></td>
     </tr>
     </table>
     <div class="firstspace">&nbsp;</div>

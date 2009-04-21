@@ -29,6 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.contrib import admin
-from esp.web.models import NavBarEntry
+from esp.web.models import NavBarEntry, NavBarCategory
         
 admin.site.register(NavBarEntry)
+admin.site.register(NavBarCategory)

@@ -39,23 +39,33 @@ If you have any questions regarding the program, <br /> please email the
        Manage Your Classes
     </th>
   </tr>
-  {% if not teacherclsmodule.noclasses %}
-    <td colspan="6">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; e-mail the directors if you believe there is a problem with your time or room assignment.  Also, e-mail the directors immediately if you need to cancel a class.</td>
+  {% if teacherclsmodule.noclasses %}
+  <tr>
+    <td class="clsleft classname">
+      <em>(None available)</em>
+    </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+   </tr>
   {% endif %}
+  <tr>
+    <td colspan="6">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; e-mail the directors if you believe there is a problem with your time or room assignment.  Also, e-mail the directors immediately if you need to cancel a class.</td>
    </tr>
   {% for cls in teacherclsmodule.clslist %}
   <tr>
-    <td class="clsleft classname">
+    <td class="clsleft classname bordertop2">
       <span title="{{cls}}">
       {{ cls|truncatewords:6 }}
+      <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
       </span>
     </td>
-    <td class="clsmiddle">
+    <td class="clsmiddle bordertop2">
        <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
          <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
        </form>
     </td>
-    <td class="clsmiddle">
+    <td class="clsmiddle bordertop2">
        <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
 {% if module.deadline_met %}
@@ -70,30 +80,32 @@ If you have any questions regarding the program, <br /> please email the
          <input class="button" type="submit" value="View Status" />
       </form>
    </td>
-   <td class="clsmiddle">
+   <td class="clsmiddle bordertop2">
       <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
         title="View Class' Students" class="abutton">
-       Students
+       View Students
       </a>
    </td>
-   <td class="clsright">
+   <td class="clsright bordertop2">
       {% if cls.pageExists %}
-      <a href="/learn/{{cls.getUrlBase}}/index.html"
+      <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.html"
          title="{{ cls }}...">Visit web page</a>
       {% else %}
-      <a href="/learn/{{cls.getUrlBase}}/index.edit.html"
+      <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.edit.html"
 	 title="Create `{{ cls }}'...">Create web page</a>
       {% endif %}
      </td>
    </tr>
+
    <tr>
-    <td class="clsmiddle" colspan="3">
-	There are {{ cls.anchor.media_set.count }} documents associated with this class.
+    <td class="clsleft" colspan="5">
+	<b>Document uploads</b>: There are {{ cls.anchor.media_set.count }} documents associated with this class.
     </td>
    <td class="clsright" colspan="1">
 	<a href="/teach/{{ one }}/{{ two }}/class_docs/{{cls.id}}" title="Upload/manage files" class="abutton">Manage Documents</a>
      </td>
    </tr>
+
     {% if teacherclsmodule.allow_coteach %}
     <tr>
     <td class="clsleft"><b>Coteachers: </b></td>

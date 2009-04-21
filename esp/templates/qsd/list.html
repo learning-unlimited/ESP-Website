@@ -1,0 +1,69 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Static Page Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block subsection_name %}Scheduling{% endblock %}
+
+{% block content %}
+
+<h1>Static Page Management</h1>
+
+<p>Below is a list of all the static pages on the ESP site.  You can move a page to a new URL by clicking 'Modify' next to that page.  If a page is enabled, you may disable it by clicking 'Delete' and it will no longer be accessible.  But you can also undelete pages, if you'd like them to show up again.</p>
+
+<div id="program_form">
+
+<center>
+<form method="post" action="{{ request.path }}?cmd=bulk_move">
+<table width="600">
+<tr>
+    <th colspan="6">List of Pages</th>
+</tr>
+<tr>
+    <td colspan="6">
+        To move all of the checked pages together: &nbsp;&nbsp;&nbsp;
+        <input type="submit" class="fancybutton" value="Bulk Move" />
+    </td>
+</tr>
+<tr>
+    <th class="small" width="70">Move?</th>
+    <th class="small" width="300">Path (click to view/edit)</th>
+    <th class="small">Nav. category</th>
+    <th class="small">Title</th>
+    <th class="small" colspan="2">Options</th>
+</tr>
+{% for qsd in qsd_list %}
+<tr>
+    <td><input type="checkbox" name="check_{{ qsd.id }}" /></td>
+    <td><a href="{{ qsd.url }}">{{ qsd.url }}</a></td>
+    <td>{{ qsd.nav_category.name }}</td>
+    <td>{{ qsd.title }}</td>
+    <td><a href="{{ request.path }}?cmd=move&id={{ qsd.id }}" class="abutton">Move</a></td>
+    <td>{% if qsd.disabled %}
+            <a href="{{ request.path }}?cmd=undelete&id={{ qsd.id }}" class="abutton">Undelete</a>
+        {% else %}
+            <a href="{{ request.path }}?cmd=delete&id={{ qsd.id }}" class="abutton">Delete</a>
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}
+<tr>
+    <td colspan="5">
+        To move all of the checked pages together: &nbsp;&nbsp;&nbsp;
+        <input type="submit" class="fancybutton" value="Bulk Move" />
+    </td>
+</tr>
+</table>
+</form
+
+</center>
+
+<br />
+
+</div>
+
+{% endblock %}

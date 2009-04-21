@@ -54,30 +54,40 @@ class SATPrepAdminModuleInfo(models.Model):
     class Admin:
         pass
 
+REG_VERB_BASE = 'V/Flags/Registration'
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
-    
+
     module               = models.ForeignKey(ProgramModuleObj)
     enforce_max          = models.BooleanField(default=True)
     
-    signup_verb          = AjaxForeignKey(DataTree)
+    signup_verb          = AjaxForeignKey(DataTree, default=DataTree.get_by_uri(REG_VERB_BASE + '/Enrolled'))
     use_priority         = models.BooleanField(default=False)
     priority_limit       = models.IntegerField(default=3)
     
     def __init__(self, *args, **kwargs):
+        #   Trying to fetch self.signup_verb directly throws a DoesNotExist for some reason.
         super(StudentClassRegModuleInfo, self).__init__(*args, **kwargs)
-        if 'signup_verb' not in kwargs.keys():
-            self.signup_verb = GetNode('V/Flags/Registration/Enrolled')
+        if (not self.signup_verb_id) and ('signup_verb' not in kwargs.keys()):
+            self.signup_verb = DataTree.get_by_uri(REG_VERB_BASE + '/Enrolled')
     
-    def get_signup_verb(self, save=False):
-        if self.signup_verb_id: # Trying to fetch self.signup_verb directly throws a DoesNotExist.
-            return self.signup_verb
-        # If it's not set, return a sensible default.
-        v = GetNode('V/Flags/Registration/Enrolled')
-        if save:
-            self.signup_verb = v
-            self.save()
-        return v
+    def reg_verbs(self, uris=False):
+        if not self.signup_verb:
+            return []
+
+        if self.use_priority:
+            verb_list = []
+            for i in range(0, self.priority_limit):
+                if uris:
+                    verb_list.append(self.signup_verb.uri[len(REG_VERB_BASE):] + '/%d' % (i + 1))
+                else:
+                    verb_list.append(DataTree.get_by_uri(self.signup_verb.uri + '/%d' % (i + 1)))
+        else:
+            if uris:
+                verb_list = [self.signup_verb.uri[len(REG_VERB_BASE):]]
+            else:
+                verb_list = [self.signup_verb]
+        return verb_list
     
     def __unicode__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
@@ -172,9 +182,10 @@ class SATPrepTeacherModuleInfo(models.Model):
         )
         
     SUBJECT_DICT = {'M': 'Math', 'V': 'Verbal', 'W': 'Writing'}
-    #   This is the unanimous decision of the ESP office, as of 11:30pm Thursday Sep 25, 2008.
+    #   This is the unanimous decision of the ESP office, as of 9:30pm Thursday Feb 20, 2009.
     #   Old category labels are kept commented below.   -Michael P
-    SECTION_DICT = {'A': 'Libra', 'B': 'Scorpio', 'C': 'Sagittarius', 'D': 'Capricorn', 'E': 'Aquarius', 'F': 'Pisces'}
+    SECTION_DICT = {'A': 'Java', 'B': 'Python', 'C': 'QB', 'D': 'C++', 'E': 'MATLAB', 'F': 'Scheme'}
+    #    SECTION_DICT = {'A': 'Libra', 'B': 'Scorpio', 'C': 'Sagittarius', 'D': 'Capricorn', 'E': 'Aquarius', 'F': 'Pisces'}
     #   SECTION_DICT = {'A': 'Helium', 'B': 'Neon', 'C': 'Argon', 'D': 'Krypton', 'E': 'Xenon', 'F': 'Radon'}
     #   SECTION_DICT = {'A': 'Mercury', 'B': 'Venus', 'C': 'Mars', 'D': 'Jupiter', 'E': 'Saturn', 'F': 'Neptune'}
     #   SECTION_DICT = {'A': 'Red', 'B': 'Orange', 'C': 'Yellow', 'D': 'Green', 'E': 'Blue', 'F': 'Violet'}

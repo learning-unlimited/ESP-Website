@@ -34,13 +34,12 @@ from esp.datatree.models import *
 from esp.qsd.models import QuasiStaticData
 from esp.web.util.main import render_to_response
 from django.core.mail import send_mail
-from django.template import loader
+from django.template import loader, Context
 from django.http import HttpResponseRedirect
 
 # model dependencies
 from esp.membership.models import AlumniInfo, AlumniRSVP, AlumniContact, AlumniMessage
 from esp.users.models import ContactInfo
-from esp.utils.forms import save_instance
 
 from esp.middleware import ESPError
 
@@ -69,14 +68,13 @@ def thread(request, extra):
         
     if request.method == 'POST':
         #   Handle submission of replies.
-        data = request.POST.copy()
+        data = request.POST
         form = AlumniMessageForm(thread, data, request=request)
         try:
             if form.is_valid():
-                new_message = AlumniMessage()
+                del form.cleaned_data['thread'] # make the form happy
+                new_message = form.save(commit = False)
                 new_message.thread = thread
-                del form.cleaned_data['thread']
-                save_instance(form, new_message, commit=False)
                 new_message.save()
                 return HttpResponseRedirect(request.path + '?success=1')
         except UnicodeDecodeError:
@@ -100,7 +98,7 @@ def alumnicontact(request):
         context['success'] = True
         
     if request.method == 'POST':
-        data = request.POST.copy()
+        data = request.POST
         form = AlumniContactForm(data, request=request)
         if form.is_valid():
             new_contact = form.load_data()
@@ -129,7 +127,7 @@ def alumnilookup(request):
     
     #   If the form has been submitted, process it.
     if request.method == 'POST':
-        data = request.POST.copy()
+        data = request.POST
         
         #   Option 1: submitted information for someone.
         method = data.get('method', 'none')
@@ -139,15 +137,15 @@ def alumnilookup(request):
             form2 = AlumniInfoForm(data, request=request)
     
             if form2.is_valid() and form1.is_valid():
-                #   Save the information in the database
-                new_info = AlumniInfo()
-                
                 #   Contact info form does additional check to see if making a new one is really necessary
                 new_contact = form1.load_user()
                 
                 #   Delete previous instances of this person.
                 AlumniInfo.objects.filter(contactinfo__last_name=new_contact.last_name, contactinfo__first_name=new_contact.first_name).delete()
-                save_instance(form2, new_info, {'contactinfo_id': new_contact.id}, True)
+                #   Save the new one into the database
+                new_info = form2.save(commit = False)
+                new_info.contactinfo = new_contact
+                new_info.save()
                 
                 #   Send an e-mail to esp-membership with details.
                 SUBJECT_PREPEND = '[ESP Alumni] Information Submitted:'
@@ -156,7 +154,7 @@ def alumnilookup(request):
                 
                 t = loader.get_template('email/alumniinfo')
         
-                msgtext = t.render({'contact_form': form1, 'main_form': form2})
+                msgtext = t.render(Context({'contact_form': form1, 'main_form': form2}))
                         
                 send_mail(SUBJECT_PREPEND + ' '+ form1.cleaned_data['first_name'] + ' ' + form1.cleaned_data['last_name'],
                         msgtext, from_email, to_email, fail_silently = True)
@@ -193,13 +191,12 @@ def alumnirsvp(request):
 
     #   If the form has been submitted, process it.
     if request.method == 'POST':
-        data = request.POST.copy()
-        form = AlumniRSVPForm(data)
+        data = request.POST
+        form = AlumniRSVPForm(data, request=request)
 
         if form.is_valid():
             #   Save the information in the database
-            new_rsvp = AlumniRSVP()
-            save_instance(form, new_rsvp)
+            new_rsvp = form.save()
             
             #   Send an e-mail to esp-membership with details.
             SUBJECT_PREPEND = '[ESP Alumni] RSVP From:'
@@ -208,7 +205,7 @@ def alumnirsvp(request):
             
             t = loader.get_template('email/alumnirsvp')
     
-            msgtext = t.render({'form': form})
+            msgtext = t.render(Context({'form': form}))
                     
             send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['name'], msgtext, from_email, to_email, fail_silently = True)
     
@@ -216,7 +213,7 @@ def alumnirsvp(request):
 
     else:
         #   Otherwise, the default view is a blank form.
-        form = AlumniRSVPForm()
+        form = AlumniRSVPForm(request=request)
     
     return render_to_response('membership/alumnirsvp.html', request, request.get_node('Q/Web/alumni'), {'form': form})
 

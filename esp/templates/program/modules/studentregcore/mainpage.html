@@ -115,8 +115,7 @@ tion is correct?'))
 {% if module.useTemplate %}
 <a name="module-{{module.id}}"></a>
 <br />
- {% include module.getTemplate %}
-
+{% include module.getTemplate %}
 {% endif %}
 {% endfor %}
 </div>
@@ -127,14 +126,20 @@ tion is correct?'))
 <center>
 
 
+{% if program.isFull %}{% if not canRegToFullProgram %}
+<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+{% endif %}{% else %}
+<!--
 {% if not completedAll %}
 <div class="errormsg">
-Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Save</em> button below (it will be active at this point).
+Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Confirm</em> button below (it will be active at this point).
 {% else %}
 <div class="info">
-Please click <em>Save</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
+Please click <em>Confirm</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
 {% endif %}
 </div>
+-->
+{% endif %}
 
 </center>
 {% endif %} -->

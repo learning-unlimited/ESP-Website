@@ -36,6 +36,7 @@ from esp.datatree.models import *
 from esp.users.models import User, UserBit
 from django import forms
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
+from esp.utils.widgets import DateTimeWidget
 from esp.middleware import ESPError
 
 
@@ -45,14 +46,14 @@ class UserBitForm(forms.ModelForm):
         super(UserBitForm, self).__init__(*args, **kwargs)
 
         if bit != None:
-            self.fields['startdate'] = forms.DateTimeField(initial=bit.startdate)
-            self.fields['enddate'] = forms.DateTimeField(initial=bit.enddate, required=False)
+            self.fields['startdate'] = forms.DateTimeField(initial=bit.startdate, widget=DateTimeWidget())
+            self.fields['enddate'] = forms.DateTimeField(initial=bit.enddate, widget=DateTimeWidget(), required=False)
             self.fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput())
             self.fields['qsc'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.qsc.id, widget=forms.HiddenInput())
             self.fields['verb'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.verb.id, widget=forms.HiddenInput())
         else:
-            self.fields['startdate'] = forms.DateTimeField(required=False)
-            self.fields['enddate'] = forms.DateTimeField(required=False)
+            self.fields['startdate'] = forms.DateTimeField(widget=DateTimeWidget(), required=False)
+            self.fields['enddate'] = forms.DateTimeField(widget=DateTimeWidget(), required=False)
             self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
 
         self.fields['user'] = forms.ModelChoiceField(queryset=User.objects.all(), widget=forms.HiddenInput(), required=False)
@@ -113,27 +114,13 @@ class AdminCore(ProgramModuleObj, CoreModule):
         """ View for controlling program deadlines (V/Deadline/Registration/*) """
         deadline_verb = GetNode("V/Deadline/Registration")
         
-        def add_tree_nodes_to_list(node):
-            retVal = []
-
-            for i in node.children():
-                retVal.append(i)
-                retVal += add_tree_nodes_to_list(i)
-
-            return retVal
-
         def try_else(fn1, fn2):
             try:
                 return fn1()
             except:
                 return fn2()
 
-        def mux_bit_to_dict(bit):
-            return { 'startdate': bit.startdate, 'enddate': bit.enddate, 'recursive': bit.recursive }
-
-        from django import forms
-        
-        nodes = add_tree_nodes_to_list(deadline_verb)
+        nodes = deadline_verb.descendants().exclude(id = deadline_verb.id)
 
         saved_successfully = "not_saving"
         
@@ -146,7 +133,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         }
                       for v in nodes ]
 
-            print "test1"
             
             for form in forms:
                 # Get rid of any bits we're deleting
@@ -155,7 +141,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
                                                       verb=v,
                                                       user__isnull=True):
                         bit.expire()
-                print "test2"
                 # Save any bits we're updating
                 if not form['delete_status'] and form['ub_form'].is_valid():
                     bit = form['ub_form'].save(commit=False)
@@ -172,7 +157,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         bit.save()
                     
                     saved_successfully = True
-            print "test3"
         else:
             forms = [ { 'verb': v,
                         'ub_form': try_else( lambda: UserBitForm( UserBit.objects.get(qsc=self.program_anchor_cached(),

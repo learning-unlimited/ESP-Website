@@ -1,6 +1,6 @@
     <tr>
         <td>
-            <b>{{ class.emailcode }}: {{ class.title|escape }}</b>
+            <b>{{ class.emailcode }}: <a href="{{ class.parent_program.get_teach_url }}catalogpreview/{{ class.id }}">{{ class.title|escape }}</a></b>
         </td>
         <td>
        <span class="teachers">

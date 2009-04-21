@@ -39,7 +39,7 @@ from esp.datatree.models import *
 from esp.users.models import UserBit
 from datetime         import datetime
 from django.db.models.query   import Q
-from esp.money.models import LineItemType, RegisterLineItem, LineItem
+from esp.accounting_docs.models import Document, MultipleDocumentError
 
 class OnsitePrintSchedules(ProgramModuleObj):
     @classmethod
@@ -70,7 +70,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
         Q_qsc  = Q(qsc  = qsc.id)
         Q_verb = Q(verb__in = [ verb.id ] + list( verb.children() ) )
         
-        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')
+        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')[:5]
         
         for ubit in ubits:
             ubit.enddate = datetime.now()
@@ -90,14 +90,27 @@ class OnsitePrintSchedules(ProgramModuleObj):
             # now we sort them by time/title
             classes.sort()
                 
-            #   Payment information using new accounting system
-            ps = student.paymentStatus(self.program_anchor_cached())
-            student.itemizedcosts = ps[3]
-            student.itemizedcosttotal = ps[2]
-            student.has_paid = ps[0]  
+
+            # get payment information
+            li_types = prog.getLineItemTypes(student)
+            try:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+            except MultipleDocumentError:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+            
+            # attach payment information to student
+            student.invoice_id = invoice.locator
+            student.itemizedcosts = invoice.get_items()
+            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')
+            student.itemizedcosttotal = invoice.cost()
+            student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
+            if student.has_financial_aid:
+                student.itemizedcosttotal = 0
+            student.has_paid = ( student.itemizedcosttotal == 0 )
+            
             student.payment_info = True
             student.classes = classes
-                
+
             students.append(student)
 
         if len(students) == 0:
@@ -105,11 +118,15 @@ class OnsitePrintSchedules(ProgramModuleObj):
             # set the refresh rate
             response['Refresh'] = '2'
         else:
-            response =  render_to_response(self.baseDir()+'studentschedules.html',
-                            request, (prog, tl), {'students': students})
+            from django.conf import settings
+            from esp.web.util.latex import render_to_latex
+
+            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, 'pdf')
+            #response =  render_to_response(self.baseDir()+'studentschedules.html',
+            #                request, (prog, tl), {'students': students})
 
             # set the refresh rate
-            response['Refresh'] = '0'
+            response['Refresh'] = '2'
 
         return response
 

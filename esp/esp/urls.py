@@ -33,16 +33,7 @@ from esp.settings import PROJECT_ROOT, MEDIA_ROOT
 
 admin.autodiscover()
 
-section_redirect_keys = {
-    'teach':   'Programs',
-    'manage':  'Programs',
-    'onsite':  'Programs',    
-    'learn':   'Programs',
-    'programs':'Programs',
-    None:      'Web',
-    }
-
-section_prefix_keys = {'teach': 'teach', 'learn': 'learn', 'programs': ''}
+from esp.section_data import section_redirect_keys, section_prefix_keys
 
 # Static media
 urlpatterns = patterns('django.views.static',
@@ -72,6 +63,11 @@ urlpatterns += patterns('django.views.generic',
                         (r'.php$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
                         )
 
+# program stuff
+urlpatterns += patterns('',
+                        (r'^',  include('esp.program.urls')),
+                        )
+
 urlpatterns += patterns('esp.web.views.bio',
 
                         # bios
@@ -84,6 +80,10 @@ urlpatterns += patterns('esp.web.views.bio',
 
 urlpatterns += patterns('',
                         (r'^myesp/', include('esp.users.urls'),)
+                        )
+
+urlpatterns += patterns('',
+                        (r'^cache/', include('esp.cache.urls'),)
                         )
 
 urlpatterns += patterns('esp.qsd.views',
@@ -102,7 +102,8 @@ urlpatterns += patterns('django.contrib.auth.views',
 
 # other apps
 urlpatterns += patterns('',
-                        (r'^alumni/', include('esp.membership.alumni_urls')),
+#                        (r'^alumni/', include('esp.membership.alumni_urls')),
+#                        (r'^membership/', include('esp.membership.urls')),
                         (r'^',  include('esp.miniblog.urls')),
                         (r'^',  include('esp.survey.urls')),
                         )
@@ -160,7 +161,3 @@ urlpatterns += patterns('esp.web.views.main',
 urlpatterns += patterns('esp.web.views.navBar',
     # Update navbar
     (r'^navbar/edit.scm', 'updateNavBar') )
-
-urlpatterns += patterns('esp.program.views',
-                    (r'^manage/([-A-Za-z0-9_ ]+)/?', 'managepage'),
-                    )

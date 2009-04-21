@@ -246,7 +246,7 @@ class LineItemManager(ProcedureManager):
     def forProgram(self, program):
         """ Get all LineItems (currently including optional ones) whose types are anchored in the given program. """
         a = GetNode(program.anchor.get_uri()+'/LineItemTypes')
-        return self.filter(li_type__anchor__below=a)
+        return self.filter(QTree(li_type__anchor__below=a))
 
 class LineItem(models.Model):
     """ A transaction line item """

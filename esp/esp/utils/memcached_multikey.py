@@ -12,6 +12,8 @@ class CacheClass(BaseCache):
 
     def make_key(self, key):
         return settings.CACHE_PREFIX + key
+    def unmake_key(self, key):
+        return key[len(settings.CACHE_PREFIX):]
         
     def add(self, key, value, timeout=0):
         return self._wrapped_cache.add(self.make_key(key), value, timeout=timeout)
@@ -26,7 +28,19 @@ class CacheClass(BaseCache):
         return self._wrapped_cache.delete(self.make_key(key))
 
     def get_many(self, keys):
-        return self._wrapped_cache.get_many([make_key(key) for key in self.keys])
+        wrapped_ans = self._wrapped_cache.get_many([self.make_key(key) for key in keys])
+        ans = {}
+        for k,v in wrapped_ans.items():
+            ans[self.unmake_key(k)] = v
+        return ans
+
+    # Django 1.1 feature
+    def incr(self, key, delta=1):
+        return self._wrapped_cache.incr(self.make_key(key), delta)
+
+    # Django 1.1 feature
+    def decr(self, key, delta=1):
+        return self._wrapped_cache.decr(self.make_key(key), delta)
 
     def close(self, **kwargs):
         self._wrapped_cache.close()

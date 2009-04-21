@@ -1,9 +1,9 @@
 {% if onsiteregform %}{% else %}
-<div style="height: 7.5in;">
+<div style="">
 <table align="center" width="100%">
 <tr>
-    <td valign="top" align="center" width="25%">{% comment %}
-        {% if student.payment_info %}
+    <td valign="top" align="center" width="25%">
+        {% comment %}{% if student.payment_info %}
             {% if student.meals %}
             <ul class="meals">
             {% for item in student.meals %}
@@ -14,8 +14,8 @@
 			<b>No meals preordered</b>
             {% endif %}
         {% else %}&nbsp;
-        {% endif %}
-    {% endcomment %}</td>
+        {% endif %}{% endcomment %}
+    </td>
     <td valign="top" width="40%" align="center">
         <div class="title">Student Schedule for <br />
             <span>{{ student.name }}</span>
@@ -73,8 +73,9 @@ If you have any questions or would like to switch classes, please go to the prog
 
 </table>
 </div>
- {% comment %}
-<table class="perforate" cellpadding="4px">
+
+<table class="perforate" cellpadding="4px">{% comment %}
+<tr><td>&nbsp;</td></tr>
  <tr>
   <td width="40%" align="center">
    <image src="http://esp.scripts.mit.edu/barcodegen/html/image.php?code=code39&o=1&t=50&r=1&text={{ student.invoice_id }}&f1=Arial.ttf&f2=8&a1=&a2=&a3=" />
@@ -86,4 +87,5 @@ If you have any questions or would like to switch classes, please go to the prog
     <b>Amount owed: ${{ student.itemizedcosttotal|floatformat:"-2" }}</b>
     </div>
   </td>
- </tr> {% endcomment %}
+ </tr>
+{% endcomment %}

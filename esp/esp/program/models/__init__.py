@@ -32,14 +32,12 @@ from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser
-from esp.lib.markdown import markdown
-from esp.qsd.models import QuasiStaticData
 from datetime import datetime, timedelta
 from django.core.cache import cache
-from esp.miniblog.models import Entry
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
+from esp.cache import cache_function
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -54,9 +52,6 @@ class ProgramModule(models.Model):
     # Main view function associated with this Program Module
     #   Not all program modules have main calls!
     main_call  = models.CharField(max_length=32, blank=True, null=True)
-
-    # aseering 3-19-2007 -- ??; no idea what this is for
-    check_call = models.CharField(max_length=32, blank=True, null=True)
 
     # One of teach/learn/etc.; What is this module typically used for?
     module_type = models.CharField(max_length=32)
@@ -268,18 +263,13 @@ class Program(models.Model):
         app_label = 'program'
         db_table = 'program_program'
 
+    @cache_function
     def checkitems_all_cached(self):
         """  The main Manage page requests checkitems.all() O(n) times in
         the number of classes in the program.  Minimize the number of these
         calls that actually hit the db. """
-        CACHE_KEY = "PROGRAM__CHECKITEM__CACHE__%d" % self.id
-        val = cache.get(CACHE_KEY)
-        if val == None:
-            val = self.checkitems.all()
-            len(val)
-            cache.set(CACHE_KEY, val, 1)
-        
-        return val
+        return self.checkitems.all()
+    checkitems_all_cached.depend_on_row(lambda:ProgramCheckItem, lambda item: {'self': item.program})
 
     get_teach_url = _get_type_url("teach")
     get_learn_url = _get_type_url("learn")
@@ -297,7 +287,9 @@ class Program(models.Model):
         return '/'.join(str_array[-2:])
     
     def __unicode__(self):
-        return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+        if not hasattr(self, "_nice_name"):
+            self._nice_name = str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+        return self._nice_name
 
     def parent(self):
         return self.anchor.parent
@@ -487,7 +479,7 @@ class Program(models.Model):
         userbits = UserBit.objects.filter(verb = v, user = espuser,
                          qsc = self.anchor.tree_create(['Confirmation']))
 
-        userbits = userbits.filter(Q(enddate__isnull=True) | Q(enddate__gte=datetime.now()))
+        userbits = userbits.filter(enddate__gte=datetime.now())
 
         if len(userbits) < 1:
             return False
@@ -510,7 +502,6 @@ class Program(models.Model):
             return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
     
     def getAvailableClassrooms(self, timeslot):
-        from esp.resources.models import ResourceType
         #   Filters down classrooms to those that are not taken.
         return filter(lambda x: x.is_available(), self.getClassrooms(timeslot))
     
@@ -521,11 +512,12 @@ class Program(models.Model):
                 #   Make a dictionary with some helper variables for each resource.
                 result[c.name] = c
                 result[c.name].timeslots = [c.event]
+
+                result[c.name].furnishings = c.associated_resources()
+                result[c.name].sequence = c.schedule_sequence(self)
+                result[c.name].prog_available_times = c.available_times(self.anchor)
             else:
                 result[c.name].timeslots.append(c.event)
-            result[c.name].furnishings = c.associated_resources()
-            result[c.name].sequence = c.schedule_sequence(self)
-            result[c.name].prog_available_times = c.available_times(self.anchor)
             
         for c in result:
             result[c].timegroup = Event.collapse(result[c].timeslots)
@@ -542,7 +534,6 @@ class Program(models.Model):
         cache.delete(cache_key)
     
     def groupedClassrooms(self):
-        from esp.resources.models import ResourceType
         from django.core.cache import cache
         
         cache_key = self.classroom_group_key()
@@ -587,7 +578,7 @@ class Program(models.Model):
         return retVal
 
     def sections(self, use_cache=True):
-        return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id')
+        return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
     def getTimeSlots(self):
         return Event.objects.filter(anchor=self.anchor).order_by('start')
@@ -789,6 +780,9 @@ class Program(models.Model):
         return extension
 
     def getColor(self):
+        if hasattr(self, "_getColor"):
+            return self._getColor
+        
         cache_key = 'PROGRAM__COLOR_%s' % self.id
         retVal = cache.get(cache_key)
         
@@ -803,6 +797,8 @@ class Program(models.Model):
                     cache.set(cache_key, retVal, 9999)
         if retVal == -1:
             return None
+
+        self._getColor = retVal
         return retVal
     
     def visibleEnrollments(self):
@@ -810,6 +806,8 @@ class Program(models.Model):
         Returns whether class enrollments should show up in the catalog.
         Current policy is that after everybody can sign up for one class, this returns True.
         """
+        if hasattr(self, "_visibleEnrollments"):
+            return self._visibleEnrollments
         
         cache_key = 'PROGRAM_VISIBLEENROLLMENTS_%s' % self.id
         retVal = cache.get(cache_key)
@@ -823,6 +821,8 @@ class Program(models.Model):
                 if UserBit.objects.filter(QTree(qsc__above=self.anchor_id, verb__above=reg_verb), user__isnull=True, recursive=True, startdate__lte=datetime.now()).count() > 0:
                     retVal = True
             cache.set(cache_key, retVal, 9999)
+
+        self._visibleEnrollments = retVal
         return retVal
     
     def archive(self):
@@ -934,55 +934,47 @@ class RegistrationProfile(models.Model):
         app_label = 'program'
         db_table = 'program_registrationprofile'
 
-    @staticmethod
+    @cache_function
     def getLastProfile(user):
-        regProf = user.cache['getLastProfile']
-        if regProf is not None:
+        regProf = None
+        
+        if isinstance(user.id, int):
+            try:
+                regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
+            except:
+                pass
+
+        if regProf != None:
             return regProf
+        
+        regProf = RegistrationProfile()
+        regProf.user = user
 
-        try:
-            regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
-        except:
-            # Create a new one if it doesn't exist
-            regProf = RegistrationProfile()
-            regProf.user = user
-
-        user.cache['getLastProfile'] = regProf
         return regProf
+    getLastProfile.depend_on_row(lambda:RegistrationProfile, lambda profile: {'user': profile.user})
+    getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
     def confirmStudentReg(self, user):
         """ Confirm the specified user's registration in the program """
-        bits = UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
+        bits = UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
         if bits.count() == 0:
             bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
 
     def cancelStudentRegConfirmation(self, user):
         """ Cancel the registration confirmation for the specified student """
         raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
-        #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now())):
+        #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc__parent=self.anchor, qsc__name="Confirmation").filter(enddate__gte=datetime.now()):
         #    bit.expire()
         
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
-        #  TODO: make Django NOT do a db query to grab ESPUser's data
-        #  probably requires manually getting the cache data, since
-        #  it's not as lazily evaluated as it claims to be
-        ESPUser(self.user).cache['getLastProfile'] = None
         super(RegistrationProfile, self).save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        """ clear getLastProfile cache """
-        #  TODO: make Django NOT do a db query to grab ESPUser's data
-        #  probably requires manually getting the cache data, since
-        #  it's not as lazily evaluated as it claims to be
-        ESPUser(self.user).cache['getLastProfile'] = None
-        super(RegistrationProfile, self).delete(*args, **kwargs)
         
     @staticmethod
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')
+        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
             # Has this user already filled out a profile for the parent program?
             parent_program = program.getParentProgram()

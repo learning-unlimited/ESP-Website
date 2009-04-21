@@ -27,11 +27,13 @@ td.newday { border-width: 2px 1px 0 1px;}
 </head>
 <body>
 {% for scheditem in scheditems %}
-{% ifchanged %}
+
+{% ifchanged scheditem.teacher.id %}
 {% if not forloop.first %}
 </table>
 <div id="pagebreak">&nbsp;</div>
 {% endif %}
+
 <div class="title">Teacher Schedule for <br /><br />
     <span>{{ scheditem.name }}</span>
 </div>

@@ -40,7 +40,7 @@ Course Title:
 Course Slug:
 </label>
 <br />
-<small>(Used for the URL: http://esp.mit.edu/learn/{{program.getUrlBase}}/[SLUG]/index.html)</small>
+<small>(Used for the URL: http://{{ request.META.HTTP_HOST }}/learn/{{program.getUrlBase}}/[SLUG]/index.html)</small>
 {% if form.url.errors %}
 <br />
 <span class="form_error">{{ form.url.errors|join:", " }}</span>

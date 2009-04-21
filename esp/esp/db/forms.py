@@ -103,13 +103,13 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
         css = """
 <style type="text/css">
     /* Taken from Yahoo... */
-    #id_%s__yui_autocomplete {position:relative;width:%s;margin-bottom:1em;}/* set width of widget here*/
+    #id_%s__yui_autocomplete {position:relative;width:%sem;margin-bottom:1em;}/* set width of widget here*/
     #id_%s__yui_autocomplete {z-index:0} /* for IE z-index of absolute divs inside relative divs issue */
     #id_%s__yui_autocomplete input {_position:absolute;width:100%%;height:1.4em;z-index:0;} /* abs for ie quirks */
     #id_%s__container {position:relative; width:100%%;top:-.1em;}
     #id_%s__container .yui-ac-content {position:absolute;width:100%%;border:1px solid #ccc;background:#fff;overflow:hidden;z-index:9050;}
     #id_%s__container .yui-ac-shadow {position:absolute;margin:.3em;width:100%%;background:#eee;z-index:8000;}
-    #id_%s__container ul {padding:5px 0;width:100%%; list-item-type: none;margin-left: 0; padding-left: 0;z-index:9000;}
+    #id_%s__container ul {padding:5px 0;width:100%%; list-style-type: none;margin-left: 0; padding-left: 0;z-index:9000;}
     #id_%s__container li {padding:0 5px;cursor:default;white-space:nowrap;padding-left: 0; margin-left: 0;}
     #id_%s__container li.yui-ac-highlight {background:#9cf;z-index:9000;}
     #id_%s__container li.yui-ac-prehighlight {background:#CCFFFF;z-index:9000;}
@@ -225,18 +225,24 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             return None
         
         try:
-            value = int(value)
+            id = int(value)
         except ValueError:
             match = get_id_re.match(value)
             if match:
-                value = int(match.groups()[0])
+                id = int(match.groups()[0])
             else:
                 #   This is equivalent to a validation error but, now that we
                 #   trust the ForeignKey field to work normally, we don't need to
                 #   cause an error.
-                value = None
+                id = None
 
         if hasattr(self, "field"):
-            value = self.field.rel.to.objects.get(id=value)
+            # If we couldn't grab an ID, ask the target's autocompleter.
+            if id == None:
+                objs = self.field.rel.to.ajax_autocomplete(value)
+                if len( objs ) == 1:
+                    id = objs[0]['id']
+            # Finally, grab the object.
+            return self.field.rel.to.objects.get(id=id)
 
-        return value
+        return id

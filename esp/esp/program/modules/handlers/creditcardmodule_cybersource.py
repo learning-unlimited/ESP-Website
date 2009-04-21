@@ -69,14 +69,12 @@ class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
         # this should be fixed...this is the best I can do for now - Axiak
         # I think this is substantially better; it's the same thing, but in one query. - Adam
         #transactions = Transaction.objects.filter(anchor = self.program_anchor_cached())
-        #userids = [ x.fbo_id for x in transactions ]
-        QObj = Q(fbo__anchor=self.program_anchor_cached())
+        #userids = [ x.document_id for x in documents ]
+        QObj = Q(document__anchor=self.program_anchor_cached(), document__doctype=3, document__cc_ref__gt='')
 
         if QObject:
             return {'creditcard': QObj}
         else:
-            from esp.users.models import ESPUser
-            
             return {'creditcard':User.objects.filter(QObj).distinct()}
 
 

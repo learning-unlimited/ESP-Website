@@ -28,14 +28,13 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.miniblog.models import Entry
 from esp.datatree.models import *
 from esp.users.models    import ESPUser, User
-from esp.users.views import search_for_user, get_user_list
+from esp.users.views import get_user_list
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo, ClassSubject, ClassCategories
 from esp.cal.models import Event
@@ -74,7 +73,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
         
         if request.method == 'POST':
             #   Receive the data and create a series of rooms in the specified timeslot.
-            data = request.POST.copy()
+            data = request.POST
             timeslot_id = int(data.get('timeslot'))
             empty_rooms = data.get('empty_rooms')
             rooms = data.get('rooms')
@@ -400,7 +399,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                         scheduling_log.append('Added %s to %s at %s' % (user, cls['cls'], cls['cls'].meeting_times.all()[0]))
 
                         if not dry_run:
-                            cls['cls'].preregister_student(user)
+                            cls['cls'].preregister_student(user, overridefull=True)
                             cls['cls'].update_cache_students()
                             
                         for ts in cls['cls'].meeting_times.all():
@@ -472,10 +471,10 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
             cur_classes = ClassSubject.objects.filter(parent_program = self.program)
             [cls.delete() for cls in cur_classes]
 
-        dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-        dummy_anchor.save()
+        #dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
+        #dummy_anchor.save()
         
-        data = request.POST.copy()
+        data = request.POST
         
         #   Pull the timeslots from the multiselect field on the form.
         timeslots = []
@@ -506,7 +505,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                 newclass.class_size_max = room_capacity
                 
                 newclass.category = ClassCategories.objects.get(category = 'SATPrep')
-                newclass.anchor = dummy_anchor
+                newclass.anchor = self.program.classes_node()
     
                 newclass.save()
                                 
@@ -537,7 +536,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                     sec.meeting_times.add(ts)
                     sec.assign_room(new_room)
         
-        dummy_anchor.delete()
+        #dummy_anchor.delete()
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
 
     @aux_call

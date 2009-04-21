@@ -62,16 +62,11 @@ def render_class_core(cls):
     # Show enrollment?
     show_enrollment = prog.visibleEnrollments()
     
-    # Check to see if this is an implied class; if so, grab the parent program and use its colors instead
-    if prog.getParentProgram() is not None:
-        if cls.id in prog.getParentProgram().class_ids_implied():
-            prog = prog.getParentProgram()
-    
     # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
     colorstring = prog.getColor()
     if colorstring is not None:
         colorstring = ' background-color:#' + colorstring + ';'
-    
+
     return {'class': cls,
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
@@ -83,7 +78,7 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
 
     section = cls.get_section(timeslot=timeslot)
 
-    if user and prereg_url:
+    if False and user and prereg_url:
         error1 = cls.cannotAdd(user, True, request=request)
         # If we can't add the class at all, then we take that error message
         if error1:

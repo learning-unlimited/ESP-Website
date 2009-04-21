@@ -1,0 +1,18 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Password reset cancelled{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Cancelled"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block content %}
+<h1>Password Recovery Cancelled</h1>
+
+
+<p>
+  The password recovery request has been successfully cancelled.
+</p>
+
+{% endblock %}

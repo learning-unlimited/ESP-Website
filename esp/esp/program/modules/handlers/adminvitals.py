@@ -36,6 +36,7 @@ from esp.program.models import ClassSubject, ClassSection, Program
 from esp.users.models import UserBit, ESPUser, shirt_sizes, shirt_types
 from django.contrib.auth.models import User
 from django.core.cache import cache
+import math
 
 class KeyDoesNotExist(Exception):
     pass
@@ -118,18 +119,20 @@ class AdminVitals(ProgramModuleObj):
                 shirt_count[ shirt_type[0] ] = {}
                 for shirt_size in shirt_sizes:
                     shirt_count[ shirt_type[0] ][ shirt_size[0] ] = 0
-            student_dict = self.program.students()
-            if student_dict.has_key('classreg'):
-                for student in student_dict['classreg']:
-                    profile = ESPUser(student).getLastProfile().student_info
-                    if profile is not None:
-                        if shirt_count.has_key(profile.shirt_type) and shirt_count[profile.shirt_type].has_key(profile.shirt_size):
-                            shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
-                shirts['students'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
+# removing this since students don't actually have t-shirt info anymore --rye 02-18-09
+#
+#            student_dict = self.program.students()
+#            if student_dict.has_key('classreg'):
+#                for student in student_dict['classreg']:
+#                    profile = ESPUser(student).getLastProfile().student_info
+#                    if profile is not None:
+#                        if shirt_count.has_key(profile.shirt_type) and shirt_count[profile.shirt_type].has_key(profile.shirt_size):
+#                            shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
+#                shirts['students'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
 
-            for shirt_type in shirt_types:
-                for shirt_size in shirt_sizes:
-                    shirt_count[ shirt_type[0] ][ shirt_size[0] ] = 0
+#            for shirt_type in shirt_types:
+#                for shirt_size in shirt_sizes:
+#                    shirt_count[ shirt_type[0] ][ shirt_size[0] ] = 0
             teacher_dict = self.program.teachers()
             if teacher_dict.has_key('class_approved'):
                 for teacher in teacher_dict['class_approved']:
@@ -146,6 +149,12 @@ class AdminVitals(ProgramModuleObj):
         context['shirt_sizes'] = adminvitals_shirt['shirt_sizes']
         context['shirt_types'] = adminvitals_shirt['shirt_types']
         context['shirts'] = adminvitals_shirt['shirts']
+
+        shours = 0
+        for section in self.program.sections():
+            shours += math.ceil(section.duration)*section.parent_class.class_size_max
+        
+        context['classpersonhours'] = shours
         
         return context
     

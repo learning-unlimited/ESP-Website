@@ -1,0 +1,12 @@
+{% if show_class %}
+    {% if not class.isFull %}
+    <tr>
+        <td>
+            <b style="font-size: 1.3em">{{ class.emailcode }}</b>
+        </td>
+        <td style="font-size: 1.3em">
+            {{ class.title }} ({{class.parent_class.grade_min}}-{{class.parent_class.grade_max}})
+        </td>
+    </tr>
+    {% endif %}
+{% endif %}

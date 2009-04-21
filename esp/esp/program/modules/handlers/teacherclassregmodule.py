@@ -28,16 +28,15 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassImplication
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
 from django.utils.datastructures import MultiValueDict
-from esp.cal.models              import Event
 from django.core.mail            import send_mail
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
@@ -490,7 +489,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
             if not self.deadline_met():
-                return self.goToCore();
+                return self.goToCore(tl)
             
             reg_form = TeacherClassRegForm(self, request.POST)
             # Silently drop errors from section wizard when we're not using it
@@ -529,21 +528,17 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # If the time you're already teaching plus the time of the class you propose exceeds the program's total time, fail.
                 # The newclass_oldtime term balances things out if this isn't actually a new class.
                 self.user = ESPUser(self.user)
-#                if self.user.getTaughtTime(prog, include_scheduled=True) + timedelta(hours=new_duration) > self.program.total_duration() + newclass_oldtime:
-#                    raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
+                if self.user.getTaughtTime(prog, include_scheduled=True) + timedelta(hours=new_duration) > self.program.total_duration() + newclass_oldtime:
+                    raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
 
                 # datatree maintenance
                 if newclass_isnew:
                     newclass.parent_program = self.program
-                    newclass.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-
-                    newclass.anchor.save(old_save=True)
-                    newclass.enrollment = 0
+                    newclass.anchor = self.program.classes_node()
                     newclass.save()
-                    newclass.anchor.delete(True)
                 
-                    nodestring = newclass.category.category[:1].upper() + str(newclass.id)
-                    newclass.anchor = self.program.classes_node().tree_create([nodestring])
+                    nodestring = newclass.category.symbol + str(newclass.id)
+                    newclass.anchor = newclass.anchor.tree_create([nodestring])
                     newclass.anchor.tree_create(['TeacherEmail'])
                     
                 newclass.anchor.friendly_name = newclass.title
@@ -622,7 +617,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                             section.anchor.delete(True)
                             
                             # set up the class's actual location on the data tree
-                            nodestring = section.category.category[:1].upper() + str(section.id)
+                            nodestring = section.category.symbol + str(section.id)
                             section.anchor = subprogram.classes_node().tree_create([nodestring])
                             section.anchor.tree_create(['TeacherEmail'])
                             section.anchor.friendly_name = section.title
@@ -703,11 +698,17 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data = newclass.__dict__
                 # Duration can end up with rounding errors. Pick the closest.
                 old_delta = None
+                # Technically, this is a "backwards compatibility" field, so we put in a hack
+                # for the "correct" usage. This feels silly. Why are ClassSections allowed different
+                # durations when every interface assumes they're identical?
+                current_duration = current_data['duration'] or newclass.sections.all()[0].duration
+                rounded_duration = 0
                 for k, v in self.getDurations() + [(0,'')]:
-                    new_delta = abs( k - current_data['duration'] )
+                    new_delta = abs( k - current_duration )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
-                        current_data['duration'] = k
+                        rounded_duration = k
+                current_data['duration'] = rounded_duration
                 current_data['category'] = newclass.category.id
                 current_data['num_sections'] = newclass.sections.count()
                 current_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
@@ -753,7 +754,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         # Search for teachers with names that start with search string
         if not request.GET.has_key('q'):
-            return self.goToCore()
+            return self.goToCore(tl)
 
         queryset = User.objects.filter(Q_teacher)
         

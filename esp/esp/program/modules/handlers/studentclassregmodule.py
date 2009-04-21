@@ -53,7 +53,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             }, {
             "link_title": "Sign up for Classes",
             "admin_title": "Sign up for Classes, SoW (StudentClassRegModule)",
-            "module_type": "learn",
+            "module_type": "learn2",
             "seq": 10,
             "required": True,
             "main_call": "sowclass"
@@ -70,7 +70,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
         Reg = QTree(userbit__verb__below = verb_base)
-        Unexpired = Q(userbit__enddate__isnull=True) | Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
+        Unexpired = Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
         
         if QObject:
             return {'classreg': self.getQForUser(Par & Unexpired & Reg)}
@@ -81,8 +81,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         return {'classreg': """Students who have have signed up for at least one class."""}
     
     def isCompleted(self):
-        self.user = ESPUser(self.user)
-        return self.user.getSections(self.program).count() > 0
+        return (len(self.user.getSections(self.program)[:1]) > 0)
 
     def deadline_met(self):
         #tmpModule = ProgramModuleObj()
@@ -94,29 +93,34 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def prepare(self, context={}):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
         timeslots = list(self.program.getTimeSlots().order_by('id'))
-        classList = regProf.preregistered_classes()
-
+        classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes())
+        
         prevTimeSlot = None
         blockCount = 0
-        
-        user = ESPUser(self.user)
-        user_grade = user.getGrade()
+
+        if not isinstance(self.user, ESPUser):
+            user = ESPUser(self.user)
+        else:
+            user = self.user
+            
         is_onsite = user.isOnsite(self.program)
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
         
         schedule = []
         timeslot_dict = {}
         for sec in classList:
-            class_qset = ClassSubject.objects.catalog(self.program).filter(anchor__friendly_name = sec.title, grade_min__lte=user_grade, grade_max__gte=user_grade)
-            show_changeslot = ( len([0 for c in class_qset if (not c.isFull()) or is_onsite]) > 1 ) # Does the class have enough siblings to warrant a "change section" link?
+            show_changeslot = ( len(classList) > 0 ) # Does the class have enough siblings to warrant a "change section" link?
+            
             if scrmi.use_priority:
                 sec.verbs = sec.getRegVerbs(user)
-            for mt in sec.meeting_times.all().values('id'):
+
+            for mt in sec.get_meeting_times():
                 section_dict = {'section': sec, 'changeable': show_changeslot}
-                if mt['id'] in timeslot_dict:
-                    timeslot_dict[mt['id']].append(section_dict)
+                if mt.id in timeslot_dict:
+                    timeslot_dict[mt.id].append(section_dict)
                 else:
-                    timeslot_dict[mt['id']] = [section_dict]
+                    timeslot_dict[mt.id] = [section_dict]
+                    
         for timeslot in timeslots:
             if prevTimeSlot != None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
@@ -130,14 +134,13 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
                 schedule.append((timeslot, cls_list, blockCount + 1, user_priority))
-            else:
+            else:                
                 schedule.append((timeslot, [], blockCount + 1, user_priority))
 
             prevTimeSlot = timeslot
                 
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
-        
         return context
 
     @aux_call
@@ -233,7 +236,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         #   Desired priority level is 1 above current max
         if section.preregister_student(self.user, self.user.onsite_local, False, priority):
-            bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now()))
+            bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
             if bits.count() == 0:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
 
@@ -274,7 +277,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         categories = {}
 
         for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
+            categories[cls.parent_class.category_id] = {'id':cls.parent_class.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.parent_class.category.category}
 
         return render_to_response(self.baseDir()+'fillslot.html', request, (prog, tl), {'classes':    classes,
                                                                                         'one':        one,
@@ -333,7 +336,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         categories = {}
 
         for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
+            categories[cls.parent_category.category_id] = {'id':cls.parent_class.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.parent_class.category.category}
         
         return render_to_response(self.baseDir()+'changeslot.html', request, (prog, tl), {'classes':    classes,
                                                                                         'oldclass':   oldclass,
@@ -356,7 +359,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         categories = {}
         for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt}
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
         
         return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), {'classes': classes,
                                                                                        'one':        one,

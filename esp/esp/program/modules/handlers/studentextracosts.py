@@ -34,6 +34,7 @@ from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from django.db.models.query import Q
+from esp.datatree.sql.query_utils import QTree
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
@@ -69,8 +70,8 @@ class StudentExtraCosts(ProgramModuleObj):
     def studentDesc(self):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
-
-        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached(parent=True)):
+        treeq = QTree(anchor__below=self.program_anchor_cached(parent=True))
+        for i in LineItemType.objects.filter(treeq):
             student_desc[i.text] = """Students who have opted for '%s'""" % i.text
 
         return student_desc
@@ -79,8 +80,10 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return the useful lists of students for the Extra Costs module. """
 
         student_lists = {}
+        treeq = QTree(anchor__below=self.program_anchor_cached(parent=True))
+
         # Get all the line item types for this program.
-        for i in LineItemType.objects.filter(anchor=self.program_anchor_cached(parent=True)):
+        for i in LineItemType.objects.filter(treeq):
             if QObject:
                 student_lists[i.text] = self.getQForUser(Q(accounting_lineitem__li_type = i))
             else:

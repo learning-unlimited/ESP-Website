@@ -72,12 +72,12 @@ class ProgramPrintables(ProgramModuleObj):
                 single_select = False
 
             if ids == None:
-                lineitems = LineItem.objects.forProgram(prog).order_by('li_type_id','user_id').select_related()
+                lineitems = LineItem.objects.forProgram(prog).order_by('li_type','user').select_related()
             else:
-                lineitems = LineItem.objects.forProgram(prog).filter(li_type__id__in=ids).order_by('li_type_id','user_id').select_related()
+                lineitems = LineItem.objects.forProgram(prog).filter(li_type__id__in=ids).order_by('li_type','user').select_related()
         else:
             single_select = False
-            lineitems = LineItem.objects.forProgram(prog).order_by('li_type_id','user_id').select_related()
+            lineitems = LineItem.objects.forProgram(prog).order_by('li_type','user').select_related()
         
         for lineitem in lineitems:
             lineitem.has_financial_aid = ESPUser(lineitem.user).hasFinancialAid(prog.anchor)
@@ -187,22 +187,22 @@ class ProgramPrintables(ProgramModuleObj):
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
                                       (self.program, tl),
-                                      {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list) })
+                                      {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list })
 
         
-        classes = ClassSubject.objects.filter(parent_program = self.program)
+        classes = list(ClassSubject.objects.filter(parent_program = self.program, status=10))
 
-        classes = [cls for cls in classes
-                   if cls.isAccepted()    ]
-
-        classes.sort(ClassSubject.catalog_sort)
+        sort_list_reversed = sort_list
+        sort_list_reversed.reverse()
+        for sort_fn in sort_list_reversed:
+            classes.sort(sort_fn)
 
         clsids = ','.join([str(cls.id) for cls in classes])
 
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
                                   (self.program, tl),
-                                  {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list) })
+                                  {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list })
         
 
     @aux_call
@@ -212,9 +212,20 @@ class ProgramPrintables(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
+        if request.GET.has_key('mingrade'):
+            mingrade=int(request.GET['mingrade'])
+            classes = classes.filter(grade_max__gte=mingrade)
+
+        if request.GET.has_key('maxgrade'):
+            maxgrade=int(request.GET['maxgrade'])
+            classes = classes.filter(grade_min__lte=maxgrade)
+
+        if request.GET.has_key('open'):
+            classes = [cls for cls in classes if not cls.isFull()]
+
         if request.GET.has_key('sort_name_list'):
             sort_name_list = request.GET['sort_name_list'].split(',')
-            first_sort = sort_name_list[0]
+            first_sort = sort_name_list[0] or 'category'
         else:
             first_sort = "category"
 
@@ -226,7 +237,7 @@ class ProgramPrintables(ProgramModuleObj):
             cls_dict = {}
             for cls in classes:
                 cls_dict[str(cls.id)] = cls
-            classes = [cls_dict[clsid] for clsid in clsids]
+            classes = [cls_dict[clsid] for clsid in clsids if cls_dict.has_key(clsid)]
 
         context = {'classes': classes, 'program': self.program}
 
@@ -576,6 +587,7 @@ class ProgramPrintables(ProgramModuleObj):
             classes.sort()            
             for cls in classes:
                 scheditems.append({'name': teacher.name(),
+                                   'teacher': teacher,
                                    'cls' : cls})
 
         context['scheditems'] = scheditems
@@ -771,12 +783,12 @@ Student schedule for %s:
 
     @aux_call
     @needs_admin
-    def studentschedules(self, request, tl, one, two, module, extra, prog):
+    def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
         """ generate student schedules """
         
-        context = {'module': self     }
+        context = {'module': self }
 
-        if extra == 'onsite':
+        if onsite:
             students = [ESPUser(User.objects.get(id=request.GET['userid']))]
         else:
             filterObj, found = get_user_list(request, self.program.getLists(True))
@@ -784,7 +796,7 @@ Student schedule for %s:
             if not found:
                 return filterObj
 
-            students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
+            students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
         students.sort()
         
@@ -802,8 +814,7 @@ Student schedule for %s:
             student.updateOnsite(request)
             # get list of valid classes
             classes = [ cls for cls in student.getEnrolledSections()
-                                if cls.parent_program == self.program
-                                and cls.isAccepted()                       ]
+                                if cls.parent_program == self.program and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
             
@@ -823,7 +834,7 @@ Student schedule for %s:
             # attach payment information to student
             student.invoice_id = invoice.locator
             student.itemizedcosts = invoice.get_items()
-            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')
+            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')  # not just meals, but all BuyOne LineItems (for Spark 2009, included t-shirt, photo, etc)
             student.itemizedcosttotal = invoice.cost()
             student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
             if student.has_financial_aid:
@@ -834,7 +845,17 @@ Student schedule for %s:
             student.classes = classes
             
         context['students'] = students
-        return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+        
+        if extra:
+            file_type = extra.strip()
+        else:
+            file_type = 'pdf'
+
+        from django.conf import settings
+        context['PROJECT_ROOT'] = settings.PROJECT_ROOT
+            
+        from esp.web.util.latex import render_to_latex
+        return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
 
     @aux_call
     @needs_admin
@@ -845,8 +866,8 @@ Student schedule for %s:
         if not found:
             return filterObj
 
-        context = {'module': self     }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
+        context = {'module': self }
+        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct() ]
 
         students.sort()
         
@@ -865,6 +886,9 @@ Student schedule for %s:
                                    'cls' : cls})
 
         context['scheditems'] = scheditems
+
+        from django.conf import settings
+        context['PROJECT_ROOT'] = settings.PROJECT_ROOT
         
         return render_to_response(self.baseDir()+'flatstudentschedule.html', request, (prog, tl), context)
 

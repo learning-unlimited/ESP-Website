@@ -73,6 +73,10 @@ class SATPrepModule(ProgramModuleObj):
     def students(self,QObject = False):
         if QObject:
             return {'satprepinfo': self.getQForUser(Q(satprepreginfo__program = self.program)),
+                    'satprep_diag_current': self.getQForUser(Q(satprepreginfo__program = self.program) & 
+                                                             (Q(satprepreginfo__diag_math_score__isnull=False) |
+                                                              Q(satprepreginfo__diag_verb_score__isnull=False) |
+                                                              Q(satprepreginfo__diag_writ_score__isnull=False))),
                     'satprep_mathdiag': self.getQForUser(Q(satprepreginfo__diag_math_score__isnull = False)),
                     'satprep_mathprac': self.getQForUser(Q(satprepreginfo__prac_math_score__isnull = False)),
                     'satprep_mathold' : self.getQForUser(Q(satprepreginfo__old_math_score__isnull = False)),
@@ -97,8 +101,13 @@ class SATPrepModule(ProgramModuleObj):
         studentsverbprac = User.objects.filter(Q(satprepreginfo__prac_verb_score__isnull = False)).distinct()
 
         students = User.objects.filter(satprepreginfo__program = self.program).distinct()
+        students_diag_current = User.objects.filter(Q(satprepreginfo__program = self.program) & 
+                                                             (Q(satprepreginfo__diag_math_score__isnull=False) |
+                                                              Q(satprepreginfo__diag_verb_score__isnull=False) |
+                                                              Q(satprepreginfo__diag_writ_score__isnull=False)))
 
         return {'satprepinfo': students,
+                'satprep_diag_current': students_diag_current,
                 'satprep_mathold': studentsmathold,
                 'satprep_verbold': studentsverbold,
                 'satprep_writold': studentswritold,
@@ -113,6 +122,7 @@ class SATPrepModule(ProgramModuleObj):
 
     def studentDesc(self):
         return {'satprepinfo': """Students who have filled out the SAT Prep information.""",
+                'satprep_diag_current': """Students who have current diagnostic exam scores.""",
                 'satprep_mathdiag': """Students who have an SAT math diagnostic score.""",
                 'satprep_writdiag': """Students who have an SAT writing diagnostic score.""",
                 'satprep_verbdiag': """Students who have an SAT verbal diagnostic score.""",

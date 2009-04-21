@@ -36,7 +36,7 @@ function reset()
         clearInterval(interval_handle);
     scroll_offset = 0;
     scroll();
-    setTimeout("start_scrolling();", 3000);
+    setTimeout("start_scrolling();", 50);
 }
 
 function start_scrolling()
@@ -58,6 +58,11 @@ html, body {
 
 .classitem {
 padding-bottom: 5px;
+font-size: 1.2em;
+}
+
+.materials {
+font-size: 1.7em;
 }
 </style>
 
@@ -79,13 +84,21 @@ padding-bottom: 5px;
 <td width="65%" valign="top">
   <table cellpadding="2" cellspacing="0" width="100%">
     <tr>
-        <th style="font-size: 1.5em" colspan="2">{{ prog.niceName }}: Open classes starting at {{ current_time.start|date:"D P" }}</th>
+        <th style="font-size: 2.0em" colspan="2">{{ prog.niceName }}: Open classes for the upcoming hour: starting at {{ current_time.start|date:"D P" }}</th>
     </tr>
     <tr>
-        <th style="font-size: 1.2em" class="materials">Code</th>
-        <th style="font-size: 1.2em" class="materials">Class Title</th>
+        <th style="font-size: 1.7em" class="materials">Code</th>
+        <th style="font-size: 1.7em" class="materials">Class Title</th>
     </tr>
-    {% for class in classes %}{% if class.starts_soon %}{% if not class.isFull %}{% render_class_current class %}{% endif %}{% endif %}{% endfor %}
+    {% for class in classes %}
+        {% ifequal class.start_time current_time %}
+        {% if not class.isFull %}
+        {% if not class.already_passed %}
+            {% render_class_current class %}
+        {% endif %}
+        {% endif %}
+        {% endifequal %}
+    {% endfor %}
 </table>
 </td>
 <Td valign="top">

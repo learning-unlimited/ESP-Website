@@ -274,3 +274,7 @@
 div.raw_id_admin {
     visibility: hidden;
 }
+
+div.calendar {
+    z-index: 10; /* 2 actually suffices, but I'm leaving a safety margin. -ageng 2009-02-02 */
+}

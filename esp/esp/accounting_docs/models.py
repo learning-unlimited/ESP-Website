@@ -163,7 +163,12 @@ class Document(models.Model):
             new_doc.anchor = anchor
             new_doc.doctype = doctype
             new_doc.user = user
-            new_doc.locator = 'N/A'
+
+            # Give a random locator to satisfy uniqueness constraint
+            # (in case of race condition)
+            from random import randint
+            new_doc.locator = 'N/A:' + str(randint(0,9999999))
+
             new_doc.save()
             
             new_doc.set_default_locator()

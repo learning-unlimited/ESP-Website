@@ -37,7 +37,7 @@ from django.core.cache import cache
 
 # Where to start our tree search.
 
-from esp.urls import section_redirect_keys
+from esp.section_data import section_redirect_keys
    
 subsection_map = {
     'programs': '',

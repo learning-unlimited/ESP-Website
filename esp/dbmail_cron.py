@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
 import sys
-sys.path += ['/esp/web/esp.mit.edu/']
-sys.path += ['/esp/web/esp.mit.edu/esp/']
-sys.path += ['/esp/web/esp.mit.edu/django/']
+sys.path += ['/esp/web/chicago/']
+sys.path += ['/esp/web/chicago/esp/']
+sys.path += ['/esp/web/chicago/django/']
 
 import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'

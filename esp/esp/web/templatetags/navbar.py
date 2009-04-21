@@ -24,10 +24,9 @@ def navbar_gen(context):
         request = {}
 
     try:
-        navbar = context['navbar_list']
+        navbar = context['navbar_list'].value
     except:
-        from esp.web.util.main import default_navbar_data
-        navbar = default_navbar_data
+        navbar = None
     
-    return {'navbar_list': navbar.value,
+    return {'navbar_list': navbar,
             'request':     request}

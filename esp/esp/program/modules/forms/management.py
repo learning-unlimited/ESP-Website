@@ -55,6 +55,11 @@ class ClassManageForm(ManagementForm):
          
     def save_data(self, cls):
         cls.status = self.cleaned_data['status']
+        #   If the section's status has not already been marked, apply the subject's status.
+        for sec in cls.sections.all():
+            if sec.status == 0:
+                sec.status = self.cleaned_data['status']
+                sec.save()
         cls.grade_min = self.cleaned_data['min_grade']
         cls.grade_max = self.cleaned_data['max_grade']
         cls.directors_notes = self.cleaned_data['notes']

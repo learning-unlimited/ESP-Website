@@ -97,7 +97,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @needs_student
     @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(Q(enddate__isnull=True)|Q(enddate__gte=datetime.now())).count() > 0:
+        if UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now()).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
     
@@ -192,19 +192,21 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                     context['completedAll'] = False
 
                 context = module.prepare(context)
-
-            context['canRegToFullProgram'] = ESPUser(request.user).canRegToFullProgram(prog)
+                
+            context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
                     
+            
 	    context['modules'] = modules
 	    context['one'] = one
 	    context['two'] = two
             context['coremodule'] = self
-            context['isConfirmed'] = self.program.isConfirmed(self.user)
+            context['isConfirmed'] = self.program.isConfirmed(self.user)            
             context['have_paid'] = self.have_paid()
-
+            
+            
             context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
-	    return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
     def isStep(self):
         return False

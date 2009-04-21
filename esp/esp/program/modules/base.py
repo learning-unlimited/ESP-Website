@@ -441,7 +441,7 @@ class ProgramModuleObj(models.Model):
                                  if getattr(x[FN], "call_tag", None) == "Main Call" ]
                 assert len(mainCallList) <= 1, "Error: You can only have one Main Call per class!: (%s: %s)" % (cls.__name__, ",".join(mainCallList))
                 props["main_call"] = ",".join(mainCallList)
-
+            
         if type(props) == dict:
             props = [ props ]
 
@@ -514,10 +514,15 @@ def needs_teacher(method):
 
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
+        if request.session.has_key('user_morph'):
+            morpheduser=request.session['user_morph']['olduser']
+        else:
+            morpheduser=None
+
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if not moduleObj.user.isAdmin(moduleObj.program):
+        if not (moduleObj.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
             if not ( hasattr(moduleObj.user, 'other_user') and moduleObj.user.other_user and moduleObj.user.other_user.isAdmin(moduleObj.program) ):
                 return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
         return method(moduleObj, request, *args, **kwargs)

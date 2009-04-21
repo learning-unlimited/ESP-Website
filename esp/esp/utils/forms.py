@@ -32,10 +32,40 @@ Email: web@esp.mit.edu
 from django.forms.forms import Form, Field, BoundField
 from django import forms
 from django.forms.util import ErrorList
-from django.utils.html import escape
+from django.utils.html import escape, mark_safe
 
 from esp.utils.widgets import CaptchaWidget
 
+
+class SizedCharField(forms.CharField):
+    """ Just like CharField, but you can set the width of the text widget. """
+    def __init__(self, length=None, *args, **kwargs):
+        forms.CharField.__init__(self, *args, **kwargs)
+        self.widget.attrs['size'] = length
+
+#### NOTE: Python super() does weird things (it's the next in the MRO, not a superclass).
+#### DO NOT OMIT IT if overriding __init__() when subclassing these forms
+
+class FormWithRequiredCss(forms.Form):
+    """ Form that adds the "required" class to every required widget, to restore oldforms behavior. """
+    def __init__(self, *args, **kwargs):
+        super(FormWithRequiredCss, self).__init__(*args, **kwargs)
+        for field in self.fields.itervalues():
+            if field.required:
+                field.widget.attrs['class'] = 'required'
+
+class FormUnrestrictedOtherUser(FormWithRequiredCss):
+    """ Form that implements makeRequired for the old form --- disables required fields at in some cases. """
+
+    def __init__(self, user=None, *args, **kwargs):
+        super(FormUnrestrictedOtherUser, self).__init__(*args, **kwargs)
+        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+            pass
+        else:
+            for field in self.fields.itervalues():
+                if field.required:
+                    field.required = False
+                    field.widget.attrs['class'] = None # GAH!
 
 class CaptchaField(Field):
     """ A Captcha form element which evaluates to True or raises a validation
@@ -51,6 +81,11 @@ class CaptchaField(Field):
             kwargs['help_text'] = 'If you have an ESP user account, you can log in to make this go away.'
         if 'label' not in kwargs:
             kwargs['label'] = 'Prove you\'re human'
+
+        error_messages = {'required' : 'Please enter the two words displayed.'}
+        if 'error_messages' in kwargs:
+            error_messages = error_messages.update(kwargs['error_messages'])
+        kwargs['error_messages'] = error_messages
             
         local_request = kwargs['request']
         del kwargs['request']
@@ -172,7 +207,7 @@ def grouped_as_table(self):
                 output.append(str_hidden)
         return u'\n'.join(output)
             
-    return new_html_output(self, u'<tr><td colspan="2"><table class="plain" width="100%"><tr>', u'<th>%(label)s</th><td width="%(field_width)d%%">%(errors)s%(field)s%(help_text)s</td>', u'<th colspan="2">%(label)s</th></tr><tr><td colspan="2">%(errors)s%(field)s%(help_text)s</td>', u'<td>%s</td>', '</tr></table></td></tr>', u'<br />%s', False)
+    return mark_safe(new_html_output(self, u'<tr><td colspan="2"><table class="plain" width="100%"><tr>', u'<th>%(label)s</th><td width="%(field_width)d%%">%(errors)s%(field)s%(help_text)s</td>', u'<th colspan="2">%(label)s</th></tr><tr><td colspan="2">%(errors)s%(field)s%(help_text)s</td>', u'<td>%s</td>', '</tr></table></td></tr>', u'<br />%s', False))
 
 
 def add_fields_to_init(init_func, new_fields):
@@ -187,45 +222,3 @@ def add_fields_to_init(init_func, new_fields):
 def add_fields_to_class(target_class, new_fields):
     """ Take a class and give it new attributes.  The attribute names are the keys in the new_fields dictionary and the default values are the corresponding values in the dictionary. """
     target_class.__init__ = add_fields_to_init(target_class.__init__, new_fields)
-
-
-
-def save_instance(form, instance, additional_fields={}, commit=True):
-    """
-    Saves bound Form ``form``'s cleaned_data into model instance ``instance``.
-
-    Assumes ``form`` has a field for every non-AutoField database field in
-    ``instance``. If commit=True, then the changes to ``instance`` will be
-    saved to the database. Returns ``instance``.
-    
-    Modified to override missing form keys (fields removed by formfield_callback)
-    """
-    from django.db import models
-    opts = instance.__class__._meta
-    
-    if form.errors:
-        raise ValueError("The %s could not be changed because the data didn't validate." % opts.object_name)
-    cleaned_data = form.cleaned_data
-    
-    for f in opts.fields:
-        if not f.editable or isinstance(f, models.AutoField):
-            continue
-        if f.name in cleaned_data.keys():
-            setattr(instance, f.name, cleaned_data[f.name])
-        
-    #   If additional fields are supplied, write them into the instance.
-    #   I don't have a better way right now.
-    for fname in additional_fields.keys():
-            setattr(instance, fname, additional_fields[fname])
-            
-    if commit:
-        instance.save()
-        for f in opts.many_to_many:
-            if f.name in cleaned_data.keys():
-                setattr(instance, f.attname, cleaned_data[f.name])
-
-    # GOTCHA: If many-to-many data is given and commit=False, the many-to-many
-    # data will be lost. This happens because a many-to-many options cannot be
-    # set on an object until after it's saved. Maybe we should raise an
-    # exception in that case.
-    return instance

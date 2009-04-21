@@ -123,3 +123,83 @@ class InlineLatexTest(unittest.TestCase):
         eqn = self.getRandomEquation()
         self.failUnlessRaises(Exception, InlineLatex, eqn, style='ORANGES')
         self.failUnlessRaises(Exception, InlineLatex, eqn, style='ORANGES')
+
+# TODO: Make this guy and the above share code or something...
+from esp.gen_media.subsectionimages import SubSectionImage
+class SubSectionImageTest(unittest.TestCase):
+    """ Tests for the subsection image system. """
+
+    def setUp(self):
+        self._to_kill = []
+
+    def tearDown(self):
+        # Clean up
+        for img in self._to_kill:
+            if os.path.exists(img.local_path):
+                os.remove(img.local_path)
+        self._to_kill = []
+
+    @staticmethod
+    def getRandomTitle():
+        """ Get a random title --- we want new text to test. """
+        from random import randint
+        num_mangoes = randint(0, 50000)
+        if num_mangoes is 0:
+            return "I have no mangoes. *pout*"
+        if num_mangoes is 1:
+            return "I have 1 mango. Yum!"
+        return "I have %d mangoes. Yum!" % num_mangoes
+
+    def getAndCheck(self, title, *args, **kwargs):
+        """ Constructs and image and checks its validity - test fails otherwise. """
+        img = SubSectionImage(title, *args, **kwargs)
+
+        self._to_kill.append(img) # Clean up later
+
+        self.failIf(img.url is None, "No URL was returned for %s." % title)
+        local_path = img.local_path
+        self.failIf(local_path is None, "No local path was returned for %s." % title)
+        self.failIf(img.img is None, "No image tag was returned for %s." % title)
+        self.failUnless(os.path.exists(local_path), "File %s does not exist for %s." % (local_path, title))
+
+        return img
+
+    def testGen(self):
+        """ Test that an image was successfully generated. """
+        title = self.getRandomTitle()
+        img = self.getAndCheck(title)
+
+    def testConsistent(self):
+        """ Test that the same data gives the same path. """
+        title = self.getRandomTitle()
+        img1 = self.getAndCheck(title)
+        img2 = self.getAndCheck(title)
+        self.failUnlessEqual(img1.local_path, img2.local_path, "Returned paths inconsistent for %s." % title)
+
+    def testDefaultFontSize(self):
+        """ Test that the default font size is indeed 24. """
+        title = self.getRandomTitle()
+        img1 = self.getAndCheck(title)
+        img2 = self.getAndCheck(title, font_size=24)
+        self.failUnlessEqual(img1.local_path, img2.local_path, "Default font size is not 24")
+
+    def testDistinctFontSize(self):
+        """ Test that switching font sizes gives different images. """
+        title = self.getRandomTitle()
+        img1 = self.getAndCheck(title, font_size=24)
+        img2 = self.getAndCheck(title, font_size=10)
+        self.failIfEqual(img1.local_path, img2.local_path, "Images with different font size saved at the same location.")
+
+    def testDefaultFill(self):
+        """ Test that #333333 is the default fill. """
+        title = self.getRandomTitle()
+        img1 = self.getAndCheck(title)
+        img2 = self.getAndCheck(title, fill='#333333')
+        self.failUnlessEqual(img1.local_path, img2.local_path, "Default fill is not #333333.")
+
+    def testDistinctStyleFill(self):
+        """ Test that different fills give different images. """
+        title = self.getRandomTitle()
+        img1 = self.getAndCheck(title, fill='#333333')
+        img2 = self.getAndCheck(title, fill='#da71db') # what? 7 looks kinda like a 'v'...
+        self.failIfEqual(img1.local_path, img2.local_path, "Images with different fill saved at the same location.")
