@@ -909,20 +909,6 @@ class SplashInfo(models.Model):
             n.save()
             return n
 
-    def updateForm(self, new_data):
-        new_data['lunchsat'] = self.lunchsat
-        new_data['lunchsun'] = self.lunchsun
-        new_data['siblingdiscount'] = self.siblingdiscount
-        new_data['siblingname'] = self.siblingname
-        return new_data
-
-    def addOrUpdate(self, new_data):
-        self.lunchsat = new_data['lunchsat']
-        self.lunchsun = new_data['lunchsun']
-        self.siblingdiscount = (new_data['siblingdiscount'] == 'True')
-        self.siblingname = new_data['siblingname']
-        self.submitted = True
-
     def pretty_satlunch(self):
         foodmap = {}
         foodmap['no'] = ''

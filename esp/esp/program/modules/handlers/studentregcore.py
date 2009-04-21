@@ -182,31 +182,28 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @meets_grade
     @meets_deadline('/MainPage')
     def studentreg(self, request, tl, one, two, module, extra, prog):
-    	    """ Display a student reg page """
+        """ Display a student reg page """
 
-	    context = {}
-            modules = prog.getModules(self.user, 'learn')
-	    context['completedAll'] = True
-            for module in modules:
-                if not module.isCompleted() and module.required:
-                    context['completedAll'] = False
+        context = {}
+        modules = prog.getModules(self.user, 'learn')
+        context['completedAll'] = True
+        for module in modules:
+            if not module.isCompleted() and module.required:
+                context['completedAll'] = False
+            context = module.prepare(context)
 
-                context = module.prepare(context)
+        context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
 
-            context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
+        context['modules'] = modules
+        context['one'] = one
+        context['two'] = two
+        context['coremodule'] = self
+        context['isConfirmed'] = self.program.isConfirmed(self.user)
+        context['have_paid'] = self.have_paid()
 
+        context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
-	    context['modules'] = modules
-	    context['one'] = one
-	    context['two'] = two
-            context['coremodule'] = self
-            context['isConfirmed'] = self.program.isConfirmed(self.user)
-            context['have_paid'] = self.have_paid()
-
-
-            context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
-
-            return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
     def isStep(self):
         return False

@@ -1,0 +1,73 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}Lunch Preferences & Tuition{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block subsection_name %}Lunch Preferences & Tuition{% endblock %}
+
+{% block content %}
+<br /><br />
+<h1>Splash - Lunch Preferences and Tuition </h1>
+<br />
+
+<h2>Lunch Preferences</h2>
+<p>
+<b>*** We strongly recommend students bring their own lunch or purchase a Splash lunch. *** </b><br/>
+You should not expect to be able to purchase food on campus this year, even if you did last year. Instead, we are offering catered lunch to students for 
+$5 on each day. Vegetarian options are available both days.
+</p>
+
+<p>Select your lunch preference below.
+<b>All meals come with chips and drink.</b>
+</p>
+
+<form action="{{request.path}}" method="post">
+<table cellpadding="1" align="center" border="0">
+
+<tr>
+ <td>Would you like a Quiznos sandwich box on SATURDAY? (+ $5)<br/>
+     {{ form.lunchsat }}
+ </td>
+</tr>
+</table>
+<br/>
+<table cellpadding="1" align="center" border="0">
+<tr>
+ <td>Would you like Pizza My Heart (two slices) on SUNDAY? (+ $5)<br/>
+     {{ form.lunchsun }}
+ </td>
+</tr>
+</table>
+
+<hr/>
+<h2>Sibling Discount </h2>
+
+<p>
+This Splash, we are offering a special discount to households with more than one attendee regardless of family income. The cost of enrolling in 
+Splash is $40 for the first student, and $20 for each additional student.
+
+</p>
+
+{{ form.siblingdiscount }}
+<br/>Please enter his/her name below:<br/>
+{{ form.siblingname }} 
+{% if missing_siblingname %}<span class="form_error">Please specify sibling's name above!</span><br />{% endif %}
+
+<hr/>
+<h2>Financial Aid</h2>
+<p>
+
+Full financial aid is available to any students who need it. If you require financial aid, please email
+<a href="mailto:stanfordesp@gmail.com?subject=Financial Aid for Splash! Spring 2009 (Student ID {{ user.id }})">stanfordesp@gmail.com</a>.
+
+</p>
+<center><input type="submit" class="fancybutton" value="Save and Continue"></center>
+</form>
+
+</div>
+
+{% endblock %}
