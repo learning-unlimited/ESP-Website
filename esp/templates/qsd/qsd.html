@@ -1,4 +1,4 @@
-{% extends "outlines/series-3.html" %}
+{% extends "main.html" %}
 {% load subsection %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -13,4 +13,5 @@
 {% load render_qsd %}
 {% autoescape off %}{% render_qsd qsdrec request.user %}{% endautoescape %}
 
-{% if have_edit %}<a href="{{ edit_url }}">Edit this page</a>{% endif %}{% endblock %}
+{% if have_edit %}<a href="{{ edit_url }}">Edit this page</a><br />{% endif %}{% endblock %}
+{% if request.user.is_administrator %}<a href="/manage/pages">Move and Edit Pages</a><br />{% endif %}

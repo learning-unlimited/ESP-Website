@@ -1,4 +1,4 @@
-{% extends "outlines/series-3.html" %}
+{% extends "main.html" %}
 
 {% block title %}ESP{% endblock %}
 
@@ -6,11 +6,37 @@
 
 {% block content_color %}#FFFFFF{% endblock %}
 
+{% block nav_header %}{% endblock %}
+
+{% block navbar %}
+<div id="navbar">&nbsp;</div>
+{% endblock %}
+
 {% block content %}
 
+<!-- override stylesheets somewhat -->
 <style type="text/css">
 #main {
-  background: #BCCAF5;
+    background: #BCCAF5;
+}
+#navbar {
+    background: #BCCAF5;
+    color: #000000;
+}
+#navbar a {
+    color: #006666 !important;
+}
+div.qsd_header
+{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    color: #666699 ! important;
+    padding: 0px;
+    border: 1px dashed #666699 !important;
+    margin: 0px;
+    height: 16px;
+    overflow: hidden;
+    text-align: center;
 }
 </style>
 
