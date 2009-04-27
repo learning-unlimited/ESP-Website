@@ -1,0 +1,73 @@
+{% extends "elements/html" %}
+
+{% block javascript %}
+{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ media_url }}styles/main.css" type="text/css" />
+{% endblock %}
+
+{% block body %}
+
+<style type="text/css">
+body {
+  background: {% block content_color %}#FFFFFF{% endblock %};
+}
+</style>
+
+<div id="content">
+<div id="topleft">
+<br /><br /><br /><br />
+<center><a href="/">ESP</a></center>
+</div>
+
+<div id="title_bar">
+    Title image or text here
+</div>
+
+<div id="nav_buttons">
+    <a class="navbutton" href="/learn/index.html">For Students</a>
+    <a class="navbutton" href="/teach/index.html">For Teachers</a>
+    <a class="navbutton" href="/volunteer/index.html">For Volunteers</a>
+    <a class="navbutton" href="/more_info/index.html">More Information</a>
+</div>
+
+{% block nav_header %}
+<div id="navbar_header">News and Links</div>
+{% endblock %}
+
+<div id="main_header">
+{% block welcome_message %}
+    <!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. -->
+    <table width="600px" height="30px"><tr><td valign="middle">Welcome to ESP</td></tr></table>
+{% endblock %}
+</div>
+
+{% block navbar %}
+<div id="navbar">
+    <div id="navbar_content">
+    <span class="announcementlink_title">Relevant Links</span>
+    </div>
+
+    <div id="navbar_content">
+    <!-- more announcements -->
+    </div>
+    <div id="navbar_content">
+    </div>
+</div>
+{% endblock %}
+
+<div id="main">
+    <div id="main_content">
+    {% block content %}
+    {% endblock %}
+    </div>
+</div>
+
+</div>
+
+<div id="footer">
+Your footer here
+</div>
+
+{% endblock %}
