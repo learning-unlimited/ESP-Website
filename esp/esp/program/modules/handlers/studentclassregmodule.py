@@ -38,8 +38,76 @@ from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from django.db.models.query import Q
 from django.template.loader import get_template
-from esp.cal.models import Event
+from django.http import HttpResponse
+from django.views.decorators.cache import cache_control
+from esp.cal.models import Event, EventType
 from datetime import datetime
+from decimal import Decimal
+import simplejson
+
+def json_encode(obj):
+    if isinstance(obj, ClassSubject):
+        return { 'id': obj.id,
+                 'title': obj.anchor.friendly_name,
+                 'anchor': obj.anchor_id,
+                 'parent_program': obj.parent_program_id,
+                 'category': obj.category,
+                 'class_info': obj.class_info,
+                 'allow_lateness': obj.allow_lateness,
+                 'grade_min': obj.grade_min,
+                 'grade_max': obj.grade_max,
+                 'class_size_min': obj.class_size_min,
+                 'class_size_max': obj.class_size_max,
+                 'schedule': obj.schedule,
+                 'prereqs': obj.prereqs,
+                 'requested_special_resources': obj.requested_special_resources,
+                 'directors_notes': obj.directors_notes,
+                 'requested_room': obj.requested_room,
+                 'session_count': obj.session_count,
+                 'num_students': obj._num_students,
+                 'teachers': obj._teachers,
+                 'get_sections': obj._sections,                         
+                 }
+    elif isinstance(obj, ClassSection):
+        return { 'id': obj.id,
+                 'anchor': obj.anchor_id,
+                 'status': obj.status,
+                 'duration': obj.duration,
+                 'get_meeting_times': obj._events,
+                 'num_students': obj._count_students,
+                 'capacity': obj.capacity
+                 }
+    elif isinstance(obj, ClassCategories):
+        return { 'id': obj.id,
+                 'category': obj.category,
+                 'symbol': obj.symbol
+                 }
+    elif isinstance(obj, Event):
+        return { 'id': obj.id,
+                 'anchor': obj.anchor_id,
+                 'start': obj.start,
+                 'end': obj.end,
+                 'short_description': obj.description,
+                 'event_type': obj.event_type,
+                 'priority': obj.priority,
+                 }
+    elif isinstance(obj, EventType):
+        return { 'id': obj.id,
+                 'description': obj.description
+                 }
+    elif isinstance(obj, User):
+        return { 'id': obj.id,
+                 'first_name': obj.first_name,
+                 'last_name': obj.last_name,
+                 'username': obj.username,
+                 }
+    elif isinstance(obj, Decimal):
+        return str(obj)
+    elif isinstance(obj, datetime):
+        return obj.strftime('%Y-%m-%dT%H:%M:%S')
+    else:
+        raise TypeError(repr(obj) + " is not JSON serializable")
+
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
@@ -348,7 +416,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
-        classes = ClassSubject.objects.catalog(self.program)
+        classes = ClassSubject.objects.catalog(self.program)        
 
         categories = {}
         for cls in classes:
@@ -358,6 +426,25 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                                                                                        'one':        one,
                                                                                        'two':        two,
                                                                                        'categories': categories.values()})
+
+    def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        return render_to_response(self.baseDir()+'catalog_javascript.html', request, (prog, tl), {
+                'one':        one,
+                'two':        two,
+                })
+    
+    @cache_control(max_age=3600)
+    def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        """ Return the program class catalog """
+        # using .extra() to select all the category text simultaneously
+        classes = ClassSubject.objects.catalog(self.program)        
+
+        resp = HttpResponse()
+        
+        simplejson.dump(list(classes), resp, default=json_encode)
+        
+        return resp
+
     
     # This function exists only to apply the @meets_deadline decorator.
     @meets_deadline('/Catalog')
