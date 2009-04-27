@@ -75,6 +75,14 @@ class TeacherPreviewModule(ProgramModuleObj):
     def classroster(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='classrosters.html')
 
+    @aux_call
+    def catalogpreview(self, request, tl, one, two, module, extra, prog):
+        try:
+            cls = ClassSubject.objects.get(id=int(extra))
+        except:
+            cls = None
+        return render_to_response(self.baseDir()+'catalogpreview.html', request, (prog, tl), {'class': cls})
+    
     def get_handouts(self):
         return {'teacherschedule': 'Your Class Schedule', 'classroster': 'Class Rosters'}
 
@@ -87,7 +95,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         categories = {}
         for cls in classes:
             if cls.category_id not in categories:
-                categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category_txt, 'classes': [cls]}
+                categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'classes': [cls]}
             else:
                 categories[cls.category_id]['classes'].append(cls)
         

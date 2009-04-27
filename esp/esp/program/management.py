@@ -1,10 +1,12 @@
+from __future__ import with_statement
+
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2009 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,27 +30,21 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.datatree.models import *
-from esp.users.models import UserBit
+from django.dispatch import dispatcher
+from django.db.models import signals 
+from esp.program import models as program
+from esp.program.models import class_ as class_models
+from esp.utils.custom_cache import custom_cache
 
-# INITIAL_USERBITS is an array of dictionaries;
-# the dictionaries should be in a format that can be passed as kwargs to
-# UserBit.objects.get_or_create()
-INITIAL_USERBITS = (
-    { "qsc": GetNode("Q/Web"),
-      "verb": GetNode("V/Flags/Public") },
-    { "qsc": GetNode("Q/Programs"),
-      "verb": GetNode("V/Flags/Public"),
-      "recursive": False},
-    { "qsc": GetNode("Q/Web"),
-      "verb": GetNode("V/Subscribe") }
-    )
+have_already_installed = False
 
-def populateInitialUserBits(initial_userbits = None):
-    """ Create the UserBits listed in INITIAL_USERBITS """
-
-    if initial_userbits == None:
-        initial_userbits = INITIAL_USERBITS
+def post_syncdb(sender, app, **kwargs):
+    global have_already_installed
+    if app == program and not have_already_installed:
+        with custom_cache():
+            have_already_installed = True
+            print "Installing esp.program.class initial data..."
+            class_models.install()
         
-    for bit in initial_userbits:
-        UserBit.objects.get_or_create(**bit)
+signals.post_syncdb.connect(post_syncdb)
+

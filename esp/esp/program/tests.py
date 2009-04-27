@@ -232,12 +232,12 @@ class ProgramHappenTest(TestCase):
         # Try signing up for a class.
         self.client.post('%saddclass' % self.prog.get_learn_url(), reg_dict)
         self.assertTrue( UserBit.UserHasPerms(user=self.student, qsc=sec.anchor,
-            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').get_signup_verb()), 'Registration failed.')
+            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), 'Registration failed.')
         
         # Try dropping a class.
         self.client.get('%sclearslot/%s' % (self.prog.get_learn_url(), self.timeslot.id))
         self.assertFalse( UserBit.UserHasPerms(user=self.student, qsc=sec.anchor,
-            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').get_signup_verb()), 'Registration failed.')
+            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), 'Registration failed.')
         
         pass
     

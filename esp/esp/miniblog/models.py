@@ -54,6 +54,7 @@ class AnnouncementLink(models.Model):
 
     def get_absolute_url(self):
         return self.href
+    makeUrl = get_absolute_url
     
     def makeTitle(self):
         return self.title
@@ -99,8 +100,10 @@ class Entry(models.Model):
     def makeTitle(self):
         return self.title
 
+    """ Disabling makeUrl since we don't display entries as separate pages any more. """
     def makeUrl(self):
-        return "/blog/"+str(self.id)+"/"
+        return None
+        #   return "/blog/"+str(self.id)+"/"
     
     @staticmethod
     def find_posts_by_perms(user, verb, qsc=None):
