@@ -58,7 +58,9 @@ else:
 
 
 # Look for changes in esp/db_schema. Save what we don't know how to handle.
+# Also, slony config needs to be updated when tables or sequences are created.
 unhandled_changes = []
+slony_needs_update = False
 manifest = pipelines( 'git --no-pager diff --summary %s esp/db_schema' % commits_str )
 for line in manifest:
     words = line.split()
@@ -66,6 +68,9 @@ for line in manifest:
         # Deleted or modified? Usually shouldn't happen. Warn if it does.
         # Need a better way to deal with branch switching.
         unhandled_changes.append(line)
+    else:
+        if os.system( "grep -q 'CREATE \(SEQUENCE\|TABLE\)' %s" % words[-1] ) == 0:
+            slony_needs_update = True
 
 # If no changes, quit now.
 if not manifest:
@@ -107,6 +112,15 @@ for line in changelog_raw:
     else:
         # Dump ordinary lines.
         print line
+
+if slony_needs_update:
+    print """
+%s-----
+New tables or sequences detected%s
+
+    The slony configuration (if you're using slony) may need to be updated.
+    The file you're looking for is probably /etc/slony1/slon_tools.conf
+%s""" % ( color(37, 1), color(0), color(36, 0) )
 
 if unhandled_changes:
     print """
