@@ -891,7 +891,7 @@ class ClassSection(models.Model):
                 self.update_cache_students()
                 
             #   Clear completion bit on the student's application if the class has app questions.
-            app = user.getApplication(self.parent_program, create=False)
+            app = ESPUser(user).getApplication(self.parent_program, create=False)
             if app:
                 app.set_questions()
                 if app.questions.count() > 0:
