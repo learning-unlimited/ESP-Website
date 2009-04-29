@@ -14,6 +14,10 @@ Supply two commits to see changes between them.
 from __future__ import with_statement
 
 import sys, os
+from esp.settings import DATABASE_NAME
+
+# Tag for keeping track of current schema
+TAG_NAME = '%s-current-schema' % DATABASE_NAME
 
 # Use colors?
 USE_COLORS = True
@@ -47,7 +51,10 @@ if len(sys.argv) > 1:
             commits_str += '..HEAD'
 else:
     # No command-line arguments. Then use the last change made to HEAD.
-    commits_str = 'HEAD@{1}..HEAD'
+    if not pipelines( 'git tag -l %s' % TAG_NAME ):
+        os.system( 'git tag %s HEAD@{1}' % TAG_NAME )
+        print '%sWarning: Tagged HEAD@{1} as %s%s\n' % ( color(37,0), TAG_NAME, color(0) )
+    commits_str = '%s..HEAD' % TAG_NAME
 
 
 # Look for changes in esp/db_schema. Save what we don't know how to handle.
@@ -115,9 +122,12 @@ Other changes detected%s
 
 print """
 %s-----
-%sTo see this message again before the next checkout or merge, run:
-    $ %s%s/db_schema_notify.py%s
+%sTo see this message again, run:
+    $ %s%s/esp/db_schema_notify.py%s
 You can also pass specific commits as arguments to this script, to see the
     changes between two commits or between a commit and the current HEAD.
-""" % ( color(37, 1), color(0), color(32, 1), os.getcwd(), color(0) )
+
+After you are done updating the schema, run:
+    $ %s%s/esp/db_schema_done.py%s
+""" % ( color(37, 1), color(0), color(32, 1), os.getcwd(), color(0), color(32, 1), os.getcwd(), color(0) )
 
