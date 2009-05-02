@@ -52,10 +52,16 @@ CACHE_PREFIX="ESP"
 ######################
 
 # root directory
-PROJECT_ROOT = '/esp/web_git/mit/esp/'
+PROJECT_ROOT = '/esp/web/esp.mit.edu/esp/'
 
 # log directory
 LOG_FILE = "/var/log/django/esp_errlog"
+
+
+###################
+# Other settings  #
+###################
+USE_MAILMAN = True
 
 
 ###################
@@ -69,8 +75,6 @@ SHOW_TEMPLATE_ERRORS = DEBUG
 INTERNAL_IPS = (
     '18.208.0.164',
     '18.187.7.102',
-    '71.126.253.25',
-    '72.93.219.106',
     '127.0.0.1',
 )
 
@@ -93,3 +97,4 @@ from database_settings import *
 MIDDLEWARE_LOCAL = [
     #(1250, 'esp.middleware.StatsMiddleware'),
 ]
+
