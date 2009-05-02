@@ -97,3 +97,4 @@ from database_settings import *
 MIDDLEWARE_LOCAL = [
     #(1250, 'esp.middleware.StatsMiddleware'),
 ]
+
