@@ -435,7 +435,7 @@ class UserBit(models.Model):
     verb = AjaxForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
 
     startdate = models.DateTimeField(blank=True, null=True, default = datetime.datetime.now)
-    enddate = models.DateTimeField(blank=True, null=True)
+    enddate = models.DateTimeField(blank=True, null=True, default = datetime.datetime(9999,1,1))
     recursive = models.BooleanField(default=True)
 
     objects = UserBitManager()
