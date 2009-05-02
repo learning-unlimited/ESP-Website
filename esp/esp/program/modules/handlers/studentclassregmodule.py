@@ -366,7 +366,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @aux_call
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
-        
         user = ESPUser(request.user)
         if user.isTeacher() or user.isAdmin(self.program.anchor):
             return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
