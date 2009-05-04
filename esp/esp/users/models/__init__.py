@@ -92,7 +92,7 @@ class ESPUser(User, AnonymousUser):
         db_table = 'auth_user'
 
         def __init__(self):
-            super(self, Meta).__init__()
+            super(Meta, self).__init__()
             self.pk.attname = "id"
             self.local_fields[0].column = "id"
         
@@ -980,7 +980,7 @@ class GuardianInfo(models.Model):
         db_table = 'users_guardianinfo'
 
     def save(self, *args, **kwargs):
-        super(self, GuardianInfo).save(*args, **kwargs)
+        super(GuardianInfo, self).save(*args, **kwargs)
         from esp.mailman import add_list_member
         add_list_member('announcements', self.user)
 
@@ -1048,7 +1048,7 @@ class EducatorInfo(models.Model):
         db_table = 'users_educatorinfo'
 
     def save(self, *args, **kwargs):
-        super(self, EducatorInfo).save(*args, **kwargs)
+        super(EducatorInfo, self).save(*args, **kwargs)
         from esp.mailman import add_list_member
         add_list_member('announcements', self.user)
 
