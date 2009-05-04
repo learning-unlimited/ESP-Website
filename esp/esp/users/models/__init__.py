@@ -254,9 +254,10 @@ class ESPUser(User, AnonymousUser):
                 error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
             else:
                 return all_classes.filter(parent_program = program)
-    # FIXME: What if the Program query gives nothing?
     getTaughtClasses.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
-                                                    lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id)
+                                                    lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
+                                                                bit.qsc.parent.name == 'Classes' and
+                                                                bit.qsc.parent.parent.program_set.count() > 0 )
     # FIXME: depend on ClassSubject (ids vs values thing again)
     #   This one's important... if ClassSubject data changes...
     # kinda works, but a bit too heavy handed:
