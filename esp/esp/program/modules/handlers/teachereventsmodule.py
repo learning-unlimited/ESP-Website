@@ -135,7 +135,7 @@ class TeacherEventsModule(ProgramModuleObj):
                 if data['interview']:
                     ub, created = UserBit.objects.get_or_create( user=request.user, qsc=data['interview'], verb=self.reg_verb, defaults={'recursive':False} )
                     # Send the directors an e-mail
-                    if self.program.director_email and (created or ub.enddate is not None):
+                    if self.program.director_email and (created or ub.enddate < datetime.now() ):
                         event_names = ' '.join([x.description for x in data['interview'].event_set.all()])
                         send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_names, \
                               """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
@@ -143,13 +143,13 @@ class TeacherEventsModule(ProgramModuleObj):
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
                               [self.program.director_email], True)
                     if not created:
-                        ub.enddate = None
+                        ub.enddate = datetime(9999,1,1) # Approximately infinity; see default value of UserBit.enddate
                         ub.save()
                 # Register for training
                 if data['training']:
                     ub, created = UserBit.objects.get_or_create( user=request.user, qsc=data['training'], verb=self.reg_verb, defaults={'recursive':False} )
                     if not created:
-                        ub.enddate = None
+                        ub.enddate = datetime(9999,1,1) # Approximately infinity
                         ub.save()
                 return self.goToCore(tl)
         else:
