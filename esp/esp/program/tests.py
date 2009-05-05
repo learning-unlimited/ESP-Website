@@ -200,7 +200,9 @@ class ProgramHappenTest(TestCase):
         self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
         
         # Check that stuff went through correctly
-        self.classsubject = self.prog.classes()[0]
+        classes = self.prog.classes()
+        self.failUnless( classes.count() == 1 )
+        self.classsubject = classes[0]
         self.assertEqual( unicode(self.classsubject.title()), unicode(class_dict['title']), 'Failed to save title.' )
     
     def studentreg(self):
