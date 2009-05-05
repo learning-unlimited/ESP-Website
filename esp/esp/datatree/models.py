@@ -431,7 +431,7 @@ class DataTree(models.Model):
         # just scan the list for this particular child
         children = self.children()
         if children != None:
-            return name in (child.name for child in children)
+            return key in (child.name for child in children)
 
     def __contains__(self, child):
         if type(child) != DataTree:
