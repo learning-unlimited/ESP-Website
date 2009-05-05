@@ -432,6 +432,8 @@ class DataTree(models.Model):
         children = self.children()
         if children != None:
             return key in (child.name for child in children)
+        else:
+            return bool(self.children().filter(name__exact = key)[:1])
 
     def __contains__(self, child):
         if type(child) != DataTree:
@@ -450,6 +452,11 @@ class DataTree(models.Model):
                     return child
             # Key must not be in the set of children
             raise exceptions.KeyError, key
+        else:
+            try:
+                return DataTree.objects.get(parent = self, name = key)
+            except:
+                raise exceptions.KeyError, key
 
         
     def __setitem__(self, key, value):
