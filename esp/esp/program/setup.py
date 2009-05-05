@@ -47,7 +47,6 @@ def prepare_program(program, form):
 
     # Fetch/create the program node
     program_node_name = program.anchor.uri + '/' + form.cleaned_data['term']
-    datatrees += [(program_node_name, form.cleaned_data['term_friendly'])]
 
     # Create the DataTree branches
     for sub_node in ProgramTemplate:
