@@ -928,7 +928,7 @@ class RegistrationProfile(models.Model):
     educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
     last_ts = models.DateTimeField(default=datetime.now())
     emailverifycode = models.TextField(blank=True, null=True)
-    email_verified  = models.BooleanField(default=False, blank=True, null = True)
+    email_verified  = models.BooleanField(default=False, blank=True)
 
     class Meta:
         app_label = 'program'
@@ -1095,14 +1095,14 @@ class FinancialAidRequest(models.Model):
 
     approved = models.DateTimeField(blank=True, null=True)
 
-    reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', null=True, blank=True)
+    reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', blank=True, default=False)
 
     household_income = models.CharField(verbose_name = 'Approximately what is your household income (round to the nearest $10,000)?', null=True, blank=True,
                         max_length=12)
 
     extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this year', null=True, blank=True)
 
-    student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True,null=True)
+    student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True, default=False)
 
     done = models.BooleanField(default=False, editable=False)
 

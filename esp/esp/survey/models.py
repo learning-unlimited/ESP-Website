@@ -188,8 +188,8 @@ class QuestionType(models.Model):
     _param_names = models.TextField("Parameter names", blank=True,
                                     help_text="A pipe (|) delimited list of parameter names.")
     param_names = ListField('_param_names')
-    is_numeric = models.BooleanField(null=True)
-    is_countable = models.BooleanField(null=True)
+    is_numeric = models.BooleanField(default=False)
+    is_countable = models.BooleanField(default=False)
 
     @property
     def template_file(self):

@@ -759,7 +759,7 @@ class StudentInfo(models.Model):
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
-    studentrep = models.BooleanField(blank=True, null=True, default = False)
+    studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heardofesp = models.TextField(blank=True, null=True)
 # removing shirt information, because this confused people.
