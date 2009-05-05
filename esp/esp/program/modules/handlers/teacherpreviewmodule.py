@@ -87,7 +87,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         categories = {}
         for cls in classes:
             if cls.category_id not in categories:
-                categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category_txt, 'classes': [cls]}
+                categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'classes': [cls]}
             else:
                 categories[cls.category_id]['classes'].append(cls)
         
