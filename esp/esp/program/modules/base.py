@@ -515,7 +515,7 @@ def needs_teacher(method):
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
         if request.session.has_key('user_morph'):
-            morpheduser=request.session['user_morph']['olduser']
+            morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
         else:
             morpheduser=None
 
