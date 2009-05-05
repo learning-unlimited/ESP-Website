@@ -185,7 +185,7 @@ class ESPUser(User, AnonymousUser):
                 self.other_user   = True
                 self.onsite_retTitle = request.session['user_morph']['retTitle']
                 return True
-            elif request.session['user_morph']['olduser'] is not None:
+            elif request.session['user_morph']['olduser_id'] is not None:
                 self.other_user = True
                 return False
         else:
@@ -195,7 +195,7 @@ class ESPUser(User, AnonymousUser):
 
 
     def switch_to_user(self, request, user, retUrl, retTitle, onsite = False):
-        user_morph = {'olduser' : self,
+        user_morph = {'olduser_id' : self.id,
                       'retUrl'  : retUrl,
                       'retTitle': retTitle,
                       'onsite'  : onsite}
@@ -208,18 +208,17 @@ class ESPUser(User, AnonymousUser):
 
         request.session['user_morph'] = user_morph
 
-
     def get_old(self, request):
         if not 'user_morph' in request.session:
             return False
-        return request.session['user_morph']['olduser']
+        return ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
 
     def switch_back(self, request):
         if not 'user_morph' in request.session:
             raise ESPError(), 'Error: You were not another user to begin with!'
 
         retUrl   = request.session['user_morph']['retUrl']
-        new_user = request.session['user_morph']['olduser']
+        new_user = self.get_old(request)
         del request.session['user_morph']
         logout(request)
 
