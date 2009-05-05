@@ -33,16 +33,7 @@ from esp.settings import PROJECT_ROOT, MEDIA_ROOT
 
 admin.autodiscover()
 
-section_redirect_keys = {
-    'teach':   'Programs',
-    'manage':  'Programs',
-    'onsite':  'Programs',    
-    'learn':   'Programs',
-    'programs':'Programs',
-    None:      'Web',
-    }
-
-section_prefix_keys = {'teach': 'teach', 'learn': 'learn', 'programs': ''}
+from esp.section_data import section_redirect_keys, section_prefix_keys
 
 # Static media
 urlpatterns = patterns('django.views.static',
@@ -91,6 +82,10 @@ urlpatterns += patterns('',
                         (r'^myesp/', include('esp.users.urls'),)
                         )
 
+urlpatterns += patterns('',
+                        (r'^cache/', include('esp.cache.urls'),)
+                        )
+
 urlpatterns += patterns('esp.qsd.views',
                         (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/(?P<url>.*).html$', 'qsd'),
                         (r'^(?P<url>.*)\.html$', 'qsd'),
@@ -107,7 +102,7 @@ urlpatterns += patterns('django.contrib.auth.views',
 
 # other apps
 urlpatterns += patterns('',
-                        (r'^alumni/', include('esp.membership.alumni_urls')),
+#                        (r'^alumni/', include('esp.membership.alumni_urls')),
 #                        (r'^membership/', include('esp.membership.urls')),
                         (r'^',  include('esp.miniblog.urls')),
                         (r'^',  include('esp.survey.urls')),

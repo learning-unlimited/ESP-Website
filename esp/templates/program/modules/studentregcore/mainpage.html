@@ -17,7 +17,6 @@
 </style>
 <br /><br />
 <h1>Student registration for {{program.niceName}} </h1>
-
 {% if not request.user.onsite_local %}
     <div id="catalog">
     {% if program.isFull %}
@@ -35,19 +34,6 @@
 
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
-
-    <center>
-    <!--
-    {% if not completedAll %}
-    <div class="errormsg">
-    Please finish the required steps listed below (they will be checked off when they are completed). Then, click on the <em>Confirm</em> button at the bottom of this page.
-    {% else %}
-    <div class="info">
-    Please finalize your registration, then <b>click <em>Confirm</em></b> below to indicate that you've finished filling out this form.  Upon clicking this you will be given a receipt with further instructions!  Note that paying with a credit card <b>does not completely confirm</b> your registration, because you can still adjust your schedule after paying. 
-    {% endif %} 
-    </div> -->
-    </center>
-    
     <center><div class="note">
     <b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
     </div></center>
@@ -81,16 +67,6 @@
     </tr>
     {% endif %}
     {% endfor %}
-    <!-- <tr>
-    <td><a href="#confirmreg" title="Confirm Registration">
-            Confirm Registration</a> <em>(below)</em>
-    </td>
-    <td>
-    <a href="#confirmreg">
-        <img src="/media/images/{% if not isConfirmed %}no{% endif %}checkmark.gif" class="nocheckmark" />
-    </a>
-    </td>
-    </tr> -->   
     </table>
 
 {% endif %}
@@ -104,8 +80,7 @@
 {% if module.useTemplate %}
 <a name="module-{{module.id}}"></a>
 <br />
- {% include module.getTemplate %}
-
+{% include module.getTemplate %}
 {% endif %}
 {% endfor %}
 </div>
@@ -118,16 +93,6 @@
 {% if program.isFull %}{% if not canRegToFullProgram %}
 <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
 {% endif %}{% else %}
-<!--
-{% if not completedAll %}
-<div class="errormsg">
-Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Confirm</em> button below (it will be active at this point).
-{% else %}
-<div class="info">
-Please click <em>Confirm</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
-{% endif %}
-</div>
--->
 {% endif %}
 
 </center>
@@ -143,12 +108,11 @@ Please click <em>Confirm</em> below to confirm your registration into {{program.
     <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
     <input class="button" type="submit" value="{% if not isConfirmed %}Confirm Registration, View Receipt{% else %}Registration Confirmed!  View Receipt{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
     {% if isConfirmed %}{% if not have_paid %}
-    | 
+    
     <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
     <input class="button" type="submit" value="Cancel Registration" />
     {% endif %}{% endif %}
     </center>
 {% endif %}
-
 {% endblock %}
 

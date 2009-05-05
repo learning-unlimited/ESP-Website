@@ -16,9 +16,8 @@ from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
 from esp.datatree.models import *
 
-# Cache introspection
-from django.core.cache.backends.memcached import CacheClass as MemcachedClass
-
+import operator
+from esp.datatree.sql.query_utils import QTree
 
 
 __all__ = ['UserBit','UserBitImplication']
@@ -232,41 +231,22 @@ class UserBitManager(ProcedureManager):
         if retVal is not None: return retVal
 
         q_list = self.bits_get_qsc( user, verb )
-
-        res = None
-
+        #q_list = self.filter(id__in=(x.id for x in q_list)).select_related('qsc')
+        query_list = []
         for bit in q_list:
-            try:
-                q = bit.qsc
-            except DataTree.DoesNotExist, e:
-                bit.delete()
-                continue
-
             if bit.recursive:
-                qsc_children_ids = [q.id] + [x['id'] for x in q.descendants(False).values('id')]
-                query = Model.objects.filter(anchor__in = qsc_children_ids)
+                query_list.append(QTree(anchor__below=bit.qsc_id))
             else:
-                query = Model.objects.filter(anchor=q)
-                
-            if qsc is not None:
-                query = query.filter(QTree(anchor__below = qsc))
+                query_list.append(Q(anchor=bit.qsc_id))
 
-            if res == None:
-                res = query
-            else:
-                res = res | query
+        query = Model.objects.filter(reduce(operator.or_, query_list)).distinct()
+        if qsc is not None:
+            query = query.filter(QTree(anchor__below = qsc))
 
-        if res != None:
-            retVal = res.distinct()
-
-        if res == None:
-            retVal = Model.objects.none().distinct()
-
-        list(retVal) # force retVal to evaluate itself
-        self.cache(user)[user_cache_key] = retVal
+        self.cache(user)[user_cache_key] = query
 
 	# Operation Complete!
-	return retVal
+	return query
 
     def UserHasPerms(self, user, qsc, verb, now = None, recursive_required = False):
         """ Given a user, a permission, and a subject, return True if the user, or all users,
@@ -434,8 +414,8 @@ class UserBit(models.Model):
     qsc = AjaxForeignKey(DataTree, related_name='userbit_qsc') # Controller to grant access to
     verb = AjaxForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
 
-    startdate = models.DateTimeField(blank=True, null=True, default = datetime.datetime.now)
-    enddate = models.DateTimeField(blank=True, null=True, default = datetime.datetime(9999,1,1))
+    startdate = models.DateTimeField(blank=True, default = datetime.datetime.now)
+    enddate = models.DateTimeField(blank=True, default = datetime.datetime(9999,1,1))
     recursive = models.BooleanField(default=True)
 
     objects = UserBitManager()
@@ -501,6 +481,21 @@ class UserBit(models.Model):
         else:
             UserBit.updateCache(self.user.id)
 
+    def applies_to_user(self, user):
+        if isinstance(user, User):
+            user = user._get_pk_val()
+        return self.user_id == user or self.user_id == None
+
+    def applies_to_verb(self, verb):
+        if isinstance(verb, str):
+            verb = GetNode(verb)
+        return self.verb_id == verb.id or (self.recursive and self.verb.is_ancestor_of(verb))
+
+    def applies_to_qsc(self, qsc):
+        if isinstance(qsc, str):
+            qsc = GetNode(qsc)
+        return self.qsc_id == qsc.id or (self.recursive and self.qsc.is_ancestor_of(qsc))
+
     def updateCache(cls, user_id):
         cls.objects.cache(user_id).update()
     updateCache = classmethod(updateCache)
@@ -532,8 +527,8 @@ class UserBit(models.Model):
             when = datetime.datetime.now()
         if prefix is not '' and not prefix.endswith('__'):
             prefix += '__'
-        q = Q(**{prefix+'startdate__isnull': True}) | Q(**{prefix+'startdate__lte': when})
-        q = q & (Q(**{prefix+'enddate__isnull': True}) | Q(**{prefix+'enddate__gte': when}))
+        q = Q(**{prefix+'startdate__lte': when})
+        q = q & Q(**{prefix+'enddate__gte': when})
         return q
 
     @staticmethod

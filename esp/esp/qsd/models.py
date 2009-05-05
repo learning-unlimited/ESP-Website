@@ -28,17 +28,19 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from django.db import models
-from esp.datatree.models import *
-from esp.web.models import NavBarCategory
-from esp.lib.markdown import markdown
-from django.contrib.auth.models import User
-from django.core.cache import cache
 from datetime import datetime
 import hashlib
 
+from django.db import models
+from django.core.cache import cache
+from django.contrib.auth.models import User
+
+from esp.datatree.models import *
+from esp.lib.markdown import markdown
 from esp.db.fields import AjaxForeignKey
 from esp.db.file_db import *
+from esp.cache import cache_function
+from esp.web.models import NavBarCategory
 
 class QSDManager(FileDBManager):
     def get_by_path__name(self, path, name):
@@ -125,21 +127,14 @@ class QuasiStaticData(models.Model):
         retVal = super(QuasiStaticData, self).save(*args, **kwargs)
         QuasiStaticData.objects.obj_to_file(self)
         
-        # Invalidate the memory / Django cache
-        from django.core.cache import cache
-        cache_key = 'QSD_URL_%d' % self.id
-        cache.delete(cache_key)
-        
         return retVal
 
+    # Really, I think the correct solution here is to key it by path.get_uri and name
+    # is_descendant_of is slightly more expensive, but whatever.
+    @cache_function
     def url(self):
         """ Get the relative URL of a page (i.e. /learn/Splash/eligibility.html) """
-        from django.core.cache import cache
-        cache_key = 'QSD_URL_%d' % self.id
-        result = cache.get(cache_key)
-        if result:
-            return result
-        
+
         my_path = self.path
         path_parts = self.path.get_uri().split('/')
         program_top = DataTree.get_by_uri('Q/Programs')
@@ -155,8 +150,26 @@ class QuasiStaticData(models.Model):
         else:
             result = '/' + '/'.join(path_parts[1:]) + '/' + self.name + '.html'
         
-        cache.set(cache_key, result)
         return result
+    url.depend_on_row(lambda:QuasiStaticData, 'self')
+    # This never really happens in this case, still... something to think about:
+    #
+    #    We can either do a query on Datatree modification and then delete the
+    #    relevant cache, or we could add a Token to the cache and then we can
+    #    delete by DataTree nodes. Although this is offloaded work from data
+    #    modification to data retrieval, the modified form of work is also MUCH
+    #    cheaper. As in, we can just grab qsd.path_id and not incur any
+    #    database load, whereas the current setup is going to force us to do a
+    #    database query AND do it at times a DataTree node is deleted... many
+    #    of these aren't relevant.
+    #
+    #    That said, how can we propogate stuff then? With fully general Tokens,
+    #    mapping functions are hard to write. Something more like the old
+    #    partitions idea?
+    #
+    #    Special-case DataTree?? :-(
+    #
+    # url.depend_on_row(lambda:DataTree, lambda instance: {'self': QuasiStaticData.objects.blahbalh})
             
     def __unicode__(self):
         return (self.path.full_name() + ':' + self.name + '.html' )

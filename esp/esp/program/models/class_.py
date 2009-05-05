@@ -36,6 +36,7 @@ from collections import defaultdict
 from django.db import models
 from django.db.models.query import Q
 from django.core.cache import cache
+from django.utils.datastructures import SortedDict
 
 # ESP Util
 from esp.db.models.prepared import ProcedureManager
@@ -53,6 +54,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.users.models import ESPUser, UserBit
 from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
+from esp.program.models import Program
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
@@ -94,43 +96,94 @@ class SectionCacheHelper(GenericCacheHelper):
 
 class ClassManager(ProcedureManager):
 
-    def approved(self):
+    def approved(self, return_q_obj=False):
+        if return_q_obj:
+            return Q(status = 10)
+        
         return self.filter(status = 10)
 
-    def catalog(self, program, ts=None, force_all=False):
+    def catalog(self, program, ts=None, force_all=False, initial_queryset=None):
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
         queries for the category's title (cls.category_txt)
         and the total # of media.
         """
+        now = datetime.datetime.now()
+        enrolled_node=GetNode("V/Flags/Registration/Enrolled")
+        teaching_node=GetNode("V/Flags/Registration/Teacher")
 
-        # some extra queries to save
-        select = {'category_txt': 'program_classcategories.category',
-                  'media_count': 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'}
-
-        where=['"program_classcategories"."id" = "program_class"."category_id"']
-
-        tables=['"program_classcategories"']
-        
-        if force_all:
-            classes = self.filter(parent_program = program)
+        if initial_queryset:
+            classes = initial_queryset
         else:
-            classes = self.approved().filter(parent_program = program)
-            
-        if ts is not None:
-            #   Make a list of all section IDs for the program
-            section_ids = []
-            for c in classes:
-                sec = c.get_section(timeslot=ts)
-                if sec:
-                    section_ids.append(sec.id)
-                #   Get the class subjects having at least one of those sections.
-            classes = ClassSubject.objects.filter(sections__in=section_ids)
+            classes = self.all()
+        
+        if not force_all:
+            classes = classes.filter(self.approved(return_q_obj=True))
+        
+        classes = classes.select_related('anchor',
+                                         'category')
+        
+        classes = classes.filter(parent_program = program)
 
-        return classes.extra(select=select,
-                             where=where,
-                             order_by=('category',)).extra(tables=tables).distinct()
+        if ts is not None:
+            classes = classes.filter(meeting_times=ts)
+        
+        select = SortedDict([( '_num_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "datatree_datatree"."id" AND "datatree_datatree"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
+                             ('teacher_ids', 'SELECT list("users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
+                             ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
+                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')')])
+                             
+        select_params = [ enrolled_node.id,
+                          now,
+                          now,
+                          teaching_node.id,
+                          now,
+                          now,
+                         ]
+        classes = classes.extra(select=select, select_params=select_params)
+        classes = classes.order_by('category', '_num_students', 'id')
+        classes = classes.distinct()
+
+        # All class ID's; used by later query ugliness:
+        class_ids = map(lambda x: x.id, classes)
+        
+        # Now to get the sections corresponding to these classes...
+
+        sections = ClassSection.objects.filter(parent_class__in=class_ids)
+        
+        sections = sections.select_related('anchor')
+
+        sections = ClassSection.prefetch_catalog_data(sections.distinct())
+
+        sections_by_parent_id = defaultdict(list)
+        for s in sections:
+            sections_by_parent_id[s.parent_class_id].append(s)
+        
+        # We got classes.  Now get teachers...
+
+        teachers = User.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+
+        teachers_by_id = {}
+        for t in teachers:            
+            teachers_by_id[t.id] = t
+
+        # Now, to combine all of the above
+
+        if len(classes) >= 1:
+            p = Program.objects.select_related('anchor').get(id=classes[0].parent_program_id)
+            
+        for c in classes:
+            c._teachers = [teachers_by_id[int(x)] for x in c.teacher_ids.split(',')] if c.teacher_ids != '' else []
+            c._teachers.sort(cmp=lambda t1, t2: cmp(t1.last_name, t2.last_name))
+            c._sections = sections_by_parent_id[c.id]
+            for s in c._sections:
+                s.parent_class = c
+            c._sections.sort(cmp=lambda s1, s2: cmp(s1.anchor.name, s2.anchor.name))
+            c.parent_program = p # So that if we set attributes on one instance of the program,
+                                 # they show up for all instances.
+            
+        return classes
 
     cache = ClassCacheHelper
 
@@ -160,11 +213,52 @@ class ClassSection(models.Model):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
-
+    max_class_capacity = models.IntegerField(null=True)
+    
     cache = SectionCacheHelper
     checklist_progress_all_cached = checklist_progress_base('ClassSection')
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
 
+    @classmethod
+    def prefetch_catalog_data(cls, queryset):
+        """ Take a queryset of a set of ClassSubject's, and annotate each class in it with the '_count_students' and 'event_ids' fields (used internally when available by many functions to save on queries later) """
+        now = datetime.datetime.now()
+        enrolled_node=GetNode("V/Flags/Registration/Enrolled")
+
+        select = SortedDict([( '_count_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_classsection"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
+                             ('event_ids', 'SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")')])
+        
+        select_params = [ enrolled_node.id,
+                          now,
+                          now,
+                         ]
+
+        sections = queryset.extra(select=select, select_params=select_params)
+        section_ids = map(lambda x: x.id, sections)
+
+        # Now, go get some events...
+
+        events = Event.objects.filter(meeting_times__in=section_ids).distinct()
+
+        events_by_id = {}
+        for e in events:
+            events_by_id[e.id] = e
+            
+        # Now, to combine all of the above:
+
+        for s in sections:
+            s._events = [events_by_id[int(x)] for x in s.event_ids.split(',')] if s.event_ids != '' else []
+            s._events.sort(cmp=lambda e1, e2: cmp(e1.start, e2.start))
+
+        return sections
+    
+    
+    def get_meeting_times(self):
+        if not hasattr(self, "_events"):
+            self._events = self.meeting_times.all()
+
+        return self._events
+    
     #   Some properties for traits that are actually traits of the ClassSubjects.
     def _get_parent_program(self):
         return self.parent_class.parent_program
@@ -183,9 +277,8 @@ class ClassSection(models.Model):
     title = property(_get_title)
     
     def _get_capacity(self):
-        ans = self.cache['capacity']
-        if ans is not None:
-            return ans
+        if self.max_class_capacity is not None:
+            return self.max_class_capacity
 
         rooms = self.initial_rooms()
         if len(rooms) == 0:
@@ -196,8 +289,13 @@ class ClassSection(models.Model):
                 rc += r.num_students
             ans = min(self.parent_class.class_size_max, rc)
 
-        self.cache['capacity'] = ans
+            # Only save the capacity if we do have rooms assigned;
+            # otherwise don't bother as this number will almost definitely change
+            self.max_class_capacity = ans
+            self.save()
+            
         return ans
+    
     capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
@@ -208,11 +306,13 @@ class ClassSection(models.Model):
         pc = self.parent_class
         return '%s: %s' % (self.emailcode(), pc.title())
 
+    cache = ClassCacheHelper
+
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
         pc = self.parent_class
-        pc_sec_ids = [p['id'] for p in pc.sections.all().order_by('id').values('id')]
-        return pc_sec_ids.index(self.id) + 1
+        pc_sec_ids = map(lambda x: x.id, pc.get_sections())
+        return list(pc_sec_ids).index(self.id) + 1
 
     def delete(self, adminoverride=False):
         if self.num_students() > 0 and not adminoverride:
@@ -627,7 +727,7 @@ class ClassSection(models.Model):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.uri)
         result = defaultdict(list)
-        userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).distinct()
+        userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(enddate__gte=datetime.datetime.now()).distinct()
         for u in userbits:
             bit_str = u.verb.uri[uri_start:]
             result[bit_str].append(ESPUser(u.user))
@@ -655,7 +755,7 @@ class ClassSection(models.Model):
         retVal = User.objects.none()
         for verb_str in verbs:
             v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            user_ids = [a['user'] for a in UserBit.valid_objects().filter(verb=v, qsc=self.anchor).values('user')]
+            user_ids = UserBit.valid_objects().filter(verb=v, qsc=self.anchor).values_list('user', flat=True)
             new_qs = User.objects.filter(id__in=user_ids).distinct()
             retVal = retVal | new_qs
             
@@ -709,6 +809,9 @@ class ClassSection(models.Model):
         return self.num_students(use_cache, verbs=verb_list)
 
     def num_students(self, use_cache=True, verbs=['/Enrolled']):
+        if hasattr(self, "_count_students"):
+            return self._count_students
+
         #   Only cache the result for the default setting.
         if len(verbs) == 1 and verbs[0] == '/Enrolled':
             defaults = True
@@ -734,15 +837,15 @@ class ClassSection(models.Model):
             # NOTE: This assumes that no user can be both Enrolled and Rejected
             # from the same class. Otherwise, this is pretty silly.
             new_qs = UserBit.objects.filter(qsc=self.anchor, verb=v)
-            new_qs = new_qs.filter(Q(enddate__gte=datetime.datetime.now())
-                    | Q(enddate__isnull=True))
+            new_qs = new_qs.filter(enddate__gte=datetime.datetime.now())
             qs = qs | new_qs
         
         retVal = qs.count()
 
         if defaults:
             self.cache['num_students'] = retVal
-            
+
+        self._count_students = retVal
         return retVal            
 
     def room_capacity(self):
@@ -783,7 +886,10 @@ class ClassSection(models.Model):
         resources = Resource.objects.filter(resourceassignment__target=self).filter(res_type=classroom_type)
         events = [r.event for r in resources] 
         """
-        events = list(self.meeting_times.all())
+        if hasattr(self, "_events"):
+            events = self._events
+        else:
+            events = list(self.meeting_times.all())
 
         txtTimes = [ event.pretty_time() for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
@@ -838,7 +944,7 @@ class ClassSection(models.Model):
         self.update_cache()
 
     def getRegBits(self, user):
-        result = UserBit.objects.filter(QTree(qsc__below=self.anchor)).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        result = UserBit.objects.filter(QTree(qsc__below=self.anchor)).filter(enddate__gte=datetime.datetime.now()).order_by('verb__name')
         return result
     
     def getRegVerbs(self, user):
@@ -891,7 +997,7 @@ class ClassSection(models.Model):
                 self.update_cache_students()
                 
             #   Clear completion bit on the student's application if the class has app questions.
-            app = ESPUser(user).getApplication(self.parent_program, create=False)
+            app = user.getApplication(self.parent_program, create=False)
             if app:
                 app.set_questions()
                 if app.questions.count() > 0:
@@ -955,6 +1061,12 @@ class ClassSubject(models.Model):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
 
+    def get_sections(self):
+        if not hasattr(self, "_sections"):
+            self._sections = self.sections.all()
+
+        return self._sections
+        
     @classmethod
     def ajax_autocomplete(cls, data):
         values = cls.objects.filter(anchor__friendly_name__istartswith=data).values(
@@ -984,7 +1096,7 @@ class ClassSubject(models.Model):
     def _get_meeting_times(self):
         timeslot_id_list = []
         for s in self.sections.all():
-            timeslot_id_list += [item['id'] for item in s.meeting_times.all().values('id')]
+            timeslot_id_list += s.meeting_times.all().values_list('id', flat=True)
         return Event.objects.filter(id__in=timeslot_id_list).order_by('start')
     all_meeting_times = property(_get_meeting_times)
 
@@ -1001,6 +1113,25 @@ class ClassSubject(models.Model):
 
     def get_section(self, timeslot=None):
         """ Cache sections for a class.  Always use this function to get a class's sections. """
+
+    
+        # If we happen to know our own sections from a subquery:
+        did_search = True
+
+        if hasattr(self, "_sections"):
+            for s in self._sections:
+                if not hasattr(s, "_events"):
+                    did_search = False
+                    break
+                if timeslot in s._events:
+                    return s
+
+            if did_search: # If we did successfully search all sections, but found none in this timeslot
+                return None
+            #If we didn't successfully search all sections, go and do it the old-fashioned way:
+
+        print "Couldn't find section!"
+            
         from django.core.cache import cache
 
         if timeslot:
@@ -1090,7 +1221,7 @@ class ClassSubject(models.Model):
         
     def friendly_times(self):
         collapsed_times = []
-        for s in self.sections.all():
+        for s in self.get_sections():
             collapsed_times += s.friendly_times()
         return collapsed_times
         
@@ -1107,9 +1238,14 @@ class ClassSubject(models.Model):
         return result
         
     def num_students(self, use_cache=True, verbs=['/Enrolled']):
+        if hasattr(self, "_num_students"):
+            return self._num_students
+
         result = 0
-        for sec in self.sections.all():
+        for sec in self.get_sections():
             result += sec.num_students(use_cache, verbs)
+
+        self._num_students = result
         return result
         
     def max_students(self):
@@ -1141,6 +1277,9 @@ class ClassSubject(models.Model):
 
     def got_index_qsd(self):
         """ Returns if this class has an associated index.html QSD. """
+        if hasattr(self, "_index_qsd"):
+            return (self._index_qsd != '')
+        
         if QuasiStaticData.objects.filter(path = self.anchor, name = "learn:index")[:1]:
             return True
         else:
@@ -1198,6 +1337,10 @@ class ClassSubject(models.Model):
     
     def teachers(self, use_cache = True):
         """ Return a queryset of all teachers of this class. """
+        # We might have teachers pulled in by Awesome Query Magic(tm), as in .catalog()
+        if hasattr(self, "_teachers"):
+            return self._teachers
+        
         retVal = self.cache['teachers']
         if retVal is not None and use_cache:
             return retVal
@@ -1223,9 +1366,9 @@ class ClassSubject(models.Model):
     def isFull(self, timeslot=None, use_cache=True):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
-            sections = self.sections.filter(meeting_times=timeslot)
+            sections = self.get_section(timeslot)
         else:
-            sections = self.sections.all()
+            sections = self.get_sections()
         for s in sections:
             if not s.isFull(use_cache=use_cache):
                 return False
@@ -1457,7 +1600,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return "/".join(urllist)
 
     def getRegBits(self, user):
-        return UserBit.objects.filter(QTree(qsc__below=self.anchor), user=user).filter(Q(enddate__gte=datetime.datetime.now()) | Q(enddate__isnull=True)).order_by('verb__name')
+        return UserBit.objects.filter(QTree(qsc__below=self.anchor), user=user).filter(enddate__gte=datetime.datetime.now()).order_by('verb__name')
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """

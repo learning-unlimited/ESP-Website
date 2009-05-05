@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2009 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,33 +28,28 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from django.db import models
-from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
-from django.core.exceptions import PermissionDenied
-from django.contrib.auth.models import User, AnonymousUser
-from esp.datatree.models import *
+
 from datetime import datetime, timedelta
-from django.db.models.query import Q
-from esp.dblog.models import error
-from django.db.models.query import QuerySet
-from django.core.cache import cache
-from esp.middleware import ESPError
-from django.template.defaultfilters import urlencode
+
 from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
+from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
+from django.core.mail import send_mail
+from django.db import models
+from django.db.models.query import Q, QuerySet
+from django.http import HttpRequest
+from django.template import Context, loader
+from django.template.defaultfilters import urlencode
+
+from esp.cache import cache_function, wildcard
+from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
-from esp.db.cache import GenericCacheHelper
-from django.http import HttpRequest
-from django.template import loader
-from django.core.mail import send_mail
-from django.template import Context
+from esp.dblog.models import error
+from esp.middleware import ESPError
 
-UserBit = None
-
-def _import_userbit():
-    global UserBit
-    if UserBit is None:
-        from esp.users.models.userbits import UserBit
 
 try:
     import cPickle as pickle
@@ -74,14 +69,17 @@ def user_get_key(user):
 def userBitCacheTime():
     return 300
 
-class CacheHelper(GenericCacheHelper):
-    @staticmethod
-    def get_key(user):
-        return 'ESPUserCache__%s' % user._get_pk_val()
+def admin_required(func):
+    def wrapped(request, *args, **kwargs):
+        if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator():
+            raise PermissionDenied
+        return func(request, *args, **kwargs)
+    return wrapped
+
 
 class ESPUserManager(ProcedureManager):
 
-    cache = CacheHelper
+    pass
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -112,7 +110,6 @@ class ESPUser(User, AnonymousUser):
             User.__init__(self, userObj, *args, **kwargs)
             
         self.other_user = False
-        self.cache = ESPUser.objects.cache(self)
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -154,7 +151,6 @@ class ESPUser(User, AnonymousUser):
         return self.getOld().is_authenticated()
 
     def getVisible(self, objType):
-        _import_userbit()
         return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
 
     def getLastProfile(self):
@@ -163,20 +159,18 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.getLastProfile(self)
 
+    @cache_function
+    def getEditable_ids(self, objType):
+        # As far as I know, fbap's cache is still screwy, so we'll retain this cache at a higher level for now --davidben, 2009-04-06
+        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit')).values_list('id', flat=True)
+    getEditable_ids.get_or_create_token(('self',)) # Currently very difficult to determine type, given anchor
+    getEditable_ids.depend_on_row(lambda:UserBit, lambda bit: {} if bit.user_id is None else {'self': bit.user},
+                                                  lambda bit: bit.applies_to_verb('V/Administer/Edit'))
+
     def getEditable(self, objType):
-        _import_userbit()
-
-        # Cache it at the point, since the fbap cache doesn't really work
-        key = 'getEditable__%s.%s' % (objType.__module__, objType.__name__)
-        id_list = self.cache[key]
-        if id_list is None:
-            id_list = UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit')).values_list('id', flat=True)
-            self.cache.set(key, id_list, 3600)
-
-        return objType.objects.filter(id__in=id_list)
+        return objType.objects.filter(id__in=self.getEditable_ids(objType))
 
     def canEdit(self, object):
-        _import_userbit()
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
 
     def updateOnsite(self, request):
@@ -244,6 +238,7 @@ class ESPUser(User, AnonymousUser):
             return otheruser.username
         return ''
 
+    @cache_function
     def getTaughtClasses(self, program = None):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
@@ -259,14 +254,26 @@ class ESPUser(User, AnonymousUser):
                 error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
             else:
                 return all_classes.filter(parent_program = program)
+    # FIXME: What if the Program query gives nothing?
+    getTaughtClasses.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
+                                                    lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id)
+    # FIXME: depend on ClassSubject (ids vs values thing again)
+    #   This one's important... if ClassSubject data changes...
+    # kinda works, but a bit too heavy handed:
+    getTaughtClasses.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program})
 
+
+    @cache_function
     def getTaughtSections(self, program = None):
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program))
-        section_ids = []
-        for c in classes:
-            section_ids += [v['id'] for v in c.sections.all().values('id')]
-        return ClassSection.objects.filter(id__in=section_ids)
+        return ClassSection.objects.filter(parent_class__in=classes)
+    getTaughtSections.get_or_create_token(('program',))
+    # FIXME: Would be REALLY nice to kill it only for the teachers of this section
+    # ...key_set specification needs more work...
+    getTaughtSections.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
+    getTaughtSections.depend_on_cache(getTaughtClasses, lambda self=wildcard, program=wildcard, **kwargs:
+                                                              {'self':self, 'program':program})
 
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
@@ -277,25 +284,6 @@ class ESPUser(User, AnonymousUser):
             if include_scheduled or (s.start_time() is None):
                 total_time = total_time + timedelta(hours=float(s.duration))
         return total_time
-
-    def getUserNum(self):
-        """ Returns the "number" of a user, which is distinct from id.
-            It's like the index if you search by lsat and first name."""
-
-        retVal = self.cache['getUserNum']
-
-        if retVal is not None: return retVal
-        users = User.objects.filter(last_name__iexact = self.last_name,
-                                    first_name__iexact = self.first_name).order_by('id')
-        i = 0
-        for user in users:
-            if user.id == self.id:
-                break
-            i += 1
-
-        retVal = (i and i or '')
-        self.cache['getUserNum'] = retVal
-        return retVal
 
     @staticmethod
     def getUserFromNum(first, last, num):
@@ -320,7 +308,6 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
-        _import_userbit()
         types = ['Student', 'Teacher','Guardian','Educator']
 
         if strType not in types:
@@ -336,56 +323,52 @@ class ESPUser(User, AnonymousUser):
         else:
             return User.objects.filter(Q_useroftype)
 
-    def availability_cache_key(self, program, ignore_classes=False):
-        if ignore_classes:
-            return 'espuser__availabletimes_all:%d,%d' % (self.id, program.id)
-        else:
-            return 'espuser__availabletimes:%d,%d' % (self.id, program.id)
-
+    @cache_function
     def getAvailableTimes(self, program, ignore_classes=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.resources.models import Resource
         from esp.cal.models import Event
-        from django.core.cache import cache
 
-        #   This is such a common operation that I think it should be cached.
-        cache_key = self.availability_cache_key(program, ignore_classes)
-        result = cache.get(cache_key)
-        if result is not None:
-            return result
+        valid_events = Event.objects.filter(resource__user=self, anchor=program.anchor)
 
-        res_list = [item['event'] for item in Resource.objects.filter(user=self).values('event')]
-
-        #   Subtract out the times that they are already teaching.
-        other_classes = self.getTaughtSections(program)
-
-        other_times = [[mt['id'] for mt in cls.meeting_times.values('id')] for cls in other_classes]
-        result = program.getTimeSlots().filter(id__in=res_list)
         if ignore_classes:
-            for lst in other_times:
-                result = result.exclude(id__in=lst)
+            #   Subtract out the times that they are already teaching.
+            other_sections = self.getTaughtSections(program)
 
-        #   Finally, convert from a query set down to a list for caching
-        listed_result = list(result)
-        cache.set(cache_key, listed_result)
-        return listed_result
+            other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections]
+            for lst in other_times:
+                valid_events = valid_events.exclude(id__in=lst)
+
+        return valid_events
+    getAvailableTimes.get_or_create_token(('self', 'program',))
+    getAvailableTimes.depend_on_cache(getTaughtSections,
+            lambda self=wildcard, program=wildcard, **kwargs:
+                 {'self':self, 'program':program, 'ignore_classes':True})
+    # FIXME: Really should take into account section's teachers...
+    # even though that shouldn't change often
+    getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
+    getAvailableTimes.depend_on_row(lambda:Resource, lambda resource:
+                                        # FIXME: What if resource.event.anchor somehow isn't a program?
+                                        # Probably want a helper method return a special "nothing" object (XXX: NOT None)
+                                        # and have key_sets discarded if they contain it
+                                        {'program': Program.objects.get(anchor=resource.event.anchor),
+                                            'self': resource.user})
+    # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
+    # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
         """ Clear all resources indicating this teacher's availability for a program """
         from esp.resources.models import Resource
-        from django.core.cache import cache
 
-        cache_key = self.availability_cache_key(program)
-        cache.delete(cache_key)
         Resource.objects.filter(user=self, event__anchor=program.anchor).delete()
 
     def addAvailableTime(self, program, timeslot):
         from esp.resources.models import Resource, ResourceType
-        from django.core.cache import cache
 
-        cache_key = self.availability_cache_key(program)
-        cache.delete(cache_key)
+        # if program.anchor is not timeslot.anchor:
+        #    BADNESS
+
         r = Resource()
         r.user = self
         r.event = timeslot
@@ -393,16 +376,22 @@ class ESPUser(User, AnonymousUser):
         r.res_type = ResourceType.get_or_create('Teacher Availability')
         r.save()
 
-    def enrollment_cache_key(self, program):
-        if program is not None:
-            return 'EnrolledClasses__%s' % program.id
+    def getApplication(self, program, create=True):
+        from esp.program.models.app_ import StudentApplication
+        
+        apps = StudentApplication.objects.filter(user=self, program=program)
+        print 'Count: %d' % apps.count()
+        if apps.count() > 1:
+            raise ESPError(True), '%d applications found for user %s in %s' % (apps.count(), self.username, program.niceName())
+        elif apps.count() == 0:
+            if create:
+                app = StudentApplication(user=self, program=program)
+                app.save()
+                return app
+            else:
+                return None
         else:
-            return 'EnrolledClasses__noprogram'
-
-    def clear_enrollment_cache(self, program):
-        _import_userbit()
-        cache = UserBit.objects.cache(self)
-        cache[self.enrollment_cache_key(program)] = None
+            return apps[0]
 
     def getApplication(self, program, create=True):
         from esp.program.models.app_ import StudentApplication
@@ -458,16 +447,14 @@ class ESPUser(User, AnonymousUser):
                 
             csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base,
                                                     anchor__userbit_qsc__verb__below=verb_base)
-                                              & Q( Q(anchor__userbit_qsc__user=self),
-                                                   Q(anchor__userbit_qsc__enddate__gte=datetime.now()) |
-                                                   Q(anchor__userbit_qsc__enddate__isnull=True))).distinct()
+                                              & Q( anchor__userbit_qsc__user=self,
+                                                   anchor__userbit_qsc__enddate__gte=datetime.now())).distinct()
 
         else:            
             verb_uris = ('V/Flags/Registration' + verb_str for verb_str in verbs)
             
             csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base)
-                                              & Q(Q(anchor__userbit_qsc__enddate__gte=datetime.now()) |
-                                                  Q(anchor__userbit_qsc__enddate__isnull=True)),
+                                              & Q(anchor__userbit_qsc__enddate__gte=datetime.now()),
                                               Q(anchor__userbit_qsc__user=self,
                                                 anchor__userbit_qsc__verb__uri__in=verb_uris)
                                               ).distinct()
@@ -514,7 +501,6 @@ class ESPUser(User, AnonymousUser):
         return priority
 
     def isEnrolledInClass(self, clsObj, request=None):
-        _import_userbit()
         verb_str = 'V/Flags/Registration/Enrolled'
         if request:
             verb = request.get_node(verb_str)
@@ -524,11 +510,9 @@ class ESPUser(User, AnonymousUser):
         return UserBit.UserHasPerms(self, clsObj.anchor, verb)
 
     def canAdminister(self, nodeObj):
-        _import_userbit()
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
 
     def canRegToFullProgram(self, nodeObj):
-        _import_userbit()
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
     def hasFinancialAid(self, anchor):
@@ -611,7 +595,6 @@ class ESPUser(User, AnonymousUser):
     line_items = lambda x, y: x.paymentStatus(y)[3]
 
     def isOnsite(self, program = None):
-        _import_userbit()
         verb = GetNode('V/Registration/OnSite')
         if program is None:
             return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
@@ -622,7 +605,6 @@ class ESPUser(User, AnonymousUser):
 
     def recoverPassword(self):
         # generate the ticket, send the email.
-        from esp.users.models import PersistentQueryFilter
         from esp.dbmail.models import MessageRequest
         from django.template import loader, Context
         from django.contrib.sites.models import Site
@@ -652,7 +634,6 @@ class ESPUser(User, AnonymousUser):
 
 
     def isAdministrator(self, anchor_object = None):
-        _import_userbit()
         if anchor_object is None:
             return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
         else:
@@ -676,7 +657,6 @@ class ESPUser(User, AnonymousUser):
         Creates the methods such as isTeacher that determins whether
         or not the user is a member of that user class.
         """
-        _import_userbit()
         user_classes = ('Teacher','Guardian','Educator','Officer','Student')
         overrides = {'Officer': 'Administrator'}
         for user_class in user_classes:
@@ -699,13 +679,11 @@ class ESPUser(User, AnonymousUser):
 
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
-        _import_userbit()
         # Axiak
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer/Edit'))
 
     def getMiniBlogEntries(self):
         """Return all miniblog posts this person has V/Subscribe bits for"""
-        _import_userbit()
         # Axiak 12/17
         from esp.miniblog.models import Entry
         return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe')).order_by('-timestamp')
@@ -826,7 +804,6 @@ class StudentInfo(models.Model):
         return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
 
     def updateForm(self, form_dict):
-        _import_userbit()
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
@@ -844,7 +821,6 @@ class StudentInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
-        _import_userbit()
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
 
@@ -1314,7 +1290,6 @@ class K12School(models.Model):
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
     """ Get the specified node.  Create it only if the specified user has create bits on it """
-    _import_userbit()
 
     DEFAULT_VERB = 'V/Administer/Edit'
 
@@ -1599,3 +1574,9 @@ def install():
                             "recursive": False } )
 
         populateInitialUserBits(AdminUserBits)
+
+# We can't import these earlier because of circular stuff...
+from esp.users.models.userbits import UserBit
+from esp.cal.models import Event
+from esp.program.models import ClassSubject, ClassSection, Program
+from esp.resources.models import Resource

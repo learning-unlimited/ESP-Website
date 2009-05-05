@@ -29,6 +29,32 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-# Convenience imports
-from esp.cache.argcache import cache_function
-from esp.cache.key_set import wildcard
+from django.conf import settings
+
+__all__ = ['register_cache', 'cache_by_uid', 'dump_all_caches', 'caches_locked']
+
+all_caches = {}
+
+def register_cache(cache_obj):
+    all_caches[cache_obj.uid] = cache_obj
+
+def cache_by_uid(uid):
+    return all_caches.get(uid, None)
+
+def dump_all_caches():
+    for c in all_caches.values():
+        c.delete_all()
+
+def _finalize_caches():
+    for c in all_caches.values():
+        c.run_all_delayed()
+        if settings.CACHE_DEBUG:
+            print "Initialized cache", c.pretty_name
+
+_caches_locked = False
+def caches_locked():
+    return _caches_locked
+
+def _lock_caches():
+    global _caches_locked
+    _caches_locked = True

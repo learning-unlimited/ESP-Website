@@ -23,10 +23,41 @@
 -- Email: web@esp.mit.edu
 
 
+-- ***
+-- Table indices for the DataTree table
+-- ***
+
+-- Indices to facilitate range queries
+CREATE INDEX datatree__rangestart ON datatree_datatree USING btree (rangestart);
+CREATE INDEX datatree__rangeend ON datatree_datatree USING btree (rangeend);
+
+-- Speeds up get_by_uri queries
+CREATE INDEX datatree_uri ON datatree_datatree USING btree (uri) WHERE uri_correct = true;
+
+--- ***
+--- "List" aggregate
+--- ***
+
+CREATE OR REPLACE FUNCTION comma_cat (text, text)
+  RETURNS text AS
+  'SELECT CASE
+    WHEN $2 is null or $2 = '''' THEN $1
+    WHEN $1 is null or $1 = '''' THEN $2
+    ELSE $1 || '','' || $2
+  END'
+LANGUAGE sql;
+
+CREATE AGGREGATE list (
+       BASETYPE = text, 
+       SFUNC = comma_cat,
+       STYPE = text,
+       INITCOND = ''
+);
+
 
 -- ***
 -- ESP plpgpsql functions
--- **
+-- ***
 -- Written by Mike Axiak.
 
 
@@ -110,9 +141,9 @@ BEGIN
       AND
       ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
       AND
-      ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now())
+      ("users_userbit"."startdate" <= now())
       AND
-      ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= now())
+      ("users_userbit"."enddate" >= now())
       AND
       (
         ("users_userbit"."recursive" = True AND
@@ -178,9 +209,9 @@ BEGIN
       (
         ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -235,7 +266,7 @@ BEGIN
         AND
         ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -293,9 +324,9 @@ BEGIN
     WHERE
     (
       (
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
       )
       AND
       (
@@ -350,9 +381,9 @@ BEGIN
     WHERE
     (
       (
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
       )
       AND
       (
@@ -399,9 +430,9 @@ BEGIN
       (
         ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -447,9 +478,9 @@ BEGIN
       (
         ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= start_ts)
         AND
-        ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -498,9 +529,9 @@ BEGIN
              ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
              AND 
              (
-               ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now_ts)
+               ("users_userbit"."startdate" <= now_ts)
                AND
-               ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" > now_ts)
+               ("users_userbit"."enddate" > now_ts)
              )
           )
           AND
@@ -529,9 +560,9 @@ BEGIN
              ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
              AND 
              (
-               ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now_ts)
+               ("users_userbit"."startdate" <= now_ts)
                AND
-               ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" > now_ts)
+               ("users_userbit"."enddate" > now_ts)
              )
           )
           AND
@@ -560,9 +591,9 @@ BEGIN
                  ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
                  AND 
                  (
-                   ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= now_ts)
+                   ("users_userbit"."startdate" <= now_ts)
                    AND
-                   ("users_userbit"."enddate" IS NULL OR "users_userbit"."enddate" > now_ts)
+                   ("users_userbit"."enddate" > now_ts)
                  )
               )
               AND

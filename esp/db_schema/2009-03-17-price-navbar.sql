@@ -2,7 +2,7 @@ BEGIN;
 
 -- Creating nav bar categories
 
-DROP TABLE IF EXISTS "web_navbarcategory";
+DROP TABLE IF EXISTS "web_navbarcategory" cascade;
 
 CREATE TABLE "web_navbarcategory" (
     "id" serial NOT NULL PRIMARY KEY,

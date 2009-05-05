@@ -29,15 +29,19 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.miniblog.views.blogs import *
+from datetime import datetime
 
-from esp.web.util import render_to_response
-from esp.miniblog.models import Entry
 from django.contrib.auth.models import User, AnonymousUser
+from django.db.models.query import Q
+
+from esp.miniblog.views.blogs import *
+from esp.miniblog.models import Entry, AnnouncementLink
+
+from esp.cache import cache_function
+from esp.web.util import render_to_response
 from esp.datatree.models import *
 from esp.users.models import UserBit, ESPUser
 from esp.dbmail.models import MessageRequest, EmailRequest
-from datetime import datetime
 
 def show_miniblog(request, url, subsection = None, section_redirect_keys = {}, extramsg=''):
     """ Shows a miniblog based on the specified node """
@@ -136,4 +140,31 @@ def preview_miniblog(request, section = None):
 
     return curUser.getMiniBlogEntries()
     
+@cache_function
+def get_visible_announcements(user, limit):
+    verb = DataTree.get_by_uri('V/Subscribe')
+    
+    models_to_search = [Entry, AnnouncementLink]
+    results = []
+    grand_total = 0
+    overflowed = False
+    for model in models_to_search:
+        result = UserBit.find_by_anchor_perms(model, user, verb).order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.now()) | Q(highlight_expire__isnull = True))
 
+        if limit:
+            overflowed = ((len(result) - limit) > 0)
+            total = len(result)
+            result = result[:limit]
+        else:
+            overflowed = False
+            total = len(result)
+
+        results += result
+        grand_total += total
+
+    return {'announcementList': results,
+              'overflowed':       overflowed,
+              'total':            grand_total}
+get_visible_announcements.depend_on_model(Entry)
+get_visible_announcements.depend_on_model(AnnouncementLink)
+# FIXME: Really should depend on the UserBit...

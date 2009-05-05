@@ -68,6 +68,7 @@ DEBUG = False
 DISPLAYSQL = False
 TEMPLATE_DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
+CACHE_DEBUG = False
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -173,9 +174,15 @@ INSTALLED_APPS = (
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
+    'esp.cache',
+    'esp.cache_loader',
 #    'django_evolution',
 #    'django_command_extensions',
 )
+import os
+for app in ('django_evolution', 'django_command_extensions'):
+    if os.path.exists(app):
+        INSTALLED_APPS += (app,)
 
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True

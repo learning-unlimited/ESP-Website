@@ -35,7 +35,7 @@
       <td style="width: 50%;" valign="top">
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
-	  {% for sec in class.sections.all %}
+	  {% for sec in class.get_sections %}
            {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "|smartypants }} <br />{% endif %}
           {% endfor %}
         <br />
@@ -46,7 +46,7 @@
            {{ class.grade_min }}-{{ class.grade_max }}
          {% if show_enrollment %} <br />
          <strong>Enrollment</strong><br />
-           {% for sec in class.sections.all %}
+           {% for sec in class.get_sections %}
               {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />{% endif %}
            {% endfor %}
         {% endif %}

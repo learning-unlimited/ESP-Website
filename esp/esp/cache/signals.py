@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2009 MIT ESP
+Copyright (c) 2008 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,7 +28,21 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+__all__ = ['table_dirty', 'cache_deleted']
 
-# Convenience imports
-from esp.cache.argcache import cache_function
-from esp.cache.key_set import wildcard
+
+from django.dispatch import Signal
+
+### not used
+### # TODO: Is it worth it making it specify changed fields? How common is this sort of thing?
+### """ Emitted when the entire table should be considered dirty. i.e. every field of every row could potentially be changed. """
+### table_dirty = Signal()
+
+""" Emitted when a cache is deleted. """
+cache_deleted = Signal(providing_args=[]) # DON'T FORGOT TO SPECIFY THESE AT SOME POINT...
+
+""" Emitted when an M2M entry is added. """
+m2m_added = Signal(providing_args=['instance', 'field', 'object'])
+
+""" Emitted when an M2M entry is removed. """
+m2m_removed = Signal(providing_args=['instance', 'field', 'object'])

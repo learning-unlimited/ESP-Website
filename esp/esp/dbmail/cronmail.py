@@ -38,11 +38,13 @@ from esp.datatree.models import *
 from datetime import datetime, timedelta
 from django.db.models.query import Q
 from django.contrib.auth.models import User, AnonymousUser
+from django.db import transaction
 from esp.users.models import ESPUser
 from esp.miniblog.models import Entry
 
 from django.conf import settings
 
+@transaction.autocommit
 def process_messages():
     """ Go through all unprocessed messages and process them. """
     messages = MessageRequest.objects.filter(Q(processed_by__lte=datetime.now()) |
@@ -64,6 +66,7 @@ def process_messages():
             message.save()
 
 
+@transaction.autocommit
 def send_email_requests():
     """ Go through all email requests that aren't sent and send them. """
     mailtxts = TextOfEmail.objects.filter(Q(sent_by__lte=datetime.now()) |
@@ -92,7 +95,7 @@ def send_email_requests():
 
         time.sleep(wait)
     
-
+@transaction.autocommit
 def event_to_message(event):
     m = MessageRequest()
     m.subject = "Event Notification"
@@ -135,6 +138,7 @@ def send_event_notices_for_day(day):
     else:
         send_event_notices_for_date(datetime.now())
 
+@transaction.autocommit
 def send_miniblog_messages():
     entries = Entry.objects.filter(email = True, sent = False)
 

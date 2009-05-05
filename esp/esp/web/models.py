@@ -44,7 +44,7 @@ class NavBarCategory(models.Model):
     long_explanation = models.TextField()
 
     def get_navbars(self):
-        return self.navbarentry_set.all().order_by('sort_rank')
+        return self.navbarentry_set.all().select_related('category').order_by('sort_rank')
     
     @classmethod
     def default(cls):

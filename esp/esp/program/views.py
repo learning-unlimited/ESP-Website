@@ -34,7 +34,7 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect, Http404
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits
+from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits, admin_required
 
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -97,20 +97,14 @@ def classTemplateEditor(request, program, session):
     return render_to_response('display/qsd_listing.html', request, program, {'qsd_pages': qsd_pages,
                                                             'have_create': have_create })
 
-@login_required
+@admin_required
 def manage_programs(request):
-    if not request.user.isAdmin():
-        raise Http404
-
     admPrograms = ESPUser(request.user).getEditable(Program).order_by('-id')
 
     return render_to_response('program/manage_programs.html', request, GetNode('Q/Web/myesp'), {'admPrograms': admPrograms})
 
-@login_required
+@admin_required
 def newprogram(request):
-    if not request.user.isAdmin():
-        raise Http404
-
     template_prog = None
 
     if 'template_prog' in request.GET:
@@ -240,11 +234,9 @@ def submit_transaction(request):
         
     return render_to_response( 'accounting_docs/credit_rejected.html', request, GetNode('Q/Accounting'), {} )
 
-@login_required
+# This really should go in qsd
+@admin_required
 def manage_pages(request):
-    if not request.user.isAdmin():
-        raise Http404
-
     if request.method == 'POST':
         data = request.POST
         if request.GET['cmd'] == 'bulk_move':
@@ -304,12 +296,12 @@ def manage_pages(request):
     #   Show QSD listing 
     qsd_ids = []
     qsds = QuasiStaticData.objects.all().order_by('-create_date').values_list('id', 'path', 'name')
-    dup_detect = {}
-    for qsd in qsds:
-        key = qsd[1], qsd[2]
-        if not dup_detect.has_key(key):
-            qsd_ids.append(qsd[0])
-            dup_detect[key] = qsd
+    seen_keys = set()
+    for id, path, name in qsds:
+        key = path, name
+        if key not in seen_keys:
+            qsd_ids.append(id)
+            seen_keys.add(key)
     qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
     qsd_list.sort(key=lambda q: q.url())
     return render_to_response('qsd/list.html', request, DataTree.get_by_uri('Q/Web'), {'qsd_list': qsd_list})

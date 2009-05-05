@@ -375,10 +375,18 @@ class DataTree(models.Model):
         self.rangestart, self.rangeend = node.rangestart, node.rangeend
         cache.set("GetNode%s" % self.get_uri(), self, 86400)
     
-    def children(self):
+    def children(self, only_if_known = False):
         " Return all the subnodes of this one. "
-        return DataTree.objects.filter(parent = self)
-
+        
+        if hasattr(self, "_children"):
+            return self._children
+        elif not only_if_known:
+            children = DataTree.objects.filter(parent = self)            
+            setattr(self, "_children", children)
+            return self._children
+        else:
+            return None
+    
     def depth(self):
         uri = self.get_uri()
         if uri == '':
@@ -418,7 +426,12 @@ class DataTree(models.Model):
         return [(node.name, node) for node in self.children()]
 
     def has_key(self, key):
-        return bool(self.children().filter(name__exact = key)[:1])
+        # If we already know the children of this node,
+        # don't bother querying for them;
+        # just scan the list for this particular child
+        children = self.children()
+        if children != None:
+            return name in (child.name for child in children)
 
     def __contains__(self, child):
         if type(child) != DataTree:
@@ -427,12 +440,18 @@ class DataTree(models.Model):
     
 
     def __getitem__(self, key):
-        try:
-            return DataTree.objects.get(parent = self, name = key)
-        except:
+        # If we already know the children of this node,
+        # don't bother querying for them;
+        # just scan the list for this particular child
+        children = self.children(only_if_known=True)
+        if children != None:
+            for child in children:
+                if child.name == key:
+                    return child
+            # Key must not be in the set of children
             raise exceptions.KeyError, key
 
-
+        
     def __setitem__(self, key, value):
         assert isinstance(value, DataTree), "Expected a DataTree"
         value.name = key
