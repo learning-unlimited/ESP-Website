@@ -67,8 +67,8 @@ class AlumniInfo(models.Model):
     end_year = models.IntegerField('To year',blank=True,null=True)
     involvement = models.TextField('What ESP programs/activities (HSSP, Splash, SAT Prep, etc.) were you involved with?',blank=True,null=True)
     
-    news_interest = models.BooleanField('Would you like to receive our e-mail newsletter twice yearly?', null=True)
-    advising_interest = models.BooleanField('Would you like to join an e-mail list of alumni that advise ESP?', null=True)
+    news_interest = models.BooleanField('Would you like to receive our e-mail newsletter twice yearly?', default=False)
+    advising_interest = models.BooleanField('Would you like to join an e-mail list of alumni that advise ESP?', default=False)
     
     contactinfo = AjaxForeignKey(ContactInfo, blank=True, related_name='alumni_user', verbose_name='Contact Information')
     

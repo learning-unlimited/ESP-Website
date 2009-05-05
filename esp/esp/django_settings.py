@@ -127,7 +127,7 @@ MIDDLEWARE_GLOBAL = [
     ( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
    #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
-    ( 400, 'esp.datatree.middleware.DataTreeLockMiddleware'),
+    (2400, 'esp.datatree.middleware.DataTreeLockMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
    #( 600, 'esp.middleware.psycomiddleware.PsycoMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),

@@ -152,7 +152,7 @@ class Resource(models.Model):
     res_type = models.ForeignKey(ResourceType)
     num_students = models.IntegerField(blank=True, default=-1)
     group_id = models.IntegerField(default=-1) # Default value of -1 means ungrouped, or at least so I'm assuming for now in grouped_resources(). -ageng 2008-05-13
-    is_unique = models.BooleanField(default=False, null=True)
+    is_unique = models.BooleanField(default=False)
     user = AjaxForeignKey(User, null=True, blank=True)
     event = models.ForeignKey(Event)
     

@@ -94,10 +94,10 @@ class StudentClassRegModuleInfo(models.Model):
     
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
-    allow_coteach        = models.BooleanField(blank=True, null=True)
-    set_prereqs          = models.BooleanField(blank=True, null=True)
-    display_times        = models.BooleanField(blank=True, null=True)
-    times_selectmultiple = models.BooleanField(blank=True, null=True)
+    allow_coteach        = models.BooleanField(blank=True, default=True)
+    set_prereqs          = models.BooleanField(blank=True, default=True)
+    display_times        = models.BooleanField(blank=True, default=True)
+    times_selectmultiple = models.BooleanField(blank=True, default=True)
     
     #   The maximum length of a class, in minutes.
     class_max_duration   = models.IntegerField(blank=True, null=True)
@@ -121,7 +121,7 @@ class ClassRegModuleInfo(models.Model):
 
     #   If this is true, teachers will be allowed to specify that students may
     #   come to their class late.
-    allow_lateness       = models.BooleanField(blank=True, null=True)
+    allow_lateness       = models.BooleanField(blank=True, default=False)
 
     def session_counts_ints_get(self):
         return [ int(s) for s in self.session_counts.split(',') ]
@@ -131,7 +131,7 @@ class ClassRegModuleInfo(models.Model):
     
     session_counts_ints = property( session_counts_ints_get, session_counts_ints_set )
     
-    class_durations_any = models.BooleanField(blank=True, null=True)
+    class_durations_any = models.BooleanField(blank=True, default=False)
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
     

@@ -117,7 +117,7 @@ class LineItemType(models.Model):
 	label = models.TextField()
 	anchor = AjaxForeignKey(DataTree)
 	optional = models.BooleanField(default=True)
-	show_on_schedule = models.BooleanField(default=False, null=True)
+	show_on_schedule = models.BooleanField(default=False)
 
 	@classmethod
 	def forAnchor(cls, anchor):
