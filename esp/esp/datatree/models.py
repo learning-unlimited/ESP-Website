@@ -842,7 +842,7 @@ class DataTree(models.Model):
     # TESTS      #
     ##############
     @staticmethod
-    def randwordtest(factor = 4):
+    def randwordtest(factor = 4, limit = -1):
         # some random test
         import sys
         import random
@@ -857,7 +857,9 @@ class DataTree(models.Model):
                 low_id = 1
 
                 
-            while True:
+            while limit != 0:
+                if limit > 0:
+                    limit -= 1
                 try:
                     size = int(DataTree.objects.count())
                     cur_id = random.choice(range(low_id,low_id + size*factor))
