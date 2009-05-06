@@ -287,23 +287,21 @@ class Program(models.Model):
         return '/'.join(str_array[-2:])
     
     def __unicode__(self):
-        if not hasattr(self, "_nice_name"):
-            self._nice_name = str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
-        return self._nice_name
+        return self.niceName()
 
     def parent(self):
         return self.anchor.parent
 
     def niceName(self):
-        # Cache niceName, because otherwise it takes a couple of queries
-        # to sort it out
-        CACHE_KEY = "PROGRAM__NICENAME__%s" % self.id
+        if not hasattr(self, "_nice_name"):
+            # Separate this so that in-memory and memcache are used in the right order
+            self._nice_name = self._niceName_memcache()
+        return self._nice_name
 
-        retVal = cache.get(CACHE_KEY)
-        if not retVal:
-            retVal = str(self).replace("_", " ")
-            cache.set(CACHE_KEY, retVal, timeout=86400)
-        return retVal
+    @cache_function
+    def _niceName_memcache(self):
+        return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+    # this stuff never really changes
 
     def niceSubName(self):
         return self.anchor.name.replace('_', ' ')
