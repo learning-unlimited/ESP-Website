@@ -238,43 +238,69 @@ class ESPUser(User, AnonymousUser):
             return otheruser.username
         return ''
 
-    @cache_function
     def getTaughtClasses(self, program = None):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
+        if program is None:
+            return self.getTaughtClassesAll()
+        else:
+            return self.getTaughtClassesFromProgram(program)
+
+    @cache_function
+    def getTaughtClassesFromProgram(self, program):
         from esp.program.models import ClassSubject, Program # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
         tr_node = GetNode('V/Flags/Registration/Teacher')
         all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
-        if program is None: # If we have no program specified
-            return all_classes
-        else:
-            if type(program) != Program: # if we did not receive a program
-                error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
-            else:
-                return all_classes.filter(parent_program = program)
-    getTaughtClasses.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
-                                                    lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
-                                                                bit.qsc.parent.name == 'Classes' and
-                                                                bit.qsc.parent.parent.program_set.count() > 0 )
-    # FIXME: depend on ClassSubject (ids vs values thing again)
-    #   This one's important... if ClassSubject data changes...
-    # kinda works, but a bit too heavy handed:
-    getTaughtClasses.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program})
 
+        if type(program) != Program: # if we did not receive a program
+            error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
+        else:
+            return all_classes.filter(parent_program = program)
+    getTaughtClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
+                                                              lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
+                                                                          bit.qsc.parent.name == 'Classes' and
+                                                                          bit.qsc.parent.parent.program_set.count() > 0 )
+    getTaughtClassesFromProgram.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
+    def getTaughtClassesAll(self):
+        from esp.program.models import ClassSubject # Need the Class object.
+        
+        #   Why is it that we had a find_by_anchor_perms function again?
+        tr_node = GetNode('V/Flags/Registration/Teacher')
+        return ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
+    getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
+                                                      lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
+                                                                  bit.qsc.parent.name == 'Classes' and
+                                                                  bit.qsc.parent.parent.program_set.count() > 0 )
+    getTaughtClassesAll.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
+
+
     def getTaughtSections(self, program = None):
+        if program is None:
+            return self.getTaughtSectionsAll()
+        else:
+            return self.getTaughtSectionsFromProgram(program)
+
+    @cache_function
+    def getTaughtSectionsAll(self):
+        from esp.program.models import ClassSection
+        classes = list(self.getTaughtClassesAll())
+        return ClassSection.objects.filter(parent_class__in=classes)
+    getTaughtSectionsAll.depend_on_model(lambda:ClassSection)
+    getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
+                                                              {'self':self})
+    @cache_function
+    def getTaughtSectionsFromProgram(self, program):
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program))
         return ClassSection.objects.filter(parent_class__in=classes)
-    getTaughtSections.get_or_create_token(('program',))
-    # FIXME: Would be REALLY nice to kill it only for the teachers of this section
-    # ...key_set specification needs more work...
-    getTaughtSections.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
-    getTaughtSections.depend_on_cache(getTaughtClasses, lambda self=wildcard, program=wildcard, **kwargs:
-                                                              {'self':self, 'program':program})
+    getTaughtSectionsFromProgram.get_or_create_token(('program',))
+    getTaughtSectionsFromProgram.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
+    getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
+                                                                              {'self':self, 'program':program})
 
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
@@ -343,7 +369,7 @@ class ESPUser(User, AnonymousUser):
 
         return valid_events
     getAvailableTimes.get_or_create_token(('self', 'program',))
-    getAvailableTimes.depend_on_cache(getTaughtSections,
+    getAvailableTimes.depend_on_cache(getTaughtSectionsFromProgram,
             lambda self=wildcard, program=wildcard, **kwargs:
                  {'self':self, 'program':program, 'ignore_classes':True})
     # FIXME: Really should take into account section's teachers...
