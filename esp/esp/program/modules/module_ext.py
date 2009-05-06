@@ -69,7 +69,7 @@ class StudentClassRegModuleInfo(models.Model):
         #   Trying to fetch self.signup_verb directly throws a DoesNotExist for some reason.
         super(StudentClassRegModuleInfo, self).__init__(*args, **kwargs)
         if (not self.signup_verb_id) and ('signup_verb' not in kwargs.keys()):
-            self.signup_verb = DataTree.get_by_uri(REG_VERB_BASE + '/Enrolled')
+            self.signup_verb = GetNode(REG_VERB_BASE + '/Enrolled')
     
     def reg_verbs(self, uris=False):
         if not self.signup_verb:
