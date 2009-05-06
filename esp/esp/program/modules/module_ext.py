@@ -96,7 +96,7 @@ class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, default=True)
     set_prereqs          = models.BooleanField(blank=True, default=True)
-    display_times        = models.BooleanField(blank=True, default=True)
+    display_times        = models.BooleanField(blank=True, default=False)
     times_selectmultiple = models.BooleanField(blank=True, default=True)
     
     #   The maximum length of a class, in minutes.
