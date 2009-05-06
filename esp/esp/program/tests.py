@@ -47,16 +47,6 @@ class ProgramHappenTest(TestCase):
         from esp.datatree.models import DataTree, GetNode
         from esp.datatree.models import install as datatree_install
         from esp.users.models import ESPUser, UserBit
-        from django.db import transaction, connection
-        
-        # Force DataTree to work
-        # FIXME: we shouldn't have to do this here!
-        cursor = connection.cursor()
-        transaction.enter_transaction_management()
-        cursor.execute("""INSERT INTO datatree_datatree (name, friendly_name, uri, uri_correct, rangestart, rangeend, range_correct, lock_table )
-            VALUES ('ROOT', '', '', TRUE, 0, 25, TRUE, 0 )""")
-        transaction.commit()
-        transaction.leave_transaction_management()
         
         # make program type, since we can't do that yet
         self.program_type_anchor = GetNode('Q/Programs/Prubbogrubbam')
