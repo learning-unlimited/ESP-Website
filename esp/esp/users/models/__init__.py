@@ -97,7 +97,7 @@ class ESPUser(User, AnonymousUser):
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:
     #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
-    def __init__(self, userObj, *args, **kwargs):
+    def __init__(self, userObj=None, *args, **kwargs):
         if isinstance(userObj, ESPUser):
             self.__olduser = userObj.getOld()
             self.__dict__.update(self.__olduser.__dict__)
@@ -106,9 +106,14 @@ class ESPUser(User, AnonymousUser):
             self.__dict__ = userObj.__dict__
             self.__olduser = userObj
 
-        else:
+        elif userObj is not None or len(args) > 0:
+            # Initializing a model using non-keyworded args is a horrible idea.
+            # No clue why you'd do it, but I won't stop you. -ageng 2009-05-10
             User.__init__(self, userObj, *args, **kwargs)
-            
+
+        else:
+            User.__init__(self, *args, **kwargs)
+
         self.other_user = False
 
     @classmethod
