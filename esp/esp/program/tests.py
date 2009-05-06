@@ -128,16 +128,9 @@ class ProgramHappenTest(TestCase):
                 'finaid_cost':       '37',
             }
         self.client.post('/manage/newprogram', prog_dict)
-        # HACK: I cannot get this next line to work in the test client.
-        # Using HttpRequest object and manually calling the view instead.
-        #    self.client.post('/manage/newprogram?checked=1', {})
-        h = HttpRequest()
-        h.COOKIES = self.client.cookies
-        h.GET = {'checked': '1'}
-        h.path = '/manage/newprogram'
-        h.user = self.admin
-        h.session = self.client.session
-        newprogram(h)
+        # TODO: Use the following line once we're officially on Django 1.1
+        # self.client.post('/manage/newprogram?checked=1', {})
+        self.client.get('/manage/newprogram', {'checked': '1'})
         
         # Now test correctness...
         self.prog = Program.by_prog_inst('Prubbogrubbam', prog_dict['term'])
