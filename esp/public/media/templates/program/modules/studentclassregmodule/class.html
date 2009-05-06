@@ -1,0 +1,50 @@
+{% load Markdown.Markdown %}
+<div class="show_class{% if not cls.class_is_available %} class_not_allowed{% endif %}">
+  <table cellpadding="5" cellspacing="0" >
+    <tr>
+      <th colspan="2" style="width: 70%; background-color:#ccccff;">
+           {{ cls.title }}
+      </th>
+
+      <th style="width: 30%; background-color:#ccccff;">
+       <span class="teachers">
+	{% for teacher in cls.teachers %}
+<a href="/teach/teachers/{{teacher.username}}/bio.html" 
+          title="The biography of {{ teacher.first_name }} {{ teacher.last_name }}">{{ teacher.first_name }} {{ teacher.last_name }}</a>{% if not forloop.last %}, {% endif %}
+       {% endfor %}
+       </span>
+       </th>
+     </tr>
+     <tr>
+       <td colspan="3" class="info">
+	{{ cls.class_info|markdown|safe }}
+       </td>
+     </tr>
+    <tr>
+	<td style="width: 50%"></td>
+	<td style="width: 50%;" colspan="2">
+         <strong>Grades:</strong>
+	   {% if cls.not_in_grade_range %}<span style="color: red">{% endif %}{{ cls.grade_min }}-{{ cls.grade_max }}{% if cls.not_in_grade_range %}</span>{% endif %}
+	</td>
+    </tr>
+      <td>
+        <strong>Meeting Times</strong><br />
+	{% for section in cls.get_sections %}
+           Section {{ forloop.counter }}: {{ section.pretty_meeting_times }}<br />
+        {% endfor %}
+        <br />
+      </td>
+ 
+      <td style="width: 50%;" colspan="2">
+         <strong>Enrollment</strong><br />
+	{% for section in cls.get_sections %}
+	      <div class="{% if section.isFull %}cant_attend{% endif %}">Section {{ forloop.counter }}: {% if section.isFull %}<span style="color: red; font-weight: bold;">Full!</span>{% else %}{{ section.num_students }} (of {{ cls.class_size_max }}){% endif %}<br /></div>
+	{% endfor %}
+      </td>
+    </tr>
+</table>
+</div>
+
+
+
+

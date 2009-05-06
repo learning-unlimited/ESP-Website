@@ -75,6 +75,14 @@ class TeacherPreviewModule(ProgramModuleObj):
     def classroster(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='classrosters.html')
 
+    @aux_call
+    def catalogpreview(self, request, tl, one, two, module, extra, prog):
+        try:
+            cls = ClassSubject.objects.get(id=int(extra))
+        except:
+            cls = None
+        return render_to_response(self.baseDir()+'catalogpreview.html', request, (prog, tl), {'class': cls})
+    
     def get_handouts(self):
         return {'teacherschedule': 'Your Class Schedule', 'classroster': 'Class Rosters'}
 

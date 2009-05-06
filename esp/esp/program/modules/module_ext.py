@@ -61,7 +61,7 @@ class StudentClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     enforce_max          = models.BooleanField(default=True)
     
-    signup_verb          = AjaxForeignKey(DataTree, default=DataTree.get_by_uri(REG_VERB_BASE + '/Enrolled'))
+    signup_verb          = AjaxForeignKey(DataTree)
     use_priority         = models.BooleanField(default=False)
     priority_limit       = models.IntegerField(default=3)
     
@@ -69,7 +69,7 @@ class StudentClassRegModuleInfo(models.Model):
         #   Trying to fetch self.signup_verb directly throws a DoesNotExist for some reason.
         super(StudentClassRegModuleInfo, self).__init__(*args, **kwargs)
         if (not self.signup_verb_id) and ('signup_verb' not in kwargs.keys()):
-            self.signup_verb = DataTree.get_by_uri(REG_VERB_BASE + '/Enrolled')
+            self.signup_verb = GetNode(REG_VERB_BASE + '/Enrolled')
     
     def reg_verbs(self, uris=False):
         if not self.signup_verb:
@@ -96,7 +96,7 @@ class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, default=True)
     set_prereqs          = models.BooleanField(blank=True, default=True)
-    display_times        = models.BooleanField(blank=True, default=True)
+    display_times        = models.BooleanField(blank=True, default=False)
     times_selectmultiple = models.BooleanField(blank=True, default=True)
     
     #   The maximum length of a class, in minutes.

@@ -1,0 +1,72 @@
+
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}}{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/showdown/compressed/showdown.js"></script>
+<script type="text/javascript" src="/media/scripts/dojo-release-1.3.0/dojo/dojo.js"></script>
+<script type="text/javascript" src="/media/scripts/catalog.js"></script>
+{% endblock %}
+
+{% load subsection %}
+
+{% block subsection %}
+{% autoescape off %}{{ "Course Catalog"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+{% endblock %}
+
+{% block content %}
+<br />
+
+<h1>
+    {{ program.niceName }} <br /> 
+        Course Catalog
+</h1>
+
+{% if timeslot %}
+<h2 style="text-align: center;">
+Viewing classes for: {{ timeslot.friendly_name }}
+</h2>
+{% endif %}
+{% if request.user.onsite_local %}
+
+{% if not request.GET.filter %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}?filter=True">Filter out invalid classes</a>
+</h2>
+{% else %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}">Show all classes</a>
+</h2>
+{% endif %}
+{% endif %}
+
+<div id="catalog">
+<div id="categories">
+<!--  CATEGORIES  -->
+</div>
+<br />
+
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:catalog" request.user %}
+
+<div id="classes">
+<!--  CLASSES  -->
+Welcome to our fancy new JavaScript version of the catalog!  If you'd like to use the old-fashioned catalog, click <a href="catalog">here</a>.
+</div>
+</div>
+
+
+<script language="JavaScript">
+var user_grade = {{ request.user.getGrade }};
+if ( user_grade == 0 ) { user_grade = null; } // We want null, the server provides 0
+get_catalog_data();
+</script>
+
+{% endblock %}

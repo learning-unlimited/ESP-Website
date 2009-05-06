@@ -1842,3 +1842,13 @@ class ClassCategories(models.Model):
 
     class Admin:
         pass
+
+def install():
+    """ Initialize the default class categories. """
+    category_dict = {'S': 'Science', 'M': 'Math & Computer Science', 'E': 'Engineering', 'A': 'Arts', 'H': 'Humanities'}
+    
+    for key in category_dict:
+        cat = ClassCategories()
+        cat.symbol = key
+        cat.category = category_dict[key]
+        cat.save()

@@ -1,0 +1,34 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}}{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+{% endblock %}
+
+{% load subsection %}
+{% load latex %}
+{% load smartypants %}
+
+{% block subsection %}
+{% autoescape off %}{{ "Catalog Preview"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+{% endblock %}
+
+{% block content %}
+<br />
+
+<h1>
+    Catalog Preview for {{ class.emailcode }}
+</h1>
+
+<div id="catalog">
+{% load class_render %}
+{% render_class class %}
+</div>
+
+{% endblock %}

@@ -187,6 +187,8 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
                                    'form': form})
 
     def prepare(self, context):
+        clrmi = module_ext.ClassRegModuleInfo.objects.get(module__program=self.program)
+        context['num_teacher_questions'] = clrmi.num_teacher_questions;
         context['classes'] = self.user.getTaughtClasses().filter(parent_program = self.program)
         return context
 

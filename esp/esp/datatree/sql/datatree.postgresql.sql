@@ -27,32 +27,47 @@
 -- Table indices for the DataTree table
 -- ***
 
+-- It seems that these indices are created by default by manage.py syncdb.  
+-- If this is not true, we can uncomment the following lines. -Michael P
+
 -- Indices to facilitate range queries
-CREATE INDEX datatree__rangestart ON datatree_datatree USING btree (rangestart);
-CREATE INDEX datatree__rangeend ON datatree_datatree USING btree (rangeend);
+-- CREATE INDEX datatree__rangestart ON datatree_datatree USING btree (rangestart);
+-- CREATE INDEX datatree__rangeend ON datatree_datatree USING btree (rangeend);
 
 -- Speeds up get_by_uri queries
-CREATE INDEX datatree_uri ON datatree_datatree USING btree (uri) WHERE uri_correct = true;
+-- CREATE INDEX datatree_uri ON datatree_datatree USING btree (uri) WHERE uri_correct = true;
 
 --- ***
 --- "List" aggregate
 --- ***
 
-CREATE OR REPLACE FUNCTION comma_cat (text, text)
+CREATE OR REPLACE FUNCTION comma_cat (text, integer)
   RETURNS text AS
   'SELECT CASE
-    WHEN $2 is null or $2 = '''' THEN $1
-    WHEN $1 is null or $1 = '''' THEN $2
-    ELSE $1 || '','' || $2
+    WHEN $2::text is null or $2::text = '''' THEN $1
+    WHEN $1 is null or $1 = '''' THEN $2::text
+    ELSE $1 || '','' || $2::text
   END'
 LANGUAGE sql;
 
+-- Some SQL weirdness required to add or replace this aggregate
+
+CREATE OR REPLACE FUNCTION add_list_aggregate() RETURNS void AS
+$$
+BEGIN
+IF NOT EXISTS(SELECT * FROM pg_proc WHERE proname = 'list' AND proisagg) THEN
 CREATE AGGREGATE list (
-       BASETYPE = text, 
+       BASETYPE = integer,
        SFUNC = comma_cat,
        STYPE = text,
-       INITCOND = ''
-);
+       INITCOND = '');
+END IF;       
+END;
+$$
+LANGUAGE 'plpgsql';
+
+SELECT add_list_aggregate();
+DROP FUNCTION add_list_aggregate();
 
 
 -- ***

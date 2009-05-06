@@ -163,8 +163,13 @@ def newprogram(request):
         context = pickle.loads(request.session['context_str'])
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
+            # Fix the anchor friendly name right away, otherwise in-memory caches cause (mild) issues later on
+            anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
+            anchor.friendly_name = pcf.cleaned_data['term_friendly']
+            anchor.save()
+
             new_prog = pcf.save(commit = False) # don't save, we need to fix it up:
-            new_prog.anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
+            new_prog.anchor = anchor
             new_prog.save()
             pcf.save_m2m()
             
