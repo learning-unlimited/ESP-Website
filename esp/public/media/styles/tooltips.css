@@ -1,0 +1,28 @@
+.tooltip {
+    position: relative; /*this is the key*/
+    z-index: 24;
+    color: #000000 !important;
+    text-decoration: none !important;
+}
+
+.tooltip:hover {
+    z-index: 25; 
+    background-color: #ffff99;
+}
+
+.tooltip span {
+    display: none;
+}
+
+.tooltip:hover span { /*the span will display just on :hover state*/
+    display: block;
+    position: absolute;
+    top: 2em; 
+    left: 2em; 
+    width: 25em;
+    margin: 4px;
+    border: 1px solid #333399;
+    background-color: #ccccff; 
+    color: #000000;
+    font-size: 12px;
+}
