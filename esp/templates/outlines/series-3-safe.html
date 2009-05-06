@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>MIT ESP - Welcome to our Web site</title>
+<title>MIT ESP - {% block title %}{% endblock %}</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="description" content="" />
 <meta name="keywords" content="" lang="en-us" xml:lang="en-us" />
@@ -76,7 +76,6 @@
 
 <div id="divnav0">
 <a href="/about/index.html" onmouseover="MM_swapImage('discoveresp','','/media/images/lev2/nav/discoveresp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
-
 <img src="/media/images/lev2/nav/discoveresp.gif" border="0" alt="Take a Class" title="" name="discoveresp" id="discoveresp" />
 </a>
 </div>
@@ -105,29 +104,59 @@
 <img src="/media/images/lev2/nav/archivesresources.gif" border="0" alt="Archives / Resources" title="" name="archivesresources" id="archivesresources" />
 </a>
 </div>
+
+
 <div id="divnav5">
 <a href="/myesp/home/" onmouseover="MM_swapImage('myesp','','/media/images/lev2/nav/myesp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/lev2/nav/myesp.gif" border="0" alt="myESP" title="" name="myesp" id="myesp" />
 </a>
 </div>
+
+
+
 <div id="divnav6">
+
+
 <a href="/about/contact.html" onmouseover="MM_swapImage('contactinfo','','/media/images/lev2/nav/contactinfo_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/lev2/nav/contactinfo.gif" border="0" alt="Contact Info" title="" name="contactinfo" id="contactinfo" />
 </a>
+
 </div>
+
+
+
+
+<!-- section name -->
 <div id="divsectionname">
+
+
+
 </div>
+ 
+<!-- image sizes may vary -->
+
+
+
+<!-- secondary nav -->
+
 <ul id="secondarynav">
+
+
+
+
 <li class="divsecondarynavlink">&nbsp;</li>
 </ul>
+
+
+
+<!-- search -->
 <div id="divsearch">
   <form id="searchform" method="get" action="http://search.mit.edu/search">
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
       <tr>
 
-	<td width="100%%"><div class="divformcol1">&nbsp;</div></td>
+	<td width="100%"><div class="divformcol1">&nbsp;</div></td>
 	<td class="rightalign">
-
 	 <input type='hidden' name='site' value='mit' />
 	 <input type='hidden' name='client' value='mit' />
 	 <input type='hidden' name='proxystylesheet' value='mit' />
@@ -137,19 +166,32 @@
          <div class="divformcol3"><label for="q">Search:</label></div>
 
         </td>
-
 				<td><div class="divformcol4"><input style="border: 2px solid black;" type="text" name="q" id="q" size="8" value="" maxlength="255" class="inputbox" accesskey="s" /></div></td>
 				<td><div class="divformcol5"><input type="image" name="gosearch" id="gosearch" src="/media/images/go1.gif" class="gobutton" alt="Go" title="" /></div></td>
 	          </tr>
     </table>
   </form></div>	
+
+<script type="text/javascript" src="/media/scripts/jquery.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
+<script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+
 <div id="divlogin">
+<script type="text/javascript">
+<!--
+if (esp_user_login) {
+  document.write(esp_user_login);
+  document.write('<span style="display: none;">');
+}
+//-->
+</script>
 <form name="loginform" id="loginform" method="post" action="/myesp/login/">
 <input type="hidden" name="op" value="login" />
 <table border="0" cellpadding="0" cellspacing="0" summary=" ">
-<tr>
-  <td width="100%%"><div class="divformcol1">&nbsp;</div></td>
+  
 
+<tr>
+  <td width="100%"><div class="divformcol1">&nbsp;</div></td>
   <td class="rightalign"><div class="divformcol1"><label for="id__top_username">Username:</label></div></td>
   <td><div class="divformcol2">
    <input style="border: 2px solid black;" type="text" id="id__top_username" class="vTextField required inputbox" name="username" size="15" value="" maxlength="30" /></div></td>
@@ -160,7 +202,7 @@
 </tr>
 
 <tr>
-  <td width="100%%"><div class="divformcol1">&nbsp;</div></td>
+  <td width="100%"><div class="divformcol1">&nbsp;</div></td>
   <td style="text-align:left">
   
 		<div class="divformcol1" style="text-align:left"><a href="/myesp/register/">Join ESP!</a></div>
@@ -172,16 +214,31 @@
 
     					  
 	</td>
-
 	<td colspan="3"> </td>
 </tr>
 
 </table>
 </form>
+<script type="text/javascript">
+<!--
+if (esp_user_login) {
+  document.write('</span>');
+}
+//-->
+</script>
 </div>
+
+
+<!-- subsection name -->
 <div id="divsubsectionname">
-&nbsp;
+{% block subsection %}
+{% endblock %}
 </div>
+<!-- image sizes may vary -->
+
+<!-- image sizes may vary -->
+
+<!-- content, quote, and footer -->
 <div id="divmain">
   <a name="startcontent" id="startcontent"></a>
   <table border="0" cellpadding="0" cellspacing="0" summary=" " id="maintable">
@@ -199,23 +256,11 @@
       <td align="left" valign="bottom" class="paper notmaintd"><img src="/media/images/bandaid2.gif" width="43" height="35" alt="" /></td>
       <td align="left" valign="top" class="paper">
         <div id="divmaintext">
-
-<h1>Welcome to our web site</h1>
-
-
-Due to high demand, our web site is allowing only a certain number of people in at a time.
-<br />
-To let others use the site, <strong>please be sure to sign out when you are done</strong>. Otherwise, the site will log you out after <strong>%s minutes of inactivity</strong>.
-<br />
-<br />
-Thank you for your understanding,
-<br />
-Educational Studies Program
-
+{% block content %}
+{% endblock %}
         </div>
       </td>
       <td align="left" valign="bottom" class="paper notmaintd">
-
         <div id="divquotenone"><!-- table required for bottom vertical alignment of text -->
           <table border="0" cellpadding="0" cellspacing="0" summary=" "><tr><td>
           <div id="divquotetext"> 
@@ -227,7 +272,6 @@ Educational Studies Program
       </td> 
       <td class="paper"><div class="row3 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
     </tr>
-
     <tr><!-- footer -->
       <td colspan="3" align="left" valign="top">
 		<!-- footer -->
@@ -238,7 +282,6 @@ Educational Studies Program
     <tr>
       <td><!-- mit logo -->
         <div id="divfootercol1">
-
           <a href="http://web.mit.edu/" accesskey="m"><img src="/media/images/mit.gif" width="42" height="24" border="0" alt="MIT home" title="MIT home" /></a></div>
       </td>
       <td><!-- mit -->
@@ -247,7 +290,6 @@ Educational Studies Program
 
       </td>
       <td><!-- address -->
-
         <div id="divfootercol3">
           <p>84 Massachusetts Avenue,<br />
           Room W20-467, Cambridge, MA 02139<br />
@@ -256,7 +298,6 @@ Educational Studies Program
 
       <td><!-- email -->
         <div id="divfootercol4">
-
           <p><a href="mailto:esp@mit.edu">ESP's Email</a></p></div>
       </td>
       <td><!-- email bubble -->
@@ -266,7 +307,6 @@ Educational Studies Program
 
     </tr>
   </table>
-
 </div>      </td>
       <td><div id="divquotenonebot"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
       <td><div class="row4 col5"><img src="/media/images/spacer.gif" width="1" height="1" alt="" /></div></td>
@@ -276,6 +316,16 @@ Educational Studies Program
       </td>
      </tr>
   </table>
+</div>
+
+
+
+<div class="offscreen">
+<!-- Web Reporting -->
+<!-- Disabled
+  <img src="http://counter.mit.edu/tally" width="1" height="1" alt="" />
+-->
+<!-- End Web Reporting -->
 
 </div>
 

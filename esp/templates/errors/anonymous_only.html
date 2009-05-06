@@ -1,6 +1,11 @@
-{% extends "main_static.html" %}
+{% extends "outlines/series-3-safe.html" %}
 
 {% block title %}Error{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Error - Anonymous Only"|subsection }}{% endautoescape %}
+{% endblock %}
 
 {% block content %}
 
