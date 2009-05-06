@@ -28,7 +28,7 @@ class MiniblogNode(template.Node):
             if not isinstance(self.user, (User, AnonymousUser)):
                 raise template.VariableDoesNotExist("Requires a user object, recieved '%s'" % self.user)
         except template.VariableDoesNotExist:
-             raise template.TemplateSyntaxError, "%s tag requires first argument, %s, to be a User" % (tag, self.user)
+             raise template.TemplateSyntaxError, "miniblog_for_user tag requires first argument, %s, to be a User" % self.user
 
         context[self.var_name] = get_visible_announcements(self.user, self.limit)
         return ''
