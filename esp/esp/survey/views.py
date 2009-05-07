@@ -101,7 +101,6 @@ def survey_view(request, tl, program, instance):
         questions = survey.questions.filter(anchor = prog.anchor).order_by('seq')
         perclass_questions = survey.questions.filter(anchor__name="Classes", anchor__parent = prog.anchor)
         
-        user.clear_enrollment_cache(prog)
         if tl == 'learn':
             classes = user.getEnrolledClasses(prog, request)
         elif tl == 'teach':
