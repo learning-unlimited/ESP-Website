@@ -127,7 +127,6 @@ MIDDLEWARE_GLOBAL = [
     ( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
    #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
-    (2400, 'esp.datatree.middleware.DataTreeLockMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
    #( 600, 'esp.middleware.psycomiddleware.PsycoMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
@@ -139,6 +138,7 @@ MIDDLEWARE_GLOBAL = [
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
+    (1600, 'esp.datatree.middleware.DataTreeLockMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
