@@ -127,7 +127,7 @@ class ClassManager(ProcedureManager):
         classes = classes.filter(parent_program = program)
 
         if ts is not None:
-            classes = classes.filter(meeting_times=ts)
+            classes = classes.filter(sections__meeting_times=ts)
         
         select = SortedDict([( '_num_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "datatree_datatree"."id" AND "datatree_datatree"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
                              ('teacher_ids', 'SELECT list("users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
@@ -1366,7 +1366,7 @@ class ClassSubject(models.Model):
     def isFull(self, timeslot=None, use_cache=True):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
-            sections = self.get_section(timeslot)
+            sections = [self.get_section(timeslot)]
         else:
             sections = self.get_sections()
         for s in sections:
