@@ -70,7 +70,7 @@ class QuasiStaticData(models.Model):
     title = models.CharField(max_length=256)
     content = models.TextField()
     
-    nav_category = models.ForeignKey(NavBarCategory)
+    nav_category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
     create_date = models.DateTimeField(default=datetime.now, editable=False)
     author = AjaxForeignKey(User)
