@@ -61,7 +61,7 @@ class StudentClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     enforce_max          = models.BooleanField(default=True)
     
-    signup_verb          = AjaxForeignKey(DataTree, default=DataTree.get_by_uri(REG_VERB_BASE + '/Enrolled'))
+    signup_verb          = AjaxForeignKey(DataTree, default=lambda:GetNode(REG_VERB_BASE + '/Enrolled'))
     use_priority         = models.BooleanField(default=False)
     priority_limit       = models.IntegerField(default=3)
     
