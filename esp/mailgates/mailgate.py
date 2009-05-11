@@ -10,6 +10,7 @@ sys.path.insert(0, "/esp/web/stanford/django")
 sys.path.insert(0, "/esp/web/stanford/esp")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
+from esp import cache_loader # Needed to block an annoying circular-dependency issue
 from esp.dbmail.models import EmailList
 
 host = socket.gethostname()
