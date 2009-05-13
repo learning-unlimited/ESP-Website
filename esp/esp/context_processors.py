@@ -5,6 +5,14 @@ from django.conf import settings
 def media_url(request): 
     return {'media_url': settings.MEDIA_URL} 
 
+def espuserified_request(request):
+    from esp.users.models import ESPUser
+    if hasattr(request, 'user'):
+        # Forces the user object to be an ESPUser object
+        request.user = ESPUser(request.user, error=True)
+        request.user.updateOnsite(request)
+    return {'request': request}
+
 def esp_user(request):
     from esp.users.models import ESPUser
     if hasattr(request, 'user'):

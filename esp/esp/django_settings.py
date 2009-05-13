@@ -194,8 +194,8 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
                                'esp.context_processors.test_cookie',
                                'esp.context_processors.current_site',
                                'esp.context_processors.index_backgrounds',
+                               'esp.context_processors.espuserified_request',
                                'django.core.context_processors.i18n',
-                               'django.core.context_processors.request',
                                'django.core.context_processors.auth',
                                )
 
