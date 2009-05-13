@@ -91,22 +91,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
             else:
                 context['navbar_list'] = makeNavBar(request.user, prog, section, category)
 
-        # get the preload_images list
-        if not context.has_key('preload_images'):
-                context['preload_images'] = preload_images
-        # upgrade user
-
         return render_response(request, template, context)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
 
-preload_images = [
-	settings.MEDIA_URL+'images/level3/nav/home_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/discoveresp_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/takeaclass_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/volunteertoteach_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/getinvolved_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/archivesresources_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/myesp_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/contactinfo_ro.gif'
-]
