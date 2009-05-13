@@ -39,7 +39,7 @@ cmemcached      Python                  http://gijsbert.org/cmemcache/index.html
 flup            Python                  python-flup
 psycopg         Python                  python-psycopg
 
-LaTeX           System                  texlive
+LaTeX           System                  texlive, texlive-latex-extra
 libmemcache0    System                  libmemcache0
 ImageMagick     System                  imagemagick
 memcached       System                  memcached
