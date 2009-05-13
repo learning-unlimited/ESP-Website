@@ -33,7 +33,6 @@ from django.db.models.query import Q
 from esp.datatree.models import *
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
-from esp.dbmail.models import MessageRequest
 from django.contrib.auth.models import User
 from esp.db.fields import AjaxForeignKey
 from django.core.cache import cache
