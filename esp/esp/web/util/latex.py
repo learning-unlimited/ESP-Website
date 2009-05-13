@@ -94,11 +94,9 @@ def gen_latex(texcode, type='pdf'):
     if type=='pdf':
         mime = 'application/pdf'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips %s.dvi' % (TEX_TEMP, file_base))
-        os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvipdf %s.dvi' % (TEX_TEMP, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
-            os.remove('%s.ps' % file_base)
             
     elif type=='dvi':
         mime = 'application/x-dvi'
