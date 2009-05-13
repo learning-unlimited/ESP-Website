@@ -605,32 +605,28 @@ class ESPUser(User, AnonymousUser):
 
     def recoverPassword(self):
         # generate the ticket, send the email.
-        from esp.dbmail.models import MessageRequest
-        from django.template import loader, Context
         from django.contrib.sites.models import Site
+        from django.conf import settings
 
-        # get the filter object
-        filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = self.id),
-                                                         User,
-                                                         'User %s' % self.username)
+        # email addresses
+        to_email = ['%s <%s>' % (self.name(), self.email)]
+        from_email = settings.SERVER_EMAIL
 
+        # create the ticket
         ticket = PasswordRecoveryTicket.new_ticket(self)
 
+        # email subject
         domainname = Site.objects.get_current().domain
+        subject = '[ESP] Your Password Recovery For '+domainname
 
-        # create the variable modules
-        variable_modules = {'user': self, 'ticket': ticket, 'domainname' : domainname}
+        # generate the email text
+        t = loader.get_template('email/password_recover')
+        msgtext = t.render(Context({'user': self,
+                                    'ticket': ticket,
+                                    'domainname': domainname}))
 
-
-        newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
-                                                      subject    = '[ESP] Your Password Recovery For '+domainname,
-                                                      recipients = filterobj,
-                                                      sender     = '"MIT Educational Studies Program" <esp@mit.edu>',
-                                                      creator    = self,
-                                                      msgtext    = loader.find_template_source('email/password_recover')[0])
-
-        newmsg_request.save()
-
+        # Do NOT fail_silently. We want to know if there's a problem.
+        send_mail(subject, msgtext, from_email, to_email)
 
 
     def isAdministrator(self, anchor_object = None):
