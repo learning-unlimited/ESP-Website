@@ -64,7 +64,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
 
     # if there are only two arguments
     if context is None and prog is None:
-        return django.shortcuts.render_to_response(template, requestOrContext, {'navbar_list': []})
+        return django.shortcuts.render_to_response(template, requestOrContext, Context({'navbar_list': []}))
     
     if context is not None:
         request = requestOrContext
