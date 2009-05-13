@@ -103,9 +103,6 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
         # get the preload_images list
         if not context.has_key('preload_images'):
                 context['preload_images'] = preload_images
-        # set the value of logged_in
-        if not context.has_key('logged_in'):
-            context['logged_in'] = request.user.is_authenticated()
         # upgrade user
 
         request.user = ESPUser(request.user, error=True)
