@@ -87,9 +87,9 @@ def gen_latex(texcode, type='pdf'):
     file_types = ['pdf','dvi','ps','log','tex']
 
     # Get (sometimes-)necessary library files
-    from esp.settings import PROJECT_ROOT
+    from django.conf import settings
     import shutil
-    shutil.copy( "%s/esp/3rdparty/pspicture.ps" % PROJECT_ROOT, TEX_TEMP )
+    shutil.copy( "%s/esp/3rdparty/pspicture.ps" % settings.PROJECT_ROOT, TEX_TEMP )
     
     if type=='pdf':
         mime = 'application/pdf'
