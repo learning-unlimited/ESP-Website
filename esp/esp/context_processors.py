@@ -20,12 +20,6 @@ def esp_user(request):
         return {'user': user}
     return {}
 
-def test_cookie(request):
-
-    if not request.user.is_authenticated():
-        request.session.set_test_cookie()
-    return {}
-
 def index_backgrounds(request):
     #if request.path.strip() == '':
     return {'backgrounds': ["/media/images/home/pagebkg1.jpg",
