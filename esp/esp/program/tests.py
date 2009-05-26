@@ -1,11 +1,10 @@
 from django.contrib.auth.models import User,Group
 import datetime, random, hashlib
-import unittest
-from django.test import TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase
 
 from esp.users.models import ESPUser
 
-class ProfileTest(unittest.TestCase):
+class ProfileTest(TestCase):
 
     def setUp(self):
         self.salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
