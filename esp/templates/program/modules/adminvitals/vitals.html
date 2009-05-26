@@ -56,11 +56,15 @@
   <th>Total # of Classes <span style="color: #C00;">Rejected</span></th>
   <td>{{ vitals.classrejected.count }}</td>
 </tr>
+<tr>
+  <th class="smaller">Total # of Class-Student-Hours:</th>
+  <td>{{ classpersonhours }}</td>
+</tr>
 {% for timeslot in vitals.timeslots %}
 
 <tr>
   <th>{{ timeslot.slotname }}</th>
-  <td>Students: {{ timeslot.studentcount }}<br />
+  <td>Students: {{ timeslot.studentcount.count }}<br />
       Classes: {{ timeslot.classcount.count }}</td>
 </tr>
 {% endfor %}
