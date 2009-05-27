@@ -77,7 +77,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
                 student.app = None
 
             if student.app:
-                reviews = student.app.reviews.all()
+                reviews = student.app.reviews.all().filter(reviewer=self.user, score__isnull=False)
             else:
                 reviews = []
 
@@ -163,9 +163,9 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
 
         student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
 
-        reviews = student.app.reviews.all()
-        if reviews.filter(reviewer=self.user).count() > 0:
-            this_review = reviews.filter(reviewer=self.user).order_by('id')[0]
+        teacher_reviews = student.app.reviews.all().filter(reviewer=self.user)
+        if teacher_reviews.count() > 0:
+            this_review = teacher_reviews.order_by('id')[0]
         else:
             this_review = StudentAppReview(reviewer=self.user)
             this_review.save()
@@ -182,6 +182,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
                                   request,
                                   (prog, tl),
                                   {'class': cls,
+                                   'reviews': teacher_reviews,
                                   'program': prog,
                                    'student':student,
                                    'form': form})

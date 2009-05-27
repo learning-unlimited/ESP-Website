@@ -10,6 +10,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
+<link rel="stylesheet" href="{{ media_url }}styles/forms.css" type="text/css"/>
 <style type="text/css">
 
 .roster td, .roster th {
@@ -27,7 +28,7 @@ table.roster {
 
 {% block content %}
 
-<h1>Junction application reviews</h1>
+<h1>Student application reviews</h1>
 <br />
 <p>
 <a href="/teach/{{ program.getUrlBase }}/teacherreg">
@@ -37,6 +38,7 @@ Back to teacher reg
 <br /><br />
 <h2>Class roster for &quot;{{class}}&quot;</h2>
 <br />
+<div id="program_form">
 <table class="roster">
 <thead>
 <tr>
@@ -79,6 +81,6 @@ Back to teacher reg
 {% endfor %}
 </tbody>
 </table>
-
+</div>
 
 {% endblock %}
