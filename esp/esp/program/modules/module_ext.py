@@ -109,7 +109,11 @@ class ClassRegModuleInfo(models.Model):
     class_durations      = models.CharField(max_length=128, blank=True, null=True)
     teacher_class_noedit = models.DateTimeField(blank=True, null=True)
     
-    session_counts       = models.CommaSeparatedIntegerField(max_length=100, blank=True)
+    #   Allowed numbers of sections and meeting days
+    allowed_sections     = models.CommaSeparatedIntegerField(max_length=100, blank=True,
+        help_text='Allow this many independent sections of a class. Leave blank to allow arbitrarily many.')
+    session_counts       = models.CommaSeparatedIntegerField(max_length=100, blank=True,
+        help_text='The number of days that a class could meet. Leave blank if this is not a relevant choice for the teachers.')
     
     num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True)
     num_class_choices    = models.PositiveIntegerField(default=1, blank=True, null=True)
@@ -122,6 +126,17 @@ class ClassRegModuleInfo(models.Model):
     #   If this is true, teachers will be allowed to specify that students may
     #   come to their class late.
     allow_lateness       = models.BooleanField(blank=True, default=False)
+    #   Room requests
+    ask_for_room         = models.BooleanField(blank=True, default=True,
+        help_text = 'If true, teachers will be asked if they have a particular classroom in mind.')
+    
+    def allowed_sections_ints_get(self):
+        return [ int(s) for s in self.allowed_sections.split(',') ]
+
+    def allowed_sections_ints_set(self, value):
+        self.allowed_sections = ",".join([ str(n) for n in value ])
+    
+    allowed_sections_ints = property( allowed_sections_ints_get, allowed_sections_ints_set )
 
     def session_counts_ints_get(self):
         return [ int(s) for s in self.session_counts.split(',') ]

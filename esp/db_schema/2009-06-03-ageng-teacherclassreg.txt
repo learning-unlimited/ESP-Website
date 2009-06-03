@@ -1,0 +1,9 @@
+Review the script 2009-06-03-ageng-teacherclassreg.sql. It can be run with:
+    $ sudo -u postgres psql -f 2009-06-03-ageng-teacherclassreg.sql django
+
+Actions taken by the script:
+    Add new columns to modules_classregmoduleinfo:
+        allowed_sections, ask_for_room
+    Set default values:
+		'', false
+    Set NOT NULL on the columns.

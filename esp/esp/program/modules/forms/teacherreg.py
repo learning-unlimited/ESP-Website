@@ -54,9 +54,11 @@ class TeacherClassRegForm(FormWithRequiredCss):
     
     # At the moment we don't use viable_times at all.
     viable_times   = forms.ChoiceField( label='Starting Time', choices=[] )
-    duration       = forms.ChoiceField( label='Length of Each Section', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget() )
-    num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget() )
-    session_count  = forms.ChoiceField( label='Number of Times Each Section Meets', choices=[(1,1)], widget=BlankSelectWidget() )
+    duration       = forms.ChoiceField( label='Duration of a Class Meeting', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget() )
+    num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget(),
+                                        help_text='(How many independent sections (copies) of your class would you like to teach?)' )
+    session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1,1)], widget=BlankSelectWidget(),
+                                        help_text='(How many days will your class take to complete?)' )
     
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 12)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(7, 12)], widget=BlankSelectWidget() )
@@ -84,11 +86,23 @@ class TeacherClassRegForm(FormWithRequiredCss):
     
     
     def __init__(self, module, *args, **kwargs):
+        def hide_field(field, default=None):
+            field.widget = forms.HiddenInput()
+            if default is not None:
+                field.initial = default
+        def hide_choice_if_useless(field):
+            """ Hide a choice field if there's only one choice """
+            if len(field.choices) == 1:
+                hide_field(field, default=field.choices[0][0])
+        
         super(TeacherClassRegForm, self).__init__(*args, **kwargs)
         
         prog = module.program
         
-        section_numbers = range( 1, prog.getTimeSlots().count()+1 )
+        if module.allowed_sections_ints:
+            section_numbers = module.allowed_sections_ints
+        else:
+            section_numbers = range( 1, prog.getTimeSlots().count()+1 )
         section_numbers = zip(section_numbers, section_numbers)
         
         class_sizes = module.getClassSizes()
@@ -97,8 +111,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
         class_grades = module.getClassGrades()
         class_grades = zip(class_grades, class_grades)
         
-        # num_sections: section_list
+        # num_sections: section_list; hide if useless
         self.fields['num_sections'].choices = section_numbers
+        hide_choice_if_useless( self.fields['num_sections'] )
         # category: program.class_categories.all()
         self.fields['category'].choices = [ (x.id, x.category) for x in prog.class_categories.all() ]
         # grade_min, grade_max: module.getClassGrades
@@ -137,18 +152,18 @@ class TeacherClassRegForm(FormWithRequiredCss):
             del self.fields['viable_times']
         if module.times_selectmultiple or not module.display_times:
             self.fields['duration'].choices = sorted(module.getDurations())
-        else:
-            self.fields['duration'].widget = forms.HiddenInput()
-            self.fields['duration'].initial = '0.0'
+        hide_choice_if_useless( self.fields['duration'] )
         
         # session_count
         if module.session_counts:
             session_count_choices = module.session_counts_ints
             session_count_choices = zip(session_count_choices, session_count_choices)
             self.fields['session_count'].choices = session_count_choices
-        else:
-            self.fields['session_count'].widget = forms.HiddenInput()
-            self.fields['session_count'].initial = 1
+        hide_choice_if_useless( self.fields['session_count'] )
+        
+        # requested_room
+        if not module.ask_for_room:
+            hide_field( self.fields['requested_room'] )
         # plus subprogram section wizard
     
     def clean(self):
