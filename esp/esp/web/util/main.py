@@ -64,7 +64,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
 
     # if there are only two arguments
     if context is None and prog is None:
-        return django.shortcuts.render_to_response(template, requestOrContext, {'navbar_list': []})
+        return django.shortcuts.render_to_response(template, requestOrContext, Context({'navbar_list': []}))
     
     if context is not None:
         request = requestOrContext
@@ -91,38 +91,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
             else:
                 context['navbar_list'] = makeNavBar(request.user, prog, section, category)
 
-        #if 'qsd.html' in template.lower():
-            #context['randquote'] = ESPQuotations.getQuotation()
-            #if context['randquote'] == None:
-                #context['randquote'] = False
-        #else:
-            #context['randquote'] = False
-        # We don't use quotes anymore...
-        context['randquote'] = False
-            
-        # get the preload_images list
-        if not context.has_key('preload_images'):
-                context['preload_images'] = preload_images
-        # set the value of logged_in
-        if not context.has_key('logged_in'):
-            context['logged_in'] = request.user.is_authenticated()
-        # upgrade user
-
-        request.user = ESPUser(request.user, error=True)
-        request.user.updateOnsite(request)
-        context['request'] = request
-
         return render_response(request, template, context)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
 
-preload_images = [
-	settings.MEDIA_URL+'images/level3/nav/home_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/discoveresp_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/takeaclass_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/volunteertoteach_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/getinvolved_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/archivesresources_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/myesp_ro.gif',
-	settings.MEDIA_URL+'images/level3/nav/contactinfo_ro.gif'
-]

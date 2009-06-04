@@ -61,7 +61,7 @@ class StudentClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     enforce_max          = models.BooleanField(default=True)
     
-    signup_verb          = AjaxForeignKey(DataTree)
+    signup_verb          = AjaxForeignKey(DataTree, default=lambda:GetNode(REG_VERB_BASE + '/Enrolled'))
     use_priority         = models.BooleanField(default=False)
     priority_limit       = models.IntegerField(default=3)
     
@@ -97,7 +97,7 @@ class ClassRegModuleInfo(models.Model):
     allow_coteach        = models.BooleanField(blank=True, default=True)
     set_prereqs          = models.BooleanField(blank=True, default=True)
     display_times        = models.BooleanField(blank=True, default=False)
-    times_selectmultiple = models.BooleanField(blank=True, default=True)
+    times_selectmultiple = models.BooleanField(blank=True, default=False)
     
     #   The maximum length of a class, in minutes.
     class_max_duration   = models.IntegerField(blank=True, null=True)

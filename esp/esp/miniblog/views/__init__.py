@@ -142,7 +142,7 @@ def preview_miniblog(request, section = None):
     
 @cache_function
 def get_visible_announcements(user, limit):
-    verb = DataTree.get_by_uri('V/Subscribe')
+    verb = GetNode('V/Subscribe')
     
     models_to_search = [Entry, AnnouncementLink]
     results = []

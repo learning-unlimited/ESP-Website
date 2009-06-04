@@ -5,6 +5,14 @@ from django.conf import settings
 def media_url(request): 
     return {'media_url': settings.MEDIA_URL} 
 
+def espuserified_request(request):
+    from esp.users.models import ESPUser
+    if hasattr(request, 'user'):
+        # Forces the user object to be an ESPUser object
+        request.user = ESPUser(request.user, error=True)
+        request.user.updateOnsite(request)
+    return {'request': request}
+
 def esp_user(request):
     from esp.users.models import ESPUser
     if hasattr(request, 'user'):
@@ -25,20 +33,6 @@ def index_backgrounds(request):
                             "/media/images/home/pagebkg3.jpg"]}
     return {}
 
-def auth(request):
-
-    if request.path.startswith('/admin'):
-        return {
-            'user': request.user,
-            'messages': request.user.get_and_delete_messages(),
-            'perms': PermWrapper(request.user)
-            }          
-
-    return {
-        'user': request.user,
-        }
-
-
 def current_site(request):
 
     if hasattr(settings, 'SITE_INFO'):
@@ -46,26 +40,16 @@ def current_site(request):
 
     return {'current_site': Site.objects.get_current()}
 
-    
-# PermWrapper and PermLookupDict proxy the permissions system into objects that
-# the template system can understand.
+def preload_images(request):
+    return {'preload_images': preload_images_data}
 
-class PermLookupDict(object):
-    def __init__(self, user, module_name):
-        self.user, self.module_name = user, module_name
-
-    def __repr__(self):
-        return str(self.user.get_all_permissions())
-
-    def __getitem__(self, perm_name):
-        return self.user.has_perm("%s.%s" % (self.module_name, perm_name))
-
-    def __nonzero__(self):
-        return self.user.has_module_perms(self.module_name)
-
-class PermWrapper(object):
-    def __init__(self, user):
-        self.user = user
-
-    def __getitem__(self, module_name):
-        return PermLookupDict(self.user, module_name)
+preload_images_data = [
+	settings.MEDIA_URL+'images/level3/nav/home_ro.gif',
+	settings.MEDIA_URL+'images/level3/nav/discoveresp_ro.gif',
+	settings.MEDIA_URL+'images/level3/nav/takeaclass_ro.gif',
+	settings.MEDIA_URL+'images/level3/nav/volunteertoteach_ro.gif',
+	settings.MEDIA_URL+'images/level3/nav/getinvolved_ro.gif',
+	settings.MEDIA_URL+'images/level3/nav/archivesresources_ro.gif',
+	settings.MEDIA_URL+'images/level3/nav/myesp_ro.gif',
+	settings.MEDIA_URL+'images/level3/nav/contactinfo_ro.gif'
+]

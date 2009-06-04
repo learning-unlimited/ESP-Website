@@ -287,23 +287,21 @@ class Program(models.Model):
         return '/'.join(str_array[-2:])
     
     def __unicode__(self):
-        if not hasattr(self, "_nice_name"):
-            self._nice_name = str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
-        return self._nice_name
+        return self.niceName()
 
     def parent(self):
         return self.anchor.parent
 
     def niceName(self):
-        # Cache niceName, because otherwise it takes a couple of queries
-        # to sort it out
-        CACHE_KEY = "PROGRAM__NICENAME__%s" % self.id
+        if not hasattr(self, "_nice_name"):
+            # Separate this so that in-memory and memcache are used in the right order
+            self._nice_name = self._niceName_memcache()
+        return self._nice_name
 
-        retVal = cache.get(CACHE_KEY)
-        if not retVal:
-            retVal = str(self).replace("_", " ")
-            cache.set(CACHE_KEY, retVal, timeout=86400)
-        return retVal
+    @cache_function
+    def _niceName_memcache(self):
+        return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+    # this stuff never really changes
 
     def niceSubName(self):
         return self.anchor.name.replace('_', ' ')
@@ -382,7 +380,6 @@ class Program(models.Model):
                 desc.update(tmpdict)
         for module in teachmodules:
             tmpdict = module.teacherDesc()
-            print tmpdict
             if tmpdict is not None:
                 desc.update(tmpdict)
 
@@ -396,6 +393,18 @@ class Program(models.Model):
             lists['all_'+usertype.lower()+'s'] = {'description':
                                    usertype+'s in all of ESP',
                                    'list' : ESPUser.getAllOfType(usertype)}
+        # Filtering by students is a really bad idea
+        students_Q = lists['all_students']['list']
+        # We can restore this one later if someone really needs it. As it is, I wouldn't mind killing
+        # lists['all_former_students'] as well.
+        del lists['all_students']
+        yog_12 = ESPUser.YOGFromGrade(12)
+        # This technically has a bug because of copy-on-write, but the other code has it too, and
+        # our copy-on-write system isn't good enough yet to make checking duplicates feasible
+        lists['all_current_students'] = {'description': 'Current students in all of ESP',
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__lte = yog_12)}
+        lists['all_former_students'] = {'description': 'Former students in all of ESP',
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__gt = yog_12)}
 
         lists['emaillist'] = {'description':
                       """All users in our mailing list without an account.""",
