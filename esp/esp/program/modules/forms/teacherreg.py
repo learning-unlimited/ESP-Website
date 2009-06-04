@@ -99,7 +99,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         
         prog = module.program
         
-        if module.allowed_sections_ints:
+        if module.allowed_sections:
             section_numbers = module.allowed_sections_ints
         else:
             section_numbers = range( 1, prog.getTimeSlots().count()+1 )
