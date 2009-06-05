@@ -846,6 +846,7 @@ class DataTree(models.Model):
         # some random test
         import sys
         import random
+        error_free = True
         GetNode('a')
         try:
             f = open('/usr/share/dict/words')
@@ -878,14 +879,17 @@ class DataTree(models.Model):
                     if DataTree.objects.exists_violators():
                         print "ERROR:"
                         print DataTree.objects.exists_violators(queryset=True)
-                        return
+                        return False
                 except int:
                     exc_info = sys.exc_info()
                     print exc_info[0], exc_info[1], exc_info[2]
+                    error_free = False
 
         except int:
             exc_info = sys.exc_info()
             raise exc_info[0], exc_info[1], exc_info[2]
+
+        return error_free
 
 
 ####################
