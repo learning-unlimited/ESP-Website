@@ -873,7 +873,7 @@ class DataTree(models.Model):
                     else:
                         uri = '/'.join(random.choice(words))
                         node = DataTree.get_by_uri(uri, True)
-                        print 'Added %s' % node
+                        print 'Added %s' % uri
                     
                     if DataTree.objects.exists_violators():
                         print "ERROR:"
