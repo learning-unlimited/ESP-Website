@@ -130,9 +130,6 @@ class ClassRegModuleInfo(models.Model):
     ask_for_room         = models.BooleanField(blank=True, default=True,
         help_text = 'If true, teachers will be asked if they have a particular classroom in mind.')
     
-    # FIXME: Is this field still used?
-    class_durations_any = models.BooleanField(blank=True, default=False)
-    
     def allowed_sections_ints_get(self):
         return [ int(s.strip()) for s in self.allowed_sections.split(',') if s.strip() != '' ]
 

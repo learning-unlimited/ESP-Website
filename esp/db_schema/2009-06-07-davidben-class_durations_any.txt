@@ -1,0 +1,5 @@
+Review the script 2009-06-07-davidben-class_durations_any.sql. It can be run with:
+    $ sudo -u postgres psql -f 2009-06-07-davidben-class_durations_any.sql django
+
+Actions taken by the script:
+    Drops class_durations_any from modules_classregmoduleinfo
