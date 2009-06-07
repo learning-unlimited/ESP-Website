@@ -131,7 +131,7 @@ class ClassRegModuleInfo(models.Model):
         help_text = 'If true, teachers will be asked if they have a particular classroom in mind.')
     
     def allowed_sections_ints_get(self):
-        return [ int(s) for s in self.allowed_sections.split(',') ]
+        return [ int(s.strip()) for s in self.allowed_sections.split(',') if s.strip() != '' ]
 
     def allowed_sections_ints_set(self, value):
         self.allowed_sections = ",".join([ str(n) for n in value ])
