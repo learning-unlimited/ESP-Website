@@ -191,7 +191,6 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
                                'esp.context_processors.esp_user',
-                               'esp.context_processors.test_cookie',
                                'esp.context_processors.current_site',
                                'esp.context_processors.index_backgrounds',
                                'esp.context_processors.espuserified_request',

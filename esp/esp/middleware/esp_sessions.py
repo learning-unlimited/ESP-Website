@@ -11,9 +11,6 @@ import datetime
 
 from esp.utils.memdb import mem_db
 
-TEST_COOKIE_NAME = 'testcookie'
-TEST_COOKIE_VALUE = 'worked'
-
 # In order for a session to be saved, one of these must
 # exist in the data.
 # You can add to this if you need.
@@ -53,18 +50,6 @@ class SessionWrapper(object):
 
     def get(self, key, default=None):
         return self._session.get(key, default)
-
-    def set_test_cookie(self):
-        self[TEST_COOKIE_NAME] = TEST_COOKIE_VALUE
-
-    def test_cookie_worked(self):
-        return True
-
-    def delete_test_cookie(self):
-        try:
-            del self[TEST_COOKIE_NAME]
-        except KeyError:
-            pass
 
     def _get_session(self):
         # Lazily loads session from storage.

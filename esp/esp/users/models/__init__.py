@@ -1464,14 +1464,13 @@ class PasswordRecoveryTicket(models.Model):
         key = "".join([random.choice(cls.SYMBOLS) for x in range(cls.RECOVER_KEY_LEN)])
         return key
 
-    @classmethod
-    def new_ticket(cls, user):
+    def new_ticket(user):
         """ Returns a new (saved) ticket for a specified user. """
         from datetime import datetime, timedelta
 
-        ticket = cls()
+        ticket = PasswordRecoveryTicket()
         ticket.user = user
-        ticket.recover_key = cls.new_key()
+        ticket.recover_key = PasswordRecoveryTicket.new_key()
         ticket.expire = datetime.now() + timedelta(days = cls.RECOVER_EXPIRE)
 
         ticket.save()

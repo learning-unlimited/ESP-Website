@@ -944,8 +944,7 @@ class ClassSection(models.Model):
         self.update_cache()
 
     def getRegBits(self, user):
-        result = UserBit.objects.filter(QTree(qsc__below=self.anchor)).filter(enddate__gte=datetime.datetime.now()).order_by('verb__name')
-        return result
+        return UserBit.objects.filter(QTree(qsc__below=self.anchor), enddate__gte=datetime.datetime.now(), user=user).order_by('verb__name')
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """
