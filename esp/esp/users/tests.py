@@ -35,7 +35,7 @@ class PasswordRecoveryTicketTest(TestCase):
         self.assertTrue(four.is_valid(), "Recovery ticket four is invalid.")
         
         # Try expiring #1; trying to validate it should destroy it
-        one.expire = datetime.now()
+        one.cancel()
         self.assertFalse(one.is_valid(), "Expired ticket is still valid.")
         self.assertEqual(one.id, None, "Ticket was not auto-deleted.")
         # Try using #1; it shouldn't work

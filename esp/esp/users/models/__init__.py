@@ -1444,7 +1444,6 @@ class PasswordRecoveryTicket(models.Model):
     @staticmethod
     def new_ticket(user):
         """ Returns a new (saved) ticket for a specified user. """
-        from datetime import datetime, timedelta
 
         ticket = PasswordRecoveryTicket()
         ticket.user = user
@@ -1482,7 +1481,6 @@ class PasswordRecoveryTicket(models.Model):
 
     def is_valid(self):
         """ Check if the ticket is still valid, kill it if not. """
-        from datetime import datetime
         if self.id is not None and datetime.now() < self.expire:
             return True
         else:
@@ -1495,6 +1493,7 @@ class PasswordRecoveryTicket(models.Model):
     def cancel(self):
         """ Cancel a ticket. """
         if self.id is not None:
+            self.expire = datetime(1990, 8, 3)
             self.delete()
     cancel.alters_data = True
 
