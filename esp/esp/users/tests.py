@@ -21,33 +21,36 @@ class PasswordRecoveryTicketTest(TestCase):
         from datetime import datetime
         
         # First, make sure both people can log in
-        assert self.client.login( username='forgetful', password='forgotten_pw' ) == True
-        assert self.client.login( username='innocent', password='remembered_pw' ) == True
+        self.assertTrue(self.client.login( username='forgetful', password='forgotten_pw' ), "User forgetful cannot login")
+        self.assertTrue(self.client.login( username='innocent', password='remembered_pw' ), "User innocent cannot login")
         
         # Create tickets; both User and ESPUser should work
         one   = PasswordRecoveryTicket.new_ticket( self.user )
         two   = PasswordRecoveryTicket.new_ticket( self.user )
         three = PasswordRecoveryTicket.new_ticket( ESPUser(self.user) )
         four  = PasswordRecoveryTicket.new_ticket( self.other )
-        assert one.is_valid() == two.is_valid() == three.is_valid() == four.is_valid() == True
+        self.assertTrue(one.is_valid(), "Recovery ticket one is invalid.")
+        self.assertTrue(two.is_valid(), "Recovery ticket two is invalid.")
+        self.assertTrue(three.is_valid(), "Recovery ticket three is invalid.")
+        self.assertTrue(four.is_valid(), "Recovery ticket four is invalid.")
         
         # Try expiring #1; trying to validate it should destroy it
         one.expire = datetime.now()
-        assert one.is_valid() == False
-        assert one.id is None
+        self.assertFalse(one.is_valid(), "Expired ticket is still valid.")
+        self.assertEqual(one.id, None, "Ticket was not auto-deleted.")
         # Try using #1; it shouldn't work
-        assert one.change_password( 'forgetful', 'bad_pw' ) == False
-        assert self.client.login( username='forgetful', password='bad_pw' ) == False
+        self.assertFalse(one.change_password( 'forgetful', 'bad_pw' ), "Expired ticket still changed password.")
+        self.assertFalse(self.client.login( username='forgetful', password='bad_pw' ), "User forgetful logged in with incorrect password.")
         
         # Try using #2
         # Make sure it doesn't work for the wrong user
-        assert two.change_password( 'innocent', 'bad_pw' ) == False
-        assert self.client.login( username='forgetful', password='bad_pw' ) == False
-        assert self.client.login( username='innocent', password='bad_pw' ) == False
+        self.assertFalse(two.change_password( 'innocent', 'bad_pw' ), "Recovery ticket two used for the wrong user.")
+        self.assertFalse(self.client.login( username='forgetful', password='bad_pw' ), "Incorrectly cashed ticket still changed password.")
+        self.assertFalse(self.client.login( username='innocent', password='bad_pw' ), "User innocent's password changed.")
         # Make sure using it changes the password it's supposed to
-        assert two.change_password( 'forgetful', 'new_pw' ) == True
-        assert self.client.login( username='forgetful', password='new_pw' ) == True
-        assert self.client.login( username='innocent', password='remembered_pw' ) == True
+        self.assertTrue(two.change_password( 'forgetful', 'new_pw' ), "Recovery ticket two failed to be cashed.")
+        self.assertTrue(self.client.login( username='forgetful', password='new_pw' ), "User forgetful cannot login with new password.")
+        self.assertTrue(self.client.login( username='innocent', password='remembered_pw' ), "User innocent's old password no longer works.")
         # Make sure it destroys all other tickets for user forgetful
-        assert PasswordRecoveryTicket.objects.filter(user=self.user).count() == 0
-        assert PasswordRecoveryTicket.objects.filter(user=self.other).count() == 1
+        self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.user).count(), 0, "Tickets for user forgetful not wiped.")
+        self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.other).count(), 1, "Tickets for user innocent incorrectly wiped.")

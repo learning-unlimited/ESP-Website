@@ -1434,11 +1434,11 @@ class PasswordRecoveryTicket(models.Model):
     def __unicode__(self):
         return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
 
-    @classmethod
-    def new_key(cls):
+    @staticmethod
+    def new_key():
         """ Generates a new random key. """
         import random
-        key = "".join([random.choice(cls.SYMBOLS) for x in range(cls.RECOVER_KEY_LEN)])
+        key = "".join([random.choice(PasswordRecoveryTicket.SYMBOLS) for x in range(PasswordRecoveryTicket.RECOVER_KEY_LEN)])
         return key
 
     @staticmethod
@@ -1498,10 +1498,10 @@ class PasswordRecoveryTicket(models.Model):
             self.delete()
     cancel.alters_data = True
 
-    @classmethod
-    def cancel_all(cls, user):
+    @staticmethod
+    def cancel_all(user):
         """ Cancel all tickets belong to user. """
-        cls.objects.filter(user=user).delete()
+        PasswordRecoveryTicket.objects.filter(user=user).delete()
 
 class DBList(object):
     """ Useful abstraction for the list of users.
