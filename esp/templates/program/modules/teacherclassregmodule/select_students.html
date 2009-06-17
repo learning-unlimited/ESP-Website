@@ -10,6 +10,7 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/tooltips.css" />
 <style type="text/css">
 
 .roster td, .roster th {
@@ -26,16 +27,28 @@ table.roster {
 
 {% block content %}
 
-<h1>Review your students</h1>
+<h1>Review your students: {{ sec }}</h1>
 <br />
 <p>
 <a href="/teach/{{ program.getUrlBase }}/teacherreg">
 Back to teacher reg
 </a>
 </p>
-<br /><br />
-<h2>Students interested in &quot;{{ sec }}&quot;</h2>
-<br />
+<p>
+<b>About your class:</b>
+<ul>
+<li><b>Room</b>: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}
+<li><b>Time</b>: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}
+<li><b>Capacity</b>: {{ sec.num_students }} / {{ sec.capacity }} students
+</ul>
+</p>
+<p>
+<b>In the table below:</b>
+<ul>
+<li>Hover over the student's name to see their enrollment status for other classes.  
+<li>Hover over an application score to see comments left by the reviewer.
+</ul>
+</p>
 <div id="program_form">
 <form method="POST" action="/teach/{{ prog.getUrlBase }}/select_students/{{ sec.id }}">
 <table class="roster">
@@ -45,17 +58,31 @@ Back to teacher reg
   <th class="small">Grade</th>
   <th class="small">Registration Status</th>
   <th class="small">Time signed up</th>
-  <th class="small">Enroll</th>
+  <th class="small">Review[s] (if any)</th>
+  <th class="small">Accept</th>
   <th class="small">Reject</th>
-  <th class="small">Let directors decide</th>
+  <th class="small">Leave unchanged</th>
 </tr>
 </thead>
 <tbody>
 {% for student in students_list %}
   <tr>
     <td>
-   {{ student.name }}
-    </td>
+  <a class="tooltip tooltip_wide"> {{ student.name }}
+  <span>
+    {% if not student.other_classes|length_is:0 %}
+    {% for cls in student.other_classes %}
+    <b>{{ cls.0.title }}</b> ({{ cls.0.emailcode }}, 
+    {% for ts in cls.0.friendly_times %}
+       {{ ts }}{% if not forloop.last %}, {% endif %}{% endfor %}): 
+    {% for uri in cls.1 %} {{ uri }}{% if not forloop.last %}, {% endif %}{% endfor %} <br />
+    {% endfor %}
+    {% else %}
+    [No other classes]
+    {% endif %}
+  </span>
+</a>
+</td>
     <td>
    {{ student.getGrade }}
     </td>    
@@ -66,6 +93,20 @@ Back to teacher reg
     </td>
     <td>
     {{ student.added_class|date:"M d, Y h:i:s" }}
+    </td>
+    <td>
+      {% for review in student.app.reviews.all %}
+      <a class="tooltip">
+      {{ review.score }} -- {{ review.reviewer.first_name }} {{ review.reviewer.last_name}}
+      <span>
+	{% if not review.comments|length_is:0 %}
+	{{ review.comments }}
+	{% else %}
+	[No comments]
+	{% endif %}
+      </span>
+      </a> <br />
+      {% endfor %}
     </td>
     <td>
         <input type="radio" name="regstatus_{{ student.id }}_{{ sec.id }}" value="enroll" {% if student.enrolled %}checked{% endif %}/>
@@ -79,7 +120,7 @@ Back to teacher reg
   </tr>
 {% endfor %}
 <tr>
-<th colspan="7" align="center">
+<th colspan="8" align="center">
     <input class="fancybutton" type="submit" value="Submit" />
 </th>
 </tr>
