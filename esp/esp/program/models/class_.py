@@ -809,9 +809,6 @@ class ClassSection(models.Model):
         return self.num_students(use_cache, verbs=verb_list)
 
     def num_students(self, use_cache=True, verbs=['/Enrolled']):
-        if hasattr(self, "_count_students"):
-            return self._count_students
-
         #   Only cache the result for the default setting.
         if len(verbs) == 1 and verbs[0] == '/Enrolled':
             defaults = True
@@ -845,7 +842,6 @@ class ClassSection(models.Model):
         if defaults:
             self.cache['num_students'] = retVal
 
-        self._count_students = retVal
         return retVal            
 
     def room_capacity(self):
@@ -1237,15 +1233,17 @@ class ClassSubject(models.Model):
         return result
         
     def num_students(self, use_cache=True, verbs=['/Enrolled']):
-        if hasattr(self, "_num_students"):
-            return self._num_students
-
         result = 0
         for sec in self.get_sections():
             result += sec.num_students(use_cache, verbs)
-
-        self._num_students = result
         return result
+
+    def num_students_prereg(self, use_cache=True):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        all_registration_verbs = verb_base.descendants()
+        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        return self.num_students(False, verb_list)
         
     def max_students(self):
         return self.sections.count()*self.class_size_max

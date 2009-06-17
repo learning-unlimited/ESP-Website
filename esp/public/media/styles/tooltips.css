@@ -26,3 +26,7 @@
     color: #000000;
     font-size: 12px;
 }
+
+.tooltip_wide span {
+    width: 600px !important;
+} 
