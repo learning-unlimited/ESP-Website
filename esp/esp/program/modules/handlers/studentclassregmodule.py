@@ -201,10 +201,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
 
-            if scrmi.use_priority:
-                user_priority = user.getRegistrationPriority([timeslot])
-            else:
-                user_priority = None
+            #   Same change as above.  -Michael P
+            #   if scrmi.use_priority:
+            #       user_priority = user.getRegistrationPriority([timeslot])
+            #   else:
+            #       user_priority = None
+            user_priority = user.getRegistrationPriority([timeslot])
 
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]

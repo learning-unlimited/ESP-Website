@@ -9,7 +9,7 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
 {% if not module.deadline_met %}
     <center>
     <div class="note">
-    Note: Class registration is not open at this time. Please use this page to view your schedule. {% if completedAll %}You can still click `View Receipt' below to get a printable receipt. {% endif %}
+    Note: Student registration is no longer open. Please use this page to view your schedule. {% if completedAll %}You can still click `Save' to view your receipt. {% endif %}
     </div>
     </center>
     <br />
@@ -38,7 +38,7 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
         {% for cls in timeslot.1 %}
 	{% comment %}{% if use_priority %}{% endcomment %}
             {% if not cls.section.verbs|length_is:0 %}
-                <i>{% for v in cls.section.verbs %} {{ v.friendly_name }}{% endfor %}:</i>
+                <i>{% for v in cls.section.verbs %}{{ v.friendly_name }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
 	{% comment %}{% endif %}{% endcomment %}
 	{{ cls.section.title }} 
@@ -65,7 +65,9 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
             {% endfor %}
             {% if timeslot.3 %}
                 <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
-                <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
+                {% if not timeslot.1|length_is:1 %}
+                    <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
+                {% endif %}
             {% endif %}
             </td>
             {% else %}
