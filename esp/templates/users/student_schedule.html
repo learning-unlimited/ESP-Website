@@ -26,7 +26,7 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
 </tr>
 {% for timeslot in timeslots %}
     {% ifchanged timeslot.0.start.day %}
-        <tr><th class="small" colspan="3" height="3" style="text-align: center;">{{ timeslot.0.pretty_date }}</th></tr>
+        <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th></tr>
     {% endifchanged %}
     {% ifchanged timeslot.2 %}
         <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
@@ -36,11 +36,11 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
         
         <td style="vertical-align: top !important;">
         {% for cls in timeslot.1 %}
-	{% if use_priority %}
+	{% comment %}{% if use_priority %}{% endcomment %}
             {% if not cls.section.verbs|length_is:0 %}
                 <i>{% for v in cls.section.verbs %} {{ v.friendly_name }}{% endfor %}:</i>
             {% endif %}
-	{% endif %}
+	{% comment %}{% endif %}{% endcomment %}
 	{{ cls.section.title }} 
             
             {% if request.user.onsite_local %}
@@ -68,6 +68,15 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
                 <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
             {% endif %}
             </td>
+            {% else %}
+            <!-- Allow removal of classes if the appropriate flag is set -->
+            {% if allow_removal %}
+            <td width='25%' align='center' style="vertical-align: top !important;">
+            {% for cls in timeslot.1 %}
+                <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a><br />
+            {% endfor %}
+            </td>
+            {% endif %}
             {% endif %}
         {% else %}
             {% if module.deadline_met %}
