@@ -590,7 +590,6 @@ def meets_grade(method):
 # Just broke out this function to allow combined deadlines (see meets_any_deadline,
 # meets_all_deadlines functions below).  -Michael P, 6/23/2009
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
-    errorpage = 'errors/program/deadline-%s.html' % tl
     from esp.users.models import UserBit
     from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
     if tl != 'learn' and tl != 'teach':
@@ -612,6 +611,7 @@ def meets_deadline(extension=''):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             canView = _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs)
+            errorpage = 'errors/program/deadline-%s.html' % tl
             if canView:
                 return method(moduleObj, request, tl, *args, **kwargs)
             else:
@@ -625,6 +625,7 @@ def meets_deadline(extension=''):
 def meets_any_deadline(extensions=[]):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
+            errorpage = 'errors/program/deadline-%s.html' % tl
             for ext in extensions:
                 canView = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
                 if canView:
@@ -637,6 +638,7 @@ def meets_any_deadline(extensions=[]):
 def meets_all_deadlines(extensions=[]):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
+            errorpage = 'errors/program/deadline-%s.html' % tl
             for ext in extensions:
                 canView = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
                 if not canView:
