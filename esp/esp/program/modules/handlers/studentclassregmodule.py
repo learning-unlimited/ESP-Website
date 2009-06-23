@@ -179,10 +179,15 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         schedule = []
         timeslot_dict = {}
         for sec in classList:
-            show_changeslot = ( len(classList) > 0 ) # Does the class have enough siblings to warrant a "change section" link?
+            #   TODO: Fix this bit (it was broken, and may need additional queries
+            #   or a parameter added to ClassRegModuleInfo).
+            show_changeslot = False
             
-            if scrmi.use_priority:
-                sec.verbs = sec.getRegVerbs(user)
+            #   Get the verbs all the time in order for the schedule to show
+            #   the student's detailed enrollment status.  (Performance hit, I know.)
+            #   - Michael P, 6/23/2009
+            #   if scrmi.use_priority:
+            sec.verbs = sec.getRegVerbs(user)
 
             for mt in sec.get_meeting_times():
                 section_dict = {'section': sec, 'changeable': show_changeslot}
