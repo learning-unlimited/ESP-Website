@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -131,9 +130,6 @@ class StudentAppQuestion(BaseAppElement, models.Model):
         app_label = 'program'
         db_table = 'program_studentappquestion'
     
-    class Admin:
-        pass
-
 class StudentAppResponse(BaseAppElement, models.Model):
     """ A response to an application question. """
     question = models.ForeignKey(StudentAppQuestion, editable=False)
@@ -149,9 +145,7 @@ class StudentAppResponse(BaseAppElement, models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappresponse'
-        
-    class Admin:
-        pass
+
     
 class StudentAppReview(BaseAppElement, models.Model):
     """ An individual review for a student application question.
@@ -173,9 +167,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappreview'
-    
-    class Admin:
-        pass
+
 
 class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
@@ -247,5 +239,3 @@ class StudentApplication(models.Model):
         app_label = 'program'
         db_table = 'program_junctionstudentapp'    
 
-    class Admin:
-        pass

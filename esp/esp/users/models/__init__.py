@@ -411,27 +411,7 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models.app_ import StudentApplication
         
         apps = StudentApplication.objects.filter(user=self, program=program)
-        print 'Count: %d' % apps.count()
-        if apps.count() > 1:
-            raise ESPError(True), '%d applications found for user %s in %s' % (apps.count(), self.username, program.niceName())
-        elif apps.count() == 0:
-            if create:
-                app = StudentApplication(user=self, program=program)
-                app.save()
-                return app
-            else:
-                return None
-        else:
-            return apps[0]
-
-    def getApplication(self, program, create=True):
-        from esp.program.models.app_ import StudentApplication
-        
-        apps = StudentApplication.objects.filter(user=self, program=program)
-        print 'Count: %d' % apps.count()
-        if apps.count() > 1:
-            raise ESPError(True), '%d applications found for user %s in %s' % (apps.count(), self.username, program.niceName())
-        elif apps.count() == 0:
+        if apps.count() == 0:
             if create:
                 app = StudentApplication(user=self, program=program)
                 app.save()
@@ -497,11 +477,12 @@ class ESPUser(User, AnonymousUser):
         return self.getSections(program, verbs=['/Enrolled'])
 
     def getRegistrationPriority(self, timeslots):
-        """ Finds the highest available priority level for this user across the supplied timeslots. """
+        """ Finds the highest available priority level for this user across the supplied timeslots. 
+            Returns 0 if the student is already enrolled in one or more of the timeslots. """
         from esp.program.models import Program, RegistrationProfile
         
         if len(timeslots) < 1:
-            return 1
+            return 0
         
         prog = Program.objects.get(anchor=timeslots[0].anchor)
         prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
@@ -518,6 +499,8 @@ class ESPUser(User, AnonymousUser):
                     for v in cv:
                         if v.parent.name == 'Priority':
                             priority_dict[t.id].append(int(v.name))
+                        elif v.name == 'Enrolled':
+                            return 0
         #   Now priority_dict is a dictionary where the keys are timeslot IDs and the values
         #   are lists of taken priority levels.  Merge those and find the lowest positive
         #   integer not in that list.

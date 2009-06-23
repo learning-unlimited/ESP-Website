@@ -209,7 +209,8 @@ class ClassSection(models.Model):
     parallel sections for a course being taught more than once at Splash or Spark. """
     
     anchor = models.ForeignKey(DataTree)
-    status = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted
+    status = models.IntegerField(default=0)                 #   -10 = rejected, 0 = unreviewed, 10 = accepted
+    registration_status = models.IntegerField(default=0)    #   0 = open, 10 = closed
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
@@ -707,6 +708,10 @@ class ClassSection(models.Model):
             for time in sec.meeting_times.all():
                 if len(self.meeting_times.filter(id = time.id)) > 0:
                     return 'This section conflicts with your schedule--check out the other sections!'
+                    
+        # check to see if registration has been closed for this section
+        if not self.isRegOpen():
+            return 'Registration for this section is not currently open.'
 
         # this user *can* add this class!
         return False
@@ -899,6 +904,8 @@ class ClassSection(models.Model):
     def isRejected(self): return self.status == -10
     def isCancelled(self): return self.status == -20
     isCanceled = isCancelled   
+    def isRegOpen(self): return self.registration_status == 0
+    def isRegClosed(self): return self.registration_status == 10
 
     def update_cache_students(self):
         from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func
@@ -966,6 +973,11 @@ class ClassSection(models.Model):
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     
         prereg_verb_base = scrmi.signup_verb
+        
+        #   Override the registration verb if the class has application questions
+        if self.parent_class.studentappquestion_set.count() > 0:
+            prereg_verb_base = GetNode('V/Flags/Registration/Applied')
+        
         if scrmi.use_priority:
             prereg_verb = DataTree.get_by_uri(prereg_verb_base.uri + '/%d' % priority, create=True)
         else:
@@ -1498,19 +1510,24 @@ class ClassSubject(models.Model):
                             return True
         return False
 
-    def isAccepted(self):
-        return self.status == 10
-
-    def isReviewed(self):
-        return self.status != 0
-
-    def isRejected(self):
-        return self.status == -10
-    
-    def isCancelled(self):
-        return self.status == -20
+    def isAccepted(self): return self.status == 10
+    def isReviewed(self): return self.status != 0
+    def isRejected(self): return self.status == -10
+    def isCancelled(self): return self.status == -20
     isCanceled = isCancelled    # Yay alternative spellings
     
+    def isRegOpen(self):
+        for sec in self.sections.all():
+            if sec.isRegOpen():
+                return True
+        return False
+    
+    def isRegClosed(self):
+        for sec in self.sections.all():
+            if not sec.isRegClosed():
+                return False
+        return True
+        
     def accept(self, user=None, show_message=False):
         """ mark this class as accepted """
         if self.isAccepted():
@@ -1849,3 +1866,4 @@ def install():
         cat.symbol = key
         cat.category = category_dict[key]
         cat.save()
+

@@ -1,4 +1,3 @@
-
 <p>
 Below is your class schedule for {{ program.niceName }}.  Please use the links in the right-hand column to select classes to fill each time slot.  You may also <a target="_blank" href='/learn/{{one}}/{{two}}/catalog'> open a full catalog in a separate window</a>.
 </p>
@@ -38,7 +37,7 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
         {% for cls in timeslot.1 %}
 	{% comment %}{% if use_priority %}{% endcomment %}
             {% if not cls.section.verbs|length_is:0 %}
-                <i>{% for v in cls.section.verbs %} {{ v.friendly_name }}{% endfor %}:</i>
+                <i>{% for v in cls.section.verbs %}{{ v.friendly_name }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
 	{% comment %}{% endif %}{% endcomment %}
 	{{ cls.section.title }} 
@@ -65,7 +64,9 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
             {% endfor %}
             {% if timeslot.3 %}
                 <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
-                <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
+                {% if not timeslot.1|length_is:1 %}
+                    <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
+                {% endif %}
             {% endif %}
             </td>
             {% else %}
@@ -91,3 +92,4 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
 </table> 
 </div>
 <br/>
+
