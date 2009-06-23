@@ -47,7 +47,11 @@
          {% if show_enrollment %} <br />
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}
-              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />{% endif %}
+              {% with sec.isRegClosed as is_closed %}
+              {% if is_closed %}<font color="#999999">(Closed) {% endif %}
+              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />{% endif %} 
+              {% if is_closed %}</font>{% endif %}
+              {% endwith %}
            {% endfor %}
         {% endif %}
       </td>

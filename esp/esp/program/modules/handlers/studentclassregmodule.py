@@ -349,6 +349,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         else:
             classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
             classes = filter(lambda c: not c.isFull(timeslot=ts), classes)
+            classes = filter(lambda c: not c.isRegClosed(), classes)
 
         categories = {}
 
