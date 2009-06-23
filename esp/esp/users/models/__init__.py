@@ -411,27 +411,7 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models.app_ import StudentApplication
         
         apps = StudentApplication.objects.filter(user=self, program=program)
-        print 'Count: %d' % apps.count()
-        if apps.count() > 1:
-            raise ESPError(True), '%d applications found for user %s in %s' % (apps.count(), self.username, program.niceName())
-        elif apps.count() == 0:
-            if create:
-                app = StudentApplication(user=self, program=program)
-                app.save()
-                return app
-            else:
-                return None
-        else:
-            return apps[0]
-
-    def getApplication(self, program, create=True):
-        from esp.program.models.app_ import StudentApplication
-        
-        apps = StudentApplication.objects.filter(user=self, program=program)
-        print 'Count: %d' % apps.count()
-        if apps.count() > 1:
-            raise ESPError(True), '%d applications found for user %s in %s' % (apps.count(), self.username, program.niceName())
-        elif apps.count() == 0:
+        if apps.count() == 0:
             if create:
                 app = StudentApplication(user=self, program=program)
                 app.save()
