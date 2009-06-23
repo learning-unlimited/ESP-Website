@@ -29,7 +29,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
 from esp.program.modules import module_ext
@@ -152,12 +152,13 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def isCompleted(self):
         return (len(self.user.getSections(self.program)[:1]) > 0)
 
-    def deadline_met(self):
-        #tmpModule = ProgramModuleObj()
-        #tmpModule.__dict__ = self.__dict__
-        return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
+    def deadline_met(self, extension=None):
+        #   Allow default extension to be overridden if necessary
+        if extension is not None:
+            return super(StudentClassRegModule, self).deadline_met(extension)
+        else:
+            return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
 
-    
     @needs_student
     def prepare(self, context={}):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
@@ -210,6 +211,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
+        context['allow_removal'] = self.deadline_met('/Removal')
+
         return context
 
     @aux_call
@@ -484,7 +487,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     @aux_call
     @needs_student
-    @meets_deadline('/Classes/OneClass')    
+    @meets_any_deadline(['/Classes/OneClass','/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
         

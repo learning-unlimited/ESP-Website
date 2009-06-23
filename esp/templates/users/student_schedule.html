@@ -68,6 +68,15 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
                 <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
             {% endif %}
             </td>
+            {% else %}
+            <!-- Allow removal of classes if the appropriate flag is set -->
+            {% if allow_removal %}
+            <td width='25%' align='center' style="vertical-align: top !important;">
+            {% for cls in timeslot.1 %}
+                <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a><br />
+            {% endfor %}
+            </td>
+            {% endif %}
             {% endif %}
         {% else %}
             {% if module.deadline_met %}
