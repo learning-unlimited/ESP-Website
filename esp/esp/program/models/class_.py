@@ -954,12 +954,22 @@ class ClassSection(models.Model):
         return [u.verb for u in self.getRegBits(user)]
 
     def unpreregister_student(self, user):
+        from esp.program.models.app_ import StudentAppQuestion
 
         prereg_verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
         for ub in UserBit.objects.filter(QTree(verb__below=prereg_verb_base), user=user, qsc=self.anchor_id):
             if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
                 ub.expire()
+        
+        #   If the student had blank application question responses for this class, remove them.
+        app = ESPUser(user).getApplication(self.parent_program, create=False)
+        if app:
+            blank_responses = app.responses.filter(question__subject=self.parent_class, response='')
+            unneeded_questions = StudentAppQuestion.objects.filter(studentappresponse__in=blank_responses)
+            for q in unneeded_questions:
+                app.questions.remove(q)
+            blank_responses.delete()
         
         # update the students cache
         students = list(self.students())
