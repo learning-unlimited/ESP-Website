@@ -122,8 +122,6 @@ class OnSiteRegister(ProgramModuleObj):
 
                 new_user = ESPUser(new_user)
                 
-                new_user.recoverPassword()
-
                 if new_data['paid']:
                     self.createBit('Paid')
                     self.updatePaid(True)
@@ -147,6 +145,8 @@ class OnSiteRegister(ProgramModuleObj):
 		ub.qsc = GetNode('Q')
 		ub.verb = v
 		ub.save()
+
+                new_user.recoverPassword()
                 
                 return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'student': new_user, 'retUrl': '/onsite/%s/schedule_students?extra=285&op=usersearch&userid=%s' % \
                                                                                                    (self.program.getUrlBase(), new_user.id)})
