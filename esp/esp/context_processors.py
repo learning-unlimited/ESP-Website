@@ -22,9 +22,9 @@ def esp_user(request):
 
 def index_backgrounds(request):
     #if request.path.strip() == '':
-    return {'backgrounds': ["/media/images/home/pagebkg1.jpg",
-                            "/media/images/home/pagebkg2.jpg",
-                            "/media/images/home/pagebkg3.jpg"]}
+    return {'backgrounds': [settings.MEDIA_URL+"images/home/pagebkg1.jpg",
+                            settings.MEDIA_URL+"images/home/pagebkg2.jpg",
+                            settings.MEDIA_URL+"images/home/pagebkg3.jpg"]}
     return {}
 
 def current_site(request):
