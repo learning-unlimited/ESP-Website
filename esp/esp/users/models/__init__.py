@@ -622,6 +622,11 @@ class ESPUser(User, AnonymousUser):
         from django.contrib.sites.models import Site
         from django.conf import settings
 
+        # we have a lot of users with no email (??)
+        #  let's at least display a sensible error message
+        if self.email.strip() == '':
+            raise ESPError(), 'User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username
+
         # email addresses
         to_email = ['%s <%s>' % (self.name(), self.email)]
         from_email = settings.SERVER_EMAIL
