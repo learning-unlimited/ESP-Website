@@ -109,11 +109,12 @@ class OnSiteRegister(ProgramModuleObj):
                                                                 self.program)
                 contact_user = ContactInfo(first_name = new_user.first_name,
                                            last_name  = new_user.last_name,
-                                           e_mail     = new_user.email)
+                                           e_mail     = new_user.email,
+                                           user       = new_user)
                 contact_user.save()
                 regProf.contact_user = contact_user
 
-                student_info = StudentInfo(graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
+                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
                 student_info.save()
                 regProf.student_info = student_info
 
