@@ -148,8 +148,6 @@ class OnSiteRegister(ProgramModuleObj):
 		ub.verb = v
 		ub.save()
                 
-                new_user = ESPUser(new_user)
-
                 return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'student': new_user, 'retUrl': '/onsite/%s/schedule_students?extra=285&op=usersearch&userid=%s' % \
                                                                                                    (self.program.getUrlBase(), new_user.id)})
 
