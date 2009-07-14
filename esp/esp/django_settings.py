@@ -127,7 +127,6 @@ MIDDLEWARE_GLOBAL = [
     ( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
    #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
-    ( 400, 'esp.datatree.middleware.DataTreeLockMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
    #( 600, 'esp.middleware.psycomiddleware.PsycoMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
@@ -139,6 +138,7 @@ MIDDLEWARE_GLOBAL = [
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
+    (1600, 'esp.datatree.middleware.DataTreeLockMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
@@ -151,13 +151,13 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
+    'esp.datatree',
     'esp.users',
     'esp.membership',
     'esp.miniblog',
     'esp.web',
     'esp.program',
     'esp.program.modules',
-    'esp.datatree',
     'esp.dbmail',
     'esp.cal',
     'esp.lib',
@@ -189,14 +189,15 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 #SESSION_ENGINE="django.contrib.sessions.backends.cache"
 
-TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
+TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this one after all branches are transitioned
                                'esp.context_processors.esp_user',
-                               'esp.context_processors.test_cookie',
                                'esp.context_processors.current_site',
                                'esp.context_processors.index_backgrounds',
+                               'esp.context_processors.espuserified_request',
+                               'esp.context_processors.preload_images',
                                'django.core.context_processors.i18n',
-                               'django.core.context_processors.request',
                                'django.core.context_processors.auth',
+                               'django.core.context_processors.media',
                                )
 
 # no i18n

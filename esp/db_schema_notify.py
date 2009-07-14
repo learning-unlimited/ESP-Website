@@ -39,6 +39,10 @@ def pipelines( cmd ):
     import subprocess
     return subprocess.Popen( cmd.split(' '), stdout=subprocess.PIPE ).communicate()[0].splitlines()
 
+# chdir to top-level directory of repository
+git_dir = pipelines('git rev-parse --show-cdup')
+if len(git_dir) > 0 and git_dir[0] != '':
+    os.chdir(git_dir[0])
 
 # Figure out which commits we're comparing.
 if len(sys.argv) > 1:

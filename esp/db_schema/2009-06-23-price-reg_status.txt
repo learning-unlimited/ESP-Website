@@ -1,0 +1,5 @@
+Review the script 2009-06-23-price-reg_status.sql. It can be run with:
+    $ sudo -u postgres psql -f 2009-06-23-price-reg_status.sql django
+
+Actions taken by the script:
+    Add registration status flag to class sections

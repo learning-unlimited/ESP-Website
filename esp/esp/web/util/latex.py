@@ -88,18 +88,16 @@ def gen_latex(texcode, type='pdf'):
     file_types = ['pdf','dvi','ps','log','tex']
 
     # Get (sometimes-)necessary library files
-    from esp.settings import PROJECT_ROOT
+    from django.conf import settings
     import shutil
-    shutil.copy( "%s/esp/3rdparty/pspicture.ps" % PROJECT_ROOT, TEX_TEMP )
+    shutil.copy( "%s/esp/3rdparty/pspicture.ps" % settings.PROJECT_ROOT, TEX_TEMP )
     
     if type=='pdf':
         mime = 'application/pdf'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips %s.dvi' % (TEX_TEMP, file_base))
-        os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvipdf %s.dvi' % (TEX_TEMP, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
-            os.remove('%s.ps' % file_base)
             
     elif type=='dvi':
         mime = 'application/x-dvi'

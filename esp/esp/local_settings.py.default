@@ -61,8 +61,8 @@ LOG_FILE = '/path/to/website/log'
 ###################
 # Debug settings  #
 ###################
-DEBUG = False
-DISPLAYSQL = False
+DEBUG = True
+DISPLAYSQL = True
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 

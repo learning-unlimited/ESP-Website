@@ -389,6 +389,12 @@ def myesp_onsite(request, module):
 
 	progs = UserBit.find_by_anchor_perms(Program, user = user, verb = verb)
 
+        # Order them decreasing by id
+        # - Currently reverse the list in Python, otherwise fbap's cache is ignored
+        # TODO: Fix this
+        progs = list(progs)
+        progs.reverse()
+
 	if len(progs) == 1:
 		return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
 	else:

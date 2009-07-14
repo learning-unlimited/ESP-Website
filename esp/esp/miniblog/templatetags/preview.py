@@ -24,13 +24,13 @@ class MiniblogNode(template.Node):
 
         # First we ensure we have a user
         try:
-            self.user = template.resolve_variable(self.user, context)
-            if not isinstance(self.user, (User, AnonymousUser)):
-                raise template.VariableDoesNotExist("Requires a user object, recieved '%s'" % self.user)
+            user_obj = template.resolve_variable(self.user, context)
         except template.VariableDoesNotExist:
-             raise template.TemplateSyntaxError, "%s tag requires first argument, %s, to be a User" % (tag, self.user)
+             raise template.VariableDoesNotExist, "Argument to miniblog_for_user, %s, did not exist" % self.user
+        if not isinstance(user_obj, (User, AnonymousUser)):
+            raise template.TemplateSyntaxError("Requires a user object, recieved '%s'" % user_obj)
 
-        context[self.var_name] = get_visible_announcements(self.user, self.limit)
+        context[self.var_name] = get_visible_announcements(user_obj, self.limit)
         return ''
 
 

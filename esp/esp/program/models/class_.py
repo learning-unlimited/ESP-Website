@@ -127,7 +127,7 @@ class ClassManager(ProcedureManager):
         classes = classes.filter(parent_program = program)
 
         if ts is not None:
-            classes = classes.filter(meeting_times=ts)
+            classes = classes.filter(sections__meeting_times=ts)
 
         select = SortedDict([( '_num_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "datatree_datatree"."id" AND "datatree_datatree"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
                              ('teacher_ids', 'SELECT list("users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
@@ -209,7 +209,8 @@ class ClassSection(models.Model):
     parallel sections for a course being taught more than once at Splash or Spark. """
 
     anchor = models.ForeignKey(DataTree)
-    status = models.IntegerField(default=0)   #   -10 = rejected, 0 = unreviewed, 10 = accepted
+    status = models.IntegerField(default=0)                 #   -10 = rejected, 0 = unreviewed, 10 = accepted
+    registration_status = models.IntegerField(default=0)    #   0 = open, 10 = closed
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
@@ -772,7 +773,7 @@ class ClassSection(models.Model):
                 if time.id == 36: has36 = True
                 if len(self.meeting_times.filter(id = time.id)) > 0:
                     return 'This section conflicts with your schedule--check out the other sections!'
-
+              
         if (has25 and len(self.meeting_times.filter(id = 26)) > 0):
             return 'This section conflicts with your schedule!'
         if (has26 and len(self.meeting_times.filter(id = 25)) > 0):
@@ -782,6 +783,10 @@ class ClassSection(models.Model):
         if (has36 and len(self.meeting_times.filter(id = 35)) > 0):
             return 'This section conflicts with your schedule!'
 
+        # check to see if registration has been closed for this section
+        if not self.isRegOpen():
+            return 'Registration for this section is not currently open.'
+ 
         # this user *can* add this class!
         return False
 
@@ -883,9 +888,6 @@ class ClassSection(models.Model):
         return self.num_students(use_cache, verbs=verb_list)
 
     def num_students(self, use_cache=True, verbs=['/Enrolled']):
-        if hasattr(self, "_count_students"):
-            return self._count_students
-
         #   Only cache the result for the default setting.
         if len(verbs) == 1 and verbs[0] == '/Enrolled':
             defaults = True
@@ -919,7 +921,6 @@ class ClassSection(models.Model):
         if defaults:
             self.cache['num_students'] = retVal
 
-        self._count_students = retVal
         return retVal
 
     def room_capacity(self):
@@ -977,6 +978,8 @@ class ClassSection(models.Model):
     def isRejected(self): return self.status == -10
     def isCancelled(self): return self.status == -20
     isCanceled = isCancelled
+    def isRegOpen(self): return self.registration_status == 0
+    def isRegClosed(self): return self.registration_status == 10
 
     def update_cache_students(self):
         from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func
@@ -1018,14 +1021,14 @@ class ClassSection(models.Model):
         self.update_cache()
 
     def getRegBits(self, user):
-        result = UserBit.objects.filter(QTree(qsc__below=self.anchor)).filter(enddate__gte=datetime.datetime.now()).order_by('verb__name')
-        return result
+        return UserBit.objects.filter(QTree(qsc__below=self.anchor), enddate__gte=datetime.datetime.now(), user=user).order_by('verb__name')
 
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """
         return [u.verb for u in self.getRegBits(user)]
 
     def unpreregister_student(self, user):
+        from esp.program.models.app_ import StudentAppQuestion
 
         prereg_verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
@@ -1033,6 +1036,15 @@ class ClassSection(models.Model):
             if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
                 ub.expire()
 
+        #   If the student had blank application question responses for this class, remove them.
+        app = ESPUser(user).getApplication(self.parent_program, create=False)
+        if app:
+            blank_responses = app.responses.filter(question__subject=self.parent_class, response='')
+            unneeded_questions = StudentAppQuestion.objects.filter(studentappresponse__in=blank_responses)
+            for q in unneeded_questions:
+                app.questions.remove(q)
+            blank_responses.delete()
+        
         # update the students cache
         students = list(self.students())
         students = [ student for student in students
@@ -1045,6 +1057,11 @@ class ClassSection(models.Model):
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
 
         prereg_verb_base = scrmi.signup_verb
+        
+        #   Override the registration verb if the class has application questions
+        if self.parent_class.studentappquestion_set.count() > 0:
+            prereg_verb_base = GetNode('V/Flags/Registration/Applied')
+        
         if scrmi.use_priority:
             prereg_verb = DataTree.get_by_uri(prereg_verb_base.uri + '/%d' % priority, create=True)
         else:
@@ -1071,7 +1088,7 @@ class ClassSection(models.Model):
                 self.update_cache_students()
 
             #   Clear completion bit on the student's application if the class has app questions.
-            app = user.getApplication(self.parent_program, create=False)
+            app = ESPUser(user).getApplication(self.parent_program, create=False)
             if app:
                 app.set_questions()
                 if app.questions.count() > 0:
@@ -1312,16 +1329,18 @@ class ClassSubject(models.Model):
         return result
 
     def num_students(self, use_cache=True, verbs=['/Enrolled']):
-        if hasattr(self, "_num_students"):
-            return self._num_students
-
         result = 0
         for sec in self.get_sections():
             result += sec.num_students(use_cache, verbs)
-
-        self._num_students = result
         return result
 
+    def num_students_prereg(self, use_cache=True):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        all_registration_verbs = verb_base.descendants()
+        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        return self.num_students(False, verb_list)
+        
     def max_students(self):
         return self.sections.count()*self.class_size_max
 
@@ -1440,7 +1459,7 @@ class ClassSubject(models.Model):
     def isFull(self, timeslot=None, use_cache=True):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
-            sections = self.get_section(timeslot)
+            sections = [self.get_section(timeslot)]
         else:
             sections = self.get_sections()
         for s in sections:
@@ -1575,19 +1594,24 @@ class ClassSubject(models.Model):
                             return True
         return False
 
-    def isAccepted(self):
-        return self.status == 10
-
-    def isReviewed(self):
-        return self.status != 0
-
-    def isRejected(self):
-        return self.status == -10
-
-    def isCancelled(self):
-        return self.status == -20
+    def isAccepted(self): return self.status == 10
+    def isReviewed(self): return self.status != 0
+    def isRejected(self): return self.status == -10
+    def isCancelled(self): return self.status == -20
     isCanceled = isCancelled    # Yay alternative spellings
+    
+    def isRegOpen(self):
+        for sec in self.sections.all():
+            if sec.isRegOpen():
+                return True
+        return False
 
+    def isRegClosed(self):
+        for sec in self.sections.all():
+            if not sec.isRegClosed():
+                return False
+        return True
+        
     def accept(self, user=None, show_message=False):
         """ mark this class as accepted """
         if self.isAccepted():

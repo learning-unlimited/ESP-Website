@@ -69,7 +69,7 @@ class NavBarEntry(models.Model):
     text = models.CharField(max_length=64)
     indent = models.BooleanField()
 
-    category = models.ForeignKey(NavBarCategory)
+    category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
     def can_edit(self, user):
         return UserBit.UserHasPerms(user, self.path, GetNode('V/Administer/Edit/QSD'))

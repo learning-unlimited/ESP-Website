@@ -7,6 +7,26 @@ from django.db import backend, connection, transaction
 
 __all__ = ['ProcedureManager']
 
+""" dictfetchmany:
+    Function borrowed from psycopg1 so that we can support
+    other database backends that don't define dictfetchmany.
+"""
+def _build_dict(cursor, row):
+    res = {}
+    for i in range(len(cursor.description)):
+        res[cursor.description[i][0]] = row[i]
+    return res
+    
+def dictfetchmany(cursor, size):
+    if hasattr(cursor, 'dictfetchmany'):
+        return cursor.dictfetchmany(size)
+    else:
+        res = []
+        rows = cursor.fetchmany(size)
+        for row in rows:
+            res.append(_build_dict(cursor, row))
+        return res
+
 class PreparedStatementError(Exception):
     pass
 
@@ -89,7 +109,7 @@ class QuerySetPrepared(QuerySet):
         model_keys = [f.column for f in self.model._meta.fields]
 
         while 1:
-            rows = cursor.dictfetchmany(GET_ITERATOR_CHUNK_SIZE)
+            rows = dictfetchmany(cursor, GET_ITERATOR_CHUNK_SIZE)
             if not rows:
                 raise StopIteration
             for row in rows:
@@ -217,14 +237,14 @@ class ProcedureManager(Manager):
                                       ', '.join('%s' for x in new_params)),
                        new_params)
 
-        rows = cursor.dictfetchmany(GET_ITERATOR_CHUNK_SIZE)
+        rows = dictfetchmany(cursor, GET_ITERATOR_CHUNK_SIZE)
 
         retVal = []
 
         while rows:
             for row in rows:
                 retVal.append(row)
-            rows = cursor.dictfetchmany(GET_ITERATOR_CHUNK_SIZE)
+            rows = dictfetchmany(cursor, GET_ITERATOR_CHUNK_SIZE)
 
         return retVal
 

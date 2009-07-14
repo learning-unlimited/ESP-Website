@@ -431,7 +431,9 @@ class DataTree(models.Model):
         # just scan the list for this particular child
         children = self.children()
         if children != None:
-            return name in (child.name for child in children)
+            return key in (child.name for child in children)
+        else:
+            return bool(self.children().filter(name__exact = key)[:1])
 
     def __contains__(self, child):
         if type(child) != DataTree:
@@ -450,6 +452,11 @@ class DataTree(models.Model):
                     return child
             # Key must not be in the set of children
             raise exceptions.KeyError, key
+        else:
+            try:
+                return DataTree.objects.get(parent = self, name = key)
+            except:
+                raise exceptions.KeyError, key
 
 
     def __setitem__(self, key, value):
@@ -835,10 +842,11 @@ class DataTree(models.Model):
     # TESTS      #
     ##############
     @staticmethod
-    def randwordtest(factor = 4):
+    def randwordtest(factor = 4, limit = -1):
         # some random test
         import sys
         import random
+        error_free = True
         GetNode('a')
         try:
             f = open('/usr/share/dict/words')
@@ -850,7 +858,9 @@ class DataTree(models.Model):
                 low_id = 1
 
 
-            while True:
+            while limit != 0:
+                if limit > 0:
+                    limit -= 1
                 try:
                     size = int(DataTree.objects.count())
                     cur_id = random.choice(range(low_id,low_id + size*factor))
@@ -864,19 +874,22 @@ class DataTree(models.Model):
                     else:
                         uri = '/'.join(random.choice(words))
                         node = DataTree.get_by_uri(uri, True)
-                        print 'Added %s' % node
+                        print 'Added %s' % uri
 
                     if DataTree.objects.exists_violators():
                         print "ERROR:"
                         print DataTree.objects.exists_violators(queryset=True)
-                        return
+                        return False
                 except int:
                     exc_info = sys.exc_info()
                     print exc_info[0], exc_info[1], exc_info[2]
+                    error_free = False
 
         except int:
             exc_info = sys.exc_info()
             raise exc_info[0], exc_info[1], exc_info[2]
+
+        return error_free
 
 
 ####################

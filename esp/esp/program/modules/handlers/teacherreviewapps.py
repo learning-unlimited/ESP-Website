@@ -77,7 +77,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
                 student.app = None
 
             if student.app:
-                reviews = student.app.reviews.all()
+                reviews = student.app.reviews.all().filter(reviewer=self.user, score__isnull=False)
             else:
                 reviews = []
 
@@ -113,18 +113,39 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
             if existing_questions.count() < clrmi.num_teacher_questions:
                 for i in range(0, clrmi.num_teacher_questions - existing_questions.count()):
                     q = StudentAppQuestion(subject=s)
-                    q.save()
                     question_list.append(q)
+        
+        #   Initialize forms with nonstandard prefixes if they correspond to questions
+        #   that have not yet been saved.
+        form_list = []
+        i = 1
+        for q in question_list:
+            if not (hasattr(q, 'id') and q.id):
+                form = q.get_form(form_prefix='question_new_%d' % i)
+            else:
+                form = q.get_form()
+            form.app_question = q
+            form_list.append(form)
+            i += 1
         
         if request.method == 'POST':
             data = request.POST
-            for q in question_list:
-                form = q.get_form(data)
+            for f in form_list:
+                #   Reinitialize the form with a bound one having the same prefix.
+                q = f.app_question
+                form = f.app_question.get_form(data, form_prefix=f.prefix)
+                
+                #   If the form is valid, save the question.  If not, delete it.
                 if form.is_valid():
                     q.update(form)
+                    q.save()
+                else:
+                    if hasattr(q, 'id') and q.id:
+                        q.delete()
+
             return self.goToCore(tl)
             
-        context = {'clrmi': clrmi, 'prog': prog, 'questions': question_list}
+        context = {'clrmi': clrmi, 'prog': prog, 'forms': form_list}
         return render_to_response(self.baseDir()+'questions.html', request, (prog, tl), context)
 
     @aux_call
@@ -163,9 +184,9 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
 
         student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
 
-        reviews = student.app.reviews.all()
-        if reviews.filter(reviewer=self.user).count() > 0:
-            this_review = reviews.filter(reviewer=self.user).order_by('id')[0]
+        teacher_reviews = student.app.reviews.all().filter(reviewer=self.user)
+        if teacher_reviews.count() > 0:
+            this_review = teacher_reviews.order_by('id')[0]
         else:
             this_review = StudentAppReview(reviewer=self.user)
             this_review.save()
@@ -182,6 +203,7 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
                                   request,
                                   (prog, tl),
                                   {'class': cls,
+                                   'reviews': teacher_reviews,
                                   'program': prog,
                                    'student':student,
                                    'form': form})
@@ -194,3 +216,4 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
 
     def isStep(self):
         return True
+

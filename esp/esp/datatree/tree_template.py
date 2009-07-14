@@ -116,7 +116,9 @@ def genTemplate():
     V_node = DataTree.objects.get(uri='V')
     Q_node.uri = 'Q'
     V_node.uri = 'V'
-    for n in node_list:
+
+    #   We can't use node_list again, since expire_uri doesn't modify the python object.
+    for n in DataTree.objects.filter(uri_correct=False):
         n.get_uri()
 
         
