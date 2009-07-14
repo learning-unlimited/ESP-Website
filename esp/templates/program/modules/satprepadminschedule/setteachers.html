@@ -1,31 +1,23 @@
-{% extends "main.html" %}
+
+{% extends "outlines/series-3.html" %}
 
 {% block title %}{{program.niceName}} Schedule{% endblock %}
 
 {% block subsection_name %}Scheduling Options{% endblock %}
 
 {% block stylesheets %}
-{{block.super}}
-<style type="text/css">
-#divmaintext table, #divmaintext th, #divmaintext td { border: 1px solid black; border-collapse: collapse; }
-</style>
-
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}
 
 {% block content %}
-<br />
-<br />
 
-<br /><br />
 <h1>
-Scheduling {{program.niceName}}
+    Scheduling {{ program.niceName }}
 </h1>
 
 <br />
-<br />
-<h2>
-Set Teacher Sections
-</h2>
+<h2>Set Teacher Sections</h2>
 
 <br />
 

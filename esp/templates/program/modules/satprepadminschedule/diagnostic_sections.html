@@ -1,0 +1,40 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Resources for {{ prog.niceName }}{% endblock %}
+
+{% block subsection_name %}Resource Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Resources for {{ prog.niceName }}</h1>
+
+<p>Your diagnostic sections have been created.  The printable schedules and checklists (from the <a href="/manage/{{ prog.getUrlBase }}/printoptions">printables page</a>) will now reflect these assignments.  You may also use the {% templatetag openbrace %} program.schedule {% templatetag closebrace %} tag in e-mails from the <a href="/manage/{{ prog.getUrlBase }}/main">communications panel</a>.  See below for a summary of the assignments.</p>
+
+<div id="program_form">
+{% for section in sections %}
+<table align="center" width="350">
+<tr>
+    <th colspan="2">Section {{ section.index }}: {{ section.fln }} - {{ section.lln }}</th>
+</tr>
+<tr>
+    <th class="smaller">Timeslot: {{ section.timeslot }}</th>
+    <th class="smaller">Room: {{ section.room }}
+</tr>
+{% for s in section.students %}
+<tr>
+    <td>{{ s.id }}</td>
+    <td>{{ s.first_name }} {{ s.last_name }}</td>
+</tr>
+{% endfor %}
+</table>
+<br />
+<p><a href="/manage/{{ prog.getUrlBase }}/main">Back to the main program management page</a></p>
+{% endfor %}
+</div>
+
+{% endblock %}

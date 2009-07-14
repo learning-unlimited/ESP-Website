@@ -1,0 +1,25 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Printables{% endblock %}
+
+{% block subsection_name %}Filter List of Paid Students{% endblock %}
+
+{% block content %}
+
+<h1>Filter List of Paid Students</h1>
+
+<form method="get" action="paid_list">
+<p>
+<select multiple size="{{ lineitemtypes.count }}" name="filter">
+{% for lineitemtype in lineitemtypes %}
+<option value="{{ lineitemtype.id }}">{{ lineitemtype.text }}</option>
+{% endfor %}
+</select>
+</p>
+
+<p><input type="checkbox" checked="True" value="True" name="hide_paid" id="hide_paid" /><label for="hide_paid">Hide Payment Information</label></p>
+
+<p><input type="Submit" /></p>
+
+</form>
+{% endblock %}
