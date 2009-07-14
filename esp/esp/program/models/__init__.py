@@ -594,7 +594,7 @@ class Program(models.Model):
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
-        ts_list = self.getTimeSlots()
+        ts_list = Event.collapse(list(self.getTimeSlots()), tol=timedelta(minutes=15))
         time_sum = timedelta()
         for t in ts_list:
             time_sum = time_sum + (t.end - t.start)
