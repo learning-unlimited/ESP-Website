@@ -1,7 +1,8 @@
 from django import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import REDIRECT_FIELD_NAME
-from esp.forms import SizedCharField, BlankSelectWidget, FormWithRequiredCss
+from esp.utils.forms import SizedCharField, FormWithRequiredCss
+from esp.utils.widgets import BlankSelectWidget
 from esp.web.util.main import render_to_response
 from esp.users.models import ESPUser, K12School
 
