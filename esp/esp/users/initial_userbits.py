@@ -37,6 +37,9 @@ from esp.users.models import UserBit
 INITIAL_USERBITS = (
     { "qsc": GetNode("Q/Web"),
       "verb": GetNode("V/Flags/Public") },
+    { "qsc": GetNode("Q/Programs"),
+      "verb": GetNode("V/Flags/Public"),
+      "recursive": False},
     { "qsc": GetNode("Q/Web"),
       "verb": GetNode("V/Subscribe") }
     )

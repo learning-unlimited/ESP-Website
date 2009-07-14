@@ -337,12 +337,14 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 						userrole['name'] = 'Student'
 						userrole['base'] = 'learn'
 						userrole['reg'] = 'studentreg'
+						regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
 					elif curUser.isTeacher():
 						userrole['name'] = 'Teacher'
 						userrole['base'] = 'teach'
 						userrole['reg'] = 'teacherreg'
+						regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
 					ctxt['userrole'] = userrole
-					regverb = GetNode('V/Deadline/Registration/%s/MainPage' % ctxt['userrole']['name'])
+					
 					progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
 					nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 					ctxt['progs'] = progs
@@ -386,6 +388,12 @@ def myesp_onsite(request, module):
 	verb = GetNode('V/Registration/OnSite')
 
 	progs = UserBit.find_by_anchor_perms(Program, user = user, verb = verb)
+
+        # Order them decreasing by id
+        # - Currently reverse the list in Python, otherwise fbap's cache is ignored
+        # TODO: Fix this
+        progs = list(progs)
+        progs.reverse()
 
 	if len(progs) == 1:
 		return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())

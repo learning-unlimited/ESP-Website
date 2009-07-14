@@ -1,0 +1,13 @@
+{% if categories %}
+<table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
+<tr>
+<th colspan="2">Jump to Category </th>
+</tr>
+{% for category in categories %}
+{% cycle '<tr>' '' %}
+<td><a href="#cat{{ category.id }}">{{ category.category }}</a></td>
+{% cycle '' '</tr>' %}
+{% endfor %}
+{% if not categories|length|divisibleby:2 %}</tr>{% endif %}
+</table>
+{% endif %}

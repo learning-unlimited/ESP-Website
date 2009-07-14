@@ -1,4 +1,4 @@
-{% extends "outlines/series-3.html" %}
+{% extends "main.html" %}
 
 {% block title %}{{ title }} - EDIT{% endblock %}
 
@@ -30,8 +30,8 @@
 
 {% block xtrajs %}
 {{ block.super }}
-<script type="text/javascript" src="{{ media_url }}scripts/jquery.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/markdown.js"></script>
+<script type="text/javascript" src="{{ MEDIA_URL }}scripts/jquery.js"></script>
+<script type="text/javascript" src="{{ MEDIA_URL }}scripts/markdown.js"></script>
 {% endblock %}
 
 

@@ -1,4 +1,4 @@
-{% extends "outlines/series-3.html" %}
+{% extends "main.html" %}
 
 {% block title %}{{ program.niceName }} Student Application{% endblock %}
 
@@ -17,7 +17,7 @@
 
 <h2>Introduction</h2>
 <p>
-    To complete your application for {{ program.niceName }}, please fill out the following form. While you are working on it, you can <strong>Save Progress</strong> to keep your work while going to other things. Once you're finished, please let us know by clicking <strong>Complete</strong>.
+    To complete your application for {{ program.niceName }}, please fill out the following form. While you are working on it, you can click <strong>Save Progress</strong> to save your work before leaving this page. Once you're finished, please let us know by clicking <strong>Complete</strong>.
 </p>
 
 <p>   
@@ -31,19 +31,18 @@
 <br />
 
 <div id="program_form">
-<center>
 <form action="{{ request.path }}" method="post" name="application_form">
-<table id="appform" width="600">
+<table align="center" id="appform" width="600">
 {% for form in forms %}
 <tr>
  <th colspan="2">
-    {{ form.target.question.question }}
+    Question {{ forloop.counter }} {% if form.target.question.subject %}({{ form.target.question.subject.title }}){% endif %}
  </th>
 </tr>
 <tr>
  <td colspan="2">
-    {% if form.target.question.subject %}This question is being asked by the teachers of {{ form.target.question.subject }}.<br />{% endif %}
-    <b>Directions:</b> {{ form.target.question.directions }}
+    {{ form.target.question.question }}
+    {% if form.target.question.directions %}<br /><br /><b>Additional directions:</b> {{ form.target.question.directions }}{% endif %}
  </td>
 </tr>
 {{ form }}
@@ -66,7 +65,6 @@
 </tr>
 </table>
 </form>
-</center>
 </div>
 
 {% endblock %}

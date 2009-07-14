@@ -179,10 +179,10 @@ class ArgCache(WithDelayableMethods):
             existing.locked = True
         return existing
 
-    def __init__(self, name, params, uid=None, cache=cache):
+    def __init__(self, name, params, uid=None, cache=cache, *args, **kwargs):
         if uid is None:
             uid = name
-        super(ArgCache, self).__init__(name, params, uid, cache)
+        super(ArgCache, self).__init__(*args, **kwargs)
 
         if isinstance(params, list):
             params = tuple(params)
@@ -193,6 +193,9 @@ class ArgCache(WithDelayableMethods):
         self.tokens = []
         self.token_dict = {}
         self.locked = False
+
+        # Mostly used to avoid recursion
+        self.disabled = False
 
         # Init stats
         self.hit_count = 0
@@ -217,12 +220,16 @@ class ArgCache(WithDelayableMethods):
 
     def _hit_hook(self, arg_list):
         if settings.CACHE_DEBUG:
+            old_disabled, self.disabled = self.disabled, True
             print "Cache Hit! %s on %s" % (self.name, arg_list)
+            self.disabled = old_disabled
         self.hit_count += 1
 
     def _miss_hook(self, arg_list):
         if settings.CACHE_DEBUG:
+            old_disabled, self.disabled = self.disabled, True
             print "Cache Miss! %s on %s" % (self.name, arg_list)
+            self.disabled = old_disabled
         self.miss_count += 1
 
     @property
@@ -316,6 +323,9 @@ class ArgCache(WithDelayableMethods):
 
     def get(self, arg_list):
         """ Get the value of the cache at arg_list (which can be a tuple). """
+        if self.disabled:
+            return None
+
         key = self.key(arg_list)
 
         # gather keys
@@ -354,6 +364,9 @@ class ArgCache(WithDelayableMethods):
 
     def set(self, arg_list, value, timeout_seconds=None):
         """ Set the value of the cache at arg_list (which can be a tuple). """
+        if self.disabled:
+            return
+
         key = self.key(arg_list)
 
         # gather keys

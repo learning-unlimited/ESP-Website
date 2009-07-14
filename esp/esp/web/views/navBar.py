@@ -170,8 +170,7 @@ def updateNavBar(request, section = ''):
     """
 
     for i in [ 'navbar_id', 'action', 'new_url', 'node_id' ]:
-        if not request.REQUEST.has_key(i):
-            assert False, "Need " + str(i)
+        assert request.REQUEST.has_key(i), "Need " + str(i)
 
     action = request.REQUEST['action']
 
@@ -193,9 +192,7 @@ def updateNavBar(request, section = ''):
         #raise Http404
         raise
 
-    if not actions.has_key(action):
-        #raise Http404
-        assert False, "Need action"
+    assert actions.has_key(action), "Need action"
 
     if request.REQUEST.has_key('section'):
         section = request.REQUEST['section']
@@ -303,7 +300,7 @@ def navBarNew(request, navbar, node, section):
 
 def navBarDelete(request, navbar, node, section):
     if not UserBit.UserHasPerms(request.user, navbar.path, GetNode(EDIT_VERB_STRING)):
-        raise PermissionDenied, "You don't have permisssion to do that!"
+        raise PermissionDenied, "You don't have permission to do that!"
 
     navbar.delete()
 

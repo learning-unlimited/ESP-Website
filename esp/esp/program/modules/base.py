@@ -488,13 +488,13 @@ def usercheck_usetl(method):
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         if tl == 'learn' and not moduleObj.user.isStudent():
-            return render_to_response(errorpage, {})
+            return render_to_response(errorpage, request, moduleObj.program, {})
 
         if tl == 'teach' and not moduleObj.user.isTeacher():
-            return render_to_response(errorpage, {})
+            return render_to_response(errorpage, request, moduleObj.program, {})
 
         if tl == 'manage' and not moduleObj.user.isAdmin(moduleObj.program):
-            return render_to_response(errorpage, {})
+            return render_to_response(errorpage, request, moduleObj.program, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
 
@@ -515,7 +515,7 @@ def needs_teacher(method):
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
         if request.session.has_key('user_morph'):
-            morpheduser=request.session['user_morph']['olduser']
+            morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
         else:
             morpheduser=None
 
@@ -586,29 +586,65 @@ def meets_grade(method):
     return _checkGrade
 
 # Anything you can do, I can do meta
+
+# Just broke out this function to allow combined deadlines (see meets_any_deadline,
+# meets_all_deadlines functions below).  -Michael P, 6/23/2009
+def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
+    from esp.users.models import UserBit
+    from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
+    if tl != 'learn' and tl != 'teach':
+        return True
+
+    canView = moduleObj.user.updateOnsite(request)
+    if not canView:
+        canView = UserBit.UserHasPerms(moduleObj.user,
+                                       moduleObj.program.anchor_id,
+                                       GetNode('V/Deadline/Registration/'+{'learn':'Student',
+                                                                       'teach':'Teacher'}[tl]+extension))
+
+    return canView
+
+#   Return a decorator that returns a function calling the decorated function if
+#   the deadline is met, or a function that generates an error page if the
+#   deadline is not met.
 def meets_deadline(extension=''):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
-            from esp.users.models import UserBit
-            from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
-            if tl != 'learn' and tl != 'teach':
-                return True
-
-            canView = moduleObj.user.updateOnsite(request)
-            if not canView:
-                canView = UserBit.UserHasPerms(moduleObj.user,
-                                               moduleObj.program.anchor_id,
-                                               GetNode('V/Deadline/Registration/'+{'learn':'Student',
-                                                                               'teach':'Teacher'}[tl]+extension))
-
+            canView = _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs)
             if canView:
                 return method(moduleObj, request, tl, *args, **kwargs)
             else:
                 return render_to_response(errorpage, request, (moduleObj.program, tl), {})
-
         return _checkDeadline
+    return meets_deadline
 
+#   Behaves like the meets_deadline function above, but accepts a list of
+#   userbit names.  The returned decorator returns the decorated function if
+#   any of the deadlines are met.
+def meets_any_deadline(extensions=[]):
+    def meets_deadline(method):
+        def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
+            errorpage = 'errors/program/deadline-%s.html' % tl
+            for ext in extensions:
+                canView = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
+                if canView:
+                    return method(moduleObj, request, tl, *args, **kwargs)
+            return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+        return _checkDeadline
+    return meets_deadline
+
+#   Line meets_any_deadline above, but requires that all deadlines are met.
+def meets_all_deadlines(extensions=[]):
+    def meets_deadline(method):
+        def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
+            errorpage = 'errors/program/deadline-%s.html' % tl
+            for ext in extensions:
+                canView = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
+                if not canView:
+                    return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+            return method(moduleObj, request, tl, *args, **kwargs)
+        return _checkDeadline
     return meets_deadline
 
 

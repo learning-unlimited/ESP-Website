@@ -1,0 +1,53 @@
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+<!-- login -->
+<table align="center" class="loginform" cellspacing="0" cellpadding="5">
+<tr><td>
+
+{% if request.user.is_authenticated %}
+<div id="divnav">
+  <p align="center">
+    Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
+    {% if request.user.is_staff %}
+        <a href="/admin/">Administration pages</a> <br />
+    {% endif %}
+    {% if request.user.isAdministrator %}
+        <a href="/manage/programs/">Manage Programs</a> <br />
+    {% endif %}
+    <a href="/myesp/signout/">Logout</a>
+  </p>
+</div>
+{% else %}
+
+<div id="divnav">
+    <div style="font-size: 1.1em; margin-bottom: 5px">Please log in to access program registration</div>
+  <form name="loginform" id="loginform" method="post" action="/myesp/login/">
+    <input type="hidden" name="next" value="{{ request.path }}" />
+    <table border="0" cellpadding="0" cellspacing="0" summary=" ">
+      <tr>
+        <td><div class="divformcol1"><label for="user">User name:</label></div></td>
+        <td><div class="divformcol2"><input type="text" name="username" id="user" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+
+        <td><div class="divformcol3">&nbsp;</div></td>
+      </tr>
+      <tr>
+        <td><div class="divformcol1"><label for="pass">Password:</label></div></td>
+        <td><div class="divformcol2"><input type="password" name="password" id="pass" size="8" value="" maxlength="255" class="inputbox" /></div></td>
+        <td><div class="divformcol3"><input type="image" name="gologin" id="gologin" src="/media/images/go.gif" class="gobutton" alt="Go" title="" /></div></td>
+      </tr>
+      <tr>
+
+        <td colspan="3"><div class="divformcol1"><a href="/myesp/loginhelp.html">Login Help</a>
+        <span style="padding-left: 25px;">
+        <a href="/myesp/register">Register</a></span></div></td>
+      </tr>
+    </table>
+  </form>
+</div>
+{% endif %}
+
+</td></tr>
+</table>

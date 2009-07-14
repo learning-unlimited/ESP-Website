@@ -34,75 +34,6 @@ from esp.users.models.userbits import UserBitImplication
 from esp.program.Lists_ClassCategories import populate as populate_LCC
 from esp.program.models import Program, ProgramModule
 from esp.accounting_core.models import LineItemType
-#    from esp.program.Lists_EquipmentTypes import populate as populate_LET
-
-#   Note: this is an old function.  Please see prepare_program and commit_program below.
-def PopulateProgram(program_node,
-                program_term,
-                program_admins,
-                teacher_reg_range,
-                student_reg_range,
-                publish_range):
-    """ PopulateProgram initializes a program, establishing its Data Tree branch and
-    creating its registration deadline and administration permissions
-    """
-
-    # Fetch/create the program node
-    anchor = GetNode( program_node )
-
-    # Set the friendly name for the program's term (e.g. 'Summer 2006')
-    anchor.friendly_name = program_term
-    anchor.save()
-
-    # Create a Program entry
-    program = Program()
-    program.anchor = anchor
-    program.grade_min = 6
-    program.grade_max = 12
-    program.class_size_min = 4
-    program.class_size_max = 200
-
-    # Create the DataTree branches
-    for sub_node in ProgramTemplate:
-        GetNode(program_node + sub_node)
-
-    # Create the initial deadline authorizations
-    if student_reg_range is not None:
-        deadline_student = UserBit()
-        deadline_student.user = None
-        deadline_student.qsc = anchor
-        deadline_student.verb = GetNode( 'V/Deadline/Registration/Student' )
-        deadline_student.startdate = student_reg_range[0]
-        deadline_student.enddate = student_reg_range[1]
-        deadline_student.save()
-    if teacher_reg_range is not None:
-        deadline_teacher = UserBit()
-        deadline_teacher.user = None
-        deadline_teacher.qsc = anchor
-        deadline_teacher.verb = GetNode( 'V/Deadline/Registration/Teacher' )
-        deadline_teacher.startdate = teacher_reg_range[0]
-        deadline_teacher.enddate = teacher_reg_range[1]
-        deadline_teacher.save()
-
-    # Create the administration authorizations
-    admin_verb = GetNode( 'V/Administer' )
-    for director in program_admins:
-        admin_perm = UserBit()
-        admin_perm.user = director
-        admin_perm.qsc = anchor
-        admin_perm.verb = admin_verb
-        admin_perm.save()
-    
-    # Create the publishing authorizations
-    publish_verb = GetNode( 'V/Flags/Public' )
-    publish = UserBit()
-    publish.user = None
-    publish.qsc = anchor
-    publish.verb = publish_verb
-    publish.startdate = publish_range[0]
-    publish.enddate = publish_range[1]
-    publish.save()
-    
 
 def prepare_program(program, form):
     """ This function adds custom stuff to save_instance to facilitate making programs happen.
@@ -116,7 +47,6 @@ def prepare_program(program, form):
 
     # Fetch/create the program node
     program_node_name = program.anchor.uri + '/' + form.cleaned_data['term']
-    datatrees += [(program_node_name, form.cleaned_data['term_friendly'])]
 
     # Create the DataTree branches
     for sub_node in ProgramTemplate:
@@ -161,8 +91,10 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
         new_ub.verb = DataTree.get_by_uri(tup[0], create=True)
         new_ub.qsc = prog.anchor
         new_ub.recursive = True
-        new_ub.startdate = tup[2]
-        new_ub.enddate = tup[3]
+        if tup[2]:
+            new_ub.startdate = tup[2]
+        if tup[3]:
+            new_ub.enddate = tup[3]
         if (tup[1] is None) or (tup[1] == 0) or (tup[1] == '(all)'):
             new_ub.user = None
         elif type(tup[1]) in (User, ESPUser):
@@ -221,6 +153,8 @@ ProgramTemplate = (
     '/Confirmation',
     '/Accounts',
     '/Accounts/FinancialAid',
+    '/TeacherEvents/Interview',
+    '/TeacherEvents/Training',
     )
 
 VerbNodes = (

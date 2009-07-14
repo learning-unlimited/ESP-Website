@@ -78,7 +78,7 @@ class UserRegForm(forms.Form):
         return data
 
     def clean_confirm_password(self):
-        if self.cleaned_data['confirm_password'] != self.cleaned_data['password']:
+        if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
         return self.cleaned_data['confirm_password']
 

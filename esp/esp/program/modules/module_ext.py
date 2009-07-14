@@ -54,40 +54,61 @@ class SATPrepAdminModuleInfo(models.Model):
     class Admin:
         pass
 
+REG_VERB_BASE = 'V/Flags/Registration'
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
     module               = models.ForeignKey(ProgramModuleObj)
     enforce_max          = models.BooleanField(default=True)
 
-    signup_verb          = AjaxForeignKey(DataTree)
+    signup_verb          = AjaxForeignKey(DataTree, default=lambda:GetNode(REG_VERB_BASE + '/Enrolled'))
     use_priority         = models.BooleanField(default=False)
     priority_limit       = models.IntegerField(default=3)
 
     def __init__(self, *args, **kwargs):
+        #   Trying to fetch self.signup_verb directly throws a DoesNotExist for some reason.
         super(StudentClassRegModuleInfo, self).__init__(*args, **kwargs)
-        if 'signup_verb' not in kwargs.keys():
-            self.signup_verb = GetNode('V/Flags/Registration/Enrolled')
+        if (not self.signup_verb_id) and ('signup_verb' not in kwargs.keys()):
+            self.signup_verb = GetNode(REG_VERB_BASE + '/Enrolled')
 
-    def get_signup_verb(self, save=False):
-        if self.signup_verb_id: # Trying to fetch self.signup_verb directly throws a DoesNotExist.
-            return self.signup_verb
-        # If it's not set, return a sensible default.
-        v = GetNode('V/Flags/Registration/Enrolled')
-        if save:
-            self.signup_verb = v
-            self.save()
-        return v
+    def reg_verbs(self, uris=False):
+        if not self.signup_verb:
+            return []
+
+        if self.use_priority:
+            verb_list = []
+            for i in range(0, self.priority_limit):
+                if uris:
+                    verb_list.append(self.signup_verb.uri[len(REG_VERB_BASE):] + '/%d' % (i + 1))
+                else:
+                    verb_list.append(DataTree.get_by_uri(self.signup_verb.uri + '/%d' % (i + 1)))
+        else:
+            if uris:
+                verb_list = [self.signup_verb.uri[len(REG_VERB_BASE):]]
+            else:
+                verb_list = [self.signup_verb]
+        
+        #   Require that the /Applied bit is in the list, since students cannot enroll
+        #   directly in classes with application questions.
+        if uris:
+            if '/Applied' not in verb_list: 
+                verb_list.append('/Applied')
+        else:
+            applied_verb = GetNode(REG_VERB_BASE + '/Applied')
+            if applied_verb not in verb_list:
+                verb_list.append(applied_verb)
+        
+        return verb_list
 
     def __unicode__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
 
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
-    allow_coteach        = models.BooleanField(blank=True, null=True)
-    set_prereqs          = models.BooleanField(blank=True, null=True)
-    display_times        = models.BooleanField(blank=True, null=True)
-    times_selectmultiple = models.BooleanField(blank=True, null=True)
+    allow_coteach        = models.BooleanField(blank=True, default=True)
+    set_prereqs          = models.BooleanField(blank=True, default=True)
+    display_times        = models.BooleanField(blank=True, default=False)
+    times_selectmultiple = models.BooleanField(blank=True, default=False)
 
     #   The maximum length of a class, in minutes.
     class_max_duration   = models.IntegerField(blank=True, null=True)
@@ -99,7 +120,11 @@ class ClassRegModuleInfo(models.Model):
     class_durations      = models.CharField(max_length=128, blank=True, null=True)
     teacher_class_noedit = models.DateTimeField(blank=True, null=True)
 
-    session_counts       = models.CommaSeparatedIntegerField(max_length=100, blank=True)
+    #   Allowed numbers of sections and meeting days
+    allowed_sections     = models.CommaSeparatedIntegerField(max_length=100, blank=True,
+        help_text='Allow this many independent sections of a class. Leave blank to allow arbitrarily many.')
+    session_counts       = models.CommaSeparatedIntegerField(max_length=100, blank=True,
+        help_text='The number of days that a class could meet. Leave blank if this is not a relevant choice for the teachers.')
 
     num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True)
     num_class_choices    = models.PositiveIntegerField(default=1, blank=True, null=True)
@@ -111,7 +136,46 @@ class ClassRegModuleInfo(models.Model):
 
     #   If this is true, teachers will be allowed to specify that students may
     #   come to their class late.
-    allow_lateness       = models.BooleanField(blank=True, null=True)
+    allow_lateness       = models.BooleanField(blank=True, default=False)
+    #   Room requests
+    ask_for_room         = models.BooleanField(blank=True, default=True,
+        help_text = 'If true, teachers will be asked if they have a particular classroom in mind.')
+    
+    def allowed_sections_ints_get(self):
+        return [ int(s.strip()) for s in self.allowed_sections.split(',') if s.strip() != '' ]
+
+    def allowed_sections_ints_set(self, value):
+        self.allowed_sections = ",".join([ str(n) for n in value ])
+    
+    def allowed_sections_actual_get(self):
+        if self.allowed_sections:
+            return self.allowed_sections_ints_get()
+        else:
+            # Unfortunately, it turns out the ProgramModule system does obscene
+            # things with __dict__, so the class specification up there is a
+            # blatant lie. Why the designer didn't think of giving two
+            # different fields different names is a mystery sane people have no
+            # hope of fathoming. (Seriously, these models are INTENDED to be
+            # subclassed together with ProgramModuleObj! What were you
+            # thinking!?)
+            #
+            # see ProgramModuleObj.module, ClassRegModuleInfo.module, and
+            # ProgramModuleObj.fixExtensions
+            #
+            # TODO: Look into renaming the silly field and make sure no black
+            # magic depends on it
+            if hasattr(self, 'program'):
+                program = self.program
+            elif isinstance(self.module, ProgramModuleObj):
+                # Sadly, this probably never happens, but this function is
+                # going to work when called by a sane person, dammit!
+                program = self.module.program
+            else:
+                raise ESPError("Can't find program from ClassRegModuleInfo")
+            return range( 1, program.getTimeSlots().count()+1 )
+
+    # TODO: rename allowed_sections to... something and this to allowed_sections
+    allowed_sections_actual = property( allowed_sections_actual_get, allowed_sections_ints_set )
 
     def session_counts_ints_get(self):
         return [ int(s) for s in self.session_counts.split(',') ]
@@ -120,8 +184,6 @@ class ClassRegModuleInfo(models.Model):
         self.session_counts = ",".join([ str(n) for n in value ])
 
     session_counts_ints = property( session_counts_ints_get, session_counts_ints_set )
-
-    class_durations_any = models.BooleanField(blank=True, null=True)
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
 

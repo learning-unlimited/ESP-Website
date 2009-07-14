@@ -185,7 +185,7 @@ class ESPUser(User, AnonymousUser):
                 self.other_user   = True
                 self.onsite_retTitle = request.session['user_morph']['retTitle']
                 return True
-            elif request.session['user_morph']['olduser'] is not None:
+            elif request.session['user_morph']['olduser_id'] is not None:
                 self.other_user = True
                 return False
         else:
@@ -195,7 +195,7 @@ class ESPUser(User, AnonymousUser):
 
 
     def switch_to_user(self, request, user, retUrl, retTitle, onsite = False):
-        user_morph = {'olduser' : self,
+        user_morph = {'olduser_id' : self.id,
                       'retUrl'  : retUrl,
                       'retTitle': retTitle,
                       'onsite'  : onsite}
@@ -208,18 +208,17 @@ class ESPUser(User, AnonymousUser):
 
         request.session['user_morph'] = user_morph
 
-
     def get_old(self, request):
         if not 'user_morph' in request.session:
             return False
-        return request.session['user_morph']['olduser']
+        return ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
 
     def switch_back(self, request):
         if not 'user_morph' in request.session:
             raise ESPError(), 'Error: You were not another user to begin with!'
 
         retUrl   = request.session['user_morph']['retUrl']
-        new_user = request.session['user_morph']['olduser']
+        new_user = self.get_old(request)
         del request.session['user_morph']
         logout(request)
 
@@ -248,42 +247,69 @@ class ESPUser(User, AnonymousUser):
             return otheruser.username
         return ''
 
-    @cache_function
     def getTaughtClasses(self, program = None):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
+        if program is None:
+            return self.getTaughtClassesAll()
+        else:
+            return self.getTaughtClassesFromProgram(program)
+
+    @cache_function
+    def getTaughtClassesFromProgram(self, program):
         from esp.program.models import ClassSubject, Program # Need the Class object.
 
         #   Why is it that we had a find_by_anchor_perms function again?
         tr_node = GetNode('V/Flags/Registration/Teacher')
         all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
-        if program is None: # If we have no program specified
-            return all_classes
-        else:
-            if type(program) != Program: # if we did not receive a program
-                error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
-            else:
-                return all_classes.filter(parent_program = program)
-    # FIXME: What if the Program query gives nothing?
-    getTaughtClasses.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
-                                                    lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id)
-    # FIXME: depend on ClassSubject (ids vs values thing again)
-    #   This one's important... if ClassSubject data changes...
-    # kinda works, but a bit too heavy handed:
-    getTaughtClasses.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program})
 
+        if type(program) != Program: # if we did not receive a program
+            error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
+        else:
+            return all_classes.filter(parent_program = program)
+    getTaughtClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
+                                                              lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
+                                                                          bit.qsc.parent.name == 'Classes' and
+                                                                          bit.qsc.parent.parent.program_set.count() > 0 )
+    getTaughtClassesFromProgram.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
+    def getTaughtClassesAll(self):
+        from esp.program.models import ClassSubject # Need the Class object.
+        
+        #   Why is it that we had a find_by_anchor_perms function again?
+        tr_node = GetNode('V/Flags/Registration/Teacher')
+        return ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
+    getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
+                                                      lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
+                                                                  bit.qsc.parent.name == 'Classes' and
+                                                                  bit.qsc.parent.parent.program_set.count() > 0 )
+    getTaughtClassesAll.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
+
+
     def getTaughtSections(self, program = None):
+        if program is None:
+            return self.getTaughtSectionsAll()
+        else:
+            return self.getTaughtSectionsFromProgram(program)
+
+    @cache_function
+    def getTaughtSectionsAll(self):
+        from esp.program.models import ClassSection
+        classes = list(self.getTaughtClassesAll())
+        return ClassSection.objects.filter(parent_class__in=classes)
+    getTaughtSectionsAll.depend_on_model(lambda:ClassSection)
+    getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
+                                                              {'self':self})
+    @cache_function
+    def getTaughtSectionsFromProgram(self, program):
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program))
         return ClassSection.objects.filter(parent_class__in=classes)
-    getTaughtSections.get_or_create_token(('program',))
-    # FIXME: Would be REALLY nice to kill it only for the teachers of this section
-    # ...key_set specification needs more work...
-    getTaughtSections.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
-    getTaughtSections.depend_on_cache(getTaughtClasses, lambda self=wildcard, program=wildcard, **kwargs:
-                                                              {'self':self, 'program':program})
+    getTaughtSectionsFromProgram.get_or_create_token(('program',))
+    getTaughtSectionsFromProgram.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
+    getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
+                                                                              {'self':self, 'program':program})
 
     def getTaughtTime(self, program = None, include_scheduled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
@@ -352,7 +378,7 @@ class ESPUser(User, AnonymousUser):
 
         return valid_events
     getAvailableTimes.get_or_create_token(('self', 'program',))
-    getAvailableTimes.depend_on_cache(getTaughtSections,
+    getAvailableTimes.depend_on_cache(getTaughtSectionsFromProgram,
             lambda self=wildcard, program=wildcard, **kwargs:
                  {'self':self, 'program':program, 'ignore_classes':True})
     # FIXME: Really should take into account section's teachers...
@@ -386,6 +412,20 @@ class ESPUser(User, AnonymousUser):
         r.res_type = ResourceType.get_or_create('Teacher Availability')
         r.save()
 
+    def getApplication(self, program, create=True):
+        from esp.program.models.app_ import StudentApplication
+        
+        apps = StudentApplication.objects.filter(user=self, program=program)
+        if apps.count() == 0:
+            if create:
+                app = StudentApplication(user=self, program=program)
+                app.save()
+                return app
+            else:
+                return None
+        else:
+            return apps[0]
+
     def getClasses(self, program=None, verbs=None):
         from esp.program.models import ClassSubject
         csl = self.getSections(program, verbs)
@@ -393,7 +433,14 @@ class ESPUser(User, AnonymousUser):
         return ClassSubject.objects.filter(id__in=pc_ids)
 
     def getAppliedClasses(self, program=None):
-        return self.getClasses(program, verbs=['/Applied'])
+        #   If priority registration is enabled, add in more verbs.
+        if program:
+            scrmi = program.getModuleExtension('StudentClassRegModuleInfo')
+            verb_list = scrmi.reg_verbs(uris=True)
+        else:
+            verb_list = ['/Applied']
+            
+        return self.getClasses(program, verbs=verb_list)
 
     def getEnrolledClasses(self, program=None, request=None):
         """ A new version of getEnrolledClasses that accepts arbitrary registration
@@ -435,11 +482,12 @@ class ESPUser(User, AnonymousUser):
         return self.getSections(program, verbs=['/Enrolled'])
 
     def getRegistrationPriority(self, timeslots):
-        """ Finds the highest available priority level for this user across the supplied timeslots. """
+        """ Finds the highest available priority level for this user across the supplied timeslots. 
+            Returns 0 if the student is already enrolled in one or more of the timeslots. """
         from esp.program.models import Program, RegistrationProfile
 
         if len(timeslots) < 1:
-            return 1
+            return 0
 
         prog = Program.objects.get(anchor=timeslots[0].anchor)
         prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
@@ -456,6 +504,8 @@ class ESPUser(User, AnonymousUser):
                     for v in cv:
                         if v.parent.name == 'Priority':
                             priority_dict[t.id].append(int(v.name))
+                        elif v.name == 'Enrolled':
+                            return 0
         #   Now priority_dict is a dictionary where the keys are timeslot IDs and the values
         #   are lists of taken priority levels.  Merge those and find the lowest positive
         #   integer not in that list.
@@ -574,32 +624,33 @@ class ESPUser(User, AnonymousUser):
 
     def recoverPassword(self):
         # generate the ticket, send the email.
-        from esp.dbmail.models import MessageRequest
-        from django.template import loader, Context
         from django.contrib.sites.models import Site
+        from django.conf import settings
 
-        # get the filter object
-        filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = self.id),
-                                                         User,
-                                                         'User %s' % self.username)
+        # we have a lot of users with no email (??)
+        #  let's at least display a sensible error message
+        if self.email.strip() == '':
+            raise ESPError(), 'User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username
 
+        # email addresses
+        to_email = ['%s <%s>' % (self.name(), self.email)]
+        from_email = settings.SERVER_EMAIL
+
+        # create the ticket
         ticket = PasswordRecoveryTicket.new_ticket(self)
 
+        # email subject
         domainname = Site.objects.get_current().domain
+        subject = '[ESP] Your Password Recovery For '+domainname
 
-        # create the variable modules
-        variable_modules = {'user': self, 'ticket': ticket, 'domainname' : domainname}
+        # generate the email text
+        t = loader.get_template('email/password_recover')
+        msgtext = t.render(Context({'user': self,
+                                    'ticket': ticket,
+                                    'domainname': domainname}))
 
-
-        newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
-                                                      subject    = '[ESP] Your Password Recovery For '+domainname,
-                                                      recipients = filterobj,
-                                                      sender     = '"MIT Educational Studies Program" <esp@mit.edu>',
-                                                      creator    = self,
-                                                      msgtext    = loader.find_template_source('email/password_recover')[0])
-
-        newmsg_request.save()
-
+        # Do NOT fail_silently. We want to know if there's a problem.
+        send_mail(subject, msgtext, from_email, to_email)
 
 
     def isAdministrator(self, anchor_object = None):
@@ -729,7 +780,7 @@ class StudentInfo(models.Model):
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
-    studentrep = models.BooleanField(blank=True, null=True, default = False)
+    studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heardofesp = models.TextField(blank=True, null=True)
 # removing shirt information, because this confused people.
@@ -1376,22 +1427,21 @@ class PasswordRecoveryTicket(models.Model):
     def __unicode__(self):
         return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
 
-    @classmethod
-    def new_key(cls):
+    @staticmethod
+    def new_key():
         """ Generates a new random key. """
         import random
-        key = "".join([random.choice(cls.SYMBOLS) for x in range(cls.RECOVER_KEY_LEN)])
+        key = "".join([random.choice(PasswordRecoveryTicket.SYMBOLS) for x in range(PasswordRecoveryTicket.RECOVER_KEY_LEN)])
         return key
 
-    @classmethod
-    def new_ticket(cls, user):
+    @staticmethod
+    def new_ticket(user):
         """ Returns a new (saved) ticket for a specified user. """
-        from datetime import datetime, timedelta
 
-        ticket = cls()
+        ticket = PasswordRecoveryTicket()
         ticket.user = user
-        ticket.recover_key = cls.new_key()
-        ticket.expire = datetime.now() + timedelta(days = cls.RECOVER_EXPIRE)
+        ticket.recover_key = PasswordRecoveryTicket.new_key()
+        ticket.expire = datetime.now() + timedelta(days = PasswordRecoveryTicket.RECOVER_EXPIRE)
 
         ticket.save()
         return ticket
@@ -1424,7 +1474,6 @@ class PasswordRecoveryTicket(models.Model):
 
     def is_valid(self):
         """ Check if the ticket is still valid, kill it if not. """
-        from datetime import datetime
         if self.id is not None and datetime.now() < self.expire:
             return True
         else:
@@ -1437,13 +1486,14 @@ class PasswordRecoveryTicket(models.Model):
     def cancel(self):
         """ Cancel a ticket. """
         if self.id is not None:
+            self.expire = datetime(1990, 8, 3)
             self.delete()
     cancel.alters_data = True
 
-    @classmethod
-    def cancel_all(cls, user):
+    @staticmethod
+    def cancel_all(user):
         """ Cancel all tickets belong to user. """
-        cls.objects.filter(user=user).delete()
+        PasswordRecoveryTicket.objects.filter(user=user).delete()
 
 class DBList(object):
     """ Useful abstraction for the list of users.

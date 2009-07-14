@@ -49,7 +49,7 @@ def post_syncdb(sender, app, **kwargs):
 
             from django.db import connection
             cursor = connection.cursor()
-            f = open("datatree/sql/datatree.postgresql.sql")
+            f = open("datatree/sql/datatree.postgresql-multiline.sql")
             cursor.execute(f.read())
             f.close()
 

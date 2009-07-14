@@ -3,6 +3,8 @@ import datetime, random, hashlib
 import unittest
 from django.test import TestCase
 
+from esp.users.models import ESPUser
+
 class ProfileTest(unittest.TestCase):
 
     def setUp(self):
@@ -45,16 +47,6 @@ class ProgramHappenTest(TestCase):
         from esp.datatree.models import DataTree, GetNode
         from esp.datatree.models import install as datatree_install
         from esp.users.models import ESPUser, UserBit
-        from django.db import transaction, connection
-
-        # Force DataTree to work
-        # FIXME: we shouldn't have to do this here!
-        cursor = connection.cursor()
-        transaction.enter_transaction_management()
-        cursor.execute("""INSERT INTO datatree_datatree (name, friendly_name, uri, uri_correct, rangestart, rangeend, range_correct, lock_table )
-            VALUES ('ROOT', '', '', TRUE, 0, 25, TRUE, 0 )""")
-        transaction.commit()
-        transaction.leave_transaction_management()
 
         # make program type, since we can't do that yet
         self.program_type_anchor = GetNode('Q/Programs/Prubbogrubbam')
@@ -128,16 +120,9 @@ class ProgramHappenTest(TestCase):
                 'finaid_cost':       '37',
             }
         self.client.post('/manage/newprogram', prog_dict)
-        # HACK: I cannot get this next line to work in the test client.
-        # Using HttpRequest object and manually calling the view instead.
-        #    self.client.post('/manage/newprogram?checked=1', {})
-        h = HttpRequest()
-        h.COOKIES = self.client.cookies
-        h.GET = {'checked': '1'}
-        h.path = '/manage/newprogram'
-        h.user = self.admin
-        h.session = self.client.session
-        newprogram(h)
+        # TODO: Use the following line once we're officially on Django 1.1
+        # self.client.post('/manage/newprogram?checked=1', {})
+        self.client.get('/manage/newprogram', {'checked': '1'})
 
         # Now test correctness...
         self.prog = Program.by_prog_inst('Prubbogrubbam', prog_dict['term'])
@@ -170,22 +155,37 @@ class ProgramHappenTest(TestCase):
         from esp.resources.models import Resource, ResourceType, ResourceAssignment
         from datetime import datetime
 
+        self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
+        user_obj = ESPUser.objects.get(username='tubbeachubber')
+        self.failUnless( user_obj.getTaughtClasses().count() == 0, "User tubbeachubber is teaching classes that don't exist")
+        self.failUnless( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
+        
         timeslot_type = EventType.objects.create(description='Class Time Block')
         self.timeslot = Event.objects.create(anchor=self.prog.anchor, description='Never', short_description='Never Ever',
             start=datetime(3001,1,1,12,0), end=datetime(3001,1,1,13,0), event_type=timeslot_type )
+
+        # Make some other time slots
+        Event.objects.create(anchor=self.prog.anchor, description='Never', short_description='Never Ever',
+            start=datetime(3001,1,1,13,0), end=datetime(3001,1,1,14,0), event_type=timeslot_type )
+        Event.objects.create(anchor=self.prog.anchor, description='Never', short_description='Never Ever',
+            start=datetime(3001,1,1,14,0), end=datetime(3001,1,1,15,0), event_type=timeslot_type )
+        Event.objects.create(anchor=self.prog.anchor, description='Never', short_description='Never Ever',
+            start=datetime(3001,1,1,15,0), end=datetime(3001,1,1,16,0), event_type=timeslot_type )
+
         classroom_type = ResourceType.objects.create(name='Classroom', consumable=False, priority_default=0,
             description='Each classroom or location is a resource; almost all classes need one.')
         self.classroom = Resource.objects.create(name='Nowhere', num_students=50, res_type=classroom_type, event=self.timeslot)
 
         # Teacher logs in and posts class
         self.loginTeacher()
+        num_sections = 3
         class_dict = {
             'title': 'Chairing',
             'category': self.prog.class_categories.all()[0].id,
             'class_info': 'Chairing is fun!',
             'prereqs': 'A chair.',
             'duration': self.prog.getDurations()[0][0],
-            'num_sections': '1',
+            'num_sections': str(num_sections),
             'session_count': '1',
             'grade_min': self.prog.grade_min,
             'grade_max': self.prog.grade_max,
@@ -200,14 +200,44 @@ class ProgramHappenTest(TestCase):
         self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
 
         # Check that stuff went through correctly
-        self.classsubject = self.prog.classes()[0]
+
+        # check prog.classes
+        classes = self.prog.classes()
+        self.assertEqual( classes.count(), 1, 'Classes failing to show up in program' )
+        self.classsubject = classes[0]
+
+        # check the title is good
         self.assertEqual( unicode(self.classsubject.title()), unicode(class_dict['title']), 'Failed to save title.' )
 
+        # check getTaughtClasses
+        getTaughtClasses = user_obj.getTaughtClasses()
+        self.assertEqual( getTaughtClasses.count(), 1, "User's getTaughtClasses is the wrong size" )
+        self.assertEqual( getTaughtClasses[0], self.classsubject, "User's getTaughtClasses is wrong" )
+        # repeat with program-specific one
+        getTaughtClasses = user_obj.getTaughtClasses()
+        self.assertEqual( getTaughtClasses.count(), 1, "User's getTaughtClasses is the wrong size" )
+        self.assertEqual( getTaughtClasses[0], self.classsubject, "User's getTaughtClasses is wrong" )
+
+        # check getTaughtSections
+        getTaughtSections = user_obj.getTaughtSections()
+        self.assertEqual( getTaughtSections.count(), num_sections, "User tubbeachubber is not teaching the right number of sections" )
+        for section in getTaughtSections:
+            self.assertEqual( section.parent_class, self.classsubject, "Created section has incorrect parent_class." )
+        # repeat with program-specific one
+        getTaughtSections = user_obj.getTaughtSections(program=self.prog)
+        self.assertEqual( getTaughtSections.count(), num_sections, "User tubbeachubber is not teaching the right number of sections" )
+        for section in getTaughtSections:
+            self.assertEqual( section.parent_class, self.classsubject, "Created section has incorrect parent_class." )
+    
     def studentreg(self):
         from esp.users.models import ContactInfo, StudentInfo, UserBit
         from esp.program.models import RegistrationProfile
         from datetime import datetime, timedelta
 
+        # Check that you're in no classes
+        self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
+        self.assertEqual( self.student.getEnrolledSections().count(), 0, "Student incorrectly enrolled in a section")
+        
         # Approve and schedule a class, because I'm too lazy to have this run as a test just yet.
         self.classsubject.accept()
         sec = self.classsubject.sections.all()[0]
@@ -232,12 +262,20 @@ class ProgramHappenTest(TestCase):
         # Try signing up for a class.
         self.client.post('%saddclass' % self.prog.get_learn_url(), reg_dict)
         self.assertTrue( UserBit.UserHasPerms(user=self.student, qsc=sec.anchor,
-            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').get_signup_verb()), 'Registration failed.')
+            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), 'Registration failed.')
 
+        # Check that you're in it now
+        self.assertEqual( self.student.getEnrolledClasses().count(), 1, "Student not enrolled in exactly one class" )
+        self.assertEqual( self.student.getEnrolledSections().count(), 1, "Student not enrolled in exactly one section" )
+        
         # Try dropping a class.
         self.client.get('%sclearslot/%s' % (self.prog.get_learn_url(), self.timeslot.id))
         self.assertFalse( UserBit.UserHasPerms(user=self.student, qsc=sec.anchor,
-            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').get_signup_verb()), 'Registration failed.')
+            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), 'Registration failed.')
+
+        # Check that you're in no classes
+        self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
+        self.assertEqual( self.student.getEnrolledSections().count(), 0, "Student incorrectly enrolled in a section")
 
         pass
 
