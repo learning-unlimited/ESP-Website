@@ -67,18 +67,6 @@ body {
 
 }
 
-#topleft a {
-    background-color: #BCCAF5;
-    font-size: 2em;
-    text-align: center;
-    vertical-align: center;
-    padding-top: 20px;
-    padding-bottom: 20px;
-    padding-left: 10px;
-    padding-right: 10px;
-    border: 2px solid #FFFFFF;
-}
-
 #title_bar {
   background: #00003C;
   width: 600px;
