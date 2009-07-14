@@ -4,7 +4,7 @@
 {% endblock %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{{ MEDIA_URL }}styles/main.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
 {% endblock %}
 
 {% block body %}
@@ -50,9 +50,32 @@ body {
     </div>
 
     <div id="navbar_content">
+
+    {% load smartypants %}
+    {% load markdown %}
+    {% for announce in announcements.announcementList %}
+        <p>
+        <span class="announcementlink_title{% if announce.section %}{{ announce.section }}{% endif %}">
+        {% if announce.makeUrl %}
+            <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a>
+        {% else %}
+            {{ announce.makeTitle }}
+        {% endif %}
+        </span><br />
+        <span class="announcementlink">{% autoescape off %}{{ announce.content|markdown|smartypants }}{% endautoescape %}</span>
+        </p>
+    {% endfor %}
+
     <!-- more announcements -->
+    {% if announcements.overflowed %}
+    <div id="divannouncemore">
+        <a href="/myesp/home/">More Notices...</a>
     </div>
+    {% endif %}
+    </div>
+    
     <div id="navbar_content">
+    
     </div>
 </div>
 {% endblock %}
@@ -61,6 +84,7 @@ body {
     <div id="main_content">
     {% block content %}
     {% endblock %}
+
     </div>
 </div>
 
