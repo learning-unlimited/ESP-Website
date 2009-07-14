@@ -1,5 +1,5 @@
 <!-- secondary nav -->
-<ul id="navbar_links">
+<ul id="secondarynav">
 
 {% for nav_entry in navbar_list.qsdTree %}
   <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}{% if nav_entry.has_bits %} movable{% endif %} " id="nav_entry__{{nav_entry.entry.id}}"> 
