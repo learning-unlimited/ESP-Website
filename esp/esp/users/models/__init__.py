@@ -477,11 +477,12 @@ class ESPUser(User, AnonymousUser):
         return self.getSections(program, verbs=['/Enrolled'])
 
     def getRegistrationPriority(self, timeslots):
-        """ Finds the highest available priority level for this user across the supplied timeslots. """
+        """ Finds the highest available priority level for this user across the supplied timeslots. 
+            Returns 0 if the student is already enrolled in one or more of the timeslots. """
         from esp.program.models import Program, RegistrationProfile
         
         if len(timeslots) < 1:
-            return 1
+            return 0
         
         prog = Program.objects.get(anchor=timeslots[0].anchor)
         prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
@@ -498,6 +499,8 @@ class ESPUser(User, AnonymousUser):
                     for v in cv:
                         if v.parent.name == 'Priority':
                             priority_dict[t.id].append(int(v.name))
+                        elif v.name == 'Enrolled':
+                            return 0
         #   Now priority_dict is a dictionary where the keys are timeslot IDs and the values
         #   are lists of taken priority levels.  Merge those and find the lowest positive
         #   integer not in that list.
@@ -618,6 +621,11 @@ class ESPUser(User, AnonymousUser):
         # generate the ticket, send the email.
         from django.contrib.sites.models import Site
         from django.conf import settings
+
+        # we have a lot of users with no email (??)
+        #  let's at least display a sensible error message
+        if self.email.strip() == '':
+            raise ESPError(), 'User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username
 
         # email addresses
         to_email = ['%s <%s>' % (self.name(), self.email)]

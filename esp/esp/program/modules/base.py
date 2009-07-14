@@ -610,8 +610,8 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
 def meets_deadline(extension=''):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
-            canView = _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs)
             errorpage = 'errors/program/deadline-%s.html' % tl
+            canView = _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs)
             if canView:
                 return method(moduleObj, request, tl, *args, **kwargs)
             else:

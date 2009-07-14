@@ -87,6 +87,17 @@ class StudentClassRegModuleInfo(models.Model):
                 verb_list = [self.signup_verb.uri[len(REG_VERB_BASE):]]
             else:
                 verb_list = [self.signup_verb]
+        
+        #   Require that the /Applied bit is in the list, since students cannot enroll
+        #   directly in classes with application questions.
+        if uris:
+            if '/Applied' not in verb_list: 
+                verb_list.append('/Applied')
+        else:
+            applied_verb = GetNode(REG_VERB_BASE + '/Applied')
+            if applied_verb not in verb_list:
+                verb_list.append(applied_verb)
+        
         return verb_list
     
     def __unicode__(self):

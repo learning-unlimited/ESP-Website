@@ -52,9 +52,14 @@
   <td>{{ vitals.classrejected.count }}</td>
 </tr>
 <tr>
+  <th class="smaller">Total # of Class Hours:</th>
+  <td>{{ classhours }}</td>
+</tr>
+<tr>
   <th class="smaller">Total # of Class-Student-Hours:</th>
   <td>{{ classpersonhours }}</td>
 </tr>
+
 {% for timeslot in vitals.timeslots %}
 
 <tr>
