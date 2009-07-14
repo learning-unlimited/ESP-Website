@@ -109,11 +109,12 @@ class OnSiteRegister(ProgramModuleObj):
                                                                 self.program)
                 contact_user = ContactInfo(first_name = new_user.first_name,
                                            last_name  = new_user.last_name,
-                                           e_mail     = new_user.email)
+                                           e_mail     = new_user.email,
+                                           user       = new_user)
                 contact_user.save()
                 regProf.contact_user = contact_user
 
-                student_info = StudentInfo(graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
+                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
                 student_info.save()
                 regProf.student_info = student_info
 
@@ -121,8 +122,6 @@ class OnSiteRegister(ProgramModuleObj):
 
                 new_user = ESPUser(new_user)
                 
-                new_user.recoverPassword()
-
                 if new_data['paid']:
                     self.createBit('Paid')
                     self.updatePaid(True)
@@ -146,9 +145,9 @@ class OnSiteRegister(ProgramModuleObj):
 		ub.qsc = GetNode('Q')
 		ub.verb = v
 		ub.save()
-                
-                new_user = ESPUser(new_user)
 
+                new_user.recoverPassword()
+                
                 return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'student': new_user, 'retUrl': '/onsite/%s/schedule_students?extra=285&op=usersearch&userid=%s' % \
                                                                                                    (self.program.getUrlBase(), new_user.id)})
 

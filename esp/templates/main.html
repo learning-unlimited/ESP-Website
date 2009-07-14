@@ -1,23 +1,23 @@
 {% extends "elements/html" %}
 
 {% block javascript %}
-{{ block.super }}
-{% if request.user.is_authenticated %}
-<script type="text/javascript" src="{{ media_url }}scripts/yui/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/yui/event/event-min.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/yui/dom/dom-min.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/yui/connection/connection-min.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/yui/logger/logger-min.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/yui/dragdrop/dragdrop-debug.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/yui/animation/animation-min.js"></script>
-<script type="text/javascript" src="{{ media_url }}scripts/ddlist.js"></script>
-{% endif %}
+    {{ block.super }}
+    {% if request.user.is_authenticated %}
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/yahoo/yahoo-min.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/event/event-min.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/dom/dom-min.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/connection/connection-min.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/logger/logger-min.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/dragdrop/dragdrop-debug.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/animation/animation-min.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/ddlist.js"></script>
+    {% endif %}
 {% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="{{ media_url }}styles/print_basic.css" type="text/css" media="print" />
-<link rel="stylesheet" href="{{ media_url }}styles/level3.css" type="text/css" media="screen" />
-<link rel="stylesheet" href="{{ media_url }}styles/uchicago_main.css" type="text/css" />
+    <link rel="stylesheet" href="{{ MEDIA_URL }}styles/main.css" type="text/css" />
+    <link rel="stylesheet" href="{{ MEDIA_URL }}styles/level3.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="{{ MEDIA_URL }}styles/uchicago_main.css" type="text/css" />
 {% endblock %}
 
 {% block body %}
