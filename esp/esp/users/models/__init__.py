@@ -264,9 +264,10 @@ class ESPUser(User, AnonymousUser):
                 error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
             else:
                 return all_classes.filter(parent_program = program)
-    # FIXME: What if the Program query gives nothing?
     getTaughtClasses.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
-                                                    lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id)
+                                                    lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
+                                                                bit.qsc.parent.name == 'Classes' and
+                                                                bit.qsc.parent.parent.program_set.count() > 0 )
     # FIXME: depend on ClassSubject (ids vs values thing again)
     #   This one's important... if ClassSubject data changes...
     # kinda works, but a bit too heavy handed:
@@ -386,6 +387,23 @@ class ESPUser(User, AnonymousUser):
         r.res_type = ResourceType.get_or_create('Teacher Availability')
         r.save()
 
+    def getApplication(self, program, create=True):
+        from esp.program.models.app_ import StudentApplication
+        
+        apps = StudentApplication.objects.filter(user=self, program=program)
+        print 'Count: %d' % apps.count()
+        if apps.count() > 1:
+            raise ESPError(True), '%d applications found for user %s in %s' % (apps.count(), self.username, program.niceName())
+        elif apps.count() == 0:
+            if create:
+                app = StudentApplication(user=self, program=program)
+                app.save()
+                return app
+            else:
+                return None
+        else:
+            return apps[0]
+
     def getClasses(self, program=None, verbs=None):
         from esp.program.models import ClassSubject
         csl = self.getSections(program, verbs)
@@ -393,7 +411,14 @@ class ESPUser(User, AnonymousUser):
         return ClassSubject.objects.filter(id__in=pc_ids)
 
     def getAppliedClasses(self, program=None):
-        return self.getClasses(program, verbs=['/Applied'])
+        #   If priority registration is enabled, add in more verbs.
+        if program:
+            scrmi = program.getModuleExtension('StudentClassRegModuleInfo')
+            verb_list = scrmi.reg_verbs(uris=True)
+        else:
+            verb_list = ['/Applied']
+            
+        return self.getClasses(program, verbs=verb_list)
 
     def getEnrolledClasses(self, program=None, request=None):
         """ A new version of getEnrolledClasses that accepts arbitrary registration

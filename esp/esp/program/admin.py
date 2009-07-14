@@ -36,6 +36,7 @@ from esp.program.models import TeacherParticipationProfile, SATPrepRegInfo, Regi
 from esp.program.models import TeacherBio, FinancialAidRequest
 
 from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories
+from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler', 'main_call')
@@ -104,3 +105,10 @@ class SubjectAdmin(admin.ModelAdmin):
 admin.site.register(ClassSubject, SubjectAdmin)
 
 admin.site.register(ClassCategories)
+
+## app_.py
+
+admin.site.register(StudentApplication)
+admin.site.register(StudentAppQuestion)
+admin.site.register(StudentAppResponse)
+admin.site.register(StudentAppReview)

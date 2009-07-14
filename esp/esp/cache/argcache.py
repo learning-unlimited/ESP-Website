@@ -179,10 +179,10 @@ class ArgCache(WithDelayableMethods):
             existing.locked = True
         return existing
 
-    def __init__(self, name, params, uid=None, cache=cache):
+    def __init__(self, name, params, uid=None, cache=cache, *args, **kwargs):
         if uid is None:
             uid = name
-        super(ArgCache, self).__init__(name, params, uid, cache)
+        super(ArgCache, self).__init__(*args, **kwargs)
 
         if isinstance(params, list):
             params = tuple(params)

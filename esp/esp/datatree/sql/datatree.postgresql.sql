@@ -5,16 +5,16 @@
 -- modify it under the terms of the GNU General Public License
 -- as published by the Free Software Foundation; either version 2
 -- of the License, or (at your option) any later version.
---
+-- 
 -- This program is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
---
+-- 
 -- You should have received a copy of the GNU General Public License
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
---
+-- 
 -- Contact Us:
 -- ESP Web Group
 -- MIT Educational Studies Program,
@@ -27,32 +27,47 @@
 -- Table indices for the DataTree table
 -- ***
 
+-- It seems that these indices are created by default by manage.py syncdb.  
+-- If this is not true, we can uncomment the following lines. -Michael P
+
 -- Indices to facilitate range queries
-CREATE INDEX datatree__rangestart ON datatree_datatree USING btree (rangestart);
-CREATE INDEX datatree__rangeend ON datatree_datatree USING btree (rangeend);
+-- CREATE INDEX datatree__rangestart ON datatree_datatree USING btree (rangestart);
+-- CREATE INDEX datatree__rangeend ON datatree_datatree USING btree (rangeend);
 
 -- Speeds up get_by_uri queries
-CREATE INDEX datatree_uri ON datatree_datatree USING btree (uri) WHERE uri_correct = true;
+-- CREATE INDEX datatree_uri ON datatree_datatree USING btree (uri) WHERE uri_correct = true;
 
 --- ***
 --- "List" aggregate
 --- ***
 
-CREATE OR REPLACE FUNCTION comma_cat (text, text)
+CREATE OR REPLACE FUNCTION comma_cat (text, integer)
   RETURNS text AS
   'SELECT CASE
-    WHEN $2 is null or $2 = '''' THEN $1
-    WHEN $1 is null or $1 = '''' THEN $2
-    ELSE $1 || '','' || $2
+    WHEN $2::text is null or $2::text = '''' THEN $1
+    WHEN $1 is null or $1 = '''' THEN $2::text
+    ELSE $1 || '','' || $2::text
   END'
 LANGUAGE sql;
 
+-- Some SQL weirdness required to add or replace this aggregate
+
+CREATE OR REPLACE FUNCTION add_list_aggregate() RETURNS void AS
+$$
+BEGIN
+IF NOT EXISTS(SELECT * FROM pg_proc WHERE proname = 'list' AND proisagg) THEN
 CREATE AGGREGATE list (
-       BASETYPE = text,
+       BASETYPE = integer,
        SFUNC = comma_cat,
        STYPE = text,
-       INITCOND = ''
-);
+       INITCOND = '');
+END IF;       
+END;
+$$
+LANGUAGE 'plpgsql';
+
+SELECT add_list_aggregate();
+DROP FUNCTION add_list_aggregate();
 
 
 -- ***
@@ -139,7 +154,7 @@ BEGIN
       ("program_class__anchor".rangestart >= program_anchor_rec.rangestart AND
        "program_class__anchor".rangeend   <= program_anchor_rec.rangeend)
       AND
-      ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
+      ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
       AND
       ("users_userbit"."startdate" <= now())
       AND
@@ -207,7 +222,7 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
         ("users_userbit"."startdate" <= start_ts)
         AND
@@ -262,7 +277,7 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
         ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
         AND
@@ -309,7 +324,7 @@ BEGIN
     SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = qsc_id;
 
     FOR output IN
-    SELECT DISTINCT
+    SELECT DISTINCT 
     "users_userbit"."id","users_userbit"."user_id","users_userbit"."qsc_id","users_userbit"."verb_id",
     "users_userbit"."startdate","users_userbit"."enddate","users_userbit"."recursive"
 
@@ -428,7 +443,7 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
         ("users_userbit"."startdate" <= start_ts)
         AND
@@ -476,7 +491,7 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
         ("users_userbit"."startdate" <= start_ts)
         AND
@@ -527,7 +542,7 @@ BEGIN
         (
           (
              ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
-             AND
+             AND 
              (
                ("users_userbit"."startdate" <= now_ts)
                AND
@@ -558,7 +573,7 @@ BEGIN
         (
           (
              ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
-             AND
+             AND 
              (
                ("users_userbit"."startdate" <= now_ts)
                AND
@@ -569,7 +584,7 @@ BEGIN
             ("users_userbit"."verb_id" = verb_id AND "users_userbit"."qsc_id" = qsc_id)
         )
         LIMIT 1;
-
+    
         IF NOT FOUND THEN
             -- Now we have to use verb recursion
             -- Select qsc
@@ -589,7 +604,7 @@ BEGIN
             (
               (
                  ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
-                 AND
+                 AND 
                  (
                    ("users_userbit"."startdate" <= now_ts)
                    AND
