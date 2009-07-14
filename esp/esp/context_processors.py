@@ -37,5 +37,15 @@ def current_site(request):
 def preload_images(request):
     return {'preload_images': preload_images_data}
 
+""" This list can be populated with images to be preloaded by the template.
+    
+    Example:
+    preload_images_data = [
+        settings.MEDIA_URL+'images/level3/nav/home_ro.gif',
+        settings.MEDIA_URL+'images/level3/nav/discoveresp_ro.gif',
+        (etc.)
+        ] 
+"""
+
 preload_images_data = [
 ]
