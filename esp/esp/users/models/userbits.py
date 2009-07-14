@@ -239,7 +239,7 @@ class UserBitManager(ProcedureManager):
             else:
                 query_list.append(Q(anchor=bit.qsc_id))
 
-        query = Model.objects.filter(reduce(operator.or_, query_list)).distinct()
+        query = Model.objects.filter(reduce(operator.or_, query_list, Q(id=-1))).distinct()
         if qsc is not None:
             query = query.filter(QTree(anchor__below = qsc))
 

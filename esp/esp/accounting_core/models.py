@@ -256,7 +256,7 @@ class LineItem(models.Model):
     amount = models.DecimalField(max_digits=9, decimal_places=2)
     text = models.TextField()
     li_type = models.ForeignKey(LineItemType)
-    posted_to = models.ForeignKey(Balance, null=True)
+    posted_to = models.ForeignKey(Balance, blank=True, null=True)
     
     objects = LineItemManager()
 

@@ -1,4 +1,4 @@
-{% extends "outlines/series-3.html" %}
+{% extends "main.html" %}
 
 {% block title %}{{program.niceName}} Schedule{% endblock %}
 
@@ -29,12 +29,12 @@ Set Teacher Sections
 
 <br />
 
-<p style="text-align: center">
-Please set the teacher sections below:
+<p>
+Please assign each teacher to the appropriate section below:
 </p>
 
-<form action="{{request.path}}" method="post" name="teachersections" >
-
+<div id="program_form">
+<form action="{{ request.path }}" method="post" name="teachersections">
 <table cellspacing="0" cellpadding="2" width="300" >
 <thead>
 <tr>
@@ -48,7 +48,7 @@ Please set the teacher sections below:
 {% ifchanged %}
 <tr>
   <th colspan="3">
-   SUBJECT: {{user.satprepmodule.get_subject_display}}
+   Teachers for {{ user.satprepmodule.get_subject_display }}
   </th>
 </tr>
 {% endifchanged %}
@@ -63,7 +63,7 @@ Please set the teacher sections below:
 </tr>
 {% endfor %}
 <tr>
-  <th colspan="3"><input type="submit" value="Save Teacher Sections" /></th>
+  <th colspan="3"><input class="fancybutton" type="submit" value="Save Teacher Sections" /></th>
 </tr>
 </tbody>
 
@@ -72,4 +72,14 @@ Please set the teacher sections below:
 <input type="hidden" name="teacher_section_form" value="true" />
 
 </form>
+</div>
+
+<br />
+<h3>Next Steps</h3>
+<ol>
+    <li><a href="/manage/{{ program.getUrlBase }}/satprep_classgen" title="Generate Classes">Generate the Classes</a></li>
+    <li><a href="/manage/{{ program.getUrlBase }}/schedule_options" title="Schedule Options">Back to SAT Prep Administration</a></li>
+    <li><a href="/manage/{{ program.getUrlBase }}/main">Back to main program management page</a></li>
+</ol>
+
 {% endblock %}

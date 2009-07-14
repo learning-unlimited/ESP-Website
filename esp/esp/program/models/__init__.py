@@ -287,23 +287,21 @@ class Program(models.Model):
         return '/'.join(str_array[-2:])
     
     def __unicode__(self):
-        if not hasattr(self, "_nice_name"):
-            self._nice_name = str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
-        return self._nice_name
+        return self.niceName()
 
     def parent(self):
         return self.anchor.parent
 
     def niceName(self):
-        # Cache niceName, because otherwise it takes a couple of queries
-        # to sort it out
-        CACHE_KEY = "PROGRAM__NICENAME__%s" % self.id
+        if not hasattr(self, "_nice_name"):
+            # Separate this so that in-memory and memcache are used in the right order
+            self._nice_name = self._niceName_memcache()
+        return self._nice_name
 
-        retVal = cache.get(CACHE_KEY)
-        if not retVal:
-            retVal = str(self).replace("_", " ")
-            cache.set(CACHE_KEY, retVal, timeout=86400)
-        return retVal
+    @cache_function
+    def _niceName_memcache(self):
+        return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+    # this stuff never really changes
 
     def niceSubName(self):
         return self.anchor.name.replace('_', ' ')
@@ -382,7 +380,6 @@ class Program(models.Model):
                 desc.update(tmpdict)
         for module in teachmodules:
             tmpdict = module.teacherDesc()
-            print tmpdict
             if tmpdict is not None:
                 desc.update(tmpdict)
 
@@ -396,6 +393,18 @@ class Program(models.Model):
             lists['all_'+usertype.lower()+'s'] = {'description':
                                    usertype+'s in all of ESP',
                                    'list' : ESPUser.getAllOfType(usertype)}
+        # Filtering by students is a really bad idea
+        students_Q = lists['all_students']['list']
+        # We can restore this one later if someone really needs it. As it is, I wouldn't mind killing
+        # lists['all_former_students'] as well.
+        del lists['all_students']
+        yog_12 = ESPUser.YOGFromGrade(12)
+        # This technically has a bug because of copy-on-write, but the other code has it too, and
+        # our copy-on-write system isn't good enough yet to make checking duplicates feasible
+        lists['all_current_students'] = {'description': 'Current students in all of ESP',
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__lte = yog_12)}
+        lists['all_former_students'] = {'description': 'Former students in all of ESP',
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__gt = yog_12)}
 
         lists['emaillist'] = {'description':
                       """All users in our mailing list without an account.""",
@@ -928,7 +937,7 @@ class RegistrationProfile(models.Model):
     educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
     last_ts = models.DateTimeField(default=datetime.now())
     emailverifycode = models.TextField(blank=True, null=True)
-    email_verified  = models.BooleanField(default=False, blank=True, null = True)
+    email_verified  = models.BooleanField(default=False, blank=True)
 
     class Meta:
         app_label = 'program'
@@ -1095,14 +1104,14 @@ class FinancialAidRequest(models.Model):
 
     approved = models.DateTimeField(blank=True, null=True)
 
-    reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', null=True, blank=True)
+    reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', blank=True, default=False)
 
     household_income = models.CharField(verbose_name = 'Approximately what is your household income (round to the nearest $10,000)?', null=True, blank=True,
                         max_length=12)
 
     extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this year', null=True, blank=True)
 
-    student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True,null=True)
+    student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True, default=False)
 
     done = models.BooleanField(default=False, editable=False)
 

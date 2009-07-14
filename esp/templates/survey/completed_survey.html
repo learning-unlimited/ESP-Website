@@ -1,0 +1,15 @@
+{% extends "main.html" %}
+{% load subsection %}
+
+{% block title %}{{ prog.niceName }} Survey{% endblock %}
+
+{% block keywords %}{% endblock %}
+
+{% block content %}
+
+<h2>Thank you!</h2>
+<br />
+<p>Your survey responses for {{ prog.niceName }} have been saved.  We appreciate the help.</p>
+
+<p><a href="/learn/{{ prog.anchor.parent.name }}/index.html">Click here</a> to return to the program's main page.</p>
+{% endblock %}

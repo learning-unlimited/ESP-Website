@@ -1,0 +1,50 @@
+<div class="show_class">
+  <table cellpadding="5" cellspacing="0" >
+    <tr>
+      <th colspan="2" style="width: 70%; background-color:#ccccff;">
+           {{ class.title }}
+      </th>
+
+      <th style="width: 30%; background-color:#ccccff;">
+       <span class="teachers">
+	{% for teacher in class.teachers %}
+<a href="/teach/teachers/{{teacher.username}}/bio.html" 
+          title="The biography of {{ teacher.first_name }} {{ teacher.last_name }}">{{ teacher.first_name }} {{ teacher.last_name }}</a>
+       {% endfor %}
+       </span>
+       </th>
+     </tr>
+     <tr>
+       <td colspan="3" class="info">
+	{{ class.description|markdown|safe }}
+       </td>
+     </tr>
+    <tr>
+	<td style="width: 50%"></td>
+	<td style="width: 50%;" colspan="2">
+         <strong>Grades:</strong>
+	   {{ class.grade_min }}-{{ class.grade_max }}
+	</td>
+    </tr>
+    <tr>
+      <td style="width: 50%;" valign="top">
+        <strong>Meeting Time</strong>
+	{% for section in class.get_sections %}
+           Section {{ forloop.counter }}: {% for time in section.get_meeting_times %}{{ time.short_description }}{% endfor %} <br />
+        {% endfor %}
+        <br />
+      </td>
+ 
+      <td style="width: 50%;" colspan="2">
+         <strong>Enrollment</strong><br />
+	{% for section in class.get_sections %}
+	      <div class="{% if section.isFull %}cant_attend{% endif %}">Section {{ forloop.counter }}: {% if section.isFull %}<span style="color: red; font-weight: bold;"></span>{% else %}{{ section.num_students }} (of {{ section.class_size_max }}){% endif %}<br /></div>
+	{% endfor %}
+      </td>
+    </tr>
+</table>
+</div>
+
+
+
+

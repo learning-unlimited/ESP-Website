@@ -1,18 +1,89 @@
 
 
-INSTALL File For the ESP Website
-==================================
+INSTALL File For the ESP Web site
+=================================
 
 modified:
     2007-04-04 (axiak)
     2008-11-25 (davidben)
-
+    2009-04-21 (price)
+    
 You have presumably downloaded the source code for ESP's web site.
 Here are the steps to get the site operational on your computer:
 
 Note: I will refer to the directory which contains this README file as '/'.
 
-1) Create a local_settings.py file in /esp/. You can do this like so:
+Note: The ESP Web site is based on the Django Web framework; the Django
+documentation will be very helpful.  Refer to it at:
+http://docs.djangoproject.com/en/dev/
+
+
+1) Install all required software.  The software libraries you need are
+summarized below.
+
+a) Libraries obtained from the Internet
+
+Library name    Type    Version         Ubuntu package name or download location
+------------    ----    -------         -------------------
+Lighttpd        System                  lighttpd
+PostgreSQL      System  8.3             postgresql-8.3
+
+python          System  2.5             python
+
+django          Python  1.0.2           python-django*
+PIL             Python                  python-imaging
+DNS             Python                  python-dns
+setuptools      Python                  python-setuptools
+twill           Python                  python-twill
+cmemcached      Python                  http://gijsbert.org/cmemcache/index.html
+flup            Python                  python-flup
+psycopg         Python                  python-psycopg
+simplejson      Python                  python-simplejson
+
+LaTeX           System                  texlive, texlive-latex-extra
+libmemcache0    System                  libmemcache0
+ImageMagick     System                  imagemagick
+memcached       System                  memcached
+dvipng          System                  dvipng
+
+Note that the Lighttpd Web server is included in the list above.  
+Apache2 and Lighttpd have both been used successfully.  After installing 
+the server of your choice, check that you have Python support 
+(e.g. mod_python).  You may follow the installation instructions included 
+with Django for your chosen server:
+http://code.djangoproject.com/wiki/ServerArrangements
+
+b) Libraries included with the ESP Web site distribution
+
+We include two Python libraries that you can install: iCalendar and 
+python-memcached.  These are located in the /esp/3rdparty directory.  
+Please unzip them and follow their respective installation instructions.
+
+
+2) Set up your database.
+
+a) Create a login role
+
+Come up with a unique name and password for the site-specific database 
+account (login role).  This role will be used for all queries generated
+by Django.  In psql, the syntax for creating a login role is
+
+CREATE ROLE [username] LOGIN PASSWORD '[password'];
+
+This can also be done using the pgadmin3 graphical administration tool.  
+
+b) Create a database
+
+Come up with a database name, typically including part of your
+organization's name as well as 'django'  (e.g. 'stanford_django'). 
+Then add this database using psql or pgadmin3:
+
+CREATE DATABASE [dbname] OWNER [username] WITH ENCODING 'utf8';
+
+
+3) Configure Django.
+
+a) Create a local_settings.py file in /esp/. You can do this like so:
 
 $ cd ./esp
 $ cp local_settings.py.default local_settings.py
@@ -22,11 +93,42 @@ $ cd ..
 NOTE: If you wish to change a setting in django_settings.py, override the value
 in local_settings.py. To configure middleware, modify MIDDLEWARE_LOCAL.
 
-
-2) Create a database_settings.py file:
+b) Create a database_settings.py file:
 
 $ cd ./esp 
 $ cp database_settings.py.default database_settings.py
 $ pico database_settings.py <-- change the database user and password
+                                to match the login role you created
 $ cd ..
+
+c) Create database tables
+
+If you are setting up an ESP server for development purposes, you may want to
+initialize your database from a backup of your organization's database. 
+
+Otherwise, use Django's manage.py script to initialize your database:
+
+$ cd ./esp
+$ ./manage.py syncdb
+
+Django will ask you to add a super user.  Please do this so that you
+have administrative access when you start using the site.
+
+d) Make admin interface pretty
+
+You will need to add a symbolic link for the images and stylesheets used by
+the Django admin interface (/admin):
+
+$ cd ./public/media
+$ ln -s /var/lib/python-support/python2.5/django/contrib/admin/media admin
+
+
+4) Explore your site
+
+At this point you should be able to restart your Web server and access the 
+site you've set up in a Web browser.  You can now:
+- edit the site's data (go to http://[hostname]/admin)
+- create static pages (start by typing in the desired URL)
+- change the styles and graphics (edit the files in /templates and /public/media)
+- set up programs (click the "Admin" button on the home page)
 

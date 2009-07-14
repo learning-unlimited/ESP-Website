@@ -30,7 +30,6 @@ Email: web@esp.mit.edu
 """
 from django.db import models
 from esp.datatree.models import *
-from esp.dbmail.models import MessageRequest
 from datetime import datetime, timedelta
 from esp.db.fields import AjaxForeignKey
 
@@ -209,7 +208,7 @@ class Event(models.Model):
 class EmailReminder(models.Model):
     """ A reminder, associated with an Event, that is to be sent by e-mail """
     event = models.ForeignKey(Event)
-    email = models.ForeignKey(MessageRequest)
+    email = models.ForeignKey('dbmail.MessageRequest')
     date_to_send = models.DateTimeField()
     sent = models.BooleanField(default=True)
 

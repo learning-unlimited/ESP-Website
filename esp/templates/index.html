@@ -1,10 +1,11 @@
-{% extends "outlines/series-3.html" %}
+{% extends "main.html" %}
 
 {% block title %}Splash! Chicago{% endblock %}
 
 {% block welcome_message %}<img src="/media/images/homewelc.gif" alt="Welcome to Splash! Chicago" />{% endblock %}
-
 {% block content_color %}#FFFFFF{% endblock %}
+{% block nav_header %}{% endblock %}
+
 
 {% block content %}
 
@@ -22,7 +23,6 @@
 <a href="/myesp/admin">Administer Splash! Chicago</a>
 </div>
 {% endif %}
-
 {% if request.user.get_profile.prof.isOnsite %}
 <div id="divnav8">
 <a href="/myesp/onsite/">On-Site Registration</a>

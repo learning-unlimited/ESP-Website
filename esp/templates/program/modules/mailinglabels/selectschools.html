@@ -1,4 +1,4 @@
-{% extends "outlines/series-3.html" %}
+{% extends "main.html" %}
 
 {% block title %}{{ program.niceName }} Schools for Mailing Labels{% endblock %}
 
@@ -32,5 +32,7 @@
 </tr>
 </table>
 </form>
+
+{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}

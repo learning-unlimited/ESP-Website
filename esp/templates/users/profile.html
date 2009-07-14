@@ -1,4 +1,4 @@
-{% extends "outlines/series-3.html" %}
+{% extends "main.html" %}
 
 {% block title %}Profile Editor{% endblock %}
 
@@ -25,10 +25,12 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 {% block content %}
 <h1>Basic Information</h1>
-<p>First, please tell us a bit about yourself! After you have filled out everything below, click the "update" button at the bottom of the page to continue on to picking your classes for Cascade.</p>
+<p>First, please tell us a bit about yourself!  (The fields bordered in red are required.)</p>
+
+<p>After you have filled out everything below, click the "update" button at the bottom of the page to continue on to picking your classes.</p>
 
 {% if form.errors %}
-<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h2><br />
+<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h2>{% autoescape off %}{{ form.errors }}{% endautoescape %}<br />
 {% endif %}
 
 <div id="program_form">

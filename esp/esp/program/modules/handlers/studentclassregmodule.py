@@ -28,7 +28,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
 from esp.program.modules import module_ext
@@ -37,8 +37,76 @@ from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from django.db.models.query import Q
 from django.template.loader import get_template
-from esp.cal.models import Event
+from django.http import HttpResponse
+from django.views.decorators.cache import cache_control
+from esp.cal.models import Event, EventType
 from datetime import datetime
+from decimal import Decimal
+import simplejson
+
+def json_encode(obj):
+    if isinstance(obj, ClassSubject):
+        return { 'id': obj.id,
+                 'title': obj.anchor.friendly_name,
+                 'anchor': obj.anchor_id,
+                 'parent_program': obj.parent_program_id,
+                 'category': obj.category,
+                 'class_info': obj.class_info,
+                 'allow_lateness': obj.allow_lateness,
+                 'grade_min': obj.grade_min,
+                 'grade_max': obj.grade_max,
+                 'class_size_min': obj.class_size_min,
+                 'class_size_max': obj.class_size_max,
+                 'schedule': obj.schedule,
+                 'prereqs': obj.prereqs,
+                 'requested_special_resources': obj.requested_special_resources,
+                 'directors_notes': obj.directors_notes,
+                 'requested_room': obj.requested_room,
+                 'session_count': obj.session_count,
+                 'num_students': obj._num_students,
+                 'teachers': obj._teachers,
+                 'get_sections': obj._sections,                         
+                 }
+    elif isinstance(obj, ClassSection):
+        return { 'id': obj.id,
+                 'anchor': obj.anchor_id,
+                 'status': obj.status,
+                 'duration': obj.duration,
+                 'get_meeting_times': obj._events,
+                 'num_students': obj._count_students,
+                 'capacity': obj.capacity
+                 }
+    elif isinstance(obj, ClassCategories):
+        return { 'id': obj.id,
+                 'category': obj.category,
+                 'symbol': obj.symbol
+                 }
+    elif isinstance(obj, Event):
+        return { 'id': obj.id,
+                 'anchor': obj.anchor_id,
+                 'start': obj.start,
+                 'end': obj.end,
+                 'short_description': obj.description,
+                 'event_type': obj.event_type,
+                 'priority': obj.priority,
+                 }
+    elif isinstance(obj, EventType):
+        return { 'id': obj.id,
+                 'description': obj.description
+                 }
+    elif isinstance(obj, User):
+        return { 'id': obj.id,
+                 'first_name': obj.first_name,
+                 'last_name': obj.last_name,
+                 'username': obj.username,
+                 }
+    elif isinstance(obj, Decimal):
+        return str(obj)
+    elif isinstance(obj, datetime):
+        return obj.strftime('%Y-%m-%dT%H:%M:%S')
+    else:
+        raise TypeError(repr(obj) + " is not JSON serializable")
+
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
@@ -83,12 +151,13 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def isCompleted(self):
         return (len(self.user.getSections(self.program)[:1]) > 0)
 
-    def deadline_met(self):
-        #tmpModule = ProgramModuleObj()
-        #tmpModule.__dict__ = self.__dict__
-        return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
+    def deadline_met(self, extension=None):
+        #   Allow default extension to be overridden if necessary
+        if extension is not None:
+            return super(StudentClassRegModule, self).deadline_met(extension)
+        else:
+            return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
 
-    
     @needs_student
     def prepare(self, context={}):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
@@ -109,10 +178,15 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         schedule = []
         timeslot_dict = {}
         for sec in classList:
-            show_changeslot = ( len(classList) > 0 ) # Does the class have enough siblings to warrant a "change section" link?
+            #   TODO: Fix this bit (it was broken, and may need additional queries
+            #   or a parameter added to ClassRegModuleInfo).
+            show_changeslot = False
             
-            if scrmi.use_priority:
-                sec.verbs = sec.getRegVerbs(user)
+            #   Get the verbs all the time in order for the schedule to show
+            #   the student's detailed enrollment status.  (Performance hit, I know.)
+            #   - Michael P, 6/23/2009
+            #   if scrmi.use_priority:
+            sec.verbs = sec.getRegVerbs(user)
 
             for mt in sec.get_meeting_times():
                 section_dict = {'section': sec, 'changeable': show_changeslot}
@@ -126,10 +200,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
 
-            if scrmi.use_priority:
-                user_priority = user.getRegistrationPriority([timeslot])
-            else:
-                user_priority = None
+            #   Same change as above.  -Michael P
+            #   if scrmi.use_priority:
+            #       user_priority = user.getRegistrationPriority([timeslot])
+            #   else:
+            #       user_priority = None
+            user_priority = user.getRegistrationPriority([timeslot])
 
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
@@ -141,6 +217,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
+        context['allow_removal'] = self.deadline_met('/Removal')
+
         return context
 
     @aux_call
@@ -161,7 +239,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             sectionid = request.POST['section_id']
         else:
             from esp.dblog.models import error
-            raise ESPError(), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
+            raise ESPError(False), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
 
         enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
 
@@ -187,10 +265,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                         datestring = ' later today'
                     else:
                         datestring = d.strftime(' on %B %d')
-                # the below was changed for Cascade; CHANGE BACK AFTER -rye 1-7-09
-                raise ESPError(False), "Currently, you are only allowed to register for one %s class. If you want to add a second class, please return to this website after April 6th." % (prog.niceName())
-
-#                raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
+                #   This line of code has been used for Cascade and may be useful in the future        
+                #   raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
 
         cobj = ClassSubject.objects.get(id=classid)
         section = ClassSection.objects.get(id=sectionid)
@@ -273,11 +349,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         else:
             classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
             classes = filter(lambda c: not c.isFull(timeslot=ts), classes)
+            classes = filter(lambda c: not c.isRegClosed(), classes)
 
         categories = {}
 
         for cls in classes:
-            categories[cls.parent_class.category_id] = {'id':cls.parent_class.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.parent_class.category.category}
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
 
         return render_to_response(self.baseDir()+'fillslot.html', request, (prog, tl), {'classes':    classes,
                                                                                         'one':        one,
@@ -350,6 +427,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
+        classes = ClassSubject.objects.catalog(self.program)        
         classes = ClassSubject.objects.catalog(self.program)
 
         # Sort classes
@@ -365,6 +443,25 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                                                                                        'one':        one,
                                                                                        'two':        two,
                                                                                        'categories': categories.values()})
+
+    def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        return render_to_response(self.baseDir()+'catalog_javascript.html', request, (prog, tl), {
+                'one':        one,
+                'two':        two,
+                })
+    
+    @cache_control(max_age=3600)
+    def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        """ Return the program class catalog """
+        # using .extra() to select all the category text simultaneously
+        classes = ClassSubject.objects.catalog(self.program)        
+
+        resp = HttpResponse()
+        
+        simplejson.dump(list(classes), resp, default=json_encode)
+        
+        return resp
+
     
     # This function exists only to apply the @meets_deadline decorator.
     @meets_deadline('/Catalog')
@@ -404,7 +501,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     @aux_call
     @needs_student
-    @meets_deadline('/Classes/OneClass')    
+    @meets_any_deadline(['/Classes/OneClass','/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
         
