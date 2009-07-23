@@ -9,6 +9,13 @@
       {% endif %}>{{ cls.title|stringformat:".40s" }}{% if cls.title|stringformat:".40s"|length_is:40 and not cls.title|length_is:40 %}...{% endif %}</span>
       </span>
     </td>
+    <td class="clsmiddle" style="font-size: 12px" width="40px">
+      <span title="Control the enrollment of the class's sections">
+      {% for sec in cls.sections.all %}
+      <a href="/teach/{{ program.getUrlBase }}/select_students/{{ sec.id }}">Sec. {{ sec.index }}</a><br />
+      {% endfor %}
+      </span>
+    </td>
     <td class="clsleft classname" style="font-size: 60%; font-style: italic;">
       <span title="Teacher Names">
          ({{ cls.getTeacherNames|join:", " }})

@@ -411,27 +411,7 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models.app_ import StudentApplication
         
         apps = StudentApplication.objects.filter(user=self, program=program)
-        print 'Count: %d' % apps.count()
-        if apps.count() > 1:
-            raise ESPError(True), '%d applications found for user %s in %s' % (apps.count(), self.username, program.niceName())
-        elif apps.count() == 0:
-            if create:
-                app = StudentApplication(user=self, program=program)
-                app.save()
-                return app
-            else:
-                return None
-        else:
-            return apps[0]
-
-    def getApplication(self, program, create=True):
-        from esp.program.models.app_ import StudentApplication
-        
-        apps = StudentApplication.objects.filter(user=self, program=program)
-        print 'Count: %d' % apps.count()
-        if apps.count() > 1:
-            raise ESPError(True), '%d applications found for user %s in %s' % (apps.count(), self.username, program.niceName())
-        elif apps.count() == 0:
+        if apps.count() == 0:
             if create:
                 app = StudentApplication(user=self, program=program)
                 app.save()
@@ -497,11 +477,12 @@ class ESPUser(User, AnonymousUser):
         return self.getSections(program, verbs=['/Enrolled'])
 
     def getRegistrationPriority(self, timeslots):
-        """ Finds the highest available priority level for this user across the supplied timeslots. """
+        """ Finds the highest available priority level for this user across the supplied timeslots. 
+            Returns 0 if the student is already enrolled in one or more of the timeslots. """
         from esp.program.models import Program, RegistrationProfile
         
         if len(timeslots) < 1:
-            return 1
+            return 0
         
         prog = Program.objects.get(anchor=timeslots[0].anchor)
         prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
@@ -518,6 +499,8 @@ class ESPUser(User, AnonymousUser):
                     for v in cv:
                         if v.parent.name == 'Priority':
                             priority_dict[t.id].append(int(v.name))
+                        elif v.name == 'Enrolled':
+                            return 0
         #   Now priority_dict is a dictionary where the keys are timeslot IDs and the values
         #   are lists of taken priority levels.  Merge those and find the lowest positive
         #   integer not in that list.
@@ -638,6 +621,11 @@ class ESPUser(User, AnonymousUser):
         # generate the ticket, send the email.
         from django.contrib.sites.models import Site
         from django.conf import settings
+
+        # we have a lot of users with no email (??)
+        #  let's at least display a sensible error message
+        if self.email.strip() == '':
+            raise ESPError(), 'User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username
 
         # email addresses
         to_email = ['%s <%s>' % (self.name(), self.email)]
@@ -1434,22 +1422,21 @@ class PasswordRecoveryTicket(models.Model):
     def __unicode__(self):
         return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
 
-    @classmethod
-    def new_key(cls):
+    @staticmethod
+    def new_key():
         """ Generates a new random key. """
         import random
-        key = "".join([random.choice(cls.SYMBOLS) for x in range(cls.RECOVER_KEY_LEN)])
+        key = "".join([random.choice(PasswordRecoveryTicket.SYMBOLS) for x in range(PasswordRecoveryTicket.RECOVER_KEY_LEN)])
         return key
 
-    @classmethod
-    def new_ticket(cls, user):
+    @staticmethod
+    def new_ticket(user):
         """ Returns a new (saved) ticket for a specified user. """
-        from datetime import datetime, timedelta
 
-        ticket = cls()
+        ticket = PasswordRecoveryTicket()
         ticket.user = user
-        ticket.recover_key = cls.new_key()
-        ticket.expire = datetime.now() + timedelta(days = cls.RECOVER_EXPIRE)
+        ticket.recover_key = PasswordRecoveryTicket.new_key()
+        ticket.expire = datetime.now() + timedelta(days = PasswordRecoveryTicket.RECOVER_EXPIRE)
 
         ticket.save()
         return ticket
@@ -1482,7 +1469,6 @@ class PasswordRecoveryTicket(models.Model):
 
     def is_valid(self):
         """ Check if the ticket is still valid, kill it if not. """
-        from datetime import datetime
         if self.id is not None and datetime.now() < self.expire:
             return True
         else:
@@ -1495,13 +1481,14 @@ class PasswordRecoveryTicket(models.Model):
     def cancel(self):
         """ Cancel a ticket. """
         if self.id is not None:
+            self.expire = datetime(1990, 8, 3)
             self.delete()
     cancel.alters_data = True
 
-    @classmethod
-    def cancel_all(cls, user):
+    @staticmethod
+    def cancel_all(user):
         """ Cancel all tickets belong to user. """
-        cls.objects.filter(user=user).delete()
+        PasswordRecoveryTicket.objects.filter(user=user).delete()
 
 class DBList(object):
     """ Useful abstraction for the list of users.

@@ -64,13 +64,15 @@ class AdminClass(ProgramModuleObj):
             "main_call": "listclasses"
             }
         
-    form_choice_types = ['status', 'room', 'progress', 'resources', 'times', 'min_grade', 'max_grade']
+    form_choice_types = ['status', 'reg_status', 'room', 'progress', 'resources', 'times', 'min_grade', 'max_grade']
     def getFormChoices(self, field_str):
         """ A more compact function for zipping up the options available on class
         management forms. """
         
         if field_str == 'status':
             return ((-20, 'Cancelled'), (-10, 'Rejected'), (0, 'Unreviewed'), (10, 'Accepted'))
+        if field_str == 'reg_status':
+            return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
             room_choices = [(c.name, c.name) for c in self.program.groupedClassrooms()]
             return [(None, 'Unassigned')] + room_choices

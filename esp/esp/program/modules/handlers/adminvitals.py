@@ -151,9 +151,12 @@ class AdminVitals(ProgramModuleObj):
         context['shirts'] = adminvitals_shirt['shirts']
 
         shours = 0
+        chours = 0
         for section in self.program.sections():
+            chours += math.ceil(section.duration)
             shours += math.ceil(section.duration)*section.parent_class.class_size_max
         
+        context['classhours'] = chours
         context['classpersonhours'] = shours
         
         return context

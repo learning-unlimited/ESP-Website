@@ -189,14 +189,15 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 #SESSION_ENGINE="django.contrib.sessions.backends.cache"
 
-TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url',
+TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this one after all branches are transitioned
                                'esp.context_processors.esp_user',
-                               'esp.context_processors.test_cookie',
                                'esp.context_processors.current_site',
                                'esp.context_processors.index_backgrounds',
+                               'esp.context_processors.espuserified_request',
+                               'esp.context_processors.preload_images',
                                'django.core.context_processors.i18n',
-                               'django.core.context_processors.request',
                                'django.core.context_processors.auth',
+                               'django.core.context_processors.media',
                                )
 
 # no i18n

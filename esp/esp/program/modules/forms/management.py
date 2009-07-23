@@ -27,6 +27,7 @@ class ClassManageForm(ManagementForm):
 
     clsid = forms.IntegerField(initial=-1, widget=forms.HiddenInput)
     status = forms.ChoiceField(choices=())
+    reg_status = forms.ChoiceField(required=False, choices=())
     min_grade = forms.ChoiceField(choices=())
     max_grade = forms.ChoiceField(choices=())
     progress = forms.MultipleChoiceField(required=False, label='Checklist', widget=forms.CheckboxSelectMultiple, choices=())
@@ -46,6 +47,7 @@ class ClassManageForm(ManagementForm):
 
     def load_data(self, cls, prefix=''):
         self.initial = {prefix+'status': cls.status,
+            prefix+'reg_status': None,
             prefix+'min_grade': cls.grade_min, 
             prefix+'max_grade': cls.grade_max,
             prefix+'notes': cls.directors_notes,
@@ -59,7 +61,9 @@ class ClassManageForm(ManagementForm):
         for sec in cls.sections.all():
             if sec.status == 0:
                 sec.status = self.cleaned_data['status']
-                sec.save()
+            if self.cleaned_data['reg_status']:
+                sec.registration_status = self.cleaned_data['reg_status']
+            sec.save()
         cls.grade_min = self.cleaned_data['min_grade']
         cls.grade_max = self.cleaned_data['max_grade']
         cls.directors_notes = self.cleaned_data['notes']
@@ -82,6 +86,7 @@ class SectionManageForm(ManagementForm):
     room = forms.MultipleChoiceField(required=False, choices=())
     resources = forms.MultipleChoiceField(label='Floating Resources', required=False, choices=())
     status = forms.ChoiceField(choices=())
+    reg_status = forms.ChoiceField(required=False, choices=())
     progress = forms.MultipleChoiceField(required=False, label='Checklist', widget=forms.CheckboxSelectMultiple, choices=())
 
     def __init__(self, *args, **kwargs):
@@ -98,6 +103,7 @@ class SectionManageForm(ManagementForm):
 
     def load_data(self, sec, prefix=''):
         self.initial = {prefix+'status': sec.status,
+            prefix+'reg_status': sec.registration_status,
             prefix+'progress': [cm.id for cm in sec.checklist_progress.all()],
             prefix+'secid': sec.id,
             prefix+'times': [ts.id for ts in sec.meeting_times.all()]}
@@ -108,6 +114,8 @@ class SectionManageForm(ManagementForm):
 
     def save_data(self, sec):
         sec.status = self.cleaned_data['status']
+        if self.cleaned_data['reg_status']:
+            sec.registration_status = self.cleaned_data['reg_status']
         sec.meeting_times.clear()
         for mi in self.cleaned_data['times']:
             ts = Event.objects.get(id=mi)

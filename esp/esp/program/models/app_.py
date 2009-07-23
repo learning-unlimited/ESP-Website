@@ -1,3 +1,4 @@
+
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -60,7 +61,19 @@ class BaseAppElement:
                     return f
             return None
             
-        form_prefix = '%s_%d' % (self._element_name, self.id)
+        #   Avoid setting the prefix if the instance has not been saved to the
+        #   database.  This may be necessary in order to generate forms without
+        #   saving instances until the form is submitted.  The view function
+        #   should set the prefix appropriately after calling get_form in this
+        #   case.
+        if 'form_prefix' in kwargs:
+            form_prefix = kwargs['form_prefix']
+            del kwargs['form_prefix']
+        else:
+            if hasattr(self, 'id') and self.id:
+                form_prefix = '%s_%d' % (self._element_name, self.id)
+            else:
+                form_prefix = 'TEMP'
         
         class form_class(forms.ModelForm):
             class Meta:
@@ -70,7 +83,7 @@ class BaseAppElement:
         for field in self._field_names:
             django_field = get_field_by_name(field)
             if type(django_field) == models.TextField:
-                form_class.base_fields[field] = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': 80, 'rows': 8}))
+                form_class.base_fields[field].widget = forms.Textarea(attrs={'cols': 80, 'rows': 8})
         
         if len(args) > 0:
             initial_dict = args[0].copy()
@@ -93,7 +106,7 @@ class BaseAppElement:
             if form.cleaned_data.has_key(field_name):
                 setattr(self, field_name, form.cleaned_data[field_name])
         self.save()
-
+        
 class StudentAppQuestion(BaseAppElement, models.Model):
     """ A question for a student application form, a la Junction or Delve.
     Questions pertaining to the program or to classes the student has
@@ -118,9 +131,6 @@ class StudentAppQuestion(BaseAppElement, models.Model):
         app_label = 'program'
         db_table = 'program_studentappquestion'
     
-    class Admin:
-        pass
-
 class StudentAppResponse(BaseAppElement, models.Model):
     """ A response to an application question. """
     question = models.ForeignKey(StudentAppQuestion, editable=False)
@@ -136,9 +146,7 @@ class StudentAppResponse(BaseAppElement, models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappresponse'
-        
-    class Admin:
-        pass
+
     
 class StudentAppReview(BaseAppElement, models.Model):
     """ An individual review for a student application question.
@@ -160,9 +168,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappreview'
-    
-    class Admin:
-        pass
+
 
 class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
@@ -234,5 +240,3 @@ class StudentApplication(models.Model):
         app_label = 'program'
         db_table = 'program_junctionstudentapp'    
 
-    class Admin:
-        pass
