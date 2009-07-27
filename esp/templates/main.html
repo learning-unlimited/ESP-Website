@@ -2,7 +2,7 @@
 
 {% block javascript %}
     {{ block.super }}
-    {% if request.user.is_authenticated %}
+    {% comment %}{% if request.user.is_authenticated %}{% endcomment %}
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/yahoo/yahoo-min.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/event/event-min.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/dom/dom-min.js"></script>
@@ -11,7 +11,7 @@
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/dragdrop/dragdrop-debug.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/animation/animation-min.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/ddlist.js"></script>
-    {% endif %}
+    {% comment %}{% endif %}{% endcomment %}
 {% endblock %}
 
 {% block stylesheets %}
@@ -92,7 +92,7 @@ body {
     
     <div id="navbar_content">
     <br />
-    {% include "users/loginbox.html" %}
+    {% include "users/loginbox_ajax.html" %}
     <br />
 
     {% if request.user.is_staff %}
