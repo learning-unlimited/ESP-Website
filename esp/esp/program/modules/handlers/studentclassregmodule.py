@@ -222,6 +222,15 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         return context
 
+    @needs_student
+    def ajax_schedule(self, request, tl, one, two, module, extra, prog):
+        import simplejson as json
+        from django.template.loader import render_to_string
+        context = self.prepare({})
+        context['prog'] = self.program
+        schedule_str = render_to_string('users/student_schedule_inline.html', context)
+        return HttpResponse(json.dumps({'student_schedule_html': schedule_str}))
+
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
