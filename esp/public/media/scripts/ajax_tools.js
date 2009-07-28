@@ -16,13 +16,16 @@ if (!registered_fragments)
 
 var reset_forms = function()
 {
-    console.log("Registered forms: " + registered_forms);
+    console.log("Registered forms: " + JSON.stringify(registered_forms, null, '\t'));
     for (var i = 0; i < registered_forms.length; i++)
     {
         form = registered_forms[i];
         var theForm = dojo.byId(form.id);
-        dojo.connect(theForm, "onsubmit", function (e) {handle_submit(form, e)});	
-        console.log("Reset event handlers for form with attributes: " + form);
+        if (theForm)
+        {
+            dojo.connect(theForm, "onsubmit", function (e) {handle_submit(form, e)});	
+            console.log("Reset event handlers for form " + JSON.stringify(theForm, null, '\t') + " with attributes: " + JSON.stringify(form, null, '\t'));
+        }
     }
     //  Try refetching fragments also, in case they changed due to a form action?
     //  fetch_fragments();
@@ -30,7 +33,7 @@ var reset_forms = function()
 
 var fetch_fragments = function()
 {
-    console.log("Fetching fragments: " + registered_fragments);
+    console.log("Fetching fragments: " + JSON.stringify(registered_fragments, null, '\t'));
     for (var i = 0; i < registered_fragments.length; i++)
     {
         frag = registered_fragments[i];
@@ -64,7 +67,7 @@ var apply_fragment_changes = function(data)
 var handle_submit = function(attrs, element)
 {
     element.preventDefault(); 
-    console.log("Handling submission of form with attributes: " + form);
+    console.log("Handling submission of form with attributes: " + JSON.stringify(attrs, null, '\t') + ", element: " + JSON.stringify(element, null, '\t'));
     dojo.xhrPost({
         url: attrs.url,
         form: attrs.id,
@@ -87,7 +90,7 @@ var handle_submit = function(attrs, element)
 
 var fetch_fragment = function(attrs)
 {
-    console.log("Fetching fragment with attributes: " + attrs);
+    console.log("Fetching fragment with attributes: " + JSON.stringify(attrs, null, '\t'));
     dojo.xhrGet({
         url: attrs.url,
         handleAs: "json",
@@ -110,13 +113,13 @@ var fetch_fragment = function(attrs)
 var register_form = function(form_attrs)
 {
     registered_forms.push(form_attrs);
-    console.log('Registered Ajax form with attributes: ' + form_attrs);
+    console.log('Registered Ajax form with attributes: ' + JSON.stringify(form_attrs, null, '\t'));
 }
 
 var register_fragment = function(fragment_attrs)
 {
     registered_fragments.push(fragment_attrs);
-    console.log('Registered Ajax page fragement with attributes: ' + fragment_attrs);
+    console.log('Registered Ajax page fragement with attributes: ' + JSON.stringify(fragment_attrs, null, '\t'));
 }
 
 dojo.addOnLoad(reset_forms); 
