@@ -1167,9 +1167,7 @@ class FinancialAidRequest(models.Model):
             if li.amount != 0:
                 txn.add_item(self.user, rev_li_type, amount=-(li.amount))
         txn.add_item(self.user, fwd_li_type, amount=Decimal(str(self.amount_received)))
-        
-        
-
+    
     def __unicode__(self):
         """ Represent this as a string. """
         accepted_verb = GetNode('V/Flags/Registration/Accepted')
@@ -1195,6 +1193,247 @@ class FinancialAidRequest(models.Model):
             string += " (REVIEWED)"
 
         return string
+        
+""" Functions for scheduling constraints
+    I'm sorry that these are in the same __init__.py file;
+    whenever I tried moving them to a separate file, 
+    Django wouldn't install the models. 
+"""
+        
+def get_subclass_instance(cls, obj):
+    for c in cls.__subclasses__():
+        #   Try casting the object into each of the subclasses.
+        #   If you find an object, return it.
+        result = None
+        try:
+            result = c.objects.get(id=obj.id)
+        except:
+            pass
+        if result:
+            return get_subclass_instance(c, result)
+    #   If you couldn't find any, return the original object.
+    return obj
 
+class BooleanToken(models.Model):
+    """ A true/false value or Boolean operation.
+        Meant to be extended to more meaningful Boolean functions operating on
+        other models, such as:
+        - Whether a user is violating a schedule constraint
+        - Whether a user is in a particular age range
+        - Whether a user has been e-mailed in the last month
+        
+        Also meant to be combined into logical expressions for queries/tests
+        (see BooleanExpression below).
+    """
+    exp = models.ForeignKey('BooleanExpression', help_text='The Boolean expression that this token belongs to')
+    text = models.TextField(help_text='Boolean value, or text needed to compute it', default='', blank=True)
+    seq = models.IntegerField(help_text='Location of this token on the expression stack (larger numbers are higher)', default=0)
+
+    def get_expression(self):
+        return self.exp.subclass_instance()
+    expression = property(get_expression)
+
+    def __unicode__(self):
+        return '[%d] %s' % (self.seq, self.text)
+
+    def subclass_instance(self):
+        return get_subclass_instance(BooleanToken, self)
+
+    @staticmethod
+    def evaluate(stack, *args, **kwargs):
+        """ Evaluate a stack of Boolean tokens. 
+            Operations (including the basic ones defined below) take their
+            arguments off the stack.
+        """
+        value = None
+        stack = list(stack)
+        while (value is None) and (len(stack) > 0):
+            token = stack.pop().subclass_instance()
+            print 'Popped token: %s' % token.text
+            
+            # Handle possibilities for what the token might be:
+            if (token.text == '||') or (token.text.lower() == 'or'):
+                # - or operator
+                (value1, stack) = BooleanToken.evaluate(stack, *args, **kwargs)
+                (value2, stack) = BooleanToken.evaluate(stack, *args, **kwargs)
+                value = (value1 or value2)
+            elif (token.text == '&&') or (token.text.lower() == 'and'):
+                # - and operator
+                (value1, stack) = BooleanToken.evaluate(stack, *args, **kwargs)
+                (value2, stack) = BooleanToken.evaluate(stack, *args, **kwargs)
+                value = (value1 and value2)
+            elif (token.text == '!') or (token.text == '~') or (token.text.lower() == 'not'):
+                # - not operator
+                (value1, stack) = BooleanToken.evaluate(stack, *args, **kwargs)
+                value = (not value1)
+            else:
+                # - direct boolean value
+                # Pass along arguments
+                value = token.boolean_value(*args, **kwargs)
+                
+        print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
+        return (value, stack)
+
+    """ This function is meant to take extra arguments so subclasses can use additional
+        information in order to compute their value (i.e. schedule information) """
+    def boolean_value(self, *args, **kwargs):
+        if (self.text == '1') or (self.text.lower() == 't') or (self.text.lower() == 'true'):
+            return True
+        else:
+            return False
+            
+            
+class BooleanExpression(models.Model):
+    """ A combination of BooleanTokens that can be manipulated and evaluated. 
+        Arbitrary arguments can be supplied to the evaluate function in order
+        to help subclassed tokens do their thing.
+    """
+    label = models.CharField(max_length=80, help_text='Description of the expression')
+
+    def __unicode__(self):
+        return '(%d tokens) %s' % (self.get_stack().count(), self.label)
+
+    def subclass_instance(self):
+        return get_subclass_instance(BooleanExpression, self)
+
+    def get_stack(self):
+        return self.booleantoken_set.all().order_by('seq')
+
+    def add_token(self, token, seq=None, duplicate=True):
+        my_stack = self.get_stack()
+        if duplicate:
+            new_token = BooleanToken(text=token.text)
+        else:
+            new_token = token
+        if seq is None:
+            if my_stack.count() > 0:
+                new_token.seq = self.get_stack().order_by('-seq').values('seq')[0]['seq'] + 10
+            else:
+                new_token.seq = 0
+        else:
+            new_token.seq = seq
+        new_token.exp = self
+        new_token.save()
+    
+    def evaluate(self, *args, **kwargs):
+        stack = self.get_stack()
+        (value, post_stack) = BooleanToken.evaluate(stack, *args, **kwargs)
+        return value
+
+
+class ScheduleMap:
+    """ The schedule map is a dictionary mapping Event IDs to lists of class sections.
+        It can be generated and cached for a user, then modified
+        (by adding/removing values) to quickly model the effect of a particular
+        schedule change.
+    """
+    @cache_function
+    def __init__(self, user, program):
+        result = {}
+        if type(user) is not ESPUser:
+            user = ESPUser(user)
+        for t in program.getTimeSlots():
+            result[t.id] = []
+        sl = user.getEnrolledSections(program)
+        for s in sl:
+            for m in s.meeting_times.all():
+                result[m.id].append(s)
+        self.map = result
+    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
+
+    def __marinade__(self):
+        import hashlib
+        import pickle
+        return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
+
+class ScheduleConstraint(models.Model):
+    """ A scheduling constraint that can be tested: 
+        IF [condition] THEN [requirement]
+        
+        This constraint requires that [requirement] be true in order
+        for [condition] to be true.  Examples:
+        - IF [all other blocks are non-lunch] THEN [this block must be lunch]
+        - IF [student taking class B] THEN [student took class A beforehand]
+        
+        The input to this calculation is a ScheduleMap (see above).
+        ScheduleConstraint.evaluate([map]) returns:
+        - False if the provided [map] would violate the constraint
+        - True if the provided [map] would satisfy the constraint
+    """
+    program = models.ForeignKey(Program)
+
+    condition = models.ForeignKey(BooleanExpression, related_name='condition_constraint')
+    requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint')
+    
+    def __unicode__(self):
+        return '%s: %s -> %s' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+    
+    @cache_function
+    def evaluate(self, smap):
+        self.schedule_map = smap.map
+        cond_state = self.condition.evaluate(map=self.schedule_map)
+        if cond_state:
+            return self.requirement.evaluate(map=self.schedule_map)
+        else:
+            return True
+    # It's okay to flush the cache if any of the boolean expressions change, since
+    # that isn't very frequent.
+    evaluate.depend_on_model(lambda: BooleanToken)
+    evaluate.depend_on_model(lambda: BooleanExpression)
+
+class ScheduleTestTimeblock(BooleanToken):
+    """ A boolean value that keeps track of a timeblock. 
+        This is an abstract base class that doesn't define
+        the boolean_value function.
+    """
+    timeblock = models.ForeignKey(Event, help_text='The timeblock that this schedule test pertains to')
+
+class ScheduleTestOccupied(ScheduleTestTimeblock):
+    """ Boolean value testing: Does the schedule contain at least one
+        section at the specified time?
+    """
+    def boolean_value(self, *args, **kwargs):
+        timeblock_id = self.timeblock.id
+        user_schedule = kwargs['map']
+        if timeblock_id in user_schedule:
+            if len(user_schedule[timeblock_id]) > 0:
+                return True
+        return False
+
+class ScheduleTestCategory(ScheduleTestTimeblock):
+    """ Boolean value testing: Does the schedule contain at least one section 
+        in the specified category at the specified time?
+    """
+    category = models.ForeignKey('ClassCategories', help_text='The class category that must be selected for this timeblock')
+    def boolean_value(self, *args, **kwargs):
+        timeblock_id = self.timeblock.id
+        user_schedule = kwargs['map']
+        if timeblock_id in user_schedule:
+            for sec in user_schedule[timeblock_id]:
+                if sec.category == self.category:
+                    return True
+        return False
+            
+class ScheduleTestSectionList(ScheduleTestTimeblock):
+    """ Boolean value testing: Does the schedule contain one of the specified
+        sections at the specified time?
+    """
+    section_ids = models.TextField(help_text='A comma separated list of ClassSection IDs that can be selected for this timeblock')
+    def boolean_value(self, *args, **kwargs):
+        timeblock_id = self.timeblock.id
+        user_schedule = kwargs['map']
+        section_id_list = [int(a) for a in self.section_ids.split(',')]
+        if timeblock_id in user_schedule:
+            for sec in user_schedule[timeblock_id]:
+                if sec.id in section_id_list:
+                    return True
+        return False
+           
+def schedule_constraint_test(prog):
+    sc = ScheduleConstraint(program=prog)
+    return True
+    
+    
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
+
