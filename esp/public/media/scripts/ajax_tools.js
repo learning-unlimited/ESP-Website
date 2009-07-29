@@ -13,9 +13,14 @@ if (!registered_fragments)
 {
     var registered_fragments = [];
 }
+if (!registered_links)
+{
+    var registered_links = [];
+}
 
 var reset_forms = function()
 {
+    //  Register forms
     console.log("Registered forms: " + JSON.stringify(registered_forms, null, '\t'));
     for (var i = 0; i < registered_forms.length; i++)
     {
@@ -27,6 +32,20 @@ var reset_forms = function()
             console.log("Reset event handlers for form " + JSON.stringify(theForm, null, '\t') + " with attributes: " + JSON.stringify(form, null, '\t'));
         }
     }
+    
+    //  Register links
+    console.log("Registered links: " + JSON.stringify(registered_links, null, '\t'));
+    for (var i = 0; i < registered_links.length; i++)
+    {
+        link = registered_links[i];
+        var theLink = dojo.byId(link.id);
+        if (theLink)
+        {
+            dojo.connect(theLink, "onclick", function (e) {handle_link(link, e)});	
+            console.log("Reset event handlers for link " + JSON.stringify(theLink, null, '\t') + " with attributes: " + JSON.stringify(link , null, '\t'));
+        }
+    }    
+    
     //  Try refetching fragments also, in case they changed due to a form action?
     //  fetch_fragments();
 }
@@ -88,6 +107,30 @@ var handle_submit = function(attrs, element)
     });
 }
 
+var handle_link = function(attrs, element)
+{
+    element.preventDefault(); 
+    console.log("Handling submission of link with attributes: " + JSON.stringify(attrs, null, '\t') + ", element: " + JSON.stringify(element, null, '\t'));
+    dojo.xhrGet({
+        url: attrs.url,
+        link: attrs.id,
+        handleAs: "json",
+        handle: function(data,args){
+            if (typeof data == "error")
+            {
+                console.warn("error!",args);
+            }
+            else
+            {
+                //  Update portions of the page determined by response
+                apply_fragment_changes(data);
+                //  Reset the form event functions so they can be used again
+                reset_forms();
+            }
+        }
+    });
+}
+
 var fetch_fragment = function(attrs)
 {
     console.log("Fetching fragment with attributes: " + JSON.stringify(attrs, null, '\t'));
@@ -114,6 +157,12 @@ var register_form = function(form_attrs)
 {
     registered_forms.push(form_attrs);
     console.log('Registered Ajax form with attributes: ' + JSON.stringify(form_attrs, null, '\t'));
+}
+
+var register_link = function(link_attrs)
+{
+    registered_links.push(link_attrs);
+    console.log('Registered Ajax link with attributes: ' + JSON.stringify(link_attrs, null, '\t'));
 }
 
 var register_fragment = function(fragment_attrs)

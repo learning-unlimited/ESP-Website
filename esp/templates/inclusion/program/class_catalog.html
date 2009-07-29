@@ -1,39 +1,50 @@
 {% if show_class %}
-{% load latex %}
-{% load smartypants %}
-{% load class_render %}
-<div class="show_class">
-  <table cellpadding="5" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
-{% render_class_core class %}
-{% if prereg_url %}
-    <tr>
-      <td colspan="3" style="text-align: center; padding:0;" align="center" valign="center" class="add_class">
-     {% if errormsg %}
-<span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
-{% if user.onsite_local %}
-<br />
-<form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
-	  <input type="hidden" name="class_id" value="{{ class.id }}" />
-          <input type="hidden" name="section_id" value="{{ section.id }}" />
-  	  <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
-                 id="submitbutton{{ class.id }}" />
-</form>
-{% endif %}
-
-{% else %}
-    {% if not section.isRegClosed %}
-	<form name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
-	  <input type="hidden" name="class_id" value="{{ class.id }}" />
-          <input type="hidden" name="section_id" value="{{ section.id }}" />
-  	  <input type="submit" class="addbutton" name="action" value="Add this class"
-                 id="submitbutton{{ class.id }}" />
-	</form>
+    {% load latex %}
+    {% load smartypants %}
+    {% load class_render %}
+    <div class="show_class">
+    <table cellpadding="5" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
+    {% render_class_core class %}
+    {% if prereg_url %}
+        <tr>
+        <td colspan="3" style="text-align: center; padding:0;" align="center" valign="center" class="add_class">
+        {% if errormsg %}
+            <span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
+            {% if user.onsite_local %}
+                <br />
+                <form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                    <input type="hidden" name="class_id" value="{{ class.id }}" />
+                    <input type="hidden" name="section_id" value="{{ section.id }}" />
+                    <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
+                                 id="submitbutton{{ class.id }}" />
+                </form>
+            {% endif %}
+        {% else %}
+            {% if section %}
+                {% if not section.isRegClosed %}
+                <form id="prereg_submitform" name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                  <input type="hidden" name="class_id" value="{{ class.id }}" />
+                      <input type="hidden" name="section_id" value="{{ section.id }}" />
+                  <input type="submit" class="addbutton" name="action" value="Add this class"
+                             id="submitbutton{{ class.id }}" />
+                </form>
+                {% endif %}
+            {% else %}
+                {% for sec in class.sections.all %}
+                    {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
+                    <form id="prereg_submitform" name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                      <input type="hidden" name="class_id" value="{{ class.id }}" />
+                      <input type="hidden" name="section_id" value="{{ sec.id }}" />
+                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}"
+                                 id="submitbutton{{ class.id }}" />
+                    </form>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+        </td>
+        </tr>
     {% endif %}
-{% endif %}
-      </td>
-     </tr>
-{% endif %}
-</table>
-
-</div>
+    </table>
+    </div>
 {% endif %}

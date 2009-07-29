@@ -176,6 +176,16 @@
     font-size: 12px;
 }
 
+td .program_form_small{
+    padding: 1px;
+}
+
+th .program_form_small{
+    font-weight: normal;
+    font-size: 13px;
+    padding: 1px;
+}
+
 #program_form label {
     font-size: 12px;
 }

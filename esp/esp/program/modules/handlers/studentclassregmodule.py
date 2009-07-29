@@ -228,15 +228,15 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         from django.template.loader import render_to_string
         context = self.prepare({})
         context['prog'] = self.program
+        context['one'] = one
+        context['two'] = two
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         return HttpResponse(json.dumps({'student_schedule_html': schedule_str}))
 
-    @aux_call
-    @needs_student
-    @meets_deadline('/Classes/OneClass')
-    def addclass(self,request, tl, one, two, module, extra, prog):
-        """ Preregister a student for the specified class, then return to the studentreg page """
-        
+    def addclass_logic(self, request, tl, one, two, module, extra, prog):
+        """ Pre-register the student for the class section in POST['section_id'].
+            Return True if there are no errors.
+        """
         reg_verb = GetNode('V/Deadline/Registration/Student/Classes')
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
         
@@ -324,10 +324,29 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
             if bits.count() == 0:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
-
-            return self.goToCore(tl) # go to the core view.
+            return True
         else:
-            raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'
+            raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'    
+    
+    @aux_call
+    @needs_student
+    @meets_deadline('/Classes/OneClass')
+    def addclass(self,request, tl, one, two, module, extra, prog):
+        """ Preregister a student for the specified class, then return to the studentreg page """
+        if self.addclass_logic(request, tl, one, two, module, extra, prog):
+            return self.goToCore(tl)
+            
+    @aux_call
+    @needs_student
+    @meets_deadline('/Classes/OneClass')
+    def ajax_addclass(self,request, tl, one, two, module, extra, prog):
+        """ Preregister a student for the specified class and return an updated inline schedule """
+        try:
+            success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+            if success:
+                return self.ajax_schedule(request, tl, one, two, module, extra, prog)
+        except:
+            return HttpResponse('Error encountered in processing')     
 
     @aux_call
     @needs_student
@@ -441,11 +460,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         categories = {}
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
-        
-        return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), {'classes': classes,
-                                                                                       'one':        one,
-                                                                                       'two':        two,
-                                                                                       'categories': categories.values()})
+            
+        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values()}
+        return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), context)
 
     def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
         return render_to_response(self.baseDir()+'catalog_javascript.html', request, (prog, tl), {
@@ -502,11 +519,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
 
-    @aux_call
-    @needs_student
-    @meets_any_deadline(['/Classes/OneClass','/Removal'])
-    def clearslot(self, request, tl, one, two, module, extra, prog):
-        """ Clear the specified timeslot from a student registration and go back to the same page """
+
+    def clearslot_logic(self, request, tl, one, two, module, extra, prog):
+        """ Clear the specified timeslot from a student registration and return True if there are no errors """
         
         #   The registration verb can be anything under this.
         v_registered_base = request.get_node('V/Flags/Registration')
@@ -537,7 +552,27 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     auto_class.unpreregister_student(self.user)
                         
-        return self.goToCore(tl)
+        return True
+
+    @aux_call
+    @needs_student
+    @meets_any_deadline(['/Classes/OneClass','/Removal'])
+    def clearslot(self, request, tl, one, two, module, extra, prog):
+        """ Clear the specified timeslot from a student registration and go back to the same page """
+        if self.clearslot_logic(request, tl, one, two, module, extra, prog):
+            return self.goToCore(tl)
+
+    @aux_call
+    @needs_student
+    @meets_any_deadline(['/Classes/OneClass','/Removal'])
+    def ajax_clearslot(self,request, tl, one, two, module, extra, prog):
+        """ Clear the specified timeslot from a student registration and return an updated inline schedule """
+        try:
+            success = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+            if success:
+                return self.ajax_schedule(request, tl, one, two, module, extra, prog)
+        except:
+            return HttpResponse('Error encountered in processing')  
 
     @aux_call
     @needs_student
