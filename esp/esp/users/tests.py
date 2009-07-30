@@ -1,5 +1,7 @@
 from django.test import TestCase
+from django import forms
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket
+from esp.users.forms.user_reg import ValidHostEmailField
 
 class ESPUser__inittest(TestCase):
     def runTest(self):
@@ -54,3 +56,18 @@ class PasswordRecoveryTicketTest(TestCase):
         # Make sure it destroys all other tickets for user forgetful
         self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.user).count(), 0, "Tickets for user forgetful not wiped.")
         self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.other).count(), 1, "Tickets for user innocent incorrectly wiped.")
+
+class ValidHostEmailFieldTest(TestCase):
+    def testCleaningKnownDomains(self):
+        # Hardcoding 'esp.mit.edu' here might be a bad idea
+        # But at least it verifies that A records work in place of MX
+        for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
+            self.failUnless( ValidHostEmailField().clean( u'fakeaddress@%s' % domain ) == u'fakeaddress@%s' % domain )
+    def testFakeDomain(self):
+        # If we have an internet connection, bad domains raise ValidationError.
+        # This should be the *only* kind of error we ever raise!
+        try:
+            ValidHostEmailField().clean( u'fakeaddress@idontex.ist' )
+        except forms.ValidationError:
+            pass
+
