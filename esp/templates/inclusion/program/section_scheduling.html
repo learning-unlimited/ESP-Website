@@ -1,0 +1,62 @@
+<tr id="sec-{{ sec.id }}-tr">
+        <td class="noborder">
+            <i>{{ sec.code }}:</i> ({{ sec.students_actual }}/{{ sec.students_max }})
+        </td>
+        
+        <td class="noborder">{{ sec.scheduling_status }}</td>
+	
+        <td class="noborder">{{ sec.duration }}</td>
+        <td class="noborder">{% for ft in sec.friendly_times %}{{ ft }}<br />{% endfor %}</td>
+        <td class="noborder">
+            {% if sec.friendly_times %}
+                <input type="hidden" name="starttime_{{ sec.id }}_old" value="{{ sec.start_time.id }}" />
+            {% endif %}
+            {% if sec.viable_times %}
+            <select name="starttime_{{ sec.id }}_new" onchange="javascript:flagDirty('{{ sec.id }}', 'sec-')">
+            <option value="-1">[None]</option>
+            {% for ft in sec.viable_times %}
+                <option value="{{ ft.id }}" {% if ft.selected %}selected="selected"{% endif %}>{{ ft.pretty_start_time }}</option>
+            {% endfor %}
+            </select>
+            {% else %}
+            <span style="color: #999999">None feasible</span>
+            {% endif %}
+        </td>
+        <td class="noborder narrow">
+            {% for room in sec.initial_rooms %}
+            <a class="tooltip">{{ room.name }}
+            <span><b>Size:</b> {{ room.num_students }}<br />
+            <b>Resources:</b><br /> {% for ar in room.resources %}- {{ ar }}<br />{% endfor %}</span>
+            </a>{% if not forloop.last %},{% endif %}{% endfor %}
+        </td>
+        <td class="noborder">
+            {% if sec.sufficient_length %}
+                {% if sec.viable_rooms %}
+                    {% if not sec.initial_rooms|length_is:0 %}
+                        <input type="hidden" name="room_{{ sec.id }}_old" value="{{ sec.initial_rooms.0.id }}" />
+                    {% endif %}
+                    <select class="narrow" name="room_{{ sec.id }}_new" onchange="javascript:flagDirty('{{ sec.id }}', 'sec-')">
+                    <option value="-1">[None]</option>
+                    {% if not sec.initial_rooms|length_is:0 %}
+                        <option value="{{ sec.initial_rooms.0.id }}" selected="selected">{{ sec.initial_rooms.0.name }} ({{ sec.initial_rooms.0.num_students }})</option>
+                    {% endif %}
+                    {% for vr in sec.viable_rooms %}
+                        <option value="{{ vr.id }}">{{ vr.name }} ({{ vr.num_students }})</option>
+                    {% endfor %}
+                    </select>
+                {% else %}
+                    {% if not sec.initial_rooms|length_is:0 %}
+                        {{ sec.initial_rooms.0.name }} ({{ sec.initial_rooms.0.num_students }})
+                    {% else %}
+                        <span style="color: #999999">None feasible</span>
+                    {% endif %}
+                {% endif %}
+            {% else %}
+                <span style="color: #999999">Assign time</span>
+            {% endif %}
+        </td>
+        <td class="noborder">
+            <input type="hidden" id="sec-{{ sec.id }}-dirty" name="sec-{{ sec.id }}-dirty" value="False" />
+            <input class="fancybutton" type="submit" value="Alter" />
+        </td>
+    </tr>
