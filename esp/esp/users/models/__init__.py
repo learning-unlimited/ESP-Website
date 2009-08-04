@@ -306,14 +306,20 @@ class ESPUser(User, AnonymousUser):
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
 
-    def getTaughtTime(self, program = None, include_scheduled = True):
+    def getTaughtTime(self, program = None, include_scheduled = True, round_to = 0.0):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
-            If include_scheduled is given as False, we don't count time for already-scheduled classes. """
+            If include_scheduled is given as False, we don't count time for already-scheduled classes.
+            Rounds to the nearest round_to (if zero, doesn't round at all). """
         user_sections = self.getTaughtSections(program)
         total_time = timedelta()
+        round_to = float( round_to )
+        if round_to:
+            rounded_hours = lambda x: round_to * round( float( x ) / round_to )
+        else:
+            rounded_hours = lambda x: float( x )
         for s in user_sections:
             if include_scheduled or (s.start_time() is None):
-                total_time = total_time + timedelta(hours=float(s.duration))
+                total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
 
     @staticmethod
