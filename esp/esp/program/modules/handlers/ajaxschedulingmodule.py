@@ -38,7 +38,7 @@ from django.http                 import HttpResponseRedirect, HttpResponse
 from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserBit
 from esp.middleware              import ESPError
-from esp.resources.models        import Resource, ResourceRequest
+from esp.resources.models        import Resource, ResourceRequest, ResourceType
 from esp.datatree.models         import DataTree
 from datetime                    import timedelta
 from django.utils                import simplejson
@@ -98,7 +98,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'text': s.title,
                 'category': s.category.category,
                 'length': float(s.duration),
-                'teachers': teacher_dict[s.anchor_id],
+                'teachers': teacher_dict[s.parent_class.anchor_id],
                 'resource_requests': rrequest_dict[s.id]
             } for s in sections ]
 
@@ -132,14 +132,17 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_teachers(self, request, tl, one, two, module, extra, prog):
         teachers = ESPUser.objects.filter(userbit__verb=GetNode('V/Flags/Registration/Teacher')).filter(userbit__qsc__classsubject__isnull=False, userbit__qsc__parent__parent__program=prog).distinct()
 
-        resources = Resource.objects.filter(user__in = [t.id for t in teachers])
+        restype = ResourceType.get_or_create('Teacher Availability')
+        resources = Resource.objects.filter(user__in = [t.id for t in teachers],
+                                            res_type = restype,
+                                            ).filter(
+            QTree(event__anchor__below = prog.anchor)).values('user_id', 'event__id')
+
 
         resources_for_user = defaultdict(list)
 
         for resource in resources:
-            resources_for_user[resource.user_id].append(resource.id)
-
-        print resources_for_user
+            resources_for_user[resource['user_id']].append(resource['event__id'])
         
         teacher_dicts = [
             {   'uid': t.id,
