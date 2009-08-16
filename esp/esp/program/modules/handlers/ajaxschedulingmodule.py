@@ -99,7 +99,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'category': s.category.category,
                 'length': float(s.duration),
                 'teachers': teacher_dict[s.parent_class.anchor_id],
-                'resource_requests': rrequest_dict[s.id]
+                'resource_requests': rrequest_dict[s.id],
+                'max_class_capacity': s.max_class_capacity,
             } for s in sections ]
 
         response = HttpResponse(content_type="text/x-json")
@@ -120,7 +121,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
             {   'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': []
+                'associated_resources': [],
+                'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
         response = HttpResponse(content_type="text/x-json")
