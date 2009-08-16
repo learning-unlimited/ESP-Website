@@ -103,7 +103,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'max_class_capacity': s.max_class_capacity,
             } for s in sections ]
 
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(sections_dicts, response)
         return response
 
@@ -125,7 +125,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(classrooms_dicts, response)
         return response
 
@@ -152,7 +152,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'availability': resources_for_user[t.id]
             } for t in teachers ]
 
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(teacher_dicts, response)
         return response
 
@@ -165,7 +165,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             t['start'] = t['start'].timetuple()[:6]
             t['end'] = t['end'].timetuple()[:6]
         
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(times, response)
         return response
 
@@ -186,7 +186,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'associated_resources': []
             } for rsrc_id in resources_grouped.keys() ]
 
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(classrooms_dicts, response)
         return response        
 
