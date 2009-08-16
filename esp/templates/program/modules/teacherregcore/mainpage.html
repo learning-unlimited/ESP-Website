@@ -61,13 +61,10 @@ We appreciate your interest!  If you have any questions, please <a href="mailto:
 
 <br />
 
-<h2>Announcements</h2>
 {% if progposts|length_is:0 %}
-<em>There are currently no announcements.  Please proceed to registering your classes below!</em>
-<br />
-<br />
-<br />
+<!-- No announcements for this program -->
 {% else %}
+<h2>Announcements</h2>
 {% for blogentry in progposts %}
 <div class="blogentry">
   <p class="heading">
