@@ -70,6 +70,8 @@ def userview(request):
         raise ESPError(False), "Sorry, can't find anyone with that username."
 
     teacherbio = TeacherBio.getLastBio(user)
+    if not teacherbio.picture:
+        teacherbio.picture = 'uploaded/not-available.jpg'
     
     return render_to_response("users/userview.html", request, GetNode("Q/Web"), { 'user': user, 'teacherbio': teacherbio } )
     
