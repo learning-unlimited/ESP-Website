@@ -1,11 +1,66 @@
-from django.contrib.auth.models import User,Group
+from django.contrib.auth.models import User, Group
 import datetime, random, hashlib
-import unittest
-from django.test import TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import UserBit, GetNode
+from django.test.client import Client
 
 from esp.users.models import ESPUser
 
-class ProfileTest(unittest.TestCase):
+class ViewUserInfoTest(TestCase):
+    def setUp(self):
+        """ Set up a bunch of user accounts to play with """
+        self.password = "pass1234"
+        
+        self.user, created = User.objects.get_or_create(first_name="Test", last_name="User", username="testuser123543", email="server@esp.mit.edu")
+        if created:
+            self.user.set_password(self.password)
+            self.user.save()
+
+        self.admin, created = User.objects.get_or_create(first_name="Admin", last_name="User", username="adminuser124353", email="server@esp.mit.edu")
+        if created:
+            self.admin.set_password(self.password)
+            self.admin.save()
+
+        self.fake_admin, created = User.objects.get_or_create(first_name="Not An Admin", last_name="User", username="notanadminuser124353", email="server@esp.mit.edu")
+        if created:
+            self.admin.set_password(self.password)
+            self.admin.save()
+
+        self.bit, created = UserBit.objects.get_or_create(user=self.admin, verb=GetNode("V/Administer"), qsc=GetNode("Q"))
+        
+
+    def testUserInfoPage(self):
+        """ Tests the /manage/userview view, that displays information about arbitrary users to admins """
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        # Test to make sure we can get a user's page
+        # (I'm just going to assume that the template renders properly;
+        # too lame to do a real thorough test of it...)
+        response = c.get("/manage/userview", { 'username': self.user.username })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['user'].id, self.user.id)
+        self.assert_(self.admin.first_name in response.content)
+
+        # Test to make sure we get an error on an unknown user
+        response = c.get("/manage/userview", { 'username': "NotARealUser" })
+        self.assertEqual(response.status_code, 500)
+
+        # Now, make sure that only admins can view this page
+        c.login(username=self.fake_admin.username, password=self.password)
+        response = c.get("/manage/userview", { 'username': self.user.username })
+        self.assertEqual(response.status_code, 403)
+
+        
+    def tearDown(self):
+        """ Delete all our fake users.  Probably not actually necessary, but, eh, oh well. """
+        self.bit.delete()
+        self.admin.delete()
+        self.fake_admin.delete()
+        self.user.delete()
+        
+        
+class ProfileTest(TestCase):
 
     def setUp(self):
         self.salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
@@ -283,3 +338,4 @@ class ProgramHappenTest(TestCase):
         self.makeprogram()
         self.teacherreg()
         self.studentreg()
+
