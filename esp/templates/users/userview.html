@@ -33,8 +33,8 @@
 <h1>User Information</h1>
 
 <div style="float: right;" id="div_usertype_info">
-   <img src="/media/{{ teacherbio.picture }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"  
-        alt="Picture of {{ user.first_name }} {{ user.last_name }}" align="right" class="biophoto" />
+   {% if teacherbio.picture %}<img src="{{ teacherbio.picture.url }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"  
+        alt="Picture of {{ user.first_name }} {{ user.last_name }}" align="right" class="biophoto" />{% endif %}
 
 {% if profile.teacher_info.bio %}
 <p><strong>Bio:</strong> {{ profile.teacher_info.bio }}</p>
