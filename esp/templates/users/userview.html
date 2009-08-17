@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/series-3.html" %}
 
 {% block title %}User Information{% endblock %}
 
@@ -33,7 +33,7 @@
 <h1>User Information</h1>
 
 <div style="float: right;" id="div_usertype_info">
-   <img src="{{ MEDIA_URL }}{{ bio.picture }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"  
+   <img src="/media/{{ teacherbio.picture }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"  
         alt="Picture of {{ user.first_name }} {{ user.last_name }}" align="right" class="biophoto" />
 
 {% if profile.teacher_info.bio %}
