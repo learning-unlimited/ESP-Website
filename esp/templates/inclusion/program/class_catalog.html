@@ -1,94 +1,50 @@
 {% if show_class %}
-{% load latex %}
-{% load smartypants %}
-<div class="show_class">
-  <table cellpadding="5" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
-    <tr>
-      <th colspan="2" style="width: 70%;">
-	{% if class.got_qsd %}<a href="../Classes/{{ class.emailcode }}/index.html">{% endif %}{% comment %}{{ class.emailcode }}: {% endcomment %}{{ class.title|escape|teximages:150|smartypants }}{% if class.got_qsd %}</a>{% endif %}
-      </th>
-      <th style="width: 30%;">
-       <span class="teachers">
-       {% for teacher in class.teachers %}
-       <a href="/teach/teachers/{{ teacher.last_name|urlencode }}/{{ teacher.first_name|urlencode }}{{ teacher.getUserNum }}/bio.html" 
-          title="Click for the biography of {{teacher.first_name }} {{teacher.last_name }}">
-          {{ teacher.first_name }} {{teacher.last_name }}
-       </a>{% if not forloop.last %},{% endif %}{% endfor %}
-       </span>
-       </th>
-     </tr>
-     <tr>
-       <td colspan="3" class="info{% if errormsg %} errormsg{% endif %}">
-         {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
-       {% if class.prereqs %}
-       <br /><br />
-       <em>*Prerequisites*</em>
-       <p style="padding-left: 10px; font-style:italic;">
-         {{ class.prereqs }}
-       </p>
-       {% endif %}
-       </td>
-     </tr>
-    <tr {% if errormsg %}class="errormsg"{% endif %}>
-      <td style="width: 50%;" valign="top" {% if errormsg %}class="errormsg"{% endif %}>
-        <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
-        <br />
-	  {{ class.friendly_times|join:"<br />" }}
-        <br />
-      </td>
- 
-      <td style="width: 50%;" colspan="2" {% if errormsg %}class="errormsg"{% endif %}>
-         {% if class.isFull %}<strong><font color="#990000">Class is full!</font></strong>{% else %}
-{% comment %} (this comment, and above shift of if tag, for Cascade -rye 1-7-09)
-<strong>Enrollment:</strong><br />  {% for sec in class.sections.all %}
-            Section {{ sec.index }}: {% if sec.isFull %}<font color = "#990000">Section is full!</font>{% else %} {{ sec.num_students }} (max {{ class.class_size_max }}) 
-        {% endif %} <br />
-        {% endfor %}{% endcomment %}
+    {% load latex %}
+    {% load smartypants %}
+    {% load class_render %}
+    <div class="show_class">
+    <table cellpadding="5" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
+    {% render_class_core class %}
+    {% if prereg_url %}
+        <tr>
+        <td colspan="3" style="text-align: center; padding:0;" align="center" valign="center" class="add_class">
+        {% if errormsg %}
+            <span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
+            {% if user.onsite_local %}
+                <br />
+                <form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                    <input type="hidden" name="class_id" value="{{ class.id }}" />
+                    <input type="hidden" name="section_id" value="{{ section.id }}" />
+                    <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
+                                 id="submitbutton{{ class.id }}" />
+                </form>
+            {% endif %}
+        {% else %}
+            {% if section %}
+                {% if not section.isRegClosed %}
+                <form id="prereg_submitform" name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                  <input type="hidden" name="class_id" value="{{ class.id }}" />
+                      <input type="hidden" name="section_id" value="{{ section.id }}" />
+                  <input type="submit" class="addbutton" name="action" value="Add this class"
+                             id="submitbutton{{ class.id }}" />
+                </form>
+                {% endif %}
+            {% else %}
+                {% for sec in class.sections.all %}
+                    {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
+                    <form id="prereg_submitform" name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                      <input type="hidden" name="class_id" value="{{ class.id }}" />
+                      <input type="hidden" name="section_id" value="{{ sec.id }}" />
+                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}"
+                                 id="submitbutton{{ class.id }}" />
+                    </form>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
         {% endif %}
-      </td>
-    </tr>
-    {% if class.media_count %}
-    <tr>
-      <th colspan="3" class="materials">
-       <b>Materials for this class include:</b> 
-	<span class="doclist">
-	{% for doc in class.docs_summary %}
-	<a href="{{ doc.get_target_file_url}}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %} 
-	{% endfor %}
-	</span>
-	<br /><b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">Click here to view all {{ class.media_count }} documents for {{ class.title }}</a></b>
-      </th>
-     </tr>
+        </td>
+        </tr>
     {% endif %}
-{% if prereg_url %}
-    <tr>
-      <td colspan="3" style="text-align: center; padding:0;" align="center" valign="center" class="add_class">
-     {% if errormsg %}
-<span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
-{% if user.onsite_local %}
-<br />
-<form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
-	  <input type="hidden" name="class_id" value="{{ class.id }}" />
-      <input type="hidden" name="section_id" value="{{ section.id }}" />
-  	  <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
-                 id="submitbutton{{ class.id }}" />
-</form>
-{% endif %}
-
-{% else %}
-    {% if not section.isRegClosed %}
-	<form name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
-	  <input type="hidden" name="class_id" value="{{ class.id }}" />
-      <input type="hidden" name="section_id" value="{{ section.id }}" />
-  	  <input type="submit" class="addbutton" name="action" value="Add this class"
-                 id="submitbutton{{ class.id }}" />
-	</form>
-    {% endif %}
-{% endif %}
-      </td>
-     </tr>
-{% endif %}
-</table>
-
-</div>
+    </table>
+    </div>
 {% endif %}

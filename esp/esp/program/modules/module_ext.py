@@ -64,6 +64,7 @@ class StudentClassRegModuleInfo(models.Model):
     signup_verb          = AjaxForeignKey(DataTree, default=lambda:GetNode(REG_VERB_BASE + '/Enrolled'))
     use_priority         = models.BooleanField(default=False)
     priority_limit       = models.IntegerField(default=3)
+    register_from_catalog = models.BooleanField(default=False)
     
     def __init__(self, *args, **kwargs):
         #   Trying to fetch self.signup_verb directly throws a DoesNotExist for some reason.

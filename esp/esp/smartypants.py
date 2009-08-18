@@ -17,7 +17,7 @@ Copyright (c) 2003 John Gruber
 Synopsis
 ========
 
-A smart-quotes plugin for Pyblosxom_.
+A smart-quotes plugin for Pyblosxom_  .
 
 The priginal "SmartyPants" is a free web publishing plug-in for Movable Type,
 Blosxom, and BBEdit that easily translates plain ASCII punctuation characters

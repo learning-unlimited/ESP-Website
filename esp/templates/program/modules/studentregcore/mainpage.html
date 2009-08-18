@@ -23,6 +23,7 @@ tion is correct?'))
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/progressbar.css" type="text/css" />
 {% endblock %}
 
 {% load subsection %}
@@ -30,9 +31,6 @@ tion is correct?'))
 {% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
 
 {% block content %}
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-</style>
 <h1 class="catalog">Pick Classes, {{program.niceName}} </h1>
 
 {% if not request.user.onsite_local %}
@@ -60,53 +58,41 @@ tion is correct?'))
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
 
-<div id="catalog">
-
-<!-- (Removing for Cascade -rye 1-7-09) <center><div class="note">
-<b>Parents:</b> You should not be at this page!  Please let your kids choose their classes and fill out the registration forms.
-</div></center> -->
-
-<!-- (temporarily disabling the checkbox for Cascade -rye 1-7-09)
-<table style="text-align: center" align="center" width="400">
-<tr><th>Steps for Registration</th><th>Done?</th></tr>
-{% for module in modules %}
-{% if module.isStep %}
- <tr>
-  <td>{% if module.useTemplate %}
-   <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-    {{ module.module.link_title }} 
-    </a> <em>(below)</em>
-   {% else %}
-    {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
-   {% endif %}
-   {% if not module.module.required %} <em>(not required)</em> {% endif %}
+    <table class="progressbar" align="center" width="400">
+    <tr>
+    <td><img src="/media/images/progress/left_fill.gif" /></td>
+    {% for module in modules %}
+    {% if module.isStep %}
+    {% with module.fillProgressBar as moduleCompleted %}
+    <td class="progress{% if moduleCompleted %}_fill{% endif %}">
+    {% if module.useTemplate %}
+    <a href="#module-{{ module.id }}">
+    {% else %}
+    <a href="{{ module.get_full_path }}">
+    {% endif %}
+    <img src="/media/images/progress/bar{% if moduleCompleted %}_fill{% endif %}.gif" 
+        {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
+        title="Not Done" alt="Not Done"{% endif %} /><br />
+    </a>
+    {% if module.useTemplate %}
+    <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
+        {{ module.module.link_title }} 
+        </a> <em>(below)</em>
+    {% else %}
+        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
+    {% endif %}
+    {% if not module.module.required %}{% if not module.hideNotRequired %}<br /><em>(optional)</em> {% endif %}{% endif %}
   </td>
-  <td>{% if not module.useTemplate %}
-   <a href="{{ module.get_full_path }}">
-   {% else %}
-   <a href="#module-{{ module.id }}">
-   {% endif %}
-   <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" 
-     {% if module.isCompleted %}title="Done!" alt="Done!"{% else %}
-       title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
-   </a>
-  </td>
-</tr>
+    {% endwith %}
 {% endif %}
 {% endfor %}
- <tr>
-  <td><a href="#confirmreg" title="Confirm Registration">
-        Confirm Registration</a> <em>(below)</em>
-  </td>
-  <td>
-   <a href="#confirmreg">
-      <img src="/media/images/{% if not isConfirmed %}no{% endif %}checkmark.gif" class="nocheckmark" />
-   </a>
-  </td>
- </tr>   
-</table> -->
+    <td><img src="/media/images/progress/right{% if completedAll %}_fill{% endif %}.gif" /></td>
+    </tr>
+    </table>
 
 {% endif %}
+
+<br />
 
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentreg" request.user %}

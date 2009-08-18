@@ -77,6 +77,11 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
     errormsg = None
 
     section = cls.get_section(timeslot=timeslot)
+    
+    #   Add ajax_addclass to prereg_url if registering from catalog is allowed
+    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+    if prereg_url is None and scrmi.register_from_catalog:
+        prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
 
     if False and user and prereg_url:
         error1 = cls.cannotAdd(user, True, request=request)

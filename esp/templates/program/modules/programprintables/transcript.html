@@ -1,0 +1,14 @@
+<center>
+<table border="1">
+<tr>
+    <th>Course</th>
+    <th>Teacher[s]</th>
+</tr>
+{% for cls in classlist %}
+<tr>
+    <td>{{ cls.title }}</td>
+    <td>{{ cls.teachers }}</td>
+</tr>
+{% endfor %}
+</table>
+</center>

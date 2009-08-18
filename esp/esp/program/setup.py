@@ -35,7 +35,9 @@ from esp.program.Lists_ClassCategories import populate as populate_LCC
 from esp.program.models import Program, ProgramModule
 from esp.accounting_core.models import LineItemType
 
-def prepare_program(program, form):
+#   Changed this function to accept a dictionary so that it can be called directly
+#   from code in addition to being used in the program creation form.  -Michael P 8/18/2009
+def prepare_program(program, data):
     """ This function adds custom stuff to save_instance to facilitate making programs happen.
     """
 
@@ -46,34 +48,34 @@ def prepare_program(program, form):
     modules = []
 
     # Fetch/create the program node
-    program_node_name = program.anchor.uri + '/' + form.cleaned_data['term']
+    program_node_name = program.anchor.uri + '/' + data['term']
 
     # Create the DataTree branches
     for sub_node in ProgramTemplate:
         datatrees += [(program_node_name + sub_node, '')]
 
-    userbits += [('V/Flags/Public', '(all)', form.cleaned_data['publish_start'], form.cleaned_data['publish_end'])]
+    userbits += [('V/Flags/Public', '(all)', data['publish_start'], data['publish_end'])]
     
-    userbits += [('V/Deadline/Registration/Student', '(all)', form.cleaned_data['student_reg_start'], form.cleaned_data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Applications', 0, form.cleaned_data['student_reg_start'], form.cleaned_data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Catalog', 0, form.cleaned_data['student_reg_start'], None)]
-    #userbits += [('V/Deadline/Registration/Student/Classes', 0, form.cleaned_data['student_reg_start'], form.cleaned_data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Classes/OneClass', 0, form.cleaned_data['student_reg_start'], form.cleaned_data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Confirm', 0, form.cleaned_data['student_reg_start'], form.cleaned_data['publish_end'])]
-    #userbits += [('V/Deadline/Registration/Student/ExtraCosts', 0, form.cleaned_data['student_reg_start'], form.cleaned_data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/MainPage', 0, form.cleaned_data['student_reg_start'], form.cleaned_data['publish_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Payment', 0, form.cleaned_data['student_reg_start'], form.cleaned_data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Student', '(all)', data['student_reg_start'], data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Applications', 0, data['student_reg_start'], data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Catalog', 0, data['student_reg_start'], None)]
+    #userbits += [('V/Deadline/Registration/Student/Classes', 0, data['student_reg_start'], data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Classes/OneClass', 0, data['student_reg_start'], data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Confirm', 0, data['student_reg_start'], data['publish_end'])]
+    #userbits += [('V/Deadline/Registration/Student/ExtraCosts', 0, data['student_reg_start'], data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/MainPage', 0, data['student_reg_start'], data['publish_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Payment', 0, data['student_reg_start'], data['publish_end'])]
     
-    userbits += [('V/Deadline/Registration/Teacher', '(all)', form.cleaned_data['teacher_reg_start'], form.cleaned_data['teacher_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Teacher/Catalog', 0, form.cleaned_data['teacher_reg_start'], None)]
-    #userbits += [('V/Deadline/Registration/Teacher/Classes', 0, form.cleaned_data['teacher_reg_start'], form.cleaned_data['teacher_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Teacher/Classes/View', 0, form.cleaned_data['teacher_reg_start'], form.cleaned_data['publish_end'])]
-    #userbits += [('V/Deadline/Registration/Teacher/MainPage', 0, form.cleaned_data['teacher_reg_start'], form.cleaned_data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Teacher', '(all)', data['teacher_reg_start'], data['teacher_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Teacher/Catalog', 0, data['teacher_reg_start'], None)]
+    #userbits += [('V/Deadline/Registration/Teacher/Classes', 0, data['teacher_reg_start'], data['teacher_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Teacher/Classes/View', 0, data['teacher_reg_start'], data['publish_end'])]
+    #userbits += [('V/Deadline/Registration/Teacher/MainPage', 0, data['teacher_reg_start'], data['publish_end'])]
     
-    for director in form.cleaned_data['admins']:
+    for director in data['admins']:
         userbits += [('V/Administer', ESPUser.objects.get(id=int(director)), None, None)]
         
-    modules += [(str(ProgramModule.objects.get(id=i)), i) for i in form.cleaned_data['program_modules']]
+    modules += [(str(ProgramModule.objects.get(id=i)), i) for i in data['program_modules']]
        
     return datatrees, userbits, modules
 

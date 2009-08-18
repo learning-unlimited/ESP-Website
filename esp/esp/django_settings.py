@@ -175,6 +175,7 @@ INSTALLED_APPS = (
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
+    'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
     'esp.cache_loader',
 #    'django_evolution',
