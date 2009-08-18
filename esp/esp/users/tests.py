@@ -2,6 +2,7 @@ from django.test import TestCase
 from django import forms
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket
 from esp.users.forms.user_reg import ValidHostEmailField
+from esp.program.tests import ProgramFrameworkTest
 
 class ESPUser__inittest(TestCase):
     def runTest(self):
@@ -71,3 +72,36 @@ class ValidHostEmailFieldTest(TestCase):
         except forms.ValidationError:
             pass
 
+
+class AjaxExistenceChecker(TestCase):
+    """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
+        in the response. 
+    """
+    def runTest(self):
+        #   Quit if path and keys are not provided.  This ensures nothing will
+        #   break if this is invoked without those attributes.
+        if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
+            return
+        
+        import simplejson as json
+        response = self.client.get(self.path)
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content)
+        for key in self.keys:
+            self.assertTrue(content.has_key(key), "Key %s missing from Ajax response to %s" % (key, self.path))
+        
+class AjaxLoginExistenceTest(AjaxExistenceChecker):
+    def __init__(self, *args, **kwargs):
+        super(AjaxLoginExistenceTest, self).__init__(*args, **kwargs)
+        self.path = '/myesp/ajax_login/'
+        self.keys = ['loginbox_html']
+        
+class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
+    def runTest(self):
+        self.path = '/learn/%s/ajax_schedule' % self.program.getUrlBase()
+        self.keys = ['student_schedule_html']
+        user=self.students[0]
+        self.assertTrue(self.client.login(username=user.username, password='password'))
+        super(AjaxScheduleExistenceTest, self).runTest()
+        
+        

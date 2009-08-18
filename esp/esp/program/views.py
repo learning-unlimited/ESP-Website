@@ -201,7 +201,7 @@ def newprogram(request):
 
         if form.is_valid():
             temp_prog = form.save(commit=False)
-            datatrees, userbits, modules = prepare_program(temp_prog, form)
+            datatrees, userbits, modules = prepare_program(temp_prog, form.cleaned_data)
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
 

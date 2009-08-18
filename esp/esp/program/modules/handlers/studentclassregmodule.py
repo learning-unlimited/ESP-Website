@@ -118,15 +118,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             "module_type": "learn",
             "seq": 10,
             "required": True,
-            "main_call": "classlist"
-            }, {
-            "link_title": "Sign up for Classes",
-            "admin_title": "Sign up for Classes, SoW (StudentClassRegModule)",
-            "module_type": "learn2",
-            "seq": 10,
-            "required": True,
-            "main_call": "sowclass"
-            } ]
+            "main_call": "classlist",
+            "aux_calls": "ajax_schedule,addclass,ajax_addclass,catalog,fillslot,clearslot,ajax_clearslot,class_docs,swapclass"
+            }]
 
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
@@ -222,6 +216,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         return context
 
+    @aux_call
     @needs_student
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
         import simplejson as json

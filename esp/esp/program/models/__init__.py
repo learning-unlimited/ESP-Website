@@ -1229,9 +1229,10 @@ class BooleanToken(models.Model):
     text = models.TextField(help_text='Boolean value, or text needed to compute it', default='', blank=True)
     seq = models.IntegerField(help_text='Location of this token on the expression stack (larger numbers are higher)', default=0)
 
-    def get_expression(self):
+    def get_expr(self):
         return self.exp.subclass_instance()
-    expression = property(get_expression)
+    #   Renamed to expr to avoid conflicting with Django SQL evaluator "expression"
+    expr = property(get_expr)
 
     def __unicode__(self):
         return '[%d] %s' % (self.seq, self.text)
@@ -1249,7 +1250,7 @@ class BooleanToken(models.Model):
         stack = list(stack)
         while (value is None) and (len(stack) > 0):
             token = stack.pop().subclass_instance()
-            print 'Popped token: %s' % token.text
+            #   print 'Popped token: %s' % token.text
             
             # Handle possibilities for what the token might be:
             if (token.text == '||') or (token.text.lower() == 'or'):
@@ -1271,7 +1272,7 @@ class BooleanToken(models.Model):
                 # Pass along arguments
                 value = token.boolean_value(*args, **kwargs)
                 
-        print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
+        #   print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
         return (value, stack)
 
     """ This function is meant to take extra arguments so subclasses can use additional
@@ -1299,12 +1300,14 @@ class BooleanExpression(models.Model):
     def get_stack(self):
         return self.booleantoken_set.all().order_by('seq')
 
-    def add_token(self, token, seq=None, duplicate=True):
+    def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if duplicate:
-            new_token = BooleanToken(text=token.text)
+        if type(token_or_value) == str:
+            new_token = BooleanToken(text=token_or_value)
+        elif duplicate:
+            new_token = BooleanToken(text=token_or_value.text)
         else:
-            new_token = token
+            new_token = token_or_value
         if seq is None:
             if my_stack.count() > 0:
                 new_token.seq = self.get_stack().order_by('-seq').values('seq')[0]['seq'] + 10
@@ -1314,6 +1317,7 @@ class BooleanExpression(models.Model):
             new_token.seq = seq
         new_token.exp = self
         new_token.save()
+        return new_token
     
     def evaluate(self, *args, **kwargs):
         stack = self.get_stack()
@@ -1329,22 +1333,33 @@ class ScheduleMap:
     """
     @cache_function
     def __init__(self, user, program):
-        result = {}
         if type(user) is not ESPUser:
             user = ESPUser(user)
-        for t in program.getTimeSlots():
+        self.program = program
+        self.user = user
+        self.populate()
+    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
+
+    @cache_function
+    def populate(self):
+        result = {}
+        for t in self.program.getTimeSlots():
             result[t.id] = []
-        sl = user.getEnrolledSections(program)
+        sl = self.user.getEnrolledSections(self.program)
         for s in sl:
             for m in s.meeting_times.all():
                 result[m.id].append(s)
         self.map = result
-    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
+        return self.map
+    populate.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
 
     def __marinade__(self):
         import hashlib
         import pickle
         return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
+        
+    def __unicode__(self):
+        return '%s' % self.map
 
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested: 
