@@ -8,8 +8,7 @@
 <!--
 function submit_check()
 {
-    if (confirm('Your registration is incomplete, perhaps because you have not registered for an activity during each time block.  Please review each of the above steps.  Are sure that all of the above informa\
-tion is correct?'))
+    if (confirm('Your registration is incomplete, perhaps because you have not registered for an activity during each time block.  Please review each of the above steps.  Are sure that all of the above information is correct?'))
     {
         return true;
     }
@@ -110,7 +109,7 @@ tion is correct?'))
 <!-- (also removing this for Cascade -rye 1-7-09)
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
-
+-->
 
 {% if program.isFull %}{% if not canRegToFullProgram %}
 <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
@@ -124,11 +123,12 @@ Please finish the required steps listed above (they will be checked off when the
 Please click <em>Confirm</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
 {% endif %}
 </div>
--->
 {% endif %}
-
+-->
+<!--
 </center>
-{% endif %} -->
+{% endif %}
+-->
 <center>
 
 <a name="confirmreg"></a>
