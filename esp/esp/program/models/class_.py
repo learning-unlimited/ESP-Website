@@ -1858,7 +1858,7 @@ class ClassCategories(models.Model):
         db_table = 'program_classcategories'
 
     def __unicode__(self):
-        return unicode(self.category)
+        return u'%s (%s)' % (self.category, self.symbol)
         
         
     @staticmethod
