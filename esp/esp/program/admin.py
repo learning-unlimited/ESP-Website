@@ -94,7 +94,7 @@ def subclass_instance_type(obj):
 subclass_instance_type.short_description = 'Instance type'
         
 class BooleanTokenAdmin(admin.ModelAdmin):
-    list_display = ('expression', 'seq', subclass_instance_type, 'text')
+    list_display = ('expr', 'seq', subclass_instance_type, 'text')
     search_fields = ['text']
 admin.site.register(BooleanToken, BooleanTokenAdmin)    
     
@@ -107,15 +107,15 @@ admin.site.register(BooleanExpression, BooleanExpressionAdmin)
 admin.site.register(ScheduleConstraint)
 
 class ScheduleTestOccupiedAdmin(admin.ModelAdmin):
-    list_display = ('timeblock', 'expression', 'seq', subclass_instance_type, 'text')
+    list_display = ('timeblock', 'expr', 'seq', subclass_instance_type, 'text')
 admin.site.register(ScheduleTestOccupied, ScheduleTestOccupiedAdmin)
 
 class ScheduleTestCategoryAdmin(admin.ModelAdmin):
-    list_display = ('timeblock', 'category', 'expression', 'seq', subclass_instance_type, 'text')
+    list_display = ('timeblock', 'category', 'expr', 'seq', subclass_instance_type, 'text')
 admin.site.register(ScheduleTestCategory, ScheduleTestCategoryAdmin)
 
 class ScheduleTestSectionListAdmin(admin.ModelAdmin):
-    list_display = ('timeblock', 'section_ids', 'expression', 'seq', subclass_instance_type, 'text')
+    list_display = ('timeblock', 'section_ids', 'expr', 'seq', subclass_instance_type, 'text')
 admin.site.register(ScheduleTestSectionList, ScheduleTestSectionListAdmin)
 
 ## class_.py
