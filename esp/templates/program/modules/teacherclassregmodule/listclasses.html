@@ -87,6 +87,7 @@ If you have any questions regarding the program, <br /> please email the
       </a>
    </td>
    <td class="clsright bordertop2">
+    {% comment %}
       {% if cls.pageExists %}
       <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.html"
          title="{{ cls }}...">Visit web page</a>
@@ -94,6 +95,7 @@ If you have any questions regarding the program, <br /> please email the
       <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.edit.html"
 	 title="Create `{{ cls }}'...">Create web page</a>
       {% endif %}
+    {% endcomment %}
      </td>
    </tr>
 
@@ -135,7 +137,9 @@ If you have any questions regarding the program, <br /> please email the
         <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}</td>
         <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
             <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>) (<a href="/teach/{{ one }}/{{ two }}/select_students/{{ sec.id }}">enroll/reject</a>)</td>
+        {% comment %}
         <td class="clsright" valign="top"><a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ request.META.HTTP_HOST }}">E-mail students</a></td>
+        {% endcomment %}
     </tr>
     {% endfor %}
 
