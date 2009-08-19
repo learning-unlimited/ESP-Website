@@ -209,9 +209,13 @@ th .program_form_small{
    //font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-size: 0.9em;
-   background-color: #ffffff;
+   /* background-color: #ffffff; */
    text-align: left;
    vertical-align: top;
+}
+
+#program_form td.colorful {
+   background-color: #c6def7;
 }
 
 #program_form input {
