@@ -17,6 +17,7 @@
 
 <div id="program_form">
 
+<h3>Types of Requests</h3>
 <p>Teachers may make three types of requests for their classes:
 <ol>
 <li>They can choose among classroom characteristics or equipment that you specify.</li>
@@ -25,7 +26,13 @@
 </ol>
 </p>
 
+<h3>CSV Format</h3>
+<p><a href="/manage/{{ prog.getUrlBase }}/view_requests/csv">Click here</a> to retrieve a CSV file containing this information.  The file can be imported into Excel and other spreadsheet programs.</p>
+
+<h3>Full Listing</h3>
 <p>These requests are listed below; note that not all classes have all three types of requests associated with them.  It may be helpful to reference this page while scheduling classes.</p>
+
+
 
 {% for cls in classes %}
 <table width="500">
