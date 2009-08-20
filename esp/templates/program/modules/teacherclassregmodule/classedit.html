@@ -6,6 +6,9 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<style type = "text/css">
+.errorlist li {color:red; font-size:125%}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -22,6 +25,10 @@ sections of the
 same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div>
 </p>
 
+{% if form.errors %}
+<p> <b> <font color = "red" size = "4">  Your registration could not be submitted because of one or more errors! Please see below for more information. </font> </b> </p>
+{% endif %}
+
 <form action="{{request.path}}" name="clsform" method="post">
 
 <div id="program_form">
@@ -36,9 +43,9 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
         <th colspan="2">Submit</th>
     </tr>
     <tr>
-        <th colspan="2" class="smaller"><p>
+        <th colspan="2" class="smaller">
         Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
-        </p></th>
+        </th>
     </tr>
     <tr>
         <td align="center" colspan="2">
