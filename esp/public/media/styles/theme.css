@@ -1,0 +1,228 @@
+
+#page {
+font-family: sans-serif;
+margin: 40px auto;
+width: 760px;
+}
+
+#header {
+width: 640px;
+height: 106px;
+position: relative;
+}
+
+#body {
+width: 640px;
+margin-left: 120px;
+padding-bottom: 20px;
+position: relative;
+}
+
+/*
+ * Rounded Corners
+ */
+.corners div {
+position: absolute;
+width: 8px;
+height: 8px;
+}
+
+.corners .ul { left: 0;  top: 0; background-position: 0px 0px; }
+.corners .ur { right: 0; top: 0; background-position: 0px 16px; }
+.corners .dl { left: 0;  bottom: 0; background-position: 0px 24px; }
+.corners .dr { right: 0; bottom: 0; background-position: 0px 8px; }
+
+
+
+/*
+ * Menu
+ */
+#sidebar {
+width: 120px;
+float: left;
+}
+#menu {
+padding: 0px; margin: 0px;
+width: 120px;
+}
+
+#menu li {
+list-style-type: none;
+padding: 0; margin: 0;
+
+padding-left: 18px;
+margin-left: 9px;
+background-position: left top;
+background-repeat: no-repeat;
+}
+#menu a {
+display: block;
+height: 35px;
+width: 93px;
+/*background: #aaa;*/
+}
+
+#menu #tab_logo {
+margin-left: 0px;
+background-image: url(/media/images/theme/tab_main.png);
+}
+#menu #tab_logo a {
+width: 102px;
+height: 106px;
+background-image: url(/media/images/theme/logo.png);
+background-position: left center;
+background-repeat: no-repeat;
+}
+
+#menu #tab_myesp {
+margin-top: 10px;
+}
+
+/*
+ * Header
+ */
+
+#contact_info {
+position: absolute;
+top: 15px;
+left: 35px;
+font-family: sans-serif;
+}
+#contact_info span {
+display: block;
+}
+#contact_info .title {
+color: black;
+font-size: 9pt;
+font-weight: bold;
+}
+#contact_info .normal {
+font-size: 8pt;
+color: white;
+}
+#contact_info .normal a {
+/*color: #3f7a00;*/
+}
+
+
+/*
+ * Search
+ */
+#search_box {
+position: absolute;
+right: 0px; top: -28px;
+width: 204px; height: 28px;
+line-height: 26px;
+/*background: #fff url(/media/images/theme/search_bg.png) no-repeat 0% 0% scroll;*/
+}
+
+#search_field {
+margin-left: 25px;
+width: 140px;
+
+height: 15px;
+font-size: 12px;
+}
+
+#search_submit {
+cursor: pointer;
+background: none;
+color: transparent;
+border: none;
+margin-left: 4px;
+width: 20px;
+}
+
+/*
+ * Login
+ */
+#login_box {
+position: absolute;
+width: 225px;
+height: 70px;
+right: 20px;
+top: 15px;
+}
+
+#login_user {
+position: absolute;
+top: 9px; left: 8px;
+
+height: 15px;
+font-size: 12px;
+}
+
+#login_pswd {
+position: absolute;
+top: 40px; left: 8px;
+
+height: 15px;
+font-size: 12px;
+}
+
+#login_submit {
+position: absolute;
+top: 5px; right: 8px;
+height: 35px; width: 70px;
+
+/*background: #fff url(/media/images/theme/login.png) no-repeat 0% 0% scroll;*/
+color: transparent;
+border: none;
+cursor: pointer;
+}
+
+#login_signup {
+position: absolute;
+top: 40px; right: 8px;
+height: 25px; width: 70px;
+
+/*background: #fff url(/media/images/theme/signup.png) no-repeat 0% 0% scroll;*/
+color: transparent;
+border: none;
+}
+
+
+
+/*
+ * Content
+ */
+#main {
+width: 600px;
+margin: 0px auto;
+position: relative;
+background: #fff;
+}
+
+#content {
+width: 560px;
+padding: 10px 20px;
+margin: 0px auto;
+min-height: 400px;
+}
+
+#submenu {
+margin: 0; padding: 0 10px;
+line-height: 35px;
+height: 35px; width: 580px;
+font-size: smaller;
+background: #ccc;
+position: relative;
+}
+
+#submenu li {
+float: left;
+list-style-type: none;
+}
+
+#submenu li a {
+display: inline-block;
+height: 100%;
+padding: 0px 20px;
+text-decoration: none;
+color: #fff;
+}
+
+#submenu li + li:before {
+content: '|';
+color: #fff;
+}

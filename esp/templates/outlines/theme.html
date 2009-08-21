@@ -1,0 +1,146 @@
+{% extends "elements/html" %}
+
+{% block title %}Home [MOCKUP]{% endblock %}
+{% block stylesheets %}
+<meta name="author" content="Tony Valderrama, Vincent Lee, and others" />
+<link rel="stylesheet" type="text/css" href="/media/styles/theme.css" media="all" />
+<link rel="stylesheet" type="text/css" href="/media/styles/theme-gen.css" media="all" />
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+
+<script type="text/javascript">
+$(function(){
+
+// create behavior wrapper
+var wrap = function(target, label) {
+  if (!target) return;
+  var flag = false;
+  target.onfocus = function(){
+    if (flag) {
+      target.value = '';
+      target.style.color = '#000000';
+    }
+  };
+  target.onblur = function(){
+    if (flag = (target.value == '')) {
+      target.value = label;
+      target.style.color = '#999999';
+    }
+  };
+  target.onblur();
+};
+
+// set behavior on Username, Password, and Search fields
+wrap(document.getElementById('login_user'),'Username');
+wrap(document.getElementById('login_pswd'),'Password');
+wrap(document.getElementById('search_field'),'Enter search term');
+
+for each (var item in document.getElementById('menu').childNodes) {
+if (item.nodeType == 1) {
+  item.onmouseover = function(){
+    document.getElementById('page').className = this.className;
+  };
+}
+}
+
+});
+</script>
+
+{% endblock %}
+
+{% block body %}
+<div id="page" class="red">
+  <div id="sidebar">
+      <ul id="menu">
+	<li id="tab_logo" class="yellowgreen" ><a href="home.html"></a></li>
+	<li id="tab_splash" class="blue" ><a href="splash.html"></a></li>
+	<li id="tab_spark" class="purple" ><a href="spark.html"></a></li>
+	<li id="tab_hssp" class="red" ><a href="hssp.html"></a></li>
+	<li id="tab_satprep" class="orange" ><a href="satprep.html"></a></li>
+	<li id="tab_junction" class="yellow" ><a href="junction.html"></a></li>
+	<li id="tab_delve" class="lightgreen" ><a href="delve.html"></a></li>
+	<li id="tab_proveit" class="darkgreen" ><a href="proveit.html"></a></li>
+	<li id="tab_myesp" class="grey" ><a href="myesp.html"></a></li>
+	<li id="tab_admin" class="black" ><a href="admin.html"></a></li>
+      </ul>
+  </div>
+  <div id="body">
+    <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
+    <div id="header">
+      <div id="search_box">
+
+{% if request.user.isAdministrator %}
+	<form name="search_form" method="get" action="/manage/userview">
+	  <input type="text" id="search_field" name="username" />
+	  <input type="submit" id="search_submit" name="search_submit" />
+	</form>
+{% else %}
+	<form name="search_form" method="get" action="http://search.mit.edu/search">
+	 <input type='hidden' name='site' value='mit' />
+	 <input type='hidden' name='client' value='mit' />
+	 <input type='hidden' name='proxystylesheet' value='mit' />
+	 <input type='hidden' name='output' value='xml_no_dtd' />
+	 <input type='hidden' name='as_dt' value='i' />
+	 <input type='hidden' name='as_sitesearch' value='esp.mit.edu' />
+	  <input type="text" id="search_field" name="q" />
+	  <input type="submit" id="search_submit" name="search_submit" />
+	</form>
+{% endif %}
+
+      </div>
+      <div id="contact_info">
+	<span class="title">MIT Educational Studies Program</span>
+      <span class="normal">84 Massachusetts Avenue, Room W20-467</span>
+      <span class="normal">Cambridge, MA 02139</span>
+      <span class="normal">Tel: 617-253-4882</span>
+      <span class="normal"><a href="contact.html">contact us</a></span>
+      </div>
+{% block login %}
+<div id="login_box">
+
+{% if not request.user.is_authenticated %}
+<!-- login -->
+<form name="login_form" id="login_form" method="post" action="/myesp/login/">
+  <input type="hidden" name="next" value="/" />
+  <input type="text" id="login_user" name="username" />
+  <input type="password" id="login_pswd" name="password" />
+  <input type="submit" id="login_submit" name="login_submit" />
+  <a href="signup.html" id="login_signup"></a>
+</form>
+
+{% else %}
+<!-- logout -->
+  Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
+  (<a href="/myesp/signout/">Logout</a>)
+{% endif %}
+
+</div>
+{% endblock %}
+    </div>
+    <div id="main">
+      <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
+{% block content_header %}
+
+{% block secondary_nav %}
+      <ul id="submenu">
+	<div class="corners"><div class="ul"></div><div class="ur"></div></div>
+	<li><a href="#">about ESP</a></li>
+	<li><a href="#">for parents</a></li>
+	<li><a href="#">contact us</a></li>
+	<li><a href="#">other resources</a></li>
+	<li><a href="#">fill the page</a></li>
+      </ul>
+{% endblock %}
+
+{% endblock %}
+
+      <div id="content">
+{% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
