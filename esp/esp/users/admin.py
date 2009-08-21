@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from esp.users.models.userbits import UserBit, UserBitImplication
-from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, K12School
+from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, K12School, ZipCode, ZipCodeSearches
 
 class UserBitAdmin(admin.ModelAdmin):
     search_fields = ['user__last_name','user__first_name',
@@ -15,6 +15,8 @@ admin.site.register(StudentInfo)
 admin.site.register(TeacherInfo)
 admin.site.register(GuardianInfo)
 admin.site.register(EducatorInfo)
+admin.site.register(ZipCode)
+admin.site.register(ZipCodeSearches)
 
 class K12SchoolAdmin(admin.ModelAdmin):
     list_display = ( 'name', 'grades', 'school_type' )
