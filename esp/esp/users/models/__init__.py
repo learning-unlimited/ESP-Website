@@ -1117,7 +1117,7 @@ class ZipCode(models.Model):
             distance from this zip code. """
         from decimal import Decimal
         try:
-            distance = Decimal(str(distance))
+            distance_decimal = Decimal(str(distance))
         except:
             raise ESPError(), '%s should be a valid decimal number!' % distance
 
@@ -1129,6 +1129,7 @@ class ZipCode(models.Model):
 
         if len(oldsearches) > 0:
             return oldsearches[0].zipcodes.split(',')
+
         all_zips = list(ZipCode.objects.exclude(id = self.id))
         winners  = [ self.zip_code ]
 
