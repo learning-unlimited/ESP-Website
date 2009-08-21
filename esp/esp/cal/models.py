@@ -215,3 +215,12 @@ class EmailReminder(models.Model):
     def __unicode__(self):
         return str(self.event) + ': ' + str(self.email)
 
+def install():
+    """
+    This ensures the existence of certain event types:
+        Class Time Block -- for classes, obviously
+        Teacher Interview -- for TeacherEventsModule
+        Teacher Training -- for TeacherEventsModule
+    """
+    for x in [ 'Class Time Block', 'Teacher Interview', 'Teacher Training' ]:
+        EventType.objects.get_or_create(description=x)
