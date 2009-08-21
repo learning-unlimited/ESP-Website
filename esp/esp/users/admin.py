@@ -1,6 +1,6 @@
 from django.contrib import admin
 from esp.users.models.userbits import UserBit, UserBitImplication
-from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo
+from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches
 
 class UserBitAdmin(admin.ModelAdmin):
     search_fields = ['user__last_name','user__first_name',
@@ -14,3 +14,5 @@ admin.site.register(StudentInfo)
 admin.site.register(TeacherInfo)
 admin.site.register(GuardianInfo)
 admin.site.register(EducatorInfo)
+admin.site.register(ZipCode)
+admin.site.register(ZipCodeSearches)
