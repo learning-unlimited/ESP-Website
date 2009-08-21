@@ -57,6 +57,8 @@ function submit_check()
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
 
+<!-- Progress bar commented out for Chicago.  Michael P, 8/20/2009 -->
+{% comment %}
     <table class="progressbar" align="center" width="400">
     <tr>
     <td><img src="/media/images/progress/left_fill.gif" /></td>
@@ -88,7 +90,7 @@ function submit_check()
     <td><img src="/media/images/progress/right{% if completedAll %}_fill{% endif %}.gif" /></td>
     </tr>
     </table>
-
+{% endcomment %}
 {% endif %}
 
 <br />

@@ -11,9 +11,6 @@
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <style type="text/css">
-
-.required { border: 2px solid black; }
-
 .form_error { font-size: 80%; font-style: italic; color: #C00; }
 
 label { font-family: Arial, Lucida, Helvetica, sans-serif; font-size: 0.8em; font-weight: normal;}
@@ -25,19 +22,19 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 {% block content %}
 <h1>Basic Information</h1>
-<p>First, please tell us a bit about yourself!  (The fields bordered in red are required.)</p>
+<p>First, please tell us a bit about yourself!  (The fields bordered in green are required.)</p>
 
-<p>After you have filled out everything below, click the "update" button at the bottom of the page to continue on to picking your classes.</p>
+<p>After you have filled out everything below, click the "Save and Continue!" button at the bottom of the page to continue on to picking your classes.</p>
 
 {% if form.errors %}
-<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h2>{% autoescape off %}{{ form.errors }}{% endautoescape %}<br />
+<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h2><br />
 {% endif %}
 
 <div id="program_form">
 <form action="{{request.path}}" method="post">
 <input type="hidden" name="profile_page" value="true" />
 <input type="hidden" name="current_role" value="{{ profiletype }}" />
-<table cellpadding="3" align="center" border="0">
+<table cellpadding="0" cellspacing="0" align="center" border="0">
 
 {% include "users/profiles/usercontact.html" %}
 
@@ -63,7 +60,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 </table>
 
 <br />
-<center><input type="submit" name="submitform" class="button" value="Update your Information!" /></center>
+<center><input type="submit" name="submitform" class="button" value="Save and Continue!" /></center>
 
 <br />
 </form>

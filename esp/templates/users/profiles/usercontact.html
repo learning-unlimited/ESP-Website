@@ -22,9 +22,8 @@
 
 <tr>
 <td colspan="2"> 
-<div class="info">
-<b>Please enter your primary e-mail address.</b>  It is important that you check your e-mail at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  <br /><br />
-<b>Students</b>: this should be your e-mail address, not your parents'.  Please enter your parents' e-mail address in the parent/guardian section below.
+<div class="emailwarning">
+<b>Students: please enter an e-mail address that is your own, and that you actually use.</b> It is important that you check your e-mail at this address regularly, since it is our best means of contacting you with important information. If you don't have an email address of your own, enter an address of someone who will be sure to read our emails and inform you of important information. 
 </div>
 </td>
 </tr>
@@ -38,14 +37,18 @@
 </tr>
 
 <tr>
-  <td colspan="2"><label>Address:</label></td>
-</tr>
-
-<tr>
- <td align='right'><label for="id_address_street">
-                       <small><i>street</i></small>
-		   </label>
- </td>
+    <td style="padding-left: 0px;">
+     <table style="plain" width="100%">
+     <tr>
+        <td><label>Address:</label></td>
+        <td align="right">
+            <label for="id_address_street">
+            <small><i>street</i></small>
+            </label>
+        </td>
+    </tr>
+    </table>
+    </td>
  <td>{{ form.address_street }} {% if form.address_street.errors %}
    <br /><span class="form_error">{{ form.address_street.errors|join:", " }}</span>
    {% endif %}

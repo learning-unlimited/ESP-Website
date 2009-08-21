@@ -74,7 +74,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_phone_cell = PhoneNumberField(local_areacode='773', required=False)
     emerg_address_street = SizedCharField(length=40, max_length=100)
     emerg_address_city = SizedCharField(length=20, max_length=50)
-    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states))
+    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states), initial="IL")
     emerg_address_zip = SizedCharField(length=5, max_length=5)
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
@@ -91,7 +91,7 @@ class GuardContactForm(FormUnrestrictedOtherUser):
 class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
     from esp.users.models import ESPUser
-    from esp.users.models import shirt_sizes, shirt_types
+    from esp.users.models import shirt_sizes, shirt_types, food_choices
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(9,13)])
     school = forms.CharField(max_length=128, required=False)
@@ -102,6 +102,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
     heard_about = forms.CharField(max_length=512, required=False)
+    food_preference = forms.ChoiceField(choices=([('','')]+list(food_choices)))
 
     studentrep_error = True
 

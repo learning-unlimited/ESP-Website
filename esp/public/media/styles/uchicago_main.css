@@ -200,3 +200,15 @@ body {
   color: #CC66FF;
 }
 
+div .emailwarning
+{
+  text-align: left;
+  font-size: 1.0em;
+  padding: 10px 10px 10px 10px;
+  border: none;
+  margin: 5px;
+  overflow: visible;
+  width: 540px;
+  background-color: #ed1c24;
+  color: #FFFFFF;
+}

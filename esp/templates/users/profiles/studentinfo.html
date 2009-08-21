@@ -1,6 +1,6 @@
 <!-- Begin Student Info Portion -->
 <tr>
- <th colspan="2">Student Information</th>
+ <th colspan="2">Additional Information</th>
 </tr>
 
 <tr>
@@ -14,7 +14,7 @@
 
 <tr>
  <td><label for="id_graduation_year">Your Grade:<br />
-<em>(As of January 8, <strong>2009</strong>{% comment %}September 4, 
+<em>(As of September 1, <strong>2009</strong>{% comment %}September 4, 
       <strong>{{request.user.currentSchoolYear}}</strong>{% endcomment %})
       </em></label></td>
  <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
@@ -40,13 +40,19 @@
 </tr>
 
 <tr>
- <td><label for="id_studentrep">I heard about Cascade from: </label></td>
+ <td><label for="id_studentrep">I heard about Splash or Cascade from: </label></td>
  <td>{{ form.heard_about }} {% if form.heard_about.errors %}
    <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
-
+<tr>
+ <td><label for="id_food_preference">Food preference: </label></td>
+ <td>{{ form.food_preference }} {% if form.food_preference.errors %}
+   <br /><span class="form_error">{{ form.food_preference.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
 <!-- End Student Info Portion -->
 
