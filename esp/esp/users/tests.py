@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django import forms
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, TeacherInfo
+from esp.users.forms.user_profile import TeacherInfoForm
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.program.tests import ProgramFrameworkTest
 
@@ -57,6 +58,40 @@ class PasswordRecoveryTicketTest(TestCase):
         # Make sure it destroys all other tickets for user forgetful
         self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.user).count(), 0, "Tickets for user forgetful not wiped.")
         self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.other).count(), 1, "Tickets for user innocent incorrectly wiped.")
+
+class TeacherInfo__validationtest(TestCase):
+    def setUp(self):
+        self.user, created = User.objects.get_or_create(username='teacherinfo_teacher')
+        self.user = ESPUser( self.user )
+        self.user.profile = self.user.getLastProfile()
+        self.info_data = {
+            'graduation_year': '2000',
+            'school': 'L University',
+            'major': 'Underwater Basket Weaving',
+            'shirt_size': 'XXL',
+            'shirt_type': 'M',
+        }
+
+    def useData(self, data):
+        tif = TeacherInfoForm(data)
+        self.failUnless(tif.is_valid())
+        ti = TeacherInfo.addOrUpdate(self.user, self.user.getLastProfile(), tif.cleaned_data)
+        self.failUnless(ti.graduation_year == tif.cleaned_data['graduation_year'])
+        tifnew = TeacherInfoForm(ti.updateForm({}))
+        self.failUnless(tifnew.is_valid())
+        self.failUnless(tifnew.cleaned_data['graduation_year'] == ti.graduation_year)
+
+    def testUndergrad(self):
+        self.info_data['graduation_year'] = '2000'
+        self.useData( self.info_data )
+    def testGrad(self):
+        self.info_data['graduation_year'] = ' G'
+        self.useData( self.info_data )
+    def testOther(self):
+        self.info_data['graduation_year'] = ''
+        self.useData( self.info_data )
+        self.info_data['graduation_year'] = 'N/A'
+        self.useData( self.info_data )
 
 class ValidHostEmailFieldTest(TestCase):
     def testCleaningKnownDomains(self):
