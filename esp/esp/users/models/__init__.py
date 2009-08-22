@@ -662,11 +662,6 @@ class ESPUser(User, AnonymousUser):
 
     isAdmin = isAdministrator
 
-    def delete(self):
-        for x in self.userbit_set.all():
-            x.delete()
-        super(ESPUser, self).delete()
-
     @classmethod
     def create_membership_methods(cls):
         """
