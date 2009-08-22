@@ -90,7 +90,7 @@ class ESPUser(User, AnonymousUser):
         db_table = 'auth_user'
 
         def __init__(self):
-            super(self, Meta).__init__()
+            super(Meta, self).__init__()
             self.pk.attname = "id"
             self.local_fields[0].column = "id"
         
