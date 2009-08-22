@@ -49,18 +49,6 @@ from esp.users.models import ESPUser
 
 import pickle
 
-#def courseCatalogue(request, one, two):
-#    """ aseering 9-1-2006 : This function appears to not be used by anything; esp.web.program contains its equivalent.
-#        If nothing breaks by commenting this out, it should probably be deleted. """
-#    treeItem = "Q/Programs/" + one + "/" + two 
-#    prog = GetNode(treeItem).program_set.all()
-#    if len(prog) < 1:
-#        return render_to_response('users/construction', request, None, {})
-#    prog = prog[0]
-#    clas = list(prog.class_set.all().order_by('category'))
-#    p = one + " " + two
-#    return render_to_response('program/catalogue', request, prog,{'courses': clas })
-
 @admin_required
 def userview(request):
     """ Render a template displaying all the information about the specified user """
