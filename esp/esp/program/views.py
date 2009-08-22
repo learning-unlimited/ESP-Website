@@ -166,7 +166,6 @@ def usersearch(request):
         from urllib import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users.username}))
 
-
 @admin_required
 def userview(request):
     """ Render a template displaying all the information about the specified user """
