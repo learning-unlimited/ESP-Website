@@ -934,7 +934,7 @@ class TeacherInfo(models.Model):
         for value in values:
             value['user'] = User.objects.get(id=value['user'])
             value['graduation_year'] = cls._graduation_year_pretty( value['graduation_year_int'] )
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
+            value['ajax_str'] = u'%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
         return values
 
     def ajax_str(self):
@@ -1063,7 +1063,7 @@ class EducatorInfo(models.Model):
 
         for value in values:
             value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
+            value['ajax_str'] = '%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
         return values
 
     def ajax_str(self):
