@@ -24,8 +24,8 @@ class ViewUserInfoTest(TestCase):
 
         self.fake_admin, created = User.objects.get_or_create(first_name="Not An Admin", last_name="User", username="notanadminuser124353", email="server@esp.mit.edu")
         if created:
-            self.admin.set_password(self.password)
-            self.admin.save()
+            self.fake_admin.set_password(self.password)
+            self.fake_admin.save()
 
         self.bit, created = UserBit.objects.get_or_create(user=self.admin, verb=GetNode("V/Administer"), qsc=GetNode("Q"))
         
@@ -33,7 +33,7 @@ class ViewUserInfoTest(TestCase):
     def testUserInfoPage(self):
         """ Tests the /manage/userview view, that displays information about arbitrary users to admins """
         c = Client()
-        c.login(username=self.admin.username, password=self.password)
+        self.failUnless( c.login(username=self.admin.username, password=self.password), "Couldn't log in as admin" )
 
         # Test to make sure we can get a user's page
         # (I'm just going to assume that the template renders properly;
@@ -48,7 +48,7 @@ class ViewUserInfoTest(TestCase):
         self.assertEqual(response.status_code, 500)
 
         # Now, make sure that only admins can view this page
-        c.login(username=self.fake_admin.username, password=self.password)
+        self.failUnless( c.login(username=self.fake_admin.username, password=self.password), "Couldn't log in as fake admin" )
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 403)
 

@@ -167,7 +167,9 @@ class ESPErrorMiddleware(object):
                 # miniblog_for_user doesn't silently fail but best not to put
                 # in ugly hacks and make random variables just happen to work.)
                 context_instance = Context()
-            return render_to_response('403.html', context, context_instance=context_instance)
+            response = render_to_response('403.html', context, context_instance=context_instance)
+            response.status_code = 403
+            return response
 
 
         if isinstance(exception, ESPError_NoLog) or exception == ESPError_NoLog \
@@ -188,7 +190,9 @@ class ESPErrorMiddleware(object):
                 # miniblog_for_user doesn't silently fail but best not to put
                 # in ugly hacks and make random variables just happen to work.)
                 context_instance = Context()
-            return render_to_response('error.html', context, context_instance=context_instance)  # Will use a pretty ESP error page...
+            response = render_to_response('error.html', context, context_instance=context_instance)  # Will use a pretty ESP error page...
+            response.status_code = 500
+            return response
         return None
 
             
