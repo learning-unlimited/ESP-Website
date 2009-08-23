@@ -1,7 +1,6 @@
 from django.test import TestCase
 from django import forms
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, TeacherInfo
-from esp.users.forms.user_profile import TeacherInfoForm
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.program.tests import ProgramFrameworkTest
 
@@ -86,10 +85,15 @@ class TeacherInfo__validationtest(TestCase):
         }
 
     def useData(self, data):
+        from esp.users.models import TeacherInfo
+        from esp.users.forms.user_profile import TeacherInfoForm
+        # Stuff data into the form and check validation.
         tif = TeacherInfoForm(data)
         self.failUnless(tif.is_valid())
+        # Check that form data copies correctly into the model
         ti = TeacherInfo.addOrUpdate(self.user, self.user.getLastProfile(), tif.cleaned_data)
         self.failUnless(ti.graduation_year == tif.cleaned_data['graduation_year'])
+        # Check that model data copies correctly back to the form
         tifnew = TeacherInfoForm(ti.updateForm({}))
         self.failUnless(tifnew.is_valid())
         self.failUnless(tifnew.cleaned_data['graduation_year'] == ti.graduation_year)
