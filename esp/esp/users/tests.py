@@ -5,13 +5,26 @@ from esp.users.forms.user_profile import TeacherInfoForm
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.program.tests import ProgramFrameworkTest
 
-class ESPUser__inittest(TestCase):
-    def runTest(self):
+class ESPUserTest(TestCase):
+    def testInit(self):
         one = ESPUser()
         two = User()
         three = ESPUser(two)
         four = ESPUser(three)
-        assert three.__dict__ == four.__dict__
+        self.failUnless( three.__dict__ == four.__dict__ )
+    def testDelete(self):
+        from esp.datatree.models import GetNode
+        from esp.users.models import UserBit
+        # Create a user and a userbit
+        self.user, created = User.objects.get_or_create(username='forgetful')
+        self.userbit = UserBit.objects.get_or_create(user=self.user, verb=GetNode('V/Administer'), qsc=GetNode('Q'))
+        # Save the ID and then delete the user
+        uid = self.user.id
+        self.user.delete()
+        # Make sure it's gone.
+        self.failUnless( User.objects.filter(id=uid).count() == 0 )
+        self.failUnless( ESPUser.objects.filter(id=uid).count() == 0 )
+        self.failUnless( UserBit.objects.filter(user=uid).count() == 0 )
 
 class PasswordRecoveryTicketTest(TestCase):
     def setUp(self):
