@@ -43,6 +43,7 @@ class CreditCardViewer_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Credit Card View Module (Cybersource)",
             "link_title": "View Credit Card Transactions",
             "module_type": "manage",
             "seq": 10000

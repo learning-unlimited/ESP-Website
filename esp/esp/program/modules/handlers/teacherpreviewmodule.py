@@ -42,6 +42,7 @@ class TeacherPreviewModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Teacher Class Previewing",
             "link_title": "Preview Other Classes",
             "module_type": "teach",
             "seq": -10,
@@ -67,10 +68,12 @@ class TeacherPreviewModule(ProgramModuleObj):
         else:
             raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.' 
 
+    # No need for needs_teacher, since it depends on request.user
     @aux_call
     def teacherschedule(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='teacherschedule.html')
 
+    # No need for needs_teacher, since it depends on request.user
     @aux_call
     def classroster(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='classrosters.html')

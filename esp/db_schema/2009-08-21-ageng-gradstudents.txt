@@ -1,0 +1,7 @@
+Review the script 2009-08-21-ageng-gradstudents.sql. It can be run with:
+    $ sudo -u postgres psql -f 2009-08-21-ageng-gradstudents.sql <database>
+
+Actions taken by the script:
+    Migrates users_teacherinfo.graduation_year to graduation_year_int,
+        casting to INTEGER NOT NULL and handling "G" intelligently.
+    Drops the column users_teacherinfo.graduation_year.

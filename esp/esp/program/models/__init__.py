@@ -1452,3 +1452,7 @@ def schedule_constraint_test(prog):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 
+def install():
+    """ Setup for program. """
+    from esp.program.dummy_program import init_dummy_program
+    init_dummy_program()

@@ -114,6 +114,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @classmethod
     def module_properties(cls):
         return [ {
+            "admin_title": "Student Class Registration",
             "link_title": "Sign up for Classes",
             "module_type": "learn",
             "seq": 10,
