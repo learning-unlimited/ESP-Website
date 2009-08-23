@@ -671,4 +671,5 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         self.assertFalse(token3.boolean_value(map=sm.map), 'ScheduleTestSectionList broken')
         self.assertTrue(sc1.evaluate(sm), 'ScheduleConstraint broken')
         self.assertTrue(sc2.evaluate(sm), 'ScheduleConstraint broken')
-        
+
+from esp.program.modules.tests import *
