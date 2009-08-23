@@ -39,6 +39,7 @@ class TeacherBioModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Teacher Biography Editor",
             "link_title": "Update your teacher biography",
             "module_type": "teach",
             "seq": -111

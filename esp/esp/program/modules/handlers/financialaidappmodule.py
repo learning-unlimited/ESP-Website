@@ -45,6 +45,7 @@ class FinancialAidAppModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Financial Aid Application",
             "link_title": "Financial Aid Application",
             "module_type": "learn",
             "seq": 25

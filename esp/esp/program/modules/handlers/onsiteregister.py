@@ -44,6 +44,7 @@ class OnSiteRegister(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Onsite New Registration",
             "link_title": "New Student Registration",
             "module_type": "onsite",
             "seq": 30

@@ -51,8 +51,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
         return {
-            "link_title": "",
-            "admin_title": "Core Student Reg (StudentRegCore)",
+            "link_title": "Student Registration",
+            "admin_title": "Core Student Registration",
             "module_type": "learn",
             "seq": -9999
             }

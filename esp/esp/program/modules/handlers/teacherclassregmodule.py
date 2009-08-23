@@ -52,6 +52,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Teacher Class Registration",
             "link_title": "Register Your Classes",
             "module_type": "teach",
             "seq": 10,
