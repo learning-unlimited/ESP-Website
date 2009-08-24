@@ -46,6 +46,7 @@ class AdminReviewApps(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Application Review for Admin",
             "link_title": "Application Review for Admin",
             "module_type": "manage",
             "seq": 1000,

@@ -1876,7 +1876,14 @@ class ClassCategories(models.Model):
 
 def install():
     """ Initialize the default class categories. """
-    category_dict = {'S': 'Science', 'M': 'Math & Computer Science', 'E': 'Engineering', 'A': 'Arts', 'H': 'Humanities'}
+    category_dict = {
+        'S': 'Science',
+        'M': 'Math & Computer Science',
+        'E': 'Engineering',
+        'A': 'Arts',
+        'H': 'Humanities',
+        'X': 'Miscellaneous',
+    }
     
     for key in category_dict:
         cat = ClassCategories()

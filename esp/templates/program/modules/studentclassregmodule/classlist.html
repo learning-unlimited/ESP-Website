@@ -1,1 +1,28 @@
-./classselector.html
+
+{% if request.user.onsite_local %}
+         <div class="divformcol1" style="text-align:center; font-size: 16pt;">
+         <a href="/myesp/switchback/">Go back to {{ request.session.user_morph.retTitle }}</a>
+
+</div>
+{% endif %}
+
+<br />
+    
+{% include "users/student_schedule.html" %}
+{% if request.user.onsite_local %}
+<center>
+<a target="_new" href="/onsite/{{program.getUrlBase}}/studentschedule">Get Student Schedule</a>
+<br />
+{% if printers %}
+{% for printer in printers %}
+<a href="/onsite/{{program.getUrlBase}}/printschedule/{{ printer }}">Print Student Schedule to {{ printer }}</a><br />
+{% endfor %}
+{% else %}
+<a href="/onsite/{{program.getUrlBase}}/printschedule">Print Student Schedule</a>
+{% endif %}
+
+<div class="errormsg">
+  WARNING: Your browser's back button will NOT work! Please use the On-Site button to the (top) right!
+</div>
+</div>
+{% endif %}

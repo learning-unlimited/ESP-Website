@@ -51,6 +51,7 @@ class ResourceModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Resource Management",
             "link_title": "Manage Times and Rooms",
             "module_type": "manage",
             "seq": 10

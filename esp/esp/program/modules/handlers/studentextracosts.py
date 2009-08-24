@@ -56,7 +56,8 @@ class StudentExtraCosts(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
-            "link_title": "T-Shirts",
+            "admin_title": "Student Optional Fees",
+            "link_title": "T-Shirts, Meals, and Photos",
             "module_type": "learn",
             "seq": 30
             }
