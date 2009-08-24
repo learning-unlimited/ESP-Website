@@ -28,8 +28,78 @@ class ViewUserInfoTest(TestCase):
             self.admin.save()
 
         self.bit, created = UserBit.objects.get_or_create(user=self.admin, verb=GetNode("V/Administer"), qsc=GetNode("Q"))
-        
 
+    def assertStringContains(self, string, contents):
+        if not (contents in string):
+            self.assert_(False, "'%s' not in '%s'" % (contents, string))
+
+    def assertNotStringContains(self, string, contents):
+        if contents in string:
+            self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
+            
+    def testUserSearchFn(self):
+        """
+        Tests whether the user-search page works properly.
+        Note that this doubles as a test of the find_user function,
+        because this page is a very lightweight wrapper around that function.
+        """
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        # Try searching by ID
+        response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+
+        # Try searching by username
+        response = c.get("/manage/usersearch", { "userstr": str(self.fake_admin.username) })
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=notanadminuser124353")
+
+        # Try some fuzzy searches
+        # First name only, unique
+        response = c.get("/manage/usersearch", { "userstr": "Test" })
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=testuser123543")
+
+        # Full name, unique
+        response = c.get("/manage/usersearch", { "userstr": "Admin User" })
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+
+        # Last name, not unique
+        response = c.get("/manage/usersearch", { "userstr": "User" })
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(response.content, self.admin.username)
+        self.assertStringContains(response.content, self.fake_admin.username)
+        self.assertStringContains(response.content, self.user.username)
+        self.assertStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
+
+        # Partial first name, not unique
+        response = c.get("/manage/usersearch", { "userstr": "Adm" })
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(response.content, self.admin.username)
+        self.assertStringContains(response.content, self.fake_admin.username)
+        self.assertNotStringContains(response.content, self.user.username)
+        self.assertStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
+        
+        # Partial first name and last name, not unique
+        response = c.get("/manage/usersearch", { "userstr": "Adm User" })
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(response.content, self.admin.username)
+        self.assertStringContains(response.content, self.fake_admin.username)
+        self.assertNotStringContains(response.content, self.user.username)
+        self.assertStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
+        
+        # Now, make sure we properly do nothing when there're no users to do anything to
+        response = c.get("/manage/usersearch", { "userstr": "NotAUser9283490238" })
+        self.assertStringContains(response.content, "No user found by that name!")
+        self.assertNotStringContains(response.content, self.admin.username)
+        self.assertNotStringContains(response.content, self.fake_admin.username)
+        self.assertNotStringContains(response.content, self.user.username)
+        self.assertNotStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')        
+
+        
     def testUserInfoPage(self):
         """ Tests the /manage/userview view, that displays information about arbitrary users to admins """
         c = Client()
@@ -51,14 +121,6 @@ class ViewUserInfoTest(TestCase):
         c.login(username=self.fake_admin.username, password=self.password)
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 403)
-
-        
-    def tearDown(self):
-        """ Delete all our fake users.  Probably not actually necessary, but, eh, oh well. """
-        self.bit.delete()
-        self.admin.delete()
-        self.fake_admin.delete()
-        self.user.delete()
         
         
 class ProfileTest(TestCase):
