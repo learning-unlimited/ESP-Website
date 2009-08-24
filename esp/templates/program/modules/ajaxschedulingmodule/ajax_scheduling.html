@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.w3.org/MarkUp/SCHEMA/xhtml11.xsd"
+     xml:lang="en" >
+<head>
+
+<!-- meta -->
+<meta http-equiv="Content-Script-Type" content="text/javascript">
+
+<title>ESP Scheduling Application</title>
+
+<!-- LIBS -->
+<!-- 3rd party -->
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/prototype.js'></script>
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/jquery.js'></script>
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/jquery-ui-custom.js'></script>
+<script type='text/javascript'>
+var $j = jQuery.noConflict(); // grr... stupid prototype fail
+</script>
+<!-- app -->
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/ESP.js'></script>
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Util.js'></script>
+
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Scheduling.js'></script>
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Resources.js'></script>
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/DragDrop.js'></script>
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Directory.js'></script>
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Matrix.js'></script>
+<!-- ENDLIBS -->
+
+<!-- STYLE -->
+<link id='sch_css' href='/media/styles/scheduling.css' type='text/css' rel='stylesheet' />
+<!-- ENDSTYLE -->
+
+<!-- APP -->
+<!-- ENDAPP -->
+
+</head>
+
+<body>
+<div id='body'>
+<div id='matrix-target'></div>
+<div id='directory-target'></div>
+</div>
+</body>
+</html>
