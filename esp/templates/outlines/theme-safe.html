@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>MIT ESP - {% block title %}{% endblock %}</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="description" content="" />
+<meta name="keywords" content="" lang="en-us" xml:lang="en-us" />
+<!-- Copyright (C) 2009 Massachusetts Institute of Technology -->
+
+<meta name="author" content="Tony Valderrama, Vincent Lee, and others" />
+<link rel="stylesheet" type="text/css" href="/media/styles/theme.css" media="all" />
+<link rel="stylesheet" type="text/css" href="/media/styles/theme-gen.css" media="all" />
+
+<script type="text/javascript" src="/media/scripts/jquery.js"> </script>
+<script type="text/javascript">
+$(function(){
+
+// create behavior wrapper
+var wrap = function(target, label) {
+  if (!target) return;
+  var flag = false;
+  target.onfocus = function(){
+    if (flag) {
+      target.value = '';
+      target.style.color = '#000000';
+    }
+  };
+  target.onblur = function(){
+    if (flag = (target.value == '')) {
+      target.value = label;
+      target.style.color = '#999999';
+    }
+  };
+  target.onblur();
+};
+
+// set behavior on Username, Password, and Search fields
+wrap(document.getElementById('login_user'),'Username');
+wrap(document.getElementById('login_pswd'),'Password');
+wrap(document.getElementById('search_field'),'Enter search term');
+
+for each (var item in document.getElementById('menu').childNodes) {
+if (item.nodeType == 1) {
+  item.onmouseover = function(){
+    document.getElementById('page').className = this.className;
+  };
+}
+}
+
+var showadmin = function(){
+  this.innerHTML = '-';
+  this.onclick = hideadmin;
+  $('#adminbar_content').show();
+};
+var hideadmin = function(){
+  this.innerHTML = '+';
+  this.onclick = showadmin;
+  $('#adminbar_content').hide();
+};
+
+document.getElementById('adminbar_toggle').onclick = hideadmin;
+
+});
+</script>
+
+</head>
+<body>
+
+<div id="page" class="yellowgreen">
+  <div id="sidebar">
+      <ul id="menu">
+	<li id="tab_logo" class="yellowgreen" ><a href="/learn/index.html"></a></li>
+	<li id="tab_splash" class="blue" ><a href="/learn/Splash/index.html"></a></li>
+	<li id="tab_spark" class="purple" ><a href="/learn/Spark/index.html"></a></li>
+	<li id="tab_hssp" class="red" ><a href="/learn/HSSP/index.html"></a></li>
+	<li id="tab_satprep" class="orange" ><a href="/learn/SATPrep/index.html"></a></li>
+	<li id="tab_junction" class="yellow" ><a href="/learn/Junction/index.html"></a></li>
+	<li id="tab_delve" class="lightgreen" ><a href="/learn/Delve/index.html"></a></li>
+	<li id="tab_proveit" class="darkgreen" ><a href="/learn/ProveIt/index.html"></a></li>
+	<li id="tab_myesp" class="grey" ><a href="/myesp/home/"></a></li>
+	<li id="tab_admin" class="black" ><a href="/manage/index.html"></a></li>
+      </ul>
+  </div>
+  <div id="body">
+    <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
+    <div id="header">
+      <div id="search_box">
+	<form name="search_form" method="get" action="http://search.mit.edu/search">
+	 <input type='hidden' name='site' value='mit' />
+	 <input type='hidden' name='client' value='mit' />
+	 <input type='hidden' name='proxystylesheet' value='mit' />
+	 <input type='hidden' name='output' value='xml_no_dtd' />
+	 <input type='hidden' name='as_dt' value='i' />
+	 <input type='hidden' name='as_sitesearch' value='esp.mit.edu' />
+	  <input type="text" id="search_field" name="q" />
+	  <input type="submit" id="search_submit" name="search_submit" />
+	</form>
+      </div>
+      <div id="contact_info">
+	<span class="title">MIT Educational Studies Program</span>
+      <span class="normal">84 Massachusetts Avenue, Room W20-467</span>
+      <span class="normal">Cambridge, MA 02139</span>
+      <span class="normal">Tel: 617-253-4882</span>
+      <span class="normal"><a href="contact.html">contact us</a></span>
+      </div>
+<div id="login_box">
+
+<script type="text/javascript">
+<!--
+if (esp_user_login) {
+  document.write(esp_user_login);
+  document.write('<span style="display: none;">');
+}
+//-->
+</script>
+<!-- login -->
+<form name="login_form" id="login_form" method="post" action="/myesp/login/">
+  <input type="hidden" name="next" value="/" />
+  <input type="text" id="login_user" name="username" />
+  <input type="password" id="login_pswd" name="password" />
+  <input type="submit" id="login_submit" name="login_submit" />
+  <a href="/myesp/register" id="login_signup"></a>
+</form>
+
+<script type="text/javascript">
+<!--
+if (esp_user_login) {
+  document.write('</span>');
+}
+//-->
+</script>
+
+</div>
+
+    </div>
+    <div id="main">
+      <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
+      <div id="content">
+{% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
