@@ -161,7 +161,7 @@ def usersearch(request):
         raise ESPError(False), "No user found by that name!"
 
     if isiterable(found_users):
-        return render_to_response('users/usersearch.html', request, GetNode("Q/Web"), { 'found_users': found_users })
+        return render_to_response('users/userview_search.html', request, GetNode("Q/Web"), { 'found_users': found_users })
     else:
         from urllib import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users.username}))
