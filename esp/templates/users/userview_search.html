@@ -1,0 +1,44 @@
+{% extends "outlines/series-3.html" %}
+
+{% block title %}User Information{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "User Information"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{{ MEDIA_URL }}styles/tooltips.css" />
+<link rel="stylesheet" type="text/css" href="{{ MEDIA_URL }}styles/forms.css" />
+
+<style type="text/css">
+.key {
+  background-color: #F2F5A9;
+}
+
+.yes {
+  color: green;
+}
+
+.no {
+  color: red;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% load mask_email %}
+
+<h1>Select User</h1>
+
+<p>Multiple users matched the criteria that you specified.  Please select one to view:</p>
+
+<table>
+<tr><th>Name</th><th>Username</th><th>E-mail</th><th>User Type</th></tr>
+{% for user in found_users %}
+<tr><td><a href="/manage/userview?username={{ user.username|urlencode }}">{{ user.name }}</a></td><td>{{ user.username }}</td><td>{{ user.email }}</td><td>{% if user.isStudent %}<span class="student">Student</span>{% endif %}{% if user.isTeacher %}<span class="teacher">Teacher</span>{% endif %}{% if user.isGuardian %}<span class="guardian">Parent/Guardian</span>{% endif %}{% if user.isEducator %}<span class="educator">Educator</span>{% endif %}{% if user.isAdministrator %}<span class="administrator">Admin</span>{% endif %}</td></tr>
+{% endfor %}
+</table>
+
+{% endblock %}
