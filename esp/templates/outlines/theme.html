@@ -78,9 +78,7 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 {% endif %}
 
 {% load main %}
-{% with request.path|concat:"//"|split:"/"|slice:"2:3"|join:"" as pagecolor %}
-<div id="page" class="{% ifequal pagecolor "Splash"%}blue{% endifequal %}{% ifequal pagecolor "Spark"%}purple{% endifequal %}{% ifequal pagecolor "HSSP"%}red{% endifequal %}{% ifequal pagecolor "SATPrep"%}orange{% endifequal %}{% ifequal pagecolor "Junction"%}yellow{% endifequal %}{% ifequal pagecolor "Delve"%}lightgreen{% endifequal %}{% ifequal pagecolor "ProveIt"%}darkgreen{% endifequal %}{% ifequal "myesp" request.path|concat:"/"|split:"/"|slice:"1:2"|join:"" %}grey{% endifequal %}">
-{% endwith %}
+<div id="page" class="{{ request.path|extract_theme }}">
   <div id="sidebar">
       <ul id="menu">
 	<li id="tab_logo" class="yellowgreen" ><a href="/learn/index.html"></a></li>

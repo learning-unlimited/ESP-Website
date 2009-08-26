@@ -1,14 +1,3 @@
-/* default main #88cf00 #56a900 #3f7a00 */
-#main > .corners div { background-image: url(/media/images/theme/gen/yg_corners_main.png); }
-#body { background: #88cf00; }
-a { color: #3f7a00; }
-#body > .corners div { background-image: url(/media/images/theme/gen/yg_corners_body.png); }
-#search_box { background: #fff url(/media/images/theme/gen/yg_search.png) no-repeat 0% scroll; }
-#login_submit { background: #fff url(/media/images/theme/gen/yg_login.png) no-repeat 0% scroll; }
-#login_signup { background: #fff url(/media/images/theme/gen/yg_signup.png) no-repeat 0% scroll; }
-#submenu { background: #3f7a00; }
-#submenu > .corners div { background-image: url(/media/images/theme/gen/yg_corners_submenu.png); }
-
 /* yellowgreen yg #88cf00 #56a900 #3f7a00 */
 .yellowgreen #main > .corners div { background-image: url(/media/images/theme/gen/yg_corners_main.png); }
 .yellowgreen #body { background: #88cf00; }
@@ -19,6 +8,7 @@ a { color: #3f7a00; }
 .yellowgreen #login_signup { background: #fff url(/media/images/theme/gen/yg_signup.png) no-repeat 0% scroll; }
 li.yellowgreen { background: #fff; background-image: url(/media/images/theme/gen/yg_tab.png); }
 li.yellowgreen a { background: #88cf00; }
+.yellowgreen #menu li.yellowgreen { margin-left: 0; width: 113px }
 .yellowgreen #submenu { background: #3f7a00; }
 .yellowgreen #submenu > .corners div { background-image: url(/media/images/theme/gen/yg_corners_submenu.png); }
 
@@ -32,6 +22,7 @@ li.yellowgreen a { background: #88cf00; }
 .blue #login_signup { background: #fff url(/media/images/theme/gen/bl_signup.png) no-repeat 0% scroll; }
 li.blue { background: #fff; background-image: url(/media/images/theme/gen/bl_tab.png); }
 li.blue a { background: #3dc0ff; }
+.blue #menu li.blue { margin-left: 0; width: 113px }
 .blue #submenu { background: #1041ba; }
 .blue #submenu > .corners div { background-image: url(/media/images/theme/gen/bl_corners_submenu.png); }
 
@@ -45,6 +36,7 @@ li.blue a { background: #3dc0ff; }
 .purple #login_signup { background: #fff url(/media/images/theme/gen/pu_signup.png) no-repeat 0% scroll; }
 li.purple { background: #fff; background-image: url(/media/images/theme/gen/pu_tab.png); }
 li.purple a { background: #7932e3; }
+.purple #menu li.purple { margin-left: 0; width: 113px }
 .purple #submenu { background: #4f0873; }
 .purple #submenu > .corners div { background-image: url(/media/images/theme/gen/pu_corners_submenu.png); }
 
@@ -58,6 +50,7 @@ li.purple a { background: #7932e3; }
 .red #login_signup { background: #fff url(/media/images/theme/gen/re_signup.png) no-repeat 0% scroll; }
 li.red { background: #fff; background-image: url(/media/images/theme/gen/re_tab.png); }
 li.red a { background: #d45437; }
+.red #menu li.red { margin-left: 0; width: 113px }
 .red #submenu { background: #8c0724; }
 .red #submenu > .corners div { background-image: url(/media/images/theme/gen/re_corners_submenu.png); }
 
@@ -71,6 +64,7 @@ li.red a { background: #d45437; }
 .orange #login_signup { background: #fff url(/media/images/theme/gen/or_signup.png) no-repeat 0% scroll; }
 li.orange { background: #fff; background-image: url(/media/images/theme/gen/or_tab.png); }
 li.orange a { background: #ff9d00; }
+.orange #menu li.orange { margin-left: 0; width: 113px }
 .orange #submenu { background: #c95700; }
 .orange #submenu > .corners div { background-image: url(/media/images/theme/gen/or_corners_submenu.png); }
 
@@ -84,6 +78,7 @@ li.orange a { background: #ff9d00; }
 .yellow #login_signup { background: #fff url(/media/images/theme/gen/ye_signup.png) no-repeat 0% scroll; }
 li.yellow { background: #fff; background-image: url(/media/images/theme/gen/ye_tab.png); }
 li.yellow a { background: #edb600; }
+.yellow #menu li.yellow { margin-left: 0; width: 113px }
 .yellow #submenu { background: #ba8200; }
 .yellow #submenu > .corners div { background-image: url(/media/images/theme/gen/ye_corners_submenu.png); }
 
@@ -97,6 +92,7 @@ li.yellow a { background: #edb600; }
 .lightgreen #login_signup { background: #fff url(/media/images/theme/gen/lg_signup.png) no-repeat 0% scroll; }
 li.lightgreen { background: #fff; background-image: url(/media/images/theme/gen/lg_tab.png); }
 li.lightgreen a { background: #8cc63f; }
+.lightgreen #menu li.lightgreen { margin-left: 0; width: 113px }
 .lightgreen #submenu { background: #45591b; }
 .lightgreen #submenu > .corners div { background-image: url(/media/images/theme/gen/lg_corners_submenu.png); }
 
@@ -110,6 +106,7 @@ li.lightgreen a { background: #8cc63f; }
 .darkgreen #login_signup { background: #fff url(/media/images/theme/gen/dg_signup.png) no-repeat 0% scroll; }
 li.darkgreen { background: #fff; background-image: url(/media/images/theme/gen/dg_tab.png); }
 li.darkgreen a { background: #478a00; }
+.darkgreen #menu li.darkgreen { margin-left: 0; width: 113px }
 .darkgreen #submenu { background: #20300f; }
 .darkgreen #submenu > .corners div { background-image: url(/media/images/theme/gen/dg_corners_submenu.png); }
 
@@ -123,6 +120,7 @@ li.darkgreen a { background: #478a00; }
 .grey #login_signup { background: #fff url(/media/images/theme/gen/gr_signup.png) no-repeat 0% scroll; }
 li.grey { background: #fff; background-image: url(/media/images/theme/gen/gr_tab.png); }
 li.grey a { background: #666666; }
+.grey #menu li.grey { margin-left: 0; width: 113px }
 .grey #submenu { background: #000000; }
 .grey #submenu > .corners div { background-image: url(/media/images/theme/gen/gr_corners_submenu.png); }
 
@@ -136,6 +134,7 @@ li.grey a { background: #666666; }
 .black #login_signup { background: #fff url(/media/images/theme/gen/bk_signup.png) no-repeat 0% scroll; }
 li.black { background: #fff; background-image: url(/media/images/theme/gen/bk_tab.png); }
 li.black a { background: #231f20; }
+.black #menu li.black { margin-left: 0; width: 113px }
 .black #submenu { background: #cc0036; }
 .black #submenu > .corners div { background-image: url(/media/images/theme/gen/bk_corners_submenu.png); }
 
