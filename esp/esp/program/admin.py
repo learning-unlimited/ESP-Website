@@ -35,8 +35,11 @@ from esp.program.models import ProgramModule, ArchiveClass, Program, BusSchedule
 from esp.program.models import TeacherParticipationProfile, SATPrepRegInfo, RegistrationProfile
 from esp.program.models import TeacherBio, FinancialAidRequest
 
+from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+
 from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
+
 
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler', 'main_call')
@@ -83,6 +86,37 @@ class TeacherBioAdmin(admin.ModelAdmin):
 admin.site.register(TeacherBio, TeacherBioAdmin)
     
 admin.site.register(FinancialAidRequest)
+
+## Schedule stuff (wish it was schedule_.py)
+
+def subclass_instance_type(obj):
+    return type(obj.subclass_instance())._meta.object_name
+subclass_instance_type.short_description = 'Instance type'
+        
+class BooleanTokenAdmin(admin.ModelAdmin):
+    list_display = ('expr', 'seq', subclass_instance_type, 'text')
+    search_fields = ['text']
+admin.site.register(BooleanToken, BooleanTokenAdmin)    
+    
+class BooleanExpressionAdmin(admin.ModelAdmin):
+    list_display = ('label', subclass_instance_type, 'num_tokens')
+    def num_tokens(self, obj):
+        return obj.get_stack().count()
+admin.site.register(BooleanExpression, BooleanExpressionAdmin)   
+
+admin.site.register(ScheduleConstraint)
+
+class ScheduleTestOccupiedAdmin(admin.ModelAdmin):
+    list_display = ('timeblock', 'expr', 'seq', subclass_instance_type, 'text')
+admin.site.register(ScheduleTestOccupied, ScheduleTestOccupiedAdmin)
+
+class ScheduleTestCategoryAdmin(admin.ModelAdmin):
+    list_display = ('timeblock', 'category', 'expr', 'seq', subclass_instance_type, 'text')
+admin.site.register(ScheduleTestCategory, ScheduleTestCategoryAdmin)
+
+class ScheduleTestSectionListAdmin(admin.ModelAdmin):
+    list_display = ('timeblock', 'section_ids', 'expr', 'seq', subclass_instance_type, 'text')
+admin.site.register(ScheduleTestSectionList, ScheduleTestSectionListAdmin)
 
 ## class_.py
 

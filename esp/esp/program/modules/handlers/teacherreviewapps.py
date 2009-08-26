@@ -44,7 +44,8 @@ class TeacherReviewApps(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
         return {
-            "link_title": "Junction Application Review",
+            "admin_title": "Application Reviews for Teachers",
+            "link_title": "Review Student Applications",
             "module_type": "teach",
             "seq": 1000,
             "main_call": "teacherreviewapp"

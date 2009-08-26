@@ -1,6 +1,26 @@
 import pickle
 from esp.web.util.structures import cross_set
+from django.test.testcases import TestCase
+import string
+import random
 
+class CacheFlushTestCase(TestCase):
+    """ Flush the cache at the start and end of this test case """
+    def _flush_cache(self):
+        """ Don't do any actual fancy deletions; just change the cache prefix """
+        from esp import settings
+        settings.CACHE_PREFIX = ''.join( random.sample( string.letters + string.digits, 16 ) )
+        from django.conf import settings as django_settings
+        django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
+
+    def _fixture_setup(self):
+        self._flush_cache()
+        super(CacheFlushTestCase, self)._fixture_setup()
+        
+    def _fixture_teardown(self):
+        self._flush_cache()
+        super(CacheFlushTestCase, self)._fixture_teardown()
+        
 
 def build_posts(test_user_params = {}, test_user_joins = {}):
     """ This function will create a list of dictionaries to post to

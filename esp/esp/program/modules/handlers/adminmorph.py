@@ -41,6 +41,7 @@ class AdminMorph(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "User Morphing Capability",
             "link_title": "Morph into User",
             "module_type": "manage",
             "seq": 34

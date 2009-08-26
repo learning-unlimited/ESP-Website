@@ -44,6 +44,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Onsite Reg Core Module",
             "link_title": "onsite",
             "module_type": "onsite",
             "seq": -1000,

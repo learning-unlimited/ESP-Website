@@ -176,6 +176,16 @@
     font-size: 12px;
 }
 
+td .program_form_small{
+    padding: 1px;
+}
+
+th .program_form_small{
+    font-weight: normal;
+    font-size: 13px;
+    padding: 1px;
+}
+
 #program_form label {
     font-size: 12px;
 }
@@ -193,10 +203,14 @@
    font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-size: 0.9em;
-   background-color: #ffffff;
+   /* background-color: #ffffff; */
    color: #000000;
    text-align: left;
    vertical-align: top;
+}
+
+#program_form td.colorful {
+   background-color: #c6def7;
 }
 
 #program_form input {

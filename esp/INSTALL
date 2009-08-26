@@ -39,6 +39,7 @@ cmemcached      Python                  http://gijsbert.org/cmemcache/index.html
 flup            Python                  python-flup
 psycopg         Python                  python-psycopg
 simplejson      Python                  python-simplejson
+pycurl          Python                  python-pycurl
 
 LaTeX           System                  texlive, texlive-latex-extra
 libmemcache0    System                  libmemcache0

@@ -46,6 +46,7 @@ class AvailabilityModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Teacher Availability",
             "link_title": "Indicate Your Availability",
             "module_type": "teach",
             "seq": 0
@@ -64,10 +65,11 @@ class AvailabilityModule(ProgramModuleObj):
         self.user = ESPUser(self.user)
         available_slots = self.user.getAvailableTimes(self.program)
         
-        total_time = self.user.getTaughtTime(self.program, include_scheduled=False)
+        # Round durations of both classes and timeslots to nearest 30 minutes
+        total_time = self.user.getTaughtTime(self.program, include_scheduled=False, round_to=0.5)
         available_time = timedelta()
         for a in available_slots:
-            available_time = available_time + a.duration()
+            available_time = available_time + timedelta( seconds = 1800 * round( a.duration().seconds / 1800.0 ) )
         
         if (total_time > available_time) or (available_time == timedelta()):
             return False

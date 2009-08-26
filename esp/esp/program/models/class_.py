@@ -1266,6 +1266,13 @@ class ClassSubject(models.Model):
         all_registration_verbs = verb_base.descendants()
         verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
         return self.num_students(False, verb_list)
+
+    def num_students_prereg(self, use_cache=True):
+        verb_base = DataTree.get_by_uri('V/Flags/Registration')
+        uri_start = len(verb_base.uri)
+        all_registration_verbs = verb_base.descendants()
+        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        return self.num_students(False, verb_list)
         
     def max_students(self):
         return self.sections.count()*self.class_size_max
@@ -1851,7 +1858,7 @@ class ClassCategories(models.Model):
         db_table = 'program_classcategories'
 
     def __unicode__(self):
-        return unicode(self.category)
+        return u'%s (%s)' % (self.category, self.symbol)
         
         
     @staticmethod
@@ -1869,7 +1876,14 @@ class ClassCategories(models.Model):
 
 def install():
     """ Initialize the default class categories. """
-    category_dict = {'S': 'Science', 'M': 'Math & Computer Science', 'E': 'Engineering', 'A': 'Arts', 'H': 'Humanities'}
+    category_dict = {
+        'S': 'Science',
+        'M': 'Math & Computer Science',
+        'E': 'Engineering',
+        'A': 'Arts',
+        'H': 'Humanities',
+        'X': 'Miscellaneous',
+    }
     
     for key in category_dict:
         cat = ClassCategories()

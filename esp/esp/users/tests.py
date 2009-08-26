@@ -1,13 +1,29 @@
 from django.test import TestCase
+from django import forms
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket
+from esp.users.forms.user_reg import ValidHostEmailField
+from esp.program.tests import ProgramFrameworkTest
 
-class ESPUser__inittest(TestCase):
-    def runTest(self):
+class ESPUserTest(TestCase):
+    def testInit(self):
         one = ESPUser()
         two = User()
         three = ESPUser(two)
         four = ESPUser(three)
-        assert three.__dict__ == four.__dict__
+        self.failUnless( three.__dict__ == four.__dict__ )
+    def testDelete(self):
+        from esp.datatree.models import GetNode
+        from esp.users.models import UserBit
+        # Create a user and a userbit
+        self.user, created = User.objects.get_or_create(username='forgetful')
+        self.userbit = UserBit.objects.get_or_create(user=self.user, verb=GetNode('V/Administer'), qsc=GetNode('Q'))
+        # Save the ID and then delete the user
+        uid = self.user.id
+        self.user.delete()
+        # Make sure it's gone.
+        self.failUnless( User.objects.filter(id=uid).count() == 0 )
+        self.failUnless( ESPUser.objects.filter(id=uid).count() == 0 )
+        self.failUnless( UserBit.objects.filter(user=uid).count() == 0 )
 
 class PasswordRecoveryTicketTest(TestCase):
     def setUp(self):
@@ -54,3 +70,90 @@ class PasswordRecoveryTicketTest(TestCase):
         # Make sure it destroys all other tickets for user forgetful
         self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.user).count(), 0, "Tickets for user forgetful not wiped.")
         self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.other).count(), 1, "Tickets for user innocent incorrectly wiped.")
+
+class TeacherInfo__validationtest(TestCase):
+    def setUp(self):
+        self.user, created = User.objects.get_or_create(username='teacherinfo_teacher')
+        self.user = ESPUser( self.user )
+        self.user.profile = self.user.getLastProfile()
+        self.info_data = {
+            'graduation_year': '2000',
+            'school': 'L University',
+            'major': 'Underwater Basket Weaving',
+            'shirt_size': 'XXL',
+            'shirt_type': 'M',
+        }
+
+    def useData(self, data):
+        from esp.users.models import TeacherInfo
+        from esp.users.forms.user_profile import TeacherInfoForm
+        # Stuff data into the form and check validation.
+        tif = TeacherInfoForm(data)
+        self.failUnless(tif.is_valid())
+        # Check that form data copies correctly into the model
+        ti = TeacherInfo.addOrUpdate(self.user, self.user.getLastProfile(), tif.cleaned_data)
+        self.failUnless(ti.graduation_year == tif.cleaned_data['graduation_year'])
+        # Check that model data copies correctly back to the form
+        tifnew = TeacherInfoForm(ti.updateForm({}))
+        self.failUnless(tifnew.is_valid())
+        self.failUnless(tifnew.cleaned_data['graduation_year'] == ti.graduation_year)
+
+    def testUndergrad(self):
+        self.info_data['graduation_year'] = '2000'
+        self.useData( self.info_data )
+    def testGrad(self):
+        self.info_data['graduation_year'] = ' G'
+        self.useData( self.info_data )
+    def testOther(self):
+        self.info_data['graduation_year'] = ''
+        self.useData( self.info_data )
+        self.info_data['graduation_year'] = 'N/A'
+        self.useData( self.info_data )
+
+class ValidHostEmailFieldTest(TestCase):
+    def testCleaningKnownDomains(self):
+        # Hardcoding 'esp.mit.edu' here might be a bad idea
+        # But at least it verifies that A records work in place of MX
+        for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
+            self.failUnless( ValidHostEmailField().clean( u'fakeaddress@%s' % domain ) == u'fakeaddress@%s' % domain )
+    def testFakeDomain(self):
+        # If we have an internet connection, bad domains raise ValidationError.
+        # This should be the *only* kind of error we ever raise!
+        try:
+            ValidHostEmailField().clean( u'fakeaddress@idontex.ist' )
+        except forms.ValidationError:
+            pass
+
+
+class AjaxExistenceChecker(TestCase):
+    """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
+        in the response. 
+    """
+    def runTest(self):
+        #   Quit if path and keys are not provided.  This ensures nothing will
+        #   break if this is invoked without those attributes.
+        if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
+            return
+        
+        import simplejson as json
+        response = self.client.get(self.path)
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content)
+        for key in self.keys:
+            self.assertTrue(content.has_key(key), "Key %s missing from Ajax response to %s" % (key, self.path))
+        
+class AjaxLoginExistenceTest(AjaxExistenceChecker):
+    def __init__(self, *args, **kwargs):
+        super(AjaxLoginExistenceTest, self).__init__(*args, **kwargs)
+        self.path = '/myesp/ajax_login/'
+        self.keys = ['loginbox_html']
+        
+class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
+    def runTest(self):
+        self.path = '/learn/%s/ajax_schedule' % self.program.getUrlBase()
+        self.keys = ['student_schedule_html']
+        user=self.students[0]
+        self.assertTrue(self.client.login(username=user.username, password='password'))
+        super(AjaxScheduleExistenceTest, self).runTest()
+        
+        

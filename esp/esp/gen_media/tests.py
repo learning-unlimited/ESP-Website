@@ -29,14 +29,14 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-import unittest
+from esp.tests.util import CacheFlushTestCase as TestCase
 import os
 
 __all__ = ['InlineLatexTest']
 
 from esp.gen_media.inlinelatex import InlineLatex
 from esp.middleware import ESPError
-class InlineLatexTest(unittest.TestCase):
+class InlineLatexTest(TestCase):
     """ Tests for the inline LaTeX system. """
 
     def setUp(self):
@@ -126,7 +126,7 @@ class InlineLatexTest(unittest.TestCase):
 
 # TODO: Make this guy and the above share code or something...
 from esp.gen_media.subsectionimages import SubSectionImage
-class SubSectionImageTest(unittest.TestCase):
+class SubSectionImageTest(TestCase):
     """ Tests for the subsection image system. """
 
     def setUp(self):

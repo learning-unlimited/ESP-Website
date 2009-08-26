@@ -44,6 +44,7 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "SATPrep On-Site User Creation",
             "link_title": "SATPrep On-Site User Creation",
             "module_type": "onsite",
             "seq": 10

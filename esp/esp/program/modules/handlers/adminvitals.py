@@ -48,6 +48,7 @@ class AdminVitals(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Admin Module for Showing Basic Vitals",
             "link_title": "Program Vitals",
             "module_type": "manage",
             "seq": -2,
@@ -151,9 +152,12 @@ class AdminVitals(ProgramModuleObj):
         context['shirts'] = adminvitals_shirt['shirts']
 
         shours = 0
+        chours = 0
         for section in self.program.sections():
+            chours += math.ceil(section.duration)
             shours += math.ceil(section.duration)*section.parent_class.class_size_max
         
+        context['classhours'] = chours
         context['classpersonhours'] = shours
         
         return context

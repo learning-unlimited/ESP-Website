@@ -52,6 +52,8 @@ class SchedulingModule(ProgramModuleObj):
         return {
             "link_title": "Scheduling",
             "module_type": "manage",
+            "main_call": "scheduling",
+            "aux_calls": "force_availability,view_requests,securityschedule",
             "seq": 8
             }
     
@@ -192,6 +194,22 @@ class SchedulingModule(ProgramModuleObj):
         context['total_teacher_num'] = User.objects.filter(teacher_dict['class_approved']).distinct().count()
 
         return render_to_response(self.baseDir()+'force_prompt.html', request, (prog, tl), context)
+
+    @aux_call
+    @needs_admin
+    def view_requests(self, request, tl, one, two, module, extra, prog):
+        """ Show summary information useful to directors scheduling a program:
+            - classroom type/equipment requests (those checked off)
+            - special requests (those entered in optionally)
+            - desired rooms (entered in optionally)
+        """
+       
+        context = {}
+        context['prog'] = prog
+        context['classes'] = prog.classes()
+        context['sections'] = prog.sections()
+        
+        return render_to_response(self.baseDir()+'requests.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin
