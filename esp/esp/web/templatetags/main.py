@@ -19,11 +19,11 @@ theme = {
     'Delve': 'lightgreen',
     'ProveIt': 'darkgreen',
 
-    'grey': 'myesp',
-    'black': 'manage'
+    'myesp': 'grey',
+    'manage': 'black'
 }
 
 @register.filter
 def extract_theme(str):
-    str = (str + '//').split('/')[2]
-    return theme.get(str,'yellowgreen')
+    str = (str + '//').split('/')
+    return theme.get(str[2],False) or theme.get(str[1],False) or 'yellowgreen'

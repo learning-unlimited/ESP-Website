@@ -90,7 +90,9 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 	<li id="tab_delve" class="lightgreen" ><a href="/learn/Delve/index.html">Delve</a></li>
 	<li id="tab_proveit" class="darkgreen" ><a href="/learn/ProveIt/index.html">ProveIt</a></li>
 	<li id="tab_myesp" class="grey" ><a href="/myesp/home/">MyESP</a></li>
-	<li id="tab_admin" class="black" ><a href="/manage/index.html">Admin</a></li>
+{% if request.user.isAdministrator %}
+	<li id="tab_admin" class="black" ><a href="/manage/programs/">Admin</a></li>
+{% endif %}
       </ul>
   </div>
   <div id="body">
@@ -121,7 +123,7 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 {% if not request.user.is_authenticated %}
 <!-- login -->
 <form name="login_form" id="login_form" method="post" action="/myesp/login/">
-  <input type="hidden" name="next" value="/" />
+  <input type="hidden" name="next" value="{{ request.path }}" />
   <input type="text" id="login_user" name="username" />
   <input type="password" id="login_pswd" name="password" />
   <input type="submit" id="login_submit" name="login_submit" />
