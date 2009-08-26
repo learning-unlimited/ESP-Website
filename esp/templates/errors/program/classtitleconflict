@@ -1,4 +1,4 @@
-{% extends "outlines/series-3.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}Class Title Conflict!{% endblock %}
 

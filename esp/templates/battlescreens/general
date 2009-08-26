@@ -1,5 +1,5 @@
 
-{% extends "outlines/series-3.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block stylesheets %}
 {{block.super}}

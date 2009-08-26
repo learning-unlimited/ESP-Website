@@ -1,3 +1,14 @@
+/* default main #88cf00 #56a900 #3f7a00 */
+#main > .corners div { background-image: url(/media/images/theme/gen/yg_corners_main.png); }
+#body { background: #88cf00; }
+a { color: #3f7a00; }
+#body > .corners div { background-image: url(/media/images/theme/gen/yg_corners_body.png); }
+#search_box { background: #fff url(/media/images/theme/gen/yg_search.png) no-repeat 0% scroll; }
+#login_submit { background: #fff url(/media/images/theme/gen/yg_login.png) no-repeat 0% scroll; }
+#login_signup { background: #fff url(/media/images/theme/gen/yg_signup.png) no-repeat 0% scroll; }
+#submenu { background: #3f7a00; }
+#submenu > .corners div { background-image: url(/media/images/theme/gen/yg_corners_submenu.png); }
+
 /* yellowgreen yg #88cf00 #56a900 #3f7a00 */
 .yellowgreen #main > .corners div { background-image: url(/media/images/theme/gen/yg_corners_main.png); }
 .yellowgreen #body { background: #88cf00; }

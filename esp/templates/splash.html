@@ -40,12 +40,16 @@ wrap(document.getElementById('login_pswd'),'Password');
 
 {% block body %}
 <div id="page">
+<!--
 <form name="select_type" method="get" action"#">
   <input type="submit" href="student.html" id="student" name="student" value="true" />
   <input type="submit" href="teacher.html" id="teacher" name="teacher" value="true" />
+-->
+  <a id="student" href="learn/index.html"></a>
+  <a id="teacher" href="teach/index.html"></a>
   <input type="checkbox" id="remember" name="remember" />
   <label for="remember" id="remember_label">Remember my choice</label>
-</form>
+<!--</form>-->
 <span id="orbox">- or -</span>
 
 {% block login %}

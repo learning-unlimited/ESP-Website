@@ -37,13 +37,25 @@ wrap(document.getElementById('login_user'),'Username');
 wrap(document.getElementById('login_pswd'),'Password');
 wrap(document.getElementById('search_field'),'Enter search term');
 
-for each (var item in document.getElementById('menu').childNodes) {
-if (item.nodeType == 1) {
-  item.onmouseover = function(){
-    document.getElementById('page').className = this.className;
-  };
-}
-}
+/*$('#menu li').each(function(i, item) {
+  var item = $(item);
+  item.bind('mouseover', function(){
+    $('#page').removeClass().addClass(item.attr('className'));
+  });
+});*/
+
+var showadmin = function(){
+  this.innerHTML = '-';
+  this.onclick = hideadmin;
+  $('#adminbar_content').show();
+};
+var hideadmin = function(){
+  this.innerHTML = '+';
+  this.onclick = showadmin;
+  $('#adminbar_content').hide();
+};
+
+document.getElementById('adminbar_toggle').onclick = hideadmin;
 
 });
 </script>
@@ -51,32 +63,42 @@ if (item.nodeType == 1) {
 {% endblock %}
 
 {% block body %}
-<div id="page" class="red">
+
+{% if request.user.isAdministrator %}
+<div id="adminbar">
+  <div class="title">Admin Toolbar</div>
+  <div id="adminbar_toggle">-</div>
+  <div id="adminbar_content">
+    <form id="user_search_form" name="user_search_form" method="get" action="/manage/userview">
+      <input type="text" id="user_search_field" name="username" />
+      <input type="submit" id="user_search_submit" name="search_submit" value="Find User"/>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% load main %}
+{% with request.path|concat:"//"|split:"/"|slice:"2:3"|join:"" as pagecolor %}
+<div id="page" class="{% ifequal pagecolor "Splash"%}blue{% endifequal %}{% ifequal pagecolor "Spark"%}purple{% endifequal %}{% ifequal pagecolor "HSSP"%}red{% endifequal %}{% ifequal pagecolor "SATPrep"%}orange{% endifequal %}{% ifequal pagecolor "Junction"%}yellow{% endifequal %}{% ifequal pagecolor "Delve"%}lightgreen{% endifequal %}{% ifequal pagecolor "ProveIt"%}darkgreen{% endifequal %}{% ifequal "myesp" request.path|concat:"/"|split:"/"|slice:"1:2"|join:"" %}grey{% endifequal %}">
+{% endwith %}
   <div id="sidebar">
       <ul id="menu">
-	<li id="tab_logo" class="yellowgreen" ><a href="home.html"></a></li>
-	<li id="tab_splash" class="blue" ><a href="splash.html"></a></li>
-	<li id="tab_spark" class="purple" ><a href="spark.html"></a></li>
-	<li id="tab_hssp" class="red" ><a href="hssp.html"></a></li>
-	<li id="tab_satprep" class="orange" ><a href="satprep.html"></a></li>
-	<li id="tab_junction" class="yellow" ><a href="junction.html"></a></li>
-	<li id="tab_delve" class="lightgreen" ><a href="delve.html"></a></li>
-	<li id="tab_proveit" class="darkgreen" ><a href="proveit.html"></a></li>
-	<li id="tab_myesp" class="grey" ><a href="myesp.html"></a></li>
-	<li id="tab_admin" class="black" ><a href="admin.html"></a></li>
+	<li id="tab_logo" class="yellowgreen" ><a href="/learn/index.html"></a></li>
+	<li id="tab_splash" class="blue" ><a href="/learn/Splash/index.html">Splash</a></li>
+	<li id="tab_spark" class="purple" ><a href="/learn/Spark/index.html">Spark</a></li>
+	<li id="tab_hssp" class="red" ><a href="/learn/HSSP/index.html">HSSP</a></li>
+	<li id="tab_satprep" class="orange" ><a href="/learn/SATPrep/index.html">SATPrep</a></li>
+	<li id="tab_junction" class="yellow" ><a href="/learn/Junction/index.html">Junction</a></li>
+	<li id="tab_delve" class="lightgreen" ><a href="/learn/Delve/index.html">Delve</a></li>
+	<li id="tab_proveit" class="darkgreen" ><a href="/learn/ProveIt/index.html">ProveIt</a></li>
+	<li id="tab_myesp" class="grey" ><a href="/myesp/home/">MyESP</a></li>
+	<li id="tab_admin" class="black" ><a href="/manage/index.html">Admin</a></li>
       </ul>
   </div>
   <div id="body">
     <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
     <div id="header">
       <div id="search_box">
-
-{% if request.user.isAdministrator %}
-	<form name="search_form" method="get" action="/manage/userview">
-	  <input type="text" id="search_field" name="username" />
-	  <input type="submit" id="search_submit" name="search_submit" />
-	</form>
-{% else %}
 	<form name="search_form" method="get" action="http://search.mit.edu/search">
 	 <input type='hidden' name='site' value='mit' />
 	 <input type='hidden' name='client' value='mit' />
@@ -87,8 +109,6 @@ if (item.nodeType == 1) {
 	  <input type="text" id="search_field" name="q" />
 	  <input type="submit" id="search_submit" name="search_submit" />
 	</form>
-{% endif %}
-
       </div>
       <div id="contact_info">
 	<span class="title">MIT Educational Studies Program</span>
@@ -107,7 +127,7 @@ if (item.nodeType == 1) {
   <input type="text" id="login_user" name="username" />
   <input type="password" id="login_pswd" name="password" />
   <input type="submit" id="login_submit" name="login_submit" />
-  <a href="signup.html" id="login_signup"></a>
+  <a href="/myesp/register" id="login_signup"></a>
 </form>
 
 {% else %}
@@ -124,14 +144,16 @@ if (item.nodeType == 1) {
 {% block content_header %}
 
 {% block secondary_nav %}
-      <ul id="submenu">
+{% load navbar %}
+{% navbar_gen %}
+<!--      <ul id="submenu">
 	<div class="corners"><div class="ul"></div><div class="ur"></div></div>
 	<li><a href="#">about ESP</a></li>
 	<li><a href="#">for parents</a></li>
 	<li><a href="#">contact us</a></li>
 	<li><a href="#">other resources</a></li>
 	<li><a href="#">fill the page</a></li>
-      </ul>
+      </ul>-->
 {% endblock %}
 
 {% endblock %}

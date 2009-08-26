@@ -1,4 +1,17 @@
 
+/*
+ * Utilities
+ */
+
+.clear-float {
+clear: both;
+}
+
+
+/*
+ * Page layout
+ */
+
 #page {
 font-family: sans-serif;
 margin: 40px auto;
@@ -60,6 +73,11 @@ display: block;
 height: 35px;
 width: 93px;
 /*background: #aaa;*/
+
+line-height: 35px;
+color: #fff;
+font-weight: bold;
+text-decoration: none;
 }
 
 #menu #tab_logo {
@@ -203,14 +221,15 @@ min-height: 400px;
 #submenu {
 margin: 0; padding: 0 10px;
 line-height: 35px;
-height: 35px; width: 580px;
+/*height: 35px;*/ width: 580px;
 font-size: smaller;
 background: #ccc;
 position: relative;
 }
 
 #submenu li {
-float: left;
+/*float: left;*/
+display: inline-block;
 list-style-type: none;
 }
 
@@ -225,4 +244,38 @@ color: #fff;
 #submenu li + li:before {
 content: '|';
 color: #fff;
+}
+
+#submenu form, #submenu tt, #submenu .bullet {
+display: none;
+}
+
+/*
+ * Admin Toolbar
+ */
+#adminbar {
+position: absolute;
+top: 10px; left: 10px;
+width: 170px;
+background: #eee;
+border: 1px #aaa solid;
+z-index: 1000;
+}
+
+#adminbar .title {
+margin: 2px 4px;
+font-weight: bold;
+}
+
+#adminbar_toggle {
+position: absolute;
+width: 20px;
+background: #ccc;
+cursor: pointer;
+right: 2px; top: 2px;
+text-align: center;
+}
+
+#adminbar_content {
+margin: 10px;
 }
