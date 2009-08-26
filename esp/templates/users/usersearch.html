@@ -1,102 +1,44 @@
 {% extends "main.html" %}
 
-{% block title %}{{program.niceName}} Management{% endblock %}
+{% block title %}User Information{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "User Information"|subsection }}{% endautoescape %}
+{% endblock %}
 
 {% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{{ MEDIA_URL }}styles/tooltips.css" />
+<link rel="stylesheet" type="text/css" href="{{ MEDIA_URL }}styles/forms.css" />
+
+<style type="text/css">
+.key {
+  background-color: #F2F5A9;
+}
+
+.yes {
+  color: green;
+}
+
+.no {
+  color: red;
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-</style>
-<br />
-<br />
+{% load mask_email %}
 
-<h1> Search For User</h1>
+<h1>Select User</h1>
 
-<p style="text-align: center">
-Please search for a user: <br />
-(Yes, Regular expressions are allowed.) 
-</p>
+<p>Multiple users matched the criteria that you specified.  Please select one to view:</p>
 
-{% if error %}
-<p class="error">Error: No user found by that criteria.</p>
-{% endif %}
-
-<div id="program_form">
-<form action="{{ request.path }}" method="get">
-<table cellpadding="0" cellspacing="0" width="450" align="center">
-
-<tr><th align="center" colspan="2">User Search Options</th></tr>
-
-<tr><td>
-<input type="hidden" name="extra" value="{{extra}}" />
-<input type="hidden" name="op" value="usersearch" />
-<label for="userid"><strong>User ID:</strong></label></td><td>
-<input type="text" size="6" name="userid" id="userid" /> &nbsp; 
-  (<label for="userid_not">Not?</label> <input type="checkbox" value="true" name="userid__not" id="userid_not" />)</td>
-</tr>
-
-<tr><td>
-<label for="username"><strong>Username:</strong></label></td><td>
-<input type="text" size="30" name="username" id="username" /> &nbsp; 
-  (<label for="username_not">Not?</label> <input type="checkbox" value="true" name="username__not" id="username_not"  />)</td>
-</tr>
-
-<tr><td>
-<label for="last_name"><strong>Last Name:</strong></label></td><td>
-<input type="text" size="30" name="last_name" id="last_name" /> &nbsp; 
-   (<label for="last_name_not">Not?</label> <input type="checkbox" value="true" name="last_name__not" id="last_name_not"  />)</td>
-</tr>
-
-<tr><td>
-<label for="first_name"><strong>First Name:</strong></label></td><td>
-<input type="text" size="30" name="first_name" id="first_name" /> &nbsp; 
-  (<label for="f<br />irst_name_not">Not?</label> <input type="checkbox" value="true" name="first_name__not" id="first_name_not" />)</td>
-</tr>
-
-<tr><td>
-<label for="email"><strong>Email:</strong></label></td><td>
-<input type="text" size="30" name="email" id="email" /> &nbsp; 
-  (<label for="email_not">Not?</label> <input type="checkbox" value="true" name="email__not" id="email_not" />)</td>
-</tr>
-
-<tr><td>
-<label><strong>Zipcode:</strong></label></td><td>
-More than <input type="text" size="4" name="zipdistance_exclude" value="" />
-and less than <input type="text" size="4" name="zipdistance" value="" />
-miles from <input type="text" size="5" name="zipcode" value="02139" />.</td>
-</tr>
-
-<tr><td>
-<label><strong>States:</strong></label></td><td>
-  <input type="text" size="10" name="states" value="" />
-  (<label for="states_not">Not?</label> <input type="checkbox" value="true" name="states__not" id="states_not" />) <br />
-<small>Enter a list of state codes (e.g. 'MA,CT,NY')</small></td>
-</tr>
-
-<tr><td><label><strong>Grade Limits:</strong></label></td> <td>
-Min: 
-<input type="text" size="3" name="grade_min" value="" /> &nbsp;&nbsp;&nbsp;
-Max:
-<input type="text" size="3" name="grade_max" value="" /></td>
-</tr>
-
-
-<tr><td><label><strong>Options:</strong></label></td><td align="center">
-<input class="fancybutton" type="submit" value="Search for user" name="submitform" /> or
-{% if list %}
-&nbsp;&nbsp;<input class="fancybutton" type="submit" value="Use Filtered List" name="submitform" />
-{% endif %}</td>
-</tr>
+<table>
+<tr><th>Name</th><th>Username</th><th>E-mail</th><th>User Type</th></tr>
+{% for user in found_users %}
+<tr><td><a href="/manage/userview?username={{ user.username|urlencode }}">{{ user.name }}</a></td><td>{{ user.username }}</td><td>{{ user.email }}</td><td>{% if user.isStudent %}<span class="student">Student</span>{% endif %}{% if user.isTeacher %}<span class="teacher">Teacher</span>{% endif %}{% if user.isGuardian %}<span class="guardian">Parent/Guardian</span>{% endif %}{% if user.isEducator %}<span class="educator">Educator</span>{% endif %}{% if user.isAdministrator %}<span class="administrator">Admin</span>{% endif %}</td></tr>
+{% endfor %}
 </table>
-</form>
-</div>
-
-<p>Please note that these operations may take a long time if they involve a lot of users.</p>
 
 {% endblock %}
