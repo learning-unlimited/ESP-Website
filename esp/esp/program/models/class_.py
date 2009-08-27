@@ -279,7 +279,7 @@ class ClassSection(models.Model):
     
     def _get_capacity(self):
         if self.max_class_capacity is not None:
-            return self.max_class_capacity
+            ans = self.max_class_capacity
 
         rooms = self.initial_rooms()
         if len(rooms) == 0:
@@ -295,7 +295,9 @@ class ClassSection(models.Model):
             self.max_class_capacity = ans
             self.save()
             
-        return ans
+        #   Apply dynamic capacity rule
+        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        return int(ans * options.class_cap_multiplier + options.class_cap_offset)
     
     capacity = property(_get_capacity)
 

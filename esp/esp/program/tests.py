@@ -734,4 +734,39 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         self.assertTrue(sc1.evaluate(sm), 'ScheduleConstraint broken')
         self.assertTrue(sc2.evaluate(sm), 'ScheduleConstraint broken')
 
+class DynamicCapacityTest(ProgramFrameworkTest):
+    def runTest(self):
+        #   Parameters
+        initial_capacity = 37
+        mult_test = 0.6
+        offset_test = 4
+    
+        #   Get class capacity
+        self.program.getModules()
+        options = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        sec = random.choice(list(self.program.sections()))
+        sec.parent_class.class_size_max = initial_capacity
+        sec.parent_class.save()
+        sec.max_class_capacity = initial_capacity
+        sec.save()
+        
+        #   Check that initially the capacity is correct
+        self.assertEqual(sec.capacity, initial_capacity)
+        #   Check that multiplier works
+        options.class_cap_multiplier = str(mult_test)
+        options.save()
+        self.assertEqual(sec.capacity, int(initial_capacity * mult_test))
+        #   Check that multiplier and offset work
+        options.class_cap_offset = offset_test
+        options.save()
+        self.assertEqual(sec.capacity, int(initial_capacity * mult_test + offset_test))
+        #   Check that offset only works
+        options.class_cap_multiplier = '1.0'
+        options.save()
+        self.assertEqual(sec.capacity, int(initial_capacity + offset_test))
+        #   Check that we can go back to normal
+        options.class_cap_offset = 0
+        options.save()
+        self.assertEqual(sec.capacity, initial_capacity)
+
 from esp.program.modules.tests import *

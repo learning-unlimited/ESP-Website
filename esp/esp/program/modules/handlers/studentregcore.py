@@ -151,7 +151,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
             
         try:
-            receipt_text = DBReceipt.objects.get(program=self.program).receipt
+            receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt
             context["request"] = request
             context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
@@ -164,6 +164,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @meets_grade    
     @meets_deadline()
     def cancelreg(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.module_ext import DBReceipt
+        
         if self.have_paid():
             raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
         
@@ -175,7 +177,21 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             for bit in bits:
                 bit.expire()
 
-        return self.goToCore(tl)
+        #   If the appropriate flag is set, remove the student from their classes.
+        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        if scrmi.cancel_button_dereg:
+            sections = self.user.getSections()
+            for sec in sections:
+                sec.unpreregister_student(self.user)
+
+        #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
+        try:
+            receipt_text = DBReceipt.objects.get(program=self.program, action='cancel').receipt
+            context["request"] = request
+            context["program"] = prog
+            return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
+        except:
+            return self.goToCore(tl)
 
     @main_call
     @needs_student
@@ -205,9 +221,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         context['coremodule'] = self
+        context['scrmi'] = prog.getModuleExtension('StudentClassRegModuleInfo')
         context['isConfirmed'] = self.program.isConfirmed(self.user)            
         context['have_paid'] = self.have_paid()
-        
         
         context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
