@@ -6,8 +6,31 @@ def split(str,splitter):
     return str.split(splitter)
 
 @register.filter
+def index(arr,index):
+    return arr[index]
+
+@register.filter
 def concat(str,text):
     return str + text
+
+@register.filter
+def equal(obj1,obj2):
+    return obj1 == obj2
+
+@register.filter
+def notequal(obj1,obj2):
+    #print str(obj1) + " != " + str(obj2) + " --> " + str(obj1 != obj2)
+    return obj1 != obj2
+
+@register.filter
+def bool_or(obj1,obj2):
+    #print str(obj1) + " or " + str(obj2) + " --> " + str(obj1 or obj2)
+    return obj1 or obj2
+
+@register.filter
+def bool_and(obj1,obj2):
+    #print str(obj1) + " and " + str(obj2) + " --> " + str(obj1 and obj2)
+    return obj1 and obj2
 
 theme = {
     '': 'yellowgreen',

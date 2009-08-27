@@ -81,6 +81,18 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 <div id="page" class="{{ request.path|extract_theme }}">
   <div id="sidebar">
       <ul id="menu">
+	{% with request.path|split:"/"|index:1 as split_url %}
+	{% with split_url|notequal:"learn"|bool_and:request.user.isTeacher as default_flag %}
+	{% if split_url|equal:"teach"|bool_or:default_flag %}
+	<li id="tab_logo" class="yellowgreen" ><a href="/teach/index.html"></a></li>
+	<li id="tab_splash" class="blue" ><a href="/teach/Splash/index.html">Splash</a></li>
+	<li id="tab_spark" class="purple" ><a href="/teach/Spark/index.html">Spark</a></li>
+	<li id="tab_hssp" class="red" ><a href="/teach/HSSP/index.html">HSSP</a></li>
+	<li id="tab_satprep" class="orange" ><a href="/teach/SATPrep/index.html">SATPrep</a></li>
+	<li id="tab_junction" class="yellow" ><a href="/teach/Junction/index.html">Junction</a></li>
+	<li id="tab_delve" class="lightgreen" ><a href="/teach/Delve/index.html">Delve</a></li>
+	<li id="tab_proveit" class="darkgreen" ><a href="/teach/ProveIt/index.html">ProveIt</a></li>
+	{% else %}
 	<li id="tab_logo" class="yellowgreen" ><a href="/learn/index.html"></a></li>
 	<li id="tab_splash" class="blue" ><a href="/learn/Splash/index.html">Splash</a></li>
 	<li id="tab_spark" class="purple" ><a href="/learn/Spark/index.html">Spark</a></li>
@@ -89,7 +101,10 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 	<li id="tab_junction" class="yellow" ><a href="/learn/Junction/index.html">Junction</a></li>
 	<li id="tab_delve" class="lightgreen" ><a href="/learn/Delve/index.html">Delve</a></li>
 	<li id="tab_proveit" class="darkgreen" ><a href="/learn/ProveIt/index.html">ProveIt</a></li>
-	<li id="tab_myesp" class="grey" ><a href="/myesp/home/">MyESP</a></li>
+	{% endif %}
+	{% endwith %}
+	{% endwith %}
+	<li id="tab_myesp" class="grey" ><a href="/myesp/home/">Profile</a></li>
 {% if request.user.isAdministrator %}
 	<li id="tab_admin" class="black" ><a href="/manage/programs/">Admin</a></li>
 {% endif %}
@@ -98,6 +113,20 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
   <div id="body">
     <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
     <div id="header">
+      <div id="cross_link">
+	{% with request.path|split:"/"|index:1 as split_url %}
+	{% if split_url|notequal:"teach" %}
+	<span class="teach inactive"><a href="/teach/index.html">Teach anything.</a></span>
+	{% else %}
+	<span class="teach"><a href="/teach/index.html">Teach anything.</a></span>
+	{% endif %}
+	{% if split_url|notequal:"learn" %}
+	<span class="learn inactive"><a href="/learn/index.html">Learn anything.</a></span>
+	{% else %}
+	<span class="learn"><a href="/learn/index.html">Learn anything.</a></span>
+	{% endif %}
+	{% endwith %}
+      </div>
       <div id="search_box">
 	<form name="search_form" method="get" action="http://search.mit.edu/search">
 	 <input type='hidden' name='site' value='mit' />
@@ -146,14 +175,6 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 {% block secondary_nav %}
 {% load navbar %}
 {% navbar_gen %}
-<!--      <ul id="submenu">
-	<div class="corners"><div class="ul"></div><div class="ur"></div></div>
-	<li><a href="#">about ESP</a></li>
-	<li><a href="#">for parents</a></li>
-	<li><a href="#">contact us</a></li>
-	<li><a href="#">other resources</a></li>
-	<li><a href="#">fill the page</a></li>
-      </ul>-->
 {% endblock %}
 
 {% endblock %}

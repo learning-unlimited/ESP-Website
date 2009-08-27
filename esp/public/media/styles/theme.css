@@ -99,6 +99,26 @@ margin-top: 10px;
  * Header
  */
 
+#cross_link {
+position: absolute;
+left: 20px; top: -22px;
+height: 22px;
+line-height: 22px;
+font-size: smaller;
+font-weight: bold;
+}
+
+#cross_link a {
+text-decoration: none;
+}
+#cross_link a:hover {
+text-decoration: underline;
+}
+#cross_link .inactive,
+#cross_link .inactive a {
+color: #999;
+}
+
 #contact_info {
 position: absolute;
 top: 15px;
