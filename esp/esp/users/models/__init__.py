@@ -1286,15 +1286,21 @@ class K12School(models.Model):
         app_label = 'users'
         db_table = 'users_k12school'
 
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        name = data.strip()
+        query_set = cls.objects.filter(name__icontains = name)
+        values = query_set.order_by('name','id').values('name', 'id')
+        for value in values:
+            value['ajax_str'] = '%s' % (value['name'])
+        return values
+
     def __unicode__(self):
         if self.contact_id:
             return '"%s" in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
             return '"%s"' % self.name
-
-    class Admin:
-        pass
 
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
