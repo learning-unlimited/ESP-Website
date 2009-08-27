@@ -15,6 +15,12 @@
     <!-- {% ifchanged timeslot.2 %}
         <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr> 
     {% endifchanged %} -->
+    {% ifequal timeslot.0.event_type.description "Compulsory" %}
+    <tr>
+        <td width="35%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
+        <td colspan="2" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
+    </tr>
+    {% else %}
     <tr>
         <td width="35%" valign="top" align="center"> {{ timeslot.0.short_description }}</td>
         
@@ -74,7 +80,7 @@
             {% endif %}	
         {% endif %}
     </tr>
-
+    {% endifequal %}
 {% endfor %}
 </table> 
 </div>

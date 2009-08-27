@@ -589,8 +589,13 @@ class Program(models.Model):
     def sections(self, use_cache=True):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
-    def getTimeSlots(self):
-        return Event.objects.filter(anchor=self.anchor).order_by('start')
+    def getTimeSlots(self, exclude_types=['Compulsory']):
+        """ Get the time slots for a program. 
+            A flag, exclude_types, allows you to restrict which types of timeslots
+            are grabbed.  The default excludes 'compulsory' events, which are
+            not intended to be used for classes (they're for lunch, photos, etc.)
+        """
+        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).order_by('start')
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
