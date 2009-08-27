@@ -2,6 +2,13 @@
 
 {% block title %}Home [MOCKUP]{% endblock %}
 {% block stylesheets %}
+{% if request.user.is_authenticated %}
+{% if request.user.isTeacher %}
+<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/teach/index.html">
+{% else %}
+<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/learn/index.html">
+{% endif %}
+{% endif %}
 <meta name="author" content="Tony Valderrama, Vincent Lee, and others" />
 <link rel="stylesheet" type="text/css" href="/media/styles/splash.css" media="all" />
 {% endblock %}
