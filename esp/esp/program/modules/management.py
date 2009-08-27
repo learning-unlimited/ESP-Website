@@ -30,17 +30,18 @@ Email: web@esp.mit.edu
 """
 
 
-from django.dispatch import dispatcher
 from django.db.models import signals 
 from esp.program.modules import models as Modules
+from esp.utils.custom_cache import custom_cache
 
 have_already_installed = False
 
 def post_syncdb(sender, app, **kwargs):
     global have_already_installed
     if app == Modules and not have_already_installed:
-        have_already_installed = True
-        print "Installing esp.program.modules initial data..."
-        Modules.install()
+        with custom_cache():
+            have_already_installed = True
+            print "Installing esp.program.modules initial data..."
+            Modules.install()
 
 signals.post_syncdb.connect(post_syncdb)
