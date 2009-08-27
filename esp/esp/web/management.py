@@ -30,21 +30,19 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-
 from django.db.models import signals 
-from esp.cal import models as cal
+from esp.web import models as web
 from esp.utils.custom_cache import custom_cache
 
 have_already_installed = False
 
 def post_syncdb(sender, app, **kwargs):
     global have_already_installed
-    
-    if (not have_already_installed) and app == cal:
+    if app == web and not have_already_installed:
         with custom_cache():
             have_already_installed = True
-            print "Installing esp.cal initial data..."
-            cal.install()
+            print "Installing esp.web initial data..."
+            web.install()
 
 signals.post_syncdb.connect(post_syncdb)
 
