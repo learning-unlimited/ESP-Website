@@ -1,3 +1,4 @@
+from __future__ import with_statement
 
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
