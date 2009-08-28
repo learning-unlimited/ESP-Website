@@ -176,6 +176,14 @@
     font-size: 12px;
 }
 
+#program_form td.compulsory_event_time {
+    background-color: #CCC;
+}
+
+#program_form td.compulsory_event_desc {
+    background-color: #CCC;
+}
+
 td .program_form_small{
     padding: 1px;
 }

@@ -41,6 +41,21 @@ from esp.survey.views   import survey_view, survey_review, survey_graphical, sur
 import operator
 
 class SurveyModule(ProgramModuleObj, CoreModule):
+    """ A module for people to take surveys. """
+
+    @classmethod
+    def module_properties(cls):
+        return [ {
+            "admin_title": "Student Surveys",
+            "link_title": "Surveys",
+            "module_type": "learn",
+            "seq": 20,
+        }, {
+            "admin_title": "Teacher Surveys",
+            "link_title": "Survey",
+            "module_type": "teach",
+            "seq": 15,
+        } ]
 
     def students(self, QObject = False):
         verb = GetNode('V/Flags/Survey/Filed')

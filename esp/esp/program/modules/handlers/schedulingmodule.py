@@ -203,13 +203,21 @@ class SchedulingModule(ProgramModuleObj):
             - special requests (those entered in optionally)
             - desired rooms (entered in optionally)
         """
-       
+        
         context = {}
         context['prog'] = prog
         context['classes'] = prog.classes()
         context['sections'] = prog.sections()
         
-        return render_to_response(self.baseDir()+'requests.html', request, (prog, tl), context)
+        if extra == 'csv':
+            from django.template import loader
+            from django.http import HttpResponse
+            content = loader.render_to_string(self.baseDir()+'requests.csv', context)
+            response = HttpResponse(content, mimetype='text/csv')
+            response['Content-Disposition'] = 'attachment; filename=requests.csv'
+            return response
+        else:
+            return render_to_response(self.baseDir()+'requests.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin

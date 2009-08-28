@@ -5,7 +5,7 @@ class ESPImagePattern (ImagePattern):
     media = { }
 
     def handleMatch(self, m, doc):
-        el = super(self, ImagePattern).handleMatch(m, doc)
+        el = super(ImagePattern, self).handleMatch(m, doc)
 
         src = el.getAttribute('src')
 
@@ -20,7 +20,7 @@ class ESPLinkPattern (LinkPattern):
     media = { }
 
     def handleMatch(self, m, doc):
-        el = super(self, ImagePattern).handleMatch(m, doc)
+        el = super(ImagePattern, self).handleMatch(m, doc)
 
         src = el.getAttribute('src')
 

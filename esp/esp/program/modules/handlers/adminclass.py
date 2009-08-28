@@ -58,6 +58,7 @@ class AdminClass(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Class Management for Admin",
             "link_title": "Manage Classes",
             "module_type": "manage",
             "seq": 1,
@@ -148,6 +149,7 @@ class AdminClass(ProgramModuleObj):
                 
         return (render_to_response(self.baseDir()+'cannotfindclass.html', {}), False)
 
+    @aux_call
     @needs_admin
     def attendees(self, request, tl, one, two, module, extra, prog):
         """ Mark students as having attended the program, or as having registered for the specified class """
@@ -233,6 +235,7 @@ class AdminClass(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'attendees_selectclass.html', request, (prog, tl), { 'saved_record': saved_record, 'prog': prog })
         
+    @aux_call
     @needs_admin
     def deletesection(self, request, tl, one, two, module, extra, prog):
         """ A little function to remove the section specified in POST. """
@@ -251,6 +254,7 @@ class AdminClass(ProgramModuleObj):
             
             return render_to_response(self.baseDir()+'delete_confirm.html', request, (prog, tl), context)
                 
+    @aux_call
     @needs_admin
     def addsection(self, request, tl, one, two, module, extra, prog):
         """ A little function to add a section to the class specified in POST. """
@@ -308,6 +312,7 @@ class AdminClass(ProgramModuleObj):
             return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)        
 
+    @aux_call
     @needs_admin
     def rejectclass(self, request, tl, one, two, module, extra, prog):
         cls, found = self.getClass(request, extra)
@@ -395,6 +400,7 @@ class AdminClass(ProgramModuleObj):
         cls.delete(True)
         return self.goToCore(tl)
 
+    @aux_call
     @needs_admin
     def coteachers(self, request, tl, one, two, module, extra, prog):
         from esp.users.models import ESPUser 

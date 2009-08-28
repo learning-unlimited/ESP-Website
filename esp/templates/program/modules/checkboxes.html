@@ -1,0 +1,30 @@
+<table style="text-align: center" align="center" width="400">
+<tr><th>Steps for Registration</th><th>Done?</th></tr>
+{% for module in modules %}
+{% if module.isStep %}
+<tr>
+<td>{% if module.useTemplate %}
+<a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
+    {{ module.module.link_title }} 
+    </a> <em>(below)</em>
+{% else %}
+    {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
+{% endif %}
+{% if not module.module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
+</td>
+<td>{% if not module.useTemplate %}
+<a href="{{ module.get_full_path }}">
+{% else %}
+<a href="#module-{{ module.id }}">
+{% endif %}
+{% with module.isCompleted as moduleCompleted %}
+<img src="/media/images/{% if not moduleCompleted %}no{% endif %}checkmark.gif" 
+    {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
+    title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
+</a>
+{% endwith %}
+</td>
+</tr>
+{% endif %}
+{% endfor %}
+</table>
