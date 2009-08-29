@@ -121,6 +121,13 @@ class ViewUserInfoTest(TestCase):
         self.failUnless( c.login(username=self.fake_admin.username, password=self.password), "Couldn't log in as fake admin" )
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 403)
+
+    def tearDown(self):
+        self.bit.delete()
+        self.user.delete()
+        self.admin.delete()
+        self.fake_admin.delete()
+        
         
         
 class ProfileTest(TestCase):
