@@ -1,0 +1,75 @@
+{% extends "main.html" %}
+
+{% block title %}Register for Splash!{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Welcome Back"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+<h1>Register for Splash!</h1>
+
+{% if next %}
+
+<p>
+After logging in below, you will return to <tt>{{ next }}</tt>.<br />
+</p>
+{% endif %}
+
+
+<div id="login_form">
+<form action="{{ action }}" method="post">
+{% if preset_username %}
+<input type="hidden" name="username" value="{{ preset_username }}">
+{% endif %}
+<table cellpadding="2" align="center">
+<thead>
+<tr>
+ <th colspan="2">Step {% if preset_username %}3: Login{% else %}2: Pick Your Name{% endif %}</th>
+</tr>
+
+{{ form }}
+
+<tr>
+  <th colspan="2" class="submit">
+    <input type="submit" value="- {% if preset_username %}Login{% else %}Continue{% endif %} -" />
+  </th>
+</tr>
+
+{% if preset_username %}
+<tr>
+  <td colspan="2">
+    <p>
+      Forgot your password? Head on over to the <a href="/myesp/passwdrecover/"
+       title="Click for account recovery">Account Recovery Page</a>.
+    </p>
+  </td>
+</tr>
+{% endif %}
+
+</tbody>
+</table>
+
+<input type="hidden" name="{{ redirect_field_name }}" value="{{ next }}" />
+</form>
+</div>
+
+<script type="text/javascript">
+<!--
+document.getElementById('id_{% if preset_username %}password{% else %}username{% endif %}').focus();
+//-->
+</script>
+<br />
+
+{% if preset_username %}
+<h2>
+  Don't already have an account?  <a href="/myesp/register/">Click here</a> to create one!
+</h2>
+{% endif %}
+{% endblock %}

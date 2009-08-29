@@ -374,14 +374,16 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 			new_data['studentrep'] = (UserBit.objects.filter(user = curUser,
 									 verb = STUDREP_VERB,
 									 qsc  = STUDREP_QSC).count() > 0)
-		new_data['first_name'] = curUser.first_name
-		new_data['last_name']  = curUser.last_name
-		new_data['e_mail']     = curUser.email
-		if request.session.has_key('school_id'):
-			new_data['k12school'] = request.session['school_id']
-		new_data = regProf.updateForm(new_data, role)
+        new_data['first_name'] = curUser.first_name
+        new_data['last_name']  = curUser.last_name
+        new_data['e_mail']     = curUser.email
+        new_data = regProf.updateForm(new_data, role)
+        if request.session.has_key('birth_month') and request.session.has_key('birth_day'):
+            new_data['dob'] = datetime.date(1994, int(request.session['birth_month']), int(request.session['birth_day']))
+        if request.session.has_key('school_id'):
+            new_data['k12school'] = request.session['school_id']
 
-                form = FormClass(curUser, initial=new_data)
+        form = FormClass(curUser, initial=new_data)
 
 	context['request'] = request
 	context['form'] = form
