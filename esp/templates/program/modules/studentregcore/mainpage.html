@@ -64,7 +64,7 @@ function submit_check()
     When each step is completed, the corresponding box in the right-hand column will
     be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
     button at the bottom of the page. -->
-    </p>{% endcomment %}
+    </p>
 {% endcomment %}
 
 <!-- (also removed for Cascade) -rye 1-7-09)
@@ -90,6 +90,8 @@ function submit_check()
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentreg" request.user %}
 
+<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
+
 {% for module in modules %}
 {% if module.useTemplate %}
 <a name="module-{{module.id}}"></a>
@@ -100,16 +102,13 @@ function submit_check()
 </div>
 <br />
 
-<!-- (also removing this for Cascade -rye 1-7-09)
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
--->
-
-{% if program.isFull %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
-{% endif %}{% else %}
-{% endif %}
-
+    {% if program.isFull %}
+        {% if not canRegToFullProgram %}
+        <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+        {% endif %}
+    {% endif %}
 </center>
 {% endif %}
 
@@ -120,7 +119,6 @@ function submit_check()
     <center>
     <a name="confirmreg"></a>
     
-    <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
     <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
     {% if isConfirmed %}{% if not have_paid %}
     

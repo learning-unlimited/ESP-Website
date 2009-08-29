@@ -936,7 +936,7 @@ class SATPrepRegInfo(models.Model):
         verbose_name = 'SATPrep Registration Info'
 
     def __unicode__(self):
-        return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
+        return 'SATPrep registration info for ' +str(self.user) + ' in '+str(self.program)
     
     @staticmethod
     def getLastForProgram(user, program):
@@ -964,6 +964,7 @@ class RegistrationProfile(models.Model):
     last_ts = models.DateTimeField(default=datetime.now())
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True)
+    text_reminder = models.NullBooleanField()
 
     class Meta:
         app_label = 'program'

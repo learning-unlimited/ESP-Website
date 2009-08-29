@@ -110,7 +110,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             giving them the option of printing a confirmation            """
         from esp.program.modules.module_ext import DBReceipt
 
-
         try:
             invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
         except:
@@ -140,6 +139,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         modules = prog.getModules(self.user, tl)
         completedAll = True
         for module in modules:
+            if hasattr(module, 'onConfirm'):
+                module.onConfirm(request) 
             if not module.isCompleted() and module.required:
                 completedAll = False
             context = module.prepare(context)
