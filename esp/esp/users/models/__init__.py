@@ -774,7 +774,7 @@ class StudentInfo(models.Model):
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
-    k12school = models.ForeignKey('K12School', blank=True, null=True)
+    k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
     heard_about = models.TextField(blank=True)
     food_preference = models.CharField(max_length=256,blank=True,null=True)
 # removing shirt information, because this confused people.
@@ -1315,7 +1315,7 @@ class K12School(models.Model):
         db_table = 'users_k12school'
 
     @classmethod
-    def ajax_autocomplete(cls, data):
+    def ajax_autocomplete(cls, data, allow_non_staff=True):
         name = data.strip()
         query_set = cls.objects.filter(name__icontains = name)
         values = query_set.order_by('name','id').values('name', 'id')
@@ -1325,10 +1325,10 @@ class K12School(models.Model):
 
     def __unicode__(self):
         if self.contact_id:
-            return '"%s" in %s, %s' % (self.name, self.contact.address_city,
+            return '%s in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
-            return '"%s"' % self.name
+            return '%s' % self.name
 
     @classmethod
     def choicelist(cls, other_help_text=''):

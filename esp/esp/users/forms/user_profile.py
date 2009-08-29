@@ -1,6 +1,9 @@
 from django import forms
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget, BlankSelectWidget
+
+from esp.users.models import StudentInfo
 import re
 
 # SRC: esp/program/manipulators.py
@@ -95,7 +98,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(9,13)])
     school = forms.CharField(max_length=128, required=False)
-    k12school = forms.ChoiceField(label='School', choices=[], widget=BlankSelectWidget(blank_choice=('','Pick your school from this list...')))
+    #   k12school = forms.ChoiceField(label='School', choices=[], widget=BlankSelectWidget(blank_choice=('','Pick your school from this list...')))
+    k12school = AjaxForeignKeyNewformField(field=StudentInfo._meta.get_field_by_name('k12school')[0], label='School')
     dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)

@@ -24,7 +24,8 @@
 </tr>
 
 <tr>
- <td><label for="id_k12school">School:</label></td>
+ <td><label for="id_k12school">School:</label>
+ <br /><span style="font-size: 0.8em; font-style: italic;">(Begin to type your school name and select your school if it comes up.)</span></td>
  <td>{{ form.k12school }} {% if form.k12school.errors %}
    <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
    {% endif %}
