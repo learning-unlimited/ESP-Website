@@ -68,6 +68,8 @@
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentreg" request.user %}
 
+<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
+
 {% for module in modules %}
 {% if module.useTemplate %}
 <a name="module-{{module.id}}"></a>
@@ -97,7 +99,6 @@
     <center>
     <a name="confirmreg"></a>
     
-    <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
     <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
     {% if isConfirmed %}{% if not have_paid %}
     
