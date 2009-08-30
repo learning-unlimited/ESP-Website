@@ -96,6 +96,25 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_student
     @meets_grade
+    def waitlist_subscribe(self, request, tl, one, two, module, extra, prog):
+        """ Add this user to the waitlist """
+        if not self.program.isFull():
+            raise ESPError(False), "You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration."
+
+        waitlist_all = UserBit.objects.filter(verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist")).filter(enddate__gte=datetime.now())
+        waitlist = waitlist_all.filter(user=self.user)
+        
+        if waitlist.count() <= 0:
+            UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist"), recursive=False)
+            already_on_list = False
+        else:
+            already_on_list = True
+
+        return render_to_response(self.baseDir()+'waitlist.html', request, (prog, tl), { 'already_on_list': already_on_list, 'waitlist': waitlist_all })
+        
+    @aux_call
+    @needs_student
+    @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
         if UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now()).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
