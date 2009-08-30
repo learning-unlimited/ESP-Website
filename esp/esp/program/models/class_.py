@@ -55,6 +55,7 @@ from esp.users.models import ESPUser, UserBit
 from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models import Program
+from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
@@ -701,6 +702,19 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
+
+        # Test any scheduling constraints based on this class
+        relevantFilters = ScheduleTestSectionList.filter_by_section(self)
+        relevantConstraints = ScheduleConstraint.objects.filter(condition__booleantoken=relevantFilters)
+
+        # Set up a ScheduleMap; fake-insert this class into it
+        sm = ScheduleMap(user, self.parent_program)
+        for meeting_time in self.meeting_times.all():
+            sm.map[meeting_time.id] += [self]
+            
+        for exp in relevantConstraints:
+            if not exp.evaluate(sm):
+                return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title, exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if scrmi.use_priority:
