@@ -98,6 +98,7 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
             'user':       user,
             'prereg_url': prereg_url,
             'errormsg':   errormsg,
+            'temp_full_message': scrmi.temporarily_full_text,
             'show_class': show_class}
 
 # We're not caching this yet because I doubt people will hit this function the same way repeatedly--same user and all.

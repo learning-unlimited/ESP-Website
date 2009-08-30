@@ -21,9 +21,12 @@
 
 #catalog td {
    ////font-family: serif;
-   padding: 5px;
    font-size: 14px;
    background-color: #BCCAF5;
+}
+
+#catalog td.info {
+    padding: 5px;
 }
 
 .doclist {
@@ -68,6 +71,15 @@ p.category {
 }
 .show_class td.info {
    text-align: left;
+}
+
+.add_class td {
+   text-align: center;
+   vertical-align: top;
+   color: #bccaf5;
+   background-color: #00003C;
+   padding: 0px;
+   margin: 0px;
 }
 
 #divmaintext h1 {

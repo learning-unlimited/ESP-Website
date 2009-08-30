@@ -277,7 +277,7 @@ class ClassSection(models.Model):
         return self.parent_class.title()
     title = property(_get_title)
     
-    def _get_capacity(self):
+    def _get_capacity(self, ignore_changes=False):
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
 
@@ -296,9 +296,12 @@ class ClassSection(models.Model):
             self.save()
             
         #   Apply dynamic capacity rule
-        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-        return int(ans * options.class_cap_multiplier + options.class_cap_offset)
-    
+        if not ignore_changes:
+            options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            return int(ans * options.class_cap_multiplier + options.class_cap_offset)
+        else:
+            return int(ans)
+   
     capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
@@ -860,8 +863,8 @@ class ClassSection(models.Model):
         else:
             return reduce(lambda x,y: x+y, [r.num_students for r in ir]) 
 
-    def isFull(self, use_cache=True):
-        return (self.num_students() >= self.capacity)
+    def isFull(self, ignore_changes=False, use_cache=True):
+        return (self.num_students() >= self._get_capacity(ignore_changes))
 
     def friendly_times(self, use_cache=False):
         """ Return a friendlier, prettier format for the times.
@@ -1393,14 +1396,14 @@ class ClassSubject(models.Model):
 
         return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers() ])
         
-    def isFull(self, timeslot=None, use_cache=True):
+    def isFull(self, ignore_changes=False, timeslot=None, use_cache=True):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
             sections = [self.get_section(timeslot)]
         else:
             sections = self.get_sections()
         for s in sections:
-            if not s.isFull(use_cache=use_cache):
+            if not s.isFull(ignore_changes=ignore_changes, use_cache=use_cache):
                 return False
         return True
 
