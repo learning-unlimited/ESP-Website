@@ -271,6 +271,7 @@ class Program(models.Model):
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
     program_size_max = models.IntegerField(null=True)
+    program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
     class_categories = models.ManyToManyField('ClassCategories')
     
@@ -494,7 +495,7 @@ class Program(models.Model):
             cache.set(CACHE_KEY, isfull, CACHE_DURATION)
 
         return isfull
-
+    
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
