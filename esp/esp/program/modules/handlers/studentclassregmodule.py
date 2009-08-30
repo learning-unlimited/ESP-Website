@@ -456,8 +456,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         # Sort classes
         classes = list(classes)
-        classes = sorted(classes, key=lambda cls: cls.num_students())
+        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
         classes = sorted(classes, key=lambda cls: cls.friendly_times()[0] if len(cls.friendly_times()) > 0 else [])
+        classes = sorted(classes, key=lambda cls: cls.category.category)
 
         categories = {}
         for cls in classes:

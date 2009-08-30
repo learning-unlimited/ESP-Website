@@ -177,11 +177,13 @@
 }
 
 #program_form td.compulsory_event_time {
-    background-color: #CCC;
+    background-color: #497cca;
+    color: #ffffff;
 }
 
 #program_form td.compulsory_event_desc {
-    background-color: #CCC;
+    background-color: #497cca;
+    color: #ffffff;
 }
 
 td .program_form_small{

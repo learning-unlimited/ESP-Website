@@ -62,7 +62,6 @@ Viewing classes for: {{ timeslot.short_description }}
 {% endif %}
 {% endif %}
 
-{% comment %} (removed for Cascade -rye 1-8-09)
 <table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
   <th colspan="2">
@@ -87,17 +86,17 @@ Viewing classes for: {{ timeslot.short_description }}
 {% endif %}
 
 </table>
-{% endcomment %}
+
 </div>
 <div id="catalog">
 {% load class_render %}
 {% for class in classes %}
-{% comment %} (removed for Cascade -rye 1-8-09)
+
 {% ifchanged class.category_id %}<hr size="1"/>
 
     <a name="cat{{class.category_id}}"></a>
       <p style="font-size: 1.2em;" class="category">
-         {{ class.category_txt }}
+         {{ class.category.category }}
       </p>
 {% if request.user.onsite_local %}
 {% if not request.GET.filter %}
@@ -112,7 +111,7 @@ Viewing classes for: {{ timeslot.short_description }}
 {% endif %}
       <p class="linktop">
          <a href="#top">[ Return to Category List ]</a>
-      </p> {% endifchanged %} {% endcomment %}
+      </p> {% endifchanged %}
 
 {% render_class class request.user prereg_url request.GET.filter timeslot request %}
 
