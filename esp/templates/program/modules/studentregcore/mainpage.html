@@ -32,7 +32,6 @@ function submit_check()
 <script type="text/javascript">
 <!--
   function submit_cancel() {
-     // prereg for a class
      {% if scrmi.cancel_button_dereg %}
      var confirm_note = 'Are you sure you want to cancel your registration and remove yourself from any classes you have signed up for?';
      {% else %}
@@ -121,8 +120,8 @@ function submit_check()
     
     <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
     {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}    
-    <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
-    <input id="cancelbutton" class="button" type="submit" onsubmit="return submit_cancel();" value="{{ scrmi.cancel_button_text }}" />
+    <form action="/learn/{{one}}/{{two}}/cancelreg"  onsubmit="return submit_cancel();" method="get">
+    <input id="cancelbutton" class="button" type="submit" value="{{ scrmi.cancel_button_text }}" />
     {% endif %}{% endif %}
     </center>
 {% endif %}

@@ -107,10 +107,11 @@ input.button {
     border: 0px solid black;
     font-weight: bold;
     font-size: 13px;
-    ////font-family: Arial, Helvetica, sans-serif;
+    padding: 3px;
+    font-family: Helvetica, Arial, sans-serif;
 }
 
 input.button:hover {
-    background-color: #333399;
+    background-color: #00003C;
     color: #BCCAF5;
 }

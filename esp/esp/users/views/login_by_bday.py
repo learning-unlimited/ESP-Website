@@ -58,8 +58,8 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
     else:
         # Prepare a new student-select box
         user_filter = Q(registrationprofile__student_info__dob__month=month, registrationprofile__student_info__dob__day=day)
-        candidate_users = ESPUser.objects.filter(user_filter).distinct().order_by('first_name', 'id')
-        form = StudentSelectForm( students=[ (s.username, '%s (%s)' % (s.name(), s.username)) for s in candidate_users ] + [('-1', 'I don\'t see my name in this list...')] )
+        candidate_users = ESPUser.objects.filter(is_active=True).filter(user_filter).distinct().order_by('first_name', 'id')
+        form = StudentSelectForm( students=[ (s.username, '%s (%s)' % (s.first_name, s.username)) for s in candidate_users ] + [('-1', 'I don\'t see my name in this list...')] )
         preset_username = ''
         action = request.get_full_path()
         if request.REQUEST.has_key('dynamic'):

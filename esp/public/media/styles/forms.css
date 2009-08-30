@@ -264,12 +264,12 @@ th .program_form_small{
 }
 
 #program_form input.button:hover {
-    background-color: #333399;
+    background-color: #00003C;
     color: #BCCAF5;
 }
 
 #program_form a.button:hover {
-    background-color: #333399;
+    background-color: #00003C;
     text-decoration: none;
     color: #BCCAF5;
 }
