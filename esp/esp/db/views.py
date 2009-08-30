@@ -4,9 +4,24 @@ from django.http import HttpResponse
 from django.utils import simplejson
 from django.db.models.query import QuerySet
 
+""" Removed the staff-only restriction and instead pass a flag to ajax_autocomplete if the user
+    is not a staff member.  The staff bit is checked at the per-function level, so that students
+    can call ajax_autocomplete on K12School but not on User or DataTree (for example).
+    
 user_is_staff = user_passes_test(lambda u: u.is_authenticated() and u.is_staff and u.is_authenticated())
-
 @user_is_staff
+"""
+
+def autocomplete_wrapper(function, data, is_staff):
+    if is_staff:
+        return function(data)
+    else:
+        if 'allow_non_staff' in function.im_func.func_code.co_varnames:
+            return function(data)
+        else:
+            return []
+
+@login_required
 def ajax_autocomplete(request):
     """
     This function will recieve a bunch fo GET requests for the
@@ -28,9 +43,9 @@ def ajax_autocomplete(request):
     Model = getattr(__import__(model_module,(),(),['']),model_name)
 
     if hasattr(Model.objects, ajax_func):
-        query_set = getattr(Model.objects, ajax_func)(data)
+        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff)
     else:
-        query_set = getattr(Model, ajax_func)(data)
+        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff)
 
     if type(query_set) == QuerySet:
         raise NotImplementedError

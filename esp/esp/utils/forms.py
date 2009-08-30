@@ -36,7 +36,6 @@ from django.utils.html import escape, mark_safe
 
 from esp.utils.widgets import CaptchaWidget
 
-
 class SizedCharField(forms.CharField):
     """ Just like CharField, but you can set the width of the text widget. """
     def __init__(self, length=None, *args, **kwargs):

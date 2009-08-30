@@ -37,11 +37,13 @@ from esp.program.models import Program
 
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
+    #   Allow multiple receipts per program.  Which one is used depends on the action.
+    action  = models.CharField(max_length=80, default='confirm')
     program = models.OneToOneField(Program)
     receipt = models.TextField()
     
     def __unicode__(self):
-        return 'Registration receipt for %s' % self.program
+        return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
 
 class SATPrepAdminModuleInfo(models.Model):
@@ -59,12 +61,43 @@ class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
     module               = models.ForeignKey(ProgramModuleObj)
-    enforce_max          = models.BooleanField(default=True)
     
-    signup_verb          = AjaxForeignKey(DataTree, default=lambda:GetNode(REG_VERB_BASE + '/Enrolled'))
-    use_priority         = models.BooleanField(default=False)
-    priority_limit       = models.IntegerField(default=3)
-    register_from_catalog = models.BooleanField(default=False)
+    #   Set to true to prevent students from registering from full classes.
+    enforce_max          = models.BooleanField(default=True, help_text='Check this box to prevent students from signing up for full classes.')
+    
+    #   Filter class caps on the fly... y = ax + b
+    #     a = class_cap_multiplier
+    #     b = class_cap_offset
+    class_cap_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default='1.00', help_text='A multiplier for class capacities (set to 0.5 to cap all classes at half their stored capacity).')
+    class_cap_offset    = models.IntegerField(default=0, help_text='Offset for class capacities (this number is added to the original capacity of every class).')
+    
+    #   This points to the tree node that is used for the verb when a student is added to a class.
+    #   Only 'Enrolled' actually puts them on the class roster.  Other verbs may be used to
+    #   represent other statuses ('Applied', 'Rejected', etc.)
+    #   Note: When use_priority is True, sub-verbs with integer indices are used 
+    #         (e.g. 'Priority/1', 'Priority/2', ...)
+    signup_verb          = AjaxForeignKey(DataTree, default=lambda:GetNode(REG_VERB_BASE + '/Enrolled'), help_text='Which verb to grant a student when they sign up for a class.')
+    
+    #   Whether to use priority
+    use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration.')
+    #   Number of choices a student can make for each time block (1st choice, 2nd choice, ...Nth choice.)
+    priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled.')
+    
+    #   Set to true to allow classes to be added (via Ajax) using buttons on the catalog
+    register_from_catalog = models.BooleanField(default=False, help_text='Check this box to allow students to add classes from the catalog page if they are logged in.')
+    
+    #   Customize buttons
+    #   - Labels
+    confirm_button_text = models.CharField(max_length=80, default='Confirm', help_text='Label for the "confirm" button at the bottom of student reg.')
+    view_button_text    = models.CharField(max_length=80, default='View Receipt', help_text='Label for the "get receipt" button (for already confirmed students) at the bottom of student reg.')
+    cancel_button_text  = models.CharField(max_length=80, default='Cancel Registration', help_text='Label for the "cancel" button at the bottom of student reg.')
+    #   - Set to true to make the cancel button remove the student from classes they have registered for
+    cancel_button_dereg = models.BooleanField(default=False, help_text='Check this box to remove a student from all of their classes when they cancel their registration.')
+    
+    #   Choose which appears on student reg for the modules: checkbox list, progress bar, or nothing
+    #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
+    progress_mode = models.IntegerField(default=1, help_text='Select which to use on student reg: 1=checkboxes, 2=progress bar, 0=neither.')
+    
     
     def __init__(self, *args, **kwargs):
         #   Trying to fetch self.signup_verb directly throws a DoesNotExist for some reason.
@@ -106,28 +139,28 @@ class StudentClassRegModuleInfo(models.Model):
     
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
-    allow_coteach        = models.BooleanField(blank=True, default=True)
-    set_prereqs          = models.BooleanField(blank=True, default=True)
+    allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
+    set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalog.')
     display_times        = models.BooleanField(blank=True, default=False)
     times_selectmultiple = models.BooleanField(blank=True, default=False)
     
     #   The maximum length of a class, in minutes.
-    class_max_duration   = models.IntegerField(blank=True, null=True)
+    class_max_duration   = models.IntegerField(blank=True, null=True, help_text='The maximum length of a class, in minutes.')
     
     class_max_size       = models.IntegerField(blank=True, null=True)
     
     class_size_step      = models.IntegerField(blank=True, null=True)
     director_email       = models.EmailField(blank=True, null=True)
     class_durations      = models.CharField(max_length=128, blank=True, null=True)
-    teacher_class_noedit = models.DateTimeField(blank=True, null=True)
+    teacher_class_noedit = models.DateTimeField(blank=True, null=True, help_text='Teachers will not be able to edit their classes after this time.')
     
     #   Allowed numbers of sections and meeting days
     allowed_sections     = models.CommaSeparatedIntegerField(max_length=100, blank=True,
-        help_text='Allow this many independent sections of a class. Leave blank to allow arbitrarily many.')
+        help_text='Allow this many independent sections of a class (comma separated list of integers). Leave blank to allow arbitrarily many.')
     session_counts       = models.CommaSeparatedIntegerField(max_length=100, blank=True,
-        help_text='The number of days that a class could meet. Leave blank if this is not a relevant choice for the teachers.')
+        help_text='Possibilities for the number of days that a class could meet (comma separated list of integers). Leave blank if this is not a relevant choice for the teachers.')
     
-    num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True)
+    num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True, help_text='The maximum number of application questions that can be specified for each class.')
     num_class_choices    = models.PositiveIntegerField(default=1, blank=True, null=True)
     
     #   An HTML color code for the program.  All classes will appear in some variant
@@ -141,6 +174,10 @@ class ClassRegModuleInfo(models.Model):
     #   Room requests
     ask_for_room         = models.BooleanField(blank=True, default=True,
         help_text = 'If true, teachers will be asked if they have a particular classroom in mind.')
+    
+    #   Choose which appears on teacher reg for the modules: checkbox list, progress bar, or nothing
+    #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
+    progress_mode = models.IntegerField(default=1, help_text='Select which to use on teacher reg: 1=checkboxes, 2=progress bar, 0=neither.')
     
     def allowed_sections_ints_get(self):
         return [ int(s.strip()) for s in self.allowed_sections.split(',') if s.strip() != '' ]

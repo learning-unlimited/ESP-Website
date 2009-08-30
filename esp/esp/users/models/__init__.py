@@ -88,11 +88,6 @@ class ESPUser(User, AnonymousUser):
     class Meta:
         app_label = 'auth'
         db_table = 'auth_user'
-
-        def __init__(self):
-            super(self, Meta).__init__()
-            self.pk.attname = "id"
-            self.local_fields[0].column = "id"
         
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:
@@ -667,11 +662,6 @@ class ESPUser(User, AnonymousUser):
 
     isAdmin = isAdministrator
 
-    def delete(self):
-        for x in self.userbit_set.all():
-            x.delete()
-        super(ESPUser, self).delete()
-
     @classmethod
     def create_membership_methods(cls):
         """
@@ -766,7 +756,6 @@ class ESPUser(User, AnonymousUser):
 
 ESPUser.create_membership_methods()
 
-ESPUser._meta.pk.name = "id"
 ESPUser._meta.pk.attname = "id"
 ESPUser._meta.local_fields[0].column = "id"
 
@@ -774,6 +763,8 @@ ESPUser._meta.local_fields[0].column = "id"
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
+food_choices = ('Anything', 'Vegetarian', 'Vegan')
+food_choices = zip(food_choices, food_choices)
 
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
@@ -783,8 +774,9 @@ class StudentInfo(models.Model):
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
-    k12school = models.ForeignKey('K12School', blank=True, null=True)
-    heard_about = models.TextField()
+    k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
+    heard_about = models.TextField(blank=True)
+    food_preference = models.CharField(max_length=256,blank=True,null=True)
 # removing shirt information, because this confused people.
 #    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
 #    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
@@ -822,11 +814,10 @@ class StudentInfo(models.Model):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
-        form_dict['k12school']       = self.k12school_id
+        form_dict['k12school']       = self.k12school
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
-        form_dict['shirt_size']      = self.shirt_size
-        form_dict['shirt_type']      = self.shirt_type
+        form_dict['food_preference'] = self.food_preference
         form_dict['studentrep_expl'] = self.studentrep_expl
         form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
                                                             qsc  = STUDREP_QSC,
@@ -846,11 +837,10 @@ class StudentInfo(models.Model):
             studentInfo = regProfile.student_info
 
         studentInfo.graduation_year = new_data['graduation_year']
-        studentInfo.k12school_id    = new_data['k12school']
+        studentInfo.k12school       = new_data['k12school']
         studentInfo.school          = new_data['school']
         studentInfo.dob             = new_data['dob']
-        #   studentInfo.shirt_size      = new_data['shirt_size']
-        #   studentInfo.shirt_type      = new_data['shirt_type']
+        studentInfo.food_preference = new_data['food_preference']
         studentInfo.studentrep_expl = new_data['studentrep_expl']
         studentInfo.save()
         if new_data['studentrep']:
@@ -886,7 +876,7 @@ class StudentInfo(models.Model):
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
-    graduation_year = models.PositiveIntegerField(blank=True, null=True)
+    graduation_year_int = models.IntegerField(help_text='Enter 1 for a grad student, or 0 if not applicable.')
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -897,6 +887,25 @@ class TeacherInfo(models.Model):
     university_email = models.EmailField(blank=True, null=True)
     student_id = models.CharField(max_length=128, blank=True, null=True)
     mail_reimbursement = models.NullBooleanField(blank=True, null=True)
+
+    @staticmethod
+    def _graduation_year_pretty(gy_int):
+        if gy_int == 0:
+            return u'N/A'
+        if gy_int == 1:
+            return u'G'
+        return unicode(gy_int)
+    def _graduation_year_get(self):
+        return TeacherInfo._graduation_year_pretty(self.graduation_year_int)
+    def _graduation_year_set(self, value):
+        if value == 'G':
+            self.graduation_year_int = 1
+        else:
+            try:
+                self.graduation_year_int = abs(int(value))
+            except:
+                self.graduation_year_int = 0
+    graduation_year = property( _graduation_year_get, _graduation_year_set )
 
     class Meta:
         app_label = 'users'
@@ -915,16 +924,17 @@ class TeacherInfo(models.Model):
                 query_set = query_set.filter(user__first_name__istartswith = first.strip())
 
         query_set = query_set[:10]
-        values = query_set.values('user', 'college', 'graduation_year', 'id')
-        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year', 'id')
+        values = query_set.values('user', 'college', 'graduation_year_int', 'id')
+        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year_int', 'id')
 
         for value in values:
             value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
+            value['graduation_year'] = cls._graduation_year_pretty( value['graduation_year_int'] )
+            value['ajax_str'] = u'%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
+        return u'%s - %s %s' % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['graduation_year']    = self.graduation_year
@@ -1058,7 +1068,7 @@ class EducatorInfo(models.Model):
 
         for value in values:
             value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
+            value['ajax_str'] = '%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
         return values
 
     def ajax_str(self):
@@ -1132,7 +1142,8 @@ class ZipCode(models.Model):
             distance from this zip code. """
         from decimal import Decimal
         try:
-            distance = Decimal(str(distance))
+            distance_decimal = Decimal(str(distance))
+            distance_float = float(str(distance))
         except:
             raise ESPError(), '%s should be a valid decimal number!' % distance
 
@@ -1140,15 +1151,16 @@ class ZipCode(models.Model):
             distance *= -1
 
         oldsearches = ZipCodeSearches.objects.filter(zip_code = self,
-                                                     distance = distance)
+                                                     distance = distance_decimal)
 
         if len(oldsearches) > 0:
             return oldsearches[0].zipcodes.split(',')
+
         all_zips = list(ZipCode.objects.exclude(id = self.id))
         winners  = [ self.zip_code ]
 
         winners += [ zipc.zip_code for zipc in all_zips
-                     if self.distance(zipc) <= distance ]
+                     if self.distance(zipc) <= distance_float ]
 
         newsearch = ZipCodeSearches(zip_code = self,
                                     distance = distance,
@@ -1302,12 +1314,21 @@ class K12School(models.Model):
         app_label = 'users'
         db_table = 'users_k12school'
 
+    @classmethod
+    def ajax_autocomplete(cls, data, allow_non_staff=True):
+        name = data.strip()
+        query_set = cls.objects.filter(name__icontains = name)
+        values = query_set.order_by('name','id').values('name', 'id')
+        for value in values:
+            value['ajax_str'] = '%s' % (value['name'])
+        return values
+
     def __unicode__(self):
         if self.contact_id:
-            return '"%s" in %s, %s' % (self.name, self.contact.address_city,
+            return '%s in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
-            return '"%s"' % self.name
+            return '%s' % self.name
 
     @classmethod
     def choicelist(cls, other_help_text=''):
@@ -1317,7 +1338,6 @@ class K12School(models.Model):
         lst = [ ( x.id, x.name ) for x in cls.objects.most() ]
         lst.append( (o.id, o.name + other_help_text) )
         return lst
-
 
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):

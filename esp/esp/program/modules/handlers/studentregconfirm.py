@@ -37,6 +37,7 @@ class StudentRegConfirm(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": 'Add "Confirm Registration" link',
             "link_title": "Confirm Registration",
             "module_type": "learn",
             "seq": 99999

@@ -1,0 +1,164 @@
+body { padding: 10px; }
+
+/*
+ * Utilities
+ */
+.loading-overlay {
+background: #eee url(loading2.gif) no-repeat scroll 50% 50%; opacity: .9;
+position: absolute; z-index: 1000;
+}
+
+#body {
+position: absolute;
+top: 10px; bottom: 10px; right: 10px; left: 10px;
+}
+
+#matrix-target {
+height: 50%; max-height: 50%; /*overflow: auto;*/
+padding-bottom: 5px; /*border: 1px solid black;*/
+position: relative;
+}
+#directory-target {
+height: 50%; max-height: 50%; /*overflow: auto;*/
+padding-top: 5px; /*border: 1px solid black;*/
+position: relative;
+}
+
+
+/*
+ * the Matrix
+ */
+.matrix {
+border: 2px solid black;
+position: absolute; top: 0; bottom: 0; right: 0; left: 0;
+/*border-collapse: collapse;*/
+}
+
+.matrix-header {
+position: absolute; top: 0px; left: 0px; right: 0px; height: 50px;
+}
+.matrix-body {
+position: absolute; top: 45px; left: 0px; right: 0px; bottom: 0px;
+border-top: 5px double #666;
+overflow: auto;
+}
+.matrix-cell-body {
+overflow: auto;
+}
+.matrix-row-header-box {
+width: 100px; float: left;
+border-right: 2px solid #666;
+}
+
+.matrix-row-body {
+display: inline-block;
+}
+
+.matrix-row {
+vertical-align: middle;
+}
+
+.matrix-row-body .matrix-cell {
+width: 60px; min-width: 60px; max-width: 60px;
+padding: 5px; margin: 0px;
+}
+.matrix-cell {
+height: 35px; max-height: 35px; min-height: 35px;
+padding: 5px 0px; vertical-align: middle; display: inline-block;
+text-align: center;
+}
+
+/*
+.matrix td:first-child { border-left: none; }
+.matrix td:last-child { border-right: none; }
+.matrix tr:first-child td { border-top: none; }
+.matrix tr:last-child td { border-bottom: none; }
+*/
+
+.matrix .header-cell { background-color: #eee; }
+.matrix .matrix-row-header {
+display: block; border-bottom: 1px solid #666;
+font-size: smaller;
+}
+.matrix .column-header {
+border-right: 1px solid #666;
+font-size: smaller;
+}
+.matrix .corner-cell {
+border-right: 2px solid #666;
+background-color: #333;
+width: 100px; max-width: 100px; min-width: 100px;
+display: inline-block;
+}
+
+.matrix .invalid-cell, .matrix .inactive { background-color: #ccc; }
+
+.matrix .data-cell.active { background-color: #cfc; }
+.matrix .data-cell.filled { background-color: #ccf; }
+
+.matrix .matrix-cell.non-sequential { border-right: 2px solid #666;}
+/*.matrix .non-sequential:last-child { border-right-width: 0px; }*/
+
+.matrix-cell-body .matrix-cell {
+border: 0px solid #666; border-width: 0px 1px 1px 0px;
+}
+
+/* DD_proxy */
+.class-dd-proxy {
+width: 50px; text-align: center;
+height: 50px; line-height: 50px;
+background: #ccc; border: 2px solid #999;
+opacity: .6;
+}
+.matrix .data-cell.active.dd-hover {
+background-color: #0f0;
+}
+.matrix .data-cell.dd-highlight {
+background-color: #6f6;
+}
+
+/*
+ * the Directory
+ */
+.directory-table-wrapper table {
+border: 1px solid black;
+border-spacing: 0px; border-collapse: collapse;
+}
+.directory-table-wrapper {
+position: absolute;
+top: 50px; left: 0px; right: 0px; bottom: 10px;
+overflow: auto;
+border: 1px solid black;
+}
+
+.directory .header { background-color: #eee; }
+.directory .header td { height: auto; }
+.directory span { float: left; padding-right: 15px; margin-right: 10px; }
+.directory .sort-by.desc span { background: url(media/down_arrow.png) no-repeat right center; }
+.directory .sort-by.asc span { background: url(media/up_arrow.png) no-repeat right center; }
+
+.directory tr + tr {
+border-top: 1px solid #999;	
+}
+
+.directory td {
+text-align: center; vertical-align: top;
+padding: 10px; height: 40px;
+}
+
+.directory td + td { border-left: 1px dotted #666; }
+
+.directory tr.assigned {
+background-color: #cfc;
+}
+
+.searchbox {
+position: absolute;
+left: 10px; top: 20px;
+right: 10px; height: 20px;
+}
+
+.searchbox input {
+width: 300px;
+margin-bottom: 20px;
+}

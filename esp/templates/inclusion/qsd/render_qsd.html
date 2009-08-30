@@ -7,8 +7,11 @@
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 {% endblock %}
 
-<script type="text/javascript" src="/media/scripts/json.js"></script>
-<script type="text/javascript" src="/media/scripts/qsd.js"></script>
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/json2.js"></script>
+    <script type="text/javascript" src="/media/scripts/qsd.js"></script>
+{% endblock %}
 
 {% if edit_bits %}
     <div class="qsd_header" onclick="qsd_inline_edit({{ qsdrec.id }});">This is quasi-static content.  Click here to edit the text; click outside the box to save changes.</div>

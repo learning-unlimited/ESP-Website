@@ -48,6 +48,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "On-Site User Check-In",
             "link_title": "Check-in (check students off for payments and forms)",
             "module_type": "onsite",
             "seq": 1

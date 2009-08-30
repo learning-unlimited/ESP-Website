@@ -22,12 +22,30 @@ function submit_check()
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
-<link rel="stylesheet" href="/media/styles/progressbar.css" type="text/css" />
 {% endblock %}
 
 {% load subsection %}
 {% block subsection %}
 {% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+  function submit_cancel() {
+     // prereg for a class
+     {% if scrmi.cancel_button_dereg %}
+     var confirm_note = 'Are you sure you want to cancel your registration and remove yourself from any classes you have signed up for?';
+     {% else %}
+     var confirm_note = 'Are you sure you want to cancel your registration?';
+     {% endif %}
+     if (confirm(confirm_note)) {
+        return true;
+     }
+     return false;
+  }
+//-->
+</script>
+{% endblock %}
 
 {% block content %}
 <h1 class="catalog">Pick Classes, {{program.niceName}} </h1>
@@ -46,7 +64,8 @@ function submit_check()
     When each step is completed, the corresponding box in the right-hand column will
     be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
     button at the bottom of the page. -->
-    </p>{% endcomment %}
+    </p>
+{% endcomment %}
 
 <!-- (also removed for Cascade) -rye 1-7-09)
 <p>
@@ -57,37 +76,12 @@ function submit_check()
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
 
-    <table class="progressbar" align="center" width="400">
-    <tr>
-    <td><img src="/media/images/progress/left_fill.gif" /></td>
-    {% for module in modules %}
-    {% if module.isStep %}
-    {% with module.fillProgressBar as moduleCompleted %}
-    <td class="progress{% if moduleCompleted %}_fill{% endif %}">
-    {% if module.useTemplate %}
-    <a href="#module-{{ module.id }}">
-    {% else %}
-    <a href="{{ module.get_full_path }}">
-    {% endif %}
-    <img src="/media/images/progress/bar{% if moduleCompleted %}_fill{% endif %}.gif" 
-        {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
-        title="Not Done" alt="Not Done"{% endif %} /><br />
-    </a>
-    {% if module.useTemplate %}
-    <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-        {{ module.module.link_title }} 
-        </a> <em>(below)</em>
-    {% else %}
-        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
-    {% endif %}
-    {% if not module.module.required %}{% if not module.hideNotRequired %}<br /><em>(optional)</em> {% endif %}{% endif %}
-  </td>
-    {% endwith %}
-{% endif %}
-{% endfor %}
-    <td><img src="/media/images/progress/right{% if completedAll %}_fill{% endif %}.gif" /></td>
-    </tr>
-    </table>
+{% ifequal scrmi.progress_mode 1 %}
+    {% include "program/modules/checkboxes.html" %}
+{% endifequal %}
+{% ifequal scrmi.progress_mode 2 %}
+    {% include "program/modules/progressbar.html" %}
+{% endifequal %}
 
 {% endif %}
 
@@ -95,6 +89,8 @@ function submit_check()
 
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentreg" request.user %}
+
+<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
 
 {% for module in modules %}
 {% if module.useTemplate %}
@@ -106,44 +102,30 @@ function submit_check()
 </div>
 <br />
 
-<!-- (also removing this for Cascade -rye 1-7-09)
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
--->
-
-{% if program.isFull %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
-{% endif %}{% else %}
-<!--
-{% if not completedAll %}
-<div class="errormsg">
-Please finish the required steps listed above (they will be checked off when they are completed). THEN, click on the <em>Confirm</em> button below (it will be active at this point).
-{% else %}
-<div class="info">
-Please click <em>Confirm</em> below to confirm your registration into {{program.niceName}}.  Upon clicking this you will be given a receipt with further instructions!
-{% endif %}
-</div>
-{% endif %}
--->
-<!--
+    {% if program.isFull %}
+        {% if not canRegToFullProgram %}
+        <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+        {% endif %}
+    {% endif %}
 </center>
 {% endif %}
--->
-<center>
 
-<a name="confirmreg"></a>
-
-<form action="/learn/{{one}}/{{two}}/confirmreg" {% comment %}{% if not completedAll %}onsubmit="return submit_check();"{% endif %}{% endcomment %} method="post">
-<input class="button" type="submit" value="Save!{% if not completedAll %} (incomplete){% endif %}" {% if not completedAll %}disabled{% endif %}/></form>
-{% if isConfirmed %}
- | 
-<form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
-<input class="button" type="submit" value="Cancel Registration" />
-{% endif %}
-
-</center>
-
-<br />
+{% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentregfooter" request.user %}
 
+{% if not request.user.onsite_local %}
+    <center>
+    <a name="confirmreg"></a>
+    
+    <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
+    {% if isConfirmed %}{% if not have_paid %}
+    
+    <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
+    <input id="cancelbutton" class="button" type="submit" onsubmit="return submit_cancel();" value="{{ scrmi.cancel_button_text }}" />
+    {% endif %}{% endif %}
+    </center>
+{% endif %}
 {% endblock %}
+

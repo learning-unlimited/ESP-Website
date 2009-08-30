@@ -30,14 +30,18 @@
 </tr>
 
 <tr>
-  <td colspan="2"><label>Address:</label></td>
-</tr>
-
-<tr>
- <td align='right'><label for="id_emerg_address_street">
-                       <small><i>street</i></small>
-		   </label>
- </td>
+    <td style="padding-left: 0px;">
+     <table style="plain" width="100%">
+     <tr>
+        <td><label>Address:</label></td>
+        <td align="right">
+            <label for="id_address_street">
+            <small><i>street</i></small>
+            </label>
+        </td>
+    </tr>
+    </table>
+    </td>
  <td>{{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
    <br /><span class="form_error">{{ form.emerg_address_street.errors|join:", " }}</span>
    {% endif %}

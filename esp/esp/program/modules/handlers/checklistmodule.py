@@ -47,6 +47,7 @@ class CheckListModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Managing Checklist Items",
             "link_title": "CheckList Management",
             "module_type": "manage",
             "seq": 1000

@@ -69,12 +69,6 @@
     color:red;background:#ffd url(/media/images/icon_error.gif) 5px .3em no-repeat; 
 }
 
-/* prettier forms */
-#divmaintext form select, #divmaintext form input[type=text], #divmaintext form input[type=file], #divmaintext form input[type=password], #divmaintext form textarea { border: 1px solid #b7b7b7; }
-#divmaintext form select.required, #divmaintext form input[type=text].required, #divmaintext form input[type=password].required, #divmaintext form input[type=file].required, #divmaintext form textarea.required { border: 1px solid #FFb7b7; }
-#divmaintext form select:focus, #divmaintext form input[type=text]:focus, #divmaintext form input[type=password]:focus, #divmaintext form textarea:focus { border: 1px solid black; }
-#divmaintext form select:focus.required, #divmaintext form input[type=text]:focus.required, #divmaintext form input[type=password]:focus.required, #divmaintext form textarea:focus.required { border: 1px solid #F00; }
-
 #divmaintext form table.plain
 {
     border: none;
@@ -182,6 +176,14 @@
     font-size: 12px;
 }
 
+#program_form td.compulsory_event_time {
+    background-color: #CCC;
+}
+
+#program_form td.compulsory_event_desc {
+    background-color: #CCC;
+}
+
 td .program_form_small{
     padding: 1px;
 }
@@ -231,7 +233,15 @@ th .program_form_small{
 #program_form select {
     //font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
+    border: 1px solid #b7b7b7;
 }
+
+#program_form select.required {
+    //font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.9em;
+    border: 1px solid #4dce3d;
+}
+
 
 #program_form input.button {
     background-color: #BCCAF5;

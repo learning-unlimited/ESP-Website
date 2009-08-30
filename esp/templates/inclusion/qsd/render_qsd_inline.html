@@ -5,8 +5,11 @@
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 {% endblock %}
 
-<script type="text/javascript" src="/media/scripts/json.js"></script>
-<script type="text/javascript" src="/media/scripts/qsd.js"></script>
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/json2.js"></script>
+    <script type="text/javascript" src="/media/scripts/qsd.js"></script>
+{% endblock %}
 
 {% if qsdrec %}
     {% if edit_bits %}

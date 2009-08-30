@@ -1,6 +1,9 @@
 from django import forms
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget, BlankSelectWidget
+
+from esp.users.models import StudentInfo
 import re
 
 # SRC: esp/program/manipulators.py
@@ -74,7 +77,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_phone_cell = PhoneNumberField(local_areacode='773', required=False)
     emerg_address_street = SizedCharField(length=40, max_length=100)
     emerg_address_city = SizedCharField(length=20, max_length=50)
-    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states))
+    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states), initial="IL")
     emerg_address_zip = SizedCharField(length=5, max_length=5)
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
@@ -91,17 +94,19 @@ class GuardContactForm(FormUnrestrictedOtherUser):
 class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
     from esp.users.models import ESPUser
-    from esp.users.models import shirt_sizes, shirt_types
+    from esp.users.models import shirt_sizes, shirt_types, food_choices
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(9,13)])
     school = forms.CharField(max_length=128, required=False)
-    k12school = forms.ChoiceField(label='School', choices=[], widget=BlankSelectWidget(blank_choice=('','Pick your school from this list...')))
+    #   k12school = forms.ChoiceField(label='School', choices=[], widget=BlankSelectWidget(blank_choice=('','Pick your school from this list...')))
+    k12school = AjaxForeignKeyNewformField(field=StudentInfo._meta.get_field_by_name('k12school')[0], label='School')
     dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
     heard_about = forms.CharField(max_length=512, required=True)
+    food_preference = forms.ChoiceField(choices=([('','')]+list(food_choices)))
 
     studentrep_error = True
 
@@ -141,7 +146,7 @@ class TeacherInfoForm(FormWithRequiredCss):
     reimbursement_choices = [(False, 'I will pick up my reimbursement in RC 001.'),
                              (True,  'Please mail me my reimbursement.')]
     
-    graduation_year = forms.IntegerField(required=False)
+    graduation_year = SizedCharField(length=4, max_length=4, required=False)
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
@@ -152,8 +157,14 @@ class TeacherInfoForm(FormWithRequiredCss):
     student_id = SizedCharField(length=24, max_length=128, required=False)
     mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 
-TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
-TeacherInfoForm.base_fields['graduation_year'].widget.attrs['maxlength'] = 4
+    def clean_graduation_year(self):
+        gy = self.cleaned_data['graduation_year'].strip()
+        try:
+            gy = str(abs(int(gy)))
+        except:
+            if gy != 'G':
+                gy = 'N/A'
+        return gy
 
 class EducatorInfoForm(FormWithRequiredCss):
     """ Extra educator-specific information """

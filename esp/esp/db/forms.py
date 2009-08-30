@@ -2,6 +2,7 @@ from django.db import models
 from django import forms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
+from django.utils.safestring import mark_safe
 import re
 
 get_id_re = re.compile('.*\D(\d+)\D')
@@ -138,7 +139,7 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 """ % (fn,fn,fn,self.field.blank and ' required' or '',addslashes(data or ''),fn,
        fn,old_init_val)
 
-        return css + html + javascript
+        return mark_safe(css + html + javascript)
     
 class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
     choices = ()
