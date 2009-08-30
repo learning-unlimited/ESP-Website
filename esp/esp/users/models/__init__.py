@@ -814,7 +814,7 @@ class StudentInfo(models.Model):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
-        form_dict['k12school']       = self.k12school_id
+        form_dict['k12school']       = self.k12school
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['food_preference'] = self.food_preference
@@ -837,7 +837,7 @@ class StudentInfo(models.Model):
             studentInfo = regProfile.student_info
 
         studentInfo.graduation_year = new_data['graduation_year']
-        studentInfo.k12school_id    = new_data['k12school']
+        studentInfo.k12school       = new_data['k12school']
         studentInfo.school          = new_data['school']
         studentInfo.dob             = new_data['dob']
         studentInfo.food_preference = new_data['food_preference']
