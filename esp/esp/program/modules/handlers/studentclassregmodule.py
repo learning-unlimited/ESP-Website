@@ -375,6 +375,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classes = filter(lambda c: not c.isFull(timeslot=ts), classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
+        #   Sort class list
+        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
+        classes = sorted(classes, key=lambda cls: cls.category.category)
+
         categories = {}
 
         for cls in classes:
