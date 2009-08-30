@@ -101,7 +101,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     studentrep_expl = forms.CharField(required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
-    heard_about = forms.CharField(max_length=512, required=False)
+    heard_about = forms.CharField(max_length=512, required=True)
 
     studentrep_error = True
 

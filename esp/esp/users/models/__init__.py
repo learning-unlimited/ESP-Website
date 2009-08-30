@@ -784,7 +784,7 @@ class StudentInfo(models.Model):
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     k12school = models.ForeignKey('K12School', blank=True, null=True)
-    heard_about = models.TextField(blank=True)
+    heard_about = models.TextField()
 # removing shirt information, because this confused people.
 #    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
 #    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
