@@ -74,6 +74,7 @@ var hideadmin = function(){
 document.getElementById('adminbar_toggle').onclick = hideadmin;
 
 });
+
 </script>
 
 {% endblock %}
@@ -84,13 +85,48 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 <div id="adminbar">
   <div class="title">Admin Toolbar</div>
   <div id="adminbar_toggle">-</div>
-  <div id="adminbar_content">
-    <form id="user_search_form" name="user_search_form" method="get" action="/manage/userview">
-      <input type="text" id="user_search_field" name="username" />
-      <input type="submit" id="user_search_submit" name="search_submit" value="Find User"/>
-    </form>
-  </div>
+  <div id="adminbar_content"></div>
 </div>
+<script type="text/javascript">
+ESP = (function(){
+  var loaded = false;
+  var queued_modules = [];
+  var adminbar = document.getElementById('adminbar_content');
+  
+  YAHOO.util.Event.on(window, "load", function(){
+    loaded = true;
+    for (var i = 0; i < queued_modules.length; i++) {
+      ESP.registerAdminModule(queued_modules[i]);
+    }
+  });
+  
+  return {
+    registerAdminModule: function(module) {
+      if (loaded) {
+        var module_wrap = document.createElement("div");
+        var module_class = "adminbar_" + module.name;
+        module_wrap.className = module_class;
+        module_wrap.innerHTML =
+			"<div class='title'>" + module.name + "</div>" +
+			"<div id='" + module_class + "_toggle' class='toggle'>-</div>" +
+			"<div class='content'>" + module.element_html + "</div>";
+        adminbar.appendChild(module_wrap);
+      } else {
+        queued_modules.push(module);
+      }
+    }
+  };
+})();
+
+ESP.registerAdminModule({
+element_html:
+'    <form id="user_search_form" name="user_search_form" method="get" action="/manage/userview">' +
+'      <input type="text" id="user_search_field" name="username" />' +
+'      <input type="submit" id="user_search_submit" name="search_submit" value="Find User"/>' +
+'    </form>',
+name: 'User Search'
+});
+</script>
 {% endif %}
 
 {% load main %}

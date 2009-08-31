@@ -290,8 +290,8 @@ border: 1px #aaa solid;
 z-index: 1000;
 }
 
-#adminbar .title {
-margin: 2px 4px;
+#adminbar > .title {
+margin: 2px 4px 6px;
 font-weight: bold;
 }
 
@@ -304,8 +304,17 @@ right: 2px; top: 2px;
 text-align: center;
 }
 
-#adminbar_content {
-margin: 10px;
+#adminbar_content .title {
+padding: 2px;
+background: #ccc;
+}
+
+#adminbar_content .content {
+padding: 6px 10px 15px;
+}
+
+#adminbar_content .toggle {
+display: none;
 }
 
 
