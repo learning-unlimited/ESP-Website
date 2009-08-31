@@ -353,14 +353,22 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
                 progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
                 nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
-                ctxt['prog'] = prog
+                ctxt['progs'] = progs
                 ctxt['nextreg'] = list(nextreg)
                 if len(progs) == 1:
-                    return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], prog.getUrlBase(), userrole['reg']))
+                    return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
                 else:
                     return render_to_response('users/profile_complete.html', request, navnode, ctxt)
             else:
                 return True
+        else:
+            #   Force loading the school back in if possible...
+            replacement_data = form.data.copy()
+            try:
+                replacement_data['k12school'] = form.fields['k12school'].clean(form.data['k12school']).id
+            except:
+                pass
+            form = FormClass(curUser, replacement_data)
 
     else:
         if prog_input is None:

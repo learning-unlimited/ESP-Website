@@ -705,7 +705,7 @@ class ClassSection(models.Model):
 
         # Test any scheduling constraints based on this class
         relevantFilters = ScheduleTestSectionList.filter_by_section(self)
-        relevantConstraints = ScheduleConstraint.objects.filter(condition__booleantoken=relevantFilters)
+        relevantConstraints = ScheduleConstraint.objects.filter(Q(requirement__booleantoken__in=relevantFilters) | Q(condition__booleantoken__in=relevantFilters))
 
         # Set up a ScheduleMap; fake-insert this class into it
         sm = ScheduleMap(user, self.parent_program)
