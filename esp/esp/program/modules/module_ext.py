@@ -86,6 +86,9 @@ class StudentClassRegModuleInfo(models.Model):
     #   Set to true to allow classes to be added (via Ajax) using buttons on the catalog
     register_from_catalog = models.BooleanField(default=False, help_text='Check this box to allow students to add classes from the catalog page if they are logged in.')
     
+    #   Enrollment visibility
+    visible_enrollments = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing enrollments on the catalog.')
+    
     #   Customize buttons
     #   - Labels
     confirm_button_text = models.CharField(max_length=80, default='Confirm', help_text='Label for the "confirm" button at the bottom of student reg.')

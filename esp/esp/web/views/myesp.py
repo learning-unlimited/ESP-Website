@@ -266,7 +266,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         navnode = GetNode('Q/Web/myesp')
     else:
         prog = prog_input
-        navnode = prog
+        navnode = prog.anchor
 
     curUser = request.user
     context = {'logged_in': request.user.is_authenticated() }
@@ -353,10 +353,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
                 progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
                 nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
-                ctxt['progs'] = progs
+                ctxt['prog'] = prog
                 ctxt['nextreg'] = list(nextreg)
                 if len(progs) == 1:
-                    return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+                    return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], prog.getUrlBase(), userrole['reg']))
                 else:
                     return render_to_response('users/profile_complete.html', request, navnode, ctxt)
             else:
@@ -385,9 +385,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
         form = FormClass(curUser, initial=new_data)
 
-	context['request'] = request
-	context['form'] = form
-	return render_to_response('users/profile.html', request, navnode, context)
+    context['request'] = request
+    context['form'] = form
+    return render_to_response('users/profile.html', request, navnode, context)
 
 @login_required
 def myesp_onsite(request, module):

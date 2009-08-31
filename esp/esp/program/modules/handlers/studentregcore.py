@@ -188,6 +188,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='cancel').receipt
+            context = {}
             context["request"] = request
             context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
