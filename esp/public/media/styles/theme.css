@@ -232,7 +232,7 @@ background: #fff;
 
 #content {
 width: 560px;
-padding: 10px 20px;
+padding: 20px 20px 10px;
 margin: 0px auto;
 min-height: 400px;
 }
@@ -265,17 +265,17 @@ content: '|';
 color: #fff;
 }
 
-#submenu form, #submenu tt, #submenu .bullet {
+/*#submenu form, #submenu tt, #submenu .bullet {
 display: none;
-}
+}*/
 
 #submenu .movable {
   cursor: move;
 }
 
-#submenu li.movable:hover {
+/*#submenu li.movable:hover {
     border: 1px solid #aaa;
-}
+}*/
 
 
 /*

@@ -8,7 +8,6 @@
 <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
 <!-- Copyright (C) 2005 Massachusetts Institute of Technology -->
 {% block javascript %}
-<script type="text/javascript" src="/media/scripts/jquery.js"> </script>
 {% endblock %}
 {% block stylesheets %}
 {% endblock %}

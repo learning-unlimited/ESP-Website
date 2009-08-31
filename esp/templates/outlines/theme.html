@@ -10,8 +10,24 @@
 {% block javascript %}
 {{ block.super }}
 
+    {% if request.user.is_authenticated %}
+        {# navbar depends on YUI #}
+        <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/calendar/calendar-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/container/container-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/menu/menu-min.js"></script>
+
+        <script type="text/javascript" src="/media/scripts/json.js"></script>
+        <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
+    {% endif %}
+
+<!--<script type="text/javascript" src="/media/scripts/jquery.js"> </script>-->
 <script type="text/javascript">
-$(function(){
+YAHOO.util.Event.on(window, "load", function(){
 
 // create behavior wrapper
 var wrap = function(target, label) {
@@ -47,12 +63,12 @@ wrap(document.getElementById('search_field'),'Enter search term');
 var showadmin = function(){
   this.innerHTML = '-';
   this.onclick = hideadmin;
-  $('#adminbar_content').show();
+  document.getElementById('adminbar_content').style.display = 'block';
 };
 var hideadmin = function(){
   this.innerHTML = '+';
   this.onclick = showadmin;
-  $('#adminbar_content').hide();
+  document.getElementById('adminbar_content').style.display = 'none';
 };
 
 document.getElementById('adminbar_toggle').onclick = hideadmin;
@@ -144,7 +160,7 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
       <span class="normal">84 Massachusetts Avenue, Room W20-467</span>
       <span class="normal">Cambridge, MA 02139</span>
       <span class="normal">Tel: 617-253-4882</span>
-      <span class="normal"><a href="contact.html">contact us</a></span>
+      <span class="normal"><a href="/about/contact.html">contact us</a></span>
       </div>
 {% block login %}
 <div id="login_box">
