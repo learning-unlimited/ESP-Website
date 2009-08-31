@@ -272,18 +272,6 @@ content: '|';
 color: #fff;
 }
 
-/*#submenu form, #submenu tt, #submenu .bullet {
-display: none;
-}*/
-
-#submenu .movable {
-  cursor: move;
-}
-
-/*#submenu li.movable:hover {
-    border: 1px solid #aaa;
-}*/
-
 
 /*
  * Admin Toolbar
@@ -291,10 +279,10 @@ display: none;
 #adminbar {
 position: absolute;
 top: 10px; left: 10px;
-width: 170px;
+width: 200px;
 background: #eee;
 border: 1px #aaa solid;
-z-index: 1000;
+z-index: 100;
 }
 
 #adminbar > .title {

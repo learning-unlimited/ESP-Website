@@ -3,19 +3,26 @@
 <div class="corners"><div class="ul"></div><div class="ur"></div></div>
 
 {% for nav_entry in navbar_list.qsdTree %}
-  <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}{% if nav_entry.has_bits %} movable{% endif %} " id="nav_entry__{{nav_entry.entry.id}}"> 
+  <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}"> 
     {% if nav_entry.entry.is_link %}
       <a href="{{ nav_entry.entry.makeUrl }}"
         title="Click for `{{ nav_entry.entry.makeTitle }}'">
-       <span class="bullet">- </span>
         {{ nav_entry.entry.makeTitle }}
       </a>
     {% else %}
-        <span class="bullet">- </span>{{ nav_entry.entry.makeTitle }}
+        {{ nav_entry.entry.makeTitle }}
     {% endif %}
+ </li>
+{% endfor %}
+</ul>
 
+{% if request.user.isAdministrator %}
+<ul id="navbar_admin">
+{% for nav_entry in navbar_list.qsdTree %}
 {% if nav_entry.has_bits %}
+  <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}{% if nav_entry.has_bits %} movable{% endif %} " id="nav_entry__{{nav_entry.entry.id}}"> 
 <tt>
+<span class="bullet">- </span>{{ nav_entry.entry.makeTitle }}
 <span id="nav_entry__control__{{nav_entry.entry.id}}">
 <a href="/navbar/edit.scm?new_url={{ request.path }}&amp;navbar_id={{ nav_entry.entry.id }}&amp;node_id={{ navbar_list.entry.node.id }}&amp;action=up">[+]</a>
 <a href="/navbar/edit.scm?new_url={{ request.path }}&amp;navbar_id={{ nav_entry.entry.id }}&amp;node_id={{ navbar_list.entry.node.id }}&amp;action=down">[-]</a>
@@ -111,8 +118,36 @@ function move_seq(new_seq) {
 }
 
 
+// register module
+ESP.registerAdminModule({
+name: "Navbar",
+content_target: "navbar_admin"
+});
+
 //-->
 </script>
 
+<style type="text/css" media="screen">
+#navbar_admin {
+margin: 0; padding: 0;
+font-size: smaller;
+}
+
+#navbar_admin li {
+list-style-type: none;
+}
+
+#navbar_admin .movable {
+  cursor: move;
+  border: 1px solid transparent;
+}
+
+#navbar_admin li.movable:hover {
+    border: 1px solid #aaa;
+}
+
+</style>
+
 {% endif %}
 </ul>
+{% endif %}

@@ -108,8 +108,17 @@ ESP = (function(){
         module_wrap.className = module_class;
         module_wrap.innerHTML =
 			"<div class='title'>" + module.name + "</div>" +
-			"<div id='" + module_class + "_toggle' class='toggle'>-</div>" +
-			"<div class='content'>" + module.element_html + "</div>";
+			"<div id='" + module_class + "_toggle' class='toggle'>-</div>";
+
+        var module_content = document.createElement("div");
+	module_content.className = "content";
+        if (module.content_html) {
+	    module_content.innerHTML = module.content_html;
+	} else {
+	    module_content.appendChild(document.getElementById(module.content_target));
+	}
+        module_wrap.appendChild(module_content);
+	
         adminbar.appendChild(module_wrap);
       } else {
         queued_modules.push(module);
@@ -119,7 +128,7 @@ ESP = (function(){
 })();
 
 ESP.registerAdminModule({
-element_html:
+content_html:
 '    <form id="user_search_form" name="user_search_form" method="get" action="/manage/userview">' +
 '      <input type="text" id="user_search_field" name="username" />' +
 '      <input type="submit" id="user_search_submit" name="search_submit" value="Find User"/>' +
