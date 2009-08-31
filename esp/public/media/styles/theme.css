@@ -27,8 +27,15 @@ position: relative;
 #body {
 width: 640px;
 margin-left: 130px;
-padding-bottom: 20px;
 position: relative;
+}
+
+#footer {
+text-align: center;
+font-size: smaller;
+color: white;
+padding-top: 10px;
+padding-bottom: 10px;
 }
 
 /*
