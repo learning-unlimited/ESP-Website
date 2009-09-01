@@ -54,7 +54,7 @@ class EmailModelForm(forms.ModelForm):
         context['instance_name'] = self.instance.__class__.__name__
         context['fields'] = []
         for field in self.fields:
-            context['fields'].append({'name': field, 'data': self.fields[field]})
+            context['fields'].append({'name': field, 'data': self.data[field]})
         msg_text = loader.render_to_string("email/autoform.txt", context)
         send_mail('Automatic E-mail Form Submission (type: %s)' % context['instance_name'], msg_text, from_addr, destination_addrs)
 

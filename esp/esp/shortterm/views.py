@@ -33,8 +33,8 @@ def volunteer_signup(request):
     if request.POST:
         response = VolunteerRegistrationForm(request.POST)
         if response.is_valid():
-            data = response.save(from_addr='Splash! Chicago <server@uchicago-splash.mit.edu>', destination_addrs=['Michael Price <price@kilentra.net>'])
-            return render_to_response("shortterm/volunteer_signup/finished.html", request, context={'anchor': volunteer_anchor})
+            data = response.save(from_addr='Splash! Chicago <server@uchicago-splash.mit.edu>', destination_addrs=['Race Wright <rwright@uchicago.edu>'])
+            return render_to_response("shortterm/volunteer_signup/complete.html", request, context={'anchor': volunteer_anchor})
     else:
         response = VolunteerRegistrationForm()
 
