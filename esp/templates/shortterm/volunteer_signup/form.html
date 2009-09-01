@@ -1,0 +1,36 @@
+{% extends "main.html" %}
+{% load subsection %}
+
+{% block title %}Volunteer Interest Form{% endblock %}
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+{% block subsection %}Volunteer at Splash!{% endblock %}
+
+{% block content %}
+
+<p>
+{% load render_qsd %}
+{% render_inline_qsd anchor "volunteer_form_instructions" request.user %}
+</p>
+
+<p>
+<div id="program_form">
+<form action="" method="post" enctype="multipart/form-data">
+<table align="center">
+<tr>
+    <th colspan="2">Volunteer Interest Form</th>
+</tr>
+<tr>
+    <td align="center" colspan="2">Please complete and submit the following form and we will get back to you soon!</td>
+</tr>
+{{ form }}
+<tr><td colspan="2" align="center"><input class="button" type="submit" value="Submit" /></td></tr>
+</table>
+</form>
+</div>
+</p>
+
+{% endblock %}
