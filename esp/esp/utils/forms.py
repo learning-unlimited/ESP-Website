@@ -44,6 +44,12 @@ class EmailModelForm(forms.ModelForm):
         Requires from_addr (string) and destination_addrs (list of strings)
         to be provided as arguments to save().
     """
+    def __init__(self, *args, **kwargs):
+        super(EmailModelForm, self).__init__(*args, **kwargs)
+        for field in self.fields.itervalues():
+            if field.required:
+                field.widget.attrs['class'] = 'required'
+    
     def save(self, from_addr='', destination_addrs=[]):
         result = super(EmailModelForm, self).save()
         self.email(from_addr, destination_addrs)

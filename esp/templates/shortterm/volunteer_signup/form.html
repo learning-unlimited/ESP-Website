@@ -4,7 +4,6 @@
 {% block title %}Volunteer Interest Form{% endblock %}
 {% block stylesheets %}
     {{ block.super }}
-    <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}
 {% block subsection %}Volunteer at Splash!{% endblock %}
@@ -17,17 +16,21 @@
 </p>
 
 <p>
-<div id="program_form">
+<div id="volunteer_form">
 <form action="" method="post" enctype="multipart/form-data">
 <table align="center">
+<thead>
 <tr>
     <th colspan="2">Volunteer Interest Form</th>
 </tr>
+</thead>
 <tr>
     <td align="center" colspan="2">Please complete and submit the following form and we will get back to you soon!</td>
 </tr>
+<tbody>
 {{ form }}
 <tr><td colspan="2" align="center"><input class="button" type="submit" value="Submit" /></td></tr>
+</tbody>
 </table>
 </form>
 </div>

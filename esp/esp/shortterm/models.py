@@ -8,7 +8,7 @@ class VolunteerRegistration(models.Model):
     your_name = models.CharField(max_length=100)
     email_address = models.EmailField()
     phone_number = models.CharField(max_length=32, help_text='Cell phone numbers are preferred.')
-    availability = models.CharField(max_length=255, help_text='When are you available to help out?')
+    availability = models.CharField(max_length=255, help_text='What times are you available to help out on October 3rd?')
     notes = models.TextField(blank=True, default='', help_text='What are you interested in helping with?  Have you talked to anyone already?')
 
 class ResponseForm(models.Model):
