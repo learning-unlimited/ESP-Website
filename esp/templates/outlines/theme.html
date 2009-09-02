@@ -10,9 +10,10 @@
 {% block javascript %}
 {{ block.super }}
 
+    {# general dependencies on YUI #}
+    <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script> 
     {% if request.user.is_authenticated %}
         {# navbar depends on YUI #}
-        <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script> 
         <script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script> 
         <script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
         <script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script> 
@@ -60,8 +61,9 @@ wrap(document.getElementById('search_field'),'Enter search term');
   });
 });*/
 
+{% if request.user.is_authenticated %}
 var showadmin = function(){
-  this.innerHTML = '-';
+  this.innerHTML = '&ndash;';
   this.onclick = hideadmin;
   document.getElementById('adminbar_content').style.display = 'block';
 };
@@ -72,6 +74,7 @@ var hideadmin = function(){
 };
 
 document.getElementById('adminbar_toggle').onclick = hideadmin;
+{% endif %}
 
 });
 
@@ -84,7 +87,7 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 {% if request.user.isAdministrator %}
 <div id="adminbar">
   <div class="title">Admin Toolbar</div>
-  <div id="adminbar_toggle">-</div>
+  <div id="adminbar_toggle">&ndash;</div>
   <div id="adminbar_content"></div>
 </div>
 <script type="text/javascript">
