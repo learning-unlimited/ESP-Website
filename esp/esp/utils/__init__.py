@@ -31,4 +31,7 @@ def echo( *args, **kwargs ):
     if kwargs.has_key('quiet') and kwargs['quiet']:
         return
     for x in args:
-        print unicode(x).encode( sys.stdout.encoding, 'replace' )
+        encoding = 'ascii'
+        if hasattr( sys.stdout, 'encoding' ):
+            encoding = sys.stdout.encoding
+        print unicode(x).encode( encoding, 'replace' )
