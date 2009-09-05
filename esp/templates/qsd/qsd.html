@@ -2,6 +2,7 @@
 {% load subsection %}
 
 {% block title %}{{ title }}{% endblock %}
+{% block content_title %}{{ title }}{% endblock %}
 
 {% block keywords %}{{ qsdrec.keywords|default_if_none:"esp,mit esp,mit,education,educational studies program,learn,teach,high school"|escape }}{% endblock %}
 {% block description %}{{ qsdrec.description|default_if_none:""|escape }}{% endblock %}

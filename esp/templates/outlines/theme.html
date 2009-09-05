@@ -1,5 +1,7 @@
 {% extends "elements/html" %}
 
+{% load main %} {# helpful functions #}
+
 {% block title %}Home [MOCKUP]{% endblock %}
 {% block stylesheets %}
 <meta name="author" content="Tony Valderrama, Vincent Lee, and others" />
@@ -141,14 +143,13 @@ name: 'User Search'
 </script>
 {% endif %}
 
-{% load main %}
 <div id="page" class="{{ request.path|extract_theme }}">
   <div id="sidebar">
       <ul id="menu">
 	{% with request.path|split:"/"|index:1 as split_url %}
 	{% with split_url|notequal:"learn"|bool_and:request.user.isTeacher as default_flag %}
 	{% if split_url|equal:"teach"|bool_or:default_flag %}
-	<li id="tab_logo" class="yellowgreen" ><a href="/teach/index.html"></a></li>
+	<li id="tab_logo" class="yellowgreen" ><a href="/teach/index.html"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
 	<li id="tab_splash" class="blue" ><a href="/teach/Splash/index.html">Splash</a></li>
 	<li id="tab_spark" class="purple" ><a href="/teach/Spark/index.html">Spark</a></li>
 	<li id="tab_hssp" class="red" ><a href="/teach/HSSP/index.html">HSSP</a></li>
@@ -157,7 +158,7 @@ name: 'User Search'
 	<li id="tab_delve" class="lightgreen" ><a href="/teach/Delve/index.html">Delve</a></li>
 	<li id="tab_proveit" class="darkgreen" ><a href="/teach/ProveIt/index.html">ProveIt</a></li>
 	{% else %}
-	<li id="tab_logo" class="yellowgreen" ><a href="/learn/index.html"></a></li>
+	<li id="tab_logo" class="yellowgreen" ><a href="/learn/index.html"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
 	<li id="tab_splash" class="blue" ><a href="/learn/Splash/index.html">Splash</a></li>
 	<li id="tab_spark" class="purple" ><a href="/learn/Spark/index.html">Spark</a></li>
 	<li id="tab_hssp" class="red" ><a href="/learn/HSSP/index.html">HSSP</a></li>
@@ -165,10 +166,11 @@ name: 'User Search'
 	<li id="tab_junction" class="yellow" ><a href="/learn/Junction/index.html">Junction</a></li>
 	<li id="tab_delve" class="lightgreen" ><a href="/learn/Delve/index.html">Delve</a></li>
 	<li id="tab_proveit" class="darkgreen" ><a href="/learn/ProveIt/index.html">ProveIt</a></li>
+	<li id="tab_parents" class="grey" ><a href="/myesp/home/">For Parents</a></li>
 	{% endif %}
 	{% endwith %}
 	{% endwith %}
-	<li id="tab_myesp" class="grey" ><a href="/myesp/home/">Profile</a></li>
+	{# <li id="tab_myesp" class="grey" ><a href="/myesp/home/">Profile</a></li> #}
 {% if request.user.isAdministrator %}
 	<li id="tab_admin" class="black" ><a href="/manage/programs/">Admin</a></li>
 {% endif %}
@@ -180,14 +182,14 @@ name: 'User Search'
       <div id="cross_link">
 	{% with request.path|split:"/"|index:1 as split_url %}
 	{% if split_url|notequal:"teach" %}
-	<span class="teach inactive"><a href="/teach/index.html">Teach anything.</a></span>
+	<span class="teach inactive"><a href="/teach/index.html">Teach</a></span>
 	{% else %}
-	<span class="teach"><a href="/teach/index.html">Teach anything.</a></span>
+	<span class="teach"><a href="/teach/index.html">Teach</a></span>
 	{% endif %}
 	{% if split_url|notequal:"learn" %}
-	<span class="learn inactive"><a href="/learn/index.html">Learn anything.</a></span>
+	<span class="learn inactive"><a href="/learn/index.html">Learn</a></span>
 	{% else %}
-	<span class="learn"><a href="/learn/index.html">Learn anything.</a></span>
+	<span class="learn"><a href="/learn/index.html">Learn</a></span>
 	{% endif %}
 	{% endwith %}
       </div>
@@ -204,7 +206,7 @@ name: 'User Search'
 	</form>
       </div>
       <div id="contact_info">
-	<span class="title">MIT Educational Studies Program</span>
+	<span class="title accentcolor">MIT Educational Studies Program</span>
       <span class="normal">84 Massachusetts Avenue, Room W20-467</span>
       <span class="normal">Cambridge, MA 02139</span>
       <span class="normal">Tel: 617-253-4882</span>
@@ -226,7 +228,7 @@ name: 'User Search'
 {% else %}
 <!-- logout -->
   Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
-  (<a href="/myesp/signout/">Logout</a>)
+  <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/home/">My Profile</a></span>
 {% endif %}
 
 </div>
@@ -235,12 +237,45 @@ name: 'User Search'
     <div id="main">
       <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
 {% block content_header %}
+<div id="content_header">
+<div class="corners"><div class="ul"></div><div class="ur"></div></div>
+{% if request.path|equal:"/teach/index.html" %}
+
+{# announcements #}
+<div id="divannouncements">
+<ul>
+{% load preview %}
+{% miniblog_for_user request.user as announcements 3 %}
+{% for announce in announcements.announcementList %}
+       <li>
+	<a href="{{ announce.get_absolute_url }}" title="{{ announce.makeTitle }}">
+	  <h1>{{ announce.category|default:"Uncategorized" }}</h1>
+                {{ announce.makeTitle }}
+       </a></li>
+{% endfor %}
+     </ul>
+</div>
+
+<!-- more announcements -->
+{% if announcements.overflowed %}
+<div id="divannouncemore">
+  <a href="/myesp/home/">more announcements...</a></div>
+{% comment %}
+     {{ announcements.total }} total ...
+     <a href="/blog/announcements" title="See all announcements!">
+        see all
+     </a>
+{% endcomment %}
+{% endif %}
+{% else %}
+<h1 class="title">{% block content_title %}&nbsp;{% endblock %}</h1>
+{% endif %}
+</div>
+{% endblock %}
 
 {% block secondary_nav %}
 {% load navbar %}
 {% navbar_gen %}
-{% endblock %}
-
 {% endblock %}
 
       <div id="content">
