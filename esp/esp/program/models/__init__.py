@@ -39,6 +39,18 @@ from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.cache import cache_function
 
+#   A function to lazily import models that is occasionally needed for cache dependencies.
+def get_model(module_name, model_name):
+    parent_module_name = '.'.join(module_name.split('.')[:-1])
+    module = __import__(module_name, (), (), parent_module_name)
+    try:
+        module_class = getattr(module, model_name)
+        if issubclass(module_class, models.Model):
+            return module_class
+    except:
+        pass
+    return None
+
 # Create your models here.
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
@@ -587,8 +599,13 @@ class Program(models.Model):
     def sections(self, use_cache=True):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
-    def getTimeSlots(self):
-        return Event.objects.filter(anchor=self.anchor).order_by('start')
+    def getTimeSlots(self, exclude_types=['Compulsory']):
+        """ Get the time slots for a program. 
+            A flag, exclude_types, allows you to restrict which types of timeslots
+            are grabbed.  The default excludes 'compulsory' events, which are
+            not intended to be used for classes (they're for lunch, photos, etc.)
+        """
+        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).order_by('start')
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
@@ -760,6 +777,7 @@ class Program(models.Model):
                 module.setUser(user)
         return modules
 
+    @cache_function
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
         This avoids actually looking up the program module first. """
@@ -785,6 +803,14 @@ class Program(models.Model):
                 extension = None
 
         return extension
+    #   Depend on all module extensions (kind of ugly, but at least we don't change those too frequently).
+    #   Ideally this could be autodetected by importing everything from module_ext first, but I ran into
+    #   a circular import problem.   -Michael P
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'ClassRegModuleInfo'))
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'StudentClassRegModuleInfo'))
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepAdminModuleInfo'))
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'CreditCardModuleInfo'))
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepTeacherModuleInfo'))
 
     def getColor(self):
         if hasattr(self, "_getColor"):

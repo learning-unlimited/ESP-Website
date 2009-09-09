@@ -6,7 +6,7 @@ __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2009 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,21 +30,19 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-
-from django.db.models import signals
-from esp.users import models as UsersModel
+from django.db.models import signals 
+from esp.web import models as web
 from esp.utils.custom_cache import custom_cache
 
 have_already_installed = False
 
 def post_syncdb(sender, app, **kwargs):
     global have_already_installed
-
-    if (not have_already_installed) and app == UsersModel:
+    if app == web and not have_already_installed:
         with custom_cache():
             have_already_installed = True
-            print "Installing esp.users initial data..."
-            UsersModel.install()
+            print "Installing esp.web initial data..."
+            web.install()
 
 signals.post_syncdb.connect(post_syncdb)
 

@@ -31,7 +31,6 @@ Email: web@esp.mit.edu
 """
 
 
-from django.dispatch import dispatcher
 from django.db.models import signals 
 from esp.cal import models as cal
 from esp.utils.custom_cache import custom_cache

@@ -8,7 +8,7 @@ function post_encode(data)
     var i = 0;
     for (key in data)
     {
-        if (key != 'toJSONString')
+        if (key != 'toJSON')
         {
             if (i != 0) result += '&';
             result += key + '=' + encodeURIComponent(data[key]);
@@ -85,7 +85,7 @@ function qsd_inline_create(qsd_name, anchor_id)
 
 function qsd_inline_update(qsd_id, data)
 {
-    var postdata = data.parseJSON();
+    var postdata = JSON.parse(data);
     document.getElementById("inline_qsd_" + qsd_id).innerHTML = postdata.content;
 }
 

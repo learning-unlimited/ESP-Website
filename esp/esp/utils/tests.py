@@ -3,10 +3,12 @@ Test cases for Django-ESP utilities
 """
 
 import unittest
+import doctest
 import subprocess
 import memcache
 import os
 from utils.memcached_multihost import CacheClass as MultihostCacheClass
+from esp import utils
 from esp import settings
 
 class MemcachedTestCase(unittest.TestCase):
@@ -215,3 +217,4 @@ class MultihostCacheClassTest(MemcachedTestCase):
         self.cacheclass.incr('test_math')
         self.assertEqual(3, self.cacheclass.get('test_math'))
         
+UtilFunctionsDocTestSuite = doctest.DocTestSuite(utils)
