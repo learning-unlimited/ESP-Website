@@ -122,7 +122,7 @@ class TeacherInfoForm(FormWithRequiredCss):
 
     from esp.users.models import shirt_sizes, shirt_types
 
-    graduation_year = SizedCharField(length=4, max_length=4, required=False)
+    graduation_year = SizedCharField(length=6, max_length=4, required=False)
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
@@ -136,7 +136,6 @@ class TeacherInfoForm(FormWithRequiredCss):
             if gy != 'G':
                 gy = 'N/A'
         return gy
-
 class EducatorInfoForm(FormWithRequiredCss):
     """ Extra educator-specific information """
 

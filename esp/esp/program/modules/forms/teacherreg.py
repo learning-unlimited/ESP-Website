@@ -68,7 +68,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect() )
     requested_room = forms.CharField(   label='Room Request', required=False,
-                                        help_text='If you have a specific room or type of room in mind, name a room at MIT that would be ideal for you.' )
+                                        help_text='If you have a specific room or type of room in mind, name a room at Stanford that would be ideal for you.' )
 
     global_resources = forms.MultipleChoiceField( label='Equipment and Classroom Options',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False,
