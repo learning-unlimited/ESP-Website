@@ -46,6 +46,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Student Application",
             "link_title": "Extra Application Info",
             "module_type": "learn",
             "seq": 10000,

@@ -41,7 +41,7 @@ class SATPrepTeacherInput(ProgramModuleObj):
     def module_properties(cls):
         return {
             "link_title": "",
-            "admin_title": "SATPrep Interface for Teachers (SATPrepTeacherInput)",
+            "admin_title": "SATPrep Interface for Teachers",
             "module_type": "teach",
             "seq": 50,
             "main_call": "satprepdiag"

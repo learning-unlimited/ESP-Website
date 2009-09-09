@@ -44,6 +44,7 @@ class AdminMaterials(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Course Materials",
             "link_title": "Manage Documents",
             "module_type": "manage",
             "seq": -9999

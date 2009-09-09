@@ -38,7 +38,7 @@ from django.http                 import HttpResponseRedirect, HttpResponse
 from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserBit
 from esp.middleware              import ESPError
-from esp.resources.models        import Resource, ResourceRequest
+from esp.resources.models        import Resource, ResourceRequest, ResourceType
 from esp.datatree.models         import DataTree
 from datetime                    import timedelta
 from django.utils                import simplejson
@@ -98,11 +98,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'text': s.title,
                 'category': s.category.category,
                 'length': float(s.duration),
-                'teachers': teacher_dict[s.anchor_id],
-                'resource_requests': rrequest_dict[s.id]
+                'teachers': teacher_dict[s.parent_class.anchor_id],
+                'resource_requests': rrequest_dict[s.id],
+                'max_class_capacity': s.max_class_capacity,
             } for s in sections ]
 
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(sections_dicts, response)
         return response
 
@@ -120,10 +121,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
             {   'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': []
+                'associated_resources': [],
+                'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(classrooms_dicts, response)
         return response
 
@@ -132,22 +134,25 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_teachers(self, request, tl, one, two, module, extra, prog):
         teachers = ESPUser.objects.filter(userbit__verb=GetNode('V/Flags/Registration/Teacher')).filter(userbit__qsc__classsubject__isnull=False, userbit__qsc__parent__parent__program=prog).distinct()
 
-        resources = Resource.objects.filter(user__in = [t.id for t in teachers])
+        restype = ResourceType.get_or_create('Teacher Availability')
+        resources = Resource.objects.filter(user__in = [t.id for t in teachers],
+                                            res_type = restype,
+                                            ).filter(
+            QTree(event__anchor__below = prog.anchor)).values('user_id', 'event__id')
+
 
         resources_for_user = defaultdict(list)
 
         for resource in resources:
-            resources_for_user[resource.user_id].append(resource.id)
-
-        print resources_for_user
-
+            resources_for_user[resource['user_id']].append(resource['event__id'])
+        
         teacher_dicts = [
             {   'uid': t.id,
                 'text': t.name(),
                 'availability': resources_for_user[t.id]
             } for t in teachers ]
 
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(teacher_dicts, response)
         return response
 
@@ -160,7 +165,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             t['start'] = t['start'].timetuple()[:6]
             t['end'] = t['end'].timetuple()[:6]
 
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(times, response)
         return response
 
@@ -181,7 +186,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'associated_resources': []
             } for rsrc_id in resources_grouped.keys() ]
 
-        response = HttpResponse(content_type="text/x-json")
+        response = HttpResponse(content_type="application/json")
         simplejson.dump(classrooms_dicts, response)
         return response
 

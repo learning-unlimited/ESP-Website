@@ -44,6 +44,7 @@ class SurveyManagement(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Survey Management",
             "link_title": "Surveys",
             "module_type": "manage",
             "seq": 25

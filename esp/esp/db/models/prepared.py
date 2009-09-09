@@ -89,7 +89,7 @@ class QuerySetPrepared(QuerySet):
 
         index_start = len(sql)
 
-        for token in (' ORDER BY ', ' WHERE ', ' LIMIT ',):
+        for token in (' ORDER BY ', ' WHERE ', ' LIMIT ', ' LEFT OUTER JOIN ', ' LEFT INNER JOIN ', ' INNER JOIN ',):
             current_index = sql.find(token)
             if current_index != -1 and current_index < index_start:
                 index_start = current_index
@@ -98,11 +98,18 @@ class QuerySetPrepared(QuerySet):
             where_clause = ''
         else:
             where_clause = sql[index_start:].replace('"%s".' % self.model._meta.db_table, '')
-
+        if self.model != None and self.model._meta.db_table != None:
+            table_name = self.model._meta.db_table
+            as_clause = ' AS "%s" ' % table_name                         
+        else:
+            table_name = ""
+            as_clause = ""                         
+            
         cursor = connection.cursor()
-        cursor.execute("%s %s(%s)%s" % (prepared_command,
+        cursor.execute("%s %s(%s)%s%s" % (prepared_command,
                                         proc_name,
                                         ', '.join('%s' for x in proc_params),
+                                        as_clause,
                                         where_clause),
                         proc_params+list(params))
 

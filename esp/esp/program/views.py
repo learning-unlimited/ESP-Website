@@ -39,12 +39,13 @@ from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits, admin_required
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
-from esp.program.models import Program
+from esp.program.models import Program, TeacherBio
 from esp.program.forms import ProgramCreationForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType, CompletedTransactionException
+from esp.users.models import ESPUser
 
 import pickle
 
@@ -60,7 +61,20 @@ import pickle
 #    p = one + " " + two
 #    return render_to_response('program/catalogue', request, prog,{'courses': clas })
 
+@admin_required
+def userview(request):
+    """ Render a template displaying all the information about the specified user """
+    try:
+        user = ESPUser.objects.get(username=request.GET['username'])
+    except:
+        raise ESPError(False), "Sorry, can't find anyone with that username."
 
+    teacherbio = TeacherBio.getLastBio(user)
+    if not teacherbio.picture:
+        teacherbio.picture = 'uploaded/not-available.jpg'
+    
+    return render_to_response("users/userview.html", request, GetNode("Q/Web"), { 'user': user, 'teacherbio': teacherbio } )
+    
 def programTemplateEditor(request):
     """ Generate and display a listing of all QSD pages in the Programs template
     (QSD pages that are created automatically when a new program is created) """
@@ -187,7 +201,7 @@ def newprogram(request):
 
         if form.is_valid():
             temp_prog = form.save(commit=False)
-            datatrees, userbits, modules = prepare_program(temp_prog, form)
+            datatrees, userbits, modules = prepare_program(temp_prog, form.cleaned_data)
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
 

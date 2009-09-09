@@ -43,6 +43,7 @@ class NameTagModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Nametag Generation",
             "link_title": "Generate Nametags",
             "module_type": "manage",
             "seq": 100

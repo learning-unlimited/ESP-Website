@@ -48,6 +48,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "SATPrep Schedule Module",
             "link_title": "Schedule SATPrep",
             "module_type": "manage",
             "seq": 1000

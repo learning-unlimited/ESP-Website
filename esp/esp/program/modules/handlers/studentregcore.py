@@ -51,8 +51,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
         return {
-            "link_title": "",
-            "admin_title": "Core Student Reg (StudentRegCore)",
+            "link_title": "Student Registration",
+            "admin_title": "Core Student Registration",
             "module_type": "learn",
             "seq": -9999
             }
@@ -106,7 +106,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=True)
 
     def confirmreg_forreal(self, request, tl, one, two, module, extra, prog, new_reg):
-	""" The page that is shown once the user saves their student reg,
+        """ The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
         from esp.program.modules.module_ext import DBReceipt
 
@@ -119,9 +119,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         #   Why is get_complete false?
         receipt = Document.get_receipt(request.user, prog.anchor, [], get_complete=False)
 
-	context = {}
-	context['one'] = one
-	context['two'] = two
+        context = {}
+        context['one'] = one
+        context['two'] = two
 
         context['itemizedcosts'] = invoice.get_items()
 
@@ -137,14 +137,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog):
             raise ESPError(log = False), "This program has filled!  It can't accept any more students.  Please try again next session."
 
-	modules = prog.getModules(self.user, tl)
-	completedAll = True
-	for module in modules:
+        modules = prog.getModules(self.user, tl)
+        completedAll = True
+        for module in modules:
             if not module.isCompleted() and module.required:
                 completedAll = False
             context = module.prepare(context)
-
-	if completedAll:
+        
+        if completedAll:
             if new_reg:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
@@ -188,19 +188,26 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         modules = prog.getModules(self.user, 'learn')
         context['completedAll'] = True
         for module in modules:
-            if not module.isCompleted() and module.required:
-                context['completedAll'] = False
+            # If completed all required modules so far...
+            if context['completedAll']:
+                if module.isCompleted():
+                    module.fillProgressBar = True
+                else:
+                    if module.required:
+                        context['completedAll'] = False
             context = module.prepare(context)
-
+        
         context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
-
+                
+        
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
         context['coremodule'] = self
-        context['isConfirmed'] = self.program.isConfirmed(self.user)
+        context['isConfirmed'] = self.program.isConfirmed(self.user)            
         context['have_paid'] = self.have_paid()
-
+        
+        
         context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)

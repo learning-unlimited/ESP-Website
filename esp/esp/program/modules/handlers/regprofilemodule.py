@@ -38,12 +38,19 @@ from django.contrib.auth.decorators import login_required
 class RegProfileModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
-        return {
+        return [ {
+            "admin_title": "Student Profile Editor",
+            "link_title": "Update Your Profile",
+            "module_type": "learn",
+            "seq": 1,
+            "required": True
+        }, {
+            "admin_title": "Teacher Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "teach",
             "seq": 1,
             "required": True
-            }
+        } ]
 
     def students(self, QObject = False):
         if QObject:

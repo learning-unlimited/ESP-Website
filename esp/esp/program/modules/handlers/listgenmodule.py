@@ -39,6 +39,7 @@ class ListGenModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "User List Generator",
             "link_title": "Generate List of Users",
             "module_type": "manage",
             "seq": 500

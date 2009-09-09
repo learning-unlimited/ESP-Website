@@ -27,9 +27,12 @@
 <br />
 <br />
 
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "startpay_header" request.user %}
+
 <p class="biglink"><a id="biglink" href="https://{{ request.META.HTTP_HOST }}/learn/{{ program.getUrlBase}}/paynow_cybersource">Proceed to Credit Card Payment</a></p>
 
-<p>You may be warned that the page's certificate is not signed by a trusted authority. This untrusted authority is MIT. To convince your computer to trust MIT, <a href="http://ca.mit.edu/mitca.crt" title="Download MIT Certificate Authority">get the MIT CA (Certificate Authority)</a>.</p>
+{% render_inline_qsd program.anchor "startpay_footer" request.user %}
 
 {% endblock %}
 

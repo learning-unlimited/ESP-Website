@@ -74,7 +74,6 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False):
     
 def install():
     """ Install the initial ProgramModule table data for all currently-existing modules """
-    print "Installing esp.program.modules initial data..."
     from esp.program.modules import handlers
     modules = [ x for x in handlers.__dict__.values() if hasattr(x, "module_properties") ]
 

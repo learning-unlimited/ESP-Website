@@ -37,6 +37,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Core Teacher Registration",
             "link_title": "Teacher Registration",
             "module_type": "teach",
             "seq": -9999

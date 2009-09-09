@@ -868,13 +868,13 @@ class DataTree(models.Model):
                     nodes = DataTree.objects.filter(id = cur_id)
                     if nodes[:1]:
                         node = nodes[0]
-                        print 'Deleting %s' % node
+                        print u'Deleting %s' % node
                         node.delete(True)
-                        print 'Deleted %s' % node
+                        print u'Deleted %s' % node
                     else:
                         uri = '/'.join(random.choice(words))
                         node = DataTree.get_by_uri(uri, True)
-                        print 'Added %s' % uri
+                        print u'Added %s' % uri
 
                     if DataTree.objects.exists_violators():
                         print "ERROR:"

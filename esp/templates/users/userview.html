@@ -1,0 +1,143 @@
+{% extends "main.html" %}
+
+{% block title %}User Information{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "User Information"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{{ MEDIA_URL }}styles/tooltips.css" />
+<link rel="stylesheet" type="text/css" href="{{ MEDIA_URL }}styles/forms.css" />
+
+<style type="text/css">
+.key {
+  background-color: #F2F5A9;
+}
+
+.yes {
+  color: green;
+}
+
+.no {
+  color: red;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% load mask_email %}
+{% with user.getLastProfile as profile %}
+<h1>User Information</h1>
+
+<div style="float: right;" id="div_usertype_info">
+   {% if teacherbio.picture %}<img src="{{ teacherbio.picture.url }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"  
+        alt="Picture of {{ user.first_name }} {{ user.last_name }}" align="right" class="biophoto" />{% endif %}
+
+{% if profile.teacher_info.bio %}
+<p><strong>Bio:</strong> {{ profile.teacher_info.bio }}</p>
+{% endif %}
+
+{% if profile.student_info %}
+<h2>Student Info</h2>
+<table>
+<tr><td class="key">School</td><td>{{ profile.student_info.school }}</td></tr>
+<tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }}</td></tr>
+<tr><td class="key">Date of Birth</td><td>{{ profile.student_info.dob|date }}</td></tr>
+<tr><td class="key">Applied to be Student Rep?</td><td>{% if profile.student_info.studentrep %}<span class="yes"><a class="tooltip">Yes<span>{{ profile.student_info.studentrep_expl }}</span></a></span>{% else %}<span class="no">No</span>{% endif %}</td></tr>
+<tr><td class="key">How Heard About ESP?</td><td>{% ifnotequal profile.student_info.heardofesp "" %}<a class="tooltip">(mouseover to see)<span>{{ profile.student_info.heardofesp }}</span></a>{% else %}(blank){% endifnotequal %}</td><tr>
+</table>
+{% endif %}
+
+{% if profile.teacher_info %}
+<h2>Teacher Info</h2>
+<table>
+<tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
+<tr><td class="key">College</td><td>{{ profile.teacher_info.college }}</td></tr>
+<tr><td class="key">Major</td></td>{{ profile.teacher_info.major }}</td></tr>
+<tr><td class="key">Shirt Size/Type</td><td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td></tr>
+</table>
+{% endif %}
+
+{% if profile.guardian_info %}
+<table>
+<tr><td class="key">Year Finished School</td><td>{{ profile.guardian_info.year_finished }}</td></tr>
+<tr><td class="key">Number of Children in ESP</td><td>{{ profile.guardian_info.num_kids }}</td></tr>
+</table>
+{% endif %}
+
+{% if profile.educator_info %}
+<table>
+<tr><td class="key">Subjects Taught</td><td>{{ profile.educator_info.subject_taught }}</td></tr>
+<tr><td class="key">Grades Taught</td><td>{{ profile.educator_info.grades_taught }}</td></tr>
+<tr><td class="key">School</td><td>{{ profile.educator_info.school }}</td></tr>
+<tr><td class="key">Position</td><td>{{ profile.educator_info.position }}></td></tr>
+</table>
+{% endif %}
+
+</div>
+
+<p><emph>Last Updated on {{ profile.last_ts|date }}</emph></p>
+
+<table>
+<tr><th>Field</th><th>Value</th></tr>
+<tr><td class="key">Name</td><td>{{ user.first_name }} {{ user.last_name }}</td></tr>
+<tr><td class="key">Username (ID)</td><td>{{ user.username }} ({{ user.id }})</td></tr>
+{% if profile.contact_user %}
+<tr><td class="key">E-mail</td><td>{{ profile.contact_user.e_mail|mask_email }}<br />({{ user.username|mask_email_concat:"esp.mit.edu" }})</td></tr>
+<tr><td class="key">Phone</td><td>{{ profile.contact_user.phone_day }} (Day)<br />{{ profile.contact_user.phone_cell }} (Cell)</td></tr>
+<tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{% if profile.contact_user.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+{% else %}
+<tr><td class="key">E-mail</td><td>user.email</td></tr>
+<tr><td colspan="2"><font color="red">User account not fully created; please fill out a profile!</font></td></tr>
+{% endif %}
+</table>
+
+<h2>Emergency Contact Info</h2>
+{% if profile.contact_emergency %}{# We want to explicitly say "no contact info here!" if we don't have any, so that, in an emergency, folks don't start burning admin power digging through the database for contact info that we don't have #}
+<table>
+<tr><th>Field</th><th>Value</th></tr>
+<tr><td class="key">Name</td><td>{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}</td></tr>
+<tr><td class="key">E-mail</td><td>{{ profile.contact_emergency.e_mail|mask_email }}</td></tr>
+<tr><td class="key">Phone</td><td>{{ profile.contact_emergency.phone_day }} (Day)<br />{{ profile.contact_emergency.phone_cell }} (Cell)</td></tr>
+<tr><td class="key">Address</td><td>{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}{% if profile.contact_emergency.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+</table>
+{% else %}
+<em>(None specified)</em>
+{% endif %}
+
+
+{% if profile.contact_guardian %}
+<h2>Parent/Guardian Contact Info</h2>
+<table>
+<tr><th>Field</th><th>Value</th></tr>
+<tr><td class="key">Name</td><td>{{ profile.contact_guardian.first_name }} {{ profile.contact_guardian.last_name }}</td></tr>
+<tr><td class="key">E-mail</td><td>{{ profile.contact_guardian.e_mail|mask_email }}</td></tr>
+<tr><td class="key">Phone</td><td>{{ profile.contact_guardian.phone_day }} (Day)<br />{{ profile.contact_guardian.phone_cell }} (Cell)</td></tr>
+<tr><td class="key">Address</td><td>{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{ profile.contact_guardian.address_state }} {{ profile.contact_guardian.address_zip }}{% if profile.contact_guardian.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+</table>
+{% endif %}
+
+{% endwith %}
+
+{% with user.getTaughtClasses as classes %}{% if classes %}
+<h2>Classes Taught (or signed up to teach)</h2>
+{% for class in classes %}
+{% ifchanged class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_program.niceName }}<br /><ul>{% endifchanged %}
+<li>{{ class }}</li>
+{% if forloop.last %}</ul>{% endif %}
+{% endfor %}
+{% endif %}{% endwith %}
+
+{% with user.getSections as classes %}{% if classes %}
+<h2>Classes Taken (or signed up to take)</h2>
+{% for class in classes %}
+{% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
+<li>{{ class }}</li>
+{% if forloop.last %}</ul>{% endif %}
+{% endfor %}
+{% endif %}{% endwith %}
+
+{% endblock %}

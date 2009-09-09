@@ -42,6 +42,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Remote-Teacher Profile Editor",
             "link_title": "Edit your Program-Specific Teacher Information",
             "module_type": "teach",
             "seq": 10

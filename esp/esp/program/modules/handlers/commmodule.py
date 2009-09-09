@@ -46,6 +46,7 @@ class CommModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Communications Panel for Admin",
             "link_title": "Communications Panel",
             "module_type": "manage",
             "seq": 10

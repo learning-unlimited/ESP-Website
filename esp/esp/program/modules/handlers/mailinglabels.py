@@ -48,6 +48,7 @@ class MailingLabels(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Mailing Label Generation",
             "link_title": "Generate Mailing Labels",
             "module_type": "manage",
             "seq": 100

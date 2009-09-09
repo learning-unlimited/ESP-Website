@@ -64,7 +64,7 @@ class TeacherEventsModule(ProgramModuleObj):
             'required': False,
             'main_call': 'event_signup',
             'admin_title': 'Teacher Training and Interview Signups',
-            'link_title': 'Sign up for Teacher Training',
+            'link_title': 'Sign up for Teacher Training and Interviews',
             'seq': 5,
         }, {
             "module_type": "manage",

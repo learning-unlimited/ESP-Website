@@ -46,6 +46,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Automatically Print Schedules for Onsite Reg",
             "link_title": "Automatically Print Schedules",
             "module_type": "onsite",
             "seq": 10000

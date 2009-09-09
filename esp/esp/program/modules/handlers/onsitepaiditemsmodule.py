@@ -49,6 +49,7 @@ class OnsitePaidItemsModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Onsite View Purchased Items",
             "link_title": "View Purchased Items for a Student",
             "module_type": "onsite",
             "seq": 31

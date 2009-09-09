@@ -9,8 +9,15 @@ def mask_email(address):
     """
     Returns an image containing the email
     """
-    image = EmailImage(address)
-    return image.img
+    if address and address != "":
+        try:
+            image = EmailImage(address)
+            return image.img
+        except:
+            pass
+
+    return "" # Fail somewhat nicely in the generic error condition
+
 register.filter('mask_email', mask_email)
 
 @stringfilter

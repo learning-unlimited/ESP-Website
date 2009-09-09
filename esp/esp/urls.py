@@ -41,7 +41,7 @@ urlpatterns = patterns('django.views.static',
                        (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': PROJECT_ROOT + 'admin/media/'}),
                        )
 
-# admin stuff
+# Admin stuff
 urlpatterns += patterns('',
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
