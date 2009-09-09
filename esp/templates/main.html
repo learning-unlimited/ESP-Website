@@ -1,1 +1,174 @@
-{% extends "outlines/series-3.html" %}
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+{% block stylesheets %}
+    <link href="{{ MEDIA_URL }}styles/main.css" rel="stylesheet" type="text/css">
+    <link href="{{ MEDIA_URL }}styles/stanford.css" rel="stylesheet" type="text/css">
+{% endblock %}
+<title>Stanford ESP - {% block title %}{% endblock %}</title>
+</head>
+<body>
+	
+<div id="container">
+
+<!--TOP LINKS-->
+{% block links_top %}
+{% include "navbar.html" %}
+{% endblock %}
+<!--END TOP LINKS-->
+
+
+<div id="top"></div>
+
+<!--LOGIN-->
+
+<div id="login">
+{% block loginbox %}
+{% include "users/loginbox_ajax.html" %}
+{% endblock %}
+</div>
+
+<!--END LOGIN-->
+
+<!--NAV BAR-->
+{% block navigation_main %}
+<div class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/blue.png'); margin-left: 17px;">
+<div class="text_padding" style="padding: 3px 6px 0px 10px;">
+<h1>I want to</h1>
+<h2><a href="/learn/index.html">Learn</a></h2>
+</div>
+</div>
+<div class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/green.png');  margin-left: 10px;">
+<div class="text_padding" style="padding: 3px 6px 0px 10px;">
+<h1>I want to</h1>
+<h2><a href="/teach/index.html">Teach</a></h2>	
+</div>
+</div>
+<div class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/red.png'); margin: 0px 0px 0px 10px;">
+<div class="text_padding" style="padding: 3px 6px 0px 10px;">
+<h1>I want to</h1>
+<h2><a href="/volunteer/index.html">Volunteer</a></h2>
+</div>
+</div>
+{% endblock %}
+<!--END NAV BAR-->
+
+
+<!--LEFT MENU-->
+<div id="left_menu_container">
+<div id="left_line"></div>
+<div id="left_menu_top"></div>
+<div id="left_menu">
+<div class="text_padding">
+<h1>News and</h1>
+<h2>Updates</h2><br>
+    {% load preview %}
+    {% miniblog_for_user request.user as announcements 6 %}
+
+    {% load smartypants %}
+    {% load markdown %}
+    {% for announce in announcements.announcementList %}
+        <h3>
+        {% if announce.makeUrl %}
+            <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a>
+        {% else %}
+            {{ announce.makeTitle }}
+        {% endif %}
+        </h3><br />
+        
+        {% if announce.content %}
+            <h5>{% autoescape off %}{{ announce.content|markdown|smartypants }}{% endautoescape %}</h5><br />
+        {% endif %}
+    {% endfor %}
+
+    <!-- more announcements -->
+    {% if announcements.overflowed %}
+    <h4>
+        <a href="/myesp/home/">More Notices...</a>
+    </h4>
+    {% endif %}
+</div>
+</div>
+
+<div id="spacer" style="height: 20px; clear: left;">&nbsp;</div>
+
+<div id="left_line"></div>
+{% block menu_left %}
+<div id="left_menu_top"></div>
+<div id="left_menu">
+<div class="text_padding">
+<h1>Upcoming</h1>
+<h2>Events</h2><br>
+<h3>April 14th, 2009</h3>
+<h4><a href="booya.com">Spring Splash!</a></h4><br>
+<h3>April 28th, 2009</h3>
+<h4><a href="booya.com">Speaker Series</a></h4><br>
+<h3>May 20th, 2009</h3>
+<h4><a href="booya.com">Spark.</a></h4><br>
+<h3>September 14th, 2009</h3>
+<h4><a href="booya.com">Fall Splash!</a></h4>
+</div>
+</div>
+<div id="left_menu_bottom"></div>
+{% endblock %}
+
+{% if request.user.is_staff or request.user.get_profile.prof.isAdministrator %}
+    <br />
+    <div id="left_menu">
+    <div class="text_padding">
+    <h1>Admin options</h1><br />
+    {% if request.user.get_profile.prof.isAdministrator %}
+        <h5><a href="/manage/programs">Manage programs</a></h5>
+        <h5><a href="/manage/pages">Manage static pages</a></h5>
+    {% endif %}
+    {% if request.user.is_staff %}
+        <h5></h5><a href="/admin/miniblog/entry/">Edit "News and Updates" text items</a></h5>
+        <h5><a href="/admin/miniblog/announcementlink/">Edit "News and Updates" links</a></h5>
+        <h5><a href="/admin/web/navbarentry/">Edit Top/Bottom Navigation Links</a></h5>
+        <h5><a href="/admin/web/navbarcategory/">Edit Top/Bottom Navigation Categories</a></h5>
+    {% endif %}
+    </div>
+    </div>
+    <br />
+{% endif %}
+</div>
+<!--END LEFT MENU-->
+
+<!--CONTENT-->
+
+<div id="content">
+{% block content %}
+<!-- Example content format:
+<h1>This is a Title Header Booyah</h1>
+<img src="{{ MEDIA_URL }}/images/purple.png"><br>
+<p>This is some text that <a href="booya.com">is placed</a> in here This is some text that is placed in here This is some text that is placed in here This is some text that is placed in here This is some text that is placed in here This is some text that is placed in here This is some text that is placed in here This is some text that is placed in here This is some text that is placed in here This is some text that is placed in here This is some text that is placed in here This is some text that is placed in here</p> 
+<br><br>
+-->
+{% endblock %}
+</div>
+
+<!--CONTENT-->
+
+
+<div id="bottom"></div>
+
+<!--BOTTOM LINKS-->
+{% block links_bottom %}
+{% include "navbar.html" %}
+{% endblock %}
+<!--END BOTTOM LINKS-->
+
+
+{% block footer %}
+<div id="special_thanks">
+<img src="{{ MEDIA_URL }}images/su.gif">
+<img src="{{ MEDIA_URL }}images/assu.gif">
+<img src="{{ MEDIA_URL }}images/gsc.gif">
+</div>
+{% endblock %}
+
+</div>
+
+</body>
+</html>

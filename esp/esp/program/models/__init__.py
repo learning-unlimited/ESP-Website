@@ -916,11 +916,11 @@ class TeacherParticipationProfile(models.Model):
 
 class SplashInfo(models.Model):
     student = AjaxForeignKey(User)
-    lunchsat = models.CharField(max_length=32, blank=True, null = True)
-    lunchsun = models.CharField(max_length=32, blank=True, null = True)
-    siblingdiscount = models.BooleanField(default=False, blank=True, null=True)
+    lunchsat = models.CharField(max_length=32, blank=True, null=True)
+    lunchsun = models.CharField(max_length=32, blank=True, null=True)
+    siblingdiscount = models.NullBooleanField(default=False, blank=True)
     siblingname = models.CharField(max_length=64, blank=True, null=True)
-    submitted = models.BooleanField(default=False, blank=True, null = True)
+    submitted = models.NullBooleanField(default=False, blank=True)
 
     class Meta:
         app_label = 'program'

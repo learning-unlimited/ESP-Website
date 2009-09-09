@@ -1,0 +1,303 @@
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	margin: 0px;
+	padding: 0px;
+	border: 0px;
+	outline: 0;
+	font-weight: inherit;
+	font-style: inherit;
+	font-size: 100%;
+	font-family: inherit;
+	font-weight: normal;
+	vertical-align: baseline;
+}
+
+ol, ul {
+	list-style: none;
+}
+
+table {
+	border-collapse: separate;
+	border-spacing: 0;
+}
+caption, th, td {
+	text-align: left;
+	font-weight: normal;
+}
+
+/*
+The ERIC MEYER CSS Reset is above this line
+*/
+
+body{
+  background-color: #FFFFFF;
+  color: #000000;
+  font-family: arial;
+  font-size: 11px;
+  text-align: center;
+}
+
+a:link{
+  color: #0000FF;
+}
+
+a:visited{
+  color: #0000FF;
+}
+
+a:hover{
+  color: #CCCCCC;
+}
+
+
+
+#container{
+  margin: auto;
+  text-align: left;
+  width: 1028px;
+}
+
+#top{
+  background-image: url('/media/images/top.png');
+  background-repeat: no-repeat;
+  display: block;
+  height:24px;
+  text-align: right;
+  width:1028px;
+}
+
+.text_links a:link{
+  color: #000000;
+  font-size: 12px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.text_links a:visited{
+  color: #000000;
+  font-size: 12px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.text_links a:hover{
+  color: #CCCCCC;
+  font-size: 12px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+
+#bottom{
+  background-image: url('/media/images/bottom.png');
+  background-repeat: no-repeat;
+  clear: both;
+  height:6px;
+  margin: 25px 0px 0px 27px;
+  width:1001px;
+}
+
+#left_line{
+  background-image: url('/media/images/left_plug.png');
+  background-repeat: no-repeat;
+  height:26px;
+  margin: 10px 0px 0px 0px;
+  width:65px;
+}
+
+.top_nav{
+  background-repeat: no-repeat;
+  float: left;
+  height:55px;
+  margin: 0px 14px 0px 0px;
+  width:246px;
+}
+
+.top_nav h1{
+  color: #FFFFFF;
+  font-size: 16px;
+}
+
+.top_nav h2{
+  color: #FFFFFF;
+  font-size: 30px;
+}
+
+.top_nav a:link{
+  color: #FFFFFF;
+  text-decoration: none;
+}
+
+.top_nav a:visited{
+  color: #FFFFFF;
+  text-decoration: none;
+}
+
+.top_nav a:hover{
+  color: #000000;
+}
+
+#left_menu_container {
+  clear: left;
+  display: block;
+  float: left;
+  margin-left: 11px;
+}
+
+#left_menu_top {
+  background-image: url('/media/images/yellow_top.png');
+  background-repeat: no-repeat;
+  height: 34px;
+  margin: 0px 0px 0px 16px;
+  width: 195px;
+}
+
+#left_menu {
+  background-color: #ffcc00; 
+  margin: 0px 0px 0px 16px;
+  width: 195px;
+}
+
+#left_menu_bottom {
+  background-image: url('/media/images/yellow_bottom.png');
+  background-repeat: no-repeat;
+  height: 5px;
+  margin: 0px 0px 0px 16px;
+  width: 195px;
+  vertical-align: baseline;
+}
+
+#left_menu h1{
+  color: #FFFFFF;
+  font-size: 18px;
+}
+
+#left_menu h2{
+  color: #FFFFFF;
+  font-size: 28px;
+}
+
+#left_menu h3{
+  color: #000000;
+  font-size: 16px;
+  text-align: right;
+}
+
+#left_menu h4{
+  color: #000000;
+  font-size: 24px;
+  text-align: right;
+}
+
+#left_menu a:link{
+  color: #000000;
+  text-decoration: none;
+}
+
+#left_menu a:visited{
+  color: #000000;
+  text-decoration: none;
+}
+
+#left_menu a:hover{
+  color: #FFFFFF;
+}
+
+#login {
+  float: left;
+  width: 225px; 
+}
+
+#login input{
+  border: 1px solid #CCCCCC;
+  color: #999999;
+  vertical-align: middle;
+}
+
+#login img{
+  vertical-align: middle;
+}
+
+#content {
+  float: left;
+  display: block;
+  margin: 0px 0px 25px 40px;
+  width: 600px;
+}
+
+#content img{
+  margin: 0px 0px 0px 2px;
+}
+
+#content p{
+  font-size: 12px;
+  line-height: 21px;
+  margin: 0px 0px 0px 8px;
+  width: 600px;
+}
+
+
+#content h1{
+  font-size: 18px;
+  line-height: 18px;
+}
+
+
+#special_thanks{
+  height: 66px;
+  text-align: center;
+}
+
+#special_thanks img{
+  vertical-align: middle;
+}
+
+.go{
+  background-image: url('/media/images/go.png');
+  background-repeat: no-repeat;
+  color: #999999;
+  cursor: hand;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: bold;
+  height: 22px;
+  padding: 3px 0px 0px 8px;
+  vertical-align: top;
+  width: 37px;
+}
+
+.text_padding{
+  padding: 4px 6px 4px 6px;
+}
+
+p .text_links
+{
+    margin: 3px 0px 20px 30px;
+}
+
+#loginform td
+{
+    padding: 3px;
+}
+
+table.loginform
+{
+    border: 0px;
+}
+
+#divnav p 
+{
+    color: #000000;
+    width: 300px;
+}
+
+#content
+{
+    background-color: #ffffff;
+}

@@ -13,14 +13,12 @@
 {% if request.user.is_authenticated %}
 <div id="divnav">
   <p align="center">
-    Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
-    {% if request.user.is_staff %}
-        <a href="/admin/">Administration pages</a> <br />
-    {% endif %}
-    {% if request.user.isAdministrator %}
-        <a href="/manage/programs/">Manage Programs</a> <br />
-    {% endif %}
-    <a href="/myesp/signout/">Logout</a>
+    You have logged in as: <br />
+    {{ request.user.first_name }} {{ request.user.last_name }}
+  </p>
+  <br />
+  <p align="center">
+    <a href="/myesp/signout/">Log out</a>
   </p>
 </div>
 {% else %}
@@ -28,7 +26,7 @@
 <div id="divnav">
   <form name="loginform" id="loginform" method="post" action="/myesp/login/">
     <input type="hidden" name="next" value="{{ request.path }}" />
-    <table border="0" cellpadding="0" cellspacing="0" summary=" ">
+    <table summary=" ">
       <tr>
         <td><div class="divformcol1"><label for="user">User name:</label></div></td>
         <td><div class="divformcol2"><input type="text" id="id_username" name="username" id="user" size="8" value="" maxlength="255" class="inputbox" /></div></td>
