@@ -99,7 +99,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(9,13)])
     school = forms.CharField(max_length=128, required=False)
     #   k12school = forms.ChoiceField(label='School', choices=[], widget=BlankSelectWidget(blank_choice=('','Pick your school from this list...')))
-    k12school = AjaxForeignKeyNewformField(field=StudentInfo._meta.get_field_by_name('k12school')[0], label='School')
+    k12school = AjaxForeignKeyNewformField(required=False,field=StudentInfo._meta.get_field_by_name('k12school')[0], label='School')
     dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
@@ -119,8 +119,17 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             raise forms.ValidationError("Please enter an explanation above.")
         return expl
 
+    def clean_k12school(self):
+        #   Add text for the hidden school field if an unrecognized school or 'Other' is selected in the k12school field
+        from esp.users.models import K12School
+        result = self.cleaned_data['k12school']
+        if result.name == 'Other':
+            self.cleaned_data['school'] = '(Not in autocomplete list) ' + str(self.data['k12school'])
+        return result
+
     def clean(self):
         from esp.users.models import K12School
+
         cleaned_data = self.cleaned_data
         cleaned_data['school'] = cleaned_data['school'].strip()
         if cleaned_data.has_key('k12school') and cleaned_data.has_key('school'):

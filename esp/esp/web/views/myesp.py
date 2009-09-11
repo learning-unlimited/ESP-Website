@@ -337,8 +337,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             if responseuponCompletion == True:
                 # prepare the rendered page so it points them to open student/teacher reg's
                 ctxt = {}
-                if curUser.isStudent() or curUser.isTeacher():
-                    userrole = {}
+                userrole = {}
                 if curUser.isStudent():
                     userrole['name'] = 'Student'
                     userrole['base'] = 'learn'

@@ -1320,7 +1320,14 @@ class K12School(models.Model):
     def ajax_autocomplete(cls, data, allow_non_staff=True):
         name = data.strip()
         query_set = cls.objects.filter(name__icontains = name)
-        values = query_set.order_by('name','id').values('name', 'id')
+        
+        if query_set.count() > 0:
+            values = query_set.order_by('name','id').values('name', 'id')
+        else:
+            #   Return the "Other" school if nothing matches.
+            school, created = K12School.objects.get_or_create(name='Other')
+            values = [{'id': school.id, 'name': school.name}]
+            
         for value in values:
             value['ajax_str'] = '%s' % (value['name'])
         return values
