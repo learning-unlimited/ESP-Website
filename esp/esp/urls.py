@@ -55,12 +55,14 @@ urlpatterns += patterns('esp.shortterm.views',
                         (r'^school_response/$', 'school_response_form'))
 
 # generic stuff
-urlpatterns += patterns('django.views.generic',
-                        (r'^$', 'simple.direct_to_template',{'template':'index.html'}), # index
-                        (r'^web/?', 'simple.direct_to_template',{'template':'index.html'}), # index
-                        (r'^web$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
-                        (r'^esp_web', 'simple.direct_to_template',{'template':'index.html'}), # index
-                        (r'.php$', 'simple.direct_to_template',{'template':'index.html'}), # index                        
+urlpatterns += patterns('esp.web.views.main',
+                        (r'^$', 'home'), # index
+                        # The line below causes a problem with the admin interface under /admin/web.  
+                        # Hopefully it's alright to discontinue this redirect.   -Michael P, 9/10/2009
+                        # (r'^web/?', 'home'), # index
+                        (r'^web$', 'home'), # index                        
+                        (r'^esp_web', 'home'), # index
+                        (r'.php$', 'home'), # index                        
                         )
 
 # program stuff

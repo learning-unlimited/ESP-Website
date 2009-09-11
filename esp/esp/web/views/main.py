@@ -38,7 +38,9 @@ from django.template import loader, Context
 
 import datetime
 
+from esp.web.models import NavBarCategory
 from esp.web.util.main import render_to_response
+from esp.web.views.navBar import makeNavBar
 from esp.web.views.myesp import myesp_handlers
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
@@ -52,6 +54,11 @@ def my_import(name):
     from django.core.urlresolvers import get_callable
     return get_callable(name)
 
+def home(request):
+    #   Get navbars corresponding to the 'home' category
+    nav_category, created = NavBarCategory.objects.get_or_create(name='home')
+    context = {'navbar_list': makeNavBar(None, GetNode('Q/Web'), '', nav_category)}
+    return render_to_response('index.html', request, GetNode('Q/Web'), context)
 
 @vary_on_headers('Cookie')
 @cache_control(private=True)
