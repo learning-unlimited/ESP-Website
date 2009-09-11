@@ -100,14 +100,13 @@
 <div class="text_padding">
 <h1>Upcoming</h1>
 <h2>Events</h2><br>
-<h3>April 14th, 2009</h3>
-<h4><a href="booya.com">Spring Splash!</a></h4><br>
-<h3>April 28th, 2009</h3>
-<h4><a href="booya.com">Speaker Series</a></h4><br>
-<h3>May 20th, 2009</h3>
-<h4><a href="booya.com">Spark.</a></h4><br>
-<h3>September 14th, 2009</h3>
-<h4><a href="booya.com">Fall Splash!</a></h4>
+    {% load events %}
+    {% generate_event_list Announcement Q/Web 3 %}
+
+    {% for event in event_list %}
+        <h3>{{ event.start|date:"F jS, Y" }}</h3>
+        <h4>{{ event.short_description }}</h4><br>
+    {% endfor %}
 </div>
 </div>
 <div id="left_menu_bottom"></div>
