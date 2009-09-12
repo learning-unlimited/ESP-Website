@@ -1,61 +1,23 @@
-html, body, div, span, applet, object, iframe,
-h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, em, font, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-dl, dt, dd, ol, ul, li,
-fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td {
-	margin: 0px;
-	padding: 0px;
-	border: 0px;
-	outline: 0;
-	font-weight: inherit;
-	font-style: inherit;
-	font-size: 100%;
-	font-family: inherit;
-	font-weight: normal;
-	vertical-align: baseline;
-}
 
-ol, ul {
-	list-style: none;
-}
-
-table {
-	border-collapse: separate;
-	border-spacing: 0;
-}
-caption, th, td {
-	text-align: left;
-	font-weight: normal;
-}
-
-/*
-The ERIC MEYER CSS Reset is above this line
-*/
-
-body{
+body {
   background-color: #FFFFFF;
   color: #000000;
-  font-family: arial;
-  font-size: 11px;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
   text-align: center;
 }
 
 a:link{
-  color: #0000FF;
+  color: #000066;
 }
 
 a:visited{
-  color: #0000FF;
+  color: #330033;
 }
 
 a:hover{
   color: #CCCCCC;
 }
-
-
 
 #container{
   margin: auto;
@@ -174,13 +136,14 @@ a:hover{
 }
 
 #left_menu h1{
+  font-family: Arial, sans-serif;
   color: #FFFFFF;
   font-size: 18px;
 }
 
 #left_menu h2{
   color: #FFFFFF;
-  font-size: 28px;
+  font-size: 18px;
 }
 
 #left_menu h3{
@@ -191,8 +154,17 @@ a:hover{
 
 #left_menu h4{
   color: #000000;
-  font-size: 24px;
+  font-size: 14px;
   text-align: right;
+}
+
+#left_menu p {
+  color: #000000;
+  font-size: 1.2em;
+}
+
+#left_menu p.small {
+    font-size: 1.0em;
 }
 
 #left_menu a:link{
@@ -227,8 +199,8 @@ a:hover{
 #content {
   float: left;
   display: block;
-  margin: 0px 0px 25px 40px;
-  width: 600px;
+  margin: 0px 0px 25px 30px;
+  width: 620px;
 }
 
 #content img{
@@ -281,11 +253,6 @@ p .text_links
     margin: 3px 0px 20px 30px;
 }
 
-#loginform td
-{
-    padding: 3px;
-}
-
 table.loginform
 {
     border: 0px;
@@ -300,4 +267,57 @@ table.loginform
 #content
 {
     background-color: #ffffff;
+}
+
+h1 
+{
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    font-weight: bold;
+    color: #666666;
+    margin: 5px;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+h2
+{
+    font-size: 17px;
+    font-weight: bold;
+    margin: 5px;
+    margin-bottom: 4px;
+}
+
+h3
+{
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+h4
+{
+    font-size: 13px;
+    font-weight: bold;
+}
+
+p
+{
+    margin-bottom: 5px;
+}
+
+#main_nav h1
+{
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    margin: 0px;
+    padding: 0px;
+}
+
+#main_nav h2
+{
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+    margin: 0px;
+    padding: 0px;
 }

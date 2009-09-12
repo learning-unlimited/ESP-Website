@@ -14,7 +14,7 @@ function deleteClass() {
 </script>
 {% endblock %}
 
-<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
 
 <br />
 <br />
@@ -31,8 +31,7 @@ If you have any questions regarding the program, <br /> please email the
 </div>
 {% endif %}
 
-<div id="battlescreen">
-
+<div id="catalog">
 <table cellpadding="4" cellspacing="0" align="center">
   <tr>
     <th colspan="7">
@@ -53,19 +52,19 @@ If you have any questions regarding the program, <br /> please email the
     <td colspan="6">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; e-mail the directors if you believe there is a problem with your time or room assignment.  Also, e-mail the directors immediately if you need to cancel a class.</td>
    </tr>
   {% for cls in teacherclsmodule.clslist %}
-  <tr>
-    <td class="clsleft classname bordertop2">
+  <tr class="bordertop">
+    <td class="clsleft">
       <span title="{{cls}}">
       {{ cls|truncatewords:6 }}
       <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
       </span>
     </td>
-    <td class="clsmiddle bordertop2">
+    <td>
        <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
          <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
        </form>
     </td>
-    <td class="clsmiddle bordertop2">
+    <td>
        <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
 {% if module.deadline_met %}
@@ -75,18 +74,18 @@ If you have any questions regarding the program, <br /> please email the
 {% endif %}
        </form>
     </td>
-   <td class="clsmiddle bordertop2">
+   <td>
       <form method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
          <input class="button" type="submit" value="View Status" />
       </form>
    </td>
-   <td class="clsmiddle bordertop2">
+   <td width="120px">
       <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}"
         title="View Class' Students" class="abutton">
        View Students
       </a>
    </td>
-   <td class="clsright bordertop2">
+   <td class="clsright">
       {% if cls.pageExists %}
       <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.html"
          title="{{ cls }}...">Visit web page</a>
@@ -98,10 +97,10 @@ If you have any questions regarding the program, <br /> please email the
    </tr>
 
    <tr>
-    <td class="clsleft" colspan="5">
+    <td class="clsleft" colspan="4">
 	<b>Document uploads</b>: There are {{ cls.anchor.media_set.count }} documents associated with this class.
     </td>
-   <td class="clsright" colspan="1">
+   <td class="clsright" colspan="2">
 	<a href="/teach/{{ one }}/{{ two }}/class_docs/{{cls.id}}" title="Upload/manage files" class="abutton">Manage Documents</a>
      </td>
    </tr>
@@ -121,7 +120,7 @@ If you have any questions regarding the program, <br /> please email the
     {% endif %}
 
     {% for sec in cls.sections.all %}
-    <tr>
+    <tr class="bordertopdashed">
         <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
             Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
             <span style="font-weight: bold; color: #0C0;">Accepted</span>
@@ -141,8 +140,8 @@ If you have any questions regarding the program, <br /> please email the
 
    {% endfor %}
    {% if module.deadline_met %}
-   <tr>
-   <td colspan="6" class="clsleft bordertop2"><b>Registration form:</b>
+   <tr class="bordertop">
+   <th colspan="6"><b>Registration form:</b>
      <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
        Add a new class for {{ program.niceName }}!
      </a>
@@ -150,3 +149,4 @@ If you have any questions regarding the program, <br /> please email the
    </tr>
    {% endif %}
 </table>
+</div>

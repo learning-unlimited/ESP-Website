@@ -1,5 +1,5 @@
 <div id="loginbox">
-<table align="center" class="loginform" cellspacing="0" cellpadding="5">
+<table align="center" class="loginform" cellspacing="0" cellpadding="0">
 <tr><td>
 
 {% if login_result %}
@@ -16,7 +16,6 @@
     You have logged in as: <br />
     {{ request.user.first_name }} {{ request.user.last_name }}
   </p>
-  <br />
   <p align="center">
     <a href="/myesp/signout/">Log out</a>
   </p>

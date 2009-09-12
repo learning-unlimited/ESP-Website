@@ -2,6 +2,44 @@
 
 {% block title %}Home{% endblock %}
 
+{% block navbar_left %}
+<!-- Replace navbar with announcements -->
+<div id="left_line"></div>
+<div id="left_menu_top"></div>
+<div id="left_menu">
+<div class="text_padding">
+<h1>News and Updates</h1>
+    {% load preview %}
+    {% miniblog_for_user request.user as announcements 6 %}
+
+    {% load smartypants %}
+    {% load markdown %}
+    {% for announce in announcements.announcementList %}
+        <p>
+        {% if announce.makeUrl %}
+            <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a>
+        {% else %}
+            {{ announce.makeTitle }}
+        {% endif %}
+        <br />
+        
+        {% if announce.content %}
+            <h5>{% autoescape off %}{{ announce.content|markdown|smartypants }}{% endautoescape %}</h5><br />
+        {% endif %}
+        </p>
+    {% endfor %}
+
+    <!-- more announcements -->
+    {% if announcements.overflowed %}
+    <h4>
+        <a href="/myesp/home/">More Notices...</a>
+    </h4>
+    {% endif %}
+</div>
+</div>
+<div id="left_menu_bottom"></div>
+{% endblock %}
+
 {% block content %}
 
 {% load render_qsd %}

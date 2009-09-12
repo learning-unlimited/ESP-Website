@@ -7,24 +7,23 @@
 #catalog th {
    font-family: Arial, sans-serif;
    padding: 5px;
-   font-size: 15px;
-   background-color: #c6def7;
+   font-size: 1.15em;
+   background-color: #cccccc;
    color: #000;
+   text-align: center;
 }
 
 #catalog th.materials {
    font-family: Arial, sans-serif;
    padding: 5px;
-   font-size: 12px;
+   font-size: 0.9em;
    font-weight: normal;
-   background-color: #c6def7;
    color: #000;
 }
 
 #catalog td {
-   font-family: serif;
    padding: 5px;
-   font-size: 14px;
+   font-size: 1.0em;
    background-color: #ffffff;
    color: #000;
 }
@@ -32,7 +31,7 @@
 .doclist {
    font-family: sans-serif;
    text-indent: 20px;
-   font-size: 12px;
+   font-size: 0.9em;
    color: #000;
 }
 
@@ -55,7 +54,6 @@ p.category {
    width: 620px;
 }
 .show_class th {
-   background-color: #a6cedf;
    text-align: left;
 }
 .teachers {
@@ -93,8 +91,24 @@ a.classtitle:hover {
   text-decoration: none;
 }
 
+a.abutton {
+    background-color: #e8f0f7;
+    color: #000000;
+    border: 1px solid black;
+    font-weight: bold;
+    font-size: 13px;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 1px 10px;
+}
+
+a.abutton:hover {
+    background-color: #333399;
+    color: #00ccff;
+    padding: 1px 10px;
+}
+
 input.button {
-    background-color: #c6def7;
+    background-color: #e8f0f7;
     border: 1px solid black;
     font-weight: bold;
     font-size: 13px;
@@ -103,4 +117,21 @@ input.button {
 
 input.button:hover {
     background-color: #333399;
-    color: #c6def7;
+    color: #00ccff;
+}
+
+#catalog .clsright {
+   text-align: right;
+}
+
+#catalog .clsleft {
+   margin-left: 19px;
+}
+
+#catalog tr.bordertop{
+    border-top: 1px solid #cccccc;
+}
+
+#catalog tr.bordertopdashed {
+    border-top: 1px dashed #cccccc;
+}

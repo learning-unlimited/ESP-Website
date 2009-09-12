@@ -33,19 +33,19 @@
 
 <!--NAV BAR-->
 {% block navigation_main %}
-<div class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/blue.png'); margin-left: 17px;">
+<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/blue.png'); margin-left: 17px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
 <h2><a href="/learn/index.html">Learn</a></h2>
 </div>
 </div>
-<div class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/green.png');  margin-left: 10px;">
+<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/green.png');  margin-left: 10px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
 <h2><a href="/teach/index.html">Teach</a></h2>	
 </div>
 </div>
-<div class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/red.png'); margin: 0px 0px 0px 10px;">
+<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/red.png'); margin: 0px 0px 0px 10px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
 <h2><a href="/volunteer/index.html">Volunteer</a></h2>
@@ -57,39 +57,10 @@
 
 <!--LEFT MENU-->
 <div id="left_menu_container">
-<div id="left_line"></div>
-<div id="left_menu_top"></div>
-<div id="left_menu">
-<div class="text_padding">
-<h1>News and</h1>
-<h2>Updates</h2><br>
-    {% load preview %}
-    {% miniblog_for_user request.user as announcements 6 %}
-
-    {% load smartypants %}
-    {% load markdown %}
-    {% for announce in announcements.announcementList %}
-        <h3>
-        {% if announce.makeUrl %}
-            <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a>
-        {% else %}
-            {{ announce.makeTitle }}
-        {% endif %}
-        </h3><br />
-        
-        {% if announce.content %}
-            <h5>{% autoescape off %}{{ announce.content|markdown|smartypants }}{% endautoescape %}</h5><br />
-        {% endif %}
-    {% endfor %}
-
-    <!-- more announcements -->
-    {% if announcements.overflowed %}
-    <h4>
-        <a href="/myesp/home/">More Notices...</a>
-    </h4>
-    {% endif %}
-</div>
-</div>
+{% block navbar_left %}
+    {% load navbar %}
+    {% navbar_gen "yellow" %}
+{% endblock %}
 
 <div id="spacer" style="height: 20px; clear: left;">&nbsp;</div>
 
@@ -98,14 +69,15 @@
 <div id="left_menu_top"></div>
 <div id="left_menu">
 <div class="text_padding">
-<h1>Upcoming</h1>
-<h2>Events</h2><br>
+<h1>Upcoming Events</h1>
     {% load events %}
     {% generate_event_list Announcement Q/Web 3 %}
 
     {% for event in event_list %}
-        <h3>{{ event.start|date:"F jS, Y" }}</h3>
-        <h4>{{ event.short_description }}</h4><br>
+        <p align="right">
+        {{ event.start|date:"F jS, Y" }}<br />
+        <b>{{ event.short_description }}</b>
+        </p>
     {% endfor %}
 </div>
 </div>
@@ -116,16 +88,20 @@
     <br />
     <div id="left_menu">
     <div class="text_padding">
-    <h1>Admin options</h1><br />
+    <h1>Admin options</h1>
     {% if request.user.get_profile.prof.isAdministrator %}
-        <h5><a href="/manage/programs">Manage programs</a></h5>
-        <h5><a href="/manage/pages">Manage static pages</a></h5>
+    <p class="small">
+        <a href="/manage/programs">Manage programs</a><br />
+        <a href="/manage/pages">Manage static pages</a>
+    </p>
     {% endif %}
     {% if request.user.is_staff %}
-        <h5></h5><a href="/admin/miniblog/entry/">Edit "News and Updates" text items</a></h5>
-        <h5><a href="/admin/miniblog/announcementlink/">Edit "News and Updates" links</a></h5>
-        <h5><a href="/admin/web/navbarentry/">Edit Top/Bottom Navigation Links</a></h5>
-        <h5><a href="/admin/web/navbarcategory/">Edit Top/Bottom Navigation Categories</a></h5>
+    <p class="small">
+        <a href="/admin/miniblog/entry/">Edit "News and Updates" text items</a><br />
+        <a href="/admin/miniblog/announcementlink/">Edit "News and Updates" links</a><br />
+        <a href="/admin/web/navbarentry/">Edit Top/Bottom Navigation Links</a><br />
+        <a href="/admin/web/navbarcategory/">Edit Top/Bottom Navigation Categories</a>
+    </p>
     {% endif %}
     </div>
     </div>

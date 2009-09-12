@@ -16,6 +16,29 @@
 </p>
 
 {% else %}
+{% ifequal navbar_type "yellow" %}
+    <div id="left_line"></div>
+    <div id="left_menu_top"></div>
+    <div id="left_menu">
+    <div class="text_padding">
+    <h1>Navigation</h1>
+    <p>
+    {% for nav_entry in navbar_list.qsdTree %}
+        {% if nav_entry.entry.is_link %}
+          <a href="{{ nav_entry.entry.makeUrl }}"
+            title="Click for `{{ nav_entry.entry.makeTitle }}'">
+            {{ nav_entry.entry.makeTitle }}
+          </a>
+        {% else %}
+            {{ nav_entry.entry.makeTitle }}
+        {% endif %}
+    <br />
+    {% endfor %}
+    </p>
+    </div>
+    </div>
+    <div id="left_menu_bottom"></div>
+{% else %}
 
 <!-- secondary nav -->
 <ul id="secondarynav">
@@ -106,5 +129,5 @@ function move_seq(new_seq) {
 </script>
 
 </ul>
-
+{% endifequal %}
 {% endifequal %}
