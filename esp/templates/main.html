@@ -4,12 +4,13 @@
     {{ block.super }}
     {% comment %}{% if request.user.is_authenticated %}{% endcomment %}
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/yahoo/yahoo-min.js"></script>
-        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/event/event-min.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/dom/dom-min.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/connection/connection-min.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/animation/animation-min.js"></script>
+        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/autocomplete/autocomplete-min.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/logger/logger-min.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/dragdrop/dragdrop-debug.js"></script>
-        <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/animation/animation-min.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/ddlist.js"></script>
     {% comment %}{% endif %}{% endcomment %}
 {% endblock %}
