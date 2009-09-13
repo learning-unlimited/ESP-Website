@@ -1,0 +1,1 @@
+ALTER TABLE modules_studentclassregmoduleinfo ADD COLUMN visible_enrollments boolean;
