@@ -277,7 +277,7 @@ class ClassSection(models.Model):
         return self.parent_class.title()
     title = property(_get_title)
     
-    def _get_capacity(self):
+    def _get_capacity(self, ignore_changes=False):
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
 
@@ -296,9 +296,12 @@ class ClassSection(models.Model):
             self.save()
             
         #   Apply dynamic capacity rule
-        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-        return int(ans * options.class_cap_multiplier + options.class_cap_offset)
-    
+        if not ignore_changes:
+            options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            return int(ans * options.class_cap_multiplier + options.class_cap_offset)
+        else:
+            return int(ans)
+   
     capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
@@ -698,6 +701,19 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
+
+        # Test any scheduling constraints based on this class
+        relevantFilters = ScheduleTestSectionList.filter_by_section(self)
+        relevantConstraints = ScheduleConstraint.objects.filter(Q(requirement__booleantoken__in=relevantFilters) | Q(condition__booleantoken__in=relevantFilters))
+
+        # Set up a ScheduleMap; fake-insert this class into it
+        sm = ScheduleMap(user, self.parent_program)
+        for meeting_time in self.meeting_times.all():
+            sm.map[meeting_time.id] += [self]
+            
+        for exp in relevantConstraints:
+            if not exp.evaluate(sm):
+                return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title, exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if scrmi.use_priority:
@@ -858,8 +874,8 @@ class ClassSection(models.Model):
         else:
             return reduce(lambda x,y: x+y, [r.num_students for r in ir]) 
 
-    def isFull(self, use_cache=True):
-        return (self.num_students() >= self.capacity)
+    def isFull(self, ignore_changes=False, use_cache=True):
+        return (self.num_students() >= self._get_capacity(ignore_changes))
 
     def friendly_times(self, use_cache=False):
         """ Return a friendlier, prettier format for the times.
@@ -1391,14 +1407,14 @@ class ClassSubject(models.Model):
 
         return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers() ])
         
-    def isFull(self, timeslot=None, use_cache=True):
+    def isFull(self, ignore_changes=False, timeslot=None, use_cache=True):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
             sections = [self.get_section(timeslot)]
         else:
             sections = self.get_sections()
         for s in sections:
-            if not s.isFull(use_cache=use_cache):
+            if not s.isFull(ignore_changes=ignore_changes, use_cache=use_cache):
                 return False
         return True
 
