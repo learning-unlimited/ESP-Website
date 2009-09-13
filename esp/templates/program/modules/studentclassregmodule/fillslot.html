@@ -107,7 +107,7 @@ There are no available classes during this time block for students of your grade
 
     <a name="cat{{class.category_id}}"></a>
       <p style="font-size: 1.2em;" class="category">
-         {{ class.category_txt }}
+         {{ class.category.category }}
       </p>
 {% if request.user.onsite_local %}
 {% if not request.GET.filter %}
