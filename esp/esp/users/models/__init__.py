@@ -88,11 +88,6 @@ class ESPUser(User, AnonymousUser):
     class Meta:
         app_label = 'auth'
         db_table = 'auth_user'
-
-        def __init__(self):
-            super(self, Meta).__init__()
-            self.pk.attname = "id"
-            self.local_fields[0].column = "id"
         
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:
@@ -667,11 +662,6 @@ class ESPUser(User, AnonymousUser):
 
     isAdmin = isAdministrator
 
-    def delete(self):
-        for x in self.userbit_set.all():
-            x.delete()
-        super(ESPUser, self).delete()
-
     @classmethod
     def create_membership_methods(cls):
         """
@@ -766,7 +756,6 @@ class ESPUser(User, AnonymousUser):
 
 ESPUser.create_membership_methods()
 
-ESPUser._meta.pk.name = "id"
 ESPUser._meta.pk.attname = "id"
 ESPUser._meta.local_fields[0].column = "id"
 
@@ -885,12 +874,31 @@ class StudentInfo(models.Model):
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
-    graduation_year = models.PositiveIntegerField(blank=True, null=True)
+    graduation_year_int = models.IntegerField(help_text='Enter 1 for a grad student, or 0 if not applicable.')
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+
+    @staticmethod
+    def _graduation_year_pretty(gy_int):
+        if gy_int == 0:
+            return u'N/A'
+        if gy_int == 1:
+            return u'G'
+        return unicode(gy_int)
+    def _graduation_year_get(self):
+        return TeacherInfo._graduation_year_pretty(self.graduation_year_int)
+    def _graduation_year_set(self, value):
+        if value == 'G':
+            self.graduation_year_int = 1
+        else:
+            try:
+                self.graduation_year_int = abs(int(value))
+            except:
+                self.graduation_year_int = 0
+    graduation_year = property( _graduation_year_get, _graduation_year_set )
 
     class Meta:
         app_label = 'users'
@@ -909,16 +917,17 @@ class TeacherInfo(models.Model):
                 query_set = query_set.filter(user__first_name__istartswith = first.strip())
 
         query_set = query_set[:10]
-        values = query_set.values('user', 'college', 'graduation_year', 'id')
-        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year', 'id')
+        values = query_set.values('user', 'college', 'graduation_year_int', 'id')
+        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year_int', 'id')
 
         for value in values:
             value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
+            value['graduation_year'] = cls._graduation_year_pretty( value['graduation_year_int'] )
+            value['ajax_str'] = u'%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
+        return u'%s - %s %s' % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
@@ -1043,7 +1052,7 @@ class EducatorInfo(models.Model):
 
         for value in values:
             value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
+            value['ajax_str'] = '%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
         return values
 
     def ajax_str(self):
@@ -1117,7 +1126,8 @@ class ZipCode(models.Model):
             distance from this zip code. """
         from decimal import Decimal
         try:
-            distance = Decimal(str(distance))
+            distance_decimal = Decimal(str(distance))
+            distance_float = float(str(distance))
         except:
             raise ESPError(), '%s should be a valid decimal number!' % distance
 
@@ -1125,15 +1135,16 @@ class ZipCode(models.Model):
             distance *= -1
 
         oldsearches = ZipCodeSearches.objects.filter(zip_code = self,
-                                                     distance = distance)
+                                                     distance = distance_decimal)
 
         if len(oldsearches) > 0:
             return oldsearches[0].zipcodes.split(',')
+
         all_zips = list(ZipCode.objects.exclude(id = self.id))
         winners  = [ self.zip_code ]
 
         winners += [ zipc.zip_code for zipc in all_zips
-                     if self.distance(zipc) <= distance ]
+                     if self.distance(zipc) <= distance_float ]
 
         newsearch = ZipCodeSearches(zip_code = self,
                                     distance = distance,
@@ -1275,15 +1286,30 @@ class K12School(models.Model):
         app_label = 'users'
         db_table = 'users_k12school'
 
+    @classmethod
+    def ajax_autocomplete(cls, data, allow_non_staff=True):
+        name = data.strip()
+        query_set = cls.objects.filter(name__icontains = name)
+        values = query_set.order_by('name','id').values('name', 'id')
+        for value in values:
+            value['ajax_str'] = '%s' % (value['name'])
+        return values
+
     def __unicode__(self):
         if self.contact_id:
-            return '"%s" in %s, %s' % (self.name, self.contact.address_city,
+            return '%s in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
-            return '"%s"' % self.name
+            return '%s' % self.name
 
-    class Admin:
-        pass
+    @classmethod
+    def choicelist(cls, other_help_text=''):
+        if other_help_text:
+            other_help_text = u' (%s)' % other_help_text
+        o = cls.objects.other()
+        lst = [ ( x.id, x.name ) for x in cls.objects.most() ]
+        lst.append( (o.id, o.name + other_help_text) )
+        return lst
 
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):

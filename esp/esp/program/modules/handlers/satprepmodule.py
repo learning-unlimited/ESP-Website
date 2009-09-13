@@ -43,6 +43,7 @@ class SATPrepModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "SATPrep Information",
             "link_title": "Program-specific Information",
             "module_type": "learn",
             "seq": 10,

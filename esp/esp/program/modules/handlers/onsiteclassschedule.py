@@ -40,6 +40,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
+            "admin_title": "Onsite Scheduling for Students",
             "link_title": "Scheduling and Class Changes",
             "module_type": "onsite",
             "seq": 30

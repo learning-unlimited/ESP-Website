@@ -40,13 +40,15 @@ class OnSiteClassList(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return [ {
+            "admin_title": "Show All Classes at Onsite Registration",
             "link_title": "List of All Classes",
             "module_type": "onsite",
             "seq": 31
             }, {
+            "admin_title": "Show Open Classes at Onsite Registration",
             "link_title": "List of Open Classes",
             "module_type": "onsite",
-            "seq": 31,
+            "seq": 32,
             "main_call": "classList"
             } ]
 

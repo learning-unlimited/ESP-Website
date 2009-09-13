@@ -11,10 +11,26 @@
 {% block subsection %}
 {% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
 
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+  function submit_cancel() {
+     // prereg for a class
+     {% if scrmi.cancel_button_dereg %}
+     var confirm_note = 'Are you sure you want to cancel your registration and remove yourself from any classes you have signed up for?';
+     {% else %}
+     var confirm_note = 'Are you sure you want to cancel your registration?';
+     {% endif %}
+     if (confirm(confirm_note)) {
+        return true;
+     }
+     return false;
+  }
+//-->
+</script>
+{% endblock %}
+
 {% block content %}
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-</style>
 <br /><br />
 <h1>Student registration for {{program.niceName}} </h1>
 {% if not request.user.onsite_local %}
@@ -38,43 +54,19 @@
     <b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
     </div></center>
     
-    <table style="text-align: center" align="center" width="400">
-    <tr><th>Steps for Registration</th><th>Done?</th></tr>
-    {% for module in modules %}
-    {% if module.isStep %}
-    <tr>
-    <td>{% if module.useTemplate %}
-    <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-        {{ module.module.link_title }} 
-        </a> <em>(below)</em>
-    {% else %}
-        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
-    {% endif %}
-    {% if not module.module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
-    </td>
-    <td>{% if not module.useTemplate %}
-    <a href="{{ module.get_full_path }}">
-    {% else %}
-    <a href="#module-{{ module.id }}">
-    {% endif %}
-    {% with module.isCompleted as moduleCompleted %}
-    <img src="/media/images/{% if not moduleCompleted %}no{% endif %}checkmark.gif" 
-        {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
-        title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
-    </a>
-    {% endwith %}
-    </td>
-    </tr>
-    {% endif %}
-    {% endfor %}
-    </table>
+{% ifequal scrmi.progress_mode 1 %}
+    {% include "program/modules/checkboxes.html" %}
+{% endifequal %}
+{% ifequal scrmi.progress_mode 2 %}
+    {% include "program/modules/progressbar.html" %}
+{% endifequal %}
 
 {% endif %}
 
-<br />
-
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentreg" request.user %}
+
+<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
 
 {% for module in modules %}
 {% if module.useTemplate %}
@@ -105,12 +97,10 @@
     <center>
     <a name="confirmreg"></a>
     
-    <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-    <input class="button" type="submit" value="{% if not isConfirmed %}Confirm Registration, View Receipt{% else %}Registration Confirmed!  View Receipt{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
-    {% if isConfirmed %}{% if not have_paid %}
-    
+    <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
+    {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}    
     <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
-    <input class="button" type="submit" value="Cancel Registration" />
+    <input id="cancelbutton" class="button" type="submit" onsubmit="return submit_cancel();" value="{{ scrmi.cancel_button_text }}" />
     {% endif %}{% endif %}
     </center>
 {% endif %}

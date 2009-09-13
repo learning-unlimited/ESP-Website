@@ -1,3 +1,22 @@
+{% ifequal navbar_type "horizontal" %}
+
+<p class="text_links" style="text-align: right; margin: 3px 12px 3px 0px;">
+{% for nav_entry in navbar_list.qsdTree %}
+
+    {% if nav_entry.entry.is_link %}
+      <a href="{{ nav_entry.entry.makeUrl }}"
+        title="Click for `{{ nav_entry.entry.makeTitle }}'">
+        {{ nav_entry.entry.makeTitle }}
+      </a>
+    {% else %}
+        {{ nav_entry.entry.makeTitle }}
+    {% endif %}
+    {% if not forloop.last %} |{% endif %}
+{% endfor %}
+</p>
+
+{% else %}
+
 <!-- secondary nav -->
 <ul id="navbar_links">
 
@@ -87,3 +106,5 @@ function move_seq(new_seq) {
 </script>
 
 </ul>
+
+{% endifequal %}

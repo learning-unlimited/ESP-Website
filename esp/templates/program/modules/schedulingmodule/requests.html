@@ -1,0 +1,113 @@
+{% extends "main.html" %}
+
+{% block title %}{{ prog.niceName }} Scheduling{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+</script>
+{% endblock %}
+
+{% block subsection_name %}Scheduling{% endblock %}
+
+{% block content %}
+
+<h1>Scheduling {{ prog.niceName }}</h1>
+<h2>Resource Requests</h2>
+
+<div id="program_form">
+
+<h3>Types of Requests</h3>
+<p>Teachers may make three types of requests for their classes:
+<ol>
+<li>They can choose among classroom characteristics or equipment that you specify.</li>
+<li>They can specify a room where they would like to host the class.</li>
+<li>They can explain additional and unusual needs in their own words.</li>
+</ol>
+</p>
+
+<h3>CSV Format</h3>
+<p><a href="/manage/{{ prog.getUrlBase }}/view_requests/csv">Click here</a> to retrieve a CSV file containing this information.  The file can be imported into Excel and other spreadsheet programs.</p>
+
+<h3>Full Listing</h3>
+<p>These requests are listed below; note that not all classes have all three types of requests associated with them.  It may be helpful to reference this page while scheduling classes.</p>
+
+
+
+{% for cls in classes %}
+<table width="500">
+<tr>
+    <th colspan="2">{{ cls.emailcode }}: {{ cls.title }}</th>
+</tr>
+<tr>
+    <th colspan="2" class="smaller">Teachers: {{ cls.pretty_teachers }}</th>
+</tr>
+{% for section in cls.sections.all %}
+<tr>
+    <th class="smaller">Section {{ section.index }} ({{ section.num_students }}/{{ section.capacity }})</th>
+    <td class="colorful">
+        <b>Room:</b> {% ifequal section.initial_rooms.count 0 %}
+                Not yet assigned
+              {% else %}
+                {{ section.prettyrooms }}
+              {% endifequal %}
+        <br />
+        <b>Time:</b> {% if section.friendly_times|length_is:0 %}
+                Not yet assigned
+              {% else %}
+                {% for ts in section.friendly_times %}{{ ts }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              {% endif %}
+    </td>
+</tr>
+{% endfor %}
+{% if cls.requested_special_resources %}
+<tr>
+    <td width="130">Special resources:</td>
+    <td>{{ cls.requested_special_resources }}</td>
+</tr>
+{% endif %}
+{% if cls.requested_room %}
+<tr>
+    <td width="130">Desired room:</td>
+    <td>{{ cls.requested_room }}</td>
+</tr>
+{% endif %}
+{% with cls.default_section as section %}
+<tr>
+    <td width="130">Equipment/classroom characteristics:</td>
+    <td>
+        {% ifequal section.resourcerequest_set.all.count 0 %}
+            None requested
+        {% else %}
+            <ul>
+            {% for r in section.resourcerequest_set.all %}
+            <li>{{ r.res_type.name }}</li>
+            {% endfor %}
+            </ul>
+        {% endifequal %}
+    </td>
+</tr>
+{% endwith %}
+{% if cls.message_for_director %}
+<tr>
+    <td width="150">Other notes:</td>
+    <td>{{ cls.message_for_director }}</td>
+</tr>
+{% endif %}
+{% if cls.directors_notes %}
+<tr>
+    <td width="150">Your annotations:</td>
+    <td>{{ cls.directors_notes }}</td>
+</tr>
+{% endif %}
+</table>
+<br />
+{% endfor %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+<br />
+
+</div>
+
+{% endblock %}

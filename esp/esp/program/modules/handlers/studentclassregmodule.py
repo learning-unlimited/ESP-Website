@@ -114,19 +114,14 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @classmethod
     def module_properties(cls):
         return [ {
+            "admin_title": "Student Class Registration",
             "link_title": "Sign up for Classes",
             "module_type": "learn",
             "seq": 10,
             "required": True,
-            "main_call": "classlist"
-            }, {
-            "link_title": "Sign up for Classes",
-            "admin_title": "Sign up for Classes, SoW (StudentClassRegModule)",
-            "module_type": "learn2",
-            "seq": 10,
-            "required": True,
-            "main_call": "sowclass"
-            } ]
+            "main_call": "classlist",
+            "aux_calls": "ajax_schedule,addclass,ajax_addclass,catalog,fillslot,clearslot,ajax_clearslot,class_docs,swapclass"
+            }]
 
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
@@ -162,7 +157,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @needs_student
     def prepare(self, context={}):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-        timeslots = list(self.program.getTimeSlots().order_by('id'))
+        timeslots = list(self.program.getTimeSlots(exclude_types=[]).order_by('start'))
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes())
         
         prevTimeSlot = None
@@ -222,6 +217,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         return context
 
+    @aux_call
     @needs_student
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
         import simplejson as json
@@ -376,8 +372,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
-            classes = filter(lambda c: not c.isFull(timeslot=ts), classes)
+            classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
+
+        #   Sort class list
+        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
+        classes = sorted(classes, key=lambda cls: cls.category.category)
 
         categories = {}
 
@@ -456,6 +456,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)        
+
+        # Sort classes
+        classes = list(classes)
+        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
+        classes = sorted(classes, key=lambda cls: cls.friendly_times()[0] if len(cls.friendly_times()) > 0 else [])
+        classes = sorted(classes, key=lambda cls: cls.category.category)
 
         categories = {}
         for cls in classes:

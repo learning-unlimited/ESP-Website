@@ -842,10 +842,11 @@ class DataTree(models.Model):
     # TESTS      #
     ##############
     @staticmethod
-    def randwordtest(factor = 4, limit = -1):
+    def randwordtest(factor = 4, limit = -1, quiet=False):
         # some random test
         import sys
         import random
+        from esp.utils import echo
         error_free = True
         GetNode('a')
         try:
@@ -864,25 +865,25 @@ class DataTree(models.Model):
                 try:
                     size = int(DataTree.objects.count())
                     cur_id = random.choice(range(low_id,low_id + size*factor))
-                    #print 'Tried %s' % cur_id
+                    #echo( 'Tried %s' % cur_id, quiet=quiet )
                     nodes = DataTree.objects.filter(id = cur_id)
                     if nodes[:1]:
                         node = nodes[0]
-                        print 'Deleting %s' % node
+                        echo( u'Deleting %s' % node, quiet=quiet )
                         node.delete(True)
-                        print 'Deleted %s' % node
+                        echo( u'Deleted %s' % node, quiet=quiet )
                     else:
                         uri = '/'.join(random.choice(words))
                         node = DataTree.get_by_uri(uri, True)
-                        print 'Added %s' % uri
+                        echo( u'Added %s' % uri, quiet=quiet )
                     
                     if DataTree.objects.exists_violators():
-                        print "ERROR:"
-                        print DataTree.objects.exists_violators(queryset=True)
+                        echo( "ERROR:" )
+                        echo( DataTree.objects.exists_violators(queryset=True) )
                         return False
                 except int:
                     exc_info = sys.exc_info()
-                    print exc_info[0], exc_info[1], exc_info[2]
+                    echo( exc_info[0], exc_info[1], exc_info[2] )
                     error_free = False
 
         except int:

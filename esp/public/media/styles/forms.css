@@ -176,6 +176,14 @@
     font-size: 12px;
 }
 
+#program_form td.compulsory_event_time {
+    background-color: #CCC;
+}
+
+#program_form td.compulsory_event_desc {
+    background-color: #CCC;
+}
+
 td .program_form_small{
     padding: 1px;
 }
@@ -203,10 +211,14 @@ th .program_form_small{
    font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-size: 0.9em;
-   background-color: #ffffff;
+   /* background-color: #ffffff; */
    color: #000000;
    text-align: left;
    vertical-align: top;
+}
+
+#program_form td.colorful {
+   background-color: #c6def7;
 }
 
 #program_form input {
@@ -275,6 +287,23 @@ th .program_form_small{
     padding-left: 0;
     margin-left: 0;
 }
+
+/* Volunteer signup form */
+
+#volunteer_form thead th {
+   padding: 5px;
+   font-weight: bold;
+   background-color: #141414;
+   text-align: center;
+   color: #ffffff;
+}
+
+#volunteer_form tbody th {
+   padding: 5px;
+   font-weight: bold;
+   text-align: center;
+}
+
 
 div.raw_id_admin {
     visibility: hidden;

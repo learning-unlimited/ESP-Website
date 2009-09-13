@@ -117,3 +117,8 @@ class NavBarEntry(models.Model):
         # Find the valid entries
         return NavBarEntry.objects.filter(QTree(path__above =branch)).order_by('sort_rank')
 
+
+def install():
+    # Add a default nav bar category, to let QSD editing work.
+    NavBarCategory.objects.get_or_create(name='default', defaults={ 'long_explanation':
+        'The default category, to which new nav bars and QSD pages get assigned.'})

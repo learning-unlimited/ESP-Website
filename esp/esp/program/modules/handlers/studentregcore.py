@@ -51,8 +51,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @classmethod
     def module_properties(cls):
         return {
-            "link_title": "",
-            "admin_title": "Core Student Reg (StudentRegCore)",
+            "link_title": "Student Registration",
+            "admin_title": "Core Student Registration",
             "module_type": "learn",
             "seq": -9999
             }
@@ -106,10 +106,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=True)
     
     def confirmreg_forreal(self, request, tl, one, two, module, extra, prog, new_reg):
-	""" The page that is shown once the user saves their student reg,
+        """ The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
         from esp.program.modules.module_ext import DBReceipt
-
 
         try:
             invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
@@ -119,9 +118,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         #   Why is get_complete false?
         receipt = Document.get_receipt(request.user, prog.anchor, [], get_complete=False)
 
-	context = {}
-	context['one'] = one
-	context['two'] = two
+        context = {}
+        context['one'] = one
+        context['two'] = two
 
         context['itemizedcosts'] = invoice.get_items()
 
@@ -137,21 +136,23 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog):
             raise ESPError(log = False), "This program has filled!  It can't accept any more students.  Please try again next session."
 
-	modules = prog.getModules(self.user, tl)
-	completedAll = True
-	for module in modules:
+        modules = prog.getModules(self.user, tl)
+        completedAll = True
+        for module in modules:
+            if hasattr(module, 'onConfirm'):
+                module.onConfirm(request) 
             if not module.isCompleted() and module.required:
                 completedAll = False
             context = module.prepare(context)
-	
-	if completedAll:
+        
+        if completedAll:
             if new_reg:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
             
         try:
-            receipt_text = DBReceipt.objects.get(program=self.program).receipt
+            receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt
             context["request"] = request
             context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
@@ -164,6 +165,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @meets_grade    
     @meets_deadline()
     def cancelreg(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.module_ext import DBReceipt
+        
         if self.have_paid():
             raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
         
@@ -175,38 +178,58 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             for bit in bits:
                 bit.expire()
 
-        return self.goToCore(tl)
+        #   If the appropriate flag is set, remove the student from their classes.
+        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        if scrmi.cancel_button_dereg:
+            sections = self.user.getSections()
+            for sec in sections:
+                sec.unpreregister_student(self.user)
+
+        #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
+        try:
+            receipt_text = DBReceipt.objects.get(program=self.program, action='cancel').receipt
+            context = {}
+            context["request"] = request
+            context["program"] = prog
+            return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
+        except:
+            return self.goToCore(tl)
 
     @main_call
     @needs_student
     @meets_grade
     @meets_deadline('/MainPage')
     def studentreg(self, request, tl, one, two, module, extra, prog):
-    	    """ Display a student reg page """
+        """ Display a student reg page """
 
-	    context = {}
-            modules = prog.getModules(self.user, 'learn')
-	    context['completedAll'] = True
-            for module in modules:
-                if not module.isCompleted() and module.required:
-                    context['completedAll'] = False
+        context = {}
+        modules = prog.getModules(self.user, 'learn')
+        context['completedAll'] = True
+        for module in modules:
+            # If completed all required modules so far...
+            if context['completedAll']:
+                if module.isCompleted():
+                    module.fillProgressBar = True
+                else:
+                    if module.required:
+                        context['completedAll'] = False
 
-                context = module.prepare(context)
+            context = module.prepare(context)
+        
+        context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
                 
-            context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
-                    
-            
-	    context['modules'] = modules
-	    context['one'] = one
-	    context['two'] = two
-            context['coremodule'] = self
-            context['isConfirmed'] = self.program.isConfirmed(self.user)            
-            context['have_paid'] = self.have_paid()
-            
-            
-            context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
+        
+        context['modules'] = modules
+        context['one'] = one
+        context['two'] = two
+        context['coremodule'] = self
+        context['scrmi'] = prog.getModuleExtension('StudentClassRegModuleInfo')
+        context['isConfirmed'] = self.program.isConfirmed(self.user)            
+        context['have_paid'] = self.have_paid()
+        
+        context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
-            return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
     def isStep(self):
         return False

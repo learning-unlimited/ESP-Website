@@ -39,6 +39,18 @@ from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.cache import cache_function
 
+#   A function to lazily import models that is occasionally needed for cache dependencies.
+def get_model(module_name, model_name):
+    parent_module_name = '.'.join(module_name.split('.')[:-1])
+    module = __import__(module_name, (), (), parent_module_name)
+    try:
+        module_class = getattr(module, model_name)
+        if issubclass(module_class, models.Model):
+            return module_class
+    except:
+        pass
+    return None
+
 # Create your models here.
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
@@ -589,8 +601,13 @@ class Program(models.Model):
     def sections(self, use_cache=True):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
-    def getTimeSlots(self):
-        return Event.objects.filter(anchor=self.anchor).order_by('start')
+    def getTimeSlots(self, exclude_types=['Compulsory']):
+        """ Get the time slots for a program. 
+            A flag, exclude_types, allows you to restrict which types of timeslots
+            are grabbed.  The default excludes 'compulsory' events, which are
+            not intended to be used for classes (they're for lunch, photos, etc.)
+        """
+        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).order_by('start')
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
@@ -762,6 +779,7 @@ class Program(models.Model):
                 module.setUser(user)
         return modules
     
+    @cache_function
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
         This avoids actually looking up the program module first. """
@@ -787,6 +805,14 @@ class Program(models.Model):
                 extension = None
                 
         return extension
+    #   Depend on all module extensions (kind of ugly, but at least we don't change those too frequently).
+    #   Ideally this could be autodetected by importing everything from module_ext first, but I ran into
+    #   a circular import problem.   -Michael P
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'ClassRegModuleInfo'))
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'StudentClassRegModuleInfo'))
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepAdminModuleInfo'))
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'CreditCardModuleInfo'))
+    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepTeacherModuleInfo'))
 
     def getColor(self):
         if hasattr(self, "_getColor"):
@@ -813,26 +839,11 @@ class Program(models.Model):
     def visibleEnrollments(self):
         """
         Returns whether class enrollments should show up in the catalog.
-        Current policy is that after everybody can sign up for one class, this returns True.
+        This originally returned true if class registration was fully open.
+        Now it's just a checkbox in the StudentClassRegModuleInfo.
         """
-        if hasattr(self, "_visibleEnrollments"):
-            return self._visibleEnrollments
-        
-        cache_key = 'PROGRAM_VISIBLEENROLLMENTS_%s' % self.id
-        retVal = cache.get(cache_key)
-        
-        if retVal is None:
-            reg_verb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
-            retVal = False
-            if UserBit.objects.filter(user__isnull=True, qsc=self.anchor_id, verb=reg_verb, startdate__lte=datetime.now()).count() > 0:
-                retVal = True
-            else:
-                if UserBit.objects.filter(QTree(qsc__above=self.anchor_id, verb__above=reg_verb), user__isnull=True, recursive=True, startdate__lte=datetime.now()).count() > 0:
-                    retVal = True
-            cache.set(cache_key, retVal, 9999)
-
-        self._visibleEnrollments = retVal
-        return retVal
+        options = self.getModuleExtension('StudentClassRegModuleInfo')
+        return options.visible_enrollments
     
     def archive(self):
         archived_classes = []
@@ -910,7 +921,7 @@ class SATPrepRegInfo(models.Model):
         verbose_name = 'SATPrep Registration Info'
 
     def __unicode__(self):
-        return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
+        return 'SATPrep registration info for ' +str(self.user) + ' in '+str(self.program)
     
     @staticmethod
     def getLastForProgram(user, program):
@@ -938,6 +949,7 @@ class RegistrationProfile(models.Model):
     last_ts = models.DateTimeField(default=datetime.now())
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True)
+    text_reminder = models.NullBooleanField()
 
     class Meta:
         app_label = 'program'
@@ -1229,9 +1241,10 @@ class BooleanToken(models.Model):
     text = models.TextField(help_text='Boolean value, or text needed to compute it', default='', blank=True)
     seq = models.IntegerField(help_text='Location of this token on the expression stack (larger numbers are higher)', default=0)
 
-    def get_expression(self):
+    def get_expr(self):
         return self.exp.subclass_instance()
-    expression = property(get_expression)
+    #   Renamed to expr to avoid conflicting with Django SQL evaluator "expression"
+    expr = property(get_expr)
 
     def __unicode__(self):
         return '[%d] %s' % (self.seq, self.text)
@@ -1249,7 +1262,7 @@ class BooleanToken(models.Model):
         stack = list(stack)
         while (value is None) and (len(stack) > 0):
             token = stack.pop().subclass_instance()
-            print 'Popped token: %s' % token.text
+            #   print 'Popped token: %s' % token.text
             
             # Handle possibilities for what the token might be:
             if (token.text == '||') or (token.text.lower() == 'or'):
@@ -1271,7 +1284,7 @@ class BooleanToken(models.Model):
                 # Pass along arguments
                 value = token.boolean_value(*args, **kwargs)
                 
-        print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
+        #   print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
         return (value, stack)
 
     """ This function is meant to take extra arguments so subclasses can use additional
@@ -1299,12 +1312,14 @@ class BooleanExpression(models.Model):
     def get_stack(self):
         return self.booleantoken_set.all().order_by('seq')
 
-    def add_token(self, token, seq=None, duplicate=True):
+    def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if duplicate:
-            new_token = BooleanToken(text=token.text)
+        if type(token_or_value) == str:
+            new_token = BooleanToken(text=token_or_value)
+        elif duplicate:
+            new_token = BooleanToken(text=token_or_value.text)
         else:
-            new_token = token
+            new_token = token_or_value
         if seq is None:
             if my_stack.count() > 0:
                 new_token.seq = self.get_stack().order_by('-seq').values('seq')[0]['seq'] + 10
@@ -1314,6 +1329,7 @@ class BooleanExpression(models.Model):
             new_token.seq = seq
         new_token.exp = self
         new_token.save()
+        return new_token
     
     def evaluate(self, *args, **kwargs):
         stack = self.get_stack()
@@ -1329,22 +1345,33 @@ class ScheduleMap:
     """
     @cache_function
     def __init__(self, user, program):
-        result = {}
         if type(user) is not ESPUser:
             user = ESPUser(user)
-        for t in program.getTimeSlots():
+        self.program = program
+        self.user = user
+        self.populate()
+    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
+
+    @cache_function
+    def populate(self):
+        result = {}
+        for t in self.program.getTimeSlots():
             result[t.id] = []
-        sl = user.getEnrolledSections(program)
+        sl = self.user.getEnrolledSections(self.program)
         for s in sl:
             for m in s.meeting_times.all():
                 result[m.id].append(s)
         self.map = result
-    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
+        return self.map
+    populate.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
 
     def __marinade__(self):
         import hashlib
         import pickle
         return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
+        
+    def __unicode__(self):
+        return '%s' % self.map
 
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested: 
@@ -1366,7 +1393,7 @@ class ScheduleConstraint(models.Model):
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint')
     
     def __unicode__(self):
-        return '%s: %s -> %s' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+        return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
     
     @cache_function
     def evaluate(self, smap):
@@ -1428,6 +1455,19 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
                 if sec.id in section_id_list:
                     return True
         return False
+        
+    @classmethod
+    def filter_by_section(cls, section):
+        return cls.filter_by_sections([section])
+
+    @classmethod
+    def filter_by_sections(cls, sections):
+        import operator
+        q_list = []
+        for section in sections:
+            q_list.append(Q(Q(section_ids='%s' % section.id) | Q(section_ids__startswith='%s,' % section.id) | Q(section_ids__contains=',%s,' % section.id) | Q(section_ids__endswith=',%s' % section.id)))
+
+        return cls.objects.filter( reduce(operator.or_, q_list) )
            
 def schedule_constraint_test(prog):
     sc = ScheduleConstraint(program=prog)
@@ -1437,3 +1477,7 @@ def schedule_constraint_test(prog):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 
+def install():
+    """ Setup for program. """
+    from esp.program.dummy_program import init_dummy_program
+    init_dummy_program()
