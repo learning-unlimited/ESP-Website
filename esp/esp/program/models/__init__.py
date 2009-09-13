@@ -1393,7 +1393,7 @@ class ScheduleConstraint(models.Model):
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint')
     
     def __unicode__(self):
-        return '%s: %s -> %s' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+        return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
     
     @cache_function
     def evaluate(self, smap):
@@ -1455,6 +1455,19 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
                 if sec.id in section_id_list:
                     return True
         return False
+        
+    @classmethod
+    def filter_by_section(cls, section):
+        return cls.filter_by_sections([section])
+
+    @classmethod
+    def filter_by_sections(cls, sections):
+        import operator
+        q_list = []
+        for section in sections:
+            q_list.append(Q(Q(section_ids='%s' % section.id) | Q(section_ids__startswith='%s,' % section.id) | Q(section_ids__contains=',%s,' % section.id) | Q(section_ids__endswith=',%s' % section.id)))
+
+        return cls.objects.filter( reduce(operator.or_, q_list) )
            
 def schedule_constraint_test(prog):
     sc = ScheduleConstraint(program=prog)

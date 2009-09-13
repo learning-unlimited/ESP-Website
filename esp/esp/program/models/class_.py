@@ -55,6 +55,7 @@ from esp.users.models import ESPUser, UserBit
 from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models import Program
+from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 

@@ -39,7 +39,7 @@ class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
     action  = models.CharField(max_length=80, default='confirm')
-    program = models.OneToOneField(Program)
+    program = models.ForeignKey(Program)
     receipt = models.TextField()
     
     def __unicode__(self):
