@@ -1,0 +1,10 @@
+Automatic e-mail form submission at {% now "n\/d\/Y h:i A" %}
+
+Form type: {{ instance_name }}
+
+Form contents
+-------------
+{% for field in fields %}
+{{ field.name }}: {{ field.data }}
+
+{% endfor %}

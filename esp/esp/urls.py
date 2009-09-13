@@ -51,8 +51,10 @@ urlpatterns += patterns('',
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$','django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
                         )
 
-urlpatterns += patterns('esp.shortterm.views',
-                        (r'^school_response/$', 'school_response_form'))
+#   Short term views
+urlpatterns += patterns('',
+                        (r'^', include('esp.shortterm.urls'),),
+                        )
 
 # generic stuff
 urlpatterns += patterns('django.views.generic',
