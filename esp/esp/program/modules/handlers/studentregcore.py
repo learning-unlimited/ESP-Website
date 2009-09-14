@@ -78,24 +78,37 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         Q_studentrep = Q(userbit__qsc = STUDREP_QSC) & Q(userbit__verb = STUDREP_VERB)
 
         if QObject:
-            return {'confirmed': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb)),
-                    'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached()) &\
+            retVal = {'confirmed': self.getQForUser(Q(userbit__qsc = qsc, userbit__verb = verb)),
+                      'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached()) &\
                                                   Q(userbit__verb = verb2)),
-                    'studentrep': self.getQForUser(Q_studentrep),
-                    'waitlisted_students': self.getQForUser(Q(userbit__qsc = qsc_waitlist) & Q(userbit__verb = verb))}
-        
-        
-        return {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct(),
-                'attended' : User.objects.filter(userbit__qsc = self.program_anchor_cached(), \
-                                                    userbit__verb = verb2).distinct(),
-                'studentrep': User.objects.filter(Q_studentrep).distinct(),
-                'waitlisted_students': User.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb).distinct()}
+                      'studentrep': self.getQForUser(Q_studentrep)}
+
+
+            if self.program.program_allow_waitlist:
+                retVal['waitlisted_students'] = self.getQForUser(Q(userbit__qsc = qsc_waitlist, userbit__verb = verb))
+                    
+            return retVal
+
+        retVal = {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct(),
+                  'attended' : User.objects.filter(userbit__qsc = self.program_anchor_cached(), \
+                                                       userbit__verb = verb2).distinct(),
+                  'studentrep': User.objects.filter(Q_studentrep).distinct()}
+                  
+        if self.program.program_allow_waitlist:
+            retVal['waitlisted_students'] = User.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb).distinct()
+                  
+        return retVal
 
     def studentDesc(self):
-        return {'confirmed': """Students who have clicked on the `Confirm Pre-Registration' button.""",
-                'attended' : """Students who attended %s""" % self.program.niceName(),
-                'studentrep': """All Student Representatives of ESP"""}
+        retVal = {'confirmed': """Students who have clicked on the `Confirm Pre-Registration' button.""",
+                  'attended' : """Students who attended %s""" % self.program.niceName(),
+                  'studentrep': """All Student Representatives of ESP"""}
 
+        if self.program.program_allow_waitlist:
+            retVal['waitlisted_students'] = """Students on the program's waitlist"""
+
+        return retVal
+                  
     @aux_call
     @needs_student
     @meets_grade
