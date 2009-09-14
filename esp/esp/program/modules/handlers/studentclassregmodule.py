@@ -212,45 +212,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             else:
                 schedule.append((timeslot, [], blockCount + 1, user_priority))
 
-            # For Splash 2009, lunch blocks are 25/26 and 35/36
-            islunch = False
-            if timeslot.id == 25 and 26 in timeslot_dict: islunch = True
-            if timeslot.id == 26 and 25 in timeslot_dict: islunch = True
-            if timeslot.id == 35 and 36 in timeslot_dict: islunch = True
-            if timeslot.id == 36 and 35 in timeslot_dict: islunch = True
-
-            prevTimeSlot = timeslot
-
-        # Condense schedule
-        schedule_collapsed = []
-        laststart = None
-        lastend = None
-        lastsec = None
-        lastblk = None
-        lastpri = None
-        lastdaybreak = None
-
-        for e in schedule:
-            if laststart is None or len(e[1]) == 0 or lastsec['section']._get_parent_class().id != e[1][0]['section']._get_parent_class().id:
-                if laststart is not None:
-                    schedule_collapsed.append((Event(start=laststart, end=lastend), [lastsec], lastblk, lastpri, False, lastdaybreak))
-                    laststart = None
-
-                if len(e[1]) == 0:
-                  schedule_collapsed.append(e)
-                  continue
-
-                laststart = e[0].start
-                lastend = e[0].end
-                lastsec = e[1][0]
-                lastblk = e[2]
-                lastpri = e[3]
-                lastdaybreak = e[5]
-            else:
-                lastend = e[0].end
-        if laststart is not None:
-            schedule_collapsed.append((Event(start=laststart, end=lastend), [lastsec], lastblk, lastpri, False, lastdaybreak))
-
         # Calculate invoice
         charges = []
         charges_total = 0
@@ -282,7 +243,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['charges_total'] = charges_total
 
         context['timeslots'] = schedule
-        context['timeslots_collapsed'] = schedule_collapsed
         context['use_priority'] = scrmi.use_priority
         context['allow_removal'] = self.deadline_met('/Removal')
 
