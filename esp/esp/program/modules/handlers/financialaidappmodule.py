@@ -79,15 +79,8 @@ class FinancialAidAppModule(ProgramModuleObj):
     @needs_student
     @meets_deadline()
     def finaid(self,request, tl, one, two, module, extra, prog):
-        """
-        Student financial aid requests.
-        This template will redirect the person to an HTTPS address.
-        """
-
-        return render_to_response(self.baseDir()+'aid_direct.html',
-                                  request,
-                                  (self.program, tl),
-                                  {})
+        """ Stanford site doesn't have HTTPS, so just direct people to the actual application. """
+        return self.finaid_app(request, tl, one, two, module, extra, prog)
 
     @aux_call
     @needs_student
