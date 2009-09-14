@@ -3,11 +3,11 @@
     {% load smartypants %}
     {% load class_render %}
     <div class="show_class">
-    <table cellpadding="5" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
+    <table cellpadding="0" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
     {% render_class_core class %}
     {% if prereg_url %}
         <tr>
-        <td colspan="3" style="text-align: center; padding:0;" align="center" valign="center" class="add_class">
+        <td colspan="3" align="center" valign="center" class="add_class">
         {% if errormsg %}
             <span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
             {% if user.onsite_local %}
@@ -25,8 +25,11 @@
                 <form id="prereg_submitform" name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
                   <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ section.id }}" />
-                  <input type="submit" class="addbutton" name="action" value="Add this class"
-                             id="submitbutton{{ class.id }}" />
+                      {% if not section.isFull %}
+                      <input type="submit" class="addbutton" name="action" value="Add this class" id="submitbutton{{ class.id }}" />
+                      {% else %}
+                      <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ class.id }}" disabled />
+                      {% endif %}
                 </form>
                 {% endif %}
             {% else %}

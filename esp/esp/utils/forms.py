@@ -33,8 +33,36 @@ from django.forms.forms import Form, Field, BoundField
 from django import forms
 from django.forms.util import ErrorList
 from django.utils.html import escape, mark_safe
+from django.template import loader
+from django.core.mail import send_mail
 
 from esp.utils.widgets import CaptchaWidget
+
+class EmailModelForm(forms.ModelForm):
+    """ An extension of Django's ModelForms that e-mails when
+        an instance of the model is saved using the form.
+        Requires from_addr (string) and destination_addrs (list of strings)
+        to be provided as arguments to save().
+    """
+    def __init__(self, *args, **kwargs):
+        super(EmailModelForm, self).__init__(*args, **kwargs)
+        for field in self.fields.itervalues():
+            if field.required:
+                field.widget.attrs['class'] = 'required'
+    
+    def save(self, from_addr='', destination_addrs=[]):
+        result = super(EmailModelForm, self).save()
+        self.email(from_addr, destination_addrs)
+        return result
+        
+    def email(self, from_addr, destination_addrs):
+        context = {}
+        context['instance_name'] = self.instance.__class__.__name__
+        context['fields'] = []
+        for field in self.fields:
+            context['fields'].append({'name': field, 'data': self.data[field]})
+        msg_text = loader.render_to_string("email/autoform.txt", context)
+        send_mail('Automatic E-mail Form Submission (type: %s)' % context['instance_name'], msg_text, from_addr, destination_addrs)
 
 
 class SizedCharField(forms.CharField):

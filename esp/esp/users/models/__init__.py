@@ -1292,7 +1292,7 @@ class K12School(models.Model):
         db_table = 'users_k12school'
 
     @classmethod
-    def ajax_autocomplete(cls, data):
+    def ajax_autocomplete(cls, data, allow_non_staff=True):
         name = data.strip()
         query_set = cls.objects.filter(name__icontains = name)
         values = query_set.order_by('name','id').values('name', 'id')
@@ -1302,10 +1302,19 @@ class K12School(models.Model):
 
     def __unicode__(self):
         if self.contact_id:
-            return '"%s" in %s, %s' % (self.name, self.contact.address_city,
+            return '%s in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
-            return '"%s"' % self.name
+            return '%s' % self.name
+
+    @classmethod
+    def choicelist(cls, other_help_text=''):
+        if other_help_text:
+            other_help_text = u' (%s)' % other_help_text
+        o = cls.objects.other()
+        lst = [ ( x.id, x.name ) for x in cls.objects.most() ]
+        lst.append( (o.id, o.name + other_help_text) )
+        return lst
 
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):

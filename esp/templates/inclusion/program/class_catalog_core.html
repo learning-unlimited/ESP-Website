@@ -1,14 +1,14 @@
 {% load latex %}
 {% load smartypants %}
     <tr>
-      <th colspan="2" style="width: 70%;{{ colorstring }}">
+      <th colspan="2" style="padding: 5px; width: 70%;{{ colorstring }}">
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
            {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}
           {% endif %}
       </th>
-      <th style="width: 30%;{{ colorstring }}">
+      <th style="padding: 5px; width: 30%;{{ colorstring }}">
        <span class="teachers">
        {% for teacher in class.teachers %}
        <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html"

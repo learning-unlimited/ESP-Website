@@ -837,27 +837,12 @@ class Program(models.Model):
     def visibleEnrollments(self):
         """
         Returns whether class enrollments should show up in the catalog.
-        Current policy is that after everybody can sign up for one class, this returns True.
+        This originally returned true if class registration was fully open.
+        Now it's just a checkbox in the StudentClassRegModuleInfo.
         """
-        if hasattr(self, "_visibleEnrollments"):
-            return self._visibleEnrollments
-
-        cache_key = 'PROGRAM_VISIBLEENROLLMENTS_%s' % self.id
-        retVal = cache.get(cache_key)
-
-        if retVal is None:
-            reg_verb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
-            retVal = False
-            if UserBit.objects.filter(user__isnull=True, qsc=self.anchor_id, verb=reg_verb, startdate__lte=datetime.now()).count() > 0:
-                retVal = True
-            else:
-                if UserBit.objects.filter(QTree(qsc__above=self.anchor_id, verb__above=reg_verb), user__isnull=True, recursive=True, startdate__lte=datetime.now()).count() > 0:
-                    retVal = True
-            cache.set(cache_key, retVal, 9999)
-
-        self._visibleEnrollments = retVal
-        return retVal
-
+        options = self.getModuleExtension('StudentClassRegModuleInfo')
+        return options.visible_enrollments
+    
     def archive(self):
         archived_classes = []
         #   I think we should delete resources and user bits, but I'm afraid to.
@@ -992,7 +977,7 @@ class SATPrepRegInfo(models.Model):
         verbose_name = 'SATPrep Registration Info'
 
     def __unicode__(self):
-        return 'SATPrep regisration info for ' +str(self.user) + ' in '+str(self.program)
+        return 'SATPrep registration info for ' +str(self.user) + ' in '+str(self.program)
 
     @staticmethod
     def getLastForProgram(user, program):
@@ -1020,6 +1005,7 @@ class RegistrationProfile(models.Model):
     last_ts = models.DateTimeField(default=datetime.now())
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True)
+    text_reminder = models.NullBooleanField()
 
     class Meta:
         app_label = 'program'
@@ -1463,7 +1449,7 @@ class ScheduleConstraint(models.Model):
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint')
     
     def __unicode__(self):
-        return '%s: %s -> %s' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+        return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
     
     @cache_function
     def evaluate(self, smap):
@@ -1525,6 +1511,19 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
                 if sec.id in section_id_list:
                     return True
         return False
+        
+    @classmethod
+    def filter_by_section(cls, section):
+        return cls.filter_by_sections([section])
+
+    @classmethod
+    def filter_by_sections(cls, sections):
+        import operator
+        q_list = []
+        for section in sections:
+            q_list.append(Q(Q(section_ids='%s' % section.id) | Q(section_ids__startswith='%s,' % section.id) | Q(section_ids__contains=',%s,' % section.id) | Q(section_ids__endswith=',%s' % section.id)))
+
+        return cls.objects.filter( reduce(operator.or_, q_list) )
            
 def schedule_constraint_test(prog):
     sc = ScheduleConstraint(program=prog)

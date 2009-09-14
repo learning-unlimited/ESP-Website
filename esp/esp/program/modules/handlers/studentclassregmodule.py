@@ -443,8 +443,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
-            classes = filter(lambda c: not c.isFull(timeslot=ts), classes)
+            classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
+
+        #   Sort class list
+        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
+        classes = sorted(classes, key=lambda cls: cls.category.category)
 
         categories = {}
 
@@ -523,6 +527,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)        
+
+        # Sort classes
+        classes = list(classes)
+        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
+        classes = sorted(classes, key=lambda cls: cls.friendly_times()[0] if len(cls.friendly_times()) > 0 else [])
+        classes = sorted(classes, key=lambda cls: cls.category.category)
 
         categories = {}
         for cls in classes:

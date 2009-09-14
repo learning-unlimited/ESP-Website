@@ -288,6 +288,23 @@ th .program_form_small{
     margin-left: 0;
 }
 
+/* Volunteer signup form */
+
+#volunteer_form thead th {
+   padding: 5px;
+   font-weight: bold;
+   background-color: #141414;
+   text-align: center;
+   color: #ffffff;
+}
+
+#volunteer_form tbody th {
+   padding: 5px;
+   font-weight: bold;
+   text-align: center;
+}
+
+
 div.raw_id_admin {
     visibility: hidden;
 }
