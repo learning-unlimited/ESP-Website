@@ -54,7 +54,7 @@ p.category {
 .show_class table {
    text-align: center;
    margin: auto;
-   width: 620px;
+   width: 600px;
 }
 .show_class th {
    text-align: left;
@@ -146,4 +146,31 @@ input.button:hover {
 
 #catalog tr.bordertopdashed {
     border-top: 1px dashed #cccccc;
+}
+
+input.addbutton {
+    background-color: #c6def7;
+    color: #000000;
+    border: 0px solid black;
+    font-weight: bold;
+    font-size: 0.9em;
+    padding: 3px;
+    width: 100%;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+input.addbutton:hover {
+    background-color: #333399;
+    color: #c6def7;
+}
+
+input.addbutton_disabled {
+    color: #ffffff;
+    background-color: #ed1c24;
+    border: 0px solid black;
+    font-weight: bold;
+    font-size: 0.9em;
+    padding: 3px;
+    width: 100%;
+    font-family: Helvetica, Arial, sans-serif;
 }
