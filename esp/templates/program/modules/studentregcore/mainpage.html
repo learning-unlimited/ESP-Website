@@ -117,7 +117,7 @@
     </form>
 {% else %}
     <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-    <input class="button" type="submit" value="{% if not isConfirmed %}Confirm Registration, View Receipt{% else %}Registration Confirmed!  View Receipt{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull and not canRegToFullProgram %}disabled{% endif %}/></form>
+    <input class="button" type="submit" value="{% if not isConfirmed %}Confirm Registration, View Receipt{% else %}Registration Confirmed!  View Receipt{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull and not canRegToFullProgram and not isConfirmed %}disabled{% endif %}/></form>
 {% endif %}
     {% if isConfirmed and not have_paid %}
     

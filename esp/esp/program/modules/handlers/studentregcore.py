@@ -153,7 +153,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             
         context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
-        if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog):
+        if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog) and not self.program.isConfirmed(self.user):
             raise ESPError(log = False), "This program has filled!  It can't accept any more students.  Please try again next session."
 
 	modules = prog.getModules(self.user, tl)
