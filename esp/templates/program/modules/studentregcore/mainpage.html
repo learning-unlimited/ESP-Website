@@ -102,7 +102,7 @@
 {% if not request.user.onsite_local %}
     <center>
     <a name="confirmreg"></a>
-    {% if program.isFull and program.program_allow_waitlist %}
+    {% if program.isFull and program.program_allow_waitlist and not isConfirmed %}
         </form>
         <form action="/learn/{{one}}/{{two}}/waitlist_subscribe" method="post">
         <input class="button" type="submit" value="Join Waiting List"/>
