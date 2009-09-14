@@ -63,10 +63,10 @@ class AvailabilityModule(ProgramModuleObj):
     def isCompleted(self):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
         self.user = ESPUser(self.user)
-        available_slots = self.user.getAvailableTimes(self.program)
+        available_slots = self.user.getAvailableTimes(self.program, ignore_classes=False)
         
         # Round durations of both classes and timeslots to nearest 30 minutes
-        total_time = self.user.getTaughtTime(self.program, include_scheduled=False, round_to=0.5)
+        total_time = self.user.getTaughtTime(self.program, include_scheduled=True, round_to=0.5)
         available_time = timedelta()
         for a in available_slots:
             available_time = available_time + timedelta( seconds = 1800 * round( a.duration().seconds / 1800.0 ) )

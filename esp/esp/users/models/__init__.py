@@ -43,6 +43,7 @@ from django.http import HttpRequest
 from django.template import Context, loader
 from django.template.defaultfilters import urlencode
 
+from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
@@ -77,8 +78,27 @@ def admin_required(func):
     return wrapped
 
 
-class ESPUserManager(ProcedureManager):
+class UserAvailability(models.Model):
+    user = AjaxForeignKey(User)
+    event = models.ForeignKey(Event)
+    role = AjaxForeignKey(DataTree)
+    priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
+    def __unicode__(self):
+        return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
+
+    def save(self, *args, **kwargs):
+        #   Assign default role if not set.
+        #   Careful with this; the result may differ for users with multiple types.
+        #   (With this alphabetical ordering, you get roles in the order: teacher, student, guardian, educator, administrator)
+        if (not hasattr(self, 'role')) or self.role is None:
+            queryset = self.user.userbit_set.filter(QTree(verb__below=GetNode('V/Flags/UserRole'))).order_by('-verb__name')
+            if queryset.count() > 0:
+                self.role = queryset[0].verb
+        return super(UserAvailability, self).save(*args, **kwargs)
+
+
+class ESPUserManager(ProcedureManager):
     pass
 
 class ESPUser(User, AnonymousUser):
@@ -362,7 +382,7 @@ class ESPUser(User, AnonymousUser):
         from esp.resources.models import Resource
         from esp.cal.models import Event
 
-        valid_events = Event.objects.filter(resource__user=self, anchor=program.anchor)
+        valid_events = Event.objects.filter(useravailability__user=self)
 
         if ignore_classes:
             #   Subtract out the times that they are already teaching.
@@ -380,33 +400,31 @@ class ESPUser(User, AnonymousUser):
     # FIXME: Really should take into account section's teachers...
     # even though that shouldn't change often
     getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
-    getAvailableTimes.depend_on_row(lambda:Resource, lambda resource:
+    getAvailableTimes.depend_on_row(lambda:UserAvailability, lambda ua:
                                         # FIXME: What if resource.event.anchor somehow isn't a program?
                                         # Probably want a helper method return a special "nothing" object (XXX: NOT None)
                                         # and have key_sets discarded if they contain it
-                                        {'program': Program.objects.get(anchor=resource.event.anchor),
-                                            'self': resource.user})
+                                        {'program': Program.objects.get(anchor=ua.event.anchor),
+                                            'self': ua.user})
     # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
-        """ Clear all resources indicating this teacher's availability for a program """
-        from esp.resources.models import Resource
-
-        Resource.objects.filter(user=self, event__anchor=program.anchor).delete()
+        """ Clear this teacher's availability for a program """
+        self.useravailability_set.filter(QTree(event__anchor__below=program.anchor)).delete()
 
     def addAvailableTime(self, program, timeslot):
         from esp.resources.models import Resource, ResourceType
-
-        # if program.anchor is not timeslot.anchor:
-        #    BADNESS
-
-        r = Resource()
-        r.user = self
-        r.event = timeslot
-        r.name = 'Teacher Availability, %s at %s' % (self.name(), timeslot.short_description)
-        r.res_type = ResourceType.get_or_create('Teacher Availability')
-        r.save()
+        
+        #   Because the timeslot has an anchor, the program is unnecessary.
+        new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot)
+        new_availability.save()
+        
+    def convertAvailability(self):
+        resources = Resource.objects.filter(user=self)
+        for res in resources:
+            self.addAvailableTime(Program.objects.all()[0], res.event)
+        resources.delete()
 
     def getApplication(self, program, create=True):
         from esp.program.models.app_ import StudentApplication
@@ -758,7 +776,6 @@ ESPUser.create_membership_methods()
 
 ESPUser._meta.pk.attname = "id"
 ESPUser._meta.local_fields[0].column = "id"
-
 
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
