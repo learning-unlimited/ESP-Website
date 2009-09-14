@@ -73,6 +73,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         STUDREP_QSC  = GetNode('Q')
         
         qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Confirmation")
+        qsc_waitlist = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Waitlist")
 
         Q_studentrep = Q(userbit__qsc = STUDREP_QSC) & Q(userbit__verb = STUDREP_VERB)
 
@@ -80,13 +81,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             return {'confirmed': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb)),
                     'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached()) &\
                                                   Q(userbit__verb = verb2)),
-                    'studentrep': self.getQForUser(Q_studentrep)}
+                    'studentrep': self.getQForUser(Q_studentrep),
+                    'waitlisted_students': self.getQForUser(Q(userbit__qsc = qsc_waitlist) & Q(userbit__verb = verb))}
         
         
         return {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct(),
                 'attended' : User.objects.filter(userbit__qsc = self.program_anchor_cached(), \
                                                     userbit__verb = verb2).distinct(),
-                'studentrep': User.objects.filter(Q_studentrep).distinct()}
+                'studentrep': User.objects.filter(Q_studentrep).distinct(),
+                'waitlisted_students': User.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb).distinct()}
 
     def studentDesc(self):
         return {'confirmed': """Students who have clicked on the `Confirm Pre-Registration' button.""",
