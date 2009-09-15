@@ -535,6 +535,11 @@ class UserBit(models.Model):
     def valid_objects(when=None):
         """ Returns a QuerySet consisting of unexpired UserBits (at time when) """
         return UserBit.objects.filter(UserBit.not_expired(when=when))
+        
+    @staticmethod
+    def invalid_objects(when=None):
+        """ Returns a QuerySet consisting of expired UserBits (at time when) """
+        return UserBit.objects.exclude(UserBit.not_expired(when=when))
 
     UserHasPerms   = classmethod(lambda cls,*args,**kwargs: cls.objects.UserHasPerms(*args,**kwargs))
     bits_get_qsc   = classmethod(lambda cls,*args,**kwargs: cls.objects.bits_get_qsc(*args,**kwargs))
