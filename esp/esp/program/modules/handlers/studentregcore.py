@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -71,16 +70,16 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         verb2 = GetNode('V/Flags/Registration/Attended')
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
         STUDREP_QSC  = GetNode('Q')
+        now = datetime.now()
         
         qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Confirmation")
         qsc_waitlist = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Waitlist")
 
-        Q_studentrep = Q(userbit__qsc = STUDREP_QSC) & Q(userbit__verb = STUDREP_VERB)
+        Q_studentrep = Q(userbit__qsc = STUDREP_QSC, userbit__verb = STUDREP_VERB, userbit__startdate__lte=now, userbit__enddate__gte=now)
 
         if QObject:
-            retVal = {'confirmed': self.getQForUser(Q(userbit__qsc = qsc, userbit__verb = verb)),
-                      'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached()) &\
-                                                  Q(userbit__verb = verb2)),
+            retVal = {'confirmed': self.getQForUser(Q(userbit__qsc = qsc, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now)),
+                      'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached(), userbit__startdate__lte=now, userbit__enddate__gte=now, userbit__verb = verb2)),
                       'studentrep': self.getQForUser(Q_studentrep)}
 
 
@@ -89,13 +88,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                     
             return retVal
 
-        retVal = {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct(),
+        retVal = {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct(),
                   'attended' : User.objects.filter(userbit__qsc = self.program_anchor_cached(), \
-                                                       userbit__verb = verb2).distinct(),
+                                                       userbit__verb = verb2,
+                                                       userbit__startdate__lte=now,
+                                                       userbit__enddate__gte=now).distinct(),
                   'studentrep': User.objects.filter(Q_studentrep).distinct()}
                   
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = User.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb).distinct()
+            retVal['waitlisted_students'] = User.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
                   
         return retVal
 
