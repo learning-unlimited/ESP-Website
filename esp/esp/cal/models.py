@@ -82,7 +82,7 @@ class Event(models.Model):
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
 
     def title(self):
-	return self.anchor.uri
+        return self.anchor.uri
 
     def duration(self):
         return self.end - self.start
