@@ -72,7 +72,7 @@ var fetch_fragments = function()
 
 var apply_fragment_changes = function(data)
 {
-    //  console.log("Applying fragment changes from data: " + data);
+    console.log("Applying fragment changes from data: " + data);
     // Parse the keys
     for (var key in data)
     {
