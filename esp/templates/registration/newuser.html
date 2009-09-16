@@ -21,8 +21,10 @@ an account with us. After you register account, you will be allowed to register
 for programs, sign up for classes, among other things.
 </p>
 
+<br />
+<div id="program_form">
 <form action="{{ request.path }}" method="post" name="newuser_form">
-<table>
+<table align="center">
 <thead>
 <tr>
   <th colspan="2">
@@ -46,12 +48,13 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 {{ form }}
 <tr>
   <th colspan="2" class="submit">
-    <input type="submit" value="Create account, proceed to profile creation" name="submit" />
+    <input type="submit" class="button" value="Create account, proceed to profile creation" name="submit" />
   </th>
 </tr>
 </tbody>
 </table>
 </form>
+</div>
 
 <script type="text/javascript">
 <!--

@@ -14,7 +14,12 @@
 <h1>Splash - Lunch Preferences and Tuition </h1>
 <br />
 
+<div id="program_form">
+
+{% if form.errors or missing_siblingname %}<p align="center" style="color: red;">Please correct the form below before continuing. <br />{{ form.errors }}</p>{% endif %}
+
 <h2>Lunch Preferences</h2>
+<br />
 <p>
 <b>*** We strongly recommend students bring their own lunch or purchase a Splash lunch. *** </b><br/>
 You should not expect to be able to purchase food on campus this year, even if you did last year. Instead, we are offering catered lunch to students for 
@@ -27,7 +32,6 @@ $5 on each day. Vegetarian options are available both days.
 
 <form action="{{request.path}}" method="post">
 <table cellpadding="1" align="center" border="0">
-
 <tr>
  <td>Would you like a Quiznos sandwich box on SATURDAY? (+ $5)<br/>
      {{ form.lunchsat }}
@@ -43,31 +47,52 @@ $5 on each day. Vegetarian options are available both days.
 </tr>
 </table>
 
+<br />
 <hr/>
 <h2>Sibling Discount </h2>
-
+<br />
 <p>
 This Splash, we are offering a special discount to households with more than one attendee regardless of family income. The cost of enrolling in 
 Splash is $40 for the first student, and $20 for each additional student.
-
 </p>
 
-{{ form.siblingdiscount }}
-<br/>Please enter his/her name below:<br/>
-{{ form.siblingname }} 
-{% if missing_siblingname %}<span class="form_error">Please specify sibling's name above!</span><br />{% endif %}
+<table cellpadding="1" align="center" border="0">
+    <tr>
+        <td colspan="2">
+            {{ form.siblingdiscount }}
+        </td>
+    </tr>
+    <tr>
+        <td>
+        Please enter his/her name here:
+        </td>
+        <td>
+        {{ form.siblingname }} 
+        </td>
+    </tr>
+    {% if missing_siblingname %}
+    <tr>
+        <td colspan="2" align="center">
+            <span style="color: red;">Please specify your sibling's name above!</span>
+        </td>
+    </tr>
+    {% endif %}
+</table>
 
 <hr/>
 <h2>Financial Aid</h2>
+<br />
 <p>
-
 Full financial aid is available to any students who need it. If you require financial aid, please email
 <a href="mailto:stanfordesp@gmail.com?subject=Financial Aid for Splash! Spring 2009 (Student ID {{ user.id }})">stanfordesp@gmail.com</a>.
 
 </p>
-<center><input type="submit" class="fancybutton" value="Save and Continue"></center>
+
+<center><input type="submit" class="button" value="Save and Continue"></center>
+
 </form>
 
 </div>
+
 
 {% endblock %}

@@ -99,9 +99,11 @@ There are no available classes during this time block for students of your grade
 {% endif %}
 
 {# If the line below gives you a TemplateSyntaxError, try replacing it with a 'with' tag. #}
-{% for class in classes %}
 
 <div id="catalog">
+{% for class in classes %}
+
+
 
 {% ifchanged class.category_id %}<hr size="1"/>
 

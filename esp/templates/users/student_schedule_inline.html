@@ -2,15 +2,17 @@
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 
 <div id="program_form" class="program_form_small">
-<table cellpadding="3" style="width: 400px; margin: auto" border=1>
+<table cellpadding="3" style="width: 500px; margin: auto" border=1>
 <tr>
-    <th colspan="3" class="program_form_small">
-    Your schedule for {{ prog.niceName }}
-    </th>
+    <td colspan="3">
+    <b>Your schedule for {{ prog.niceName }} {% ifequal num_classes 0 %}is empty.  Please add classes below!{% endifequal %}</b>
+    </td>
 </tr>
 {% for timeslot in timeslots %}
+    {% if not timeslot.1|length_is:0 %}
+
     {% ifchanged timeslot.0.start.day %}
-        <tr><th class="program_form_small" colspan="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th></tr>
+        <tr><th class="program_form_small" colspan="3" style="text-align: center;">{{ timeslot.0.pretty_date }}</th></tr>
     {% endifchanged %}
     <!-- {% ifchanged timeslot.2 %}
         <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr> 
@@ -21,15 +23,18 @@
         <td colspan="2" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
     </tr>
     {% else %}
+    {% ifchanged timeslot.1 %}
     <tr>
-        <td width="35%" valign="top" align="center"> {{ timeslot.0.short_description }}</td>
+        <td width="15%" valign="top" align="center"> {{ timeslot.0.start|date:"P" }}</td>
         
         <td style="vertical-align: top !important;">
         {% for cls in timeslot.1 %}
 	{% comment %}{% if use_priority %}{% endcomment %}
+            <!-- Commented out for simplicity (Splash Fall 2009)
             {% if not cls.section.verbs|length_is:0 %}
                 <i>{% for v in cls.section.verbs %}{{ v.friendly_name }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
+            -->
 	{% comment %}{% endif %}{% endcomment %}
 	{{ cls.section.title }} 
             
@@ -45,9 +50,10 @@
         
         {% if not timeslot.1|length_is:0 %}
             {% if module.deadline_met %}
-            <td width='25%' align='center' style="vertical-align: top !important;">
+            <td width='20%' align='center' style="vertical-align: top !important;">
             {% for cls in timeslot.1 %}
-                <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a>
+                <a id="remove_{{ timeslot.0.id }}_{{ cls.section.id }}" href="/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a>
+                {% comment %}<a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a>{% endcomment %}
                 {% if cls.changeable %}
                     <a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[change section]</a>
                 {% endif %}
@@ -56,18 +62,18 @@
             {% if timeslot.3 %}
                 <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
                 {% if not timeslot.1|length_is:1 %}
-                    {% comment %}<a id="clearslotlink" href="/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}">[clear slot]</a>{% endcomment %}
-                    <a id="clearslotlink" href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
+                    <a id="remove_{{ timeslot.0.id }}_{{ cls.section.id }}" href="/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}">[clear slot]</a>
+                    {% comment %}<a id="clearslotlink" href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>{% endcomment %}
                 {% endif %}
             {% endif %}
             </td>
             {% else %}
             <!-- Allow removal of classes if the appropriate flag is set -->
             {% if allow_removal %}
-            <td width='25%' align='center' style="vertical-align: top !important;">
+            <td width='20%' align='center' style="vertical-align: top !important;">
             {% for cls in timeslot.1 %}
-                {% comment %}<a id="clearslotlink" href="/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a><br />{% endcomment %}
-                <a id="clearslotlink" href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a><br />
+                <a id="remove_{{ timeslot.0.id }}_{{ cls.section.id }}" href="/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a><br />
+                {% comment %}<a id="clearslotlink" href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a><br />{% endcomment %}
             {% endfor %}
             </td>
             {% endif %}
@@ -80,7 +86,9 @@
             {% endif %}	
         {% endif %}
     </tr>
+    {% endifchanged %}
     {% endifequal %}
+    {% endif %}
 {% endfor %}
 </table> 
 </div>

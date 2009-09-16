@@ -61,7 +61,7 @@ class SplashInfoModule(ProgramModuleObj):
             new_data = request.POST.copy()
             form = SplashInfoForm(new_data)
             if form.is_valid():
-                if form.cleaned_data['siblingdiscount'] and len(form.cleaned_data['siblingname']) == 0:
+                if (form.cleaned_data['siblingdiscount'] is True) and len(form.cleaned_data['siblingname']) == 0:
                     missing_siblingname = True
                 else:
                     spi = SplashInfo.getForUser(request.user)

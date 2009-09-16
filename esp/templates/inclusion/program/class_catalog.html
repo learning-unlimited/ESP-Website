@@ -2,6 +2,17 @@
     {% load latex %}
     {% load smartypants %}
     {% load class_render %}
+    
+    <script type="text/javascript">
+    function initialize_prereg_{{ class.id }}() 
+    {
+        {% for sec in class.sections.all %}{% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
+        register_form({id: "prereg_{{ sec.id }}", url: "/learn/Splash/2009_Fall/ajax_addclass"});
+        {% endif %}{% endfor %}
+    }
+    initialize_prereg_{{ class.id }}();
+    </script>
+    
     <div class="show_class">
     <table cellpadding="0" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
     {% render_class_core class %}
@@ -12,7 +23,7 @@
             <span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
             {% if user.onsite_local %}
                 <br />
-                <form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
                     <input type="hidden" name="class_id" value="{{ class.id }}" />
                     <input type="hidden" name="section_id" value="{{ section.id }}" />
                     <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
@@ -22,7 +33,7 @@
         {% else %}
             {% if section %}
                 {% if not section.isRegClosed %}
-                <form id="prereg_submitform" name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                <form id="prereg_{{ section.id }}" name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
                   <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ section.id }}" />
                       {% if not section.isFull %}
@@ -35,7 +46,7 @@
             {% else %}
                 {% for sec in class.sections.all %}
                     {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
-                    <form id="prereg_submitform" name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                    <form id="prereg_{{ sec.id }}" name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
                       <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ sec.id }}" />
                       <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}"

@@ -102,6 +102,12 @@ class RegProfileModule(ProgramModuleObj):
 
     def isCompleted(self):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-        return regProf.id is not None
-
+        
+        #   The RegistrationProfile.getLasTForProgram function grants users
+        #   the ability to skip redoing the profile if they registered in the 
+        #   last 5 days.
+        if regProf.id is not None:
+            return True
+        else:
+            return False
 

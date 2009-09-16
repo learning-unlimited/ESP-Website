@@ -5,12 +5,13 @@
 {% block subsection_name %}Welcome{% endblock %}
 
 {% block stylesheets %}
-{{ block.super }}
-<style type="text/css">
-#divmaintext table td { vertical-align: top }
-#divmaintext table li { list-style-image: url(/media/images/spacer.gif); }
-.form_error { font-size: 80%; font-style: italic; color: #C00; }
-</style>
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <style type="text/css">
+        #divmaintext table td { vertical-align: top }
+        #divmaintext table li { list-style-image: url(/media/images/spacer.gif); }
+        .form_error { font-size: 80%; font-style: italic; color: #C00; }
+    </style>
 {% endblock %}
 
 {% block content %}

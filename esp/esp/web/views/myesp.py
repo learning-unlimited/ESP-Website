@@ -355,7 +355,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 ctxt['prog'] = prog
                 ctxt['nextreg'] = list(nextreg)
                 if len(progs) == 1:
-                    return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], prog.getUrlBase(), userrole['reg']))
+                    return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
                 else:
                     return render_to_response('users/profile_complete.html', request, navnode, ctxt)
             else:

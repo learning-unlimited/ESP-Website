@@ -28,8 +28,13 @@ var reset_forms = function()
         var theForm = dojo.byId(form.id);
         if (theForm)
         {
-            dojo.connect(theForm, "onsubmit", function (e) {handle_submit(form, e)});	
-            console.log("Reset event handlers for form " + JSON.stringify(theForm, null, '\t') + " with attributes: " + JSON.stringify(form, null, '\t'));
+            //  Clear existing connections
+            if (typeof theForm._connectHandler != "undefined")
+            {
+                dojo.disconnect(theForm._connectHandler);
+            }
+            theForm._connectHandler = dojo.connect(theForm, "onsubmit", function (e) {handle_submit(form, e)});
+            //  console.log("Reset event handlers for form " + JSON.stringify(theForm, null, '\t') + " with attributes: " + JSON.stringify(form, null, '\t'));
         }
     }
     
@@ -41,8 +46,13 @@ var reset_forms = function()
         var theLink = dojo.byId(link.id);
         if (theLink)
         {
-            dojo.connect(theLink, "onclick", function (e) {handle_link(link, e)});	
-            console.log("Reset event handlers for link " + JSON.stringify(theLink, null, '\t') + " with attributes: " + JSON.stringify(link , null, '\t'));
+            //  Clear existing connections
+            if (typeof theLink._connectHandler != "undefined")
+            {
+                dojo.disconnect(theLink._connectHandler);
+            }
+            theLink._connectHandler = dojo.connect(theLink, "onclick", function (e) {handle_link(link, e)});	
+            //  console.log("Reset event handlers for link " + JSON.stringify(theLink, null, '\t') + " with attributes: " + JSON.stringify(link , null, '\t'));
         }
     }    
     
@@ -62,11 +72,15 @@ var fetch_fragments = function()
 
 var apply_fragment_changes = function(data)
 {
-    console.log("Applying fragment changes from data: " + data);
-
+    //  console.log("Applying fragment changes from data: " + data);
     // Parse the keys
     for (var key in data)
     {
+        if (key == 'script')
+        {
+            console.log("Evaluating: " + data[key]);
+            eval(data[key]);
+        }
         //  Check for FOO_html ending, which means "replace HTML content of DOM node FOO"
         var re_match = key.match("([A-Za-z0-9_]*)_html");
         if (re_match)

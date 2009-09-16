@@ -16,11 +16,6 @@ span.error {
   font-size: 50px;
 }
 
-#catalog table {
-  padding: 0;
-  margin: 0;
-}
-
 input.addbutton {
     background-color: #c6def7;
     color: #000000;

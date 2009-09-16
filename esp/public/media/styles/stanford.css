@@ -203,14 +203,10 @@ a:hover{
   width: 620px;
 }
 
-#content img{
-  margin: 0px 0px 0px 2px;
-}
-
 #content p{
   font-size: 12px;
   line-height: 21px;
-  margin: 0px 0px 0px 8px;
+  margin: 0px 0px 8px 8px;
   width: 600px;
 }
 
