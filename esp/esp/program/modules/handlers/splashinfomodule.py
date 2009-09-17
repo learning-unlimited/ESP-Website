@@ -34,6 +34,7 @@ from esp.web.util        import render_to_response
 
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.models import SplashInfo
+from esp.middleware import ESPError
 
 class SplashInfoModule(ProgramModuleObj):
     @classmethod
@@ -51,6 +52,11 @@ class SplashInfoModule(ProgramModuleObj):
     def isStep(self):
         return True
 
+    @needs_student
+    def prepare(self, context={}):
+        context['splashinfo'] = SplashInfo.getForUser(self.user)
+        return context
+
     @main_call
     @needs_student
     def splashinfo(self, request, tl, one, two, module, extra, prog):
@@ -61,7 +67,7 @@ class SplashInfoModule(ProgramModuleObj):
             new_data = request.POST.copy()
             form = SplashInfoForm(new_data)
             if form.is_valid():
-                if (form.cleaned_data['siblingdiscount'] is True) and len(form.cleaned_data['siblingname']) == 0:
+                if eval(form.cleaned_data['siblingdiscount']) and len(form.cleaned_data['siblingname']) == 0:
                     missing_siblingname = True
                 else:
                     spi = SplashInfo.getForUser(request.user)

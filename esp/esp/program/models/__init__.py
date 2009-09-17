@@ -912,7 +912,7 @@ class SplashInfo(models.Model):
         db_table = 'program_splashinfo'
 
     def __str__(self):
-        return 'SplashInfo for ' + str(self.student) + ' in ' + str(self.program)
+        return 'SplashInfo for ' + str(self.student)
 
     @staticmethod
     def hasForUser(user):
@@ -931,10 +931,11 @@ class SplashInfo(models.Model):
 
     def pretty_satlunch(self):
         foodmap = {}
-        foodmap['no'] = ''
-        foodmap['none'] = ''
-        foodmap[''] = ''
-        foodmap[None] = ''
+        default_txt = 'Bringing my own'
+        foodmap['no'] = default_txt
+        foodmap['none'] = default_txt
+        foodmap[''] = default_txt
+        foodmap[None] = default_txt
         foodmap['classic_club'] = 'Classic Club Sandwich'
         foodmap['honey_chicken'] = 'Honey Chicken Sandwich'
         foodmap['veggie'] = 'Veggie Sandwich'
@@ -944,10 +945,11 @@ class SplashInfo(models.Model):
 
     def pretty_sunlunch(self):
         foodmap = {}
-        foodmap['no'] = ''
-        foodmap['none'] = ''
-        foodmap[None] = ''
-        foodmap[''] = ''
+        default_txt = 'Bringing my own'
+        foodmap['no'] = default_txt
+        foodmap['none'] = default_txt
+        foodmap[''] = default_txt
+        foodmap[None] = default_txt
         foodmap['classic_club'] = 'Classic Club Sandwich'
         foodmap['honey_chicken'] = 'Honey Chicken Sandwich'
         foodmap['veggie'] = 'Veggie Sandwich'

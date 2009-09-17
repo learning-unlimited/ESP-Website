@@ -1,0 +1,37 @@
+<table align="center" cellpadding="5" width="400px" style="border: 1px solid black;">
+    <tr>
+        <th colspan="2">
+            Additional Information for {{ splashinfo.student.first_name }} {{ splashinfo.student.last_name }}
+        </th>
+    </tr>
+    <tr>
+        <td>
+            Saturday Lunch:
+        </td>
+        <td>
+            {{ splashinfo.pretty_satlunch }}
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Sunday Lunch:
+        </td>
+        <td>
+            {{ splashinfo.pretty_sunlunch }}
+        </td>
+    </tr>
+    </tr>
+        <tr>
+        <td valign="top">
+            Sibling Discount:
+        </td>
+        <td>
+            {% if splashinfo.siblingdiscount %}
+                <b>Yes ($20)</b>
+                <br />Sibling's name: {{ splashinfo.siblingname }}
+            {% else %}
+                <b>No ($40)</b>
+            {% endif %}
+        </td>
+    </tr>
+</table>

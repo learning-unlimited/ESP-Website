@@ -28,7 +28,7 @@ class SplashInfoForm(forms.Form):
     def save(self, splashinfo):
         splashinfo.lunchsat = self.cleaned_data['lunchsat']
         splashinfo.lunchsun = self.cleaned_data['lunchsun']
-        splashinfo.siblingdiscount = bool(self.cleaned_data['siblingdiscount'])
+        splashinfo.siblingdiscount = eval(self.cleaned_data['siblingdiscount'])
         splashinfo.siblingname = self.cleaned_data['siblingname']
         splashinfo.submitted = True
         splashinfo.save()
