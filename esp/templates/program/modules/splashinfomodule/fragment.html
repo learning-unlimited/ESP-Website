@@ -5,19 +5,29 @@
         </th>
     </tr>
     <tr>
-        <td>
+        <td valign="top">
             Saturday Lunch:
         </td>
         <td>
-            {{ splashinfo.pretty_satlunch }}
+            {% ifequal splashinfo.lunchsat "no" %}
+                <b>No</b>
+            {% else %}
+                <b>Yes ($5)</b>
+            {% endifequal %}
+            <br />{{ splashinfo.pretty_satlunch }}
         </td>
     </tr>
     <tr>
-        <td>
+        <td valign="top">
             Sunday Lunch:
         </td>
         <td>
-            {{ splashinfo.pretty_sunlunch }}
+            {% ifequal splashinfo.lunchsun "no" %}
+                <b>No</b>
+            {% else %}
+                <b>Yes ($5)</b>
+            {% endifequal %}
+            <br />{{ splashinfo.pretty_sunlunch }}
         </td>
     </tr>
     </tr>
