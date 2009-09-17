@@ -1542,7 +1542,7 @@ class ClassSubject(models.Model):
             if not UserBit.UserHasPerms(user = user,
                                         qsc  = self.anchor,
                                         verb = verb_override):
-                return 'You are not in the requested grade range for this class.'
+                return 'You are not in the requested grade range for this class.  Class %s (%s) is for grades %d to %d, and you are in grade %d.  Please update your profile if this is incorrect.' % (self.emailcode(), self.title(), self.grade_min, self.grade_max, user.getGrade())
 
         # student has no classes...no conflict there.
         if user.getEnrolledClasses(self.parent_program, request).count() == 0:

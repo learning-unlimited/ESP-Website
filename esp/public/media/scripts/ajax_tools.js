@@ -5,6 +5,7 @@
 //  - Handle responses that rewrite DOM nodes by supplying a key of [NODENAME]_html in JSON
 
 //  Define an array for registered forms if they do not exist
+var result = null;
 if (!registered_forms)
 {
     var registered_forms = [];
@@ -17,6 +18,10 @@ if (!registered_links)
 {
     var registered_links = [];
 }
+if (!connection_map)
+{
+    var connection_map = {};
+}
 
 var reset_forms = function()
 {
@@ -28,13 +33,14 @@ var reset_forms = function()
         var theForm = dojo.byId(form.id);
         if (theForm)
         {
-            //  Clear existing connections
-            if (typeof theForm._connectHandler != "undefined")
+            if (connection_map[form.id] != "undefined")
             {
-                dojo.disconnect(theForm._connectHandler);
+                //  console.log("Disconnecting connection_map[" + form.id + "] =" + connection_map[form.id]);
+                dojo.disconnect(connection_map[form.id]);
             }
-            theForm._connectHandler = dojo.connect(theForm, "onsubmit", function (e) {handle_submit(form, e)});
-            //  console.log("Reset event handlers for form " + JSON.stringify(theForm, null, '\t') + " with attributes: " + JSON.stringify(form, null, '\t'));
+            result = dojo.connect(theForm, "onsubmit", registered_forms[i], 'callback');
+            console.log("Setting up callback for " + form.id + " to " + JSON.stringify(registered_forms[i], null, '\t'));
+            connection_map[form.id] = result;
         }
     }
     
@@ -47,12 +53,13 @@ var reset_forms = function()
         if (theLink)
         {
             //  Clear existing connections
-            if (typeof theLink._connectHandler != "undefined")
+            if (connection_map[link.id] != "undefined")
             {
-                dojo.disconnect(theLink._connectHandler);
+                dojo.disconnect(connection_map[link.id]);
             }
-            theLink._connectHandler = dojo.connect(theLink, "onclick", function (e) {handle_link(link, e)});	
-            //  console.log("Reset event handlers for link " + JSON.stringify(theLink, null, '\t') + " with attributes: " + JSON.stringify(link , null, '\t'));
+            result = dojo.connect(theLink, "onclick", registered_links[i], 'callback');
+            console.log("Setting up callback for " + link.id + " to " + JSON.stringify(registered_links[i], null, '\t'));
+            connection_map[link.id] = result;
         }
     }    
     
@@ -97,52 +104,45 @@ var apply_fragment_changes = function(data)
     }
 }
 
-var handle_submit = function(attrs, element)
+var handle_submit = function(mode, attrs, element)
 {
     element.preventDefault(); 
-    console.log("Handling submission of form with attributes: " + JSON.stringify(attrs, null, '\t') + ", element: " + JSON.stringify(element, null, '\t'));
-    dojo.xhrPost({
+    console.log("Handling " + mode + " submission of object: " + JSON.stringify(attrs, null, '\t') + ", element: " + JSON.stringify(element, null, '\t'));
+    params = {
         url: attrs.url,
         form: attrs.id,
         handleAs: "json",
         handle: function(data,args){
-            if (typeof data == "error")
+            if (args.xhr.status != 200)
             {
-                console.warn("error!",args);
+                console.log("Received status = " + args.xhr.status + ", skipping handler.");
             }
             else
             {
+                if ('error' in data)
+                {
+                    //  Maybe this should be something more gentle like a floating div.
+                    alert(data['error']);
+                    return;
+                }   
                 //  Update portions of the page determined by response
                 apply_fragment_changes(data);
                 //  Reset the form event functions so they can be used again
                 reset_forms();
             }
+        },
+        error: function (data, args) {
+            console.log("Handling error: " + data);
         }
-    });
-}
-
-var handle_link = function(attrs, element)
-{
-    element.preventDefault(); 
-    console.log("Handling submission of link with attributes: " + JSON.stringify(attrs, null, '\t') + ", element: " + JSON.stringify(element, null, '\t'));
-    dojo.xhrGet({
-        url: attrs.url,
-        link: attrs.id,
-        handleAs: "json",
-        handle: function(data,args){
-            if (typeof data == "error")
-            {
-                console.warn("error!",args);
-            }
-            else
-            {
-                //  Update portions of the page determined by response
-                apply_fragment_changes(data);
-                //  Reset the form event functions so they can be used again
-                reset_forms();
-            }
-        }
-    });
+    };
+    if (mode == 'post')
+    {
+        dojo.xhrPost(params);
+    }
+    else
+    {
+        dojo.xhrGet(params);
+    }
 }
 
 var fetch_fragment = function(attrs)
@@ -167,16 +167,32 @@ var fetch_fragment = function(attrs)
     });
 }
     
+function CallbackForm(id, url)
+{
+    this.id = id;
+    this.url = url;
+    this.callback = function (e) {handle_submit('post', this, e)};
+}
+    
+function CallbackLink(id, url)
+{
+    this.id = id;
+    this.url = url;
+    this.callback = function (e) {handle_submit('get', this, e)};
+}
+    
 var register_form = function(form_attrs)
 {
-    registered_forms.push(form_attrs);
-    console.log('Registered Ajax form with attributes: ' + JSON.stringify(form_attrs, null, '\t'));
+    var new_attrs = new CallbackForm(form_attrs.id, form_attrs.url);
+    registered_forms.push(new_attrs);
+    console.log('Registered Ajax form with attributes: ' + JSON.stringify(new_attrs, null, '\t'));
 }
 
 var register_link = function(link_attrs)
 {
-    registered_links.push(link_attrs);
-    console.log('Registered Ajax link with attributes: ' + JSON.stringify(link_attrs, null, '\t'));
+    var new_attrs = new CallbackLink(link_attrs.id, link_attrs.url);
+    registered_links.push(new_attrs);
+    console.log('Registered Ajax link with attributes: ' + JSON.stringify(new_attrs, null, '\t'));
 }
 
 var register_fragment = function(fragment_attrs)

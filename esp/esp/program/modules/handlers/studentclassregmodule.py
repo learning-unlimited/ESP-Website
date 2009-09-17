@@ -34,7 +34,7 @@ from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
-from esp.middleware      import ESPError
+from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, UserBit, User
 from django.db.models.query import Q
 from esp.program.models import SplashInfo
@@ -374,8 +374,13 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
             if success:
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
-        except:
-            return HttpResponse('Error encountered in processing')     
+        except ESPError_NoLog, inst:
+            if inst[0]:
+                msg = inst[0]
+                raise AjaxError(msg)
+            else:
+                ec = sys.exc_info()[1]
+                raise AjaxError(ec[1])
 
     @aux_call
     @needs_student
