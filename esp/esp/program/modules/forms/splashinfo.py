@@ -1,4 +1,5 @@
 from django import forms
+from esp.middleware import ESPError
 
 class SplashInfoForm(forms.Form):
     satchoices = [('no', 'No thanks; I will bring my own lunch'), 
@@ -27,7 +28,7 @@ class SplashInfoForm(forms.Form):
     def save(self, splashinfo):
         splashinfo.lunchsat = self.cleaned_data['lunchsat']
         splashinfo.lunchsun = self.cleaned_data['lunchsun']
-        splashinfo.siblingdiscount = (self.cleaned_data['siblingdiscount'] == True)
+        splashinfo.siblingdiscount = bool(self.cleaned_data['siblingdiscount'])
         splashinfo.siblingname = self.cleaned_data['siblingname']
         splashinfo.submitted = True
         splashinfo.save()
