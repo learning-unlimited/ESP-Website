@@ -87,7 +87,7 @@ class AjaxErrorMiddleware(object):
         if isinstance(exception, AjaxErrorMiddleware.AjaxError):
             return self.bad_request(request, exception)
 
-        return self.server_error(request, exception)
+        return None
     
 
     def serialize_error(self, status, message):
