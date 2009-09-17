@@ -27,6 +27,8 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+import copy
+
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
@@ -1369,14 +1371,25 @@ class BooleanExpression(models.Model):
 
     def get_stack(self):
         return self.booleantoken_set.all().order_by('seq')
+        
+    def reset(self):
+        self.booleantoken_set.all().delete()
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
         if type(token_or_value) == str:
+            print 'Adding new token %s to %s' % (token_or_value, unicode(self))
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
-            new_token = BooleanToken(text=token_or_value.text)
+            token_type = type(token_or_value)
+            print 'Adding duplicate of token %d, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
+            new_token = token_type()
+            #   Copy over fields that don't describe relations
+            for item in new_token._meta.fields:
+                if not item.__class__.__name__ in ['AutoField', 'OneToOneField']:
+                    setattr(new_token, item.name, getattr(token_or_value, item.name))
         else:
+            print 'Adding new token %s to %s' % (token_or_value, unicode(self))
             new_token = token_or_value
         if seq is None:
             if my_stack.count() > 0:
@@ -1387,6 +1400,7 @@ class BooleanExpression(models.Model):
             new_token.seq = seq
         new_token.exp = self
         new_token.save()
+        print 'New token ID: %d' % new_token.id
         return new_token
     
     def evaluate(self, *args, **kwargs):
