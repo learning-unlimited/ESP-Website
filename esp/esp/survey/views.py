@@ -103,12 +103,21 @@ def survey_view(request, tl, program, instance):
         
         if tl == 'learn':
             classes = user.getEnrolledClasses(prog, request)
+            timeslots = prog.getTimeSlots().order_by('start')
+            for ts in timeslots:
+                # The order by string really means "title"
+                ts.classsections = prog.sections().filter(meeting_times=ts).exclude(meeting_times__start__lt=ts.start).order_by('parent_class__anchor__friendly_name').distinct()
+                for sec in ts.classsections:
+                    if user in sec.students():
+                        sec.selected = True
         elif tl == 'teach':
             classes = user.getTaughtClasses(prog)
+            timeslots = []
         else:
             classes = []
+            timeslots = []
 
-        context = { 'survey': survey, 'questions': questions, 'perclass_questions': perclass_questions, 'program': prog, 'classes': classes }
+        context = { 'survey': survey, 'questions': questions, 'perclass_questions': perclass_questions, 'program': prog, 'classes': classes, 'timeslots': timeslots }
 
         return render_to_response('survey/survey.html', request, prog.anchor, context)
 
