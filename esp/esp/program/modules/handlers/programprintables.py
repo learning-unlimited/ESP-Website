@@ -783,6 +783,35 @@ Student schedule for %s:
 
     @aux_call
     @needs_admin
+    def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
+        if onsite:
+            students = [ESPUser(User.objects.get(id=request.GET['userid']))]
+        else:
+            filterObj, found = get_user_list(request, self.program.getLists(True))
+    
+            if not found:
+                return filterObj
+
+            students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
+
+        import csv
+        from django.http import HttpResponse
+        response = HttpResponse(mimetype='text/csv')
+        writer = csv.writer(response)
+
+        for student in students:            
+            li_types = prog.getLineItemTypes(student)
+            try:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+            except MultipleDocumentError:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+
+            writer.writerow((invoice.locator, student.id, student.last_name, student.first_name, invoice.cost()))
+                
+        return response
+        
+    @aux_call
+    @needs_admin
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
         """ generate student schedules """
         
