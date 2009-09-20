@@ -8,6 +8,51 @@
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}
 
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript">
+        <!-- Does anybody still care if javascript isn't in HTML comments?  -ageng 2009-09-19
+        
+        // This actually returns a function that updates said timeslot
+        // The returned function is intended to be used as an event handler
+        function updateTimeSlot(id) {
+            function _func() {
+                var newstyle = 'block';
+                formfield = document.getElementById('id_attendance_' + id);
+                
+                if ( formfield.value == 0 ) {
+                    newstyle = 'none';
+                }
+                
+                document.getElementById('perclass_questions_' + id).style.display = newstyle;
+            }
+            return _func;
+        }
+        
+        // Show/hide per-class questions and attach onchange event handlers
+        function setupTimeSlots() {
+            if ( ! document.getElementById ) { return true; }
+            var timeslot_ids = [{% for ts in timeslots %}{{ ts.id }}{% if not forloop.last %},{% endif %}{% endfor %}];
+            var id, func;
+            for ( var i = 0; i < timeslot_ids.length; i++ ) {
+                id = timeslot_ids[i];
+                func = updateTimeSlot( id );
+                func()
+                document.getElementById('id_attendance_' + id).onchange = func;
+            }
+        }
+        
+        // Can't use window.onload=foo since <body onload="foo()"> overrides it.
+        if ( window.addEventListener ) {
+            window.addEventListener( 'load', setupTimeSlots, false );
+        } else if ( window.attachEvent ) {
+            window.attachEvent( 'onload', setupTimeSlots );
+        }
+        
+        //-->
+    </script>
+{% endblock %}
+
 {% load subsection %}
 {% block subsection %}
     {% autoescape off %}{{ "Survey"|subsection }}{% endautoescape %}
@@ -28,16 +73,46 @@
 {% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
 
 {% if perclass_questions %}
-{% for class in classes %}
-    <table width="600">
-    <tr>
-        <th>Questions for {{ class.emailcode }}: {{ class.title }}</th>
-    </tr>
-    </table>
-    {% for question in perclass_questions %}
-        {{ question.render|substitute:class }}
+{% if timeslots %}
+    {% for ts in timeslots %}
+        <table width="600">
+        <tr>
+            <th>Questions for {{ ts.description }}</th>
+        </tr>
+        </table>
+        <table width="600">
+        <tr>
+            <td width="35%">
+                <label for="id_attendance_{{ ts.id }}"><b>Which class did you attend in this timeblock?</b></label>
+            </td>
+            <td>
+                <select name="attendance_{{ ts.id }}" id="id_attendance_{{ ts.id }}">
+                    <option value="0">[None]</option>
+                    {% for sec in ts.classsections %}
+                        <option value="{{ sec.parent_class.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        </table>
+        <div id="perclass_questions_{{ ts.id }}">
+        {% for question in perclass_questions %}
+            {{ question.render|substitute:ts }}
+        {% endfor %}
+        </div>
     {% endfor %}
-{% endfor %}
+{% else %}
+    {% for class in classes %}
+        <table width="600">
+        <tr>
+            <th>Questions for {{ class.emailcode }}: {{ class.title }}</th>
+        </tr>
+        </table>
+        {% for question in perclass_questions %}
+            {{ question.render|substitute:class }}
+        {% endfor %}
+    {% endfor %}
+{% endif %}
 {% endif %}
 
 <table width="600">
