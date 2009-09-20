@@ -119,8 +119,18 @@ class SurveyResponse(models.Model):
 
     def set_answers(self, get_or_post, save=False):
         """ For a given get or post, get a set of answers. """
-        answers = []
+        
+        # First, set up attendance dictionary based on the attendance questions
+        # If there were no attendance questions, this wasn't a student survey
+        attendances = {}
+        keys = filter(lambda x: x.startswith('attendance_'), get_or_post.keys())
+        for key in keys:
+            try:
+                attendances[ int( key[11:] ) ] = int(get_or_post.getlist(key)[0])
+            except (TypeError, ValueError):
+                pass
 
+        answers = []
         keys = filter(lambda x: x.startswith('question_'), get_or_post.keys())
         for key in keys:
             value = get_or_post.getlist(key)
@@ -136,6 +146,10 @@ class SurveyResponse(models.Model):
                 try:
                     qid = int(str_list[1])
                     cid = int(str_list[2])
+                    if attendances.has_key(cid):
+                        cid = attendances[cid]
+                    if not cid:
+                        continue
                     question = Question.objects.get(id=qid)
                     cls = ClassSubject.objects.get(id=cid)
                 except ClassSubject.DoesNotExist:
