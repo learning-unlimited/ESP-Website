@@ -1,0 +1,5 @@
+Review the script 2009-09-22-axiak-resourcetype.sql. To run, enter:
+    $ sudo -u postgres psql -f 2009-09-22-axiak-resourcetype.sql django
+
+Actions taken by the script:
+    Adds columns distancefunc to ResourceType.
