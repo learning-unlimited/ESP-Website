@@ -84,7 +84,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
 
             if self.program.program_allow_waitlist:
-                retVal['waitlisted_students'] = self.getQForUser(Q(userbit__qsc = qsc_waitlist, userbit__verb = verb))
+                retVal['waitlisted_students'] = self.getQForUser(Q(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now))
                     
             return retVal
 
