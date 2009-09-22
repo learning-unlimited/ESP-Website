@@ -1501,7 +1501,6 @@ class ScheduleConstraint(models.Model):
 
     def handle_failure(self):
         #   Try the on_failure callback but be very lenient about it (fail silently)
-        '''
         try:
             func_str = """def _f(schedule_map):
 %s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
@@ -1512,13 +1511,8 @@ class ScheduleConstraint(models.Model):
         except Exception, inst:
             #   raise ESPError(False), 'Schedule constraint handler error: %s' % inst
             pass
-        '''
-        func_str = """def _f(schedule_map):
-%s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
-        #   print func_str
-        exec func_str
-        result = _f(self.schedule_map)
-        return result
+        #   If we got nothing from the on_failure function, just provide Nones.
+        return (None, None)
 
 class ScheduleTestTimeblock(BooleanToken):
     """ A boolean value that keeps track of a timeblock. 
