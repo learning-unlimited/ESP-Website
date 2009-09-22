@@ -64,7 +64,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(7, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(),
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
-    class_size_optimal = forms.ChoiceField( label='Optimal Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(), help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
+    class_size_optimal = forms.ChoiceField( label='Optimal Number of Students', choices=[(0, 0)], required=False, widget=BlankSelectWidget(), help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
     has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect() )
@@ -181,6 +181,19 @@ class TeacherClassRegForm(FormWithRequiredCss):
                 self._errors['grade_max'] = forms.util.ErrorList([msg])
                 del cleaned_data['grade_min']
                 del cleaned_data['grade_max']
+
+        # Make sure the optimal class size <= maximum class size.
+        class_size_optimal = cleaned_data.get('class_size_optimal')
+        class_size_max = cleaned_data.get('class_size_max')
+        if class_size_optimal and class_size_max:
+            class_size_optimal = int(class_size_optimal)
+            class_size_max = int(class_size_max)
+            if class_size_optimal > class_size_max:
+                msg = u'Optimal class size must be less than or equal to the maximum class size.'
+                self._errors['class_size_optimal'] = forms.util.ErrorList([msg])
+                self._errors['class_size_max'] = forms.util.ErrorList([msg])
+                del cleaned_data['class_size_optimal']
+                del cleaned_data['class_size_max']
         
         # Return cleaned data
         return cleaned_data
