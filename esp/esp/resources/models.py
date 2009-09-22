@@ -59,6 +59,8 @@ Procedures:
 
 GLOBAL_RESOURCE_CACHE_KEY="RESOURCE__GLOBAL_KEY"
 
+DISTANCE_FUNC_REGISTRY = {}
+
 def global_resource_rev():
     retVal = cache.get(GLOBAL_RESOURCE_CACHE_KEY)
     if retVal:
@@ -80,8 +82,13 @@ class ResourceType(models.Model):
     description = models.TextField()                                #   What is this resource?
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(blank=True, default=-1)  #   How important is this compared to other types?
-    attributes_pickled  = models.TextField(blank=True)                        
-    program = models.ForeignKey(Program, null=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
+    attributes_pickled  = models.TextField(blank=True, null=True, editable=False)                        
+    program = models.ForeignKey(Program, null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
+    distancefunc = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Enter python code that assumes <tt>r1</tt> and <tt>r2</tt> are resources with this type.",
+        )               #   Defines a way to compare this resource type with others.
 
     def _get_attributes(self):
         if hasattr(self, '_attributes_cached'):
@@ -108,6 +115,7 @@ class ResourceType(models.Model):
             self.attributes_pickled = pickle.dumps(self._attributes_cached)
         super(ResourceType, self).save(*args, **kwargs)
     """
+
     @staticmethod
     def get_or_create(label):
         current_type = ResourceType.objects.filter(name__icontains=label)
@@ -187,7 +195,35 @@ class Resource(models.Model):
         cache.delete(cache_key)
 
         increment_global_resource_rev()
-    
+
+    def distance(self, other):
+        """
+        Using the custom distance function defined in the ResourceType,
+        compute the distance between this resource and another.
+        Bear in mind that this is cached using a python global registry.
+        """
+        if self.res_type_id != other.res_type_id:
+            raise ValueError("Both resources must be of the same type to compare!")
+
+        if self.res_type_id in DISTANCE_FUNC_REGISTRY:
+            return DISTANCE_FUNC_REGISTRY[self.res_type_id](self, other)
+
+        distancefunc = self.res_type.distancefunc
+
+        if distancefunc and distancefunc.strip():
+            funcstr = distancefunc.strip().replace('\r\n', '\n')
+        else:
+            funcstr = "return 0"
+        funcstr = """def _cmpfunc(r1, r2):\n%s""" % (
+            '\n'.join('    %s' % l for l in funcstr.split('\n'))
+            )
+        exec funcstr
+        DISTANCE_FUNC_REGISTRY[self.res_type_id] = _cmpfunc
+        return _cmpfunc(self, other)
+
+    __sub__ = distance
+
+
     def identical_resources(self):
         res_list = Resource.objects.filter(name=self.name)
         return res_list
