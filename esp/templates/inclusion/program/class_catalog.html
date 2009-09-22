@@ -13,11 +13,11 @@
             <span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
             {% if user.onsite_local %}
                 <br />
-                <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+                <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ section.id }}');" method="post" action="{{ prereg_url }}">
                     <input type="hidden" name="class_id" value="{{ class.id }}" />
                     <input type="hidden" name="section_id" value="{{ section.id }}" />
                     <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
-                                 id="submitbutton{{ class.id }}" />
+                                 id="submitbutton{{ section.id }}" />
                 </form>
             {% endif %}
         {% else %}
@@ -27,9 +27,9 @@
                   <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ section.id }}" />
                       {% if not section.isFull %}
-                      <input type="submit" class="addbutton" name="action" value="Add this class" id="submitbutton{{ class.id }}" />
+                      <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Add this class" onclick="return submit_prereg({{ class.id }});" id="submitbutton{{ class.id }}" /></div>
                       {% else %}
-                      <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ class.id }}" disabled />
+                      <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ sec.id }}" disabled />
                       {% endif %}
                 </form>
                 {% endif %}
@@ -39,8 +39,10 @@
                     <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}">
                       <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ sec.id }}" />
-                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}"
-                                 id="submitbutton{{ class.id }}" />
+                      <div id="addbutton_catalog_sec{{ sec.id }}">
+                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" onclick="return submit_prereg({{ sec.id }});"
+                                 id="submitbutton{{ sec.id }}" />
+                      </div>
                     </form>
                     {% endif %}
                 {% endfor %}
@@ -59,12 +61,14 @@
         {% comment %} This code would allow fillslot pages to use Ajax too.  But we don't want that yet.  -Michael P 
             {% if not section.isRegClosed %}
         register_form({id: "prereg_{{ section.id }}", url: "/learn/Splash/2009_Fall/ajax_addclass"});
+        register_fragment({id: "addbutton_fillslot_sec{{ section.id }}_html", url: ""});
             {% endif %}
         {% endcomment %}
         {% else %}
             {% for sec in class.sections.all %}
                 {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
         register_form({id: "prereg_{{ sec.id }}", url: "/learn/Splash/2009_Fall/ajax_addclass"});
+        register_fragment({id: "addbutton_catalog_sec{{ sec.id }}_html", url: ""});
                 {% endif %}
             {% endfor %}
         {% endif %}

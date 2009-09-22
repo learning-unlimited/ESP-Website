@@ -260,7 +260,32 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['num_classes'] = self.user.getEnrolledSections(self.program).count()
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
-        return HttpResponse(json.dumps({'student_schedule_html': schedule_str, 'script': script_str}))
+        json_data = {'student_schedule_html': schedule_str, 'script': script_str}
+        
+        #   Rewrite registration button if a particular section was named.  (It will be in extra).
+        sec_id = None
+        try:
+            sec_id = int(extra)
+        except:
+            pass
+            
+        if sec_id:
+            try:
+                section = ClassSection.objects.get(id=sec_id)
+                cls = section.parent_class
+                button_context = {'section': section, 'cls': cls}
+                if section in self.user.getEnrolledSections(self.program):
+                    button_context['label'] = 'Registered!'
+                    button_context['disabled'] = True
+                addbutton_str1 = render_to_string(self.baseDir()+'addbutton_fillslot.html', button_context)
+                addbutton_str2 = render_to_string(self.baseDir()+'addbutton_catalog.html', button_context)
+                json_data['addbutton_fillslot_sec%d_html' % sec_id] = addbutton_str1
+                json_data['addbutton_catalog_sec%d_html' % sec_id] = addbutton_str2
+            except Exception, inst:
+                raise AjaxError('Encountered an error retrieving updated buttons: %s' % inst)
+
+                
+        return HttpResponse(json.dumps(json_data))
 
     def addclass_logic(self, request, tl, one, two, module, extra, prog):
         """ Pre-register the student for the class section in POST['section_id'].
@@ -373,6 +398,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         try:
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
             if success:
+                try:
+                    #   Rewrite the registration button if possible.  This requires telling
+                    #   the ajax_schedule view what section was added/changed.
+                    extra = request.POST['section_id']
+                except:
+                    pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog, inst:
             if inst[0]:
@@ -611,12 +642,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @meets_any_deadline(['/Classes/OneClass','/Removal'])
     def ajax_clearslot(self,request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
-        try:
-            success = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-            if success:
-                return self.ajax_schedule(request, tl, one, two, module, extra, prog)
-        except:
-            return HttpResponse('Error encountered in processing')  
+        success = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        if success:
+            return self.ajax_schedule(request, tl, one, two, module, extra, prog)
 
     @aux_call
     @needs_student

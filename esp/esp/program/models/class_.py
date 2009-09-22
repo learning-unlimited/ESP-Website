@@ -767,8 +767,7 @@ class ClassSection(models.Model):
 
         # Set up a ScheduleMap; fake-insert this class into it
         sm = ScheduleMap(user, self.parent_program)
-        for meeting_time in self.meeting_times.all():
-            sm.map[meeting_time.id] += [self]
+        sm.add_section(self)
             
         for exp in relevantConstraints:
             if not exp.evaluate(sm):
@@ -779,32 +778,6 @@ class ClassSection(models.Model):
             verbs = ['/Enrolled']
         else:
             verbs = ['/' + scrmi.signup_verb.name]
-
-        # Lunch hack
-        has25 = False
-        has26 = False
-        has35 = False
-        has36 = False
-
-        # check to see if there's a conflict:
-        for sec in user.getSections(self.parent_program, verbs=verbs):
-            for time in sec.meeting_times.all():
-                # pdox: Lunch Hack
-                if time.id == 25: has25 = True
-                if time.id == 26: has26 = True
-                if time.id == 35: has35 = True
-                if time.id == 36: has36 = True
-                if len(self.meeting_times.filter(id = time.id)) > 0:
-                    return 'This section conflicts with your schedule--check out the other sections!'
-              
-        if (has25 and len(self.meeting_times.filter(id = 26)) > 0):
-            return 'This section conflicts with your schedule!'
-        if (has26 and len(self.meeting_times.filter(id = 25)) > 0):
-            return 'This section conflicts with your schedule!'
-        if (has35 and len(self.meeting_times.filter(id = 36)) > 0):
-            return 'This section conflicts with your schedule!'
-        if (has36 and len(self.meeting_times.filter(id = 35)) > 0):
-            return 'This section conflicts with your schedule!'
 
         # check to see if registration has been closed for this section
         if not self.isRegOpen():

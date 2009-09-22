@@ -21,7 +21,7 @@
     <div id="left_menu_top"></div>
     <div id="left_menu">
     <div class="text_padding">
-    <h1>Navigation</h1>
+    <h1>{{ title }}</h1>
     <p>
     {% for nav_entry in navbar_list.qsdTree %}
         {% if nav_entry.entry.is_link %}

@@ -50,24 +50,30 @@
 
 <!--NAV BAR-->
 {% block navigation_main %}
+<a href="/learn/index.html">
 <div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/blue.png'); margin-left: 17px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
-<h2><a href="/learn/index.html">Learn</a></h2>
+<h2>Learn</h2>
 </div>
 </div>
-<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/green.png');  margin-left: 10px;">
-<div class="text_padding" style="padding: 3px 6px 0px 10px;">
-<h1>I want to</h1>
-<h2><a href="/teach/index.html">Teach</a></h2>	
-</div>
-</div>
+</a>
+<a href="/teach/index.html">
+    <div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/green.png');  margin-left: 10px;">
+    <div class="text_padding" style="padding: 3px 6px 0px 10px;">
+    <h1>I want to</h1>
+    <h2>Teach</h2>	
+    </div>
+    </div>
+</a>
+<a href="/volunteer/index.html">
 <div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/red.png'); margin: 0px 0px 0px 10px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
-<h2><a href="/volunteer/index.html">Volunteer</a></h2>
+<h2>Volunteer</h2>
 </div>
 </div>
+</a>
 {% endblock %}
 <!--END NAV BAR-->
 

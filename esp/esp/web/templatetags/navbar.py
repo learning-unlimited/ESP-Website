@@ -27,7 +27,16 @@ def navbar_gen(context, navbar_type='left'):
         navbar = context['navbar_list'].value
     except:
         navbar = None
+        
+    title_str = 'Navigation'
+    if 'learn' in request.path:
+        title_str = 'Students'
+    elif 'teach' in request.path:
+        title_str = 'Teachers'
+    elif 'volunteer' in request.path:
+        title_str = 'Volunteers'
     
     return {'navbar_list': navbar,
+            'title': title_str,
             'request':     request,
             'navbar_type': navbar_type}
