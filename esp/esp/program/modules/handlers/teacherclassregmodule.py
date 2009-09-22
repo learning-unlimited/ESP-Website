@@ -35,6 +35,7 @@ from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
+from django.template.loader      import render_to_string
 from esp.middleware              import ESPError
 from django.utils.datastructures import MultiValueDict
 from django.core.mail            import send_mail
@@ -789,19 +790,17 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                             rr.desired_value = 'Yes'
                             rr.save()
 
-                #   Add a component to the message for directors if the teacher is providing their own space.
-                prepend_str = '*** Notice *** \n The teacher has specified that they will provide their own space for this class.  Please contact them for the size and resources the space provides (if they have not specified below) and create the appropriate resources for scheduling. \n**************\n\n'
                 
-                if ( new_data['has_own_space'] == 'True' ):
-                    message_for_directors = prepend_str + new_data['message_for_directors']
-                else:
-                    message_for_directors = new_data['message_for_directors']
+                mail_ctxt = dict(new_data) # context for email sent to directors
+
+                # Make some of the fields in new_data nicer for viewing.
+                mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category']).category
+                mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
 
                 # send mail to directors
                 if newclass_newmessage and self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
-                              """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nSpecial Resources:\n%s\n\nComments to Director:\n%s\n\n""" % \
-                              (new_data['title'], new_data['class_info'], new_data['requested_special_resources'], message_for_directors) , \
+                              render_to_string(self.baseDir() + 'classreg_email', mail_ctxt) , \
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
                               [self.program.director_email], True)
 
