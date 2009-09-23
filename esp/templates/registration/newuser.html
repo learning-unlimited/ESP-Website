@@ -9,7 +9,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
 {% block content %}
@@ -21,6 +21,7 @@ an account with us. After you register account, you will be allowed to register
 for programs, sign up for classes, among other things.
 </p>
 
+<div id="program_form">
 <form action="{{ request.path }}" method="post" name="newuser_form">
 <table>
 <thead>
@@ -52,6 +53,7 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 </tbody>
 </table>
 </form>
+</div>
 
 <script type="text/javascript">
 <!--

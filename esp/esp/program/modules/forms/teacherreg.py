@@ -66,7 +66,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
-    has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect() )
+    has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect(), required=False )
     requested_room = forms.CharField(   label='Room Request', required=False,
                                         help_text='If you have a specific room or type of room in mind, name a room at MIT that would be ideal for you.' )
     
@@ -161,6 +161,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # requested_room
         if not module.ask_for_room:
             hide_field( self.fields['requested_room'] )
+            
+        #   Hide resource fields since separate forms are now being used. - Michael P
+        resource_fields = ['has_own_space', 'global_resources', 'resources', 'requested_special_resources']
+        for field in resource_fields:
+            self.fields[field].widget = forms.HiddenInput()
+        
         # plus subprogram section wizard
     
     def clean(self):

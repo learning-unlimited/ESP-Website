@@ -43,6 +43,7 @@ from django.core.cache           import cache
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
+from esp.resources.forms         import ResourceRequestFormSet
 from datetime                    import timedelta
 
 class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
@@ -494,8 +495,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 return self.goToCore(tl)
             
             reg_form = TeacherClassRegForm(self, request.POST)
+            resource_formset = ResourceRequestFormSet(request.POST)
             # Silently drop errors from section wizard when we're not using it
-            if reg_form.is_valid():
+            if reg_form.is_valid() and resource_formset.is_valid():
                 new_data = reg_form.cleaned_data
                 
                 # Some defaults
@@ -640,12 +642,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                             for i in range(0, section_count):
                                 subsection = section.add_section(duration=section_data['duration'])
                                 # create resource requests for each section
-                                for res_type_id in new_data['resources']:
-                                    if res_type_id in subprogram_module.getResourceTypes():
-                                        rr = ResourceRequest()
-                                        rr.target = subsection
-                                        rr.res_type = ResourceType.objects.get(id=res_type_id)
-                                        rr.save()
+                                for resform in resource_formset.forms:
+                                    rr = ResourceRequest()
+                                    rr.target = subsection
+                                    rr.res_type = resform.cleaned_data['resource_type']
+                                    rr.desired_value = resform.cleaned_data['desired_value']
+                                    rr.save()
                         
                         newclassimplication.member_id_ints = implied_id_ints
                         newclassimplication.save()
@@ -654,11 +656,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 #   Note that resource requests now belong to the sections
                 for sec in newclass.sections.all():
                     sec.clearResourceRequests()
-                    for res_type_id in new_data['resources'] + new_data['global_resources']:
+                    for resform in resource_formset.forms:
                         rr = ResourceRequest()
                         rr.target = sec
-                        rr.res_type = ResourceType.objects.get(id=res_type_id)
+                        rr.res_type = resform.cleaned_data['resource_type']
+                        rr.desired_value = resform.cleaned_data['desired_value']
                         rr.save()
+                    
 
                 #   Add a component to the message for directors if the teacher is providing their own space.
                 prepend_str = '*** Notice *** \n The teacher has specified that they will provide their own space for this class.  Please contact them for the size and resources the space provides (if they have not specified below) and create the appropriate resources for scheduling. \n**************\n\n'
@@ -721,12 +725,20 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data['url']   = newclass.anchor.name
                 context['class'] = newclass
                 reg_form = TeacherClassRegForm(self, current_data)
+                
+                #   Todo...
+                raise NotImplementedError, 'Need to add ability to initialize formset by reading the resource requests for a class.'
+                resource_formset = ResourceRequestFormSet()
             else:
                 reg_form = TeacherClassRegForm(self)
+                type_labels = ['Classroom', 'A/V']
+                resource_formset = ResourceRequestFormSet(resource_type=[ResourceType.get_or_create(x) for x in type_labels])
 
         context['one'] = one
         context['two'] = two
         context['form'] = reg_form
+        context['formset'] = resource_formset
+        context['resource_types'] = ResourceType.objects.all()
         
         if newclass is None:
             context['addoredit'] = 'Add'

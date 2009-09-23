@@ -33,6 +33,19 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
         <td colspan="2">&nbsp;</td>
     </tr>
     <tr>
+        <th colspan="2">Classroom Requests</th>
+    </tr>
+    <tr>
+        <td colspan="2">Please specify your classroom needs by building a list of requests.  Click the buttons below to add requests in the corresponding categories; you may submit more than one request per category (for example, you would need separate A/V requests for both DVD player and speakers).  Click the "[remove]" link next to a request to remove it.  (If you are providing your own space for this class, please remove all requests.)</td>
+    </tr>
+    <tr>
+        <td colspan="2"><b>Add a request for:</b> {% for rt in resource_types %}{{ rt.name }}{% if not forloop.last %} | {% endif %}{% endfor %}</td>
+    </tr>
+    {{ formset }}
+    <tr>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+    <tr>
         <th colspan="2">Submit</th>
     </tr>
     <tr>

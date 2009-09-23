@@ -1,10 +1,12 @@
+from __future__ import with_statement
+
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "GPL v.2"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2008 MIT ESP
+Copyright (c) 2009 MIT ESP
 
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,21 +30,19 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from django.contrib import admin
+from django.db.models import signals 
+from esp.resources import models as resources
+from esp.utils.custom_cache import custom_cache
 
-from esp.resources.models import ResourceType, ResourceRequest
+have_already_installed = False
 
-class ResourceTypeAdmin(admin.ModelAdmin):
-    def rt_choices(self, obj):
-        return "%s" % str(obj.choices)
-    rt_choices.short_description = 'Choices'
+def post_syncdb(sender, app, **kwargs):
+    global have_already_installed
+    if app == resources and not have_already_installed:
+        with custom_cache():
+            have_already_installed = True
+            print "Installing esp.resources initial data..."
+            resources.install()
+        
+signals.post_syncdb.connect(post_syncdb)
 
-    list_display = ('name', 'description', 'consumable', 'priority_default', 'rt_choices', 'distancefunc', 'program')
-    search_fields = ['name', 'description', 'consumable', 'priority_default', 'rt_choices', 'distancefunc', 'program']
-
-class ResourceRequestAdmin(admin.ModelAdmin):
-    list_display = ('target', 'res_type', 'desired_value')
-    search_fields = ['target', 'res_type', 'desired_value']
-
-admin.site.register(ResourceType, ResourceTypeAdmin)
-admin.site.register(ResourceRequest, ResourceRequestAdmin)

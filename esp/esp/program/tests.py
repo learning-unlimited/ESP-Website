@@ -6,6 +6,7 @@ from django.test.client import Client
 
 from esp.datatree.models import *
 from esp.users.models import ESPUser
+from esp.resources.models import ResourceType
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
@@ -316,11 +317,15 @@ class ProgramHappenTest(TestCase):
             'grade_max': self.prog.grade_max,
             'class_size_max': '10',
             'allow_lateness': 'False',
-            'has_own_space': 'False',
-            'requested_special_resources': 'Two doorstops and a first-aid kit.',
             'message_for_directors': 'Hi chairs!',
-            
-            'class_reg_page': '1'
+            'class_reg_page': '1',
+            #   Resource forms in default configuration
+            'form-TOTAL_FORMS': '2',
+            'form-INITIAL_FORMS': '1',
+            'form-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
+            'form-0-desired_value': 'Lecture',
+            'form-1-resource_type': str(ResourceType.get_or_create('A/V').id),
+            'form-1-desired_value': 'LCD projector',
         }
         self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
         

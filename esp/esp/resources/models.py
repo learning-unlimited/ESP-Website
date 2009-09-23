@@ -77,12 +77,16 @@ def increment_global_resource_rev():
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     from esp.program.models import Program
+    from esp.survey.models import ListField
 
     name = models.CharField(max_length=40)                          #   Brief name
     description = models.TextField()                                #   What is this resource?
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(blank=True, default=-1)  #   How important is this compared to other types?
-    attributes_pickled  = models.TextField(blank=True, null=True, editable=False)                        
+    attributes_pickled  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")       
+    #   As of now we have a list of string choices for the value of a resource.  But in the future
+    #   it could be extended.
+    choices = ListField('attributes_pickled')
     program = models.ForeignKey(Program, null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
     distancefunc = models.TextField(
         blank=True,
@@ -109,12 +113,10 @@ class ResourceType(models.Model):
 
     attributes = property(_get_attributes, _set_attributes)
 
-    """ Don't know why this doesn't work. Hope to fix soon. -Michael P
     def save(self, *args, **kwargs):
         if hasattr(self, '_attributes_cached'):
             self.attributes_pickled = pickle.dumps(self._attributes_cached)
         super(ResourceType, self).save(*args, **kwargs)
-    """
 
     @staticmethod
     def get_or_create(label):
@@ -145,9 +147,10 @@ class ResourceRequest(models.Model):
     target = models.ForeignKey(ClassSection, null=True)
     target_subj = models.ForeignKey(ClassSubject, null=True)
     res_type = models.ForeignKey(ResourceType)
+    desired_value = models.TextField()
     
     def __unicode__(self):
-        return 'Resource request of %s for %s' % (str(self.res_type), self.target.emailcode())
+        return 'Resource request of %s for %s: %s' % (str(self.res_type), self.target.emailcode(), self.desired_value)
 
     class Admin:
         pass
@@ -441,4 +444,12 @@ class ResourceAssignment(models.Model):
     class Admin:
         pass
     
+    
+def install():
+    #   Create default resource types.
+    ResourceType.objects.get_or_create(name='Classroom',description='Type of classroom',attributes_pickled='Lecture|Discussion|Outdoor|Lab|Open space')
+    ResourceType.objects.get_or_create(name='A/V',description='A/V equipment',attributes_pickled='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player')
+    ResourceType.objects.get_or_create(name='Computer[s]',description='Computer[s]',attributes_pickled='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students')
+    ResourceType.objects.get_or_create(name='Seating',description='Seating arrangement',attributes_pickled="Don't care|Fixed seats|Movable desks")
+    ResourceType.objects.get_or_create(name='Light control',description='Light control',attributes_pickled="Don't care|Darkenable")
     
