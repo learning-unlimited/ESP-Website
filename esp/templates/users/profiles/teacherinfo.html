@@ -5,7 +5,15 @@
 </tr>
 
 <tr>
- <td><label for="id_school">School/Employer:</label></td>
+<td><label for="id_from_mit">Are you currently an undergraduate, graduate student, faculty, or staff at MIT?</label></td>
+<td>{{ form.from_mit }} {% if form.from_mit.errors %}
+  <br /><span class="form_error">{{ form.from_mit.errors|join:", " }}</span>
+  {% endif %}
+</td>
+</tr>
+
+<tr>
+ <td><label for="id_school">If no, what is your school/employer?</label></td>
  <td>{{ form.school }} {% if form.school.errors %}
    <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
    {% endif %}
@@ -13,7 +21,7 @@
 </tr>
 
 <tr>
- <td><label for="id_school">Graduation Year:</label><br /><div style="font-size: 0.8em">(Enter 'G' if you're a graduate student)</div></td>
+ <td><label for="id_graduation_year">Graduation Year:</label><br /><div style="font-size: 0.8em">(Enter 'G' if you're a graduate student)</div></td>
  <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
    {% endif %}

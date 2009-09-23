@@ -882,6 +882,7 @@ class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
+    from_mit = models.NullBooleanField(null=True)
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -924,6 +925,7 @@ class TeacherInfo(models.Model):
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
+        form_dict['from_mit']        = self.from_mit
         form_dict['school']          = self.college
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
@@ -939,6 +941,7 @@ class TeacherInfo(models.Model):
         else:
             teacherInfo = regProfile.teacher_info
         teacherInfo.graduation_year = new_data['graduation_year']
+        teacherInfo.from_mit        = (new_data['from_mit'] == "True")
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
         teacherInfo.shirt_size      = new_data['shirt_size']
