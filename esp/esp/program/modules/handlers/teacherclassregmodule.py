@@ -131,7 +131,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if self.class_size_step:
             class_size_step = self.class_size_step
 
-        ret_range = range(0, 23) + [30, 35, 40, 150]
+        ret_range = range(0, 23) + [30, 35, 40, 80, 100, 150]
         ret_range = filter(lambda x: ((x >= min_size) and (x <= max_size)), ret_range)
 
         return ret_range

@@ -31,7 +31,9 @@
 
 <!--TOP LINKS-->
 {% block links_top %}
-{% include "navbar.html" %}
+<!-- Removed top nav bar. -->
+<br />
+{% comment %}{% include "navbar.html" %}{% endcomment %}
 {% endblock %}
 <!--END TOP LINKS-->
 
@@ -153,7 +155,13 @@
 
 <!--BOTTOM LINKS-->
 {% block links_bottom %}
-{% include "navbar.html" %}
+{% comment %}{% include "navbar.html" %}{% endcomment %}
+<!-- Static navbar for now. The dynamic one appears on the left. -->
+<p class="text_links" style="text-align: right; margin: 3px 12px 3px 0px;">
+      <a href="/about/index.html">About ESP</a> |
+      <a href="/about/getting-here.html">Directions to Splash</a> |
+      <a href="/learn/Splash/2009_Spring/catalog">Old Splash Catalogs</a>
+</p>
 {% endblock %}
 <!--END BOTTOM LINKS-->
 

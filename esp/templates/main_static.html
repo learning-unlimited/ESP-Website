@@ -18,7 +18,8 @@
 
 <!--TOP LINKS-->
 {% block links_top %}
-{% include "navbar.html" %}
+<br />
+{% comment %}{% include "navbar.html" %}{% endcomment %}
 {% endblock %}
 <!--END TOP LINKS-->
 
@@ -62,8 +63,10 @@
 <!--LEFT MENU-->
 <div id="left_menu_container">
 {% block navbar_left %}
+{% comment %}
     {% load navbar %}
     {% navbar_gen "yellow" %}
+{% endcomment %}
 {% endblock %}
 
 <div id="spacer" style="height: 20px; clear: left;">&nbsp;</div>
@@ -95,7 +98,7 @@
 
 <!--BOTTOM LINKS-->
 {% block links_bottom %}
-{% include "navbar.html" %}
+{% comment %}{% include "navbar.html" %}{% endcomment %}
 {% endblock %}
 <!--END BOTTOM LINKS-->
 
