@@ -667,6 +667,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category']).category
                 mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
 
+                # Provide information about whether or not teacher's from MIT.
+                mail_ctxt['from_mit'] = self.user.getLastProfile().teacher_info.from_mit
+                mail_ctxt['college'] = self.user.getLastProfile().teacher_info.college
+
                 # send mail to directors
                 if newclass_newmessage and self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
