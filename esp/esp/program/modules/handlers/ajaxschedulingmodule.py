@@ -134,13 +134,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_teachers(self, request, tl, one, two, module, extra, prog):
         teachers = ESPUser.objects.filter(userbit__verb=GetNode('V/Flags/Registration/Teacher')).filter(userbit__qsc__classsubject__isnull=False, userbit__qsc__parent__parent__program=prog).distinct()
 
-        restype = ResourceType.get_or_create('Teacher Availability')
-        resources = Resource.objects.filter(user__in = [t.id for t in teachers],
-                                            res_type = restype,
-                                            ).filter(
-            QTree(event__anchor__below = prog.anchor)).values('user_id', 'event__id')
-
-
+        resources = UserAvailability.objects.filter(user__in=teachers).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
         resources_for_user = defaultdict(list)
 
         for resource in resources:
@@ -172,7 +166,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_resources(self, request, tl, one, two, module, extra, prog):
-        resources = Resource.objects.filter(event__anchor=self.program_anchor_cached()).exclude(res_type__name__in=["Classroom", "Teacher Availability"])
+        resources = Resource.objects.filter(event__anchor=self.program_anchor_cached()).exclude(res_type__name__in=["Classroom"])
 
         resources_grouped = defaultdict(list)
 

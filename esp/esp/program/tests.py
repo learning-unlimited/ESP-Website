@@ -320,12 +320,14 @@ class ProgramHappenTest(TestCase):
             'message_for_directors': 'Hi chairs!',
             'class_reg_page': '1',
             #   Resource forms in default configuration
-            'form-TOTAL_FORMS': '2',
-            'form-INITIAL_FORMS': '1',
-            'form-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
-            'form-0-desired_value': 'Lecture',
-            'form-1-resource_type': str(ResourceType.get_or_create('A/V').id),
-            'form-1-desired_value': 'LCD projector',
+            'request-TOTAL_FORMS': '2',
+            'request-INITIAL_FORMS': '2',
+            'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
+            'request-0-desired_value': 'Lecture',
+            'request-1-resource_type': str(ResourceType.get_or_create('A/V').id),
+            'request-1-desired_value': 'LCD projector',
+            'restype-TOTAL_FORMS': '0',
+            'restype-INITIAL_FORMS': '0',
         }
         self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
         

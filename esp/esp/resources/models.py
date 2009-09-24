@@ -264,8 +264,7 @@ class Resource(models.Model):
     
     def associated_resources(self):
         rt1 = ResourceType.get_or_create('Classroom')
-        rt2 = ResourceType.get_or_create('Teacher Availability')
-        Q_assoc_types = Q(res_type=rt1) | Q(res_type=rt2)
+        Q_assoc_types = Q(res_type=rt1)
         return self.grouped_resources().exclude(id=self.id).exclude(Q_assoc_types)
     
     #   Modified to handle assigning rooms to both classes and their individual sections.

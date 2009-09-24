@@ -359,8 +359,7 @@ class ClassSection(models.Model):
         """   Get all assignments pertaining to floating resources like projectors. """
         from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
-        ta_restype = ResourceType.get_or_create('Teacher Availability')
-        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
+        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype)
     
     def classrooms(self):
         """ Returns the list of classroom resources assigned to this class."""
@@ -615,7 +614,6 @@ class ClassSection(models.Model):
 
         teachers = self.parent_class.teachers()
         num_teachers = teachers.count()
-        ta_type = ResourceType.get_or_create('Teacher Availability')
 
         timeslot_list = []
         for t in teachers:

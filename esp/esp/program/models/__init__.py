@@ -632,7 +632,7 @@ class Program(models.Model):
     def getResourceTypes(self):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
-        exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
+        exclude_types = [ResourceType.get_or_create('Classroom')]
         
         Q_filters = Q(program=self) | Q(program__isnull=True)
         
@@ -651,7 +651,7 @@ class Program(models.Model):
     def getFloatingResources(self, timeslot=None, queryset=False):
         from esp.resources.models import ResourceType
         #   Don't include classrooms and teachers in the floating resources.
-        exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
+        exclude_types = [ResourceType.get_or_create('Classroom')]
         
         if timeslot is not None:
             res_list = self.getResources().filter(event=timeslot, is_unique=True).exclude(res_type__in=exclude_types)

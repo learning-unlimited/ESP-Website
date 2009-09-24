@@ -41,7 +41,8 @@ class IDBasedModelChoiceField(forms.ModelChoiceField):
 
 class ResourceRequestForm(forms.Form):
     resource_type = IDBasedModelChoiceField(queryset=ResourceType.objects.all(), widget=forms.HiddenInput)
-    desired_value = forms.ChoiceField(choices=())
+    desired_value = forms.ChoiceField(choices=(), widget=forms.RadioSelect, required=False)
+    #   desired_value = forms.ChoiceField(choices=())
     
     def __init__(self, data=None, **kwargs):
     
@@ -59,11 +60,16 @@ class ResourceRequestForm(forms.Form):
 
         if hasattr(self, 'resource_type'):
             self.fields['desired_value'].label = self.resource_type.name
-            self.fields['desired_value'].choices = zip(tuple(' ') + self.resource_type.choices, tuple(' ') + self.resource_type.choices)    
+            #   Use radio buttons for 4 or fewer choices; select boxes above that to save space
+            if len(self.resource_type.choices) > 4:
+                self.fields['desired_value'].widget = forms.Select()
+            #   Don't provide a blank default value
+            #   self.fields['desired_value'].choices = zip(tuple(' ') + self.resource_type.choices, tuple(' ') + self.resource_type.choices)    
+            self.fields['desired_value'].choices = zip(self.resource_type.choices, self.resource_type.choices)
+            
             self.initial['resource_type'] = self.resource_type.id
-
         
-class ResourceRequestFormSet(formset_factory(ResourceRequestForm)):
+class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
     """ Like a FormSet, but handles the list of resource_types for the forms to start out with. """
     def __init__(self, *args, **kwargs):
         if 'resource_type' in kwargs:
@@ -74,7 +80,7 @@ class ResourceRequestFormSet(formset_factory(ResourceRequestForm)):
     def initial_form_count(self):
         """Returns the number of forms that are required in this FormSet."""
         if hasattr(self, 'resource_type'):
-            return len(self.resource_type) - 1
+            return len(self.resource_type)
         else:
             return super(ResourceRequestFormSet, self).initial_form_count()
     
@@ -106,5 +112,15 @@ class ResourceRequestFormSet(formset_factory(ResourceRequestForm)):
         defaults.update(default_args)
         form = self.form(**defaults)
         self.add_fields(form, i)
+        
         return form
     
+class ResourceTypeForm(forms.ModelForm):
+    name = forms.CharField(label='New Request', required=False)
+
+    class Meta:
+        model = ResourceType
+        fields = ['name']
+    
+class ResourceTypeFormSet(formset_factory(ResourceTypeForm, extra=0)):
+    pass

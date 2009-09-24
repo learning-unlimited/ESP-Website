@@ -8,6 +8,11 @@
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
+{% block xtrajs %}
+    {{ block.super }}
+    {% include "load_ajax_scripts.html" %}
+{% endblock %}
+
 {% block content %}
 
 <h1>{{ addoredit }}ing a class for {{ program.niceName }}</h1>
@@ -22,7 +27,7 @@ sections of the
 same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div>
 </p>
 
-<form action="{{request.path}}" name="clsform" method="post">
+<form action="{{request.path}}" id="clsform" name="clsform" method="post">
 
 <div id="program_form">
 <center>
@@ -35,13 +40,39 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
     <tr>
         <th colspan="2">Classroom Requests</th>
     </tr>
+    <!--
     <tr>
-        <td colspan="2">Please specify your classroom needs by building a list of requests.  Click the buttons below to add requests in the corresponding categories; you may submit more than one request per category (for example, you would need separate A/V requests for both DVD player and speakers).  Click the "[remove]" link next to a request to remove it.  (If you are providing your own space for this class, please remove all requests.)</td>
+        <td colspan="2">Please specify your classroom needs by building a list of requests.  You may submit more than one request per category (for example, you would need separate A/V requests for both DVD player and speakers).  If you are providing your own space for this class, please remove all requests.</td>
     </tr>
+    -->
     <tr>
-        <td colspan="2"><b>Add a request for:</b> {% for rt in resource_types %}{{ rt.name }}{% if not forloop.last %} | {% endif %}{% endfor %}</td>
+        <td width="30%">
+            <b>Click to add requests:</b>
+            <noscript>(Note: Please enable Javascript.)</noscript>
+        </td>
+        <td>
+            {% for rt in resource_types %}<a id="add_request_{{ rt.id }}" href="/teach/{{ program.getUrlBase }}/makeaclass">{{ rt.name }}</a>{% if not forloop.last %} | {% endif %}{% endfor %} | <a id="add_restype" href="/teach/{{ program.getUrlBase }}/makeaclass">Other</a>
+        </td>
     </tr>
-    {{ formset }}
+</table>
+<script type="text/javascript">
+<!--
+    register_fragment({id: "request_forms_html", url: ""});
+    register_fragment({id: "restype_forms_html", url: ""});
+    {% for rt in resource_types %}
+    register_link({id: "add_request_{{ rt.id }}", url: "/teach/{{ program.getUrlBase }}/ajax_requests", content: {action: "add", restype: "{{ rt.id }}"}, post_form: "clsform"});{% endfor %}
+    register_link({id: "add_restype", url: "/teach/{{ program.getUrlBase }}/ajax_restypes", content: {action: "add"}, post_form: "clsform"});
+-->
+</script>
+<div id="request_forms">
+{% include "program/modules/teacherclassregmodule/requests_form_fragment.html" %}
+</div>
+<div id="restype_forms">
+{% with restype_formset as formset %}
+{% include "program/modules/teacherclassregmodule/restype_form_fragment.html" %}
+{% endwith %}
+</div>
+<table width="550">
     <tr>
         <td colspan="2">&nbsp;</td>
     </tr>
