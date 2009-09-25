@@ -903,7 +903,7 @@ class TeacherInfo(models.Model):
                 self.graduation_year_int = abs(int(value))
             except:
                 self.graduation_year_int = 0
-    graduation_year = property( _graduation_year_get, _graduation_year_set )
+    #graduation_year = property( _graduation_year_get, _graduation_year_set )
 
     class Meta:
         app_label = 'users'
