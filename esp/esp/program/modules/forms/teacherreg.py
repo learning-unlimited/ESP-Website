@@ -77,12 +77,15 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False )
     requested_special_resources = forms.CharField( label='Special Requests', widget=forms.Textarea(), required=False,
                                                    help_text="Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the 'Message for Directors' box! " )
-
+                                                   
+    #   Stanford doesn't use purchase requests.  (But this can be enabled here as long as it is also added to the ClassSubject model. 
+    """
     purchase_requests = forms.CharField( label='Planned Purchases', widget=forms.Textarea(), required=False,
                                          help_text='We give all teachers a $30 budget per class section for their classes; we can reimburse you if you turn in an itemized receipt with attached reimbursement form before the end of the program.  If you would like to exceed this budget, please type a budget proposal here stating what you would like to buy, what it will cost, and why you would like to purchase it.' )
-
+    """
+    
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
-                                                   help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
+                                                   help_text='Please explain any special circumstances and equipment requests. If you want to purchase more than $30 worth of items for your class, please submit a budget proposal here.' )
 
 
     def __init__(self, module, *args, **kwargs):

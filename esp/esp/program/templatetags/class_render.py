@@ -70,7 +70,8 @@ def render_class_core(cls):
     return {'class': cls,
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
-            'show_enrollment': show_enrollment }
+            'show_enrollment': show_enrollment,
+            'show_meeting_times': prog.getModuleExtension('StudentClassRegModuleInfo').visible_meeting_times}
             
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
