@@ -15,7 +15,6 @@ def cache_key(context, navbar_type='left'):
     return ('NAVBAR','%sBAR__%s__%s' % (navbar_type.upper(), urlencode(str(request.path)),
                                 request.user.id))
 
-
 @cache_inclusion_tag(register,'inclusion/web/navbar_left.html', takes_context = True, cache_key_func=cache_key)
 def navbar_gen(context, navbar_type='left'):
     try:
@@ -30,11 +29,11 @@ def navbar_gen(context, navbar_type='left'):
         
     title_str = 'Navigation'
     if 'learn' in request.path:
-        title_str = 'Students'
+        title_str = 'For Students'
     elif 'teach' in request.path:
-        title_str = 'Teachers'
+        title_str = 'For Teachers'
     elif 'volunteer' in request.path:
-        title_str = 'Volunteers'
+        title_str = 'For Volunteers'
     
     return {'navbar_list': navbar,
             'title': title_str,
