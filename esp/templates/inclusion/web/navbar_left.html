@@ -26,6 +26,9 @@
     {% for nav_entry in navbar_list.qsdTree %}
         {% if nav_entry.entry.is_link %}
           <a href="{{ nav_entry.entry.makeUrl }}"
+	    {% ifequal nav_entry.entry.makeUrl request.path %}
+	       class="currentnaventry"
+	    {% endifequal %}
             title="Click for `{{ nav_entry.entry.makeTitle }}'">
             {{ nav_entry.entry.makeTitle }}
           </a>

@@ -32,8 +32,10 @@ def navbar_gen(context, navbar_type='left'):
         title_str = 'For Students'
     elif 'teach' in request.path:
         title_str = 'For Teachers'
-    elif 'volunteer' in request.path:
+    elif 'getinvolved' in request.path:
         title_str = 'For Volunteers'
+    elif 'about' in request.path:
+        title_str = 'About ESP'
     
     return {'navbar_list': navbar,
             'title': title_str,

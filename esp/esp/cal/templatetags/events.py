@@ -53,7 +53,7 @@ class EventNode(template.Node):
 
     def render(self, context):
         anchor_node = GetNode(self.tree_uri)
-        queryset = Event.objects.filter(event_type__description=self.event_type,start__gte=datetime.now()).filter(QTree(anchor__below=anchor_node)).order_by('start')
+        queryset = Event.objects.filter(event_type__description=self.event_type,end__gte=datetime.now()).filter(QTree(anchor__below=anchor_node)).order_by('start')
         if self.limit:
             context['event_list'] = queryset[:self.limit]
         else:

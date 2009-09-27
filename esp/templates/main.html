@@ -29,6 +29,7 @@
 	
 <div id="container">
 
+<a href="/"><img src="{{ MEDIA_URL }}images/stanfordesp-logo-small.png" height="50" style="padding-top: 3px;" /></a>
 <!--TOP LINKS-->
 {% block links_top %}
 <!-- Removed top nav bar. -->
@@ -38,7 +39,7 @@
 <!--END TOP LINKS-->
 
 
-<div id="top"></div>
+<div id="top" style="background-image: url('{{ MEDIA_URL }}images/{{ topImg }}');"></div>
 
 <!--LOGIN-->
 
@@ -52,24 +53,24 @@
 
 <!--NAV BAR-->
 {% block navigation_main %}
-<a href="/learn/index.html">
-<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/blue.png'); margin-left: 17px;">
+<a href="/learn/index.html" class="nounder">
+<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/{{ learnImg }}'); margin-left: 17px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
 <h2>Learn</h2>
 </div>
 </div>
 </a>
-<a href="/teach/index.html">
-    <div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/green.png');  margin-left: 10px;">
+<a href="/teach/index.html" class="nounder">
+    <div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/{{ teachImg }}');  margin-left: 10px;">
     <div class="text_padding" style="padding: 3px 6px 0px 10px;">
     <h1>I want to</h1>
     <h2>Teach</h2>	
     </div>
     </div>
 </a>
-<a href="/volunteer/index.html">
-<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/red.png'); margin: 0px 0px 0px 10px;">
+<a href="/getinvolved/index.html" class="nounder">
+<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/{{ volImg }}'); margin: 0px 0px 0px 10px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
 <h2>Volunteer</h2>
@@ -100,7 +101,11 @@
 
     {% for event in event_list %}
         <p align="right">
+	{% ifequal event.start.day event.end.day %}
         {{ event.start|date:"F jS, Y" }}<br />
+	{% else %}
+	{{ event.start|date:"F jS" }} - {{ event.end|date:"jS, Y" }}
+	{% endifequal %}
         <b>{{ event.short_description }}</b>
         </p>
     {% endfor %}
@@ -160,7 +165,7 @@
 <p class="text_links" style="text-align: right; margin: 3px 12px 3px 0px;">
       <a href="/about/index.html">About ESP</a> |
       <a href="/about/getting-here.html">Directions to Splash</a> |
-      <a href="/learn/Splash/2009_Spring/catalog">Old Splash Catalogs</a>
+      <a href="/learn/oldcatalogs.html">Old Splash Catalogs</a>
 </p>
 {% endblock %}
 <!--END BOTTOM LINKS-->

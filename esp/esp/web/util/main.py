@@ -75,6 +75,31 @@ def render_to_response(template, requestOrContext, prog = None, context = None):
             section = prog[1]
             prog = prog[0]
 
+        # setting images for template?
+        topImg = 'top.png'
+        learnImg = 'blue.png'
+        teachImg = 'green.png'
+        volImg = 'red.png'
+
+        if 'learn' in request.path:
+            topImg = 'top-blue.png'
+            teachImg = 'green-faded.png'
+            volImg = 'red-faded.png'
+        elif 'teach' in request.path:
+            topImg = 'top-green.png'
+            learnImg = 'blue-faded.png'
+            volImg = 'red-faded.png'
+        elif 'getinvolved' in request.path:
+            topImg = 'top-red.png'
+            learnImg = 'blue-faded.png'
+            teachImg = 'green-faded.png'
+
+        context['topImg'] = topImg
+        context['learnImg'] = learnImg
+        context['teachImg'] = teachImg
+        context['volImg'] = volImg
+        # end template images
+
         if not context.has_key('program'):
             if type(prog) == Program:
                 context['program'] = prog
