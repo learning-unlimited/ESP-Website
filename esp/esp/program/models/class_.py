@@ -293,8 +293,8 @@ class ClassSection(models.Model):
 
             # Only save the capacity if we do have rooms assigned;
             # otherwise don't bother as this number will almost definitely change
-            self.max_class_capacity = ans
-            self.save()
+            #self.max_class_capacity = ans
+            #self.save()
 
         #   Apply dynamic capacity rule
         if not ignore_changes:
