@@ -887,29 +887,44 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         Q_teacher = Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))
 
         # Search for teachers with names that start with search string
-        if not request.GET.has_key('q'):
+        if not request.GET.has_key('name') or request.POST.has_key('name'):
             return self.goToCore(tl)
 
         queryset = User.objects.filter(Q_teacher)
         
-        startswith = request.GET['q']
-        parts = [x.strip() for x in startswith.split(',')]
-        Q_name = Q(last_name__istartswith=parts[0])
+        if not request.GET.has_key('name'):
+            startswith = request.POST['name']
+        else:
+            startswith = request.GET['name']
+        parts = [x.strip('*') for x in startswith.split(',')]
+        
+        #   Don't return anything if there's no input.
+        if len(parts[0]) > 0:
+            Q_name = Q(last_name__istartswith=parts[0])
 
-        if len(parts) > 1:
-            Q_name = Q_name & Q(first_name__istartswith=parts[1])
+            if len(parts) > 1:
+                Q_name = Q_name & Q(first_name__istartswith=parts[1])
 
-        # Isolate user objects
-        queryset = queryset.filter(Q_name)[:(limit*10)]
-        user_dict = {}
-        for user in queryset:
-            user_dict[user.id] = user
-        users = user_dict.values()
+            # Isolate user objects
+            queryset = queryset.filter(Q_name)[:(limit*10)]
+            user_dict = {}
+            for user in queryset:
+                user_dict[user.id] = user
+            users = user_dict.values()
 
-        # Construct combo-box items
-        obj_list = [["%s, %s (%s, id: %d)" % (user.last_name, user.first_name, user.username, user.id), user.id] for user in users]
+            # Construct combo-box items
+            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
+        else:
+            obj_list = []
 
         # Operation Complete!
+        json_dict = {
+            "label": "name",
+            "identifier": "id",
+            "items": obj_list
+        }
+        
+        #return JsonResponse(json_dict)
         return JsonResponse(obj_list)
 
     def getNavBars(self):
