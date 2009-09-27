@@ -33,18 +33,20 @@
      </tr>
     <tr>
       <td style="width: 50%;" valign="top">
+        {% if show_meeting_times %}
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
 	  {% for sec in class.get_sections %}
            {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "|smartypants }} <br />{% endif %}
           {% endfor %}
         <br />
+        {% endif %}
       </td>
 
       <td style="width: 50%;" colspan="2">
          <strong>Grades:</strong>
-           {{ class.grade_min }}-{{ class.grade_max }}
-         {% if show_enrollment %} <br />
+           {{ class.grade_min }}-{{ class.grade_max }}<br />
+         {% if show_enrollment %} 
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}
               {% with sec.isRegClosed as is_closed %}
@@ -54,6 +56,7 @@
               {% endwith %}
            {% endfor %}
         {% endif %}
+        <br />
       </td>
     </tr>
     {% if class.media_count %}
