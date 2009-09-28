@@ -517,6 +517,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
             
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values()}
+        
         return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), context)
 
     def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
