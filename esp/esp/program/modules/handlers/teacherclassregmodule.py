@@ -437,7 +437,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             to_be_deleted = old_coteachers_set - new_coteachers_set
 
             # don't delete the current user
-            to_be_deleted.remove(self.user)
+            # to_be_deleted.remove(self.user)
 
             for teacher in to_be_added:
                 if cls.conflicts(teacher):
