@@ -225,9 +225,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
           charges_total += 40
 
         foodmap = {}
-        foodmap['classic_club'] = 'Classic Club (turkey/bacon/ham/cheddar)'
-        foodmap['honey_chicken'] = 'Honey Chicken (chicken/honey mustard)'
-        foodmap['veggie'] = 'Veggie (guacamole/olives/mozzarella/cheddar)'
+        foodmap['chicken'] = 'Chicken Burrito'
+        foodmap['steak'] = 'Steak Burrito'
+        foodmap['veggie'] = 'Veggie Burrito'
+        foodmap['spicy_thai'] = 'Spicy Thai Burrito'
         foodmap['cheese'] = 'Cheese Pizza'
         foodmap['pepperoni'] = 'Pepperoni Pizza'
 

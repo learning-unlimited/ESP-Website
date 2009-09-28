@@ -939,9 +939,10 @@ class SplashInfo(models.Model):
         foodmap['none'] = default_txt
         foodmap[''] = default_txt
         foodmap[None] = default_txt
-        foodmap['classic_club'] = 'Classic Club Sandwich'
-        foodmap['honey_chicken'] = 'Honey Chicken Sandwich'
-        foodmap['veggie'] = 'Veggie Sandwich'
+        foodmap['chicken'] = 'Chicken Burrito'
+        foodmap['steak'] = 'Steak Burrito'
+        foodmap['veggie'] = 'Veggie Burrito'
+        foodmap['spicy_thai'] = 'Spicy Thai Burrito'
         foodmap['cheese'] = 'Cheese Pizza'
         foodmap['pepperoni'] = 'Pepperoni Pizza'
         return foodmap[self.lunchsat]
@@ -953,9 +954,10 @@ class SplashInfo(models.Model):
         foodmap['none'] = default_txt
         foodmap[''] = default_txt
         foodmap[None] = default_txt
-        foodmap['classic_club'] = 'Classic Club Sandwich'
-        foodmap['honey_chicken'] = 'Honey Chicken Sandwich'
-        foodmap['veggie'] = 'Veggie Sandwich'
+        foodmap['chicken'] = 'Chicken Burrito'
+        foodmap['steak'] = 'Steak Burrito'
+        foodmap['veggie'] = 'Veggie Burrito'
+        foodmap['spicy_thai'] = 'Spicy Thai Burrito'
         foodmap['cheese'] = 'Cheese Pizza'
         foodmap['pepperoni'] = 'Pepperoni Pizza'
         return foodmap[self.lunchsun]
@@ -1323,7 +1325,7 @@ class BooleanToken(models.Model):
         stack = list(stack)
         while (value is None) and (len(stack) > 0):
             token = stack.pop().subclass_instance()
-            #   print 'Popped token: %s' % token.text
+            # print 'Popped token: %s' % str(token.__dict__)
             
             # Handle possibilities for what the token might be:
             if (token.text == '||') or (token.text.lower() == 'or'):
@@ -1345,7 +1347,7 @@ class BooleanToken(models.Model):
                 # Pass along arguments
                 value = token.boolean_value(*args, **kwargs)
                 
-        #   print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
+        # print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
         return (value, stack)
 
     """ This function is meant to take extra arguments so subclasses can use additional

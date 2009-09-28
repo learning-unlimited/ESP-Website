@@ -767,6 +767,10 @@ class ClassSection(models.Model):
 
         # Set up a ScheduleMap; fake-insert this class into it
         sm = ScheduleMap(user, self.parent_program)
+        for ts in self.meeting_times.all():
+            if len(sm.map[ts.id]) > 0:
+                return "You cannot add this class because of a scheduling conflict at %s." % ts.short_time()
+
         sm.add_section(self)
             
         for exp in relevantConstraints:

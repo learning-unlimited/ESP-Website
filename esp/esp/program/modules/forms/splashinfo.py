@@ -2,10 +2,11 @@ from django import forms
 from esp.middleware import ESPError
 
 class SplashInfoForm(forms.Form):
-    satchoices = [('no', 'No thanks; I will bring my own lunch'), 
-                  ('classic_club', 'Yes, Classic Club (turkey/bacon/ham/cheddar)'), 
-                  ('honey_chicken', 'Yes, Honey Chicken (chicken/honey mustard)'),
-                  ('veggie', 'Yes, Veggie (guacamole/olives/mozzarella/cheddar)')]
+    satchoices = [('no', 'No thanks; I will bring my own lunch'),
+                  ('chicken', 'Yes, Chicken'),
+                  ('steak', 'Yes, Steak'),
+                  ('spicy_thai', 'Yes, Spicy Thai'),
+                  ('veggie', 'Yes, Vegeterian')]
 
     sunchoices = [('no', 'No thanks; I will bring my own lunch'),
                   ('cheese', 'Yes, Cheese Pizza'),
