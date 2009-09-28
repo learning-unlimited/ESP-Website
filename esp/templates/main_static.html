@@ -3,8 +3,8 @@
 <html>
 <head>
 {% block stylesheets %}
-    <link href="{{ MEDIA_URL }}styles/main.css" rel="stylesheet" type="text/css">
-    <link href="{{ MEDIA_URL }}styles/stanford.css" rel="stylesheet" type="text/css">
+    <link href="/media/styles/main.css" rel="stylesheet" type="text/css">
+    <link href="/media/styles/stanford.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
 {% block javascript %}
@@ -38,19 +38,19 @@
 
 <!--NAV BAR-->
 {% block navigation_main %}
-<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/blue.png'); margin-left: 17px;">
+<div id="main_nav" class="top_nav" style="background-image: url('/media/images/blue.png'); margin-left: 17px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
 <h2><a href="/learn/index.html">Learn</a></h2>
 </div>
 </div>
-<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/green.png');  margin-left: 10px;">
+<div id="main_nav" class="top_nav" style="background-image: url('/media/images/green.png');  margin-left: 10px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
 <h2><a href="/teach/index.html">Teach</a></h2>	
 </div>
 </div>
-<div id="main_nav" class="top_nav" style="background-image: url('{{ MEDIA_URL }}images/red.png'); margin: 0px 0px 0px 10px;">
+<div id="main_nav" class="top_nav" style="background-image: url('/media/images/red.png'); margin: 0px 0px 0px 10px;">
 <div class="text_padding" style="padding: 3px 6px 0px 10px;">
 <h1>I want to</h1>
 <h2><a href="/volunteer/index.html">Volunteer</a></h2>
