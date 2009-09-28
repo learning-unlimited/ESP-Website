@@ -86,7 +86,7 @@
 <tr><td class="key">Name</td><td>{{ user.first_name }} {{ user.last_name }}</td></tr>
 <tr><td class="key">Username (ID)</td><td>{{ user.username }} ({{ user.id }})</td></tr>
 {% if profile.contact_user %}
-<tr><td class="key">E-mail</td><td>{{ profile.contact_user.e_mail|mask_email }}<br />({{ user.username|mask_email_concat:"esp.mit.edu" }})</td></tr>
+<tr><td class="key">E-mail</td><td>{{ profile.contact_user.e_mail|mask_email }}<br />({{ user.username|mask_email_concat:"uchicago-splash.mit.edu" }})</td></tr>
 <tr><td class="key">Phone</td><td>{{ profile.contact_user.phone_day }} (Day)<br />{{ profile.contact_user.phone_cell }} (Cell)</td></tr>
 <tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{% if profile.contact_user.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
 {% else %}

@@ -557,6 +557,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 if num_sections < len(section_list):
                     for class_section in section_list[num_sections:]:
                         class_section.delete()
+                        
+                # Set duration of sections
+                for section in newclass.sections.all():
+                    section.duration = newclass.duration
+                    section.save()
 
                 # Set duration of sections
                 for section in newclass.sections.all():

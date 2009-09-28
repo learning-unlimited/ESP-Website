@@ -34,6 +34,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
+from django.db.models.query import Q
 from esp.program.models  import ClassSubject, ClassSection
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
@@ -416,16 +417,20 @@ class ProgramPrintables(ProgramModuleObj):
             classes.sort()
 
             # aseering 9-29-2007, 1:30am: There must be a better way to do this...
-            ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
-            if ci.count() > 0:
-                phone_cell = ci[0].phone_cell
-            else:
-                phone_cell = 'N/A'
+            # price 9-28-2009: There is.
+            ci = teacher.getLastProfile().contact_user
+            if ci is None:
+                try:
+                    ci = teacher.contactinfo_set.all().order_by('-id')[0]
+                except:
+                    ci = None
+            if ci is not None:
+                phone_day = ci.phone_day
 
             if len(classes) > 0:
                 scheditems.append({'name': teacher.name(),
                                'user': teacher,
-                               'phonenum': phone_cell,
+                               'phone_day': phone_day,
                                'cls' : classes[0]})
         
         scheditems = filter(filt_exp, scheditems)
