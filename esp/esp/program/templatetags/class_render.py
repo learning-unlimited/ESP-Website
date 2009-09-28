@@ -1,5 +1,6 @@
 from django import template
 from esp.web.util.template import cache_inclusion_tag
+from esp.users.models import ESPUser
     
 register = template.Library()
 
