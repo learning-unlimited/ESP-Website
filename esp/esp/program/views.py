@@ -350,7 +350,7 @@ def submit_transaction(request):
             # Get the document that would've been created instead
             document = invoice.docs_next.all()[0]
         except:
-            raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:esp-webmasters@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
+            raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:stanford-websupport@lists.learningu.org\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
 
         one = document.anchor.parent.name
         two = document.anchor.name
