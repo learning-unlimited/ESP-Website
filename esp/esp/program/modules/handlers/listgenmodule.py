@@ -67,9 +67,10 @@ class ListGenModule(ProgramModuleObj):
 
         strtype = request.GET['type']
 
-        users = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct() ]
-
+        users = list(ESPUser.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct())
         users.sort()
+        for u in users:
+            u.class_count = u.getEnrolledSections(self.program).count()
         
         return render_to_response(self.baseDir()+('list_%s.html'%strtype), request, (prog, tl), {'users': users, 'listdesc': filterObj.useful_name})
                                                                                                  
