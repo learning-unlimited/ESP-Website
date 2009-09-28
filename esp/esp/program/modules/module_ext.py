@@ -91,6 +91,9 @@ class StudentClassRegModuleInfo(models.Model):
     #   Meeting times visibility
     visible_meeting_times = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing classes\' meeting times on the catalog.')
     
+    #   Show classes that have not yet been scheduled?
+    show_unscheduled_classes = models.BooleanField(default=True, help_text='Uncheck this box to prevent people from seeing classes in the catalog before they have been scheduled.')
+    
     #   Customize buttons
     #   - Labels
     confirm_button_text = models.CharField(max_length=80, default='Confirm', help_text='Label for the "confirm" button at the bottom of student reg.')
