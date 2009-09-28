@@ -54,7 +54,7 @@
     {% endif %}
     </table>
     </div>
-    
+    {% if prereg_url %}
     <script type="text/javascript">
     function initialize_prereg_{{ class.id }}() 
     {
@@ -76,5 +76,6 @@
     }
     initialize_prereg_{{ class.id }}();
     </script>
+    {% endif %}
     
 {% endif %}
