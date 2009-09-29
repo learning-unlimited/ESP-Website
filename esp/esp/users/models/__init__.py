@@ -296,6 +296,16 @@ class ESPUser(User, AnonymousUser):
                                                                   bit.qsc.parent.parent.program_set.count() > 0 )
     getTaughtClassesAll.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
 
+    @cache_function
+    def getFullClasses_pretty(self, program):
+        full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
+        return "\n".join([cls.emailcode()+": "+cls.title() for cls in full_classes])
+    getFullClasses_pretty.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
+                                                      lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
+                                                                  bit.qsc.parent.name == 'Classes' and
+                                                                  bit.qsc.parent.parent.program_set.count() > 0 )
+    getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
+
 
     def getTaughtSections(self, program = None):
         if program is None:

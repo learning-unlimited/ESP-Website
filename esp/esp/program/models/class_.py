@@ -1417,6 +1417,9 @@ class ClassSubject(models.Model):
                 return False
         return True
 
+    def is_nearly_full(self):
+        return len([x for x in self.get_sections() if x.num_students() > 0.75*x.capacity]) > 0
+
     def getTeacherNames(self):
         teachers = []
         for teacher in self.teachers():

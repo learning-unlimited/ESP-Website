@@ -102,7 +102,8 @@ class CommModule(ProgramModuleObj):
             raise ESPError(), "You seem to be trying to email 0 people!  Please go back, edit your search, and try again."
 
         htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
-        renderedtext = Template(htmlbody).render(Context({'user': ActionHandler(ESPUser(firstuser), ESPUser(firstuser)), 'program': ActionHandler(self.program, ESPUser(firstuser))})).replace('\n', '<br />')
+        firstEspUser = ESPUser(firstuser)
+        renderedtext = Template(htmlbody).render(Context({'user': firstEspUser, 'program': self.program, 'fullClasses': firstEspUser.getFullClasses_pretty(self.program)}))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                   (prog, tl), {'filterid': filterid,
@@ -135,7 +136,7 @@ class CommModule(ProgramModuleObj):
         
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, User)
 
-        variable_modules = {'user': self.user, 'program': self.program}
+        variable_modules = {'user': self.user, 'program': self.program, 'fullClasses': self.user.getFullClasses_pretty(self.program)}
 
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
                                                       subject    = subject,
