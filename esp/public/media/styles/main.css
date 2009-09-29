@@ -45,6 +45,7 @@ body {
   margin-left: auto;
   margin-right: auto;
   background: #141414;
+  /* overflow: hidden; */
 }
 
 #footer {

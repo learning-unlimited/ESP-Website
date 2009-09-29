@@ -563,6 +563,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     section.duration = newclass.duration
                     section.save()
 
+                # Set duration of sections
+                for section in newclass.sections.all():
+                    section.duration = newclass.duration
+                    section.save()
+                                                                                    
+
                 # create classes in subprograms -- the work for this should probably be farmed out to another function
                 if newclass_isnew:
                     if prog.getSubprograms().count() > 0:

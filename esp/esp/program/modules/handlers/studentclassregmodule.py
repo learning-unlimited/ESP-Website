@@ -372,7 +372,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
-            classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
+            classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=False), classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
         #   Sort class list
@@ -468,7 +468,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
             
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values()}
+        context = {'classes': classes, 'one': one, 'two': two, 'categories': sorted(categories.values(), key=lambda x: x['category'][3:])}
         return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), context)
 
     def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
