@@ -70,7 +70,7 @@ class ListGenModule(ProgramModuleObj):
         users = list(ESPUser.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct())
         users.sort()
         for u in users:
-            u.class_count = u.getEnrolledSections(self.program).count()
+            u.class_count = sum([x.meeting_times.count() for x in u.getEnrolledSections(self.program)])
         
         return render_to_response(self.baseDir()+('list_%s.html'%strtype), request, (prog, tl), {'users': users, 'listdesc': filterObj.useful_name})
                                                                                                  
