@@ -92,21 +92,29 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         Q_approved_teacher = Q(userbit__qsc__in=approved_list) & Q_isteacher
         Q_proposed_teacher = Q(userbit__qsc__in=proposed_list) & Q_isteacher
 
+        full_classes = [x for x in self.program.classes().filter(status__gt=0)]
+        full_classes = [(x, [y for y in x.get_sections() if y.num_students() > 0.75 * y.capacity]) for x in full_classes]
+        full_classes = [x[0].anchor for x in full_classes if len(x[1]) > 0]
+        Q_full_teacher = Q(userbit__qsc__in=full_classes) & Q_isteacher
+
         if QObject:
             return {'class_approved': self.getQForUser(Q_approved_teacher),
                     'class_proposed': self.getQForUser(Q_proposed_teacher),
-                    'class_rejected': self.getQForUser(Q_rejected_teacher)}
+                    'class_rejected': self.getQForUser(Q_rejected_teacher),
+                    'class_full': self.getQForUser(Q_full_teacher)}
 
         else:
             return {'class_approved': User.objects.filter(Q_approved_teacher).distinct(),
                     'class_proposed': User.objects.filter(Q_proposed_teacher).distinct(),
-                    'class_rejected': User.objects.filter(Q_rejected_teacher).distinct()}
+                    'class_rejected': User.objects.filter(Q_rejected_teacher).distinct(),
+                    'class_full': User.objects.filter(Q_full_teacher).distinct()}
 
 
     def teacherDesc(self):
         return {'class_approved': """Teachers teaching an approved class.""",
                 'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
-                'class_rejected': """Teachers teaching a rejected class."""}
+                'class_rejected': """Teachers teaching a rejected class.""",
+                'class_full': """Teachers teaching a nearly-full class."""}
 
 
 
