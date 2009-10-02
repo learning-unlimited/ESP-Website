@@ -1026,6 +1026,30 @@ Student schedule for %s:
 
     @aux_call
     @needs_admin
+    def student_tickets(self, request, tl, one, two, module, extra, prog):
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+            
+        try:
+            num_name_groups = int(extra)
+        except:
+            num_name_groups = 7
+            
+        students = ESPUser.objects.filter(filterObj.get_Q()).distinct().order_by('last_name')
+        lastnames = students.values_list('last_name')
+        num_lastnames = len(lastnames)
+        names_per_set = float(num_lastnames) / num_name_groups
+        context = {'name_groups': []}
+        for i in range(num_name_groups):
+            start_index = int(i * names_per_set)
+            end_index = int((i + 1) * names_per_set)
+            context['name_groups'].append(students[start_index:end_index])
+
+        return render_to_response(self.baseDir()+'student_tickets.html', request, (prog, tl), context)
+    
+    @aux_call
+    @needs_admin
     def classrosters(self, request, tl, one, two, module, extra, prog):
         """ generate class rosters """
 
