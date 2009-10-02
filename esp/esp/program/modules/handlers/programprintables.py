@@ -32,6 +32,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
+from esp.cal.models import Event
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
 from django.db.models.query import Q
@@ -815,6 +816,8 @@ Student schedule for %s:
             if parent_program_students.has_key('classreg'):
                 parent_program_students_classreg = parent_program_students['classreg']
         
+        all_events = Event.objects.filter(anchor=self.program.anchor).order_by('start')
+
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -822,6 +825,15 @@ Student schedule for %s:
                                 if cls.parent_program == self.program and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
+
+            # now we insert compulsory events and empty blocks
+            for c in all_events:
+                # find the first class that begins after the compulsory event ends
+                for i in range(0, len(classes)):
+                    if type(classes[i]) == ClassSection and classes[i].start_time().start > c.end:
+                        if i == 0 or (type(classes[i-1]) == ClassSection and classes[i-1].start_time().end < c.end) or (type(classes[i-1]) == Event and classes[i-1].end < c.end):
+                            classes.insert(i, c)
+                            break
             
             # note whether student is in parent program
             student.in_parent_program = False
