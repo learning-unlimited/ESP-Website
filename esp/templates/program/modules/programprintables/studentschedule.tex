@@ -13,11 +13,12 @@
 \graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
 
 \pagestyle{empty}
-\renewcommand*\arraystretch{1.4}
+\renewcommand*\arraystretch{1.5}
 \newcolumntype{+}{>{\global \let \currentrowstyle \relax }}
 \newcolumntype{^}{>{\currentrowstyle }}
 \newcommand{\rowstyle}[1]{\gdef \currentrowstyle{#1} #1\ignorespaces}
 \setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
 
 \begin{document}
 {% for student in students %}
@@ -25,15 +26,13 @@
 \vspace*{1.75in}
 \begin{center}
 \begin{tabularx}{17cm}{X r}
-
-\begin{minipage}{4in}
+\noindent
 {% spaceless %}
-\fontsize{6cm}{7.2cm}
-\selectfont
- \textbf{ {{ student.getGrade|texescape }} $\bullet$ {{ student.last_name|texescape }} } \\
-{% endspaceless %}
+\begin{minipage}{4in}
+\Huge\textbf{ {{ student.getGrade|texescape }} $\bullet$ {{ student.last_name|texescape }} } \\
  \Large \textbf{ {{ student.first_name|texescape }} $\bullet$ {{ student.username|texescape }} $\bullet$ {{ student.id }} } \\
 \end{minipage}
+{% endspaceless %}
 &
 \includegraphics[width=0.5in]{splogol}\hspace{0.45in}
 
@@ -45,20 +44,20 @@
 \normalsize
 
 \begin{center}
-\begin{tabularx}{17cm}{|X|c|m{3.5in}|}
+\begin{tabularx}{17cm}{|X|c|m{4in}|}
 \hline
 \multicolumn{3}{c}{
 \rowstyle{\color{white}\cellcolor{black} } 
 \textbf{Class Schedule for {{ student.name|texescape }} } }  \\
-\textbf{Class Time} & \textbf{Room} & \textbf{Class} \\
+\multicolumn{1}{|c|}{\textbf{Class Time} } & \textbf{Room} & \multicolumn{1}{c|}{\textbf{Class} } \\
 {% for cls in student.classes %}\hline
 {% ifequal cls.event_type.description "Compulsory" %}
   \multicolumn{3}{|c|}{ \textbf{\textit{ {{ cls.description }} } } }
 {% else %}
   {% ifequal cls.event_type.description "Class" %}
-  {{ cls.start|date:"f" }} -- {{ cls.end|date:"f A" }} & \multicolumn{2}{c|}{[NO CLASS]}
+  \multicolumn{1}{|c|}{ {{ cls.start|date:"f" }} -- {{ cls.end|date:"f A" }} } & \multicolumn{2}{c|}{[NO CLASS]}
   {% else %}
-  {{ cls.start_time.start|date:"f" }} -- {{ cls.start_time.end|date:"f A" }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }}: {{ cls.title|texescape }}
+  \multicolumn{1}{|c|}{ {{ cls.start_time.start|date:"f" }} -- {{ cls.start_time.end|date:"f A" }} } & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }}: {{ cls.title|truncatewords:5|texescape }}
   {% endifequal %}
 {% endifequal %}
 \\ 
