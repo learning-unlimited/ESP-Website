@@ -194,6 +194,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
                 self._errors['class_size_max'] = forms.util.ErrorList([msg])
                 del cleaned_data['class_size_optimal']
                 del cleaned_data['class_size_max']
+
+        if class_size_optimal == '':
+            cleaned_data['class_size_optimal'] = None
         
         # Return cleaned data
         return cleaned_data
