@@ -1,5 +1,5 @@
 {% autoescape off %}
-\documentclass[letterpaper,12pt]{article}
+\documentclass[landscape,letterpaper,12pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{fullpage}
 \usepackage{textpos}
@@ -23,18 +23,18 @@
 \begin{document}
 {% for student in students %}
 ~\\
-\vspace*{1.75in}
+\vspace*{0.25in}
 \begin{center}
 \begin{tabularx}{17cm}{X r}
 \noindent
 {% spaceless %}
-\begin{minipage}{4in}
-\Huge\textbf{ {{ student.getGrade|texescape }} $\bullet$ {{ student.last_name|texescape }} } \\
+\begin{minipage}[b]{4in}
+\Huge\textbf{% templatetag openbrace %}{{ student.getGrade|texescape }} $\bullet$ {{ student.last_name|texescape }} } \\
  \Large \textbf{ {{ student.first_name|texescape }} $\bullet$ {{ student.username|texescape }} $\bullet$ {{ student.id }} } \\
 \end{minipage}
 {% endspaceless %}
 &
-\includegraphics[width=0.5in]{splogol}\hspace{0.45in}
+\includegraphics[width=1in]{splogol}\vspace{-0.2in}
 
 \end{tabularx}
 \end{center}
@@ -64,6 +64,20 @@
 {% endfor %}\hline
 \end{tabularx}
 \end{center}
+
+
+\begin{center}
+\begin{tabularx}{17cm}{X c}
+\multicolumn{2}{c}{\small
+\textit{Please see attached map for building directions, or ask anyone in yellow and gray shirts for help.}
+\normalsize } \\
+\multicolumn{2}{c}{
+  \rowstyle{\color{white}\cellcolor{black} 
+    \textbf{\includegraphics[width=0.6in]{twitterlogo}Follow us on Twitter: twitter.com/splashchicago} } } \\
+~ & ~ 
+\end{tabularx}
+\end{center}
+
 {% if not forloop.last %}\pagebreak{% endif %}
 {% endfor %}
 
