@@ -44,8 +44,8 @@ top: 343px; left: 340px;
 
 #login_box {
 position: absolute;
-top: 380px; left: 230px;
-width: 245px; height: 70px;
+top: 380px; left: 220px;
+width: 265px; height: 70px;
 background: #56a900;
 padding: 6px;
 }
@@ -84,8 +84,8 @@ top: 37px; left: 8px;
 
 #login_submit {
 position: absolute;
-top: 5px; right: 8px;
-height: 35px; width: 70px;
+top: 12px; right: 48px;
+height: 21px; width: 50px;
 
 background: #fff url(/media/images/theme/gen/yg_login.png) no-repeat 0% 0% scroll;
 color: transparent;
@@ -95,10 +95,21 @@ cursor: pointer;
 
 #login_signup {
 position: absolute;
-top: 40px; right: 8px;
-height: 25px; width: 70px;
+position: absolute;
+top: 12px; right: 8px;
+height: 21px; width: 40px;
 
 background: #fff url(/media/images/theme/gen/yg_signup.png) no-repeat 0% 0% scroll;
 color: transparent;
 border: none;
+}
+
+#login_help {
+position: absolute;
+top: 37px; right: 25px;
+font-size: smaller;
+}
+
+#login_box a {
+color: #3f7a00;
 }

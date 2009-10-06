@@ -63,6 +63,7 @@ wrap(document.getElementById('search_field'),'Enter search term');
   });
 });*/
 
+{% comment %}
 {% if request.user.is_authenticated %}
 var showadmin = function(){
   this.innerHTML = '&ndash;';
@@ -77,7 +78,7 @@ var hideadmin = function(){
 
 document.getElementById('adminbar_toggle').onclick = hideadmin;
 {% endif %}
-
+{% endcomment %}
 });
 
 </script>
@@ -88,8 +89,7 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 
 {% if request.user.isAdministrator %}
 <div id="adminbar">
-  <div class="title">Admin Toolbar</div>
-  <div id="adminbar_toggle">&ndash;</div>
+  <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>
 <script type="text/javascript">
@@ -106,16 +106,23 @@ ESP = (function(){
   });
   
   return {
+    toggleDisplay: function(id) {
+      var el = document.getElementById(id);
+      if (el.style.display == "none") {
+        el.style.display = "block";
+      } else {
+        el.style.display = "none";
+      }
+    },
     registerAdminModule: function(module) {
       if (loaded) {
         var module_wrap = document.createElement("div");
         var module_class = "adminbar_" + module.name;
         module_wrap.className = module_class;
         module_wrap.innerHTML =
-			"<div class='title'>" + module.name + "</div>" +
-			"<div id='" + module_class + "_toggle' class='toggle'>-</div>";
-
+	    "<div class='title' onclick='ESP.toggleDisplay(\""+module_class+"_content"+"\");'>" + module.name + "</div>";
         var module_content = document.createElement("div");
+	module_content.id = module_class+"_content";
 	module_content.className = "content";
         if (module.content_html) {
 	    module_content.innerHTML = module.content_html;
@@ -223,6 +230,7 @@ name: 'User Search'
   <input type="password" id="login_pswd" name="password" />
   <input type="submit" id="login_submit" name="login_submit" />
   <a href="/myesp/register" id="login_signup"></a>
+  <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
 </form>
 
 {% else %}

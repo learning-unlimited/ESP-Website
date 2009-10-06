@@ -42,7 +42,7 @@ theme = {
     'Delve': 'lightgreen',
     'ProveIt': 'darkgreen',
 
-    'myesp': 'grey',
+    #'myesp': 'grey',
     'manage': 'black'
 }
 

@@ -89,7 +89,7 @@ font-weight: bold;
 text-decoration: none;
 
 font-variant: small-caps;
-/*text-transform: uppercase;*/
+text-transform: uppercase;
 }
 
 #menu #tab_logo {
@@ -201,9 +201,9 @@ width: 20px;
 #login_box {
 font-size: smaller;
 position: absolute;
-width: 225px;
+width: 245px;
 height: 70px;
-right: 20px;
+right: 25px;
 top: 15px;
 }
 
@@ -225,8 +225,8 @@ font-size: 12px;
 
 #login_submit {
 position: absolute;
-top: 5px; right: 8px;
-height: 35px; width: 70px;
+top: 9px; right: 48px;
+height: 21px; width: 50px;
 
 /*background: #fff url(/media/images/theme/login.png) no-repeat 0% 0% scroll;*/
 color: transparent;
@@ -236,15 +236,25 @@ cursor: pointer;
 
 #login_signup {
 position: absolute;
-top: 40px; right: 8px;
-height: 25px; width: 70px;
+top: 9px; right: 8px;
+height: 21px; width: 40px;
 
 /*background: #fff url(/media/images/theme/signup.png) no-repeat 0% 0% scroll;*/
 color: transparent;
 border: none;
 }
 
-
+#login_help {
+position: absolute;
+top: 34px; right: 25px;
+font-size: smaller;
+}
+/*#login_help {
+text-decoration: none;
+}
+#login_help:hover {
+text-decoration: underline;
+}*/
 
 /*
  * Content
@@ -269,7 +279,7 @@ position: relative;
 
 #content_header h1.title {
 margin: 0;
-padding: 0 15px 3px;
+padding: 6px 15px 4px;
 color: #fff;
 font-variant: small-caps;
 }
@@ -306,6 +316,7 @@ color: #fff;
 
 #divannouncements {
   height: 180px;
+  overflow: hidden;
 }
 
 #divannouncements ul {
@@ -343,30 +354,29 @@ z-index: 100;
 }
 
 #adminbar > .title {
-margin: 2px 4px 6px;
+padding: 2px;
+text-align: center;
 font-weight: bold;
+cursor: pointer;
 }
 
-#adminbar_toggle {
-position: absolute;
-width: 20px;
-background: #ccc;
-cursor: pointer;
-right: 2px; top: 2px;
-text-align: center;
-}
+/*#adminbar > .title:hover {
+background: #e4e4e4;
+}*/
 
 #adminbar_content .title {
 padding: 2px;
 background: #ccc;
+border-top: 1px solid #aaa;
+cursor: pointer;
+}
+
+#adminbar_content .title:hover {
+background: #bbb;
 }
 
 #adminbar_content .content {
 padding: 6px 10px 15px;
-}
-
-#adminbar_content .toggle {
-display: none;
 }
 
 
