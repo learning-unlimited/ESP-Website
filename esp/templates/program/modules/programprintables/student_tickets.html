@@ -7,13 +7,13 @@ body { font-family: georgia; margin: 0pt;}
 </style>
 </head>
 <body>
-{% for group in name_groups %}
+{% for group in joint_groups %}
     {% if not forloop.first %}
         </table>
         <div style="page-break-after: always;">&nbsp; </div>
     {% endif %}
     <table cellspacing="0" cellpadding="0" align="center">
-    {% for student in group %}
+    {% for student in group.1 %}
         {% if forloop.counter0|divisibleby:12 %}
             {% if not forloop.first %}
                 </table>
