@@ -7,6 +7,42 @@
 <meta name="author" content="Tony Valderrama, Vincent Lee, and others" />
 <link rel="stylesheet" type="text/css" href="/media/styles/theme.css" media="all" />
 <link rel="stylesheet" type="text/css" href="/media/styles/theme-gen.css" media="all" />
+<!--[if lte IE 6]>
+<style type="text/css">
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+#body {
+  position: absolute;
+  left: 0px;
+  top: 40px;
+}
+#ie6_warning {
+  color: blue;
+  font-size: 0.83em;
+}
+#ie6_warning p {
+  position: relative;
+  left: 10px;
+}
+#search_box {
+  top: -28px;
+  border: 0px;
+  border-bottom: 0;
+  margin: 0;
+}
+#submenu {
+  width: 600px;
+
+}
+#submenu li {
+  display: inline;
+}
+</style>
+<![endif]-->
+
 {% endblock %}
 
 {% block javascript %}
@@ -202,7 +238,7 @@ name: 'User Search'
 	 <input type='hidden' name='as_dt' value='i' />
 	 <input type='hidden' name='as_sitesearch' value='esp.mit.edu' />
 	  <input type="text" id="search_field" name="q" />
-	  <input type="submit" id="search_submit" name="search_submit" />
+	  <input type="submit" id="search_submit" name="search_submit" value="" />
 	</form>
       </div>
       <div id="contact_info">
@@ -221,7 +257,7 @@ name: 'User Search'
   <input type="hidden" name="next" value="{{ request.path }}" />
   <input type="text" id="login_user" name="username" />
   <input type="password" id="login_pswd" name="password" />
-  <input type="submit" id="login_submit" name="login_submit" />
+  <input type="submit" id="login_submit" name="login_submit" value="" />
   <a href="/myesp/register" id="login_signup"></a>
 </form>
 
@@ -281,6 +317,12 @@ name: 'User Search'
       <div id="content">
 {% block content %}{% endblock %}
       </div>
+      <!--[if lte IE 6]>
+	  <div id="ie6_warning">
+<p>You're using a really old Web browser!  This site'll look a lot better if you <a href="http://www.microsoft.com/windows/internet-explorer/">upgrade</a>.</p>
+	  </div>
+      <![endif]-->
+
     </div>
     <div id="footer">
       &copy; MIT Educational Studies Program, 2009
