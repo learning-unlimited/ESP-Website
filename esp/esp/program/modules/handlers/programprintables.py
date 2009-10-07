@@ -34,7 +34,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
-from esp.program.models  import ClassSubject, ClassSection
+from esp.program.models  import ClassSubject, ClassSection, SplashInfo
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
@@ -818,18 +818,18 @@ Student schedule for %s:
                 # we use the filter instead of simply "in" because the types of items in "students" and "parent_program_students_classreg" don't match.
                 student.in_parent_program = parent_program_students_classreg.filter(id=student.id).count() > 0
 
-            # get payment information
-            li_types = prog.getLineItemTypes(student)
-            try:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
-            except MultipleDocumentError:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+            # Stanford specific cost information
+            splashinfo = SplashInfo.getForUser(student)
+            cost = 40
+            if splashinfo.siblingdiscount:
+                cost -= 20
+            if splashinfo.lunchsun not in [None, '', 'no']:
+                cost += 5
+            if splashinfo.lunchsat not in [None, '', 'no']:
+                cost += 5
 
-            # attach payment information to student
-            student.invoice_id = invoice.locator
-            student.itemizedcosts = invoice.get_items()
-            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')  # not just meals, but all BuyOne LineItems (for Spark 2009, included t-shirt, photo, etc)
-            student.itemizedcosttotal = invoice.cost()
+            student.itemizedcosttotal = cost
+
             student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
             if student.has_financial_aid:
                 student.itemizedcosttotal = 0
@@ -840,6 +840,7 @@ Student schedule for %s:
             student.splashinfo = SplashInfo.getForUser(student)
 
         context['students'] = students
+        context['program'] = self.program
 
         if extra:
             file_type = extra.strip()

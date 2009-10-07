@@ -92,21 +92,27 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         Q_approved_teacher = Q(userbit__qsc__in=approved_list) & Q_isteacher
         Q_proposed_teacher = Q(userbit__qsc__in=proposed_list) & Q_isteacher
 
+        full_classes = [x.anchor for x in self.program.classes().filter(status__gt=0) if x.is_nearly_full()]
+        Q_full_teacher = Q(userbit__qsc__in=full_classes) & Q_isteacher
+
         if QObject:
             return {'class_approved': self.getQForUser(Q_approved_teacher),
                     'class_proposed': self.getQForUser(Q_proposed_teacher),
-                    'class_rejected': self.getQForUser(Q_rejected_teacher)}
+                    'class_rejected': self.getQForUser(Q_rejected_teacher),
+                    'class_full': self.getQForUser(Q_full_teacher)}
 
         else:
             return {'class_approved': User.objects.filter(Q_approved_teacher).distinct(),
                     'class_proposed': User.objects.filter(Q_proposed_teacher).distinct(),
-                    'class_rejected': User.objects.filter(Q_rejected_teacher).distinct()}
+                    'class_rejected': User.objects.filter(Q_rejected_teacher).distinct(),
+                    'class_full': User.objects.filter(Q_full_teacher).distinct()}
 
 
     def teacherDesc(self):
         return {'class_approved': """Teachers teaching an approved class.""",
                 'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
-                'class_rejected': """Teachers teaching a rejected class."""}
+                'class_rejected': """Teachers teaching a rejected class.""",
+                'class_full': """Teachers teaching a nearly-full class."""}
 
 
 
@@ -809,3 +815,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         else:
             return []
+
+    def get_msg_vars(self, user, key):
+        user = ESPUser(user)
+        if key == 'full_classes':
+            return user.getFullClasses_pretty(self.program)
+
+        return 'No classes.'
