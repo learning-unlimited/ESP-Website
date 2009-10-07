@@ -942,3 +942,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         
         else:
             return []
+
+    def get_msg_vars(self, user, key):
+        user = ESPUser(user)
+        if key == 'full_classes':
+            return user.getFullClasses_pretty(self.program)
+
+        return 'No classes.'

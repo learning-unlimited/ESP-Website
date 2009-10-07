@@ -103,7 +103,7 @@ class CommModule(ProgramModuleObj):
 
         htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
         firstEspUser = ESPUser(firstuser)
-        renderedtext = Template(htmlbody).render(Context({'user': firstEspUser, 'program': self.program, 'fullClasses': firstEspUser.getFullClasses_pretty(self.program)}))
+        renderedtext = Template(htmlbody).render(Context({'user': firstEspUser, 'program': self.program}))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                   (prog, tl), {'filterid': filterid,
@@ -136,7 +136,7 @@ class CommModule(ProgramModuleObj):
         
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, User)
 
-        variable_modules = {'user': self.user, 'program': self.program, 'fullClasses': self.user.getFullClasses_pretty(self.program)}
+        variable_modules = {'user': self.user, 'program': self.program}
 
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
                                                       subject    = subject,
