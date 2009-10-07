@@ -404,7 +404,8 @@ class ProgramPrintables(ProgramModuleObj):
             # get list of valid classes
             classes = [ cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
-                    and cls.isAccepted()                       ]
+                    and cls.isAccepted()
+                    and cls.meeting_times.count() > 0]
             # now we sort them by time/title
             classes.sort()
 
