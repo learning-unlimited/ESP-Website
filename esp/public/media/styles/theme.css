@@ -287,7 +287,8 @@ font-variant: small-caps;
 #submenu {
 margin: 0; padding: 0 10px;
 line-height: 35px;
-/*height: 35px;*/ width: 580px;
+//height: 35px;
+width: 580px;
 font-size: smaller;
 background: #ccc;
 position: relative;
@@ -302,7 +303,7 @@ list-style-type: none;
 #submenu li a {
 display: inline-block;
 height: 100%;
-padding: 0px 20px;
+padding: 0px 10px;
 text-decoration: none;
 color: #fff;
 }
