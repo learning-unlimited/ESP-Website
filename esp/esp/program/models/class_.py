@@ -1760,7 +1760,16 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     @staticmethod
     def class_sort_by_timeblock(one, other):
-        return cmp(one.all_meeting_times[0], other.all_meeting_times[0])
+        if len(one.all_meeting_times) == 0:
+            if len(other.all_meeting_times) == 0:
+                return 0
+            else:
+                return -1
+        else:
+            if len(other.all_meeting_times) == 0:
+                return 1
+            else:
+                return cmp(one.all_meeting_times[0], other.all_meeting_times[0])
 
     @staticmethod
     def class_sort_noop(one, other):
