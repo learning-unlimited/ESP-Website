@@ -303,13 +303,13 @@ list-style-type: none;
 #submenu li a {
 display: inline-block;
 height: 100%;
-padding: 0px 10px;
+padding: 0px 2px;
 text-decoration: none;
 color: #fff;
 }
 
 #submenu li + li:before {
-content: '|';
+content: '•';
 color: #fff;
 }
 
