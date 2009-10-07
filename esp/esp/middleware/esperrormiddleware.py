@@ -79,7 +79,7 @@ class AjaxErrorMiddleware(object):
     def process_exception(self, request, exception):
         #   This line has been commented out for debugging so that requests
         #   can be made using a normal browser like Firefox with UrlParams.
-        #   if not request.is_ajax(): return
+        if not request.is_ajax(): return
 
         if isinstance(exception, (ObjectDoesNotExist, Http404)):
             return self.not_found(request, exception)
