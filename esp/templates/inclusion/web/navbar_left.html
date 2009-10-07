@@ -17,6 +17,8 @@
 
 {% if request.user.isAdministrator %}
 <ul id="navbar_admin">
+<li><a href="/admin/web/navbarentry/">Edit Nav bars</a></li>
+<!-- Remove the navbar code for now; we should fix it someday...
 {% for nav_entry in navbar_list.qsdTree %}
   <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}{% if nav_entry.has_bits %} movable{% endif %} " id="nav_entry__{{nav_entry.entry.id}}"> 
 {% if nav_entry.has_bits %}
@@ -59,6 +61,7 @@ Create a new entry:
 <input name="submit" value="Create!" type="Submit" />
 </form>
 </li>
+-->
 
 <script type="text/javascript">
 <!--
