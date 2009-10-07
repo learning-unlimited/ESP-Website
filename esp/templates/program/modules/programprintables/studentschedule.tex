@@ -13,7 +13,8 @@
 \graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
 
 \pagestyle{fancy}
-\fancyhead[C]{\includegraphics[scale = 1]{header-top}\includegraphics[scale = 1]{header-line}}
+\fancyhead[C]{\Huge \textsf{\textbf{ {{ program.niceName }} } } \normalsize \\
+\includegraphics[scale = 0.9]{header-line}}
 \setlength\headheight{80pt}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
@@ -53,8 +54,7 @@ Student Schedule for \\
 \columnbreak
 
 \begin{flushleft}
-\textbf{
-Name: {{ student.name|texescape }} \\
+\textbf{Name: {{ student.name|texescape }} \\
 Username: {{ student.username|texescape }} \\
 User ID: {{ student.id }} \\
 }
@@ -79,20 +79,12 @@ If you have any questions or would like to switch classes, please go to the prog
 \hline
 \textbf{Time} & \textbf{Room} & \textbf{Class} & & \textbf{Teacher(s)} \\
 {% for cls in student.classes %}\hline
-{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} } : & {{ cls.title|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\
+{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} }:& {{ cls.title|truncatewords:5|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\
 {% endfor %}\hline
 \end{tabularx}
 
 \end{center}
 
-\vfill
-\begin{pspicture}(3.0, 0.7in)
-\psbarcode{% templatetag openbrace %}{{ student.invoice_id }}{% templatetag closebrace %}{includetext height=0.4}{code39}
-\end{pspicture} \\
-\vspace{0pt} \\
-{{ student.name }} ({{ student.id }}) \\
-Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
-\vspace{2.5cm}
 {% if not forloop.last %}\pagebreak{% endif %}
 {% endfor %}
 
