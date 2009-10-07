@@ -213,7 +213,7 @@ name: 'User Search'
 	{% endif %}
 	{% endwith %}
 	{% endwith %}
-	{# <li id="tab_myesp" class="grey" ><a href="/myesp/home/">Profile</a></li> #}
+	{# <li id="tab_myesp" class="grey" ><a href="/myesp/accountmanage.html">Profile</a></li> #}
 {% if request.user.isAdministrator %}
 	<li id="tab_admin" class="black" ><a href="/manage/programs/">Admin</a></li>
 {% endif %}
@@ -272,7 +272,7 @@ name: 'User Search'
 {% else %}
 <!-- logout -->
   Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
-  <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/home/">My Profile</a></span>
+  <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage.html">My Profile</a></span>
 {% endif %}
 
 </div>
