@@ -78,7 +78,7 @@ wrap(document.getElementById('search_field'),'Enter search term');
 for each (var item in document.getElementById('menu').childNodes) {
 if (item.nodeType == 1) {
   item.onmouseover = function(){
-    document.getElementById('page').className = this.className;
+    //document.getElementById('page').className = this.className;
   };
 }
 }
@@ -105,16 +105,14 @@ document.getElementById('adminbar_toggle').onclick = hideadmin;
 <div id="page" class="yellowgreen">
   <div id="sidebar">
       <ul id="menu">
-	<li id="tab_logo" class="yellowgreen" ><a href="/learn/index.html"></a></li>
-	<li id="tab_splash" class="blue" ><a href="/learn/Splash/index.html"></a></li>
-	<li id="tab_spark" class="purple" ><a href="/learn/Spark/index.html"></a></li>
-	<li id="tab_hssp" class="red" ><a href="/learn/HSSP/index.html"></a></li>
-	<li id="tab_satprep" class="orange" ><a href="/learn/SATPrep/index.html"></a></li>
-	<li id="tab_junction" class="yellow" ><a href="/learn/Junction/index.html"></a></li>
-	<li id="tab_delve" class="lightgreen" ><a href="/learn/Delve/index.html"></a></li>
-	<li id="tab_proveit" class="darkgreen" ><a href="/learn/ProveIt/index.html"></a></li>
-	<li id="tab_myesp" class="grey" ><a href="/myesp/home/"></a></li>
-	<li id="tab_admin" class="black" ><a href="/manage/index.html"></a></li>
+	<li id="tab_logo" class="yellowgreen" ><a href="/learn/index.html"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
+	<li id="tab_splash" class="blue" ><a href="/learn/Splash/index.html">SPLASH</a></li>
+	<li id="tab_spark" class="purple" ><a href="/learn/Spark/index.html">SPARK</a></li>
+	<li id="tab_hssp" class="red" ><a href="/learn/HSSP/index.html">HSSP</a></li>
+	<li id="tab_satprep" class="orange" ><a href="/learn/SATPrep/index.html">SATPrep</a></li>
+	<li id="tab_junction" class="yellow" ><a href="/learn/Junction/index.html">JUNCTION</a></li>
+	<li id="tab_delve" class="lightgreen" ><a href="/learn/Delve/index.html">DELVE</a></li>
+	<li id="tab_proveit" class="darkgreen" ><a href="/learn/ProveIt/index.html">ProveIt</a></li>
       </ul>
   </div>
   <div id="body">
