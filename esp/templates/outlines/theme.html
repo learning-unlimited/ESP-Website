@@ -234,6 +234,11 @@ name: 'User Search'
 	{% else %}
 	<span class="learn"><a href="/learn/index.html">Learn</a></span>
 	{% endif %}
+	{% if split_url|notequal:"volunteer" %}
+	<span class="volunteer inactive"><a href="/volunteer/index.html">Volunteer</a></span>
+	{% else %}
+	<span class="volunteer"><a href="/volunteer/index.html">Volunteer</a></span>
+	{% endif %}
 	{% endwith %}
       </div>
       <div id="search_box">
