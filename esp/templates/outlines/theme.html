@@ -339,7 +339,13 @@ name: 'User Search'
 <p>You're using a really old Web browser!  This site'll look a lot better if you <a href="http://www.microsoft.com/windows/internet-explorer/">upgrade</a>.</p>
 	  </div>
       <![endif]-->
-
+      {% with request.path|split:"/"|index:1 as split_url %}
+      {% if program and split_url|notequal:"manage" and request.user.isAdministrator %}
+      <div id="admin_link">
+	<a href="/manage/{{ program.anchor.parent.name }}/{{ program.anchor.name }}/dashboard">Administer this program</a>
+      </div>
+      {% endif %}
+      {% endwith %}
     </div>
     <div id="footer">
       &copy; MIT Educational Studies Program, 2009

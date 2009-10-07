@@ -469,6 +469,10 @@ padding: 6px 10px 15px;
   text-decoration: underline;
 }
 
+#admin_link {
+  padding: 30px 0px 0px 0px;
+}
+
 table.pdoxtable {
 	border: 1px solid black;
 }
