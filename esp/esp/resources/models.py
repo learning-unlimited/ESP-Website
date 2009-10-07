@@ -34,6 +34,7 @@ from esp.cal.models import Event
 from esp.users.models import User
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError_Log
+from esp.cache import cache_function
 
 from django.db import models
 from django.db.models.query import Q
@@ -374,16 +375,8 @@ class Resource(models.Model):
         else:
             return False
         
+    @cache_function
     def is_available(self, QObjects=False, timeslot=None):
-        if QObjects:
-            cache_key = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.id
-        else:
-            cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.id
-
-        retVal = cache.get(cache_key)
-        if retVal:
-            return retVal
-
         if timeslot is None:
             test_resource = self
         else:
@@ -392,10 +385,10 @@ class Resource(models.Model):
         if QObjects:
             return ~Q(test_resource.is_taken(True))
         else:
-            retVal = not (test_resource.is_taken(False))
-            cache.set(cache_key, retVal, timeout=86400)
-            return retVal
-        
+            return not test_resource.is_taken(False)
+    is_available.depend_on_row(lambda:ResourceAssignment, lambda instance: {'self': instance.resource})
+    is_available.depend_on_row(lambda:Event, lambda instance: {'timeslot': instance})
+    
     def is_taken(self, QObjects=False):
         if QObjects:
             return Q(resource=self)
