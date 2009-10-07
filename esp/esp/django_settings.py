@@ -82,6 +82,7 @@ ADMINS = (
     ('ESP Webmasters','esp-serverlog@mit.edu'),
     ('David Meyer',   'pdox@alum.mit.edu'),
     ('LU Webmasters', 'serverlog@lists.learningu.org'),
+    ('J.D. Zamfirescu', 'zamfire+esperrors@gmail.com'),
 )
 
 
