@@ -1067,6 +1067,42 @@ Student schedule for %s:
 
     @aux_call
     @needs_admin
+    def mealtickets(self, request, tl, one, two, module, extra, prog):
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+        
+        student_list = ESPUser.objects.filter(filterObj.get_Q()).order_by('last_name').distinct()
+        #   For Stanford this is just a list of two lists: the Saturday, then the Sunday users.
+        #   Each user object is appended with the needed attributes for the meal_ticket.html template.
+        users_sat = []
+        users_sun = []
+        for student in student_list:
+            si = SplashInfo.getForUser(student)
+            if si.lunchsat not in [None, 'none', '', 'no']:
+                users_sat.append({'name': student.name(), 'day': 'Saturday', 'item': si.pretty_satlunch()})
+            if si.lunchsun not in [None, 'none', '', 'no']:
+                users_sun.append({'name': student.name(), 'day': 'Sunday', 'item': si.pretty_sunlunch()})
+
+        new_lists = []
+        numperpage = 12
+        for lst in [users_sat, users_sun]:
+            new_list = []
+            expanded = [[] for i in range(numperpage)]
+            for i in range(len(lst)):
+                expanded[(i*numperpage)/len(lst)].append(lst[i])
+            for i in range(len(expanded[0])):
+                for j in range(len(expanded)):
+                    if len(expanded[j]) <= i:
+                        new_list.append({'name': '[ EXTRA ]', 'item': 'Any Available'})
+                    else:
+                        new_list.append(expanded[j][i])
+            new_lists.append(new_list)
+
+        return render_to_response(self.baseDir()+'mealtickets.html', request, (prog, tl), {'user_groups': new_lists, 'program': prog})
+
+    @aux_call
+    @needs_admin
     def classrosters(self, request, tl, one, two, module, extra, prog):
         """ generate class rosters """
 
