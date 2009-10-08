@@ -61,6 +61,9 @@ def render_class_core(cls):
     
     # Show enrollment?
     show_enrollment = prog.visibleEnrollments()
+
+    #   Show e-mail codes?  We need to look in the settings.
+    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     
     # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
     colorstring = prog.getColor()
@@ -70,7 +73,8 @@ def render_class_core(cls):
     return {'class': cls,
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
-            'show_enrollment': show_enrollment }
+            'show_enrollment': show_enrollment,
+            'show_emailcodes': scrmi.show_emailcodes}
             
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):

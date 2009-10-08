@@ -5,7 +5,7 @@
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
-           {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}
+           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}
           {% endif %}
       </th>
       <th style="padding: 5px; width: 30%;{{ colorstring }}">
