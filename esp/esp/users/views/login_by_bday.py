@@ -21,8 +21,8 @@ def login_by_bday(request, *args, **kwargs):
     """ Let a student pick their school. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/learn/Splash/2009_Fall/studentreg')
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Splash/2009_Fall/studentreg')
+        return HttpResponseRedirect('/learn/Cascade/2009_Fall/studentreg')
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Fall/studentreg')
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
@@ -43,8 +43,8 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
     """ Let a student pick their name. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/learn/Splash/2009_Fall/studentreg')
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Splash/2009_Fall/studentreg')
+        return HttpResponseRedirect('/learn/Cascade/2009_Fall/studentreg')
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Fall/studentreg')
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
