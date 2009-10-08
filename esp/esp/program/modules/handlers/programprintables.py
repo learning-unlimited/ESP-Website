@@ -535,7 +535,17 @@ class ProgramPrintables(ProgramModuleObj):
         from esp.program.models import RegistrationProfile
         
         def emergency_stuff(student):
-            return {'emerg_contact': RegistrationProfile.getLastForProgram(student, prog).contact_emergency}
+            #  Try to get some kind of emergency contact info even if it wasn't entered for this program.
+            program_profile = RegistrationProfile.getLastForProgram(student, prog)
+            if program_profile.contact_emergency:
+                return {'emerg_contact': program_profile.contact_emergency}
+            else:
+                other_profiles = RegistrationProfile.objects.filter(user=student).order_by('-last_ts')
+                for prof in other_profiles:
+                    if prof.contact_emergency:
+                        return {'emerg_contact': prof.contact_emergency}
+                
+                return {}
         
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff)
 
