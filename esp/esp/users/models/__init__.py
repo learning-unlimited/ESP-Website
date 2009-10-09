@@ -1376,7 +1376,14 @@ class PersistentQueryFilter(models.Model):
         """ The main constructor, please call this. """
         import hashlib
         dumped_filter = pickle.dumps(q_filter)
-        foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
+        
+        # Deal with multiple instances
+        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+        pqfs = PersistentQueryFilter.objects.filter(query_q)
+        if pqfs.count() > 0:
+            foo = pqfs[0]
+        else:
+            foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                    q_filter = dumped_filter,
                                                                    sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
         foo.useful_name = description
