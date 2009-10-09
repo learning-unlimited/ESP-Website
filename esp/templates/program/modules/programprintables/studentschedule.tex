@@ -7,6 +7,7 @@
 \usepackage{pst-barcode}
 \usepackage{textpos}
 \usepackage{tabularx}
+\usepackage{array}
 \usepackage{graphicx}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
 \usepackage[left=.5in,top=1cm,right=.5in]{geometry}
@@ -75,11 +76,12 @@ If you have any questions or would like to switch classes, please go to the prog
 
 \vspace{0.25cm}
 
-\begin{tabularx}{18cm}{|l|c|lX|X|}
+\begin{tabularx}{18cm}{|l|p{1.2in}|lX|X|}
 \hline
 \textbf{Time} & \textbf{Room} & \textbf{Class} & & \textbf{Teacher(s)} \\
 {% for cls in student.classes %}\hline
-{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} }:& {{ cls.title|truncatewords:5|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\
+% {{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} }:& {{ cls.title|truncatewords:5|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\
+{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.awesomeroom|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} }:& {{ cls.title|truncatewords:5|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\
 {% endfor %}\hline
 \end{tabularx}
 
