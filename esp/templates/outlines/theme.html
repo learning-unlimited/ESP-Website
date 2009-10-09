@@ -215,7 +215,7 @@ name: 'User Search'
 	{% endwith %}
 	{# <li id="tab_myesp" class="grey" ><a href="/myesp/accountmanage.html">PROFILE</a></li> #}
 {% with request.path|split:"/"|index:1 as split_url %}{% ifequal split_url "teach" %}
-	<li id="tab_logistics" class="purple"><a href="/teach/logistics.html">LOGISTICS</a></li>
+	<li id="tab_logistics" class="grey"><a href="/teach/logistics/index.html">LOGISTICS</a></li>
 {% endifequal %}{% endwith %}
 {% if request.user.isAdministrator %}
 	<li id="tab_admin" class="black" ><a href="/manage/programs/">ADMIN</a></li>
