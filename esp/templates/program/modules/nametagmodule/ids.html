@@ -66,34 +66,34 @@ body { font-family: georgia;
 </table>
 <div style="page-break-after: always;">&nbsp; </div>
 {% for user in users %}
-{% if forloop.counter0|divisibleby:6 %}
-{% if not forloop.first %}
-<tr>
-  <td><div class="indicator">&nbsp;</div></td>
-  <td><div class="indicator">&nbsp;</div></td>
-</tr>
-</table>
-<div style="page-break-after: always;">&nbsp;</div>
-{% endif %}
-<table border="0" cellspacing="0" cellpadding="0" align="center">
-<tr>
-  <td>
-    {% include "program/modules/nametagmodule/singleid.html" %}
-  </td>
-{% else %}
-{% if forloop.counter|divisibleby:2 %}
-  <td>
-   {% include "program/modules/nametagmodule/singleid.html" %}
-  </td>
-</tr>
-{% else %}
-</tr>
-<tr>
-  <td>
-   {% include "program/modules/nametagmodule/singleid.html" %}
-  </td>
-{% endif %}
-{% endif %}
+    {% if forloop.counter0|divisibleby:6 %}
+        {% if not forloop.first %}
+            <tr>
+              <td><div class="indicator">&nbsp;</div></td>
+              <td><div class="indicator">&nbsp;</div></td>
+            </tr>
+            </table>
+            <div style="page-break-after: always;">&nbsp;</div>
+        {% endif %}
+        <table border="0" cellspacing="0" cellpadding="0" align="center">
+        <tr>
+          <td>
+            {% include "program/modules/nametagmodule/singleid.html" %}
+          </td>
+    {% else %}
+        {% if forloop.counter|divisibleby:2 %}
+          <td>
+           {% include "program/modules/nametagmodule/singleid.html" %}
+          </td>
+        </tr>
+        {% else %}
+        </tr>
+        <tr>
+          <td>
+           {% include "program/modules/nametagmodule/singleid.html" %}
+          </td>
+        {% endif %}
+    {% endif %}
 {% endfor %}
 </body>
 </html>
