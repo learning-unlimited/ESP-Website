@@ -50,7 +50,7 @@
     {% endif %}
     <img src="/media/images/progress/bar{% if moduleCompleted %}_fill{% endif %}.gif" 
         {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
-        title="Not Done" alt="Not Done"{% endif %} /><br />
+        title="Not Done" alt="Not Done"{% endif %} border="0" width="80px" height="16px" /><br />
     </a>
     {% if module.useTemplate %}
     <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
