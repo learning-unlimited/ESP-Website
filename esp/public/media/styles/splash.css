@@ -25,6 +25,18 @@ left: 230px; top: 30px;
 width: 250px; height: 250px;
 }
 
+#whoarewe {
+font-variant: small-caps;
+font-family: sans-serif;
+color: white;
+text-decoration: none;
+text-align: center;
+padding: 15px 15px;
+position: absolute;
+right: 140px; top: 27px;
+width: 45px; height: 45px;
+}
+
 #teacher {
 position: absolute;
 right: 5px; top: 110px;
