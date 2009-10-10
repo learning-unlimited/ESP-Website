@@ -17,7 +17,6 @@
 
 {% block javascript %}
 {{ block.super }}
-
 <script type="text/javascript">
 window.onload = function(){
 
@@ -44,6 +43,12 @@ wrap(document.getElementById('login_user'),'Username');
 wrap(document.getElementById('login_pswd'),'Password');
 
 };
+
+function set_teachlearn(tl) {
+if (document.getElementById('remember').checked) {
+document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025").toGMTString() + '; path=/';
+}
+}
 </script>
 {% endblock %}
 
@@ -54,8 +59,8 @@ wrap(document.getElementById('login_pswd'),'Password');
   <input type="submit" href="student.html" id="student" name="student" value="true" />
   <input type="submit" href="teacher.html" id="teacher" name="teacher" value="true" />
 -->
-  <a id="student" href="learn/index.html"></a>
-  <a id="teacher" href="teach/index.html"></a>
+  <a id="student" href="learn/index.html" onclick="javascript:set_teachlearn('learn');"></a>
+  <a id="teacher" href="teach/index.html" onclick="javascript:set_teachlearn('teach');"></a>
   <a id="about" href="about/welcome.html"></a>
   <a id="whoarewe" href="about/welcome.html">Who Are We?</a>
   <input type="checkbox" id="remember" name="remember" />
