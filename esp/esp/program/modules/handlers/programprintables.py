@@ -786,8 +786,8 @@ Student schedule for %s:
         return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
 
     @aux_call
-    @needs_admin
-    def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
+    # No needs_admin decorator since students need to get their schedule at onsite (can be temporary)
+    def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False, format='pdf'):
         """ generate student schedules """
 
         context = {'module': self }
@@ -860,8 +860,11 @@ Student schedule for %s:
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
 
-        from esp.web.util.latex import render_to_latex
-        return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
+        if format == 'html':
+            return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+        else:  # elif format == 'pdf':
+            from esp.web.util.latex import render_to_latex
+            return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
 
     @aux_call
     @needs_admin

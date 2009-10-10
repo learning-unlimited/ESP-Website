@@ -9,7 +9,8 @@
 	 {% include "users/student_schedule.html" %}
 	 {% if request.user.onsite_local %}
 	 <center>
-	   <a target="_new" href="/onsite/{{program.getUrlBase}}/studentschedule">Get Student Schedule</a>
+	   Get Student Schedule: <a target="_new" href="/onsite/{{program.getUrlBase}}/studentschedule?format=html">(HTML)</a>
+	                         <a target="_new" href="/onsite/{{program.getUrlBase}}/studentschedule?format=pdf">(PDF)</a>
 	   <br />
 	   {% if printers %}
 	   {% for printer in printers %}
