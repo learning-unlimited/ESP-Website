@@ -1,6 +1,7 @@
 from esp.users.views.usersearch import *
 from esp.users.views.registration import *
 from esp.users.views.password_reset import *
+from esp.users.models import ESPUser
 
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.web.util.main import render_to_response
@@ -11,7 +12,18 @@ def login_checked(request, *args, **kwargs):
     if request.user.is_authenticated():
         return HttpResponseRedirect('/')
 
-    return login(request, *args, **kwargs)
+    reply = login(request, *args, **kwargs)
+
+    if reply.get('Location', '') == '/':
+        # We're getting redirected to the homepage.
+        # Let's try to do something smarter.
+        request.user = ESPUser(request.user)
+        if request.user.isTeacher():
+            return HttpResponseRedirect("/teach/index.html")
+        else:
+            return HttpResponseRedirect("/learn/index.html")
+
+    return reply
 
 def ajax_login(request, *args, **kwargs):
     import simplejson as json
