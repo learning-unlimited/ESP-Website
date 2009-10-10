@@ -19,6 +19,12 @@ left: 5px; top: 65px;
 width: 180px; height: 180px;
 }
 
+#about {
+position: absolute;
+left: 230px; top: 30px;
+width: 250px; height: 250px;
+}
+
 #teacher {
 position: absolute;
 right: 5px; top: 110px;
