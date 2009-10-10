@@ -13,7 +13,7 @@
 \graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
 
 \pagestyle{fancy}
-\fancyhead[C]{\includegraphics[scale = 1]{header-top}\includegraphics[scale = 1]{header-line}}
+\fancyhead[C]{% templatetag openbrace %}{% comment %}\includegraphics[scale = 1]{header-top}{% endcomment %}\includegraphics[scale = 1]{header-line}}
 \setlength\headheight{80pt}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt} 

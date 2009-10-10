@@ -81,14 +81,14 @@
 <!-- search -->
 <div id="divsearch">
 {% if request.user.isAdministrator %}
-<form id="searchform" method="get" action="/manage/userview">
+<form id="searchform" method="get" action="/manage/usersearch">
 <table border="0" cellpadding="0" cellspacing="0">
 <tr>
 <td width="100%"><div class="divformcol1">&nbsp;</div></td>
 <td class="rightalign">
 <div class="divformcol3"><label for="username">User Lookup:</label></div>
 </td>
-<td><div class="divformcol4"><input style="border: 2px solid black;" type="text" name="username" id="username" size="8" value="" class="inputbox" /></div></td>
+<td><div class="divformcol4"><input style="border: 2px solid black;" type="text" name="userstr" id="userstr" size="8" value="" class="inputbox" /></div></td>
 <td><div class="divformcol5"><input type="image" name="gosearch" id="gosearch" src="{{ media_url }}images/go1.gif" class="gobutton" alt="Go" title="" /></div></td>
 </tr>
 </table>

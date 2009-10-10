@@ -57,7 +57,9 @@ users to whom you are sending this email.
 <p>
 <strong>Email body:</strong>
 <br />
-{{ renderedtext }}
+{% autoescape off %}
+    {{ renderedtext }}
+{% endautoescape %}
 <br />
 </p>
 

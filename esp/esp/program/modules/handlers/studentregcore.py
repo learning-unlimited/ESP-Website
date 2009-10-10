@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -71,28 +70,65 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         verb2 = GetNode('V/Flags/Registration/Attended')
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
         STUDREP_QSC  = GetNode('Q')
+        now = datetime.now()
         
         qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Confirmation")
+        qsc_waitlist = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Waitlist")
 
-        Q_studentrep = Q(userbit__qsc = STUDREP_QSC) & Q(userbit__verb = STUDREP_VERB)
+        Q_studentrep = Q(userbit__qsc = STUDREP_QSC, userbit__verb = STUDREP_VERB, userbit__startdate__lte=now, userbit__enddate__gte=now)
 
         if QObject:
-            return {'confirmed': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb)),
-                    'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached()) &\
-                                                  Q(userbit__verb = verb2)),
-                    'studentrep': self.getQForUser(Q_studentrep)}
-        
-        
-        return {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct(),
-                'attended' : User.objects.filter(userbit__qsc = self.program_anchor_cached(), \
-                                                    userbit__verb = verb2).distinct(),
-                'studentrep': User.objects.filter(Q_studentrep).distinct()}
+            retVal = {'confirmed': self.getQForUser(Q(userbit__qsc = qsc, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now)),
+                      'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached(), userbit__startdate__lte=now, userbit__enddate__gte=now, userbit__verb = verb2)),
+                      'studentrep': self.getQForUser(Q_studentrep)}
+
+
+            if self.program.program_allow_waitlist:
+                retVal['waitlisted_students'] = self.getQForUser(Q(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now))
+                    
+            return retVal
+
+        retVal = {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct(),
+                  'attended' : User.objects.filter(userbit__qsc = self.program_anchor_cached(), \
+                                                       userbit__verb = verb2,
+                                                       userbit__startdate__lte=now,
+                                                       userbit__enddate__gte=now).distinct(),
+                  'studentrep': User.objects.filter(Q_studentrep).distinct()}
+                  
+        if self.program.program_allow_waitlist:
+            retVal['waitlisted_students'] = User.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+                  
+        return retVal
 
     def studentDesc(self):
-        return {'confirmed': """Students who have clicked on the `Confirm Pre-Registration' button.""",
-                'attended' : """Students who attended %s""" % self.program.niceName(),
-                'studentrep': """All Student Representatives of ESP"""}
+        retVal = {'confirmed': """Students who have clicked on the `Confirm Pre-Registration' button.""",
+                  'attended' : """Students who attended %s""" % self.program.niceName(),
+                  'studentrep': """All Student Representatives of ESP"""}
 
+        if self.program.program_allow_waitlist:
+            retVal['waitlisted_students'] = """Students on the program's waitlist"""
+
+        return retVal
+                  
+    @aux_call
+    @needs_student
+    @meets_grade
+    def waitlist_subscribe(self, request, tl, one, two, module, extra, prog):
+        """ Add this user to the waitlist """
+        if not self.program.isFull():
+            raise ESPError(False), "You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration."
+
+        waitlist_all = UserBit.objects.filter(verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist")).filter(enddate__gte=datetime.now())
+        waitlist = waitlist_all.filter(user=self.user)
+        
+        if waitlist.count() <= 0:
+            UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist"), recursive=False)
+            already_on_list = False
+        else:
+            already_on_list = True
+
+        return render_to_response(self.baseDir()+'waitlist.html', request, (prog, tl), { 'already_on_list': already_on_list, 'waitlist': waitlist_all })
+        
     @aux_call
     @needs_student
     @meets_grade
@@ -134,7 +170,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             
         context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
-        if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog):
+        if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog) and not self.program.isConfirmed(self.user):
             raise ESPError(log = False), "This program has filled!  It can't accept any more students.  Please try again next session."
 
         modules = prog.getModules(self.user, tl)

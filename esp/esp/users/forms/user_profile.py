@@ -121,21 +121,32 @@ class TeacherInfoForm(FormWithRequiredCss):
     """ Extra teacher-specific information """
 
     from esp.users.models import shirt_sizes, shirt_types
+    from_mit_answers = [ (True, "Yes"), (False, "No") ]
 
-    graduation_year = SizedCharField(length=4, max_length=4, required=False)
+    graduation_year = forms.IntegerField(required=False)
+    from_mit = forms.ChoiceField(choices=from_mit_answers, widget = forms.RadioSelect() )
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
 
-    def clean_graduation_year(self):
-        gy = self.cleaned_data['graduation_year'].strip()
-        try:
-            gy = str(abs(int(gy)))
-        except:
-            if gy != 'G':
-                gy = 'N/A'
-        return gy
+    def clean(self):
+        cleaned_data = self.cleaned_data
+
+        # If teacher is not from MIT, make sure they've filled in the next box
+        from_mit = cleaned_data.get('from_mit')
+        school = cleaned_data.get('school')
+
+        if from_mit == "False" and school == "":
+            msg = u'Please enter your affiliation if you are not from MIT.'
+            self._errors['school'] = forms.util.ErrorList([msg])
+            del cleaned_data['from_mit']
+            del cleaned_data['school']
+
+        return cleaned_data
+
+TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
+TeacherInfoForm.base_fields['graduation_year'].widget.attrs['maxlength'] = 4
 
 class EducatorInfoForm(FormWithRequiredCss):
     """ Extra educator-specific information """

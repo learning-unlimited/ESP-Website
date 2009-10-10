@@ -46,7 +46,6 @@ from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType, CompletedTransactionException
-from esp.users.models import ESPUser
 
 import pickle
 import operator
@@ -162,10 +161,11 @@ def usersearch(request):
         raise ESPError(False), "No user found by that name!"
 
     if isiterable(found_users):
-        return render_to_response('users/usersearch.html', request, GetNode("Q/Web"), { 'found_users': found_users })
+        return render_to_response('users/userview_search.html', request, GetNode("Q/Web"), { 'found_users': found_users })
     else:
         from urllib import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users.username}))
+
 
 @admin_required
 def userview(request):
