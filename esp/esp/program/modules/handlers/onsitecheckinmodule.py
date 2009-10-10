@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from esp.program.modules.module_ext import CreditCardModuleInfo
+from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm
 from esp.program.modules.handlers.creditcardmodule import CreditCardModule
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
@@ -38,10 +39,13 @@ from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
 from django              import forms
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
+from django.template.loader import render_to_string
 from esp.program.models import SATPrepRegInfo
 from esp.users.views    import search_for_user
 from esp.accounting_docs.models   import Document
+
+import simplejson as json
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
@@ -118,6 +122,52 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                     self.program_anchor_cached(),
                                     verb)
 
+    @aux_call
+    @needs_onsite
+    def ajax_status(self, request, tl, one, two, module, extra, prog, context={}):
+        students = ESPUser.objects.filter(prog.students(QObjects=True)['attended']).distinct().order_by('id')
+        context['students'] = students
+        
+        #   Populate some stats
+        start_times = {}
+        grade_levels = {}
+        for student in students:
+            grade = student.getGrade()
+            if grade not in grade_levels:
+                grade_levels[grade] = 0
+            grade_levels[grade] += 1
+            start_time = student.getFirstClassTime(prog)
+            if start_time not in start_times:
+                start_times[start_time] = 0
+            start_times[start_time] += 1    
+        
+        context['module'] = self
+        context['program'] = prog
+        context['start_times'] = [{'time': key, 'num_students': start_times[key]} for key in start_times]
+        context['grade_levels'] = [{'grade': key, 'num_students': grade_levels[key]} for key in grade_levels]
+        json_data = {'checkin_status_html': render_to_string(self.baseDir()+'checkinstatus.html', context)}
+        return HttpResponse(json.dumps(json_data))
+
+
+    @aux_call
+    @needs_onsite
+    def rapidcheckin(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        if request.method == 'POST':
+            #   Handle submission of student
+            form = OnSiteRapidCheckinForm(request.POST)
+            if form.is_valid():
+                student = ESPUser(form.cleaned_data['user'])
+                bit, created = UserBit.objects.get_or_create(user=student, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
+                context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
+                if request.is_ajax():
+                    return self.ajax_status(request, tl, one, two, module, extra, prog, context)
+        else:
+            form = OnSiteRapidCheckinForm()
+        
+        context['module'] = self
+        context['form'] = form
+        return render_to_response(self.baseDir()+'ajaxcheckin.html', request, (prog, tl), context)
         
 
     @main_call
