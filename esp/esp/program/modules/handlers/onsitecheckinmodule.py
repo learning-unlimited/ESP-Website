@@ -126,25 +126,43 @@ class OnSiteCheckinModule(ProgramModuleObj):
     @needs_onsite
     def ajax_status(self, request, tl, one, two, module, extra, prog, context={}):
         students = ESPUser.objects.filter(prog.students(QObjects=True)['attended']).distinct().order_by('id')
-        context['students'] = students
         
         #   Populate some stats
-        start_times = {}
-        grade_levels = {}
-        for student in students:
-            grade = student.getGrade()
-            if grade not in grade_levels:
-                grade_levels[grade] = 0
-            grade_levels[grade] += 1
-            start_time = student.getFirstClassTime(prog)
-            if start_time not in start_times:
-                start_times[start_time] = 0
-            start_times[start_time] += 1    
+        if 'snippets' in request.GET:
+            snippet_list = request.GET['snippets'].split(',')
+        else:
+            snippet_list = ['grades']
+        
+        if 'grades' in snippet_list:
+            grade_levels = {}
+            for student in students:
+                grade = student.getGrade()
+                if grade not in grade_levels:
+                    grade_levels[grade] = 0
+                grade_levels[grade] += 1
+            context['grade_levels'] = [{'grade': key, 'num_students': grade_levels[key]} for key in grade_levels]
+        else:
+            context['grade_levels'] = None
+            
+        if 'times' in snippet_list:
+            start_times = {}
+            for student in students:
+                start_time = student.getFirstClassTime(prog)
+                if start_time not in start_times:
+                    start_times[start_time] = 0
+                start_times[start_time] += 1    
+            context['start_times'] = [{'time': key, 'num_students': start_times[key]} for key in start_times]
+        else:
+            context['start_times'] = None
+         
+        if 'students' in snippet_list:
+            context['students'] = students
+        else:
+            context['students'] = None
         
         context['module'] = self
         context['program'] = prog
-        context['start_times'] = [{'time': key, 'num_students': start_times[key]} for key in start_times]
-        context['grade_levels'] = [{'grade': key, 'num_students': grade_levels[key]} for key in grade_levels]
+       
         json_data = {'checkin_status_html': render_to_string(self.baseDir()+'checkinstatus.html', context)}
         return HttpResponse(json.dumps(json_data))
 
