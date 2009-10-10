@@ -486,11 +486,37 @@ class ESPUser(User, AnonymousUser):
                                                 anchor__userbit_qsc__verb__uri__in=verb_uris)
                                               ).distinct()
 
-
         return csl
 
     def getEnrolledSections(self, program=None):
+        if program is None:
+            return self.getEnrolledSectionsAll()
+        else:
+            return self.getEnrolledSectionsFromProgram(program)
+
+    @cache_function
+    def getEnrolledSectionsFromProgram(self, program):
         return self.getSections(program, verbs=['/Enrolled'])
+    getEnrolledSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent.parent)},
+                                                 lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
+
+    @cache_function
+    def getEnrolledSectionsAll(self):
+        return self.getSections(None, verbs=['/Enrolled'])
+    getEnrolledSectionsAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user}, 
+                                         lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
+
+    @cache_function
+    def getFirstClassTime(self, program):
+        sections = self.getEnrolledSectionsFromProgram(program).order_by('meeting_times')
+        if sections.count() == 0:
+            return None
+        else:
+            if sections[0].meeting_times.count() == 0:
+                return None
+            else:
+                return sections[0].meeting_times.order_by('start')[0]
+    getFirstClassTime.depend_on_cache(getEnrolledSectionsFromProgram, lambda self=wildcard, program=wildcard, **kwargs: {'self':self, 'program':program})
 
     def getRegistrationPriority(self, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. 
