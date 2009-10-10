@@ -64,7 +64,7 @@
 
 <div id="alumniform">
   <form action="{{ request.path }}" method="post">
-  <table class="contact" align="center" width="500">
+  <table class="contact" align="center" class="fullwidth">
   <thead>
     <tr>
       <th colspan="2">
@@ -102,7 +102,7 @@
 {% if lookup_performed %}
 <div id="catalog">
 <br />
-<table width="600" align="center" cellpadding="0" cellspacing="0">
+<table class="fullwidth" align="center" cellpadding="0" cellspacing="0">
 <tr>
     <th colspan="3" align="center">Lookup found {{ lookup_list|length }} matches</th>
 </tr>
@@ -114,7 +114,7 @@
     </tr>
     </table>
     {% for lookup_result in lookup_list %}
-    <table width="600" align="center" cellpadding="0" cellspacing="0">
+    <table class="fullwidth" align="center" cellpadding="0" cellspacing="0">
         <tr>
             <td width="20%" valign="top">{{ lookup_result.contactinfo.first_name }} {{ lookup_result.contactinfo.last_name }}</td>
             <td width="20%" valign="top">{{ lookup_result.start_year }} &ndash; {{ lookup_result.end_year }}</td>
@@ -143,7 +143,7 @@ If you have an account on the ESP web site, please use the box in the first row 
 
 <div id="alumniform">
   <form action="{{ request.path }}" method="post">
-  <table class="contact" align="center" width="500">
+  <table class="contact fullwidth" align="center">
 
   <thead>
     <tr>

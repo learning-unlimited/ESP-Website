@@ -112,18 +112,18 @@ li.yellow a { background-color: #edb600; background-image: url(/media/images/the
 #page.yellow #cross_link .inactive a { background-image: url(/media/images/theme/gen/ye_overtab.png); }
 #page.yellow #cross_link a { background-image: url(/media/images/theme/gen/ye_overtab_active.png); }
 
-/* lightgreen lg #8cc63f #5b7228 #45591b */
-#page.lightgreen .forecolor { color: #8cc63f; }
+/* lightgreen lg #84BE6A #5b7228 #45591b */
+#page.lightgreen .forecolor { color: #84BE6A; }
 #page.lightgreen .backcolor { color: #5b7228; }
 #page.lightgreen .accentcolor { color: #45591b; }
 #page.lightgreen #main > .corners div { background-image: url(/media/images/theme/gen/lg_corners_main.png); }
-#page.lightgreen #body { background: #8cc63f; }
+#page.lightgreen #body { background: #84BE6A; }
 .lightgreen a { color: #45591b; }
 #page.lightgreen #body > .corners div { background-image: url(/media/images/theme/gen/lg_corners_body.png); }
 #page.lightgreen #search_box { background: #fff url(/media/images/theme/gen/lg_search.png) no-repeat 0% scroll; }
 #page.lightgreen #login_submit { background: #fff url(/media/images/theme/gen/lg_login.png) no-repeat 0% scroll; }
 #page.lightgreen #login_signup { background: #fff url(/media/images/theme/gen/lg_signup.png) no-repeat 0% scroll; }
-li.lightgreen a { background-color: #8cc63f; background-image: url(/media/images/theme/gen/lg_tab.png); }
+li.lightgreen a { background-color: #84BE6A; background-image: url(/media/images/theme/gen/lg_tab.png); }
 #page.lightgreen #menu li.lightgreen { margin-left: 0; width: 130px }
 #page.lightgreen #submenu { background: #45591b; }
 #page.lightgreen #content_header { background: #5b7228; }

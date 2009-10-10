@@ -1,6 +1,6 @@
 <!-- Question Type: Yes/No Response -->
 {% load survey %}
-<table width="600">
+<table class="fullwidth">
 <tr>
     <td width="30%"><b>{{ name }}</b></td>
     <td width="14%"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="Yes" />Yes</td>

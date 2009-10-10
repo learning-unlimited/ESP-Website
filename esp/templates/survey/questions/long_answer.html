@@ -1,6 +1,6 @@
 <!-- Question Type: Long Text -->
 {% load survey %}
-<table width="600">
+<table class="fullwidth">
 <tr>
     <td width="35%"><b>{{ name }}</b></td>
     <td><textarea rows="{{ rows }}" cols="{{ columns }}" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}"/></textarea></td>
