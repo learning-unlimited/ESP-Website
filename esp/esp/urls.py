@@ -54,9 +54,12 @@ urlpatterns += patterns('',
 urlpatterns += patterns('esp.shortterm.views',
                         (r'^school_response/$', 'school_response_form'))
 
+urlpatterns += patterns('esp.web.views',
+                        (r'^$', 'index',{'template':'splash.html'}), # index
+                        )
+
 # generic stuff
 urlpatterns += patterns('django.views.generic',
-                        (r'^$', 'simple.direct_to_template',{'template':'splash.html'}), # index
                         (r'^web/?', 'simple.direct_to_template',{'template':'splash.html'}), # index
                         (r'^web$', 'simple.direct_to_template',{'template':'splash.html'}), # index                        
                         (r'^esp_web', 'simple.direct_to_template',{'template':'splash.html'}), # index
