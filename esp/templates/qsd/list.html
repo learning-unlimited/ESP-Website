@@ -19,7 +19,7 @@
 
 <center>
 <form method="post" action="{{ request.path }}?cmd=bulk_move">
-<table class="fullwidth">
+<table class="fullwidth" style="table-layout: fixed;">
 <tr>
     <th colspan="6">List of Pages</th>
 </tr>
@@ -30,8 +30,8 @@
     </td>
 </tr>
 <tr>
-    <th class="small" width="70">Move?</th>
-    <th class="small" width="300">Path (click to view/edit)</th>
+    <th class="small">Move?</th>
+    <th class="small">Path (click to view/edit)</th>
     <th class="small">Nav. category</th>
     <th class="small">Title</th>
     <th class="small" colspan="2">Options</th>
@@ -52,7 +52,7 @@
 </tr>
 {% endfor %}
 <tr>
-    <td colspan="5">
+    <td colspan="6">
         To move all of the checked pages together: &nbsp;&nbsp;&nbsp;
         <input type="submit" class="fancybutton" value="Bulk Move" />
     </td>
