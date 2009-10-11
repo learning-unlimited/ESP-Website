@@ -93,10 +93,27 @@ class TeacherInfo__validationtest(TestCase):
         self.failUnless(tif.is_valid())
         # Check that form data copies correctly into the model
         ti = TeacherInfo.addOrUpdate(self.user, self.user.getLastProfile(), tif.cleaned_data)
-        self.failUnless(ti.graduation_year == tif.cleaned_data['graduation_year'])
+
+        def is_int(i):
+            try:
+                int(i)
+                return True
+            except:
+                return False
+            
+        # There's some data-cleaning going on here, so
+        # ti.graduation_year may have been edited to drop
+        # invalid values.
+        self.failUnless(ti.graduation_year.strip() == tif.cleaned_data['graduation_year'].strip()
+                        or (ti.graduation_year.strip() == "N/A"
+                            and not (is_int(tif.cleaned_data['graduation_year'].strip())
+                                 or tif.cleaned_data['graduation_year'].strip() == 'G')))
+        
         # Check that model data copies correctly back to the form
         tifnew = TeacherInfoForm(ti.updateForm({}))
         self.failUnless(tifnew.is_valid())
+
+        # This one should be an exact match
         self.failUnless(tifnew.cleaned_data['graduation_year'] == ti.graduation_year)
 
     def testUndergrad(self):
