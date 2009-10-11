@@ -111,6 +111,16 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
             raise forms.ValidationError("Please enter an explanation above.")
         return expl
+
+    def clean_graduation_year(self):
+        gy = self.cleaned_data['graduation_year'].strip()
+        try:
+            gy = str(abs(int(gy)))
+        except:
+            if gy != 'G':
+                gy = 'N/A'
+        return gy
+    
 StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
 StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
@@ -123,7 +133,7 @@ class TeacherInfoForm(FormWithRequiredCss):
     from esp.users.models import shirt_sizes, shirt_types
     from_mit_answers = [ (True, "Yes"), (False, "No") ]
 
-    graduation_year = forms.IntegerField(required=False)
+    graduation_year = SizedCharField(length=4, max_length=4, required=False)
     from_mit = forms.ChoiceField(choices=from_mit_answers, widget = forms.RadioSelect() )
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
