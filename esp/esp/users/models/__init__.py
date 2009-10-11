@@ -882,7 +882,6 @@ class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year_int = models.IntegerField(help_text='Enter 1 for a grad student, or 0 if not applicable.')
-    graduation_year = models.PositiveIntegerField(blank=True, null=True)
     from_mit = models.NullBooleanField(null=True)
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
@@ -900,7 +899,7 @@ class TeacherInfo(models.Model):
     def _graduation_year_get(self):
         return TeacherInfo._graduation_year_pretty(self.graduation_year_int)
     def _graduation_year_set(self, value):
-        if value == 'G':
+        if value.strip() == 'G':
             self.graduation_year_int = 1
         else:
             try:
