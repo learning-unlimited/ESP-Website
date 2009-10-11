@@ -82,6 +82,7 @@ class TeacherInfo__validationtest(TestCase):
             'major': 'Underwater Basket Weaving',
             'shirt_size': 'XXL',
             'shirt_type': 'M',
+            'from_mit': 'True'
         }
 
     def useData(self, data):
