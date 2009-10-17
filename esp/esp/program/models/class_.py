@@ -520,6 +520,9 @@ class ClassSection(models.Model):
         self.meeting_times.clear()
         for event in event_list:
             self.meeting_times.add(event)
+
+    def clear_meeting_times(self):
+        self.meeting_times.clear()
     
     def assign_start_time(self, first_event):
         """ Get enough events following the first one until you have the class duration covered.

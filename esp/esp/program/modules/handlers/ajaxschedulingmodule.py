@@ -38,7 +38,7 @@ from django.http                 import HttpResponseRedirect, HttpResponse
 from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserBit
 from esp.middleware              import ESPError
-from esp.resources.models        import Resource, ResourceRequest, ResourceType
+from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from esp.datatree.models         import DataTree
 from datetime                    import timedelta
 from django.utils                import simplejson
@@ -188,7 +188,97 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         response = HttpResponse(content_type="application/json")
         simplejson.dump(classrooms_dicts, response)
-        return response        
+        return response
+
+    @aux_call
+    @needs_admin
+    def ajax_schedule_assignments(self, request, tl, one, two, module, extra, prog):
+        resource_assignments = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog, resource__res_type__name="Classroom").select_related('resource')
+
+        resassign_dicts = [
+            { 'uid': r.id,
+              'resource_id': r.resource.name,
+              'resource_time_id': r.resource.event_id,
+              'classsection_id': r.target_id,
+              'classsubject_id': r.target_subj_id
+              } for r in resource_assignments ]
+
+        response = HttpResponse(content_type="application/json")
+        simplejson.dump(resassign_dicts, response)
+        return response
+
+    @aux_call
+    @needs_admin
+    def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
+        if not request.POST.has_key('json'):
+            raise ESPError(False), "This URL is intended to be used for client<->server communication; it's not for human-readable content."
+
+        data = simplejson.dumps(request.POST['json'])
+
+        # Pull relevant data out of the JSON structure
+        cls = ClassSection.objects.get(id=data['class'])
+        action = data['action']
+
+        def makeret(**kwargs):
+            response = HttpResponse(content_type="application/json")
+            simplejson.dump(classrooms_dicts, kwargs)
+            return response            
+        
+        ret = { 'ret': False, 'msg': "Internal Error" } # 'ret' should be overwritten by all code paths below
+
+        if action == 'deletereg':
+            cls.clearRooms()
+            cls.clear_meeting_times()
+
+            return makeret(ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
+
+        elif action == 'assignreg':
+            blockrooms = data['block_room_assignments']
+
+            times = [br['time']['uid'] for br in blockrooms]
+            classrooms = [br['room']['uid'] for br in blockrooms]
+
+            if len(times) < 1:
+                return makeret(ret=False, msg="No times specified!, can't assign to a timeblock")
+
+            if len(classrooms) < 1:
+                return makeret(ret=False, msg="No classrooms specified!, can't assign to a timeblock")
+
+            basic_cls = classrooms[0]
+            for c in classrooms:
+                if c != basic_cls:
+                    return makeret(ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
+                
+            times = Event.objects.filter(id__in=times)
+            if len(times) < 1:
+                return makeret(ret=False, msg="Specified Events not found in the database")
+
+            classrooms = Resource.objects.filter(name=basic_cls, res_type__name="Classroom")
+            if len(classrooms) < 1:
+                return makeret(ret=False, msg="Specified Classrooms not found in the database")
+
+            classroom = classrooms[0]
+
+            cls.assign_meeting_times(times)
+            status, errors = cls.assign_room(classroom)
+
+            if not status: # If we failed any of the scheduling-constraints checks in assign_room()
+                return makeret(ret=True, msg=" | ".join(errors))
+            
+            return makeret(ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
+        else:
+            return makeret(ret=False, msg="Unrecognized command: '%s'" % action)
+
+        
+    @aux_call
+    @needs_admin
+    def ajax_schedule_last_changed(self, request, tl, one, two, module, extra, prog):
+        ret = { 'val': None,  # Should either be 'None' or a valid datetime object corresponding the the timestamp at which the schedule was last changed in any way
+                'msg': 'Not yet implemented' }
+
+        response = HttpResponse(content_type="application/json")
+        simplejson.dump(classrooms_dicts, ret)
+        return response
 
     @aux_call
     @needs_admin
