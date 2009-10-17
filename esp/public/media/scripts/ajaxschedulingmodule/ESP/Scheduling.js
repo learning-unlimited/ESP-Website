@@ -11,7 +11,6 @@ ESP.Scheduling = function(){
 	$j('#directory-target').append(this.searchbox.el);
 	$j('#directory-target').append(this.directory.el);
 	
-	
 	//ESP.Utilities.evm.bind('drag_started',function(data){alert('!!!');});
 	ESP.Utilities.evm.bind('drag_dropped', function(event, data){
 		var extra = {
@@ -37,6 +36,8 @@ ESP.Scheduling = function(){
 		}
 		ESP.Utilities.evm.fire('block_section_unassignment',data);
 	    });
+
+	apply_existing_classes(this.data.schedule_assignments, this.data)
     };
     
     // process data
@@ -47,8 +48,11 @@ ESP.Scheduling = function(){
 	    blocks: [],
 	    sections: [],
 	    block_index: {},
-	    teachers: []
+	    teachers: [],
+	    schedule_assignments: []
 	};
+
+	processed_data.schedule_assignments = data.schedule_assignments;
 	
 	var Resources = ESP.Scheduling.Resources;
 	// times
@@ -83,7 +87,7 @@ ESP.Scheduling = function(){
 		var t = Resources.get('Time', r.availability[j]);
 		var block;
 		processed_data.blocks.push(block = Resources.create(
-		    'Block', { time: t, room: r, status:BlockStatus.AVAILABLE }));
+		    'Block', { time: t, room: r, status:BlockStatus.AVAILABLE, uid: [t.uid,r.uid] }));
 		processed_data.block_index[rid][block.time.uid] = block;
 	    }
 	}
@@ -116,16 +120,42 @@ ESP.Scheduling = function(){
 			length_hr: Math.round(c.length * 2) / 2,
 			id:c.id,
 			text:c.text,
-			teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); })
+			teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
 		    }));
 	    s.teachers.map(function(x){ x.sections.push(s); });
 	}
 	
-	
-	
 	return processed_data;
     };
     
+    var apply_existing_classes = function(assignments, data) {
+	var Resources = ESP.Scheduling.Resources;
+	var rsrc_sec = {}
+	var sa;
+
+	for (var i = 0; i < assignments.length; i++) {
+	    sa = data.schedule_assignments[i];
+
+	    if (!(rsrc_sec[sa.classsection_id])) {
+		rsrc_sec[sa.classsection_id] = [];
+	    }
+
+	    rsrc_sec[sa.classsection_id].push(Resources.get('Block', [sa.resource_time_id,sa.resource_id]));
+ 	}
+
+	var Section;
+	var sec_id;
+	//alert("Assigning Sections: " + string(data.schedule_assignments));
+	for (var i = 0; i < data.sections.length; i++) {
+	    sec_id = data.sections[i].uid;
+	    if (rsrc_sec[sec_id]) {
+		ESP.Utilities.evm.fire('block_section_assignment_request', { 
+			section: Resources.get('Section', sec_id), 
+			    blocks: rsrc_sec[sec_id] });
+	    }
+	}
+    }
+
     var validate_block_assignment = function(block, section) {
 	// check status
 	if (block.status != ESP.Scheduling.Resources.BlockStatus.AVAILABLE) {
@@ -178,7 +208,7 @@ ESP.Scheduling = function(){
 $j(function(){
 	var data = {};
 	var success_count = 0;
-	var files = ['times','rooms','sections','resources','teachers'];
+	var files = ['times','rooms','sections','resources','teachers','schedule_assignments'];
 	var ajax_verify = function(name) {
 	    return function(d, status) {
 		if (status != "success") {
