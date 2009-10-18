@@ -85,7 +85,6 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    $j.post('ajax_schedule_class', req, function(data, status) {
 				    if (status == "success") {
 					ESP.version_uuid = data.val;
-					ESP.tmp_data = data;
 				    }
 			        }, "json");
 			}
@@ -107,7 +106,6 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    $j.post('ajax_schedule_class', req, function(data, status) {
 				    if (status == "success") {
 					ESP.version_uuid = data.val;
-					ESP.tmp_data = data;
 				    }
 			        }, "json");
 			}
