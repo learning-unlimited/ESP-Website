@@ -151,7 +151,7 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 	    },
 	    search_function: function(text){
 		var regex = new RegExp(text,'i'); // case insensitive
-		var fields = ['id','category'];
+		var fields = ['id','category','text'];
 		var pfields = ['Teacher'];
 		return function(x){
 		    for (var i = 0; i < fields.length; i++) {
