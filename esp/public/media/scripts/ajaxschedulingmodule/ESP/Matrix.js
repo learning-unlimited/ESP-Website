@@ -76,6 +76,20 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    cell.status(BlockStatus.RESERVED);
 			}
 		    }.bind(this));
+		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
+			if (!(data.nowriteback)) {
+			    var req = { action: 'assignreg',
+					cls: data.section.uid,
+					block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
+
+			    $j.post('ajax_schedule_class', req, function(data, status) {
+				    if (status == "success") {
+					ESP.version_uuid = data.val;
+					ESP.tmp_data = data;
+				    }
+			        }, "json");
+			}
+		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
 			var old_blocks = data.blocks;
 			for (var i = 0; i < old_blocks.length; i++) {
@@ -83,6 +97,19 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    var cell = this.block_cells[block.room.uid][block.time.uid];
 			    cell.td.text('');
 			    cell.status(BlockStatus.AVAILABLE);
+			}
+		    }.bind(this))
+		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
+			if (!(data.nowriteback)) {
+			    var req = { action: 'deletereg',
+					cls: data.section.uid };
+
+			    $j.post('ajax_schedule_class', req, function(data, status) {
+				    if (status == "success") {
+					ESP.version_uuid = data.val;
+					ESP.tmp_data = data;
+				    }
+			        }, "json");
 			}
 		    }.bind(this));
 
