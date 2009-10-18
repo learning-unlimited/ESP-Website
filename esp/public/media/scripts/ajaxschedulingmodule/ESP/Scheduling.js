@@ -5,9 +5,12 @@ ESP.Scheduling = function(){
     function init(test_data_set){
 	var pd = this.data = process_data(test_data_set);
 	this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
+	$j('#matrix-target').text('');
+	$j('#matrix-target').append((new Date()).getMilliseconds());
 	$j('#matrix-target').append(this.matrix.table);
 	this.directory = new ESP.Scheduling.Widgets.Directory(pd.sections);
 	this.searchbox = new ESP.Scheduling.Widgets.SearchBox(this.directory);
+	$j('#directory-target').text('');
 	$j('#directory-target').append(this.searchbox.el);
 	$j('#directory-target').append(this.directory.el);
 	
@@ -145,13 +148,13 @@ ESP.Scheduling = function(){
 
 	var Section;
 	var sec_id;
-	//alert("Assigning Sections: " + string(data.schedule_assignments));
 	for (var i = 0; i < data.sections.length; i++) {
 	    sec_id = data.sections[i].uid;
 	    if (rsrc_sec[sec_id]) {
 		ESP.Utilities.evm.fire('block_section_assignment_request', { 
 			section: Resources.get('Section', sec_id), 
-			    blocks: rsrc_sec[sec_id] });
+			    blocks: rsrc_sec[sec_id],
+			    nowriteback: true /* Don't tell the server about this assignment */ });
 	    }
 	}
     }
@@ -164,7 +167,6 @@ ESP.Scheduling = function(){
 
 	var time = block.time;
 	
-	// check for teacher availability conflicts
 	for (var i = 0; i < section.teachers.length; i++) {
 	    var valid = false;
 	    var teacher = section.teachers[i];
@@ -177,7 +179,7 @@ ESP.Scheduling = function(){
 	    if (!valid)
 		return false;
 	}
-	
+
 	// check for teacher class conflicts
 	for (var i = 0; i < section.teachers.length; i++) {
 	    var teacher = section.teachers[i];
@@ -191,6 +193,7 @@ ESP.Scheduling = function(){
 		}
 	    }
 	}
+
 	return true;
     };
     
@@ -206,6 +209,15 @@ ESP.Scheduling = function(){
  * initialize the page
  */
 $j(function(){
+	var version_uuid = null;
+	ESP.version_uuid = version_uuid;
+
+	$j.getJSON('ajax_schedule_last_changed', function(d, status) {
+		if (status == "success") {
+		    ESP.version_uuid = d['val'];
+		}
+	    });
+
 	var data = {};
 	var success_count = 0;
 	var files = ['times','rooms','sections','resources','teachers','schedule_assignments'];
@@ -224,4 +236,20 @@ $j(function(){
 	for (var i = 0; i < files.length; i++) {
 	    $j.getJSON('ajax_' + files[i], ajax_verify(files[i]));
 	}
+
+
+	setInterval(function() {
+		$j.getJSON('ajax_schedule_last_changed', function(d, status) {
+			if (status == "success") {
+			    if (d['val'] != ESP.version_uuid) {
+				success_count = 0;
+				ESP.version_uuid = d['val'];
+				data = {};
+				for (var i = 0; i < files.length; i++) {
+				    $j.getJSON('ajax_' + files[i], ajax_verify(files[i]));
+				}
+			    }
+			}
+		    });
+	    }, 60000);
 });
