@@ -59,11 +59,11 @@ vertical-align: middle;
 }
 
 .matrix-row-body .matrix-cell {
-width: 60px; min-width: 60px; max-width: 60px;
+width: 45px; min-width: 45px; max-width: 45px;
 padding: 5px; margin: 0px;
 }
 .matrix-cell {
-height: 35px; max-height: 35px; min-height: 35px;
+height: 25px; max-height: 25px; min-height: 25px;
 padding: 5px 0px; vertical-align: middle; display: inline-block;
 text-align: center;
 }
