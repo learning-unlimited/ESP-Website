@@ -39,11 +39,14 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    // table columns
 	    properties: {
 		'ID': {
-		    get: function(x){ return x.id; },
+		    get: function(x){ return x.class_id; },
 		    //css: 'text-align:center; text-decoration:underline; font-weight:bold;',
 		    sort: function(x,y){
 			return x.section.id - y.section.id;
 		    }
+		},
+		'Title': {
+		    get: function(x){ return x.text; },
 		},
 		'Category': {
 		    get: function(x){ return x.category; },

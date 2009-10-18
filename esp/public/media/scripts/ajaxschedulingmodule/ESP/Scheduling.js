@@ -118,6 +118,7 @@ ESP.Scheduling = function(){
 	    var s;
 	    processed_data.sections.push(s = Resources.create('Section',{
 			uid: c.id,
+			class_id: c.class_id,
 			category: c.category,
 			length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
 			length_hr: Math.round(c.length * 2) / 2,

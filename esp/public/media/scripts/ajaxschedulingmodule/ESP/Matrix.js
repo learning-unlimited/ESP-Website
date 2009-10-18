@@ -72,7 +72,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			for (var i = 0; i < blocks.length; i++) {
 			    var block = blocks[i];
 			    var cell = this.block_cells[block.room.uid][block.time.uid];
-			    cell.td.text(data.section.uid);
+			    cell.td.text(data.section.class_id);
 			    cell.status(BlockStatus.RESERVED);
 			}
 		    }.bind(this));

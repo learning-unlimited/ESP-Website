@@ -101,6 +101,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         sections_dicts = [
             {   'id': s.id,
+                'class_id': s.parent_class_id,
                 'text': s.title,
                 'category': s.category.category,
                 'length': float(s.duration),
