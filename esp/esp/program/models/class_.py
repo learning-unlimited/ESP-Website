@@ -51,11 +51,13 @@ from esp.miniblog.models import Entry
 from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
+from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
 from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
-from esp.program.models import Program
+from esp.program.models          import Program
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+from esp.cache                   import cache_function
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
@@ -96,7 +98,9 @@ class SectionCacheHelper(GenericCacheHelper):
         return 'SectionCache__%s' % cls._get_pk_val()
 
 class ClassManager(ProcedureManager):
-
+    def __repr__(self):
+        return "ClassManager()"
+    
     def approved(self, return_q_obj=False):
         if return_q_obj:
             return Q(status = 10)
@@ -104,6 +108,22 @@ class ClassManager(ProcedureManager):
         return self.filter(status = 10)
 
     def catalog(self, program, ts=None, force_all=False, initial_queryset=None):
+        # Try getting the catalog straight from cache
+        print (program, ts, force_all, initial_queryset, True)
+        catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True)
+        if catalog is None:
+            # Get it from the DB, then try prefetching class sizes
+            catalog = self.catalog_cached(program, ts, force_all, initial_queryset)
+        else:
+            for cls in catalog:
+                for sec in cls.get_sections():
+                    del sec._count_students
+
+        return catalog
+
+    
+    @cache_function
+    def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None):
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
@@ -185,6 +205,16 @@ class ClassManager(ProcedureManager):
                                  # they show up for all instances.
             
         return classes
+    catalog_cached.depend_on_model(lambda: ClassSubject)
+    catalog_cached.depend_on_model(lambda: ClassSection)
+    catalog_cached.depend_on_model(lambda: QSDMedia)
+    catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
+                                 lambda bit: bit.applies_to_verb('V/Flags/Registration/Teacher'))
+    #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
+    #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
+    catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
+                                 lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.uri) and ("/Classes/" in page.path.uri)) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
+    
 
     cache = ClassCacheHelper
 
@@ -841,6 +871,10 @@ class ClassSection(models.Model):
             defaults = False
             
         if defaults:
+            # If we got this from a previous query, just return it
+            if hasattr(self, "_count_students"):
+                return self._count_students
+            
             retVal = self.cache['num_students']
             if retVal is not None and use_cache:
                 return retVal
@@ -850,6 +884,7 @@ class ClassSection(models.Model):
                 if retValCache != None:
                     retVal = len(retValCache)
                     self.cache['num_students'] = retVal
+                    self._count_students = retVal
                     return retVal
 
 
@@ -1276,8 +1311,11 @@ class ClassSubject(models.Model):
         
     def num_students(self, use_cache=True, verbs=['/Enrolled']):
         result = 0
+        if hasattr(self, "_num_students"):
+            return self._num_students
         for sec in self.get_sections():
             result += sec.num_students(use_cache, verbs)
+        self._num_students = result
         return result
 
     def num_students_prereg(self, use_cache=True):
