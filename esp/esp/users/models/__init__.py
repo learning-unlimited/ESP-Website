@@ -392,7 +392,7 @@ class ESPUser(User, AnonymousUser):
         from esp.resources.models import Resource
         from esp.cal.models import Event
 
-        valid_events = Event.objects.filter(useravailability__user=self)
+        valid_events = Event.objects.filter(useravailability__user=self, anchor=program.anchor).order_by('start'))
 
         if ignore_classes:
             #   Subtract out the times that they are already teaching.

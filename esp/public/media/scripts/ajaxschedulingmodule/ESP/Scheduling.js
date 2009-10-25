@@ -83,7 +83,7 @@ ESP.Scheduling = function(){
 	    var r = data.rooms[i];
 	    var room;
 	    processed_data.rooms.push( room =
-		    Resources.create('Room',{ uid: r.uid, text: r.text })).uid;
+		    Resources.create('Room',{ uid: r.uid, text: r.text, block_contents: r.block_contents})).uid;
 	    var rid = room.uid
 	    processed_data.block_index[rid] = {};
 	    for (var j = 0; j < r.availability.length; j++) {
@@ -106,7 +106,7 @@ ESP.Scheduling = function(){
 	for (var i = 0; i < data.teachers.length; i++) {
 	    var t = data.teachers[i];
 	    processed_data.teachers.push(Resources.create('Teacher',{
-			uid: t.uid, text: t.text,
+			uid: t.uid, text: t.text, block_contents: t.block_contents,
 			available_times: t.availability.map(function(x){ return Resources.get('Time',x); }),
 			sections: []
 		    }));
@@ -119,6 +119,7 @@ ESP.Scheduling = function(){
 	    processed_data.sections.push(s = Resources.create('Section',{
 			uid: c.id,
 			class_id: c.class_id,
+            block_contents: c.block_contents,
 			category: c.category,
 			length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
 			length_hr: Math.round(c.length * 2) / 2,
