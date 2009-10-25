@@ -35,6 +35,7 @@ from esp.datatree.models         import *
 from esp.web.util                import render_to_response
 from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
+from django.template.loader      import render_to_string
 from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserBit
 from esp.middleware              import ESPError
@@ -102,6 +103,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         sections_dicts = [
             {   'id': s.id,
                 'class_id': s.parent_class_id,
+                'block_contents': render_to_string(self.baseDir() + 'section_block_label.html', {'sec': s}),
                 'text': s.title,
                 'category': s.category.category,
                 'length': float(s.duration),
@@ -136,6 +138,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
         classrooms_dicts = [
             {   'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
+                'block_contents': render_to_string(self.baseDir() + 'room_block_label.html', 
+                    {'room_name': classrooms_grouped[room_id][0].name, 
+                     'room_num_students': classrooms_grouped[room_id][0].num_students,
+                     'room_associated_resources': [ar.res_type.name for ar in classrooms_grouped[room_id][0].associated_resources()]
+                    }),
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
                 'associated_resources': [],
                 'num_students': classrooms_grouped[room_id][0].num_students,
@@ -172,6 +179,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         teacher_dicts = [
             {   'uid': t.id,
                 'text': t.name(),
+                'block_contents': render_to_string(self.baseDir() + 'teacher_block_label.html', {'first_name': t.first_name, 'last_name': t.last_name, 'available_times': [e.pretty_time() for e in Event.collapse(list(t.getAvailableTimes(prog)))]}),
                 'availability': resources_for_user[t.id]
             } for t in teachers ]
 

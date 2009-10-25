@@ -72,7 +72,8 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			for (var i = 0; i < blocks.length; i++) {
 			    var block = blocks[i];
 			    var cell = this.block_cells[block.room.uid][block.time.uid];
-			    cell.td.text(data.section.class_id);
+                //  cell.td.text(data.section.class_id);
+			    cell.td.html(data.section.block_contents);
 			    cell.status(BlockStatus.RESERVED);
 			}
 		    }.bind(this));
@@ -160,7 +161,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			$super()
 			this.room = room;
 			this.tr = $j('<div/>').addClass('matrix-row-body');
-			this.td.text(room.text);
+			this.td.html(room.block_contents);
 			this.td.addClass('matrix-row-header');
 			//this.tr.append(this.td);
 		}
