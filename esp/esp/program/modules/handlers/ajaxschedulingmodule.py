@@ -104,6 +104,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             {   'id': s.id,
                 'class_id': s.parent_class_id,
                 'block_contents': render_to_string(self.baseDir() + 'section_block_label.html', {'sec': s}),
+                'emailcode': s.emailcode(),
                 'text': s.title,
                 'category': s.category.category,
                 'length': float(s.duration),
