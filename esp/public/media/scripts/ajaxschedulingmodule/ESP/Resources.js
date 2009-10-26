@@ -92,7 +92,7 @@ ESP.declare('ESP.Scheduling.Resources',function(){
 		}
 	    });
 	Resources.Time.sequential = function(t1, t2) {
-	    return t1.end < t2.start && t2.start - t1.end < 11*60000; // account for +-5 min
+	    return t1.end <= t2.start && t2.start - t1.end < 11*60000; // account for +-5 min
 	    //return t1.end == t2.start;
 	};
 	
