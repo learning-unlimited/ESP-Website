@@ -71,6 +71,7 @@ padding: 5px; margin: 0px;
 height: 25px; max-height: 25px; min-height: 25px;
 padding: 5px 0px; vertical-align: middle; display: inline-block;
 text-align: center;
+font-size: 0.9em;
 }
 
 /*
