@@ -33,7 +33,6 @@ Email: web@esp.mit.edu
 """
 
 from django.db import models, connection, transaction, DatabaseError
-from django.core.cache import cache
 
 from esp.datatree.sql.query_utils import *
 from esp.datatree.sql.constants import *
@@ -43,7 +42,6 @@ __all__ = ('DataTreeManager',)
 
 # Globals
 qn = connection.ops.quote_name
-CACHE_TIME = 86400
 
 
 # SQL TEMPLATES
@@ -398,13 +396,6 @@ WHERE
     def _get_by_uri(self, uri, create=False, depth=0):
         delimiter = self.model.DELIMITER
         uri = uri.strip(delimiter)
-        cache_key = 'GetNode%s' % uri
-
-        # First use cache:
-        if not depth and CACHE_TIME:
-            node = cache.get(cache_key)
-            if node:
-                return node
 
         # Try to get it directly.
         try:
@@ -426,8 +417,6 @@ WHERE
         try:
             node = super(DataTreeManager, self).get(parent=parent,
                                                     name=cur_name)
-            if not depth and CACHE_TIME:
-                cache.set(cache_key, node, CACHE_TIME)
             return node
 
         except self.model.DoesNotExist:
@@ -452,8 +441,6 @@ WHERE
         else:
             raise DatabaseError("Unable to commit to database.")
 
-        if not depth and CACHE_TIME:
-            cache.set(cache_key, node, CACHE_TIME)
         return node
 
 
