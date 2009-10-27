@@ -429,7 +429,7 @@ class UserBit(models.Model):
         
         def clean_node(node):
             if hasattr(node, 'uri'):
-                return node.uri
+                return node.get_uri()
             return '?'
 
         if self.user is None:

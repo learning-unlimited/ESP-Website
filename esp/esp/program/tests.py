@@ -515,12 +515,13 @@ class ProgramFrameworkTest(TestCase):
         if not pcf.is_valid():
             print pcf.data
             print pcf.errors
+            print prog_form_values
             raise Exception()
         
         temp_prog = pcf.save(commit=False)
         datatrees, userbits, modules = prepare_program(temp_prog, pcf.cleaned_data)
         costs = (pcf.cleaned_data['base_cost'], pcf.cleaned_data['finaid_cost'])
-        anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
+        anchor = GetNode(pcf.cleaned_data['anchor'].get_uri() + "/" + pcf.cleaned_data["term"])
         anchor.friendly_name = pcf.cleaned_data['term_friendly']
         anchor.save()
         new_prog = pcf.save(commit=False)
@@ -547,7 +548,7 @@ class ProgramFrameworkTest(TestCase):
         for t in self.teachers:
             for i in range(settings['classes_per_teacher']):
                 current_category = self.categories[subject_count % settings['num_categories']]
-                class_anchor = GetNode('%s/Classes/%s%d' % (self.program.anchor.uri, current_category.symbol, subject_count + 1))
+                class_anchor = GetNode('%s/Classes/%s%d' % (self.program.anchor.get_uri(), current_category.symbol, subject_count + 1))
                 new_class, created = ClassSubject.objects.get_or_create(anchor=class_anchor, category=current_category, grade_min=7, grade_max=12, parent_program=self.program, class_size_max=settings['room_capacity'])
                 subject_count += 1
                 for j in range(settings['sections_per_class']):
