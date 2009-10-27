@@ -326,11 +326,14 @@ class DataTree(models.Model):
                 self.save(uri_fix=True)
             return ''
 
-        parent_uri = self.parent.get_uri()
-        if parent_uri == '':
-            self.uri = self.name
+        if self.parent == None:
+            self.uri = ''
         else:
-            self.uri = parent_uri + DataTree.DELIMITER + self.name
+            parent_uri = self.parent.get_uri()
+            if parent_uri == '':
+                self.uri = self.name
+            else:
+                self.uri = parent_uri + DataTree.DELIMITER + self.name
 
         self.uri_correct = True
 
