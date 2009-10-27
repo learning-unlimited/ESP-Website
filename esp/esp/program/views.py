@@ -283,7 +283,7 @@ def newprogram(request):
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
             # Fix the anchor friendly name right away, otherwise in-memory caches cause (mild) issues later on
-            anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
+            anchor = GetNode(pcf.cleaned_data['anchor'].get_uri() + "/" + pcf.cleaned_data["term"])
             anchor.friendly_name = pcf.cleaned_data['term_friendly']
             anchor.save()
 
@@ -343,7 +343,7 @@ def submit_transaction(request):
             invoice = Document.get_by_locator(post_locator)
             send_mail('[ ESP CC ] Duplicate Postback for #' + post_locator + ' by ' + invoice.user.first_name + ' ' + invoice.user.last_name, \
                   """Duplicate Postback Notification\n--------------------------------- \n\nDocument: %s\n\nUser: %s %s (%s)\n\nProgram anchor: %s\n\nRequest: %s\n\n""" % \
-                  (invoice.locator, invoice.user.first_name, invoice.user.last_name, invoice.user.id, invoice.anchor.uri, request) , \
+                  (invoice.locator, invoice.user.first_name, invoice.user.last_name, invoice.user.id, invoice.anchor.get_uri(), request) , \
                   settings.SERVER_EMAIL, \
                   [contact[1] for contact in settings.ADMINS], True)
             # Get the document that would've been created instead

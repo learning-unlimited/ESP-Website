@@ -125,12 +125,12 @@ class StudentClassRegModuleInfo(models.Model):
             verb_list = []
             for i in range(0, self.priority_limit):
                 if uris:
-                    verb_list.append(self.signup_verb.uri[len(REG_VERB_BASE):] + '/%d' % (i + 1))
+                    verb_list.append(self.signup_verb.get_uri()[len(REG_VERB_BASE):] + '/%d' % (i + 1))
                 else:
-                    verb_list.append(DataTree.get_by_uri(self.signup_verb.uri + '/%d' % (i + 1)))
+                    verb_list.append(DataTree.get_by_uri(self.signup_verb.get_uri() + '/%d' % (i + 1)))
         else:
             if uris:
-                verb_list = [self.signup_verb.uri[len(REG_VERB_BASE):]]
+                verb_list = [self.signup_verb.get_uri()[len(REG_VERB_BASE):]]
             else:
                 verb_list = [self.signup_verb]
         

@@ -266,9 +266,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             uri_base = 'V/Flags/Registration/'
             uri_start = len(uri_base)
             bits = sec.getRegBits(student)
-            student.bits = [bit.verb.uri[uri_start:] for bit in bits]
+            student.bits = [bit.verb.get_uri()[uri_start:] for bit in bits]
             student.app = student.getApplication(self.program, False)
-            student.other_classes = [(sec2, [bit.verb.uri[uri_start:] for bit in sec2.getRegBits(student)]) for sec2 in student.getSections(self.program).exclude(id=sec.id)]
+            student.other_classes = [(sec2, [bit.verb.get_uri()[uri_start:] for bit in sec2.getRegBits(student)]) for sec2 in student.getSections(self.program).exclude(id=sec.id)]
             prereg_bits = bits.exclude(verb__name__in=['Enrolled', 'Rejected'])
             if prereg_bits.count() != 0:
                student.added_class = prereg_bits[0].startdate
