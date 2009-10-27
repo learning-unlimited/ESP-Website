@@ -146,6 +146,9 @@ class DataTree(models.Model):
             self.__dict__.update(obj.__dict__)
             return self
 
+        DataTree.objects.filter(QTree(below=self)).update(uri_correct=False)
+        self.uri_correct=False
+        
         old_node = DataTree.objects.get(id=self.id)
         if old_node.parent_id != self.parent_id:
             raise NotImplementedError("Have not yet written the parent moving code.")
