@@ -44,7 +44,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.utils.memdb import mem_db
 from esp.datatree.sql.query_utils import *
 from esp.datatree.sql.manager import DataTreeManager
-
+from esp.cache import cache_function
 
 __all__ = ('DataTree', 'GetNode', 'QTree', 'get_lowest_parent', 'StringToPerm', 'PermToString')
 
@@ -547,11 +547,12 @@ class DataTree(models.Model):
                       DataTree.MAX_WAIT
         return
 
-    @staticmethod
+    @cache_function
     def get_by_uri(uri, create=False):
         return DataTree.objects.get(uri=uri, create=create)
-
-
+    get_by_uri.depend_on_model(lambda: DataTree)  # We can't depend on row because the URI of a node will change if its parent's name changes
+    get_by_uri = staticmethod(get_by_uri)
+    
     @staticmethod
     def violating_dup_rangestart(QObject = False):
         " Returns the list of nodes violating the rangestart-must-be-unique constraint. "
