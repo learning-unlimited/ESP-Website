@@ -39,7 +39,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    // table columns
 	    properties: {
 		'ID': {
-		    get: function(x){ return x.class_id; },
+		    get: function(x){ return x.block_contents; },
 		    //css: 'text-align:center; text-decoration:underline; font-weight:bold;',
 		    sort: function(x,y){
 			return x.section.id - y.section.id;
@@ -56,7 +56,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 		    }
 		},
 		'Teacher': {
-		    get: function(x) { return ""+x.teachers.map(function(x){return x.text;}); },
+		    get: function(x) { return ""+x.teachers.map(function(x){return x.block_contents;}); },
 		},
 		'Length': {
 		    get: function(x) { return x.length_hr; },
@@ -151,7 +151,7 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 	    },
 	    search_function: function(text){
 		var regex = new RegExp(text,'i'); // case insensitive
-		var fields = ['id','category','text'];
+		var fields = ['id','category','text', 'code'];
 		var pfields = ['Teacher'];
 		return function(x){
 		    for (var i = 0; i < fields.length; i++) {
