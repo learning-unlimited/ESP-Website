@@ -1,6 +1,8 @@
 import pickle
 from esp.web.util.structures import cross_set
 from django.test.testcases import TestCase
+from django.core.cache import cache
+from esp.cache.registry import dump_all_caches
 import string
 import random
 
@@ -8,11 +10,17 @@ class CacheFlushTestCase(TestCase):
     """ Flush the cache at the start and end of this test case """
     def _flush_cache(self):
         """ Don't do any actual fancy deletions; just change the cache prefix """
-        from esp import settings
-        settings.CACHE_PREFIX = ''.join( random.sample( string.letters + string.digits, 16 ) )
-        from django.conf import settings as django_settings
-        django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
+        if hasattr(cache, "flush_all"):
+            cache.flush_all()
+        else:
+            # Best effort to clear out everything anyway
+            dump_all_caches()
 
+            from esp import settings
+            settings.CACHE_PREFIX = ''.join( random.sample( string.letters + string.digits, 16 ) )
+            from django.conf import settings as django_settings
+            django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
+            
     def _fixture_setup(self):
         self._flush_cache()
         super(CacheFlushTestCase, self)._fixture_setup()
