@@ -141,7 +141,7 @@ def preview_miniblog(request, section = None):
     return curUser.getMiniBlogEntries()
     
 @cache_function
-def get_visible_announcements(user, limit):
+def get_visible_announcements(user, limit, tl):
     verb = GetNode('V/Subscribe')
     
     models_to_search = [Entry, AnnouncementLink]
@@ -150,7 +150,10 @@ def get_visible_announcements(user, limit):
     overflowed = False
     for model in models_to_search:
         result = UserBit.find_by_anchor_perms(model, user, verb).order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.now()) | Q(highlight_expire__isnull = True))
-
+	
+	if tl:
+	    result = result.filter(section=tl)
+	
         if limit:
             overflowed = ((len(result) - limit) > 0)
             total = len(result)
