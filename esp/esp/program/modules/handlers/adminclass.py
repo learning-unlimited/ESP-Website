@@ -104,7 +104,7 @@ class AdminClass(ProgramModuleObj):
         return clsTimeSlots
 
     def getClasses(self):
-        return self.user.getEditable(ClassSubject).filter(parent_program = self.program).order_by('anchor__name')
+        return self.user.getEditable(ClassSubject, qsc=self.program.anchor).order_by('anchor__name')
         
     def prepare(self, context=None):
         if context is None: context = {}
