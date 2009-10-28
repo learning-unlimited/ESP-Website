@@ -154,7 +154,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
             new_class.duration = timeslot.duration().seconds / 3600.0
             new_class.grade_min = 9
             new_class.grade_max = 12
-            new_class.anchor = DataTree.get_by_uri(prog.anchor.uri+'/Classes/Diag'+str(i+1), create=True)
+            new_class.anchor = DataTree.get_by_uri(prog.anchor.get_uri()+'/Classes/Diag'+str(i+1), create=True)
             new_class.category = ClassCategories.objects.get(category='SATPrep')
             new_class.status = 10
             new_class.save()

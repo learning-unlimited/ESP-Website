@@ -51,10 +51,12 @@ from esp.miniblog.models import Entry
 from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
+from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
 from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
-from esp.program.models import Program
+from esp.program.models          import Program
+from esp.cache                   import cache_function
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
@@ -95,7 +97,9 @@ class SectionCacheHelper(GenericCacheHelper):
         return 'SectionCache__%s' % cls._get_pk_val()
 
 class ClassManager(ProcedureManager):
-
+    def __repr__(self):
+        return "ClassManager()"
+    
     def approved(self, return_q_obj=False):
         if return_q_obj:
             return Q(status = 10)
@@ -103,6 +107,22 @@ class ClassManager(ProcedureManager):
         return self.filter(status = 10)
 
     def catalog(self, program, ts=None, force_all=False, initial_queryset=None):
+        # Try getting the catalog straight from cache
+        print (program, ts, force_all, initial_queryset, True)
+        catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True)
+        if catalog is None:
+            # Get it from the DB, then try prefetching class sizes
+            catalog = self.catalog_cached(program, ts, force_all, initial_queryset)
+        else:
+            for cls in catalog:
+                for sec in cls.get_sections():
+                    del sec._count_students
+
+        return catalog
+
+    
+    @cache_function
+    def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None):
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
@@ -184,6 +204,16 @@ class ClassManager(ProcedureManager):
                                  # they show up for all instances.
             
         return classes
+    catalog_cached.depend_on_model(lambda: ClassSubject)
+    catalog_cached.depend_on_model(lambda: ClassSection)
+    catalog_cached.depend_on_model(lambda: QSDMedia)
+    catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
+                                 lambda bit: bit.applies_to_verb('V/Flags/Registration/Teacher'))
+    #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
+    #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
+    catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
+                                 lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.get_uri()) and ("/Classes/" in page.path.get_uri())) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
+    
 
     cache = ClassCacheHelper
 
@@ -733,19 +763,19 @@ class ClassSection(models.Model):
 
     def students_dict(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         result = defaultdict(list)
         userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(enddate__gte=datetime.datetime.now()).distinct()
         for u in userbits:
-            bit_str = u.verb.uri[uri_start:]
+            bit_str = u.verb.get_uri()[uri_start:]
             result[bit_str].append(ESPUser(u.user))
         return PropertyDict(result)
 
     def students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
         
         return self.students(use_cache, verbs=verb_list)
 
@@ -810,9 +840,9 @@ class ClassSection(models.Model):
 
     def num_students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
         
         return self.num_students(use_cache, verbs=verb_list)
 
@@ -824,6 +854,10 @@ class ClassSection(models.Model):
             defaults = False
             
         if defaults:
+            # If we got this from a previous query, just return it
+            if hasattr(self, "_count_students"):
+                return self._count_students
+            
             retVal = self.cache['num_students']
             if retVal is not None and use_cache:
                 return retVal
@@ -833,6 +867,7 @@ class ClassSection(models.Model):
                 if retValCache != None:
                     retVal = len(retValCache)
                     self.cache['num_students'] = retVal
+                    self._count_students = retVal
                     return retVal
 
 
@@ -992,11 +1027,11 @@ class ClassSection(models.Model):
             prereg_verb_base = GetNode('V/Flags/Registration/Applied')
         
         if scrmi.use_priority:
-            prereg_verb = DataTree.get_by_uri(prereg_verb_base.uri + '/%d' % priority, create=True)
+            prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
         else:
             prereg_verb = prereg_verb_base
             
-        auto_verb = DataTree.get_by_uri(prereg_verb.uri + '/Automatic', create=True)
+        auto_verb = DataTree.get_by_uri(prereg_verb.get_uri() + '/Automatic', create=True)
         
         if overridefull or not self.isFull():
             #    Then, create the userbit denoting preregistration for this class.
@@ -1206,7 +1241,7 @@ class ClassSubject(models.Model):
         new_section = ClassSection()
         new_section.parent_class = self
         new_section.duration = '%.4f' % duration
-        new_section.anchor = DataTree.get_by_uri(self.anchor.uri + '/Section' + str(section_index), create=True)
+        new_section.anchor = DataTree.get_by_uri(self.anchor.get_uri() + '/Section' + str(section_index), create=True)
         new_section.status = status
         new_section.save()
         self.sections.add(new_section)
@@ -1260,22 +1295,25 @@ class ClassSubject(models.Model):
         
     def num_students(self, use_cache=True, verbs=['/Enrolled']):
         result = 0
+        if hasattr(self, "_num_students"):
+            return self._num_students
         for sec in self.get_sections():
             result += sec.num_students(use_cache, verbs)
+        self._num_students = result
         return result
 
     def num_students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
         return self.num_students(False, verb_list)
 
     def num_students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
         return self.num_students(False, verb_list)
         
     def max_students(self):

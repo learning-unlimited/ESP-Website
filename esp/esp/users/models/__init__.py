@@ -160,15 +160,15 @@ class ESPUser(User, AnonymousUser):
         return RegistrationProfile.getLastProfile(self)
 
     @cache_function
-    def getEditable_ids(self, objType):
+    def getEditable_ids(self, objType, qsc=None):
         # As far as I know, fbap's cache is still screwy, so we'll retain this cache at a higher level for now --davidben, 2009-04-06
-        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit')).values_list('id', flat=True)
+        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'), qsc).values_list('id', flat=True)
     getEditable_ids.get_or_create_token(('self',)) # Currently very difficult to determine type, given anchor
     getEditable_ids.depend_on_row(lambda:UserBit, lambda bit: {} if bit.user_id is None else {'self': bit.user},
                                                   lambda bit: bit.applies_to_verb('V/Administer/Edit'))
 
-    def getEditable(self, objType):
-        return objType.objects.filter(id__in=self.getEditable_ids(objType))
+    def getEditable(self, objType, qsc=None):
+        return objType.objects.filter(id__in=self.getEditable_ids(objType, qsc))
 
     def canEdit(self, object):
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())

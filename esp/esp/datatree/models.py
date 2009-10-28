@@ -44,7 +44,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.utils.memdb import mem_db
 from esp.datatree.sql.query_utils import *
 from esp.datatree.sql.manager import DataTreeManager
-
+from esp.cache import cache_function
 
 __all__ = ('DataTree', 'GetNode', 'QTree', 'get_lowest_parent', 'StringToPerm', 'PermToString')
 
@@ -146,6 +146,9 @@ class DataTree(models.Model):
             self.__dict__.update(obj.__dict__)
             return self
 
+        DataTree.objects.filter(QTree(below=self)).update(uri_correct=False)
+        self.uri_correct=False
+        
         old_node = DataTree.objects.get(id=self.id)
         if old_node.parent_id != self.parent_id:
             raise NotImplementedError("Have not yet written the parent moving code.")
@@ -323,11 +326,14 @@ class DataTree(models.Model):
                 self.save(uri_fix=True)
             return ''
 
-        parent_uri = self.parent.get_uri()
-        if parent_uri == '':
-            self.uri = self.name
+        if self.parent == None:
+            self.uri = ''
         else:
-            self.uri = parent_uri + DataTree.DELIMITER + self.name
+            parent_uri = self.parent.get_uri()
+            if parent_uri == '':
+                self.uri = self.name
+            else:
+                self.uri = parent_uri + DataTree.DELIMITER + self.name
 
         self.uri_correct = True
 
@@ -541,11 +547,12 @@ class DataTree(models.Model):
                       DataTree.MAX_WAIT
         return
 
-    @staticmethod
+    @cache_function
     def get_by_uri(uri, create=False):
         return DataTree.objects.get(uri=uri, create=create)
-
-
+    get_by_uri.depend_on_model(lambda: DataTree)  # We can't depend on row because the URI of a node will change if its parent's name changes
+    get_by_uri = staticmethod(get_by_uri)
+    
     @staticmethod
     def violating_dup_rangestart(QObject = False):
         " Returns the list of nodes violating the rangestart-must-be-unique constraint. "
