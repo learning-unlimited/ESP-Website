@@ -569,11 +569,12 @@ class AdminClass(ProgramModuleObj):
         
         if request.POST.has_key('clslist'):
             clsids = request.POST['clslist'].split('\n')
+            clsids = [id.strip() for id in clsids if id.strip() != ""]
 
             cls_subjects = ClassSubject.objects.filter(id__in=clsids, parent_program=prog)
             cls_subjects.update(status=10)
 
-            cls_sections = ClassSection.objects.filter(parent_class__in=clsids, parent_class__parent_program=prog)
+            cls_sections = ClassSection.objects.filter(parent_class__in=cls_subjects)
             cls_sections.update(status=10)
 
             context = {}
