@@ -1,0 +1,27 @@
+{% extends "outlines/theme.html" %}
+{% load subsection %}
+
+{% block title %}Class Approval{% endblock %}
+
+{% block keywords %}{% endblock %}
+{% block description %}{% endblock %}
+
+{% block subsection %}{% endblock %}
+
+{% block content %}
+
+<h1>Bulk Class Approval</h1>
+
+Please enter the ids of the classes you would like to approve into
+the text box below, each separated by a newline.<br />
+
+<br />
+
+<form action="./bulkapproval" method="post" />
+<textarea name="clslist" rows="20" cols="50"></textarea><br />
+<br />
+<input type="submit" value="Submit List" />
+
+</form>
+
+{% endblock %}
