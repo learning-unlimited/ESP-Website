@@ -559,3 +559,32 @@ class AdminClass(ProgramModuleObj):
         # Operation Complete!
         return JsonResponse(obj_list)
 
+    @aux_call
+    @needs_admin
+    def bulkapproval(self, request, tl, one, two, module, extra, prog):
+        """
+        Allow admins to approve classes en masse by entering a list of
+        ClassSubject ids separated by newlines.
+        """
+        
+        if request.POST.has_key('clslist'):
+            clsids = request.POST['clslist'].split('\n')
+
+            cls_subjects = ClassSubject.objects.filter(id__in=clsids, parent_program=prog)
+            cls_subjects.update(status=10)
+
+            cls_sections = ClassSection.objects.filter(parent_class__in=clsids, parent_class__parent_program=prog)
+            cls_sections.update(status=10)
+
+            context = {}
+            context['updated_classes'] = cls_subjects
+
+            cls_id_strings = set([str(cls.id) for cls in cls_subjects])
+            context['failed_ids'] = [id for id in clsids if not (id in cls_id_strings)]
+            context['num_failures'] = len(context['failed_ids'])
+
+            return render_to_response(self.baseDir()+"approval_success.html", request, (prog, tl), context)
+
+
+        return render_to_response(self.baseDir()+"mass_approve_form.html", request, (prog, tl), {})
+
