@@ -85,7 +85,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_sections_cached(self, prog):
-        sections = prog.sections().select_related('category')
+        sections = prog.sections().select_related('category', 'parent_class')
 
         rrequests = ResourceRequest.objects.filter(target__in = sections)
 
@@ -111,6 +111,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'teachers': teacher_dict[s.parent_class.anchor_id],
                 'resource_requests': rrequest_dict[s.id],
                 'max_class_capacity': s.max_class_capacity,
+                'status': s.status,
+                'parent_status': s.parent_class.status,
             } for s in sections ]
 
         response = HttpResponse(content_type="application/json")

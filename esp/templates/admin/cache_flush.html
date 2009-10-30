@@ -1,0 +1,29 @@
+{% extends "outlines/theme.html" %}
+{% load subsection %}
+
+{% block title %}Flush the Memcached Cache{% endblock %}
+{% block content_title %}Flush the Memcached Cache{% endblock %}
+
+{% block keywords %}{% endblock %}
+{% block description %}{% endblock %}
+
+{% block subsection %}Flush the Memcached Cache{% endblock %}
+
+{% block content %}
+
+<p>This form lets you flush the Memcached cache.</p>
+
+<p>Please don't do this carelessly!  Flushing this cache can, depending on the current server configuration, cause problems ranging from slowing the server dramatically, to causing everyone currently using the site to get logged out.  Only do this if you actually know what you're doing.</p>
+
+<p>Also, please fill out the following textbox with a reason explaining why you flushed the cache.  If you flushed it because some data on the site was showing up incorrectly, please state what it was so that we can fix it so that it doesn't get out-of-date next time.  (Out-of-date data indicates a bug.  Flushing the cache may patch the bug for now, but it'll very likely come up later, possibly in a more annoying way.)</p>
+
+{% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
+{% if success %}<p><font color="blue">{{ success }}</font></p>{% endif %}
+<p>
+<form action="." method="POST">
+<textarea name="reason">?</textarea>
+<input type="submit" value="Flush Cache" />
+</form>
+</p>
+
+{% endblock %}

@@ -8,4 +8,5 @@ urlpatterns = patterns('',
                        (r'^manage/pages/?$', 'esp.program.views.manage_pages'),
                        (r'^manage/userview/?$', 'esp.program.views.userview'),
                        (r'^manage/usersearch/?$', 'esp.program.views.usersearch'),                       
+                       (r'^manage/flushcache/?$', 'esp.program.views.flushcache'),
                        )
