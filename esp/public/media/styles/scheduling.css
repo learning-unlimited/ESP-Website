@@ -17,12 +17,12 @@ top: 10px; bottom: 10px; right: 10px; left: 10px;
 }
 
 #matrix-target {
-height: 50%; max-height: 50%; /*overflow: auto;*/
+height: 66%; max-height: 66%; /*overflow: auto;*/
 padding-bottom: 5px; /*border: 1px solid black;*/
 position: relative;
 }
 #directory-target {
-height: 50%; max-height: 50%; /*overflow: auto;*/
+height: 33%; max-height: 33%; /*overflow: auto;*/
 padding-top: 5px; /*border: 1px solid black;*/
 position: relative;
 }
@@ -48,7 +48,7 @@ border-top: 5px double #666;
 overflow: auto;
 }
 .matrix-cell-body {
-overflow: auto;
+overflow: auto; height: 100%;
 }
 .matrix-row-header-box {
 width: 100px; float: left;
@@ -72,6 +72,7 @@ height: 25px; max-height: 25px; min-height: 25px;
 padding: 5px 0px; vertical-align: middle; display: inline-block;
 text-align: center;
 font-size: 0.9em;
+position: relative;
 }
 
 /*
@@ -81,7 +82,8 @@ font-size: 0.9em;
 .matrix tr:last-child td { border-bottom: none; }
 */
 
-.matrix .header-cell { background-color: #eee; }
+.matrix .header-cell { background-color: #eee; height: 37px; max-height: 37px; min-height: 37px;}
+.matrix .header-cell.matrix-row-header {height: 25px; max-height: 25px; min-height: 25px;}
 .matrix .matrix-row-header {
 display: block; border-bottom: 1px solid #666;
 font-size: smaller;
@@ -95,6 +97,7 @@ border-right: 2px solid #666;
 background-color: #333;
 width: 100px; max-width: 100px; min-width: 100px;
 display: inline-block;
+height: 37px; max-height: 37px; min-height: 37px;
 }
 
 .matrix .invalid-cell, .matrix .inactive { background-color: #ccc; }
@@ -107,6 +110,15 @@ display: inline-block;
 
 .matrix-cell-body .matrix-cell {
 border: 0px solid #666; border-width: 0px 1px 1px 0px;
+}
+
+.class-entry td {
+position: relative;
+}
+
+.matrix-cell .tooltip {
+display: block; width: 100%; height: 100%;
+position: absolute; top:0; bottom:0; left:0; right:0;
 }
 
 /* DD_proxy */
