@@ -48,7 +48,7 @@ border-top: 5px double #666;
 overflow: auto;
 }
 .matrix-cell-body {
-overflow: auto; height: 100%;
+height: 100%;
 }
 .matrix-row-header-box {
 width: 100px; float: left;
