@@ -202,3 +202,27 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		}
 	});
 })();
+
+ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
+	    initialize: function(){
+		this.el = $j('<div/>').addClass('garbage');
+		var target = this.el;
+		var activeClass = 'dd-highlight';
+		var options = $j.extend({
+		    hoverClass: 'dd-hover',
+		    tolerance: 'pointer',
+		    accept: function(d){ return true; },
+		    drop: function(e, ui) {
+			    target.removeClass(activeClass);
+			    ESP.Utilities.evm.fire('drag_dropped',{
+				event: e, ui: ui, draggable:ui.draggable, droppable:this,
+				blocks:[], section:ui.draggable.data('section')
+			    });
+		    },
+		    activate: function(e, ui) { target.addClass(activeClass); },
+		    deactivate: function(e, ui) { target.removeClass(activeClass); }
+		}, options || {});
+		target.droppable(options);
+	    }
+	}));
+

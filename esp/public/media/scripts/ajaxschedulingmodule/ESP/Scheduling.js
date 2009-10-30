@@ -10,8 +10,10 @@ ESP.Scheduling = function(){
 	$j('#matrix-target').append(this.matrix.table);
 	this.directory = new ESP.Scheduling.Widgets.Directory(pd.sections);
 	this.searchbox = new ESP.Scheduling.Widgets.SearchBox(this.directory);
+	this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
 	$j('#directory-target').text('');
 	$j('#directory-target').append(this.searchbox.el);
+	$j('#directory-target').append(this.garbage.el.addClass('float-right'));
 	$j('#directory-target').append(this.directory.el);
 	
 	//ESP.Utilities.evm.bind('drag_started',function(data){alert('!!!');});

@@ -15,6 +15,7 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
 		    revert: 'invalid', revertDuration: 350,
 		    scroll: false, cursorAt: {left:25,top:25}, cursor: 'default',
 		    opacity: .6, containment: 'window',
+		    appendTo: 'body',
 		    start: function(e,ui) {
 			var blocks = ESP.Scheduling.data.blocks;
 			var section = get_section();

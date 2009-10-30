@@ -3,6 +3,9 @@ body { padding: 10px; }
 /*
  * Utilities
  */
+.float-right { float: right; }
+.float-left  { float: left;  }
+
 .loading-overlay {
 background: #eee url(loading2.gif) no-repeat scroll 50% 50%; opacity: .9;
 position: absolute; z-index: 1000;
@@ -68,6 +71,7 @@ padding: 5px; margin: 0px;
 height: 25px; max-height: 25px; min-height: 25px;
 padding: 5px 0px; vertical-align: middle; display: inline-block;
 text-align: center;
+font-size: 0.9em;
 }
 
 /*
@@ -163,4 +167,19 @@ right: 10px; height: 20px;
 .searchbox input {
 width: 300px;
 margin-bottom: 20px;
+}
+
+.garbage {
+width: 30px;
+height: 30px;
+background: grey;
+border: 1px solid black;
+}
+
+.garbage.dd-highlight {
+background: yellow;
+}
+
+.garbage.dd-hover {
+background: red !important;
 }
