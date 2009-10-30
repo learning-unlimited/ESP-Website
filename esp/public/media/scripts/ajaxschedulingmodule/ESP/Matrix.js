@@ -142,7 +142,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			this.td.addClass('header-cell');
 		}
 	});
-	Matrix.InvalidCell = Class.create(Matrix.HeaderCell,{
+	Matrix.InvalidCell = Class.create(Matrix.Cell,{
 		initialize: function($super){
 			$super();
 			this.td.addClass('invalid-cell');
