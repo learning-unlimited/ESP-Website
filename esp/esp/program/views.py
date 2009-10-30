@@ -39,6 +39,8 @@ from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits, admin_required
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
+from django.core.mail import mail_admins
+from django.core.cache import cache
 
 from esp.program.models import Program, TeacherBio
 from esp.program.forms import ProgramCreationForm
@@ -430,3 +432,24 @@ def manage_pages(request):
     qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
     qsd_list.sort(key=lambda q: q.url())
     return render_to_response('qsd/list.html', request, DataTree.get_by_uri('Q/Web'), {'qsd_list': qsd_list})
+
+@admin_required
+def flushcache(request):
+    context = {}
+    if request.POST:
+        if request.POST.has_key("reason") and len(request.POST['reason']) > 5:
+            reason = request.POST['reason']
+            _cache = cache
+            while hasattr(_cache, "_wrapped_cache"):
+                _cache = _cache._wrapped_cache
+            if hasattr(_cache, "flush_all"):
+                _cache.flush_all()
+                mail_admins("Cache Flushed on server '%s'!" % request.META['SERVER_NAME'], "The cache was flushed!  The following reason was given:\n\n%s" % reason)
+                context['success'] = "Cache Cleared."
+            else:
+                context['error'] = "Error: This cache backend doesn't support the 'flush_all' method.  Sorry; you'll have to flush this one manually."
+        else:
+            context['error'] = "Sorry, that doesn't count as a reason."
+
+    return render_to_response('admin/cache_flush.html', request, DataTree.get_by_uri('Q/Web'), context)
+                         
