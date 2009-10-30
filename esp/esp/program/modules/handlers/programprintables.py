@@ -1289,7 +1289,8 @@ Student schedule for %s:
 
         # header row, naming each column
         write_csv.writerow([''] + ['Teachers'] + ['Projector?'] + \
-                           ['Computer Lab?'] + ['Max Size'] + \
+                           ['Computer Lab?'] + ['Optimal Size'] + \
+                           ['Max Size'] + \
                            ['Grade Levels'] + ['Comments to Director'] + \
                            [str(time) for time in times])
 
@@ -1299,6 +1300,7 @@ Student schedule for %s:
                                [section.parent_class.pretty_teachers()] + \
                                [needs_resource('LCD Projector', section)] + \
                                [needs_resource('Computer Lab', section)] + \
+                               [section.parent_class.class_size_optimal] + \
                                [section.parent_class.class_size_max] + \
                                ['%d--%d' %(section.parent_class.grade_min, section.parent_class.grade_max)] +\
                                [section.parent_class.message_for_directors] + \
