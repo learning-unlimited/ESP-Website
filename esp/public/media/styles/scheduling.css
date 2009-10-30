@@ -3,6 +3,9 @@ body { padding: 10px; }
 /*
  * Utilities
  */
+.float-right { float: right; }
+.float-left  { float: left;  }
+
 .loading-overlay {
 background: #eee url(loading2.gif) no-repeat scroll 50% 50%; opacity: .9;
 position: absolute; z-index: 1000;
@@ -163,4 +166,19 @@ right: 10px; height: 20px;
 .searchbox input {
 width: 300px;
 margin-bottom: 20px;
+}
+
+.garbage {
+width: 30px;
+height: 30px;
+background: grey;
+border: 1px solid black;
+}
+
+.garbage.dd-highlight {
+background: yellow;
+}
+
+.garbage.dd-hover {
+background: red !important;
 }
