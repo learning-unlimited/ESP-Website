@@ -78,7 +78,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			}
 		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
-			if (!(data.nowriteback)) {
+			if (!(data.nowriteback) && data.blocks.length > 0) {
 			    var req = { action: 'assignreg',
 					cls: data.section.uid,
 					block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
