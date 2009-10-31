@@ -83,8 +83,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 		this.activeFilter = filter;
 		var active_rows = [];
 		$j.each(this.entries, function(i,entry){
-			if (entry.section.class_id == 2585)
-			    filter = filter;
 			if (entry.section.blocks.length == 0 && filter(entry.section))
 			    active_rows.push(entry);
 		    });
