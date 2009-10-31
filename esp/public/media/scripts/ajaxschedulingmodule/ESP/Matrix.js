@@ -3,7 +3,8 @@
  */
 ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 	initialize: function(times, rooms, blocks){
-		this.table = $j("<div/>").addClass('matrix');
+		this.matrix = $j("<div/>").addClass('matrix');
+		this.el = this.matrix;
 
 		var Matrix = ESP.Scheduling.Widgets.Matrix;
 		
@@ -14,24 +15,27 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		var block_cells = this.block_cells = {};
 		
 		// set up header
-		var th = $j('<div/>').addClass('matrix-header')
-		th.append((new Matrix.InvalidCell()).td.addClass('corner-cell')); // do we want to keep a ref?
-		var tr = $j('<div/>').addClass('matrix-row-body');
-		th.append(tr);
+		var header = $j('<div/>').addClass('matrix-header')
+		this.matrix.append(header);
+		header.append($j('<div/>').addClass('matrix-corner-box'));
+		
+		var col_header = $j('<table/>').addClass('matrix-column-header-box');
+		header.append(col_header);
+		var tr = $j('<tr/>').addClass('matrix-row-body');
+		col_header.append(tr);
 		for (var i = 0; i < times.length; i++) {
 			var c = new Matrix.TimeCell(times[i]);
 			time_cells[times[i].uid] = c;
 			if (!times[i].seq) c.td.addClass('non-sequential');
 			tr.append(c.td);
 		}
-		this.table.append(th);
 		
-		var tb = $j('<div/>').addClass('matrix-body');
-		th = $j('<div/>').addClass('matrix-row-header-box');
-		tr = $j('<div/>').addClass('matrix-cell-body');
-		this.table.append(tb);
-		tb.append(th);
-		tb.append(tr);
+		var body = $j('<div/>').addClass('matrix-body');
+		this.matrix.append(body);
+		var row_header = $j('<table/>').addClass('matrix-row-header-box');
+		var cell_body = $j('<table/>').addClass('matrix-cell-body');
+		body.append(row_header);
+		body.append(cell_body);
 		
 		// create rows
 		for (var i = 0; i < rooms.length; i++) {
@@ -41,8 +45,10 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		    room_cells[room.uid] = rc;
 		    
 		    block_cells[room.uid] = {};
-		    th.append(rc.td);
-		    tr.append(rc.tr);
+		    var tr = $j('<tr/>');
+		    tr.append(rc.td);
+		    row_header.append(tr);
+		    cell_body.append(rc.tr);
 		}
 		
 		// create individual blocks
@@ -65,6 +71,13 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			lt = t;
 		    }
 		}
+		
+		// set up scrolling
+		cell_body.scroll(function(evt){
+			row_header.css('top','-'+cell_body.attr('scrollTop')+'px');
+			col_header.children('tbody').css('left','-'+cell_body.attr('scrollLeft')+'px');
+		    });
+		
 		var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
 		// listen for assignments
 		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
@@ -111,7 +124,6 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			        }, "json");
 			}
 		    }.bind(this));
-
 	    }
 	}));
 
@@ -132,7 +144,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 	 */
 	Matrix.Cell = Class.create({
 		initialize: function(){
-		        this.td = $j('<div/>').addClass('matrix-cell');
+		        this.td = $j('<td/>').addClass('matrix-cell');
 			this.td.data(Matrix.CELL_CACHE, this);
 		}
 	});
@@ -160,7 +172,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		initialize: function($super, room){
 			$super()
 			this.room = room;
-			this.tr = $j('<div/>').addClass('matrix-row-body');
+			this.tr = $j('<tr/>').addClass('matrix-row-body');
 			this.td.html(room.block_contents);
 			this.td.addClass('matrix-row-header');
 			//this.tr.append(this.td);
