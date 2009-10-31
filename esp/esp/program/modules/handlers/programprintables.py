@@ -1347,8 +1347,9 @@ Student schedule for %s:
         sections = prog.sections()
 
         # get only the unscheduled sections, rather than all of them
+        # also, only approved classes in the spreadsheet; can be changed
         if extra == "unscheduled":
-            sections = sections.filter(meeting_times__isnull=True)
+            sections = sections.filter(meeting_times__isnull=True, status=10)
 
         times = prog.getTimeSlots()
         if extra == "unscheduled":
