@@ -99,7 +99,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         teacher_dict = defaultdict(list)
         for b in teacher_bits:
             teacher_dict[b["qsc_id"]].append(b["user_id"])
-
+        
         sections_dicts = [
             {   'id': s.id,
                 'class_id': s.parent_class_id,
