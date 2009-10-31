@@ -553,7 +553,7 @@ class ClassSection(models.Model):
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()
-        for event in event_list:
+        for event in set(event_list):
             self.meeting_times.add(event)
 
     def clear_meeting_times(self):
