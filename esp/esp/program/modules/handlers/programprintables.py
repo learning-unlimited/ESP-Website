@@ -1329,6 +1329,14 @@ Student schedule for %s:
     @aux_call
     @needs_admin
     def oktimes_spr(self, request, tl, one, two, module, extra, prog):
+        """
+        Create a spreadsheet with all classes, with info and the times
+        at which they can be scheduled to start.
+
+        An extra argument of 'unscheduled' shows only the currently-
+        unscheduled classes, taking into account the classes the teacher
+        is already teaching and have been scheduled.
+        """
         import csv
         from django.http import HttpResponse
 
@@ -1337,8 +1345,16 @@ Student schedule for %s:
 
         # get the list of all the sections, and all the times for this program.
         sections = prog.sections()
+
+        # get only the unscheduled sections, rather than all of them
+        if extra == "unscheduled":
+            sections = sections.filter(meeting_times__isnull=True)
+
         times = prog.getTimeSlots()
-        sections_possible_times = [(section, section.viable_times()) for section in sections]
+        if extra == "unscheduled":
+            sections_possible_times = [(section, section.viable_times(True)) for section in sections]
+        else:
+            sections_possible_times = [(section, section.viable_times(False)) for section in sections]
 
         # functions to determine what will fill in the spreadsheet cell for each thing
         def time_possible(time, sections_list):
