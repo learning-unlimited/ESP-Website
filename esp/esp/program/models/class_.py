@@ -617,7 +617,7 @@ class ClassSection(models.Model):
             
         return (status, errors)
     
-    def viable_times(self):
+    def viable_times(self, ignore_classes=False):
         """ Return a list of Events for which all of the teachers are available. """
         from django.core.cache import cache
         from esp.resources.models import ResourceType, Resource
@@ -646,7 +646,7 @@ class ClassSection(models.Model):
 
         timeslot_list = []
         for t in teachers:
-            timeslot_list.append(list(t.getAvailableTimes(self.parent_program)))
+            timeslot_list.append(list(t.getAvailableTimes(self.parent_program, ignore_classes)))
             
         available_times = intersect_lists(timeslot_list)
         
