@@ -291,7 +291,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         elif action == 'assignreg':
             blockrooms = request.POST['block_room_assignments'].split("\n")
-            blockrooms = [b.split(",") for b in blockrooms]
+            blockrooms = [b.split(",") for b in blockrooms if b]
             blockrooms = [{'time_id': b[0], 'room_id': b[1]} for b in blockrooms]
             
             times = [br['time_id'] for br in blockrooms]
