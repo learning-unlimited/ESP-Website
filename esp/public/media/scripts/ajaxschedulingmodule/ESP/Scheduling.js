@@ -29,7 +29,13 @@ ESP.Scheduling = function(){
 	    });
 	ESP.Utilities.evm.bind('block_section_assignment_request', function(event, data){
 		//alert('[' + data.block.uid + '] : [' + data.section.uid + ']');
-		// TODO: verify assignment
+
+		for (var i = 0; i < data.blocks.length; i++) {
+		    if (!ESP.Scheduling.validate_block_assignment(data.blocks[i], data.section)) {
+			console.log("Error:  Conflict when adding block " + data.blocks[i].uid + "(" + data.blocks[i].text + ") to section " + data.section.emailcode);
+		    }
+		}
+
 		data.section.blocks = data.blocks;
 		for (var i = 0; i < data.blocks.length; i++) {
 		    data.blocks[i].section = data.section;
