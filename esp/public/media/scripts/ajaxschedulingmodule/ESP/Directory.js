@@ -95,10 +95,14 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 		var update = typeof update == 'undefined' ? true : update;
 		if (Object.isArray(entry)) {
 		    $j.each(entry, function(i,x){
-			    this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, x));
+			    if (x.status == 10){ // skip non-Approved classes
+				this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, x));
+			    }
 			}.bind(this));
 		} else {
-		    this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, entry));
+		    if (x.status == 10) { // skip non-Approved classes
+			this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, entry));
+		    }
 		}
 		if (update) this.filter();
 	    },

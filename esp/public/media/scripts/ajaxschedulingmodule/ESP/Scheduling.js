@@ -127,6 +127,7 @@ ESP.Scheduling = function(){
 			length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
 			length_hr: Math.round(c.length * 2) / 2,
 			id:c.id,
+			status:c.status,
 			text:c.text,
 			teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
 		    }));
