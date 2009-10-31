@@ -4,6 +4,9 @@
 ESP.Scheduling = function(){
     function init(test_data_set){
 	var pd = this.data = process_data(test_data_set);
+	this._status = new ESP.Scheduling.Widgets.StatusBar('#statusbar');
+	this.status = this._status.setStatus.bind(this._status);
+	this.status('success','Welcome to the scheduling app!');
 	this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
 	$j('#matrix-target').text('');
 	$j('#matrix-target').append((new Date()).getMilliseconds());
@@ -246,8 +249,10 @@ $j(function(){
 
 
 	setInterval(function() {
+		ESP.Scheduling.status('warning','Pinging server...');
 		$j.getJSON('ajax_schedule_last_changed', function(d, status) {
 			if (status == "success") {
+			    ESP.Scheduling.status('success','Refreshed data from server.');
 			    if (d['val'] != ESP.version_uuid) {
 				success_count = 0;
 				ESP.version_uuid = d['val'];
@@ -256,6 +261,8 @@ $j(function(){
 				    $j.getJSON('ajax_' + files[i], ajax_verify(files[i]));
 				}
 			    }
+			} else {
+			    ESP.Scheduling.status('error','Unable to refresh data from server.');
 			}
 		    });
 	    }, 300000);
