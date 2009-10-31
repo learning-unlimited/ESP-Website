@@ -64,7 +64,7 @@ vertical-align: middle;
 }
 
 .matrix-row-body .matrix-cell {
-width: 45px; min-width: 45px; max-width: 45px;
+width: 44px; min-width: 44px; max-width: 44px;
 padding: 5px; margin: 0px;
 }
 .matrix-cell {
@@ -186,6 +186,7 @@ width: 30px;
 height: 30px;
 background: grey;
 border: 1px solid black;
+margin-right: 200px;
 }
 
 .garbage.dd-highlight {
