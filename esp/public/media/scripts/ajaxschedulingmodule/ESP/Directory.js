@@ -72,7 +72,12 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 		var filter = filter || this.activeFilter || function(){ return true; };
 		this.activeFilter = filter;
 		var active_rows = [];
-		$j.each(this.entries, function(i,entry){ if (filter(entry.section)) active_rows.push(entry); });
+		$j.each(this.entries, function(i,entry){
+			if (entry.section.class_id == 2585)
+			    filter = filter;
+			if (entry.section.blocks.length == 0 && filter(entry.section))
+			    active_rows.push(entry);
+		    });
 		this.active_rows = active_rows;
 		this.sort();
 	    },
@@ -147,8 +152,8 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 		this.textbox = $j('<input type="text"/>');
 		this.el.append(this.textbox);
 		
-		this.textbox.bind('keyup',this.do_search.bind(this));
-		//this.textbox.bind('keypress',function(e){ if (e.which == 13) this.do_search(); }.bind(this));
+		//this.textbox.bind('keyup',this.do_search.bind(this));
+		this.textbox.bind('keypress',function(e){ if (e.which == 13) this.do_search(); }.bind(this));
 	    },
 	    do_search: function(){
 		this.directory.filter(this.search_function(this.textbox.val()));
