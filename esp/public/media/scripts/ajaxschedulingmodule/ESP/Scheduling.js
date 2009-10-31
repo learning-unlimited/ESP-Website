@@ -7,7 +7,7 @@ ESP.Scheduling = function(){
 	this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
 	$j('#matrix-target').text('');
 	$j('#matrix-target').append((new Date()).getMilliseconds());
-	$j('#matrix-target').append(this.matrix.table);
+	$j('#matrix-target').append(this.matrix.el);
 	this.directory = new ESP.Scheduling.Widgets.Directory(pd.sections);
 	this.searchbox = new ESP.Scheduling.Widgets.SearchBox(this.directory);
 	this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();

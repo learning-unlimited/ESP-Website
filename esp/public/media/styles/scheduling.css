@@ -1,4 +1,5 @@
 body { padding: 10px; }
+table { border-spacing: 0; }
 
 /*
  * Utilities
@@ -32,93 +33,78 @@ position: relative;
  * the Matrix
  */
 .matrix {
-font-family: Arial, Helvetica, sans-serif;
-font-size: 0.9em;
+font-family: Arial, Helvetica, sans-serif; font-size: 0.9em;
 border: 2px solid black;
 position: absolute; top: 0; bottom: 0; right: 0; left: 0;
-/*border-collapse: collapse;*/
 }
 
 .matrix-header {
+display: block;
 position: absolute; top: 0px; left: 0px; right: 0px; height: 50px;
 }
-.matrix-body {
-position: absolute; top: 45px; left: 0px; right: 0px; bottom: 0px;
-border-top: 5px double #666;
-overflow: auto;
+.matrix-corner-box {
+display: block; z-index: 100;
+position: absolute; left: 0; width: 123px; top: 0; bottom: 0;
+border-right: 2px solid #000; background: #eee;
 }
-.matrix-cell-body {
-height: 100%;
+.matrix-column-header-box {
+display: block; overflow: hidden;
+position: absolute; left: 125px; right: 0; top: 0; height: 50px;
+background: #eee;
+}
+      .matrix-column-header-box tbody {
+	  position: relative; display: block;
+      }
+      .matrix-column-header-box tr {
+	  height: 50px;
+      }
+      .matrix-column-header-box td {
+	  border-right: 1px solid #666; font-size: smaller;
+      }
+
+.matrix-body {
+display: block; overflow: hidden;
+position: absolute; top: 50px; left: 0px; right: 0px; bottom: 0px;
+border-top: 2px solid #000;
 }
 .matrix-row-header-box {
-width: 100px; float: left;
-border-right: 2px solid #666;
+display: block; overflow: hidden;
+position: absolute; left: 0; width: 123px; top: 0; bottom: 0;
+border-right: 2px solid #000; background: #eee;
+}
+      .matrix-row-header-box td {
+	  width: 100%; max-width: none; min-width: none;
+	  border-bottom: 1px solid #666; font-size: smaller;
+      }
+
+.matrix-cell-body {
+display: block; overflow: auto;
+position: absolute; left: 125px; right: 0; top: 0; bottom: 0;
 }
 
-.matrix-row-body {
-display: inline-block;
+.matrix-body tr {
+height: 34px; vertical-align: middle;
 }
 
-.matrix-row {
-vertical-align: middle;
-}
 
-.matrix-row-body .matrix-cell {
-width: 44px; min-width: 44px; max-width: 44px;
-padding: 5px; margin: 0px;
-}
 .matrix-cell {
-height: 25px; max-height: 25px; min-height: 25px;
-padding: 5px 0px; vertical-align: middle; display: inline-block;
-text-align: center;
+width: 50px; max-width: 50px; min-width: 50px;
+margin: 0px; padding: 0 2px;
+vertical-align: middle; text-align: center;
 font-size: 0.9em;
-position: relative;
 }
-
-/*
-.matrix td:first-child { border-left: none; }
-.matrix td:last-child { border-right: none; }
-.matrix tr:first-child td { border-top: none; }
-.matrix tr:last-child td { border-bottom: none; }
-*/
-
-.matrix .header-cell { background-color: #eee; height: 37px; max-height: 37px; min-height: 37px;}
-.matrix .header-cell.matrix-row-header {height: 25px; max-height: 25px; min-height: 25px;}
-.matrix .matrix-row-header {
-display: block; border-bottom: 1px solid #666;
-font-size: smaller;
-}
-.matrix .column-header {
-border-right: 1px solid #666;
-font-size: smaller;
-}
-.matrix .corner-cell {
-border-right: 2px solid #666;
-background-color: #333;
-width: 100px; max-width: 100px; min-width: 100px;
-display: inline-block;
-height: 37px; max-height: 37px; min-height: 37px;
-}
-
 .matrix .invalid-cell, .matrix .inactive { background-color: #ccc; }
-
 .matrix .data-cell.active { background-color: #cfc; }
 .matrix .data-cell.filled { background-color: #ccf; }
 
 .matrix .matrix-cell.non-sequential { border-right: 2px solid #666;}
 /*.matrix .non-sequential:last-child { border-right-width: 0px; }*/
+.matrix-cell-body .matrix-cell { border: 0px solid #666; border-width: 0px 1px 1px 0px; }
 
-.matrix-cell-body .matrix-cell {
-border: 0px solid #666; border-width: 0px 1px 1px 0px;
-}
-
-.class-entry td {
-position: relative;
-}
 
 .matrix-cell .tooltip {
-display: block; width: 100%; height: 100%;
-position: absolute; top:0; bottom:0; left:0; right:0;
+/*display: block; width: 100%; height: 100%;
+position: absolute; top:0; bottom:0; left:0; right:0;*/
 }
 
 /* DD_proxy */
@@ -128,35 +114,32 @@ height: 50px; line-height: 50px;
 background: #ccc; border: 2px solid #999;
 opacity: .6;
 }
-.matrix .data-cell.active.dd-hover {
-background-color: #0f0;
-}
-.matrix .data-cell.dd-highlight {
-background-color: #6f6;
-}
+.matrix .data-cell.active.dd-hover { background-color: #0f0; }
+.matrix .data-cell.dd-highlight { background-color: #6f6; }
+
 
 /*
  * the Directory
  */
-.directory-table-wrapper table {
-border: 1px solid black;
-border-spacing: 0px; border-collapse: collapse;
-}
 .directory-table-wrapper {
 position: absolute;
 top: 50px; left: 0px; right: 0px; bottom: 10px;
-overflow: auto;
 border: 1px solid black;
 }
 
-.directory .header { background-color: #eee; }
+.directory {
+position: relative; height: 100%; width: 100%;
+border: 1px solid black;
+border-spacing: 0px; border-collapse: collapse;
+}
 .directory .header td { height: auto; }
 .directory span { float: left; padding-right: 15px; margin-right: 10px; }
 .directory .sort-by.desc span { background: url(media/down_arrow.png) no-repeat right center; }
 .directory .sort-by.asc span { background: url(media/up_arrow.png) no-repeat right center; }
 
-.directory tr + tr {
-border-top: 1px solid #999;	
+.directory tr { width: 100%; display: block; }
+.directory tr {
+border-bottom: 1px solid #999;	
 }
 
 .directory td {
@@ -168,6 +151,18 @@ padding: 10px; height: 40px;
 
 .directory tr.assigned {
 background-color: #cfc;
+}
+
+.directory thead {
+background-color: #eee; border-bottom: 1px solid black;
+position: absolute;
+top: 0; height: 40px; left: 0; right: 0;
+}
+
+.directory tbody {
+overflow: auto;
+position: absolute;
+top: 41px; bottom: 0; left: 0; right: 0;
 }
 
 .searchbox {
