@@ -43,6 +43,7 @@ ESP.Scheduling = function(){
 	    });
 
 	apply_existing_classes(this.data.schedule_assignments, this.data)
+	this.directory.filter();
     };
     
     // process data
