@@ -2,9 +2,10 @@
     <span><b>Title</b>: {{ sec.title }}<br />
     <b>Requests:</b><br />
     <b>Class Size:</b> {{ sec.parent_class.class_size_max }} max<br />
+    <b>Grades:</b> {{ sec.parent_class.grade_min }}-{{ sec.parent_class.grade_max }}<br />
     {% for r in sec.getResourceRequests %}- {{ r.res_type.name }}<br />{% endfor %}
     <b>Prereqs:</b> {{ sec.parent_class.prereqs }}<br />
 <b>Checkboxes: </b> <br />
 {% for c in sec.checklist_progress_all_cached %}- {{ c.title }}<br />{% endfor %}
-    <b>Comments:</b> {{ sec.parent_class.message_for_directors }}<</span>
+    <b>Comments:</b> {{ sec.parent_class.message_for_directors }}</span>
 </a>
