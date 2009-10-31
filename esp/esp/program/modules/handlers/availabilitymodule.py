@@ -103,6 +103,7 @@ class AvailabilityModule(ProgramModuleObj):
         return [(str(t.id), t.short_description) for t in times]
 
     @main_call
+    @meets_deadline('/Availability')
     @needs_teacher
     def availability(self, request, tl, one, two, module, extra, prog):
         #   Renders the teacher availability page and handles submissions of said page.
