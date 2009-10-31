@@ -1,4 +1,4 @@
-body { padding: 10px; }
+body { padding: 0px; margin: 0; }
 table { border-spacing: 0; }
 
 /*
@@ -12,9 +12,26 @@ background: #eee url(loading2.gif) no-repeat scroll 50% 50%; opacity: .9;
 position: absolute; z-index: 1000;
 }
 
+#statusbar-wrapper {
+position: absolute; top: 15px; height: 30px; left: 0; right: 0;
+text-align: center;
+}
+
+#statusbar {
+padding: 5px 30px; margin: 0 auto;
+background: #eee;
+border-radius: 3px;
+-webkit-border-radius: 3px;
+-moz-border-radius: 3px;
+}
+#statusbar.red { background: #faa; }
+#statusbar.green { background: #afa; }
+#statusbar.yellow { background: #ffa; }
+
+
 #body {
 position: absolute;
-top: 10px; bottom: 10px; right: 10px; left: 10px;
+top: 50px; bottom: 10px; right: 10px; left: 10px;
 }
 
 #matrix-target {
@@ -68,7 +85,7 @@ position: absolute; top: 50px; left: 0px; right: 0px; bottom: 0px;
 border-top: 2px solid #000;
 }
 .matrix-row-header-box {
-display: block; overflow: hidden;
+display: block;
 position: absolute; left: 0; width: 123px; top: 0; bottom: 0;
 border-right: 2px solid #000; background: #eee;
 }
