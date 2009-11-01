@@ -77,7 +77,6 @@ def increment_global_resource_rev():
 
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
-    from esp.program.models import Program
     from esp.survey.models import ListField
 
     name = models.CharField(max_length=40)                          #   Brief name
@@ -88,7 +87,7 @@ class ResourceType(models.Model):
     #   As of now we have a list of string choices for the value of a resource.  But in the future
     #   it could be extended.
     choices = ListField('attributes_pickled')
-    program = models.ForeignKey(Program, null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
+    program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
     distancefunc = models.TextField(
         blank=True,
         null=True,
@@ -143,10 +142,9 @@ class ResourceType(models.Model):
 
 class ResourceRequest(models.Model):
     """ A request for a particular type of resource associated with a particular clas section. """
-    from esp.program.models.class_ import ClassSection, ClassSubject
     
-    target = models.ForeignKey(ClassSection, null=True)
-    target_subj = models.ForeignKey(ClassSubject, null=True)
+    target = models.ForeignKey('program.ClassSection', null=True)
+    target_subj = models.ForeignKey('program.ClassSubject', null=True)
     res_type = models.ForeignKey(ResourceType)
     desired_value = models.TextField()
     
@@ -401,13 +399,12 @@ class Resource(models.Model):
     
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
-    from esp.program.models.class_ import ClassSection, ClassSubject
     
     resource = models.ForeignKey(Resource)     #   Note: this really points to a bunch of Resources.
                                                #   See resources() below.
                                                
-    target = models.ForeignKey(ClassSection, null=True)
-    target_subj = models.ForeignKey(ClassSubject, null=True)
+    target = models.ForeignKey('program.ClassSection', null=True)
+    target_subj = models.ForeignKey('program.ClassSubject', null=True)
 
     def save(self, *args, **kwargs):
         cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.resource.id
