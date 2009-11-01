@@ -1514,15 +1514,15 @@ class ClassSubject(models.Model):
         ub, created = UserBit.objects.get_or_create(user = user,
                                 qsc = self.anchor,
                                 verb = v)
-        ub.save()
+        ub.renew()
         return True
 
     def removeTeacher(self, user):
         v = GetNode('V/Flags/Registration/Teacher')
 
-        UserBit.objects.filter(user = user,
-                               qsc = self.anchor,
-                               verb = v).delete()
+        for bit in UserBit.objects.filter(user = user, qsc = self.anchor, verb = v):
+            bit.expire()
+            
         return True
 
     def subscribe(self, user):
