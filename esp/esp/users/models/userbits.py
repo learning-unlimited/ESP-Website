@@ -481,6 +481,15 @@ class UserBit(models.Model):
         else:
             UserBit.updateCache(self.user.id)
 
+    def renew(self):
+        """ Un-expire a user bit. """
+        self.enddate = datetime.datetime(9999, 01, 01)
+        self.save()
+        if not hasattr(self.user,'id') or self.user.id is None:
+            UserBit.updateCache(None)
+        else:
+            UserBit.updateCache(self.user.id)
+
     def applies_to_user(self, user):
         if isinstance(user, User):
             user = user._get_pk_val()
