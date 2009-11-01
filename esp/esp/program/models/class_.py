@@ -1419,16 +1419,13 @@ class ClassSubject(models.Model):
         self.cache['title'] = retVal
         return retVal
     
-    def teachers(self, use_cache = True):
+    @cache_function
+    def teachers(self):
         """ Return a queryset of all teachers of this class. """
         # We might have teachers pulled in by Awesome Query Magic(tm), as in .catalog()
         if hasattr(self, "_teachers"):
             return self._teachers
-        
-        retVal = self.cache['teachers']
-        if retVal is not None and use_cache:
-            return retVal
-        
+
         v = GetNode('V/Flags/Registration/Teacher')
 
         # NOTE: This ignores the recursive nature of UserBits, since it's very slow and kind of pointless here.
@@ -1438,9 +1435,13 @@ class ClassSubject(models.Model):
         retVal = ESPUser.objects.all().filter(Q(userbit__qsc=self.anchor, userbit__verb=v), UserBit.not_expired('userbit')).distinct()
 
         list(retVal)
-        
-        self.cache['teachers'] = retVal
+
         return retVal
+    @staticmethod
+    def key_set_from_userbit(bit):
+        subjects = ClassSubject.objects.filter(anchor=bit.qsc)
+        return [{'self': cls} for cls in subjects]
+    teachers.depend_on_row(lambda:UserBit, lambda bit: ClassSubject.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
 
     def pretty_teachers(self, use_cache = True):
         """ Return a prettified string listing of the class's teachers """
