@@ -56,6 +56,7 @@ from esp.users.models import ESPUser, UserBit
 from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models          import Program
+from esp.resources.models        import ResourceType, Resource, ResourceRequest, ResourceAssignment
 from esp.cache                   import cache_function
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
@@ -617,10 +618,9 @@ class ClassSection(models.Model):
             
         return (status, errors)
     
+    @cache_function
     def viable_times(self, ignore_classes=False):
         """ Return a list of Events for which all of the teachers are available. """
-        from django.core.cache import cache
-        from esp.resources.models import ResourceType, Resource
         
         def intersect_lists(list_of_lists):
             if len(list_of_lists) == 0:
@@ -633,12 +633,6 @@ class ClassSection(models.Model):
                     if elt not in other_list:
                         base_list.remove(elt)
             return base_list
-        
-        #   This will need to be cached.
-        cache_key = 'class__viable_times:%d' % self.id
-        result = cache.get(cache_key)
-        if result is not None:
-            return result
 
         teachers = self.parent_class.teachers()
         num_teachers = teachers.count()
@@ -665,10 +659,23 @@ class ClassSection(models.Model):
                 #   Check whether there is enough time remaining in the block.
                 if self.sufficient_length(timegroup[i:len(timegroup)]):
                     viable_list.append(timegroup[i])
-        
-        cache.set(cache_key, viable_list)
+
         return viable_list
-    
+    #   Dependencies: 
+    #   - all resources, requests and assignments pertaining to the target class (includes teacher availability)
+    #   - teachers of the class
+    #   - the target section and its meeting times
+    viable_times.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
+    viable_times.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
+    viable_times.depend_on_model(lambda:Resource)   #   To do: Make this more specific (so the cache doesn't get flushed so often)
+    viable_times.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    viable_times.depend_on_row(lambda:ClassSection, lambda sec: {'self': sec})
+    @staticmethod
+    def key_set_from_userbit(bit):
+        sections = ClassSection.objects.filter(QTree(anchor__below=bit.qsc))
+        return [{'self': sec} for sec in sections]
+    viable_times.depend_on_row(lambda:UserBit, lambda bit: ClassSection.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
+
     def viable_rooms(self):
         """ Returns a list of Resources (classroom type) that satisfy all of this class's resource requests. 
         Resources matching the first time block of the class will be returned. """
