@@ -170,6 +170,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             
         is_onsite = user.isOnsite(self.program)
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        # Hack, to hide the Saturday night timeslots from grades 7-8
+        if not is_onsite and not user.getGrade() > 8:
+            timeslots = [x for x in timeslots if x.start.hour < 19]
         
         schedule = []
         timeslot_dict = {}
