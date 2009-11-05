@@ -43,6 +43,8 @@ from django.db import models
 from django.contrib import admin
 from django.template import Context, Template
 from django.http import HttpResponse
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from esp.lib.markdown import markdown
 import operator
 
@@ -185,7 +187,17 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
-            
+
+        ## Get or create a userbit indicating whether or not email's been sent.
+        confbit, created = UserBit.objects.get_or_create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode())+"/ConfEmail"))
+        print confbit, created
+        if created:
+            # Email has not been sent before, send an email
+            send_mail("[ESP] Thank you for registering for %s!" %(self.program.niceName()), \
+                      render_to_string('program/confemails/'+str(self.program.id)+'_confemail.txt', {'user': self.user}), \
+                      ("%s <%s>" %(self.program.niceName() + " Directors", self.program.director_email)), \
+                      [self.user.email], True)
+
         try:
             receipt_text = DBReceipt.objects.get(program=self.program).receipt
             context["request"] = request
