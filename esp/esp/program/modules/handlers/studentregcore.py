@@ -27,6 +27,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+from esp.settings import DEFAULT_EMAIL_ADDRESSES
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.program.models  import Program
@@ -43,6 +44,8 @@ from django.db import models
 from django.contrib import admin
 from django.template import Context, Template
 from django.http import HttpResponse
+from django.core.mail import send_mail
+from django.template.loader import render_to_string, get_template
 from esp.lib.markdown import markdown
 import operator
 
@@ -186,7 +189,21 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
-            
+
+        ## Get or create a userbit indicating whether or not email's been sent.
+        confbit, created = UserBit.objects.get_or_create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode())+"/ConfEmail"))
+        print confbit, created
+        if created:
+            # Email has not been sent before, send an email
+            try:
+                receipt_template = Template(DBReceipt.objects.get(program=self.program, action='confirmemail').receipt)
+            except:
+                receipt_template = get_template('program/confirm_email.txt')
+            send_mail("Thank you for registering for %s!" %(self.program.niceName()), \
+                      receipt_template.render(Context({'user': self.user, 'program': self.program}, autoescape=False)), \
+                      ("%s <%s>" %(self.program.niceName() + " Directors", self.program.director_email)), \
+                      [self.user.email, DEFAULT_EMAIL_ADDRESSES['archive']], True)
+
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt
             context["request"] = request
