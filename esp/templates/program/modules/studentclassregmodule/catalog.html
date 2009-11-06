@@ -23,6 +23,15 @@
      return false;
   }
 //-->
+
+function swap_visible(div_id) {
+	var div = document.getElementById(div_id);
+	if (div.style.display == 'none') {
+		div.style.display = '';
+	} else {
+		div.style.display = 'none';
+	}
+}
 </script>
 {% endblock %}
 

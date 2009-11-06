@@ -1,11 +1,11 @@
 {% load latex %}
 {% load smartypants %}
-    <tr>
+    <tr onclick="swap_visible('{{ class.id }}_details');swap_visible('{{ class.id }}_content');" style="cursor: pointer;">
       <th colspan="2" style="width: 70%;{{ colorstring }}">
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
-           {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}
+           {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }} {% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% endif %}
           {% endif %}
       </th>
       <th style="width: 30%;{{ colorstring }}">
@@ -17,7 +17,7 @@
        </span>
        </th>
      </tr>
-     <tr>
+     <tr id="{{ class.id }}_content">
        <td colspan="3" class="info">
         {% autoescape off %}
          {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
@@ -31,7 +31,7 @@
        {% endif %}
        </td>
      </tr>
-    <tr>
+    <tr id="{{ class.id }}_details">
       <td style="width: 50%;" valign="top">
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
@@ -79,3 +79,12 @@
      </tr>
     {% endif %}
     {% endwith %}
+
+{% if class.isFull %}
+<!-- This class is already full; start it off as invisible -->
+<script language="JavaScript">
+swap_visible('{{ class.id }}_details');
+swap_visible('{{ class.id }}_content');
+</script>
+{% endif %}
+
