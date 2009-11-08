@@ -708,9 +708,8 @@ class ClassSection(models.Model):
         relevantConstraints = ScheduleConstraint.objects.filter(program=self.parent_program)
         # Set up a ScheduleMap; fake-insert this class into it
         sm = ScheduleMap(user, self.parent_program)
-        for meeting_time in self.meeting_times.all():
-            sm.map[meeting_time.id] += [self]
-            
+        sm.add_section(self)
+        
         for exp in relevantConstraints:
             if not exp.evaluate(sm):
                 return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title, exp.requirement.label)

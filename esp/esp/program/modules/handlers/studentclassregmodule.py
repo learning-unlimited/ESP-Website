@@ -228,7 +228,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
-        context['num_classes'] = self.user.getEnrolledSections(self.program).count()
+        context['num_classes'] = self.user.getSections(self.program).count()
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}
@@ -273,7 +273,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classid = request.POST['class_id']
             sectionid = request.POST['section_id']
         else:
-            from esp.dblog.models import error
             raise ESPError(False), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
 
         enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
