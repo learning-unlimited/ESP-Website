@@ -28,6 +28,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 import copy
+import random
 
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
@@ -38,7 +39,7 @@ from datetime import datetime, timedelta
 from django.core.cache import cache
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
-from esp.middleware import ESPError
+from esp.middleware import ESPError, AjaxError
 from esp.cache import cache_function
 
 #   A function to lazily import models that is occasionally needed for cache dependencies.
@@ -1379,6 +1380,10 @@ class ScheduleMap:
         return self.map
     populate.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
 
+    def add_section(self, sec):
+        for t in sec.meeting_times.all().values_list('id'):
+            self.map[t[0]].append(sec)
+
     def __marinade__(self):
         import hashlib
         import pickle
@@ -1405,22 +1410,51 @@ class ScheduleConstraint(models.Model):
 
     condition = models.ForeignKey(BooleanExpression, related_name='condition_constraint')
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint')
+    #   This is a function of one argument, schedule_map, which returns an updated schedule_map.
+    on_failure = models.TextField()
     
     def __unicode__(self):
         return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
     
     @cache_function
-    def evaluate(self, smap):
-        self.schedule_map = smap.map
-        cond_state = self.condition.evaluate(map=self.schedule_map)
+    def evaluate(self, smap, recursive=True):
+        self.schedule_map = smap
+        cond_state = self.condition.evaluate(map=self.schedule_map.map)
         if cond_state:
-            return self.requirement.evaluate(map=self.schedule_map)
+            result = self.requirement.evaluate(map=self.schedule_map.map)
+            if result:
+                return True
+            else:
+                if recursive:
+                    #   Try using the execution hook for arbitrary code... and running again to see if it helped.
+                    (fail_result, data) = self.handle_failure()
+                    if type(fail_result) == ScheduleMap:
+                        self.schedule_map = fail_result
+                    #   raise AjaxError('ScheduleConstraint says %s' % data)
+                    return self.evaluate(self.schedule_map, recursive=False)
+                else:
+                    return False
         else:
             return True
     # It's okay to flush the cache if any of the boolean expressions change, since
     # that isn't very frequent.
     evaluate.depend_on_model(lambda: BooleanToken)
     evaluate.depend_on_model(lambda: BooleanExpression)
+
+    def handle_failure(self):
+        #   Try the on_failure callback but be very lenient about it (fail silently)
+        try:
+            func_str = """def _f(schedule_map):
+%s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
+            #   print func_str
+            exec func_str
+            result = _f(self.schedule_map)
+            return result
+        except Exception, inst:
+            #   raise ESPError(False), 'Schedule constraint handler error: %s' % inst
+            pass
+        #   If we got nothing from the on_failure function, just provide Nones.
+        return (None, None)
 
 class ScheduleTestTimeblock(BooleanToken):
     """ A boolean value that keeps track of a timeblock. 
