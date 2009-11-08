@@ -58,9 +58,6 @@ def get_smallest_section(cls, timeslot=None):
 def render_class_core(cls):
 
     prog = cls.parent_program
-    
-    # Show enrollment?
-    show_enrollment = prog.visibleEnrollments()
 
     #   Show e-mail codes?  We need to look in the settings.
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
@@ -73,8 +70,8 @@ def render_class_core(cls):
     return {'class': cls,
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
-            'show_enrollment': show_enrollment,
-            'show_emailcodes': scrmi.show_emailcodes}
+            'show_enrollment': scrmi.visible_enrollments,
+            'show_meeting_times': scrmi.visible_meeting_times}
             
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
