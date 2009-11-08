@@ -226,8 +226,11 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
+        context['num_classes'] = self.user.getEnrolledSections(self.program).count()
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
-        return HttpResponse(json.dumps({'student_schedule_html': schedule_str}))
+        script_str = render_to_string('users/student_schedule_inline.js', context)
+        return HttpResponse(json.dumps({'student_schedule_html': schedule_str, 'script': script_str}))
+ 
 
     def addclass_logic(self, request, tl, one, two, module, extra, prog):
         """ Pre-register the student for the class section in POST['section_id'].
