@@ -883,7 +883,7 @@ class StudentInfo(models.Model):
         username = "N/A"
         if self.user != None:
             username = self.user.username
-        return 'ESP Student Info (%s) -- %s' % (username, str(self.school))
+        return 'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
@@ -1456,7 +1456,7 @@ class ESPUser_Profile(models.Model):
         pass
 
     def __unicode__(self):
-        return "ESPUser_Profile for user: %s" % str(self.user)
+        return "ESPUser_Profile for user: %s" % unicode(self.user)
 
 class PasswordRecoveryTicket(models.Model):
     """ A ticket for changing your password. """

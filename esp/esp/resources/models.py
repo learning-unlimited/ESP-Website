@@ -150,7 +150,7 @@ class ResourceRequest(models.Model):
     desired_value = models.TextField()
     
     def __unicode__(self):
-        return 'Resource request of %s for %s: %s' % (str(self.res_type), self.target.emailcode(), self.desired_value)
+        return 'Resource request of %s for %s: %s' % (unicode(self.res_type), self.target.emailcode(), self.desired_value)
 
     class Admin:
         pass
@@ -169,12 +169,12 @@ class Resource(models.Model):
     
     def __unicode__(self):
         if self.user is not None:
-            return 'For %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
+            return 'For %s: %s (%s)' % (unicode(self.user), self.name, unicode(self.res_type))
         else:
             if self.num_students != -1:
-                return 'For %d students: %s (%s)' % (self.num_students, self.name, str(self.res_type))
+                return 'For %d students: %s (%s)' % (self.num_students, self.name, unicode(self.res_type))
             else:
-                return '%s (%s)' % (self.name, str(self.res_type))
+                return '%s (%s)' % (self.name, unicode(self.res_type))
     
     def save(self, *args, **kwargs):
         if self.group_id == -1:
@@ -361,7 +361,7 @@ class Resource(models.Model):
             event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times().filter(anchor=anchor)))
         else:
             event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times()))
-        return '<br /> '.join([str(e) for e in Event.collapse(event_list)])
+        return '<br /> '.join([unicode(e) for e in Event.collapse(event_list)])
     
     def matching_times(self):
         #   Find all times for which a resource of the same name is available.
@@ -429,7 +429,7 @@ class ResourceAssignment(models.Model):
         
     
     def __unicode__(self):
-        return 'Resource assignment for %s' % str(self.getTargetOrSubject())
+        return 'Resource assignment for %s' % unicode(self.getTargetOrSubject())
     
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """

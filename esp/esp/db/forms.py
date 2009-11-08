@@ -29,9 +29,9 @@ class AjaxForeignKeyFieldBase:
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
                     init_val = obj.ajax_str() + " (%s)" % data
-                    old_init_val = str(obj)
+                    old_init_val = unicode(obj)
                 else:
-                    old_init_val = init_val = obj.__str__() + " (%s)" % data
+                    old_init_val = init_val = unicode(obj) + " (%s)" % data
         else:
             data = init_val = ''
 

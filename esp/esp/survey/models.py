@@ -79,7 +79,7 @@ class ListField(object):
         if not data:
             return ()
         else:
-            return tuple(str(data).split(self.separator))
+            return tuple(data.split(self.separator))
 
     def __set__(self, instance, value):
         data = self.separator.join(map(str, value))
@@ -95,7 +95,7 @@ class Survey(models.Model):
     category = models.CharField(max_length=32) # teach|learn|etc
     
     def __unicode__(self):
-        return '%s (%s) for %s' % (self.name, self.category, str(self.anchor))
+        return '%s (%s) for %s' % (self.name, self.category, unicode(self.anchor))
     
     def num_participants(self):
         #   If there is a program anchored to the anchor, select the appropriate number
