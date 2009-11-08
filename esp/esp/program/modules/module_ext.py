@@ -88,6 +88,11 @@ class StudentClassRegModuleInfo(models.Model):
     
     #   Enrollment visibility
     visible_enrollments = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing enrollments on the catalog.')
+    #   Meeting times visibility
+    visible_meeting_times = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing classes\' meeting times on the catalog.')
+    
+    #   Show classes that have not yet been scheduled?
+    show_unscheduled_classes = models.BooleanField(default=True, help_text='Uncheck this box to prevent people from seeing classes in the catalog before they have been scheduled.')
     
     #   Customize buttons
     #   - Labels
