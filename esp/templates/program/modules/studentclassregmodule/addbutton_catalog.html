@@ -1,0 +1,1 @@
+<input type="submit" class="addbutton" name="action" value="{% if label %}{{ label }}{% else %}Register for section {{ sec.index }}{% endif %}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}"  {% if disabled %}disabled{% endif %} />
