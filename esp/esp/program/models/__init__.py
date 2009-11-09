@@ -782,16 +782,11 @@ class Program(models.Model):
             for module in modules:
                 module.setUser(user)
         return modules
-
+    
     @cache_function
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
         This avoids actually looking up the program module first. """
-
-        if not hasattr(self, "_moduleExtensions"):
-            self._moduleExtensions = {}
-        elif (ext_name_or_cls, module_id) in self._moduleExtensions:
-            return self._moduleExtensions[(ext_name_or_cls, module_id)]
         
         ext_cls = None
         if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
@@ -812,8 +807,6 @@ class Program(models.Model):
                 extension = ext_cls.objects.filter(module__program__id=self.id)[0]
             except:
                 extension = None
-
-        self._moduleExtensions[(ext_name_or_cls, module_id)] = extension
                 
         return extension
     #   Depend on all module extensions (kind of ugly, but at least we don't change those too frequently).
