@@ -46,7 +46,6 @@ from esp.db.fields import AjaxForeignKey
 # Models to depend on.
 from esp.datatree.models import *
 from esp.middleware import ESPError
-from esp.program.models import ClassSubject, ClassSection, Program
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to 
@@ -100,6 +99,8 @@ class Survey(models.Model):
     def num_participants(self):
         #   If there is a program anchored to the anchor, select the appropriate number
         #   of participants based on the category.
+        from esp.program.models import Program
+        
         progs = Program.objects.filter(anchor=self.anchor)
         if progs.count() == 1:
             prog = progs[0]
@@ -119,6 +120,7 @@ class SurveyResponse(models.Model):
 
     def set_answers(self, get_or_post, save=False):
         """ For a given get or post, get a set of answers. """
+        from esp.program.models import ClassSubject
         
         # First, set up attendance dictionary based on the attendance questions
         # If there were no attendance questions, this wasn't a student survey
