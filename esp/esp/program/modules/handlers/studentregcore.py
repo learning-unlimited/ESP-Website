@@ -190,10 +190,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
 
+        options = prog.getModuleExtension('StudentClassRegModuleInfo')
+
         ## Get or create a userbit indicating whether or not email's been sent.
         confbit, created = UserBit.objects.get_or_create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode())+"/ConfEmail"))
         print confbit, created
-        if created:
+        if created and options.send_confirmation:
             # Email has not been sent before, send an email
             try:
                 receipt_template = Template(DBReceipt.objects.get(program=self.program, action='confirmemail').receipt)
