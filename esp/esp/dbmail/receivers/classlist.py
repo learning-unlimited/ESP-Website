@@ -1,8 +1,7 @@
-
-
 from esp.dbmail.base import BaseHandler
 from esp.users.models import ESPUser
 from esp.program.models import Program, ClassSubject, ClassSection
+from esp.mailman import create_list, load_list_settings, add_list_member
 
 class ClassList(BaseHandler):
 
@@ -13,23 +12,20 @@ class ClassList(BaseHandler):
         except ESPUser.DoesNotExist:
             return
 
-        program = cls.parent_program
-        self.recipients = ['%s Directors <%s>' % (program.niceName(), program.director_email)]
+        # Create a section list in Mailman,
+        # then bounce this e-mail off to it
 
-        user_type = user_type.strip().lower()
+        list_name = "%s-%s" % (class_id, user_type)
 
-        if user_type in ('teachers','class'):
-            self.recipients += ['%s %s <%s>' % (user.first_name,
-                                                user.last_name,
-                                                user.email)
-                                for user in cls.teachers()     ]
+        create_list(list_name, "esp-moderators@mit.edu")
+        load_list_settings(list_name, "esp/mailman/sample_config.mailman")
 
-        if user_type in ('students','class'):
+        add_list_member(list_name, cls.parent_program.director_email)
+        add_list_member(list_name, cls.teachers())
+
+        if user_type != "teachers":
             for section in sections:
-                self.recipients += ['%s %s <%s>' % (user.first_name,
-                                                    user.last_name,
-                                                    user.email)
-                                    for user in section.students()     ]
+                add_list_member(list_name, [x.email for x in section.students()])
 
-        if len(self.recipients) > 0:
-            self.send = True
+        self.recipients = ["%s@esp.mit.edu" % list_name]
+        self.send = True
