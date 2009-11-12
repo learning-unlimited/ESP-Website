@@ -88,6 +88,11 @@ class StudentClassRegModuleInfo(models.Model):
     
     #   Enrollment visibility
     visible_enrollments = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing enrollments on the catalog.')
+    #   Meeting times visibility
+    visible_meeting_times = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing classes\' meeting times on the catalog.')
+    
+    #   Show classes that have not yet been scheduled?
+    show_unscheduled_classes = models.BooleanField(default=True, help_text='Uncheck this box to prevent people from seeing classes in the catalog before they have been scheduled.')
     
     #   Customize buttons
     #   - Labels
@@ -102,6 +107,9 @@ class StudentClassRegModuleInfo(models.Model):
     #   Choose which appears on student reg for the modules: checkbox list, progress bar, or nothing
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
     progress_mode = models.IntegerField(default=1, help_text='Select which to use on student reg: 1=checkboxes, 2=progress bar, 0=neither.')
+    
+    #   Choose whether an e-mail is sent the first time a student confirms registration.
+    send_confirmation = models.BooleanField(default=False, help_text='Check this box to send each student an e-mail the first time they confirm their registration.  You must define an associated DBReceipt of type "confirmemail".')
     
     #   Choose whether class IDs are shown on catalog.
     show_emailcodes = models.BooleanField(default=True, help_text='Uncheck this box to prevent e-mail codes (i.e. E534, H243) from showing up on catalog and fillslot pages.')
@@ -120,12 +128,12 @@ class StudentClassRegModuleInfo(models.Model):
             verb_list = []
             for i in range(0, self.priority_limit):
                 if uris:
-                    verb_list.append(self.signup_verb.uri[len(REG_VERB_BASE):] + '/%d' % (i + 1))
+                    verb_list.append(self.signup_verb.get_uri()[len(REG_VERB_BASE):] + '/%d' % (i + 1))
                 else:
-                    verb_list.append(DataTree.get_by_uri(self.signup_verb.uri + '/%d' % (i + 1)))
+                    verb_list.append(DataTree.get_by_uri(self.signup_verb.get_uri() + '/%d' % (i + 1)))
         else:
             if uris:
-                verb_list = [self.signup_verb.uri[len(REG_VERB_BASE):]]
+                verb_list = [self.signup_verb.get_uri()[len(REG_VERB_BASE):]]
             else:
                 verb_list = [self.signup_verb]
         

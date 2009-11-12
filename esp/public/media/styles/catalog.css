@@ -29,6 +29,10 @@
     padding: 5px;
 }
 
+#catalog td.info {
+    padding: 5px;
+}
+
 .doclist {
    ////font-family: sans-serif;
    text-indent: 20px;
@@ -114,4 +118,8 @@ input.button {
 input.button:hover {
     background-color: #00003C;
     color: #BCCAF5;
+}
+
+img.LaTeX {
+    vertical-align: middle;
 }

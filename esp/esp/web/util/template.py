@@ -32,6 +32,7 @@ Email: web@esp.mit.edu
 from django.core.cache import cache
 from django import template
 from django.utils.functional import curry
+import random
 
 from inspect import getargspec
 
@@ -96,19 +97,25 @@ def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=999
                 if cache_key_func:
                     cache_key = cache_key_func(*args)
                     if isinstance(cache_key, (tuple, list)):
-                        cache_dict_key, cache_key = cache_key
+                        cache_prefix_key, cache_key = cache_key
                     else:
-                        cache_dict_key = None
+                        cache_prefix_key = None
                 else:
                     cache_key = None
 
-                if cache_dict_key is not None:
-                    cache_dict = cache_obj.get(cache_dict_key)
-                    if cache_dict is None: cache_dict = {}
+                if cache_prefix_key is not None:
+                    cache_prefix = cache_obj.get(cache_prefix_key)
+                    if cache_prefix is None:
+                        # We probably want a unified method of generating a
+                        # random prefix. I see stuff like this used in
+                        # UserBitCache and inline latex as well...
+                        #     -ageng 2009-11-04
+                        cache_prefix = '%06d' % random.randint(0, 999999)
+                        cache_obj.set(cache_prefix_key, cache_prefix, cache_time)
 
                 if cache_key is not None:
-                    if cache_dict_key is not None:
-                        retVal = cache_dict.get(cache_key, None)
+                    if cache_prefix_key is not None:
+                        retVal = cache_obj.get('%s__%s__%s' % (cache_prefix_key, cache_prefix, cache_key), None)
                     else:
                         retVal = cache_obj.get(cache_key)
                     if retVal is not None:
@@ -125,11 +132,10 @@ def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=999
                     self.nodelist = t.nodelist
                 retVal = self.nodelist.render(context_class(dict, autoescape=context.autoescape))
                 if cache_key is not None:
-                    if cache_dict_key is None:
+                    if cache_prefix_key is None:
                         cache_obj.set(cache_key, retVal, cache_time)
                     else:
-                        cache_dict[cache_key] = retVal
-                        cache_obj.set(cache_dict_key, cache_dict, cache_time)
+                        cache_obj.set('%s__%s__%s' % (cache_prefix_key, cache_prefix, cache_key), retVal, cache_time)
                 return retVal
 
         compile_func = curry(template.generic_tag_compiler, params, defaults, func.__name__, InclusionNode)

@@ -44,7 +44,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.utils.memdb import mem_db
 from esp.datatree.sql.query_utils import *
 from esp.datatree.sql.manager import DataTreeManager
-
+from esp.cache import cache_function
 
 __all__ = ('DataTree', 'GetNode', 'QTree', 'get_lowest_parent', 'StringToPerm', 'PermToString')
 
@@ -146,6 +146,9 @@ class DataTree(models.Model):
             self.__dict__.update(obj.__dict__)
             return self
 
+        DataTree.objects.filter(QTree(below=self)).update(uri_correct=False)
+        self.uri_correct=False
+        
         old_node = DataTree.objects.get(id=self.id)
         if old_node.parent_id != self.parent_id:
             raise NotImplementedError("Have not yet written the parent moving code.")
@@ -323,11 +326,14 @@ class DataTree(models.Model):
                 self.save(uri_fix=True)
             return ''
 
-        parent_uri = self.parent.get_uri()
-        if parent_uri == '':
-            self.uri = self.name
+        if self.parent == None:
+            self.uri = ''
         else:
-            self.uri = parent_uri + DataTree.DELIMITER + self.name
+            parent_uri = self.parent.get_uri()
+            if parent_uri == '':
+                self.uri = self.name
+            else:
+                self.uri = parent_uri + DataTree.DELIMITER + self.name
 
         self.uri_correct = True
 
@@ -541,11 +547,12 @@ class DataTree(models.Model):
                       DataTree.MAX_WAIT
         return
 
-    @staticmethod
+    @cache_function
     def get_by_uri(uri, create=False):
         return DataTree.objects.get(uri=uri, create=create)
-
-
+    get_by_uri.depend_on_model(lambda: DataTree)  # We can't depend on row because the URI of a node will change if its parent's name changes
+    get_by_uri = staticmethod(get_by_uri)
+    
     @staticmethod
     def violating_dup_rangestart(QObject = False):
         " Returns the list of nodes violating the rangestart-must-be-unique constraint. "
@@ -842,10 +849,11 @@ class DataTree(models.Model):
     # TESTS      #
     ##############
     @staticmethod
-    def randwordtest(factor = 4, limit = -1):
+    def randwordtest(factor = 4, limit = -1, quiet=False):
         # some random test
         import sys
         import random
+        from esp.utils import echo
         error_free = True
         GetNode('a')
         try:
@@ -864,25 +872,25 @@ class DataTree(models.Model):
                 try:
                     size = int(DataTree.objects.count())
                     cur_id = random.choice(range(low_id,low_id + size*factor))
-                    #print 'Tried %s' % cur_id
+                    #echo( 'Tried %s' % cur_id, quiet=quiet )
                     nodes = DataTree.objects.filter(id = cur_id)
                     if nodes[:1]:
                         node = nodes[0]
-                        print u'Deleting %s' % node
+                        echo( u'Deleting %s' % node, quiet=quiet )
                         node.delete(True)
-                        print u'Deleted %s' % node
+                        echo( u'Deleted %s' % node, quiet=quiet )
                     else:
                         uri = '/'.join(random.choice(words))
                         node = DataTree.get_by_uri(uri, True)
-                        print u'Added %s' % uri
+                        echo( u'Added %s' % uri, quiet=quiet )
                     
                     if DataTree.objects.exists_violators():
-                        print "ERROR:"
-                        print DataTree.objects.exists_violators(queryset=True)
+                        echo( "ERROR:" )
+                        echo( DataTree.objects.exists_violators(queryset=True) )
                         return False
                 except int:
                     exc_info = sys.exc_info()
-                    print exc_info[0], exc_info[1], exc_info[2]
+                    echo( exc_info[0], exc_info[1], exc_info[2] )
                     error_free = False
 
         except int:

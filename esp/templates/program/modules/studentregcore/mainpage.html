@@ -51,12 +51,15 @@ function submit_check()
 
 {% if not request.user.onsite_local %}
     <div id="catalog">
-    {% if program.isFull %}
-    {% if not canRegToFullProgram %}
-    <div class="errormsg">
-    This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
-    {% endif %}
-    {% endif %}
+{% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
+{% if program.isFull %}{% if program.program_allow_waitlist %}
+<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+{% else %}{% if not canRegToFullProgram %}
+<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+{% endif %}
+{% endif %}
+{% endif %}
+{% endif %}
 {% comment %} (removed for Cascade -rye 1-7-09)
     <p>
     Please complete the following steps to register for {{ program.niceName }}.
@@ -102,8 +105,12 @@ function submit_check()
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
     {% if program.isFull %}
-        {% if not canRegToFullProgram %}
-        <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+        {% if program.program_allow_waitlist %}
+        <div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+        {% else %}
+            {% if not canRegToFullProgram %}
+            <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+            {% endif %}
         {% endif %}
     {% endif %}
 </center>
@@ -115,12 +122,19 @@ function submit_check()
 {% if not request.user.onsite_local %}
     <center>
     <a name="confirmreg"></a>
-    
-    <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull %}{% if not canRegToFullProgram %}disabled{% endif %}{% endif %}/></form>
-    {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}    
-    <form action="/learn/{{one}}/{{two}}/cancelreg"  onsubmit="return submit_cancel();" method="get">
-    <input id="cancelbutton" class="button" type="submit" value="{{ scrmi.cancel_button_text }}" />
-    {% endif %}{% endif %}
+    {% if program.isFull and program.program_allow_waitlist and not isConfirmed %}
+        </form>
+        <form action="/learn/{{one}}/{{two}}/waitlist_subscribe" method="post">
+        <input class="button" type="submit" value="Join Waiting List"/>
+        </form>
+    {% else %}
+        <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull and not canRegToFullProgram and not isConfirmed %}disabled{% endif %}/></form>
+        {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}
+            <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
+            <input id="cancelbutton" class="button" type="submit" onsubmit="return submit_cancel();" value="{{ scrmi.cancel_button_text }}" />
+            </form>
+        {% endif %}{% endif %}
+    {% endif %}
     </center>
 {% endif %}
 {% endblock %}

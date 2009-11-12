@@ -34,7 +34,7 @@ You must include enough times (in contiguous blocks) for all of the classes that
     </tr>
     {% for h in groups %}
     <tr>
-        <th class="small" colspan="2" align="center"><b>Block {{ forloop.counter }}</b></th>
+        <th class="small" colspan="2" align="center"><b>Block {{ forloop.counter }} {% ifchanged h.selections.0.slot.start.day %}({{ h.selections.0.slot.start|date:"D M d, Y" }}){% endifchanged %}</b></th>
     </tr>
         {% for t in h.selections %}
         <tr>

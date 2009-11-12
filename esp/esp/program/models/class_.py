@@ -51,11 +51,14 @@ from esp.miniblog.models import Entry
 from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
+from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
 from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
-from esp.program.models import Program
+from esp.program.models          import Program
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+from esp.resources.models        import ResourceType, Resource, ResourceRequest, ResourceAssignment
+from esp.cache                   import cache_function
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
@@ -96,7 +99,9 @@ class SectionCacheHelper(GenericCacheHelper):
         return 'SectionCache__%s' % cls._get_pk_val()
 
 class ClassManager(ProcedureManager):
-
+    def __repr__(self):
+        return "ClassManager()"
+    
     def approved(self, return_q_obj=False):
         if return_q_obj:
             return Q(status = 10)
@@ -104,6 +109,22 @@ class ClassManager(ProcedureManager):
         return self.filter(status = 10)
 
     def catalog(self, program, ts=None, force_all=False, initial_queryset=None):
+        # Try getting the catalog straight from cache
+        print (program, ts, force_all, initial_queryset, True)
+        catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True)
+        if catalog is None:
+            # Get it from the DB, then try prefetching class sizes
+            catalog = self.catalog_cached(program, ts, force_all, initial_queryset)
+        else:
+            for cls in catalog:
+                for sec in cls.get_sections():
+                    del sec._count_students
+
+        return catalog
+
+    
+    @cache_function
+    def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None):
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
@@ -185,6 +206,16 @@ class ClassManager(ProcedureManager):
                                  # they show up for all instances.
             
         return classes
+    catalog_cached.depend_on_model(lambda: ClassSubject)
+    catalog_cached.depend_on_model(lambda: ClassSection)
+    catalog_cached.depend_on_model(lambda: QSDMedia)
+    catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
+                                 lambda bit: bit.applies_to_verb('V/Flags/Registration/Teacher'))
+    #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
+    #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
+    catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
+                                 lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.get_uri()) and ("/Classes/" in page.path.get_uri())) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
+    
 
     cache = ClassCacheHelper
 
@@ -359,8 +390,7 @@ class ClassSection(models.Model):
         """   Get all assignments pertaining to floating resources like projectors. """
         from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
-        ta_restype = ResourceType.get_or_create('Teacher Availability')
-        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
+        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype)
     
     def classrooms(self):
         """ Returns the list of classroom resources assigned to this class."""
@@ -524,8 +554,11 @@ class ClassSection(models.Model):
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()
-        for event in event_list:
+        for event in set(event_list):
             self.meeting_times.add(event)
+
+    def clear_meeting_times(self):
+        self.meeting_times.clear()
     
     def assign_start_time(self, first_event):
         """ Get enough events following the first one until you have the class duration covered.
@@ -590,10 +623,9 @@ class ClassSection(models.Model):
             
         return (status, errors)
     
-    def viable_times(self):
+    @cache_function
+    def viable_times(self, ignore_classes=False):
         """ Return a list of Events for which all of the teachers are available. """
-        from django.core.cache import cache
-        from esp.resources.models import ResourceType, Resource
         
         def intersect_lists(list_of_lists):
             if len(list_of_lists) == 0:
@@ -606,20 +638,13 @@ class ClassSection(models.Model):
                     if elt not in other_list:
                         base_list.remove(elt)
             return base_list
-        
-        #   This will need to be cached.
-        cache_key = 'class__viable_times:%d' % self.id
-        result = cache.get(cache_key)
-        if result is not None:
-            return result
 
         teachers = self.parent_class.teachers()
         num_teachers = teachers.count()
-        ta_type = ResourceType.get_or_create('Teacher Availability')
 
         timeslot_list = []
         for t in teachers:
-            timeslot_list.append(list(t.getAvailableTimes(self.parent_program)))
+            timeslot_list.append(list(t.getAvailableTimes(self.parent_program, ignore_classes)))
             
         available_times = intersect_lists(timeslot_list)
         
@@ -638,10 +663,23 @@ class ClassSection(models.Model):
                 #   Check whether there is enough time remaining in the block.
                 if self.sufficient_length(timegroup[i:len(timegroup)]):
                     viable_list.append(timegroup[i])
-        
-        cache.set(cache_key, viable_list)
+
         return viable_list
-    
+    #   Dependencies: 
+    #   - all resources, requests and assignments pertaining to the target class (includes teacher availability)
+    #   - teachers of the class
+    #   - the target section and its meeting times
+    viable_times.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
+    viable_times.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
+    viable_times.depend_on_model(lambda:Resource)   #   To do: Make this more specific (so the cache doesn't get flushed so often)
+    viable_times.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    viable_times.depend_on_row(lambda:ClassSection, lambda sec: {'self': sec})
+    @staticmethod
+    def key_set_from_userbit(bit):
+        sections = ClassSection.objects.filter(QTree(anchor__below=bit.qsc))
+        return [{'self': sec} for sec in sections]
+    viable_times.depend_on_row(lambda:UserBit, lambda bit: ClassSection.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
+
     def viable_rooms(self):
         """ Returns a list of Resources (classroom type) that satisfy all of this class's resource requests. 
         Resources matching the first time block of the class will be returned. """
@@ -705,13 +743,13 @@ class ClassSection(models.Model):
 
         # Test any scheduling constraints based on this class
         relevantFilters = ScheduleTestSectionList.filter_by_section(self)
-        relevantConstraints = ScheduleConstraint.objects.filter(Q(requirement__booleantoken__in=relevantFilters) | Q(condition__booleantoken__in=relevantFilters))
+        #relevantConstraints = ScheduleConstraint.objects.filter(Q(requirement__booleantoken__in=relevantFilters) | Q(condition__booleantoken__in=relevantFilters))
 
+        relevantConstraints = ScheduleConstraint.objects.filter(program=self.parent_program)
         # Set up a ScheduleMap; fake-insert this class into it
         sm = ScheduleMap(user, self.parent_program)
-        for meeting_time in self.meeting_times.all():
-            sm.map[meeting_time.id] += [self]
-            
+        sm.add_section(self)
+        
         for exp in relevantConstraints:
             if not exp.evaluate(sm):
                 return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title, exp.requirement.label)
@@ -751,19 +789,19 @@ class ClassSection(models.Model):
 
     def students_dict(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         result = defaultdict(list)
         userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(enddate__gte=datetime.datetime.now()).distinct()
         for u in userbits:
-            bit_str = u.verb.uri[uri_start:]
+            bit_str = u.verb.get_uri()[uri_start:]
             result[bit_str].append(ESPUser(u.user))
         return PropertyDict(result)
 
     def students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
         
         return self.students(use_cache, verbs=verb_list)
 
@@ -828,9 +866,9 @@ class ClassSection(models.Model):
 
     def num_students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
         
         return self.num_students(use_cache, verbs=verb_list)
 
@@ -842,6 +880,10 @@ class ClassSection(models.Model):
             defaults = False
             
         if defaults:
+            # If we got this from a previous query, just return it
+            if hasattr(self, "_count_students"):
+                return self._count_students
+            
             retVal = self.cache['num_students']
             if retVal is not None and use_cache:
                 return retVal
@@ -851,6 +893,7 @@ class ClassSection(models.Model):
                 if retValCache != None:
                     retVal = len(retValCache)
                     self.cache['num_students'] = retVal
+                    self._count_students = retVal
                     return retVal
 
 
@@ -1010,11 +1053,11 @@ class ClassSection(models.Model):
             prereg_verb_base = GetNode('V/Flags/Registration/Applied')
         
         if scrmi.use_priority:
-            prereg_verb = DataTree.get_by_uri(prereg_verb_base.uri + '/%d' % priority, create=True)
+            prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
         else:
             prereg_verb = prereg_verb_base
             
-        auto_verb = DataTree.get_by_uri(prereg_verb.uri + '/Automatic', create=True)
+        auto_verb = DataTree.get_by_uri(prereg_verb.get_uri() + '/Automatic', create=True)
         
         if overridefull or not self.isFull():
             #    Then, create the userbit denoting preregistration for this class.
@@ -1223,7 +1266,7 @@ class ClassSubject(models.Model):
         new_section = ClassSection()
         new_section.parent_class = self
         new_section.duration = '%.4f' % duration
-        new_section.anchor = DataTree.get_by_uri(self.anchor.uri + '/Section' + str(section_index), create=True)
+        new_section.anchor = DataTree.get_by_uri(self.anchor.get_uri() + '/Section' + str(section_index), create=True)
         new_section.status = status
         new_section.save()
         self.sections.add(new_section)
@@ -1277,22 +1320,25 @@ class ClassSubject(models.Model):
         
     def num_students(self, use_cache=True, verbs=['/Enrolled']):
         result = 0
+        if hasattr(self, "_num_students"):
+            return self._num_students
         for sec in self.get_sections():
             result += sec.num_students(use_cache, verbs)
+        self._num_students = result
         return result
 
     def num_students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
         return self.num_students(False, verb_list)
 
     def num_students_prereg(self, use_cache=True):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.uri)
+        uri_start = len(verb_base.get_uri())
         all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.uri[uri_start:] for dt in all_registration_verbs]
+        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
         return self.num_students(False, verb_list)
         
     def max_students(self):
@@ -1382,16 +1428,13 @@ class ClassSubject(models.Model):
         self.cache['title'] = retVal
         return retVal
     
-    def teachers(self, use_cache = True):
+    @cache_function
+    def teachers(self):
         """ Return a queryset of all teachers of this class. """
         # We might have teachers pulled in by Awesome Query Magic(tm), as in .catalog()
         if hasattr(self, "_teachers"):
             return self._teachers
-        
-        retVal = self.cache['teachers']
-        if retVal is not None and use_cache:
-            return retVal
-        
+
         v = GetNode('V/Flags/Registration/Teacher')
 
         # NOTE: This ignores the recursive nature of UserBits, since it's very slow and kind of pointless here.
@@ -1401,9 +1444,13 @@ class ClassSubject(models.Model):
         retVal = ESPUser.objects.all().filter(Q(userbit__qsc=self.anchor, userbit__verb=v), UserBit.not_expired('userbit')).distinct()
 
         list(retVal)
-        
-        self.cache['teachers'] = retVal
+
         return retVal
+    @staticmethod
+    def key_set_from_userbit(bit):
+        subjects = ClassSubject.objects.filter(anchor=bit.qsc)
+        return [{'self': cls} for cls in subjects]
+    teachers.depend_on_row(lambda:UserBit, lambda bit: ClassSubject.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
 
     def pretty_teachers(self, use_cache = True):
         """ Return a prettified string listing of the class's teachers """
@@ -1420,6 +1467,9 @@ class ClassSubject(models.Model):
             if not s.isFull(ignore_changes=ignore_changes, use_cache=use_cache):
                 return False
         return True
+
+    def is_nearly_full(self):
+        return len([x for x in self.get_sections() if x.num_students() > 0.75*x.capacity]) > 0
 
     def getTeacherNames(self):
         teachers = []
@@ -1493,15 +1543,15 @@ class ClassSubject(models.Model):
         ub, created = UserBit.objects.get_or_create(user = user,
                                 qsc = self.anchor,
                                 verb = v)
-        ub.save()
+        ub.renew()
         return True
 
     def removeTeacher(self, user):
         v = GetNode('V/Flags/Registration/Teacher')
 
-        UserBit.objects.filter(user = user,
-                               qsc = self.anchor,
-                               verb = v).delete()
+        for bit in UserBit.objects.filter(user = user, qsc = self.anchor, verb = v):
+            bit.expire()
+            
         return True
 
     def subscribe(self, user):
@@ -1764,7 +1814,16 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     @staticmethod
     def class_sort_by_timeblock(one, other):
-        return cmp(one.all_meeting_times[0], other.all_meeting_times[0])
+        if len(one.all_meeting_times) == 0:
+            if len(other.all_meeting_times) == 0:
+                return 0
+            else:
+                return -1
+        else:
+            if len(other.all_meeting_times) == 0:
+                return 1
+            else:
+                return cmp(one.all_meeting_times[0], other.all_meeting_times[0])
 
     @staticmethod
     def class_sort_noop(one, other):

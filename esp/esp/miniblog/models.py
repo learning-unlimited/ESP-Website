@@ -43,6 +43,7 @@ import datetime
 class AnnouncementLink(models.Model):
     anchor = AjaxForeignKey(DataTree)
     title = models.CharField(max_length=256) 
+    category = models.CharField(max_length=32) # Plaintext
     timestamp = models.DateTimeField(default=datetime.datetime.now, editable=False)
     highlight_expire = models.DateTimeField(blank=True,null=True, help_text="When this should stop being showcased.")
     section = models.CharField(max_length=32,blank=True,null=True, help_text="e.g. 'teach' or 'learn' or blank")
@@ -76,7 +77,7 @@ class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     anchor = AjaxForeignKey(DataTree)
     title = models.CharField(max_length=256) # Plaintext; shouldn't contain HTML, for security reasons, though HTML will probably be passed through intact
-    slug    = models.SlugField(#prepopulate_from=('title',),
+    slug    = models.SlugField(default="General",
                                help_text="(will determine the URL)")
 
     timestamp = models.DateTimeField(default = datetime.datetime.now, editable=False)

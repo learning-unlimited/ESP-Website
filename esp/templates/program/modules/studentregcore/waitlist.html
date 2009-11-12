@@ -1,0 +1,31 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br /><br />
+<h1>Waitlist for {{program.niceName}} </h1>
+
+{% if already_on_list %}
+<p>You have <b>already been added</b> to the waitlist.  Your spot in the list will continue to be held.</p>
+{% else %}
+<p>You have been added to the waitlist!</p>
+{% endif %}
+
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:waitlist" request.user %}
+
+{% endblock %}
+

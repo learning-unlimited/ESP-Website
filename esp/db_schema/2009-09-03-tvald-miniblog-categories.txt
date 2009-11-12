@@ -1,0 +1,5 @@
+Review the script 2009-09-03-tvald-miniblog-categories.sql. It can be run with:
+    $ sudo -u postgres psql -f 2009-09-03-tvald-miniblog-categories.sql <database>
+
+Actions taken by the script:
+    Adds a "category" field to miniblog_announcementlink.

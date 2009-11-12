@@ -9,7 +9,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
 {% block content %}
@@ -19,6 +19,7 @@
 First, you need to create an account. After you do this and give us some basic information, you can sign up for classes. (Note: you will need to create a new account for Cascade even if you've registered for Splash in the past.)
 </p>
 
+<div id="program_form">
 <form action="{{ request.path }}" method="post" name="newuser_form">
 <table>
 <thead>
@@ -50,6 +51,7 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 </tbody>
 </table>
 </form>
+</div>
 
 <script type="text/javascript">
 <!--
