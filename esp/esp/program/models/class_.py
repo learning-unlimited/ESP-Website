@@ -1027,7 +1027,7 @@ class ClassSection(models.Model):
         # Remove the student from any existing class mailing lists
         list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
         for list_name in list_names:
-            remove_list_member(user.email, list_name)
+            remove_list_member(list_name, user.email)
 
 
     def preregister_student(self, user, overridefull=False, automatic=False, priority=1):
@@ -1076,7 +1076,8 @@ class ClassSection(models.Model):
             #   Add the student to the class mailing lists, if they exist
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
-                add_list_member(user.email, list_name)
+                print list_name, user.email
+                add_list_member(list_name, user.email)
 
             return True
         else:

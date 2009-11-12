@@ -21,7 +21,7 @@ class ClassList(BaseHandler):
         load_list_settings(list_name, "esp/mailman/sample_config.mailman")
 
         add_list_member(list_name, cls.parent_program.director_email)
-        add_list_member(list_name, cls.teachers())
+        add_list_member(list_name, [x.email for x in cls.teachers()])
 
         if user_type != "teachers":
             for section in sections:
