@@ -15,7 +15,7 @@ class SectionList(BaseHandler):
         # Create a section list in Mailman,
         # then bounce this e-mail off to it
 
-        list_name = "%ss%s-%s" % (class_id, section_num, user_type)
+        list_name = "%s-%s" % (section.emailcode(), user_type)
 
         create_list(list_name, "esp-moderators@mit.edu")
         load_list_settings(list_name, "esp/mailman/sample_config.mailman")
@@ -26,6 +26,6 @@ class SectionList(BaseHandler):
         if user_type != "teachers":
             add_list_member(list_name, [x.email for x in section.students()])
 
-
         self.recipients = ["%s@esp.mit.edu" % list_name]
         self.send = True
+

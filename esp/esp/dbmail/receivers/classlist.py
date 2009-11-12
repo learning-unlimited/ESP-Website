@@ -15,7 +15,7 @@ class ClassList(BaseHandler):
         # Create a section list in Mailman,
         # then bounce this e-mail off to it
 
-        list_name = "%s-%s" % (class_id, user_type)
+        list_name = "%s-%s" % (cls.emailcode(), user_type)
 
         create_list(list_name, "esp-moderators@mit.edu")
         load_list_settings(list_name, "esp/mailman/sample_config.mailman")
