@@ -1,8 +1,11 @@
+
 from subprocess import call, Popen, PIPE
-from esp.settings import USE_MAILMAN
+from esp.settings import USE_MAILMAN, PROJECT_ROOT
 from esp.utils.decorators import enable_with_setting
 from esp.database_settings import MAILMAN_PASSWORD
 from esp.users.models import ESPUser, User
+
+MM_PATH = "/usr/sbin/"
 
 ## Functions for Mailman interop
 
@@ -17,7 +20,21 @@ def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
     if isinstance(owner, User):
         owner = owner.email
 
-    return call(["newlist", "-q", list, owner, admin_password])
+    return call([MM_PATH + "newlist", "-q", list, owner, admin_password])
+
+@enable_with_setting(USE_MAILMAN)
+def load_list_settings(list, listfile):
+    """
+    Load a Mailman list-settings file and configure a list with the specified settings.
+   
+    If the path specified isn't an absolute path, it will be taken to be relative to the project root.
+    """
+    if listfile[0] == '/':
+        listpath = listfile
+    else:
+        listpath = PROJECT_ROOT + listfile
+
+    return call([MM_PATH + "config_list", "-i", listpath, list])
 
 @enable_with_setting(USE_MAILMAN)
 def add_list_member(list, member):
@@ -36,7 +53,7 @@ def add_list_member(list, member):
     if not isinstance(member, basestring):       
         member = "\n".join(member)
 
-    return Popen(["add_members", "--regular-members-file=-", list], stdin=PIPE).communicate(member)
+    return Popen([MM_PATH + "add_members", "--regular-members-file=-", list], stdin=PIPE).communicate(member)
 
 @enable_with_setting(USE_MAILMAN)
 def remove_list_member(list, member):
@@ -55,12 +72,12 @@ def remove_list_member(list, member):
     if not isinstance(member, basestring):       
         member = "\n".join(member)
 
-    return Popen(["remove_members", "--file=-", list], stdin=PIPE).communicate(member)
+    return Popen([MM_PATH + "remove_members", "--file=-", list], stdin=PIPE).communicate(member)
 
 @enable_with_setting(USE_MAILMAN)
 def list_contents(list):
     """ Return the list of e-mail addresses on the specified mailing list """
-    return Popen(["list_members", list]).communicate()[0].split('\n')
+    return Popen([MM_PATH + "list_members", list]).communicate()[0].split('\n')
 
 @enable_with_setting(USE_MAILMAN)
 def list_members(list):
