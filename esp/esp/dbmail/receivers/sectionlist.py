@@ -24,7 +24,7 @@ class SectionList(BaseHandler):
         add_list_member(list_name, ["%s@esp.mit.edu" % x.username for x in cls.teachers()])
 
         if user_type != "teachers":
-            add_list_member(list_name, ["%s@esp.mit.edu" % s.username for x in section.students()])
+            add_list_member(list_name, ["%s@esp.mit.edu" % x.username for x in section.students()])
 
         self.recipients = ["%s@esp.mit.edu" % list_name]
         self.send = True
