@@ -55,7 +55,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
-        if not request.GET.has_key('sure') and not request.GET.has_key('gen_svg'):
+        if not request.GET.has_key('sure') and not request.GET.has_key('gen_img'):
             printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
             return render_to_response(self.baseDir()+'instructions.html',
@@ -124,7 +124,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
             from django.conf import settings
             from esp.web.util.latex import render_to_latex
 
-            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, 'svg')
+            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, 'png')
             # set the refresh rate
             #response['Refresh'] = '2'
 
