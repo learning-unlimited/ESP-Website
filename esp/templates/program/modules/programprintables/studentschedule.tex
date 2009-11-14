@@ -26,15 +26,25 @@
 \begin{center}
 \vspace{1cm}
 \begin{tabular}{ c }
-Amount Owed: \\
+Total Amount Owed: \\
 \fbox{\textbf{ \${{ student.itemizedcosttotal|floatformat:"-2" }} } } \\
 \end{tabular}
 
 \vspace{0.5cm}
 
+\begin{tabular} { | c | }
+{% for item in student.admission %} \hline
+{{ item.li_type.text|texescape }} (\${% if student.has_financial_aid %}{{ item.li_type.finaid_amount|cut:"-"|floatformat:"-2" }}{% else %}{{ item.amount|cut:"-"|floatformat:"-2" }}{% endif %}) \\
+{% endfor %} \hline
+\end{tabular}
+
+\vspace{0.3cm}
+
+Additional items: \\
+\vspace{0.1cm}
 \begin{tabular}{ | c | }
 {% for item in student.meals %}\hline
-{{ item.li_type.text|texescape }} \\
+{{ item.li_type.text|texescape }} (\${% if student.has_financial_aid %}{{ item.li_type.finaid_amount|cut:"-"|floatformat:"-2" }}{% else %}{{ item.amount|cut:"-"|floatformat:"-2" }}{% endif %}) \\
 {% endfor %}\hline
 \end{tabular}
 
@@ -47,7 +57,10 @@ $ $ \\
 Student Schedule for \\
 \vspace{0.5cm}
 
-{\setlength{\baselineskip}{1.5\baselineskip} \LARGE \textbf{ {{ student.name|texescape }} } }
+{\setlength{\baselineskip}{1.5\baselineskip} 
+\LARGE \textbf{ {{ student.first_name|texescape }} \\ 
+\vspace{0.2cm}
+{{ student.last_name|texescape }} } }
 \end{center}
 
 \columnbreak

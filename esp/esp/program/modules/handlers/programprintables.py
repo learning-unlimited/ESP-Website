@@ -863,11 +863,14 @@ Student schedule for %s:
             # attach payment information to student
             student.invoice_id = invoice.locator
             student.itemizedcosts = invoice.get_items()
-            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')  # not just meals, but all BuyOne LineItems (for Spark 2009, included t-shirt, photo, etc)
+            student.meals = student.itemizedcosts.filter(li_type__anchor__parent__name='Optional').distinct()  # catch everything that's not admission to the program.
+            student.admission = student.itemizedcosts.filter(li_type__anchor__name='Required').distinct()  # Program admission
             student.itemizedcosttotal = invoice.cost()
             student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
-            if student.has_financial_aid:
-                student.itemizedcosttotal = 0
+            # The below is not actually applicable when there are costs
+            # other than just admission, which aren't covered by finaid.
+            # if student.has_financial_aid:
+            #    student.itemizedcosttotal = 0
             student.has_paid = ( student.itemizedcosttotal == 0 )
             
             student.payment_info = True
