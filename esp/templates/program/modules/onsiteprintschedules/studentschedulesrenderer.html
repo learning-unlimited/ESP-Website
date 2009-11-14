@@ -10,7 +10,10 @@ function printself() {
 
 function refreshimg() {
 	var auto_reload_img = document.getElementById("auto_reload_img");
+	if (auto_reload_img.complete) {
 	auto_reload_img.src = auto_reload_img.src;
+	}
+
 	setTimeout(refreshimg, 2000);
 }
 
@@ -19,6 +22,6 @@ setTimeout(refreshimg, 2000);
 </script>
 </head>
 <body>
-<img id="auto_reload_img" src="printschedules?gen_svg" onload="javascript:printself();" />
+<img id="auto_reload_img" src="printschedules?gen_img" onload="javascript:printself();" />
 </body>
 </html>
