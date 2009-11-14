@@ -42,6 +42,7 @@ from django.utils.datastructures import SortedDict
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.db.cache import GenericCacheHelper
+from esp.mailman import add_list_member, remove_list_member
 
 # django models
 from django.contrib.auth.models import User
@@ -1023,6 +1024,12 @@ class ClassSection(models.Model):
         self.cache['students'] = students
         self.update_cache_students()
 
+        # Remove the student from any existing class mailing lists
+        list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
+        for list_name in list_names:
+            remove_list_member(list_name, "%s@esp.mit.edu" % user.username)
+
+
     def preregister_student(self, user, overridefull=False, automatic=False, priority=1):
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
@@ -1065,7 +1072,12 @@ class ClassSection(models.Model):
                 if app.questions.count() > 0:
                     app.done = False
                     app.save()
-                
+
+            #   Add the student to the class mailing lists, if they exist
+            list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
+            for list_name in list_names:
+                add_list_member(list_name, "%s@esp.mit.edu" % user.username)
+
             return True
         else:
             #    Pre-registration failed because the class is full.

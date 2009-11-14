@@ -1,5 +1,5 @@
 {% autoescape off %}
-\documentclass[letterpaper,12pt]{article}
+\documentclass[letterpaper,10pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{fullpage}
 \usepackage{multicol}
@@ -13,8 +13,8 @@
 \graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
 
 \pagestyle{fancy}
-\fancyhead[C]{% templatetag openbrace %}{% comment %}\includegraphics[scale = 1]{header-top}{% endcomment %}\includegraphics[scale = 1]{header-line}}
-\setlength\headheight{80pt}
+% \fancyhead[C]{% templatetag openbrace %}{% comment %}\includegraphics[scale = 1]{header-top}{% endcomment %}\includegraphics[scale = 1]{header-line}}
+\setlength\headheight{20pt}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt} 
 \fancyfoot{}
@@ -26,15 +26,25 @@
 \begin{center}
 \vspace{1cm}
 \begin{tabular}{ c }
-Amount Owed: \\
+Total Amount Owed: \\
 \fbox{\textbf{ \${{ student.itemizedcosttotal|floatformat:"-2" }} } } \\
 \end{tabular}
 
-\vspace{0.5cm}
+\vspace{0.3cm}
 
+\begin{tabular} { | c | }
+{% for item in student.admission %} \hline
+{{ item.li_type.text|texescape }} (\${% if student.has_financial_aid %}{{ item.li_type.finaid_amount|cut:"-"|floatformat:"-2" }}{% else %}{{ item.amount|cut:"-"|floatformat:"-2" }}{% endif %}) \\
+{% endfor %} \hline
+\end{tabular}
+
+\vspace{0.2cm}
+
+Additional items: \\
+\vspace{0.1cm}
 \begin{tabular}{ | c | }
 {% for item in student.meals %}\hline
-{{ item.li_type.text|texescape }} \\
+{{ item.li_type.text|texescape }} (\${% if student.has_financial_aid %}{{ item.li_type.finaid_amount|cut:"-"|floatformat:"-2" }}{% else %}{{ item.amount|cut:"-"|floatformat:"-2" }}{% endif %}) \\
 {% endfor %}\hline
 \end{tabular}
 
@@ -43,11 +53,17 @@ Amount Owed: \\
 \columnbreak
 \begin{center}
 $ $ \\
-\vspace{0.5cm}
+{\Large \textbf{ {{ program.niceName }} } } \\
+\vspace{0.2cm}
 Student Schedule for \\
 \vspace{0.5cm}
 
-{\setlength{\baselineskip}{1.5\baselineskip} \LARGE \textbf{ {{ student.name|texescape }} } }
+{\setlength{\baselineskip}{1.5\baselineskip} 
+\begin{tabular}{ c }
+\LARGE \textbf{ {{ student.first_name|texescape }} } \\ 
+\vspace{0.2cm}
+\LARGE \textbf{ {{ student.last_name|texescape }} } 
+\end{tabular} }
 \end{center}
 
 \columnbreak
@@ -64,22 +80,22 @@ User ID: {{ student.id }} \\
 
 \begin{center}
 
-\vspace{1cm}
+\vspace{0.3cm}
 
 For help finding your classrooms, please consult the directions and map on your Student Info sheet. \\
 If you have any questions or would like to switch classes, please go to the program office. \\
 
-\vspace{1cm}
+\vspace{0.3cm}
 
 {\large \textbf{Schedule} \\}
 
 \vspace{0.25cm}
 
-\begin{tabularx}{18cm}{|l|c|lX|X|}
+\begin{tabularx}{18cm}{|p{3.45cm}|c|X|p{3cm}|}
 \hline
-\textbf{Time} & \textbf{Room} & \textbf{Class} & & \textbf{Teacher(s)} \\
+\textbf{Time} & \textbf{Room} & \textbf{Class} & \textbf{Teacher(s)} \\
 {% for cls in student.classes %}\hline
-{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} } : & {{ cls.title|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\ 
+{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }} : {{ cls.title|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\ 
 {% endfor %}\hline
 \end{tabularx}
 
