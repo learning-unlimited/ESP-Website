@@ -877,6 +877,7 @@ Student schedule for %s:
             student.classes = classes
             
         context['students'] = students
+        context['program'] = self.program
         
         if extra:
             file_type = extra.strip()
