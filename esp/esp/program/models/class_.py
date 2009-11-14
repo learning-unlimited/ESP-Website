@@ -311,8 +311,19 @@ class ClassSection(models.Model):
         return self.parent_class.title()
     title = property(_get_title)
     
+    def _get_room_capacity(self, rooms = None):
+        if rooms == None:
+            rooms = self.initial_rooms()
+
+        rc = 0
+        for r in rooms:
+            rc += r.num_students
+
+        return rc
+
     @cache_function
     def _get_capacity(self, ignore_changes=False):
+
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
 
