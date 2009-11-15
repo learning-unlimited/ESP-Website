@@ -48,6 +48,15 @@ Additional items: \\
 {% endfor %}\hline
 \end{tabular}
 
+{% if student.paid_online %}
+\vspace{0.2cm}
+\begin{tabular} { | c | }
+{% for item in student.paid_online %} \hline
+\textbf{ Paid Online: \${{ item.amount|floatformat:"-2" }} } \\ 
+{% endfor %}\hline
+\end{tabular}
+{% endif %}
+
 \end{center}
 
 \columnbreak
