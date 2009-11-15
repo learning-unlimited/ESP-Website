@@ -60,11 +60,11 @@ def handle_ajax_mover(method):
     """
 
     def ajax_mover(request, *args, **kwargs):
-        START = 'nav_entry__'
-
         if not request.GET.has_key('ajax_movepage') or \
            not request.GET.has_key('seq'):
             return method(request, *args, **kwargs)
+
+        START = 'nav_entry__'
 
         entries = request.GET['seq'].strip(',').split(',')
         try:
@@ -107,9 +107,6 @@ def qsd(request, branch, name, section, action):
 
     READ_VERB = 'V/Flags/Public'
     EDIT_VERB = 'V/Administer/Edit/QSD'
-
-    # Pages are global per-user (not unique per-user)
-    cache_id = '%s_%s' % (branch.id, name)
 
     if action == 'read':
         base_url = request.path[:-5]
@@ -164,14 +161,7 @@ def qsd(request, branch, name, section, action):
         if not have_read:
             raise Http403, 'You do not have permission to read this page.'
 
-        # This caching code is commented out
-        # My guess (Alex Dehnert, speaking as somebody who started work
-        # on ESP after this had happened) is that this was commented out
-        # when the render_qsd template tag started getting cached
-        #cached_html = cache.get('quasistaticdata_html:' + cache_id)
-        #if cached_html == None:
         cached_html = qsd_rec.html()
-        #    cache.set('quasistaticdata_html:' + cache_id, cached_html)
 
         # Render response
         response = render_to_response('qsd/qsd.html', request, (branch, section), {

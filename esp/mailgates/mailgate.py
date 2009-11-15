@@ -6,8 +6,9 @@
 import sys, os, operator, email, re, smtplib, socket, sha, random
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
-sys.path.insert(0, "/esp/web/mit/django")
-sys.path.insert(0, "/esp/web/mit/esp")
+sys.path.insert(0, "/home/adam/esp-project/esp/")
+sys.path.insert(0, "/home/adam/esp-project/esp/esp/")
+sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 from esp import cache_loader # Needed to block an annoying circular-dependency issue
