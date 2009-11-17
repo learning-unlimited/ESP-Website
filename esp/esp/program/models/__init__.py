@@ -643,10 +643,14 @@ class Program(models.Model):
         else:
             return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
 
-    def getResourceTypes(self):
+    def getResourceTypes(self, include_classroom=False):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
-        exclude_types = [ResourceType.get_or_create('Classroom')]
+        
+        if include_classroom:
+            exclude_types = []
+        else:
+            exclude_types = [ResourceType.get_or_create('Classroom')]
         
         Q_filters = Q(program=self) | Q(program__isnull=True)
         

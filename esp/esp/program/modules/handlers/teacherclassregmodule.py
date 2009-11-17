@@ -898,7 +898,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['form'] = reg_form
         context['formset'] = resource_formset
         context['restype_formset'] = restype_formset
-        context['resource_types'] = ResourceType.objects.all()
+        context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         
         if newclass is None:
             context['addoredit'] = 'Add'
