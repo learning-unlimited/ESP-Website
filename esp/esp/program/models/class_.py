@@ -327,7 +327,7 @@ class ClassSection(models.Model):
         if len(rooms) == 0:
             ans = self.parent_class.class_size_max
         else:
-            ans = min(self.parent_class.class_size_max, _get_room_capacity(rooms))
+            ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
 
             # Only save the capacity if we do have rooms assigned;
             # otherwise don't bother as this number will almost definitely change
