@@ -59,6 +59,8 @@ def texescape(value):
         strings[i] = strings[i].replace('\\', special_backslash)
         for char in '&$%#_{}':
             strings[i] = strings[i].replace(char, '\\' + char)
+        strings[i] = strings[i].replace('^', '\\textasciicircum')
+        strings[i] = strings[i].replace('~', '$\sim$')
         strings[i] = strings[i].replace(special_backslash, '$\\backslash$')
     
 
@@ -81,8 +83,6 @@ def texescape(value):
     value = value.replace('\r\n', '\n')
     value = value.replace('\r',   '\n')
     value = value.replace('\n',   '\\\\\n')
-    value = value.replace('^',    '\\textasciicircum')
-    value = value.replace('~',    '$\sim$')
 
     value = value.encode('ascii', 'ignore')
 
