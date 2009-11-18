@@ -9,6 +9,7 @@
 \usepackage{tabularx}
 \usepackage{graphicx}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
+\usepackage{multirow}
 \usepackage[left=.5in,top=1cm,right=.5in]{geometry}
 \graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
 
@@ -25,6 +26,35 @@
 
 \begin{center}
 \vspace{1cm}
+
+%%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%
+\begin{tabular}{|l|l|l|}
+\hline
+\multirow{3}{1in}{\centering \textbf{\small Amount \\ Due:} \\ 
+\vspace{0.05cm}
+\textbf{\large  \${{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
+{ {% if student.saturday_lunch %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
+\cline{2-3}
+& \multicolumn{2}{|p{1.5in}|}
+{ {% if student.saturday_dinner %} Saturday Dinner (\$10) {% endif %}} \\
+\cline{2-3}
+& \multicolumn{2}{|p{1.5in}|}
+{ {% if student.sunday_lunch %} Sunday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %}} \\
+\hline
+\multicolumn{2}{|p{1.25in}|}
+{ {% if student.shirtcount %}T-shirt (\$10) x {{ student.shirtcount }} {% endif %} } & 
+\multicolumn{1}{|p{1.25in}|}
+{ {% if student.photocount %}Photo (\$10) x {{ student.photocount }} {% endif %} } \\
+\hline
+\multicolumn{2}{|p{1.25in}|}
+{ Admission: \${% if student.has_financial_aid %}0{% else %}30{% endif %} } & 
+\multicolumn{1}{|p{1.25in}|}
+{ \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}\${{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
+\hline
+\end{tabular}
+%%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%
+
+{% comment %}
 \begin{tabular}{ c }
 Total Amount Owed: \\
 \fbox{\textbf{ \${{ student.itemizedcosttotal|floatformat:"-2" }} } } \\
@@ -56,7 +86,7 @@ Additional items: \\
 {% endfor %}\hline
 \end{tabular}
 {% endif %}
-
+{% endcomment %}
 \end{center}
 
 \columnbreak

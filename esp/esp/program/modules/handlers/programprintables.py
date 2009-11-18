@@ -872,6 +872,15 @@ Student schedule for %s:
             # other than just admission, which aren't covered by finaid.
             # if student.has_financial_aid:
             #    student.itemizedcosttotal = 0
+
+            ### HARDCODED IN FOR SPLASH 2009 -- remove later - rye 11-17-09 ##
+            student.shirtcount = student.meals.filter(text__contains='T-shirt').count()
+            student.photocount = student.meals.filter(text__contains='Photo').count()
+            student.saturday_lunch = student.meals.filter(text__contains='Saturday Lunch').count()
+            student.sunday_lunch = student.meals.filter(text__contains='Sunday Lunch').count()
+            student.saturday_dinner = student.meals.filter(text__contains='Saturday Dinner').count()
+            ### HARDCODED IN FOR SPLASH 2009 ###
+
             student.has_paid = ( student.itemizedcosttotal == 0 )
             
             student.payment_info = True
