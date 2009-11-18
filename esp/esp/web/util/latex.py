@@ -105,7 +105,7 @@ def gen_latex(texcode, type='pdf'):
     elif type=='ps':
         mime = 'application/postscript'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips %s -o %s.ps' % (TEX_TEMP, file_base, file_base))
+        os.system('cd %s; dvips %s -t letter -o %s.ps' % (TEX_TEMP, file_base, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
         

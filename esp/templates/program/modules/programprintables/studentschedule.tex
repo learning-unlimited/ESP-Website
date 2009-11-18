@@ -141,12 +141,49 @@ If you have any questions or would like to switch classes, please go to the prog
 \end{center}
 
 \vfill
+\begin{tabular}{lr}
+\begin{minipage}{4in}
 \begin{pspicture}(3.0, 0.7in)
 \psbarcode{% templatetag openbrace %}{{ student.invoice_id }}{% templatetag closebrace %}{includetext height=0.4}{code39}
 \end{pspicture} \\
 \vspace{0pt} \\
 {{ student.name }} ({{ student.id }}) \\
 Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
+\end{minipage}
+&
+
+%%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%
+\begin{tabular}{|l|l|l|}
+\hline
+\multirow{3}{1in}{\centering \textbf{\small Amount \\ Due:} \\ 
+\vspace{0.05cm}
+\textbf{\large  \${{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
+{ {% if student.saturday_lunch %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
+\cline{2-3}
+& \multicolumn{2}{|p{1.5in}|}
+{ {% if student.saturday_dinner %} Saturday Dinner (\$10) {% endif %}} \\
+\cline{2-3}
+& \multicolumn{2}{|p{1.5in}|}
+{ {% if student.sunday_lunch %} Sunday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %}} \\
+\hline
+\multicolumn{2}{|p{1.25in}|}
+{ {% if student.shirtcount %}T-shirt (\$10) x {{ student.shirtcount }} {% endif %} } & 
+\multicolumn{1}{|p{1.25in}|}
+{ {% if student.photocount %}Photo (\$10) x {{ student.photocount }} {% endif %} } \\
+\hline
+\multicolumn{2}{|p{1.25in}|}
+{ Admission: \${% if student.has_financial_aid %}0{% else %}30{% endif %} } & 
+\multicolumn{1}{|p{1.25in}|}
+{ \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}\${{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
+\hline
+\end{tabular}
+%%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%
+
+\end{tabular}
+
+
+
+
 \vspace{2.5cm}
 {% if not forloop.last %}\pagebreak{% endif %}
 {% endfor %}
