@@ -309,6 +309,16 @@ class ClassSection(models.Model):
         return self.parent_class.title()
     title = property(_get_title)
     
+    def _get_room_capacity(self, rooms = None):
+        if rooms == None:
+            rooms = self.initial_rooms()
+
+        rc = 0
+        for r in rooms:
+            rc += r.num_students
+
+        return rc
+
     def _get_capacity(self):
         if self.max_class_capacity is not None:
             return self.max_class_capacity
@@ -317,10 +327,7 @@ class ClassSection(models.Model):
         if len(rooms) == 0:
             ans = self.parent_class.class_size_max
         else:
-            rc = 0
-            for r in rooms:
-                rc += r.num_students
-            ans = min(self.parent_class.class_size_max, rc)
+            ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
 
             # Only save the capacity if we do have rooms assigned;
             # otherwise don't bother as this number will almost definitely change

@@ -84,7 +84,7 @@ def gen_latex(texcode, type='pdf'):
     texfile.close()
     
 
-    file_types = ['pdf','dvi','ps','log','tex']
+    file_types = ['pdf','dvi','ps','log','tex','svg','png']
 
     # Get (sometimes-)necessary library files
     from django.conf import settings
@@ -94,7 +94,7 @@ def gen_latex(texcode, type='pdf'):
     if type=='pdf':
         mime = 'application/pdf'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvipdf %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvipdfm -p letter %s.dvi' % (TEX_TEMP, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
             
@@ -112,7 +112,23 @@ def gen_latex(texcode, type='pdf'):
     elif type=='log':
         mime = 'text/plain'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
+
+    elif type=='svg':
+        mime = 'image/svg+xml'
+        os.system('cd %s; pwd; latex %s.tex' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvipdf %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; inkscape %s.pdf -l %s.svg' % (TEX_TEMP, file_base, file_base))
+        if remove_files:
+            os.remove('%s.dvi' % file_base)
+            os.remove('%s.pdf' % file_base)
         
+    elif type=='png':
+        mime = 'application/postscript'
+        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvipng %s -o %s.png' % (TEX_TEMP, file_base, file_base))
+        if remove_files:
+            os.remove('%s.dvi' % file_base)
+
     else:
         raise ESPError(), 'Invalid type received for latex generation: %s should be one of %s' % (type, file_types)
     
