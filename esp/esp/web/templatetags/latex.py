@@ -76,6 +76,8 @@ def texescape(value):
     value = value.replace('\r\n', '\n')
     value = value.replace('\r',   '\n')
     value = value.replace('\n',   '\\\\\n')
+    value = value.replace('^',    '\\textasciicircum')
+    value = value.replace('~',    '$\sim$')
 
     value = value.encode('ascii', 'ignore')
 
