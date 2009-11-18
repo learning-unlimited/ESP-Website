@@ -940,8 +940,8 @@ Student schedule for %s:
         """ generate class room rosters"""
         from esp.cal.models import Event
         
-        classes = [ cls for cls in self.program.sections()
-                    if cls.isAccepted()                      ]
+        classes = list(self.program.sections().filter(status=10, parent_class__status=10))
+
         context = {}
         classes.sort()
 
@@ -960,13 +960,13 @@ Student schedule for %s:
                         rooms[room.name] = [update_dict]
             
         for room_name in rooms:
-            rooms[room_name].sort(key=lambda x: x['timeblock'])
+            rooms[room_name].sort(key=lambda x: x['timeblock'].start)
             for val in rooms[room_name]:
                 scheditems.append(val)
                 
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
+        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)
         
     @aux_call
     @needs_admin
