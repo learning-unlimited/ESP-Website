@@ -1069,7 +1069,7 @@ Student schedule for %s:
         scheditems = []
 
         for teacher in teachers:
-            for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
+            for cls in teacher.getTaughtSections(self.program):
                 if cls.isAccepted():
                     scheditems.append({'teacher': teacher,
                                        'cls'    : cls})
