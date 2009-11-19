@@ -628,7 +628,7 @@ class ESPUser(User, AnonymousUser):
         #   a necessity for HSSP/Spark.   -Michael
         previous_li = []
         for li in li_list:
-            li_str = '%.2f,%d' % (li.amount, li.anchor.id)
+            li_str = '%.2f,%d,%d' % (li.amount, li.li_type.id, li.anchor.id)
             if li_str not in previous_li:
                 previous_li.append(li_str)
             else:

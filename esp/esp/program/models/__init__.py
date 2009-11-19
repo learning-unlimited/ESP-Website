@@ -1169,14 +1169,26 @@ class FinancialAidRequest(models.Model):
         inv = Document.get_invoice(self.user, anchor)
         txn = inv.txn
         funding_node = anchor['Accounts']
-       
-        #   Find the amount we're charging the student for the program and ensure
-        #   that we don't award more financial aid than charges.
-        charges = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='LineItemTypes',)
-       
+        
+        #   Find the amount we're charging the student for the program.
+        #charges = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='LineItemTypes',)
+        charges = txn.lineitem_set.filter(QTree(anchor__below=anchor)).exclude(li_type__text__startswith='Financial Aid')
         chg_amt = 0
         for li in charges:
-            chg_amt += li.amount
+            chg_amt += li.amount - li.li_type.finaid_amount
+        
+        #   Check if the student was granted exactly the bare admission cost of the program.
+        required_types = LineItemType.objects.filter(anchor=self.program.anchor['LineItemTypes']['Required'])
+        admission_cost = 0
+        for type in required_types:
+            admission_cost += type.amount
+            
+        #   If they were, go ahead and give them financial aid for their other line items.
+        #   Otherwise, give them financial aid for the stated amount received.
+        if self.amount_received > 0 and admission_cost == -self.amount_received:
+            self.amount_received = -chg_amt
+
+        #   Ensure that the financial aid is not larger than the amount they owe.
         if self.amount_received > (-chg_amt):
             self.amount_received = -chg_amt
         
