@@ -122,7 +122,8 @@ User ID: {{ student.id }} \\
 \vspace{0.3cm}
 
 For help finding your classrooms, please consult the directions and map on your Student Info sheet. \\
-If you have any questions or would like to switch classes, please go to the program office. \\
+If you have any questions or would like to switch classes, please go to the {% comment %}program office{% endcomment %}Bush Room (10-105). \\
+{% if student.shirtcount %}Reserved shirts MUST be picked up by Sunday at noon.{% endif %}
 
 \vspace{0.3cm}
 
@@ -130,11 +131,11 @@ If you have any questions or would like to switch classes, please go to the prog
 
 \vspace{0.25cm}
 
-\begin{tabularx}{18cm}{|p{3.45cm}|c|X|p{3cm}|}
+\begin{tabularx}{18cm}{|p{3.45cm}|p{1.5cm}|X|{% comment %}p{3cm}|{% endcomment %}}
 \hline
-\textbf{Time} & \textbf{Room} & \textbf{Class} & \textbf{Teacher(s)} \\
+\textbf{Time} & \textbf{Room} & \textbf{Class} {% comment %}& \textbf{Teacher(s)} {% endcomment %}\\
 {% for cls in student.classes %}\hline
-{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }} : {{ cls.title|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\ 
+{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }} : {{ cls.title|texescape }}{% comment %} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }}{% endcomment %} \\ 
 {% endfor %}\hline
 \end{tabularx}
 
