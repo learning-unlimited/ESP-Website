@@ -545,6 +545,21 @@ def needs_onsite(method):
 
     return _checkAdmin
 
+def needs_onsite_no_switchback(method):
+    def _checkAdmin(moduleObj, request, *args, **kwargs):
+        if not moduleObj.user or not moduleObj.user.is_authenticated():
+            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+
+        if not moduleObj.user.isOnsite(moduleObj.program) and not moduleObj.user.isAdmin(moduleObj.program):
+            user = moduleObj.user
+            user = ESPUser(user)
+            user.updateOnsite(request)
+            ouser = user.get_old(request)
+            if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
+                return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
+        return method(moduleObj, request, *args, **kwargs)
+
+    return _checkAdmin
 
 def needs_student(method):
     def _checkStudent(moduleObj, request, *args, **kwargs):

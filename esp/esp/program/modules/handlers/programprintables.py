@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -190,7 +190,10 @@ class ProgramPrintables(ProgramModuleObj):
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list })
 
         
-        classes = list(ClassSubject.objects.filter(parent_program = self.program, status=10))
+        classes = list(ClassSubject.objects.catalog(prog))
+
+        if request.GET.has_key("only_nonfull"):
+            classes = [x for x in classes if not x.isFull()]
 
         sort_list_reversed = sort_list
         sort_list_reversed.reverse()
@@ -811,7 +814,7 @@ Student schedule for %s:
         return response
         
     @aux_call
-    @needs_admin
+    @needs_onsite_no_switchback
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
         """ generate student schedules """
         

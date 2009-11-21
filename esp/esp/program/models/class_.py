@@ -473,10 +473,7 @@ class ClassSection(models.Model):
             if retVal != None:
                 return retVal
         
-        if self.duration == 0.0:
-            duration = 1.0
-        else:
-            duration = self.duration
+        duration = self.duration or 1.0
         
         if event_list is None:
             event_list = list(self.meeting_times.all().order_by('start'))
@@ -643,7 +640,10 @@ class ClassSection(models.Model):
             return base_list
 
         teachers = self.parent_class.teachers()
-        num_teachers = teachers.count()
+        try:
+            num_teachers = teachers.count()
+        except:
+            num_teachers = len(teachers)
         ta_type = ResourceType.get_or_create('Teacher Availability')
 
         timeslot_list = []
