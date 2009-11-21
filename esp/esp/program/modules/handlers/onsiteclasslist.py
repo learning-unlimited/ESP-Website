@@ -57,7 +57,7 @@ class OnSiteClassList(ProgramModuleObj):
     def classList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """
         context = {}
-        defaults = {'refresh': 300, 'scrollspeed': 3}
+        defaults = {'refresh': 300, 'scrollspeed': 1}
         for key_option in defaults.keys():
             if request.GET.has_key(key_option):
                 context[key_option] = request.GET[key_option]
