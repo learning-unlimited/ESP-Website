@@ -70,11 +70,12 @@ class OnsitePaidItemsModule(ProgramModuleObj):
         li_types = prog.getLineItemTypes(user)
 
         try:
-            invoice = Document.get_invoice(request.user, prog.anchor, li_types, dont_duplicate=True, get_complete=True)
+            invoice = Document.get_invoice(user, prog.anchor, li_types, dont_duplicate=True, get_complete=True)
         except:
-            invoice = Document.get_invoice(request.user, prog.anchor, li_types, dont_duplicate=True)
+            invoice = Document.get_invoice(user, prog.anchor, li_types, dont_duplicate=True)
 
         context['reserveditems'] = invoice.get_items()
+        context['cost'] = invoice.cost()
         
         return render_to_response(self.baseDir()+'paiditems.html', request, (prog, tl), context)
 
