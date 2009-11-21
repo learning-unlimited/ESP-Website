@@ -124,7 +124,12 @@ class OnsitePrintSchedules(ProgramModuleObj):
             from django.conf import settings
             from esp.web.util.latex import render_to_latex
 
-            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, 'png')
+            if request.GET.has_key('img_format'):
+                img_format = request.GET['img_format']
+            else:
+                img_format = 'png'
+
+            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, img_format)
             # set the refresh rate
             #response['Refresh'] = '2'
 
