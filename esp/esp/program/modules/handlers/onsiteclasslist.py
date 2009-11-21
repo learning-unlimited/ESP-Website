@@ -69,7 +69,7 @@ class OnSiteClassList(ProgramModuleObj):
         curtime = Event.objects.filter(start__gte=window_start).order_by('start')
         if curtime:
             curtime = curtime[0]
-            classes = self.program.sections().annotate(begin_time=Min(meeting_times__start)).filter(
+            classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
                 status=10, parent_class__status=10,
                 begin_time__gte=curtime.start
                 ).order_by('parent_class__category', 'begin_time').distinct()
