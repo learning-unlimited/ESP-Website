@@ -79,11 +79,6 @@ class OnsiteClassSchedule(ProgramModuleObj):
         
         new_kwargs = {}
 
-        if 'extra' in kwargs:
-            extra = kwargs['extra']
-        else:
-            extra = 'pdf'
-
         return module.studentschedules(request, args[0], args[1], args[2], args[3], extra, args[5], onsite=True)
 
 
