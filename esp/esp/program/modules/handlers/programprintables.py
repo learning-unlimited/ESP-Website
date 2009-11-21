@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -190,7 +190,10 @@ class ProgramPrintables(ProgramModuleObj):
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list })
 
         
-        classes = list(ClassSubject.objects.filter(parent_program = self.program, status=10))
+        classes = list(ClassSubject.objects.catalog(prog))
+
+        if request.GET.has_key("only_nonfull"):
+            classes = [x for x in classes if not x.isFull()]
 
         sort_list_reversed = sort_list
         sort_list_reversed.reverse()
@@ -811,7 +814,7 @@ Student schedule for %s:
         return response
         
     @aux_call
-    @needs_admin
+    @needs_onsite_no_switchback
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
         """ generate student schedules """
         
@@ -865,12 +868,22 @@ Student schedule for %s:
             student.itemizedcosts = invoice.get_items()
             student.meals = student.itemizedcosts.filter(li_type__anchor__parent__name='Optional').distinct()  # catch everything that's not admission to the program.
             student.admission = student.itemizedcosts.filter(li_type__anchor__name='Required').distinct()  # Program admission
+            student.paid_online = student.itemizedcosts.filter(anchor__parent__name='Receivable').distinct()  # LineItems for having paid online.
             student.itemizedcosttotal = invoice.cost()
             student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
             # The below is not actually applicable when there are costs
             # other than just admission, which aren't covered by finaid.
             # if student.has_financial_aid:
             #    student.itemizedcosttotal = 0
+
+            ### HARDCODED IN FOR SPLASH 2009 -- remove later - rye 11-17-09 ##
+            student.shirtcount = student.meals.filter(text__contains='T-shirt').count()
+            student.photocount = student.meals.filter(text__contains='Photo').count()
+            student.saturday_lunch = student.meals.filter(text__contains='Saturday Lunch').count()
+            student.sunday_lunch = student.meals.filter(text__contains='Sunday Lunch').count()
+            student.saturday_dinner = student.meals.filter(text__contains='Saturday Dinner').count()
+            ### HARDCODED IN FOR SPLASH 2009 ###
+
             student.has_paid = ( student.itemizedcosttotal == 0 )
             
             student.payment_info = True
@@ -931,8 +944,8 @@ Student schedule for %s:
         """ generate class room rosters"""
         from esp.cal.models import Event
         
-        classes = [ cls for cls in self.program.sections()
-                    if cls.isAccepted()                      ]
+        classes = list(self.program.sections().filter(status=10, parent_class__status=10))
+
         context = {}
         classes.sort()
 
@@ -951,13 +964,13 @@ Student schedule for %s:
                         rooms[room.name] = [update_dict]
             
         for room_name in rooms:
-            rooms[room_name].sort(key=lambda x: x['timeblock'])
+            rooms[room_name].sort(key=lambda x: x['timeblock'].start)
             for val in rooms[room_name]:
                 scheditems.append(val)
                 
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
+        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)
         
     @aux_call
     @needs_admin
@@ -1059,7 +1072,7 @@ Student schedule for %s:
         scheditems = []
 
         for teacher in teachers:
-            for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
+            for cls in teacher.getTaughtSections(self.program):
                 if cls.isAccepted():
                     scheditems.append({'teacher': teacher,
                                        'cls'    : cls})

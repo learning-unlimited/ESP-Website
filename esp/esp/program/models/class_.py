@@ -184,7 +184,7 @@ class ClassManager(ProcedureManager):
         
         # We got classes.  Now get teachers...
 
-        teachers = User.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+        teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
 
         teachers_by_id = {}
         for t in teachers:            
@@ -327,7 +327,7 @@ class ClassSection(models.Model):
         if len(rooms) == 0:
             ans = self.parent_class.class_size_max
         else:
-            ans = min(self.parent_class.class_size_max, _get_room_capacity(rooms))
+            ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
 
             # Only save the capacity if we do have rooms assigned;
             # otherwise don't bother as this number will almost definitely change
@@ -473,10 +473,7 @@ class ClassSection(models.Model):
             if retVal != None:
                 return retVal
         
-        if self.duration == 0.0:
-            duration = 1.0
-        else:
-            duration = self.duration
+        duration = self.duration or 1.0
         
         if event_list is None:
             event_list = list(self.meeting_times.all().order_by('start'))
@@ -643,7 +640,10 @@ class ClassSection(models.Model):
             return base_list
 
         teachers = self.parent_class.teachers()
-        num_teachers = teachers.count()
+        try:
+            num_teachers = teachers.count()
+        except:
+            num_teachers = len(teachers)
         ta_type = ResourceType.get_or_create('Teacher Availability')
 
         timeslot_list = []

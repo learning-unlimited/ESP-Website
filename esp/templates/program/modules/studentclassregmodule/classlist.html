@@ -11,7 +11,7 @@
 {% include "users/student_schedule.html" %}
 {% if request.user.onsite_local %}
 <center>
-<a target="_new" href="/onsite/{{program.getUrlBase}}/studentschedule">Get Student Schedule</a>
+<a target="_new" href="/onsite/{{program.getUrlBase}}/printschedules?gen_img&img_format=pdf">Get Student Schedule</a>
 <br />
 {% if printers %}
 {% for printer in printers %}
@@ -22,7 +22,7 @@
 {% endif %}
 
 <div class="errormsg">
-  WARNING: Your browser's back button will NOT work! Please use the On-Site button to the (top) right!
+  WARNING: Your browser's back button will NOT work! Please use the "Go Back to OnSite Registration" link at the top of this page!
 </div>
 </div>
 {% endif %}

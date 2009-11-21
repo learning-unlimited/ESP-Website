@@ -94,9 +94,11 @@ def gen_latex(texcode, type='pdf'):
     if type=='pdf':
         mime = 'application/pdf'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvipdf %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
+            os.remove('%s.ps' % file_base)
             
     elif type=='dvi':
         mime = 'application/x-dvi'
@@ -105,7 +107,7 @@ def gen_latex(texcode, type='pdf'):
     elif type=='ps':
         mime = 'application/postscript'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips %s -o %s.ps' % (TEX_TEMP, file_base, file_base))
+        os.system('cd %s; dvips %s -t letter -o %s.ps' % (TEX_TEMP, file_base, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
         
@@ -116,18 +118,22 @@ def gen_latex(texcode, type='pdf'):
     elif type=='svg':
         mime = 'image/svg+xml'
         os.system('cd %s; pwd; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvipdf %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
         os.system('cd %s; inkscape %s.pdf -l %s.svg' % (TEX_TEMP, file_base, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
+            os.remove('%s.ps' % file_base)
             os.remove('%s.pdf' % file_base)
         
     elif type=='png':
         mime = 'application/postscript'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvipng %s -o %s.png' % (TEX_TEMP, file_base, file_base))
+        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; convert %s.ps %s.png' % (TEX_TEMP, file_base, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
+            os.remove('%s.ps' % file_base)
 
     else:
         raise ESPError(), 'Invalid type received for latex generation: %s should be one of %s' % (type, file_types)
