@@ -109,10 +109,22 @@ class OnsitePrintSchedules(ProgramModuleObj):
             student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')
             student.itemizedcosttotal = invoice.cost()
             student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
-            if student.has_financial_aid:
-                student.itemizedcosttotal = 0
+            # Not applicable for certain programs.
+            #if student.has_financial_aid:
+            #    student.itemizedcosttotal = 0
             student.has_paid = ( student.itemizedcosttotal == 0 )
             
+            student.admission = student.itemizedcosts.filter(li_type__anchor__name='Required').distinct()  # Program admission
+            student.paid_online = student.itemizedcosts.filter(anchor__parent__name='Receivable').distinct()  # LineItems for having paid online.
+
+             ### HARDCODED IN FOR SPLASH 2009 -- remove later - rye 11-21-09 ##
+            student.shirtcount = student.meals.filter(text__contains='T-shirt').count()
+            student.photocount = student.meals.filter(text__contains='Photo').count()
+            student.saturday_lunch = student.meals.filter(text__contains='Saturday Lunch').count()
+            student.sunday_lunch = student.meals.filter(text__contains='Sunday Lunch').count()
+            student.saturday_dinner = student.meals.filter(text__contains='Saturday Dinner').count()
+            ### HARDCODED IN FOR SPLASH 2009 ###
+
             student.payment_info = True
             student.classes = classes
 
