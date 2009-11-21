@@ -190,7 +190,10 @@ class ProgramPrintables(ProgramModuleObj):
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list })
 
         
-        classes = list(ClassSubject.objects.filter(parent_program = self.program, status=10))
+        classes = list(ClassSubject.objects.catalog(prog))
+
+        if request.GET.has_key("only_nonfull"):
+            classes = [x for x in classes if not x.isFull()]
 
         sort_list_reversed = sort_list
         sort_list_reversed.reverse()
