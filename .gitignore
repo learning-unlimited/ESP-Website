@@ -1,3 +1,4 @@
 *.pyc
 esp/esp/database_settings.py
-esp/esp/local_settings.py 
+esp/esp/local_settings.py
+*~
