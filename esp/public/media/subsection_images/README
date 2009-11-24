@@ -1,0 +1,1 @@
+This directory contains images rendering the subsection-header text for the website (which is rendered as an image in the first place because it's oriented vertically, rather than horizontally, and there's no good way to get HTML to do this).  This directory should be writable by the server.
