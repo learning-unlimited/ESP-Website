@@ -1,0 +1,4 @@
+adminurl https://esp.mit.edu/cgi-bin/mailman/admindb/{list}
+default skip
+log listadmin.log
+
