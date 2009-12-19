@@ -137,8 +137,11 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
 
 def bio_user(request, founduser):
     """ Display a teacher bio for a given user """
-
+    
     if founduser is None:
+        raise Http404
+
+    if founduser.is_active == False:
         raise Http404
 
     if not founduser.isTeacher():
