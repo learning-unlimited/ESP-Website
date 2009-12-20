@@ -18,7 +18,7 @@ class SectionList(BaseHandler):
         list_name = "%s-%s" % (section.emailcode(), user_type)
 
         create_list(list_name, "esp-moderators@mit.edu")
-        load_list_settings(list_name, "esp/mailman/sample_config.mailman")
+        load_list_settings(list_name, "lists/class_mailman.config")
 
         add_list_member(list_name, cls.parent_program.director_email)
         add_list_member(list_name, ["%s@esp.mit.edu" % x.username for x in cls.teachers()])

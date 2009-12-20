@@ -408,15 +408,36 @@ class ProgramPrintables(ProgramModuleObj):
                 setattr(t, key, extra_dict[key])
         teachers.sort()
 
+        if extra == 'secondday':
+            from django.db.models import Min
+
+            allclasses = prog.sections().filter(status=10, parent_class__status=10, meeting_times__isnull=False)
+            first_timeblock_dict = allclasses.aggregate(Min('meeting_times__start'))
+
+
         scheditems = []
 
         for teacher in teachers:
             # get list of valid classes
             classes = [ cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
-                    and cls.isAccepted()                       ]
+                    and cls.isAccepted() and cls.meeting_times.count() > 0 ]
             # now we sort them by time/title
             classes.sort()
+
+            if extra == 'secondday':
+                new_classes = []
+                first_timeblock = first_timeblock_dict['meeting_times__start__min']
+
+                for cls in classes:
+                    starttime = cls.meeting_times.all().order_by('start')[0]
+                    if (starttime.start.month, starttime.start.day) != \
+                       (first_timeblock.month, first_timeblock.day):
+                        new_classes.append(cls)
+
+                classes = new_classes
+
+                
 
             # aseering 9-29-2007, 1:30am: There must be a better way to do this...
             ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
@@ -809,7 +830,7 @@ Student schedule for %s:
             except MultipleDocumentError:
                 invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
 
-            writer.writerow((invoice.locator, student.id, student.last_name, student.first_name, invoice.cost()))
+            writer.writerow((invoice.locator, student.id, student.last_name.encode('ascii', 'replace'), student.first_name.encode('ascii', 'replace'), invoice.cost()))
                 
         return response
         
