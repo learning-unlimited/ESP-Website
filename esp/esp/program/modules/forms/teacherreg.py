@@ -67,7 +67,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     class_size_optimal = forms.ChoiceField( label='Optimal Number of Students', choices=[(0, 0)], required=False, widget=BlankSelectWidget(), help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
-    has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect() )
+    has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect(), required=False )
     requested_room = forms.CharField(   label='Room Request', required=False,
                                         help_text='If you have a specific room or type of room in mind, name a room at MIT that would be ideal for you.' )
     
@@ -163,6 +163,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # requested_room
         if not module.ask_for_room:
             hide_field( self.fields['requested_room'] )
+            
+        #   Hide resource fields since separate forms are now being used. - Michael P
+        resource_fields = ['has_own_space', 'global_resources', 'resources', 'requested_special_resources']
+        for field in resource_fields:
+            self.fields[field].widget = forms.HiddenInput()
+        
         # plus subprogram section wizard
     
     def clean(self):

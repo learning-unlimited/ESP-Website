@@ -71,6 +71,7 @@ tree_template = [
     'V/Flags/UserRole/Educator',
     'V/Flags/UserRole/Guardian',
     'V/Flags/UserRole/Administrator',
+    'V/Flags/UserRole/Volunteer',
     'V/Flags/Public',
     'V/Flags/Registration',
     'V/Flags/Registration/Attended',

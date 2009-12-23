@@ -46,7 +46,6 @@ from esp.db.fields import AjaxForeignKey
 # Models to depend on.
 from esp.datatree.models import *
 from esp.middleware import ESPError
-from esp.program.models import ClassSubject, ClassSection, Program
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to 
@@ -95,7 +94,7 @@ class Survey(models.Model):
     category = models.CharField(max_length=32) # teach|learn|etc
     
     def __unicode__(self):
-        return '%s (%s) for %s' % (self.name, self.category, str(self.anchor))
+        return '%s (%s) for %s' % (self.name, self.category, unicode(self.anchor))
     
     def num_participants(self):
         #   If there is a program anchored to the anchor, select the appropriate number

@@ -34,6 +34,7 @@ from esp.cal.models import Event
 from esp.users.models import User
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError_Log
+from esp.cache import cache_function
 
 from django.db import models
 from django.db.models.query import Q
@@ -59,6 +60,8 @@ Procedures:
 
 GLOBAL_RESOURCE_CACHE_KEY="RESOURCE__GLOBAL_KEY"
 
+DISTANCE_FUNC_REGISTRY = {}
+
 def global_resource_rev():
     retVal = cache.get(GLOBAL_RESOURCE_CACHE_KEY)
     if retVal:
@@ -74,13 +77,22 @@ def increment_global_resource_rev():
 
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
+    from esp.survey.models import ListField
 
     name = models.CharField(max_length=40)                          #   Brief name
     description = models.TextField()                                #   What is this resource?
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(blank=True, default=-1)  #   How important is this compared to other types?
-    attributes_pickled  = models.TextField(blank=True)                        
-    program = models.ForeignKey('program.Program', null=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
+    attributes_pickled  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")       
+    #   As of now we have a list of string choices for the value of a resource.  But in the future
+    #   it could be extended.
+    choices = ListField('attributes_pickled')
+    program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
+    distancefunc = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Enter python code that assumes <tt>r1</tt> and <tt>r2</tt> are resources with this type.",
+        )               #   Defines a way to compare this resource type with others.
 
     def _get_attributes(self):
         if hasattr(self, '_attributes_cached'):
@@ -101,12 +113,11 @@ class ResourceType(models.Model):
 
     attributes = property(_get_attributes, _set_attributes)
 
-    """ Don't know why this doesn't work. Hope to fix soon. -Michael P
     def save(self, *args, **kwargs):
         if hasattr(self, '_attributes_cached'):
             self.attributes_pickled = pickle.dumps(self._attributes_cached)
         super(ResourceType, self).save(*args, **kwargs)
-    """
+
     @staticmethod
     def get_or_create(label):
         current_type = ResourceType.objects.filter(name__icontains=label)
@@ -135,9 +146,10 @@ class ResourceRequest(models.Model):
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
     res_type = models.ForeignKey(ResourceType)
+    desired_value = models.TextField()
     
     def __unicode__(self):
-        return 'Resource request of %s for %s' % (str(self.res_type), self.target.emailcode())
+        return 'Resource request of %s for %s: %s' % (unicode(self.res_type), self.target.emailcode(), self.desired_value)
 
     class Admin:
         pass
@@ -156,12 +168,12 @@ class Resource(models.Model):
     
     def __unicode__(self):
         if self.user is not None:
-            return 'For %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
+            return 'For %s: %s (%s)' % (unicode(self.user), self.name, unicode(self.res_type))
         else:
             if self.num_students != -1:
-                return 'For %d students: %s (%s)' % (self.num_students, self.name, str(self.res_type))
+                return 'For %d students: %s (%s)' % (self.num_students, self.name, unicode(self.res_type))
             else:
-                return '%s (%s)' % (self.name, str(self.res_type))
+                return '%s (%s)' % (self.name, unicode(self.res_type))
     
     def save(self, *args, **kwargs):
         if self.group_id == -1:
@@ -185,7 +197,35 @@ class Resource(models.Model):
         cache.delete(cache_key)
 
         increment_global_resource_rev()
-    
+
+    def distance(self, other):
+        """
+        Using the custom distance function defined in the ResourceType,
+        compute the distance between this resource and another.
+        Bear in mind that this is cached using a python global registry.
+        """
+        if self.res_type_id != other.res_type_id:
+            raise ValueError("Both resources must be of the same type to compare!")
+
+        if self.res_type_id in DISTANCE_FUNC_REGISTRY:
+            return DISTANCE_FUNC_REGISTRY[self.res_type_id](self, other)
+
+        distancefunc = self.res_type.distancefunc
+
+        if distancefunc and distancefunc.strip():
+            funcstr = distancefunc.strip().replace('\r\n', '\n')
+        else:
+            funcstr = "return 0"
+        funcstr = """def _cmpfunc(r1, r2):\n%s""" % (
+            '\n'.join('    %s' % l for l in funcstr.split('\n'))
+            )
+        exec funcstr
+        DISTANCE_FUNC_REGISTRY[self.res_type_id] = _cmpfunc
+        return _cmpfunc(self, other)
+
+    __sub__ = distance
+
+
     def identical_resources(self):
         res_list = Resource.objects.filter(name=self.name)
         return res_list
@@ -223,8 +263,7 @@ class Resource(models.Model):
     
     def associated_resources(self):
         rt1 = ResourceType.get_or_create('Classroom')
-        rt2 = ResourceType.get_or_create('Teacher Availability')
-        Q_assoc_types = Q(res_type=rt1) | Q(res_type=rt2)
+        Q_assoc_types = Q(res_type=rt1)
         return self.grouped_resources().exclude(id=self.id).exclude(Q_assoc_types)
     
     #   Modified to handle assigning rooms to both classes and their individual sections.
@@ -321,7 +360,7 @@ class Resource(models.Model):
             event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times().filter(anchor=anchor)))
         else:
             event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times()))
-        return '<br /> '.join([str(e) for e in Event.collapse(event_list)])
+        return '<br /> '.join([unicode(e) for e in Event.collapse(event_list)])
     
     def matching_times(self):
         #   Find all times for which a resource of the same name is available.
@@ -334,16 +373,8 @@ class Resource(models.Model):
         else:
             return False
         
+    @cache_function
     def is_available(self, QObjects=False, timeslot=None):
-        if QObjects:
-            cache_key = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.id
-        else:
-            cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.id
-
-        retVal = cache.get(cache_key)
-        if retVal:
-            return retVal
-
         if timeslot is None:
             test_resource = self
         else:
@@ -352,10 +383,10 @@ class Resource(models.Model):
         if QObjects:
             return ~Q(test_resource.is_taken(True))
         else:
-            retVal = not (test_resource.is_taken(False))
-            cache.set(cache_key, retVal, timeout=86400)
-            return retVal
-        
+            return not test_resource.is_taken(False)
+    is_available.depend_on_row(lambda:ResourceAssignment, lambda instance: {'self': instance.resource})
+    is_available.depend_on_row(lambda:Event, lambda instance: {'timeslot': instance})
+    
     def is_taken(self, QObjects=False):
         if QObjects:
             return Q(resource=self)
@@ -388,7 +419,7 @@ class ResourceAssignment(models.Model):
         
     
     def __unicode__(self):
-        return 'Resource assignment for %s' % str(self.getTargetOrSubject())
+        return 'Resource assignment for %s' % unicode(self.getTargetOrSubject())
     
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """
@@ -402,4 +433,12 @@ class ResourceAssignment(models.Model):
     class Admin:
         pass
     
+    
+def install():
+    #   Create default resource types.
+    ResourceType.objects.get_or_create(name='Classroom',description='Type of classroom',attributes_pickled='Lecture|Discussion|Outdoor|Lab|Open space')
+    ResourceType.objects.get_or_create(name='A/V',description='A/V equipment',attributes_pickled='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player')
+    ResourceType.objects.get_or_create(name='Computer[s]',description='Computer[s]',attributes_pickled='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students')
+    ResourceType.objects.get_or_create(name='Seating',description='Seating arrangement',attributes_pickled="Don't care|Fixed seats|Movable desks")
+    ResourceType.objects.get_or_create(name='Light control',description='Light control',attributes_pickled="Don't care|Darkenable")
     

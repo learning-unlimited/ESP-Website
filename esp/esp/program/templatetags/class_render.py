@@ -1,5 +1,6 @@
 from django import template
 from esp.web.util.template import cache_inclusion_tag
+from esp.users.models import ESPUser
     
 register = template.Library()
 
@@ -58,9 +59,9 @@ def get_smallest_section(cls, timeslot=None):
 def render_class_core(cls):
 
     prog = cls.parent_program
-    
-    # Show enrollment?
-    show_enrollment = prog.visibleEnrollments()
+
+    #   Show e-mail codes?  We need to look in the settings.
+    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     
     # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
     colorstring = prog.getColor()
@@ -70,7 +71,8 @@ def render_class_core(cls):
     return {'class': cls,
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
-            'show_enrollment': show_enrollment }
+            'show_enrollment': scrmi.visible_enrollments,
+            'show_meeting_times': scrmi.visible_meeting_times}
             
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
@@ -81,7 +83,8 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
     #   Add ajax_addclass to prereg_url if registering from catalog is allowed
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     if prereg_url is None and scrmi.register_from_catalog:
-        prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
+        if user is not None and ESPUser(user).is_authenticated():
+            prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
 
     if user and prereg_url:
         error1 = cls.cannotAdd(user, True, request=request)
@@ -98,6 +101,7 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
             'user':       user,
             'prereg_url': prereg_url,
             'errormsg':   errormsg,
+            'temp_full_message': scrmi.temporarily_full_text,
             'show_class': show_class}
 
 # We're not caching this yet because I doubt people will hit this function the same way repeatedly--same user and all.

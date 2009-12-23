@@ -1,17 +1,17 @@
 {% load latex %}
 {% load smartypants %}
     <tr onclick="swap_visible('{{ class.id }}_details');swap_visible('{{ class.id }}_content');" style="cursor: pointer;">
-      <th colspan="2" style="width: 70%;{{ colorstring }}">
+      <th colspan="2" style="padding: 5px; width: 70%;{{ colorstring }}">
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
            {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }} {% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% endif %}
           {% endif %}
       </th>
-      <th style="width: 30%;{{ colorstring }}">
+      <th style="padding: 5px; width: 30%;{{ colorstring }}">
        <span class="teachers">
        {% for teacher in class.teachers %}
-       <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html" 
+       <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html"
           title="The biography of {{teacher.first_name }} {{teacher.last_name }}">{{ teacher.first_name }} {{teacher.last_name }}</a>{% if not forloop.last %},{% endif %}
        {% endfor %}
        </span>
@@ -24,27 +24,29 @@
         {% endautoescape %}
        {% if class.prereqs %}
        <br /><br />
-       <em>*Prerequisites*</em>
-       <p style="padding-left: 10px; font-style:italic;">
+       <em>*Prerequisites*</em><br />
+       <span style="font-style:italic;">
          {{ class.prereqs }}
-       </p>
+       </span>
        {% endif %}
        </td>
      </tr>
     <tr id="{{ class.id }}_details">
       <td style="width: 50%;" valign="top">
+        {% if show_meeting_times %}
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
 	  {% for sec in class.get_sections %}
            {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "|smartypants }} <br />{% endif %}
           {% endfor %}
         <br />
+        {% endif %}
       </td>
- 
+
       <td style="width: 50%;" colspan="2">
          <strong>Grades:</strong>
-           {{ class.grade_min }}-{{ class.grade_max }}
-         {% if show_enrollment %} <br />
+           {{ class.grade_min }}-{{ class.grade_max }}<br />
+         {% if show_enrollment %} 
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}
               {% with sec.isRegClosed as is_closed %}
@@ -54,15 +56,16 @@
               {% endwith %}
            {% endfor %}
         {% endif %}
+        <br />
       </td>
     </tr>
     {% if class.media_count %}
     <tr>
       <th colspan="3" class="materials">
-       <b>Materials for this class include:</b> 
+       <b>Materials for this class include:</b>
 	<span class="doclist">
 	{% for doc in class.docs_summary %}
-	<a href="{{ doc.get_target_file_url}}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %} 
+	<a href="{{ doc.get_target_file_url}}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
 	{% endfor %}
 	</span>
 	<br /><b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">Click here to view all {{ class.media_count }} documents for {{ class.title }}</a></b>

@@ -9,7 +9,7 @@
 <!--
   function submit_prereg(clsid) {
      // prereg for a class
-     document.getElementById('submitbutton'+clsid).disabled = true;
+     document.getElementById('submitbutton'+clsid).setAttribute("class", "addbutton_disabled");
      return true;
   }
 
@@ -101,8 +101,6 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:catalog" request.user %}
 
-</div>
-<div id="catalog">
 {% load class_render %}
 {% for class in classes %}
 
@@ -110,7 +108,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 
     <a name="cat{{class.category_id}}"></a>
       <p style="font-size: 1.2em;" class="category">
-         {{ class.category_txt }}
+         {{ class.category.category }}
       </p>
 {% if request.user.onsite_local %}
 {% if not request.GET.filter %}
@@ -127,7 +125,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
          <a href="#top">[ Return to Category List ]</a>
       </p> {% endifchanged %}
 
-{% render_class class %}
+{% render_class class request.user prereg_url request.GET.filter timeslot request %}
 
 <br />
 {% endfor %}

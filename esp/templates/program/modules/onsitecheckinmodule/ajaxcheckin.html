@@ -1,0 +1,60 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Check-in for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+<br /><br />
+<h1>Checkin &mdash; For {{ program.niceName }}</h1>
+
+<div id='program_form'>
+
+<p style="text-align: center">
+Welcome to student check-in for {{program.niceName}}.  Make sure that the students have handed in all necessary forms and payments.
+
+{% if message %}
+<p align="center">{{ message }}</p>
+{% endif %}
+
+<form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
+<table>
+<tr>
+    <th colspan="2">
+        Choose Students to Check In
+    </th>
+</tr>
+<tr>
+    <td>
+        <table>
+            {{ form }}
+        </table>
+    </td>
+    <td align="center">
+        <input class="button" type="submit" value="Check-In" />
+    </td>
+</tr>
+
+</table>
+
+</form>
+
+<br />
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "onsite:status" request.user %}
+
+</div>
+
+
+{% endblock %}

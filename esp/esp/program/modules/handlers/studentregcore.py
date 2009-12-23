@@ -27,6 +27,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+from esp.settings import DEFAULT_EMAIL_ADDRESSES
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.program.models  import Program
@@ -44,7 +45,7 @@ from django.contrib import admin
 from django.template import Context, Template
 from django.http import HttpResponse
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
+from django.template.loader import render_to_string, get_template
 from esp.lib.markdown import markdown
 import operator
 
@@ -148,7 +149,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             giving them the option of printing a confirmation            """
         from esp.program.modules.module_ext import DBReceipt
 
-
         try:
             invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
         except:
@@ -178,6 +178,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         modules = prog.getModules(self.user, tl)
         completedAll = True
         for module in modules:
+            if hasattr(module, 'onConfirm'):
+                module.onConfirm(request) 
             if not module.isCompleted() and module.required:
                 completedAll = False
             context = module.prepare(context)
@@ -188,18 +190,24 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
 
+        options = prog.getModuleExtension('StudentClassRegModuleInfo')
+
         ## Get or create a userbit indicating whether or not email's been sent.
         confbit, created = UserBit.objects.get_or_create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode())+"/ConfEmail"))
         print confbit, created
-        if created:
+        if created and options.send_confirmation:
             # Email has not been sent before, send an email
-            send_mail("[ESP] Thank you for registering for %s!" %(self.program.niceName()), \
-                      render_to_string('program/confemails/'+str(self.program.id)+'_confemail.txt', {'user': self.user}), \
+            try:
+                receipt_template = Template(DBReceipt.objects.get(program=self.program, action='confirmemail').receipt)
+            except:
+                receipt_template = get_template('program/confirm_email.txt')
+            send_mail("Thank you for registering for %s!" %(self.program.niceName()), \
+                      receipt_template.render(Context({'user': self.user, 'program': self.program}, autoescape=False)), \
                       ("%s <%s>" %(self.program.niceName() + " Directors", self.program.director_email)), \
-                      [self.user.email], True)
+                      [self.user.email, DEFAULT_EMAIL_ADDRESSES['archive']], True)
 
         try:
-            receipt_text = DBReceipt.objects.get(program=self.program).receipt
+            receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt
             context["request"] = request
             context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
@@ -212,6 +220,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @meets_grade    
     @meets_deadline()
     def cancelreg(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.module_ext import DBReceipt
+        
         if self.have_paid():
             raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
         
@@ -223,7 +233,22 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             for bit in bits:
                 bit.expire()
 
-        return self.goToCore(tl)
+        #   If the appropriate flag is set, remove the student from their classes.
+        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        if scrmi.cancel_button_dereg:
+            sections = self.user.getSections()
+            for sec in sections:
+                sec.unpreregister_student(self.user)
+
+        #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
+        try:
+            receipt_text = DBReceipt.objects.get(program=self.program, action='cancel').receipt
+            context = {}
+            context["request"] = request
+            context["program"] = prog
+            return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
+        except:
+            return self.goToCore(tl)
 
     @main_call
     @needs_student
@@ -253,9 +278,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         context['coremodule'] = self
+        context['scrmi'] = prog.getModuleExtension('StudentClassRegModuleInfo')
         context['isConfirmed'] = self.program.isConfirmed(self.user)            
         context['have_paid'] = self.have_paid()
-        
         
         context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
 

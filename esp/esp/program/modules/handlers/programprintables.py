@@ -558,7 +558,17 @@ class ProgramPrintables(ProgramModuleObj):
         from esp.program.models import RegistrationProfile
         
         def emergency_stuff(student):
-            return {'emerg_contact': RegistrationProfile.getLastForProgram(student, prog).contact_emergency}
+            #  Try to get some kind of emergency contact info even if it wasn't entered for this program.
+            program_profile = RegistrationProfile.getLastForProgram(student, prog)
+            if program_profile.contact_emergency:
+                return {'emerg_contact': program_profile.contact_emergency}
+            else:
+                other_profiles = RegistrationProfile.objects.filter(user=student).order_by('-last_ts')
+                for prof in other_profiles:
+                    if prof.contact_emergency:
+                        return {'emerg_contact': prof.contact_emergency}
+                
+                return {}
         
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff)
 
@@ -921,8 +931,11 @@ Student schedule for %s:
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
             
-        from esp.web.util.latex import render_to_latex
-        return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
+        if format == 'html':
+            return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+        else:  # elif format == 'pdf':
+            from esp.web.util.latex import render_to_latex
+            return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
 
     @aux_call
     @needs_admin
@@ -991,7 +1004,7 @@ Student schedule for %s:
                 
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
         
     @aux_call
     @needs_admin
@@ -1076,6 +1089,58 @@ Student schedule for %s:
 
     @aux_call
     @needs_admin
+    def student_tickets(self, request, tl, one, two, module, extra, prog):
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+        
+        students = ESPUser.objects.filter(filterObj.get_Q()).distinct().order_by('last_name')
+        lastnames = students.values_list('last_name')
+        num_lastnames = len(lastnames)
+        context = {'name_groups': []}
+
+        try:
+            context['colors'] = request.GET['colors'].split(',')
+        except:
+            context['colors'] = ['Yellow', 'Blue', 'Pink', 'Green', 'Turquoise', 'Purple', 'Yellow', 'Blue']
+        
+        get_data = request.GET.copy()
+        try:
+            name_groups = get_data['name_groups']
+        except:
+            name_groups = 'a,c,e,h,k,o,s,u'
+            get_data['name_groups'] = name_groups
+            
+
+        if 'name_groups' in get_data:
+            name_group_start = get_data['name_groups'].split(',')
+            for i in range(len(name_group_start)):
+                gs = name_group_start[i]
+                if i < len(name_group_start) - 1:
+                    gs_end = name_group_start[i + 1]
+                    context['name_groups'].append(students.filter(last_name__gte=gs, last_name__lt=gs_end))
+                else:
+                    context['name_groups'].append(students.filter(last_name__gte=gs))
+                    
+        else:
+
+            try:
+                num_name_groups = int(extra)
+            except:
+                num_name_groups = 7
+            
+            names_per_set = float(num_lastnames) / num_name_groups
+            for i in range(num_name_groups):
+                start_index = int(i * names_per_set)
+                end_index = int((i + 1) * names_per_set)
+                context['name_groups'].append(students[start_index:end_index])
+
+        context['joint_groups'] = zip(context['colors'], context['name_groups'])
+
+        return render_to_response(self.baseDir()+'student_tickets.html', request, (prog, tl), context)
+    
+    @aux_call
+    @needs_admin
     def classrosters(self, request, tl, one, two, module, extra, prog):
         """ generate class rosters """
 
@@ -1093,7 +1158,7 @@ Student schedule for %s:
         scheditems = []
 
         for teacher in teachers:
-            for cls in teacher.getTaughtSections(self.program):
+            for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
                 if cls.isAccepted():
                     scheditems.append({'teacher': teacher,
                                        'cls'    : cls})

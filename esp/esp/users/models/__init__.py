@@ -43,6 +43,7 @@ from django.http import HttpRequest
 from django.template import Context, loader
 from django.template.defaultfilters import urlencode
 
+from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
@@ -77,8 +78,27 @@ def admin_required(func):
     return wrapped
 
 
-class ESPUserManager(ProcedureManager):
+class UserAvailability(models.Model):
+    user = AjaxForeignKey(User)
+    event = models.ForeignKey(Event)
+    role = AjaxForeignKey(DataTree)
+    priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
+    def __unicode__(self):
+        return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
+
+    def save(self, *args, **kwargs):
+        #   Assign default role if not set.
+        #   Careful with this; the result may differ for users with multiple types.
+        #   (With this alphabetical ordering, you get roles in the order: teacher, student, guardian, educator, administrator)
+        if (not hasattr(self, 'role')) or self.role is None:
+            queryset = self.user.userbit_set.filter(QTree(verb__below=GetNode('V/Flags/UserRole'))).order_by('-verb__name')
+            if queryset.count() > 0:
+                self.role = queryset[0].verb
+        return super(UserAvailability, self).save(*args, **kwargs)
+
+
+class ESPUserManager(ProcedureManager):
     pass
 
 class ESPUser(User, AnonymousUser):
@@ -276,6 +296,16 @@ class ESPUser(User, AnonymousUser):
                                                                   bit.qsc.parent.parent.program_set.count() > 0 )
     getTaughtClassesAll.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
 
+    @cache_function
+    def getFullClasses_pretty(self, program):
+        full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
+        return "\n".join([cls.emailcode()+": "+cls.title() for cls in full_classes])
+    getFullClasses_pretty.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
+                                                      lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
+                                                                  bit.qsc.parent.name == 'Classes' and
+                                                                  bit.qsc.parent.parent.program_set.count() > 0 )
+    getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
+
 
     def getTaughtSections(self, program = None):
         if program is None:
@@ -362,7 +392,7 @@ class ESPUser(User, AnonymousUser):
         from esp.resources.models import Resource
         from esp.cal.models import Event
 
-        valid_events = Event.objects.filter(resource__user=self, anchor=program.anchor).order_by('start')
+        valid_events = Event.objects.filter(useravailability__user=self, anchor=program.anchor).order_by('start')
 
         if ignore_classes:
             #   Subtract out the times that they are already teaching.
@@ -380,33 +410,31 @@ class ESPUser(User, AnonymousUser):
     # FIXME: Really should take into account section's teachers...
     # even though that shouldn't change often
     getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
-    getAvailableTimes.depend_on_row(lambda:Resource, lambda resource:
+    getAvailableTimes.depend_on_row(lambda:UserAvailability, lambda ua:
                                         # FIXME: What if resource.event.anchor somehow isn't a program?
                                         # Probably want a helper method return a special "nothing" object (XXX: NOT None)
                                         # and have key_sets discarded if they contain it
-                                        {'program': Program.objects.get(anchor=resource.event.anchor),
-                                            'self': resource.user})
+                                        {'program': Program.objects.get(anchor=ua.event.anchor),
+                                            'self': ua.user})
     # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
-        """ Clear all resources indicating this teacher's availability for a program """
-        from esp.resources.models import Resource
-
-        Resource.objects.filter(user=self, event__anchor=program.anchor).delete()
+        """ Clear this teacher's availability for a program """
+        self.useravailability_set.filter(QTree(event__anchor__below=program.anchor)).delete()
 
     def addAvailableTime(self, program, timeslot):
         from esp.resources.models import Resource, ResourceType
-
-        # if program.anchor is not timeslot.anchor:
-        #    BADNESS
-
-        r = Resource()
-        r.user = self
-        r.event = timeslot
-        r.name = 'Teacher Availability, %s at %s' % (self.name(), timeslot.short_description)
-        r.res_type = ResourceType.get_or_create('Teacher Availability')
-        r.save()
+        
+        #   Because the timeslot has an anchor, the program is unnecessary.
+        new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot)
+        new_availability.save()
+        
+    def convertAvailability(self):
+        resources = Resource.objects.filter(user=self)
+        for res in resources:
+            self.addAvailableTime(Program.objects.all()[0], res.event)
+        resources.delete()
 
     def getApplication(self, program, create=True):
         from esp.program.models.app_ import StudentApplication
@@ -471,11 +499,37 @@ class ESPUser(User, AnonymousUser):
                                                 anchor__userbit_qsc__verb__uri__in=verb_uris)
                                               ).distinct()
             
-
         return csl
 
     def getEnrolledSections(self, program=None):
+        if program is None:
+            return self.getEnrolledSectionsAll()
+        else:
+            return self.getEnrolledSectionsFromProgram(program)
+
+    @cache_function
+    def getEnrolledSectionsFromProgram(self, program):
         return self.getSections(program, verbs=['/Enrolled'])
+    getEnrolledSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent.parent)},
+                                                 lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
+
+    @cache_function
+    def getEnrolledSectionsAll(self):
+        return self.getSections(None, verbs=['/Enrolled'])
+    getEnrolledSectionsAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user}, 
+                                         lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
+
+    @cache_function
+    def getFirstClassTime(self, program):
+        sections = self.getEnrolledSectionsFromProgram(program).order_by('meeting_times')
+        if sections.count() == 0:
+            return None
+        else:
+            if sections[0].meeting_times.count() == 0:
+                return None
+            else:
+                return sections[0].meeting_times.order_by('start')[0]
+    getFirstClassTime.depend_on_cache(getEnrolledSectionsFromProgram, lambda self=wildcard, program=wildcard, **kwargs: {'self':self, 'program':program})
 
     def getRegistrationPriority(self, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. 
@@ -759,7 +813,6 @@ ESPUser.create_membership_methods()
 ESPUser._meta.pk.attname = "id"
 ESPUser._meta.local_fields[0].column = "id"
 
-
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
@@ -873,7 +926,7 @@ class StudentInfo(models.Model):
         username = "N/A"
         if self.user != None:
             username = self.user.username
-        return 'ESP Student Info (%s) -- %s' % (username, str(self.school))
+        return 'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
@@ -1312,15 +1365,30 @@ class K12School(models.Model):
         app_label = 'users'
         db_table = 'users_k12school'
 
+    @classmethod
+    def ajax_autocomplete(cls, data, allow_non_staff=True):
+        name = data.strip()
+        query_set = cls.objects.filter(name__icontains = name)
+        values = query_set.order_by('name','id').values('name', 'id')
+        for value in values:
+            value['ajax_str'] = '%s' % (value['name'])
+        return values
+
     def __unicode__(self):
         if self.contact_id:
-            return '"%s" in %s, %s' % (self.name, self.contact.address_city,
+            return '%s in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
-            return '"%s"' % self.name
+            return '%s' % self.name
 
-    class Admin:
-        pass
+    @classmethod
+    def choicelist(cls, other_help_text=''):
+        if other_help_text:
+            other_help_text = u' (%s)' % other_help_text
+        o = cls.objects.other()
+        lst = [ ( x.id, x.name ) for x in cls.objects.most() ]
+        lst.append( (o.id, o.name + other_help_text) )
+        return lst
 
 
 def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
@@ -1372,7 +1440,14 @@ class PersistentQueryFilter(models.Model):
         """ The main constructor, please call this. """
         import hashlib
         dumped_filter = pickle.dumps(q_filter)
-        foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
+        
+        # Deal with multiple instances
+        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+        pqfs = PersistentQueryFilter.objects.filter(query_q)
+        if pqfs.count() > 0:
+            foo = pqfs[0]
+        else:
+            foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                    q_filter = dumped_filter,
                                                                    sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
         foo.useful_name = description
@@ -1450,7 +1525,7 @@ class ESPUser_Profile(models.Model):
         pass
 
     def __unicode__(self):
-        return "ESPUser_Profile for user: %s" % str(self.user)
+        return "ESPUser_Profile for user: %s" % unicode(self.user)
 
 class PasswordRecoveryTicket(models.Model):
     """ A ticket for changing your password. """

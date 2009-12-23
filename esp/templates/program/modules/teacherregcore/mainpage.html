@@ -40,25 +40,12 @@ Please complete the following steps to teach for {{ program.niceName }}.  When e
 We appreciate your interest!  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
 </p>
 
-<table style="text-align: center" align="center" width="400">
-<tr><th>What to do?</th><th>Done?</th></tr>
-{% for module in modules %}
-{% if module.isStep %}
- <tr>
-  <td>{% if module.useTemplate %}
-    {{ module.module.link_title }} <em>(below)</em>
-   {% else %}
-    {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
-   {% endif %}
-  </td>
-  <td>
-   <img src="/media/images/{% if not module.isCompleted %}no{% endif %}checkmark.gif" alt="{% if module.isCompleted %}Done!{% else %}Not Done{% endif %}" class="nocheckmark" />
-  </td>
-</tr>
-{% endif %}
-{% endfor %}
-</table>
-
+{% ifequal options.progress_mode 1 %}
+    {% include "program/modules/checkboxes.html" %}
+{% endifequal %}
+{% ifequal options.progress_mode 2 %}
+    {% include "program/modules/progressbar.html" %}
+{% endifequal %}
 <br />
 
 {% if progposts|length_is:0 %}

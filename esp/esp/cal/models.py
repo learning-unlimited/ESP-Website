@@ -40,7 +40,7 @@ class EventType(models.Model):
     description = models.TextField() # Textual description; not computer-parseable
 
     def __unicode__(self):
-        return str(self.description)
+        return unicode(self.description)
 
 
 class Series(models.Model):
@@ -49,7 +49,7 @@ class Series(models.Model):
     target = AjaxForeignKey(DataTree) # location for this Series in the datatree
 
     def __unicode__(self):
-        return str(self.description)
+        return unicode(self.description)
 
     def is_happening(self, time=datetime.now()):
         """ Returns True if any Event contained by this Series, or any event contained by any Series nested beneath this Series, returns is_happening(time)==True """
@@ -213,7 +213,7 @@ class EmailReminder(models.Model):
     sent = models.BooleanField(default=True)
 
     def __unicode__(self):
-        return str(self.event) + ': ' + str(self.email)
+        return unicode(self.event) + ': ' + unicode(self.email)
 
 def install():
     """

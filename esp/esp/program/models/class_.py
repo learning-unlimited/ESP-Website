@@ -57,6 +57,7 @@ from esp.users.models import ESPUser, UserBit
 from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models          import Program
+from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.resources.models        import ResourceType, Resource, ResourceRequest, ResourceAssignment
 from esp.cache                   import cache_function
 
@@ -144,9 +145,9 @@ class ClassManager(ProcedureManager):
         
         classes = classes.select_related('anchor',
                                          'category')
-
+        
         if program != None:
-            classes = classes.filter(parent_program = program)
+        classes = classes.filter(parent_program = program)
 
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
@@ -207,8 +208,6 @@ class ClassManager(ProcedureManager):
             c._sections.sort(cmp=lambda s1, s2: cmp(s1.anchor.name, s2.anchor.name))
             c.parent_program = p # So that if we set attributes on one instance of the program,
                                  # they show up for all instances.
-            
-        return classes
     catalog_cached.depend_on_model(lambda: ClassSubject)
     catalog_cached.depend_on_model(lambda: ClassSection)
     catalog_cached.depend_on_model(lambda: QSDMedia)
@@ -216,6 +215,9 @@ class ClassManager(ProcedureManager):
                                  lambda bit: bit.applies_to_verb('V/Flags/Registration/Teacher'))
     #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
     #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
+    catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
+                                 lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.get_uri()) and ("/Classes/" in page.path.get_uri())) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
+
     catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
                                  lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.get_uri()) and ("/Classes/" in page.path.get_uri())) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
     
@@ -309,9 +311,6 @@ class ClassSection(models.Model):
     category = property(_get_category)
     
     def _get_title(self):
-        return self.parent_class.title()
-    title = property(_get_title)
-    
     def _get_room_capacity(self, rooms = None):
         if rooms == None:
             rooms = self.initial_rooms()
@@ -323,22 +322,31 @@ class ClassSection(models.Model):
         return rc
 
     def _get_capacity(self):
-        if self.max_class_capacity is not None:
             return self.max_class_capacity
+
+    
+    def _get_capacity(self, ignore_changes=False):
+        if self.max_class_capacity is not None:
+            ans = self.max_class_capacity
 
         rooms = self.initial_rooms()
         if len(rooms) == 0:
             ans = self.parent_class.class_size_max
-        else:
             ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
+            ans = min(self.parent_class.class_size_max, rc)
 
             # Only save the capacity if we do have rooms assigned;
             # otherwise don't bother as this number will almost definitely change
             self.max_class_capacity = ans
             self.save()
             
-        return ans
-    
+        #   Apply dynamic capacity rule
+        if not ignore_changes:
+            options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            return int(ans * options.class_cap_multiplier + options.class_cap_offset)
+        else:
+            return int(ans)
+   
     capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
@@ -388,15 +396,15 @@ class ClassSection(models.Model):
     
     def classroomassignments(self):
         from esp.resources.models import ResourceType
-        cls_restype = ResourceType.get_or_create('Classroom')
+        ta_restype = ResourceType.get_or_create('Teacher Availability')
+        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
         return self.getResourceAssignments().filter(target=self, resource__res_type=cls_restype)
     
     def resourceassignments(self):
         """   Get all assignments pertaining to floating resources like projectors. """
         from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
-        ta_restype = ResourceType.get_or_create('Teacher Availability')
-        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
+        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype)
     
     def classrooms(self):
         """ Returns the list of classroom resources assigned to this class."""
@@ -468,15 +476,18 @@ class ClassSection(models.Model):
         If the duration is not set, 1 hour is assumed. """
         
         # Only cache when no event list is provided.
-        caching = False
+        if self.duration == 0.0:
+            duration = 1.0
+        else:
+            duration = self.duration
         if not event_list:
             cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
             caching = True
             retVal = cache.get(cache_key)
             if retVal != None:
-                return retVal
-        
         duration = self.duration or 1.0
+        else:
+            duration = self.duration
         
         if event_list is None:
             event_list = list(self.meeting_times.all().order_by('start'))
@@ -636,18 +647,18 @@ class ClassSection(models.Model):
 
             base_list = list_of_lists[0]
             for other_list in list_of_lists[1:]:
+        except:
+            num_teachers = len(teachers)
+        ta_type = ResourceType.get_or_create('Teacher Availability')
                 i = 0
                 for elt in base_list:
                     if elt not in other_list:
                         base_list.remove(elt)
+        try:
             return base_list
 
         teachers = self.parent_class.teachers()
-        try:
-            num_teachers = teachers.count()
-        except:
-            num_teachers = len(teachers)
-        ta_type = ResourceType.get_or_create('Teacher Availability')
+        num_teachers = teachers.count()
 
         timeslot_list = []
         for t in teachers:
@@ -747,6 +758,19 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
+
+        # Test any scheduling constraints based on this class
+        relevantFilters = ScheduleTestSectionList.filter_by_section(self)
+        #relevantConstraints = ScheduleConstraint.objects.filter(Q(requirement__booleantoken__in=relevantFilters) | Q(condition__booleantoken__in=relevantFilters))
+
+        relevantConstraints = ScheduleConstraint.objects.filter(program=self.parent_program)
+        # Set up a ScheduleMap; fake-insert this class into it
+        sm = ScheduleMap(user, self.parent_program)
+        sm.add_section(self)
+        
+        for exp in relevantConstraints:
+            if not exp.evaluate(sm):
+                return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title, exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if scrmi.use_priority:
@@ -912,8 +936,8 @@ class ClassSection(models.Model):
         else:
             return reduce(lambda x,y: x+y, [r.num_students for r in ir]) 
 
-    def isFull(self, use_cache=True):
-        return (self.num_students() >= self.capacity)
+    def isFull(self, ignore_changes=False, use_cache=True):
+        return (self.num_students() >= self._get_capacity(ignore_changes))
 
     def friendly_times(self, use_cache=False):
         """ Return a friendlier, prettier format for the times.
@@ -1031,14 +1055,14 @@ class ClassSection(models.Model):
         students = list(self.students())
         students = [ student for student in students
                      if student.id != user.id ]
-        self.cache['students'] = students
-        self.update_cache_students()
-
         # Remove the student from any existing class mailing lists
         list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
         for list_name in list_names:
             remove_list_member(list_name, "%s@esp.mit.edu" % user.username)
 
+
+        self.cache['students'] = students
+        self.update_cache_students()
 
     def preregister_student(self, user, overridefull=False, automatic=False, priority=1):
         
@@ -1080,14 +1104,14 @@ class ClassSection(models.Model):
             if app:
                 app.set_questions()
                 if app.questions.count() > 0:
-                    app.done = False
-                    app.save()
-
             #   Add the student to the class mailing lists, if they exist
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
                 add_list_member(list_name, "%s@esp.mit.edu" % user.username)
 
+                    app.done = False
+                    app.save()
+                
             return True
         else:
             #    Pre-registration failed because the class is full.
@@ -1122,10 +1146,10 @@ class ClassSubject(models.Model):
     class_info = models.TextField(blank=True)
     allow_lateness = models.BooleanField(default=False)
     message_for_directors = models.TextField(blank=True)
+    class_size_optimal = models.IntegerField(blank=True, null=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)
-    class_size_optimal = models.IntegerField(blank=True, null=True)
     class_size_max = models.IntegerField()
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
@@ -1461,16 +1485,19 @@ class ClassSubject(models.Model):
 
         return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers() ])
         
-    def isFull(self, timeslot=None, use_cache=True):
+    def isFull(self, ignore_changes=False, timeslot=None, use_cache=True):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
             sections = [self.get_section(timeslot)]
         else:
             sections = self.get_sections()
         for s in sections:
-            if not s.isFull(use_cache=use_cache):
+            if not s.isFull(ignore_changes=ignore_changes, use_cache=use_cache):
                 return False
         return True
+
+    def is_nearly_full(self):
+        return len([x for x in self.get_sections() if x.num_students() > 0.75*x.capacity]) > 0
 
     def getTeacherNames(self):
         teachers = []
@@ -1815,7 +1842,16 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     @staticmethod
     def class_sort_by_timeblock(one, other):
-        return cmp(one.all_meeting_times[0], other.all_meeting_times[0])
+        if len(one.all_meeting_times) == 0:
+            if len(other.all_meeting_times) == 0:
+                return 0
+            else:
+                return -1
+        else:
+            if len(other.all_meeting_times) == 0:
+                return 1
+            else:
+                return cmp(one.all_meeting_times[0], other.all_meeting_times[0])
 
     @staticmethod
     def class_sort_noop(one, other):
@@ -1959,7 +1995,7 @@ def install():
     
     for key in category_dict:
         cat = ClassCategories()
+
         cat.symbol = key
         cat.category = category_dict[key]
         cat.save()
-

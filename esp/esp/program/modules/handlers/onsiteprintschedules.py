@@ -125,7 +125,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
             ### HARDCODED IN FOR SPLASH 2009 ###
 
             student.has_paid = ( student.itemizedcosttotal == 0 )
-
+            
             student.payment_info = True
             student.classes = classes
 

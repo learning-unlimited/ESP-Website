@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+
+{% block title %}Volunteer Interest Form{% endblock %}
+
+{% block content %}
+
+<p>
+Thank you for your interest!  Your information has been sent to us.
+</p>
+
+<p>
+{% load render_qsd %}
+{% render_inline_qsd anchor "volunteer_form_thankyou" request.user %}
+</p>
+
+{% endblock %}

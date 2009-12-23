@@ -6,6 +6,7 @@ from django.test.client import Client
 
 from esp.datatree.models import *
 from esp.users.models import ESPUser
+from esp.resources.models import ResourceType
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
@@ -316,11 +317,17 @@ class ProgramHappenTest(TestCase):
             'grade_max': self.prog.grade_max,
             'class_size_max': '10',
             'allow_lateness': 'False',
-            'has_own_space': 'False',
-            'requested_special_resources': 'Two doorstops and a first-aid kit.',
             'message_for_directors': 'Hi chairs!',
-            
-            'class_reg_page': '1'
+            'class_reg_page': '1',
+            #   Resource forms in default configuration
+            'request-TOTAL_FORMS': '2',
+            'request-INITIAL_FORMS': '2',
+            'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
+            'request-0-desired_value': 'Lecture',
+            'request-1-resource_type': str(ResourceType.get_or_create('A/V').id),
+            'request-1-desired_value': 'LCD projector',
+            'restype-TOTAL_FORMS': '0',
+            'restype-INITIAL_FORMS': '0',
         }
         self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
         
@@ -741,5 +748,40 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         self.assertFalse(token3.boolean_value(map=sm.map), 'ScheduleTestSectionList broken')
         self.assertTrue(sc1.evaluate(sm), 'ScheduleConstraint broken')
         self.assertTrue(sc2.evaluate(sm), 'ScheduleConstraint broken')
+
+class DynamicCapacityTest(ProgramFrameworkTest):
+    def runTest(self):
+        #   Parameters
+        initial_capacity = 37
+        mult_test = 0.6
+        offset_test = 4
+    
+        #   Get class capacity
+        self.program.getModules()
+        options = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        sec = random.choice(list(self.program.sections()))
+        sec.parent_class.class_size_max = initial_capacity
+        sec.parent_class.save()
+        sec.max_class_capacity = initial_capacity
+        sec.save()
+        
+        #   Check that initially the capacity is correct
+        self.assertEqual(sec.capacity, initial_capacity)
+        #   Check that multiplier works
+        options.class_cap_multiplier = str(mult_test)
+        options.save()
+        self.assertEqual(sec.capacity, int(initial_capacity * mult_test))
+        #   Check that multiplier and offset work
+        options.class_cap_offset = offset_test
+        options.save()
+        self.assertEqual(sec.capacity, int(initial_capacity * mult_test + offset_test))
+        #   Check that offset only works
+        options.class_cap_multiplier = '1.0'
+        options.save()
+        self.assertEqual(sec.capacity, int(initial_capacity + offset_test))
+        #   Check that we can go back to normal
+        options.class_cap_offset = 0
+        options.save()
+        self.assertEqual(sec.capacity, initial_capacity)
 
 from esp.program.modules.tests import *

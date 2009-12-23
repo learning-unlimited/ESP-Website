@@ -254,130 +254,150 @@ def edit_profile(request, module):
 
 @login_required
 def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
-	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+    """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
-	STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
-	STUDREP_QSC  = GetNode('Q')
+    from esp.users.models import K12School
+    STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
+    STUDREP_QSC  = GetNode('Q')
 
-	
-	if prog_input is None:
-		prog = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
-		navnode = GetNode('Q/Web/myesp')
-	else:
-		prog = prog_input
-		navnode = prog
-		
-	curUser = request.user
-	context = {'logged_in': request.user.is_authenticated() }
-	context['user'] = request.user
-	
-	curUser = ESPUser(curUser)
-	curUser.updateOnsite(request)
-	
-	FormClass = {'': UserContactForm,
-		       'student': StudentProfileForm,
-		       'teacher': TeacherProfileForm,
-		       'guardian': GuardianProfileForm,
-		       'educator': EducatorProfileForm}[role]
-	context['profiletype'] = role
 
-	if request.method == 'POST' and request.POST.has_key('profile_page'):
-                form = FormClass(curUser, request.POST)
-		
-		# Don't suddenly demand an explanation from people who are already student reps
-		if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
-                        if hasattr(form, 'repress_studentrep_expl_error'):
-                            form.repress_studentrep_expl_error()
-		
-                if form.is_valid():
-                        new_data = form.cleaned_data
+    if prog_input is None:
+        prog = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
+        navnode = GetNode('Q/Web/myesp')
+    else:
+        prog = prog_input
+        navnode = prog.anchor
 
-			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+    curUser = request.user
+    context = {'logged_in': request.user.is_authenticated() }
+    context['user'] = request.user
 
-			if regProf.id is None:
-				old_regProf = RegistrationProfile.getLastProfile(curUser)
-			else:
-				old_regProf = regProf
+    curUser = ESPUser(curUser)
+    curUser.updateOnsite(request)
 
-			for field_name in ['address_zip','address_city','address_street','address_state']:
-				if new_data[field_name] != getattr(old_regProf.contact_user,field_name,False):
-					new_data['address_postal'] = ''
+    FormClass = {'': UserContactForm,
+               'student': StudentProfileForm,
+               'teacher': TeacherProfileForm,
+               'guardian': GuardianProfileForm,
+               'educator': EducatorProfileForm}[role]
+    context['profiletype'] = role
 
-			if new_data['address_postal'] == '':
-				new_data['address_postal'] = False
+    if request.method == 'POST' and request.POST.has_key('profile_page'):
+        form = FormClass(curUser, request.POST)
 
-			regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
-			regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
+        # Don't suddenly demand an explanation from people who are already student reps
+        if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
+            if hasattr(form, 'repress_studentrep_expl_error'):
+                form.repress_studentrep_expl_error()
 
-			if new_data.has_key('dietary_restrictions') and new_data['dietary_restrictions']:
-				regProf.dietary_restrictions = new_data['dietary_restrictions']
+        if form.is_valid():
+            new_data = form.cleaned_data
 
-			if role == 'student':
-				regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
-				regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
-			elif role == 'teacher':
-				regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
-			elif role == 'guardian':
-				regProf.guardian_info = GuardianInfo.addOrUpdate(curUser, regProf, new_data)
-			elif role == 'educator':
-				regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
-			blah = regProf.__dict__
-			regProf.save()
+            regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 
-			curUser.first_name = new_data['first_name']
-			curUser.last_name  = new_data['last_name']
-			curUser.email     = new_data['e_mail']
-			curUser.save()
-			if responseuponCompletion == True:
-				# prepare the rendered page so it points them to open student/teacher reg's
-				ctxt = {}
-				if curUser.isStudent() or curUser.isTeacher():
-					userrole = {}
-					if curUser.isStudent():
-						userrole['name'] = 'Student'
-						userrole['base'] = 'learn'
-						userrole['reg'] = 'studentreg'
-						regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
-					elif curUser.isTeacher():
-						userrole['name'] = 'Teacher'
-						userrole['base'] = 'teach'
-						userrole['reg'] = 'teacherreg'
-						regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
-					ctxt['userrole'] = userrole
-					
-					progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
-					nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
-					ctxt['progs'] = progs
-					ctxt['nextreg'] = list(nextreg)
-					if len(progs) == 1:
-						return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
-					else:
-						return render_to_response('users/profile_complete.html', request, navnode, ctxt)
-			else:
-				return True
+            if regProf.id is None:
+                old_regProf = RegistrationProfile.getLastProfile(curUser)
+            else:
+                old_regProf = regProf
 
-	else:
-		if prog_input is None:
-			regProf = RegistrationProfile.getLastProfile(curUser)
-		else:
-			regProf = RegistrationProfile.getLastForProgram(curUser, prog)
-		if regProf.id is None:
-			regProf = RegistrationProfile.getLastProfile(curUser)
-		new_data = {}
-		if curUser.isStudent():
-			new_data['studentrep'] = (UserBit.objects.filter(user = curUser,
-									 verb = STUDREP_VERB,
-									 qsc  = STUDREP_QSC).count() > 0)
-		new_data['first_name'] = curUser.first_name
-		new_data['last_name']  = curUser.last_name
-		new_data['e_mail']     = curUser.email
-		new_data = regProf.updateForm(new_data, role)
+            for field_name in ['address_zip','address_city','address_street','address_state']:
+                if new_data[field_name] != getattr(old_regProf.contact_user,field_name,False):
+                    new_data['address_postal'] = ''
 
-                form = FormClass(curUser, initial=new_data)
+            if new_data['address_postal'] == '':
+                new_data['address_postal'] = False
 
-	context['request'] = request
-	context['form'] = form
-	return render_to_response('users/profile.html', request, navnode, context)
+            regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
+            regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
+
+            if new_data.has_key('dietary_restrictions') and new_data['dietary_restrictions']:
+                regProf.dietary_restrictions = new_data['dietary_restrictions']
+
+            # Deal with school entry.
+            if new_data.has_key('k12school'):
+                if new_data['k12school'] != unicode(K12School.objects.other().id):
+                    new_data['school'] = ''
+
+            if role == 'student':
+                regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
+                regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
+            elif role == 'teacher':
+                regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
+            elif role == 'guardian':
+                regProf.guardian_info = GuardianInfo.addOrUpdate(curUser, regProf, new_data)
+            elif role == 'educator':
+                regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
+            blah = regProf.__dict__
+            regProf.save()
+
+            curUser.first_name = new_data['first_name']
+            curUser.last_name  = new_data['last_name']
+            curUser.email     = new_data['e_mail']
+            curUser.save()
+            if responseuponCompletion == True:
+                # prepare the rendered page so it points them to open student/teacher reg's
+                ctxt = {}
+                userrole = {}
+                if curUser.isStudent():
+                    userrole['name'] = 'Student'
+                    userrole['base'] = 'learn'
+                    userrole['reg'] = 'studentreg'
+                    regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
+                elif curUser.isTeacher():
+                    userrole['name'] = 'Teacher'
+                    userrole['base'] = 'teach'
+                    userrole['reg'] = 'teacherreg'
+                    regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
+                ctxt['userrole'] = userrole
+                
+                if curUser.isStudent() or curUser.isTeacher():
+                    progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
+                    nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
+                    ctxt['prog'] = prog
+                    ctxt['nextreg'] = list(nextreg)
+                    if len(progs) == 1:
+                        return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+                    else:
+                        return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+                else:
+                    return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+            else:
+                return True
+        else:
+            #   Force loading the school back in if possible...
+            replacement_data = form.data.copy()
+            try:
+                replacement_data['k12school'] = form.fields['k12school'].clean(form.data['k12school']).id
+            except:
+                pass
+            form = FormClass(curUser, replacement_data)
+
+    else:
+        if prog_input is None:
+            regProf = RegistrationProfile.getLastProfile(curUser)
+        else:
+            regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+        if regProf.id is None:
+            regProf = RegistrationProfile.getLastProfile(curUser)
+        new_data = {}
+        if curUser.isStudent():
+            new_data['studentrep'] = (UserBit.objects.filter(user = curUser,
+                                     verb = STUDREP_VERB,
+                                     qsc  = STUDREP_QSC).count() > 0)
+        new_data['first_name'] = curUser.first_name
+        new_data['last_name']  = curUser.last_name
+        new_data['e_mail']     = curUser.email
+        new_data = regProf.updateForm(new_data, role)
+        if request.session.has_key('birth_month') and request.session.has_key('birth_day'):
+            new_data['dob'] = datetime.date(1994, int(request.session['birth_month']), int(request.session['birth_day']))
+        if request.session.has_key('school_id'):
+            new_data['k12school'] = request.session['school_id']
+
+        form = FormClass(curUser, initial=new_data)
+
+    context['request'] = request
+    context['form'] = form
+    return render_to_response('users/profile.html', request, navnode, context)
 
 @login_required
 def myesp_onsite(request, module):

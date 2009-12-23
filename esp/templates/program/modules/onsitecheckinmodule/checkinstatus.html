@@ -1,0 +1,72 @@
+{% spaceless %}
+<link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+
+{% if message %}
+<p align="center" style="color: #6699CC;">{{ message }}</p>
+{% endif %}
+
+<div id='program_form' class='program_form_small'>
+
+<center>
+
+
+<table width="350">
+{% if grade_levels %}
+    <tr>
+        <th colspan="2">
+            Number of students checked in (by grade)
+        </th>
+    </tr>
+    <tr>
+        <td><b>Grade</b></td>
+        <td><b>Num. Students</b></td>
+    </tr>
+    {% for item in grade_levels %}
+        <tr>
+            <td>{% if item.grade %}{{ item.grade }}{% else %}Not Specified{% endif %}</td>
+            <td>{{ item.num_students }}</td>
+        </tr>
+    {% endfor %}
+{% endif %}
+{% if start_times %}
+    <tr>
+        <th colspan="2">
+            Number of students checked in (by time of first class)
+        </th>
+    </tr>
+    <tr>
+        <td><b>Class Period</b></td>
+        <td><b>Num. Students</b></td>
+    </tr>
+    {% for item in start_times %}
+        <tr>
+            <td>{% if item.time %}{{ item.time }}{% else %}No Classes{% endif %}</td>
+            <td>{{ item.num_students }}</td>
+        </tr>
+    {% endfor %}
+{% endif %}
+{% if students %}
+    <tr>
+        <th colspan="2">
+            Students marked as attended for {{ program.niceName }}
+        </th>
+    </tr>
+    <tr>
+        <td><b>ID</b></td>
+        <td><b>Student Name</b></td>
+    </tr>
+    {% for student in students %}
+        <tr>
+            <td>{{ student.id }}</td>
+            <td>{{ student.first_name }} {{ student.last_name }}</td>
+        </tr>
+    {% endfor %}
+{% endif %}
+</table> 
+
+
+</center>
+
+</div>
+
+{% endspaceless %}

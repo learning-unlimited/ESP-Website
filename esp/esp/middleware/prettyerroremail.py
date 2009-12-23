@@ -45,7 +45,7 @@ from django.db.models.query import QuerySet
 # All of those exceptions we need to check against
 from django import http
 from django.core import exceptions
-from esp.middleware.esperrormiddleware import ESPError_NoLog, Http403
+from esp.middleware.esperrormiddleware import ESPError_NoLog, Http403, AjaxError
 
 __all__ = ('PrettyErrorEmailMiddleware',)
 
@@ -62,7 +62,7 @@ class PrettyErrorEmailMiddleware(object):
 
     ADMINS = None
     # A tuple of exceptions to ignore and *not* send email for:
-    IGNORE_EXCEPTIONS = (http.Http404, Http403, ESPError_NoLog, SystemExit, exceptions.PermissionDenied)
+    IGNORE_EXCEPTIONS = (http.Http404, Http403, ESPError_NoLog, SystemExit, AjaxError, exceptions.PermissionDenied)
 
     def process_request(self, request):
         """ In case a previous view wiped out the ADMINS variable,

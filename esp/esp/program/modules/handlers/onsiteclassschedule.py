@@ -68,6 +68,9 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @needs_student
     def studentschedule(self, request, *args, **kwargs):
         #   tl, one, two, module, extra, prog
+        format = 'pdf'
+        if 'format' in request.GET:
+            format = request.GET['format'].lower()
         request.GET = {'op':'usersearch',
                        'userid': str(self.user.id) }
 
@@ -77,7 +80,14 @@ class OnsiteClassSchedule(ProgramModuleObj):
         module.user = self.user
         module.program = self.program
         
-        return module.studentschedules(request, *args, **kwargs)
+        new_kwargs = {}
+
+        if 'extra' in kwargs:
+            extra = kwargs['extra']
+        else:
+            extra = 'pdf'
+
+        return module.studentschedules(request, args[0], args[1], args[2], args[3], extra, args[5], onsite=True, format=format)
 
 
     @main_call

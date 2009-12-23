@@ -1,0 +1,3 @@
+"Class ID","Section","Title","Teacher[s]","Num. Students","Capacity","Assigned Room","Times","Room Request","Special Requests","Equipment","Their notes","Your notes"
+{% for cls in classes %}{% for section in cls.sections.all %}"{{ cls.emailcode }}","{{ section.index }}","{{ cls.title }}","{{ cls.pretty_teachers }}","{{ section.num_students }}","{{ section.capacity }}","{{ secction.prettyrooms }}","{% for ts in section.friendly_times %}{{ ts }}{% if not forloop.last %}, {% endif %}{% endfor %}","{{ cls.requested_room }}","{{ cls.requested_special_resources }}","{% for r in section.resourcerequest_set.all %}{{ r.res_type.name }}{% if not forloop.last %}, {% endif %}{% endfor %}","{{ cls.message_for_director }}","{{ cls.directors_notes }}"
+{% endfor %}{% endfor %}

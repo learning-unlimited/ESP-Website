@@ -4,7 +4,7 @@ from esp.utils.custom_cache import custom_cache
 
 class DataTree__randwordtest(TestCase):
     def runTest(self):
-        assert DataTree.randwordtest(limit=50)
+        assert DataTree.randwordtest(limit=50, quiet=True)
 
 class DataTreeTest(TestCase, custom_cache):
     def setUp(self):

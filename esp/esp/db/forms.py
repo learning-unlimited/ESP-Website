@@ -2,6 +2,7 @@ from django.db import models
 from django import forms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
+from django.utils.safestring import mark_safe
 import re
 
 get_id_re = re.compile('.*\D(\d+)\D')
@@ -28,9 +29,9 @@ class AjaxForeignKeyFieldBase:
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
                     init_val = obj.ajax_str() + " (%s)" % data
-                    old_init_val = str(obj)
+                    old_init_val = unicode(obj)
                 else:
-                    old_init_val = init_val = obj.__str__() + " (%s)" % data
+                    old_init_val = init_val = unicode(obj) + " (%s)" % data
         else:
             data = init_val = ''
 
@@ -138,7 +139,7 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 """ % (fn,fn,fn,self.field.blank and ' required' or '',addslashes(data or ''),fn,
        fn,old_init_val)
 
-        return css + html + javascript
+        return mark_safe(css + html + javascript)
     
 class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
     choices = ()
@@ -170,9 +171,9 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             where [field] is the field in a model (i.e. ForeignKey) 
     """
     def __init__(self, field_name='', field=None, key_type=None, to_field=None,
-                 to_field_name=None, required=False, label='', initial=None,
+                 to_field_name=None, required=True, label='', initial=None,
                  widget=None, help_text='', ajax_func=None, queryset=None,
-                 error_messages=None, show_hidden_initial=False):
+                 error_messages=None, show_hidden_initial=False, *args, **kwargs):
 
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'
@@ -231,10 +232,13 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             if match:
                 id = int(match.groups()[0])
             else:
-                #   This is equivalent to a validation error but, now that we
-                #   trust the ForeignKey field to work normally, we don't need to
-                #   cause an error.
-                id = None
+                #   Reverted to standard behavior because some forms need their
+                #   AjaxForeignKey fields to be required.  -Michael P 8/31/2009
+                if self.required:
+                    raise forms.ValidationError('This field is required.')
+                else:
+                    id = None
+                
 
         if hasattr(self, "field"):
             # If we couldn't grab an ID, ask the target's autocompleter.

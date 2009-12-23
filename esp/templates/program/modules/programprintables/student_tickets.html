@@ -1,0 +1,39 @@
+<html>
+<head>
+<title>Student Tickets</title>
+<style media="print,screen" type="text/css">
+body { font-family: georgia; margin: 0pt;}
+.label { width:3.98in; height: 1.7in; text-align: center; margin: 0px; padding: 0px; border: 1px solid black; border-collapse: collapse; font-size: 26pt; overflow: hidden;}
+</style>
+</head>
+<body>
+{% for group in joint_groups %}
+    {% if not forloop.first %}
+        </table>
+        <div style="page-break-after: always;">&nbsp; </div>
+    {% endif %}
+    <table cellspacing="0" cellpadding="0" align="center">
+    {% for student in group.1 %}
+        {% if forloop.counter0|divisibleby:12 %}
+            {% if not forloop.first %}
+                </table>
+                <div style="page-break-after: always;"></div>
+                <table cellspacing="0" cellpadding="0" align="center">
+            {% endif %}
+        {% endif %}
+        {% if forloop.counter0|divisibleby:2 %}
+        <tr>
+          <td valign="middle">
+          {% include "program/modules/programprintables/student_ticket.html" %}
+          </td>
+        {% else %}
+          <td valign="middle">
+          {% include "program/modules/programprintables/student_ticket.html" %}
+          </td>
+          <td>&nbsp;</td>
+        </tr>
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+</body>
+</html>
