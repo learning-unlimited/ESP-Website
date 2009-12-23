@@ -144,8 +144,9 @@ class ClassManager(ProcedureManager):
         
         classes = classes.select_related('anchor',
                                          'category')
-        
-        classes = classes.filter(parent_program = program)
+
+        if program != None:
+            classes = classes.filter(parent_program = program)
 
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
@@ -183,7 +184,10 @@ class ClassManager(ProcedureManager):
         
         # We got classes.  Now get teachers...
 
-        teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+        if program != None:
+            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+        else:
+            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
 
         teachers_by_id = {}
         for t in teachers:            
