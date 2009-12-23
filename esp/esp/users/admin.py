@@ -9,7 +9,11 @@ class UserBitAdmin(admin.ModelAdmin):
                      'qsc__uri','verb__uri']
 admin.site.register(UserBit, UserBitAdmin)
 
-admin.site.register(UserBitImplication)
+
+class UserBitImplicationAdmin(admin.ModelAdmin):
+    exclude = ('created_bits',)
+
+admin.site.register(UserBitImplication, UserBitImplicationAdmin)
 
 admin.site.register(ContactInfo)
 admin.site.register(StudentInfo)
