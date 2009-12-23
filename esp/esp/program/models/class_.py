@@ -108,13 +108,12 @@ class ClassManager(ProcedureManager):
         
         return self.filter(status = 10)
 
-    def catalog(self, program, ts=None, force_all=False, initial_queryset=None):
+    def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False):
         # Try getting the catalog straight from cache
-        print (program, ts, force_all, initial_queryset, True)
         catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True)
         if catalog is None:
             # Get it from the DB, then try prefetching class sizes
-            catalog = self.catalog_cached(program, ts, force_all, initial_queryset)
+            catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only)
         else:
             for cls in catalog:
                 for sec in cls.get_sections():
