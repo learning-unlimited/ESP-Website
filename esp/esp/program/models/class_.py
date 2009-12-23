@@ -147,7 +147,7 @@ class ClassManager(ProcedureManager):
                                          'category')
         
         if program != None:
-        classes = classes.filter(parent_program = program)
+            classes = classes.filter(parent_program = program)
 
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
@@ -310,7 +310,6 @@ class ClassSection(models.Model):
         return self.parent_class.category
     category = property(_get_category)
     
-    def _get_title(self):
     def _get_room_capacity(self, rooms = None):
         if rooms == None:
             rooms = self.initial_rooms()
@@ -485,7 +484,7 @@ class ClassSection(models.Model):
             caching = True
             retVal = cache.get(cache_key)
             if retVal != None:
-        duration = self.duration or 1.0
+                duration = self.duration or 1.0
         else:
             duration = self.duration
         
@@ -645,16 +644,18 @@ class ClassSection(models.Model):
             if len(list_of_lists) == 0:
                 return []
 
-            base_list = list_of_lists[0]
-            for other_list in list_of_lists[1:]:
-        except:
-            num_teachers = len(teachers)
-        ta_type = ResourceType.get_or_create('Teacher Availability')
-                i = 0
-                for elt in base_list:
-                    if elt not in other_list:
-                        base_list.remove(elt)
-        try:
+            try:
+                base_list = list_of_lists[0]
+            except:
+                for other_list in list_of_lists[1:]:
+
+                    num_teachers = len(teachers)
+                    ta_type = ResourceType.get_or_create('Teacher Availability')
+                    i = 0
+                    for elt in base_list:
+                        if elt not in other_list:
+                            base_list.remove(elt)
+
             return base_list
 
         teachers = self.parent_class.teachers()
@@ -1104,13 +1105,13 @@ class ClassSection(models.Model):
             if app:
                 app.set_questions()
                 if app.questions.count() > 0:
-            #   Add the student to the class mailing lists, if they exist
-            list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
-            for list_name in list_names:
-                add_list_member(list_name, "%s@esp.mit.edu" % user.username)
+                    #   Add the student to the class mailing lists, if they exist
+                    list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
+                for list_name in list_names:
+                    add_list_member(list_name, "%s@esp.mit.edu" % user.username)
 
-                    app.done = False
-                    app.save()
+                app.done = False
+                app.save()
                 
             return True
         else:
