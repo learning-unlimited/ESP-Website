@@ -12,52 +12,25 @@ except:
 import gc
 import xlwt
 
-# I want a defaultdict class in which default_factory
-# takes the missing key as its argument, to generate a new value
-class defaultdict_perkey(dict):
-    def __init__(self, default_factory=None, *a, **kw):
-        if (default_factory is not None and
-            not hasattr(default_factory, '__call__')):
-            raise TypeError('first argument must be callable')
-        dict.__init__(self, *a, **kw)
-        self.default_factory = default_factory
-    def __getitem__(self, key):
-        try:
-            return dict.__getitem__(self, key)
-        except KeyError:
-            return self.__missing__(key)
-    def __missing__(self, key):
-        if self.default_factory is None:
-            raise KeyError(key)
-        self[key] = value = self.default_factory(key)
-        return value
-    def copy(self):
-        return self.__copy__()
-    def __copy__(self):
-        return type(self)(self.default_factory, self)
-    def __deepcopy__(self, memo):
-        import copy
-        return type(self)(self.default_factory,
-                          copy.deepcopy(self.items()))
-    def __repr__(self):
-        return 'defaultdict_perkey(%s, %s)' % (self.default_factory,
-                                        dict.__repr__(self))
-        
-
 def get_all_data():
+    """
+    Get all survey data ever;
+    then stuff it into variables hanging off of each survey in a list() of all Surveys in the db;
+    then return that list of surveys
+    """
+
     # Has to be a list so that each answer object is persistent,
     # since we're tacking data on
+    # We *really really* want to get all relevant fields in a single query;
+    # if we don't, the performance is absolutely horrible,
+    # as there are (as of 12/2009) ~100,000 answers,
+    # and 100,000 of any sort of query, no matter how cheap, takes an extremely long time.
     all_answers = list( Answer.objects.all().select_related('anchor',
                                                             'anchor__parent',
-#                                                            'anchor__parent__parent',
                                                             'question',
                                                             'question__questiontype',
-#                                                            'question__anchor',
-#                                                            'question__survey',
-#                                                            'question__survey__anchor',
                                                             'survey_response',
                                                             'survey_response__survey',
-#                                                            'survey_response__survey__anchor')
                                                             ) )
 
     gc.collect() # 'cause the Django query parser system uses gobs of RAM; keep RAM usage down a bit
@@ -74,15 +47,23 @@ def get_all_data():
     all_classes = ClassSubject.objects.catalog(None, use_cache=False)
 
     gc.collect()
-    
+
+    # So, we now basically have a tree structure, with Answers at the leaves
+    # and Surveys at the root.
+    # Join this tree structure together in memory.
+
+    # Survey responses for a class share an anchor with that class
     all_classes_dict = {}
     for c in all_classes:
         all_classes_dict[c.anchor_id] = c        
 
+    # Survey responses for a program share an anchor with that program
     all_programs_dict = {}
     for p in all_programs:
         all_programs_dict[p.anchor_id] = p
 
+    # Prepare the survey and survey_response lists to receive a whole pile of data
+    # aggregated from the massive Answers query above
     all_surveys_dict = {}
     for s in all_surveys:
         s._responses = []
@@ -94,7 +75,10 @@ def get_all_data():
     for s in all_survey_responses:
         s._answers = list()
         all_survey_responses_dict[s.id] = s
-        
+
+    # Iterate through all answers ever.
+    # Build the tree of data from the leaves up,
+    # aggregating redundant data from the Answers using sets and dictionaries.
     for a in all_answers:
         # Get the parent program
         # We could be a per-class question; figure this out from our anchor
@@ -126,25 +110,30 @@ def get_all_data():
     for s in all_surveys:
         s._questions = list(s._questions)
         s._questions.sort(key=lambda x: (x.seq, x.id))
-        
+
+    # And, finally, return the survey data
     return all_surveys
 
-
 def auto_cell_type(val):
-#    print type(val),
-    val = auto_cell_type_wrapped(val)
-    print type(val)
-#    return val
+    """
+    Excel supports a variety of Python data types.
+    Given 'val' as possibly a proper type, possibly a string that
+    could be converted to the proper type, and possibly something else,
+    try to output The Right Thing(tm).
+    """
 
-def auto_cell_type_wrapped(val):
+    # We're not smart about datetime's.
+    # If we have one, just throw it back to Excel; it can deal with them properly.
     if isinstance(val, (datetime, date, time)):
         return val
-    
+
+    # Are we an int?
     try:
         return int(val)
     except:
         pass
 
+    # Are we a float?
     try:
         return float(val)
     except:
@@ -152,7 +141,8 @@ def auto_cell_type_wrapped(val):
 
     # Give up; not a type that Excel likes
     val = unicode(val)
-    
+
+    # Are we something that looks like a boolean?
     if val.upper() in ("TRUE", "FALSE", "T", "F"):
         if val.upper() in ("TRUE", "T"):
             return True
@@ -160,21 +150,42 @@ def auto_cell_type_wrapped(val):
             return False
 
     # No idea; we'll just return a string
+    # Excel can deal with Unicode, so leave it as a Unicode-string.
     return val
     
 
 def write_xls_row(ws, rownum, data_list):
+    """
+    Given a list representing the contents of a row,
+    the index of a row in an Excel Worksheet,
+    and an Excel Worksheet object.
+    write the row.
 
+    Try to be smart about data types and cell formats and whatnot.
+    This will probably need tweaking someday.
+
+    Does not check for overwriting; if your worksheet is configured to
+    not permit overwriting already-written cells, this code can fail as a result
+    if not used accordingly.
+
+    Also, this code tends to set a lot of redundant styles on cells,
+    so you're strongly recommended to configure your workbook to use style compression.
+    """
     # Styles yoinked from <http://www.djangosnippets.org/snippets/1151/>
     styles = {'datetime': xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
               'date': xlwt.easyxf(num_format_str='yyyy-mm-dd'),
               'time': xlwt.easyxf(num_format_str='hh:mm:ss'),
               'default': xlwt.Style.default_style}
-    
+
+    # Go get the row object for the row in question
     row = ws.row(rownum)
     for c, d in enumerate(data_list):
         value = auto_cell_type(d)
-        
+
+        # Do some magic to guess the style
+        # Excel's default style for date/time-like things is really bad
+        # (just print the number in Windows date format, float(days) )
+        # but its other defaults are sane, so try to catch and convert dates
         if isinstance(value, datetime):
             cell_style = styles['datetime']
         elif isinstance(value, date):
@@ -184,28 +195,25 @@ def write_xls_row(ws, rownum, data_list):
         else:
             cell_style = styles['default']
 
+        # Actually write the row
         row.write(c, value, style=cell_style)
 
+    # Return the row number of the next row.
+    # Possibly useful for iteration over workbook?
     return rownum + 1
 
-#def write_answer_row(ws, row, ans):
-#    data_list = [
-#        ans.id,
-#        ans._program_name,
-#        ans._is_per_class,
-#        ans._class.anchor.name if ans._class else "",
-#        ans._class.anchor.friendly_name if ans._class else "",
-#        ans._class.num_students(),
-#        ans._class.pretty_teachers(),
-#        ans.survey_response.id,
-#        ans.survey_response.time_filled,
-#        ans.survey_response.survey.name,
-#        ans.survey_response.survey.category,
-#        ans.question.
-#        ans.answer(),
-#        ]
 
 def init_worksheet(workbook, sheet_name, default_cols):
+    """
+    Helper method.
+    Given a workbook, the title for a sheet, and the column headers,
+    create the workbook and populate it with the specified name and column headers.
+    If the name is longer than the legal limit (31 characters), truncate it to
+    28 characters + "...".
+    We should probably also do something spiffy with illegal characters in the name,
+    as Excel has a lot of them; but we don't; we just hand them off to the workbook
+    and let it throw an error or something.
+    """
     if len(sheet_name) > 31:
         sheet_name = sheet_name[:28] + "..."
     ws = workbook.add_sheet(sheet_name)
@@ -213,88 +221,110 @@ def init_worksheet(workbook, sheet_name, default_cols):
     return ws
 
 
-def get_style(val):
-    styles = { 'datetime': xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
-               'date': xlwt.easyxf(num_format_str='yyyy-mm-dd'),
-               'time': xlwt.easyxf(num_format_str='hh:mm:ss'),
-               'default': xlwt.Style.default_style }
-
-    if isinstance(value, datetime):
-        cell_style = styles['datetime']
-    elif isinstance(value, datetime.date):
-        cell_style = styles['date']
-    elif isinstance(value, datetime.time):
-        cell_style = styles['time']
-    else:
-        cell_style = styles['default']
-
-    return cell_style
-
-
-
-
 def build_workbook_data():
+    """
+    Return a StringIO object containing the binary data of a Microsoft Excel .xls file,
+    containing all survey results for every program ever.
+    """
+    # Get enormous gobs of data
     all_surveys = get_all_data()
 
+    # Make us a workbook
     workbook = xlwt.Workbook(encoding='utf-8', style_compression=2)
+
+    # These columns are in every spreadsheet
     default_column_names = ["Survey Response ID#", "'Survey Filed' timestamp", "Survey Name"]
-    
+
+    # Iterate through all surveys
     for s in all_surveys:
+        # It ends up being really ugly to put responses to whole-program and per-class questions
+        # all in the same worksheet.
+        # So, don't.
+        # Build two worksheets, one for ALL (whole-program) questions and one for PER-CLS questions.
+
+        # ALL:
         this_column_names = []
         this_question_ids = []
         for q in s._questions:
+            # Grab the names of questions that we care about
             this_column_names.append("%s (%s; %s)" % (q.name, q.question_type.name, str(list(enumerate(q.param_values)))))
+            # And grab the corresponding question-ID's in order, so that we can sort answers accordingly
             this_question_ids.append(q.id)
+
+        # Actually go ahead and make the worksheet
         ws = init_worksheet(workbook, "%s (ALL %s) %s" % (s.id, s.category, s.name), default_column_names + this_column_names)
 
         row = 1
+        # Iterate through all responses, output one row apiece
         for r in s._responses:
+
+            # Values for stock columns
             surveyresponse_answers = [r.id, r.time_filled, s.name]
 
             ans_dict = defaultdict(str)
 
+            # Build up a dictionary mapping questions to answers, for just this survey response
             for ans in r._answers:
-                ans_dict[ans.question_id] = auto_cell_type(ans.answer)# if isinstance(ans.answer, (datetime, basestring, bool, int, long, float)) else unicode(ans.answer)
+                ans_dict[ans.question_id] = auto_cell_type(ans.answer)
 
+            # Go build up a list of the answer to each question that we care about.
+            # Because ans_dict is a defaultdict(str), if we ask for an answer that we don't have,
+            # we'll just get "", which is probably what we want.
             this_answers = [ans_dict[q] for q in this_question_ids]
             
             write_xls_row(ws, row, surveyresponse_answers + this_answers)
 
             row += 1
 
+        # PER-CLS:
         this_column_names = []
         this_question_ids = []
+        
+        # Iterate through per-class questions this time
         for q in s._per_class_questions:
+            # But build up the same data structures
             this_column_names.append("%s (%s; %s)" % (q.name, q.question_type.name, str(list(enumerate(q.param_values)))))
             this_question_ids.append(q.id)
         ws = init_worksheet(workbook, "%s (PER-CLS %s) %s" % (s.id, s.category, s.name), default_column_names + this_column_names)
 
+        # Now we have to do something tricky,
+        # because we don't have one response per row;
+        # we have one row per response per class.        
         response_per_usercls = defaultdict( lambda: defaultdict(list) )
         row = 1
         for r in s._responses:
+            # Build up a data structure giving answers per response per class
             for ans in r._answers:
                 response_per_usercls[r.id][ans.anchor_id].append(ans)
 
             surveyresponse_answers = [r.id, r.time_filled, s.name]
-            
+
+            # And output data for each one of them
             for resp in response_per_usercls[r.id].values():
                 ans_dict = defaultdict(str)
 
                 for ans in resp:
-                    ans_dict[ans.question_id] = auto_cell_type(ans.answer)# if isinstance(ans.answer, (datetime, basestring, bool, int, long, float)) else unicode(ans.answer)
+                    ans_dict[ans.question_id] = auto_cell_type(ans.answer)
 
                 this_answers = [ans_dict[q] for q in this_question_ids]
-                this_answers_filtered = [x for x in this_answers if x != ""]
 
                 write_xls_row(ws, row, surveyresponse_answers + this_answers)
 
                 row += 1
 
+    # Output to a StringIO instance, so that we can work with the data in memory some more.
+    # It turns out that xlwt is much more efficient than Django, at storing data in-memory;
+    # so this isn't completely horrible.
     output = StringIO()
     workbook.save(output)
     return output
 
+
 def build_workbook():
+    """
+    Return a StringIO object containing the binary data of a Microsoft Excel .xls file,
+    containing all survey results for every program ever.
+    """
     output = build_workbook_data()
     gc.collect()  # build_workbook_data throws around a ton of data, and a ton of variables.  Clean them up.
     return output
