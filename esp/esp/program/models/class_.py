@@ -468,35 +468,24 @@ class ClassSection(models.Model):
             return None
    
     #   Scheduling helper functions
-    
+
+    @cache_function
     def sufficient_length(self, event_list=None):
         """   This function tells if the class' assigned times are sufficient to cover the duration.
         If the duration is not set, 1 hour is assumed. """
         
-        # Only cache when no event list is provided.
-        if self.duration == 0.0:
-            duration = 1.0
-        else:
-            duration = self.duration
-        if not event_list:
-            cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
-            caching = True
-            retVal = cache.get(cache_key)
-            if retVal != None:
-                duration = self.duration or 1.0
-        else:
-            duration = self.duration
-        
+        duration = self.duration or 1.0
+
         if event_list is None:
             event_list = list(self.meeting_times.all().order_by('start'))
         #   If you're 15 minutes short that's OK.
         time_tolerance = 15 * 60
         if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
-            if caching: cache.set(cache_key, False, timeout=86400)
             return False
         else:
-            if caching: cache.set(cache_key, True, timeout=86400)
             return True
+    sufficient_length.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    
     
     def extend_timeblock(self, event, merged=True):
         """ Return the Event list or (merged Event) for this class's duration if the class starts in the
