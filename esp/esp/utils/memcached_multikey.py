@@ -3,6 +3,17 @@ from django.core.cache.backends.base import BaseCache
 from django.core.cache.backends.memcached import CacheClass as MemcacheCacheClass
 from esp import settings
 
+try:
+    import cPickle as pickle
+except:
+    import pickle
+
+FAILFAST = getattr(settings, "DEBUG", True)
+
+# Is there any way to introspect this?
+CACHE_WARNING_SIZE = 1 * 1024**2
+CACHE_SIZE = 2 * 1024**2
+
 class CacheClass(BaseCache):
     def __init__(self, server, params):
         BaseCache.__init__(self, params)
@@ -14,14 +25,24 @@ class CacheClass(BaseCache):
         return settings.CACHE_PREFIX + key
     def unmake_key(self, key):
         return key[len(settings.CACHE_PREFIX):]
-        
+
+    def _failfast_test(self, key, value):
+        if FAILFAST:
+            data_size = len(pickle.dumps(value))
+            if data_size > CACHE_SIZE:
+                assert False, "Data size for key '%s' too large: %d bytes" % (key, data_size)
+            elif data_size > CACHE_WARNING_SIZE:
+                print "Data size for key '%s' is dangerously large: %d bytes" % (key, data_size)
+    
     def add(self, key, value, timeout=0):
+        self._failfast_test(key, value)
         return self._wrapped_cache.add(self.make_key(key), value, timeout=timeout)
 
     def get(self, key, default=None):
         return self._wrapped_cache.get(self.make_key(key), default=default)
 
     def set(self, key, value, timeout=0):
+        self._failfast_test(key, value)
         return self._wrapped_cache.set(self.make_key(key), value, timeout=timeout)
 
     def delete(self, key):
