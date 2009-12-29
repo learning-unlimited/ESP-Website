@@ -331,8 +331,8 @@ class ClassSection(models.Model):
         rooms = self.initial_rooms()
         if len(rooms) == 0:
             ans = self.parent_class.class_size_max
+        else:
             ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
-            ans = min(self.parent_class.class_size_max, rc)
 
             # Only save the capacity if we do have rooms assigned;
             # otherwise don't bother as this number will almost definitely change
@@ -395,8 +395,7 @@ class ClassSection(models.Model):
     
     def classroomassignments(self):
         from esp.resources.models import ResourceType
-        ta_restype = ResourceType.get_or_create('Teacher Availability')
-        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
+        cls_restype = ResourceType.get_or_create('Classroom')
         return self.getResourceAssignments().filter(target=self, resource__res_type=cls_restype)
     
     def resourceassignments(self):
@@ -1105,14 +1104,14 @@ class ClassSection(models.Model):
             if app:
                 app.set_questions()
                 if app.questions.count() > 0:
-                    #   Add the student to the class mailing lists, if they exist
-                    list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
-                for list_name in list_names:
-                    add_list_member(list_name, "%s@esp.mit.edu" % user.username)
+                    app.done = False
+                    app.save()
 
-                app.done = False
-                app.save()
-                
+            #   Add the student to the class mailing lists, if they exist
+            list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
+            for list_name in list_names:
+                add_list_member(list_name, "%s@esp.mit.edu" % user.username)
+
             return True
         else:
             #    Pre-registration failed because the class is full.
