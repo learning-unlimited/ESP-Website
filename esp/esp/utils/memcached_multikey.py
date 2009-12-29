@@ -2,6 +2,7 @@
 from django.core.cache.backends.base import BaseCache
 from django.core.cache.backends.memcached import CacheClass as MemcacheCacheClass
 from esp import settings
+import urllib
 
 try:
     import cPickle as pickle
@@ -22,8 +23,9 @@ class CacheClass(BaseCache):
             settings.CACHE_PREFIX = ''
 
     def make_key(self, key):
-        return settings.CACHE_PREFIX + key
+        return urllib.quote_plus( settings.CACHE_PREFIX + key )
     def unmake_key(self, key):
+        key = urllib.unquote_plus(key)
         return key[len(settings.CACHE_PREFIX):]
 
     def _failfast_test(self, key, value):
