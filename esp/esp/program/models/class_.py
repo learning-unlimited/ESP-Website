@@ -348,6 +348,9 @@ class ClassSection(models.Model):
    
     capacity = property(_get_capacity)
 
+    def title(self):
+        return self.parent_class.title()
+    
     def __init__(self, *args, **kwargs):
         super(ClassSection, self).__init__(*args, **kwargs)
         self.cache = SectionCacheHelper(self)
