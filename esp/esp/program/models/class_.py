@@ -108,13 +108,12 @@ class ClassManager(ProcedureManager):
         
         return self.filter(status = 10)
 
-    def catalog(self, program, ts=None, force_all=False, initial_queryset=None):
+    def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False):
         # Try getting the catalog straight from cache
-        print (program, ts, force_all, initial_queryset, True)
         catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True)
         if catalog is None:
             # Get it from the DB, then try prefetching class sizes
-            catalog = self.catalog_cached(program, ts, force_all, initial_queryset)
+            catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only)
         else:
             for cls in catalog:
                 for sec in cls.get_sections():
@@ -145,8 +144,9 @@ class ClassManager(ProcedureManager):
         
         classes = classes.select_related('anchor',
                                          'category')
-        
-        classes = classes.filter(parent_program = program)
+
+        if program != None:
+            classes = classes.filter(parent_program = program)
 
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
@@ -184,7 +184,10 @@ class ClassManager(ProcedureManager):
         
         # We got classes.  Now get teachers...
 
-        teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+        if program != None:
+            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+        else:
+            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
 
         teachers_by_id = {}
         for t in teachers:            
