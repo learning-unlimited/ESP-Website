@@ -797,6 +797,15 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category']).category
                 mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
 
+                # Provide information about whether or not teacher's from MIT.
+                last_profile = self.user.getLastProfile()
+                if last_profile.teacher_info != None:
+                    mail_ctxt['from_mit'] = last_profile.teacher_info.from_mit
+                    mail_ctxt['college'] = last_profile.teacher_info.college
+                else: # This teacher never filled out their teacher profile!
+                    mail_ctxt['from_mit'] = "[Teacher hasn't filled out teacher profile!]"
+                    mail_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
+                    
                 # send mail to directors
                 if newclass_newmessage and self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \

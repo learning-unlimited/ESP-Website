@@ -1334,6 +1334,7 @@ class BooleanExpression(models.Model):
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
         if type(token_or_value) == str:
+            print 'Adding new token %s to %s' % (token_or_value, unicode(self))
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1344,6 +1345,7 @@ class BooleanExpression(models.Model):
                 if not item.__class__.__name__ in ['AutoField', 'OneToOneField']:
                     setattr(new_token, item.name, getattr(token_or_value, item.name))
         else:
+            print 'Adding new token %s to %s' % (token_or_value, unicode(self))
             new_token = token_or_value
         if seq is None:
             if my_stack.count() > 0:
@@ -1354,6 +1356,7 @@ class BooleanExpression(models.Model):
             new_token.seq = seq
         new_token.exp = self
         new_token.save()
+        print 'New token ID: %d' % new_token.id
         return new_token
     
     def evaluate(self, *args, **kwargs):
