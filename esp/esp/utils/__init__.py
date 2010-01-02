@@ -20,13 +20,13 @@ def echo( *args, **kwargs ):
     
     >>> echo( 123 )
     123
-    >>> echo( u'\xc3\x85ngstrom' )
-    ... ngstrom
+    >>> echo( u'One \xc3\x85ngstrom' ) #doctest: +ELLIPSIS
+    One ...ngstrom
     >>> echo( '\xc3\x85ngstrom' )
     Traceback (most recent call last):
     UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 0: ordinal not in range(128)
-    >>> echo( echo )
-    <function echo at ... >
+    >>> echo( echo ) #doctest: +ELLIPSIS
+    <function echo at ...>
     """
     if kwargs.has_key('quiet') and kwargs['quiet']:
         return

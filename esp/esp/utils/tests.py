@@ -217,4 +217,11 @@ class MultihostCacheClassTest(MemcachedTestCase):
         self.cacheclass.incr('test_math')
         self.assertEqual(3, self.cacheclass.get('test_math'))
         
-UtilFunctionsDocTestSuite = doctest.DocTestSuite(utils)
+def suite():
+    """Choose tests to expose to the Django tester."""
+    s = unittest.TestSuite()
+    # Scan this file for TestCases
+    s.addTest(unittest.defaultTestLoader.loadTestsFromModule(utils.tests))
+    # Add doctests from esp.utils.__init__.py
+    s.addTest(doctest.DocTestSuite(utils))
+    return s
