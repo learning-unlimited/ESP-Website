@@ -208,6 +208,8 @@ class ClassManager(ProcedureManager):
             c._sections.sort(cmp=lambda s1, s2: cmp(s1.anchor.name, s2.anchor.name))
             c.parent_program = p # So that if we set attributes on one instance of the program,
                                  # they show up for all instances.
+            
+        return classes
     catalog_cached.depend_on_model(lambda: ClassSubject)
     catalog_cached.depend_on_model(lambda: ClassSection)
     catalog_cached.depend_on_model(lambda: QSDMedia)
@@ -215,9 +217,6 @@ class ClassManager(ProcedureManager):
                                  lambda bit: bit.applies_to_verb('V/Flags/Registration/Teacher'))
     #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
     #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
-    catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
-                                 lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.get_uri()) and ("/Classes/" in page.path.get_uri())) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
-
     catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
                                  lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.get_uri()) and ("/Classes/" in page.path.get_uri())) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
     
@@ -310,6 +309,10 @@ class ClassSection(models.Model):
         return self.parent_class.category
     category = property(_get_category)
     
+    def _get_title(self):
+        return self.parent_class.title()
+    title = property(_get_title)
+
     def _get_room_capacity(self, rooms = None):
         if rooms == None:
             rooms = self.initial_rooms()
@@ -320,10 +323,6 @@ class ClassSection(models.Model):
 
         return rc
 
-    def _get_capacity(self):
-            return self.max_class_capacity
-
-    
     def _get_capacity(self, ignore_changes=False):
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
@@ -348,9 +347,6 @@ class ClassSection(models.Model):
    
     capacity = property(_get_capacity)
 
-    def title(self):
-        return self.parent_class.title()
-    
     def __init__(self, *args, **kwargs):
         super(ClassSection, self).__init__(*args, **kwargs)
         self.cache = SectionCacheHelper(self)
@@ -635,22 +631,19 @@ class ClassSection(models.Model):
             if len(list_of_lists) == 0:
                 return []
 
-            try:
-                base_list = list_of_lists[0]
-            except:
-                for other_list in list_of_lists[1:]:
-
-                    num_teachers = len(teachers)
-                    ta_type = ResourceType.get_or_create('Teacher Availability')
-                    i = 0
-                    for elt in base_list:
-                        if elt not in other_list:
-                            base_list.remove(elt)
-
+            base_list = list_of_lists[0]
+            for other_list in list_of_lists[1:]:
+                i = 0
+                for elt in base_list:
+                    if elt not in other_list:
+                        base_list.remove(elt)
             return base_list
 
         teachers = self.parent_class.teachers()
-        num_teachers = teachers.count()
+        try:
+            num_teachers = teachers.count()
+        except:
+            num_teachers = len(teachers)
 
         timeslot_list = []
         for t in teachers:
@@ -1987,7 +1980,6 @@ def install():
     
     for key in category_dict:
         cat = ClassCategories()
-
         cat.symbol = key
         cat.category = category_dict[key]
         cat.save()
