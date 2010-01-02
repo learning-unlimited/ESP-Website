@@ -296,7 +296,6 @@ def top_classes(request, tl, program, instance):
                 pass
         
         categories = prog.class_categories.all().order_by('category')
-        categories = [ x.category for x in categories ]
         
         perclass_data = []
         initclass_data = [ { 'class': x, 'ratings': [ x.answer for x in Answer.objects.filter(anchor=x.anchor, question=rating_question) ] } for x in classes ]
