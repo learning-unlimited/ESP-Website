@@ -306,10 +306,11 @@ def top_classes(request, tl, program, instance):
             c['avg'] = weighted_avg(tally(c['ratings']))
             if c['avg'] < rating_cut:
                 continue
-            c['teacher'] = c['class'].teachers()[0]
-            c['numteachers'] = c['class'].teachers().count()
+            teachers = list(c['class'].teachers())
+            c['teacher'] = teachers[0]
+            c['numteachers'] = len(teachers)
             if c['numteachers'] > 1:
-                c['coteachers'] = c['class'].teachers()[1:]
+                c['coteachers'] = teachers[1:]
             del c['ratings']
             perclass_data.append(c)
     context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data, 'rating_cut': rating_cut, 'num_cut': num_cut, 'categories': categories }
