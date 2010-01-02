@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 43363)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Sidebar" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="18px" height="35px" viewBox="0 0 18 35" enable-background="new 0 0 18 35" xml:space="preserve">
+<rect width="18" height="35" fill="#FFFFFF"/>
+<g>
+	<g>
+		<path fill="#BACK" d="M40.166,25c0,5.5-4.5,10-10,10H10C4.5,35,0,30.5,0,25V10C0,4.5,4.5,0,10,0h20.166c5.5,0,10,4.5,10,10V25z"
+			/>
+	</g>
+	<g>
+		<path fill="#FORE" d="M139.728,25c0,5.5-4.5,10-10,10H20c-5.5,0-10-4.5-10-10V10c0-5.5,4.5-10,10-10h109.728c5.5,0,10,4.5,10,10
+			V25z"/>
+	</g>
+	
+		<text display="none" transform="matrix(1.0093 0 0 1 19.6816 22.9292)" fill="#FFFFFF" font-family="'MyriadPro-BoldCond'" font-size="13.8703" letter-spacing="0.991">TEXT</text>
+</g>
+</svg>
