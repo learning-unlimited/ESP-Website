@@ -32,6 +32,9 @@ assert len(args) >= 3, "Error: Must pass in action, username, and password"
 
 action, username, password = args[:3]
 
+# Mediawiki uses spaces in usernames; the ESP website uses underscores.
+username = username.replace(' ', '_')
+
 if action == "USER_EXISTS":
     if len(ESPUser.objects.filter(username__iexact=username)[:1]) > 0:
         return_(True)
