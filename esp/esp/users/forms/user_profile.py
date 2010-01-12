@@ -123,7 +123,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         #   Add text for the hidden school field if an unrecognized school or 'Other' is selected in the k12school field
         from esp.users.models import K12School
         result = self.cleaned_data['k12school']
-        if result.name == 'Other':
+        if result is None or result.name == 'Other':
             self.cleaned_data['school'] = '(Not in autocomplete list) ' + str(self.data['k12school'])
         return result
 

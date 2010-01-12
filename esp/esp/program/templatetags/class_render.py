@@ -63,9 +63,6 @@ def render_class_core(cls):
     #   Show e-mail codes?  We need to look in the settings.
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
 
-    #   Show e-mail codes?  We need to look in the settings.
-    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-    
     # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
     colorstring = prog.getColor()
     if colorstring is not None:
@@ -74,7 +71,7 @@ def render_class_core(cls):
     return {'class': cls,
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
-            'show_enrollment': show_enrollment,
+            'show_enrollment': scrmi.visible_enrollments,
             'show_emailcodes': scrmi.show_emailcodes,
             'show_meeting_times': scrmi.visible_meeting_times}
             
