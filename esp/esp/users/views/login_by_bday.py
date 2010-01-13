@@ -8,6 +8,8 @@ from esp.users.models import ESPUser, K12School
 from esp.users.views.login_byschool import StudentSelectForm, BarePasswordForm
 from django.db.models.query import Q
 
+REGISTER_URL = '/learn/Cascade/2010_Winter/studentreg'
+
 month_choices = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 month_choices = [('', '')] + [(i + 1, month_choices[i]) for i in range(len(month_choices))]
 day_choices = range(1, 32)
@@ -21,8 +23,8 @@ def login_by_bday(request, *args, **kwargs):
     """ Let a student pick their school. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/learn/Cascade/2009_Fall/studentreg')
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Fall/studentreg')
+        return HttpResponseRedirect(REGISTER_URL)
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, REGISTER_URL)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
@@ -43,8 +45,8 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
     """ Let a student pick their name. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/learn/Cascade/2009_Fall/studentreg')
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Fall/studentreg')
+        return HttpResponseRedirect(REGISTER_URL)
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, REGISTER_URL)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)

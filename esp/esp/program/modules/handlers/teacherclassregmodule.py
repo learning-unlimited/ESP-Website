@@ -659,16 +659,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     for class_section in section_list[num_sections:]:
                         class_section.delete()
                         
-                # Set duration of sections
+                # Set duration, size of sections
                 for section in newclass.sections.all():
                     section.duration = newclass.duration
+                    section.max_class_capacity = newclass.class_size_max
                     section.save()
-
-                # Set duration of sections
-                for section in newclass.sections.all():
-                    section.duration = newclass.duration
-                    section.save()
-                                                                                    
 
                 # create classes in subprograms -- the work for this should probably be farmed out to another function
                 if newclass_isnew:

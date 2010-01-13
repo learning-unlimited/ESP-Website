@@ -103,7 +103,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         section_numbers = zip(section_numbers, section_numbers)
         
         #class_sizes = module.getClassSizes()
-        class_sizes = range(4,25)
+        class_sizes = range(4,36)
         class_sizes = zip(class_sizes, class_sizes)
         
         class_grades = module.getClassGrades()

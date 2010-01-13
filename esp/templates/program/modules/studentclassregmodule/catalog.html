@@ -71,6 +71,7 @@ Viewing classes for: {{ timeslot.short_description }}
 {% endif %}
 {% endif %}
 
+{% comment %}
 <table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
   <th colspan="2">
@@ -95,10 +96,13 @@ Viewing classes for: {{ timeslot.short_description }}
 {% endif %}
 
 </table>
-
+{% endcomment %}
+</div>
+<div id="catalog">
 {% load class_render %}
 {% for class in classes %}
 
+{% comment %}
 {% ifchanged class.category_id %}<hr size="1"/>
 
     <a name="cat{{class.category_id}}"></a>
@@ -119,6 +123,7 @@ Viewing classes for: {{ timeslot.short_description }}
       <p class="linktop">
          <a href="#top">[ Return to Category List ]</a>
       </p> {% endifchanged %}
+{% endcomment %}
 
 {% render_class class request.user prereg_url request.GET.filter timeslot request %}
 
