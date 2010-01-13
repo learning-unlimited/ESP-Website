@@ -828,7 +828,7 @@ Student schedule for %s:
         return response
         
     @aux_call
-    def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
+    def studentschedules(self, request, tl, one, two, module, extra, prog, format='pdf', onsite=False):
         """ generate student schedules """
         
         context = {'module': self }
