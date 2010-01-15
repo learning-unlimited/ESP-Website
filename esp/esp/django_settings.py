@@ -178,7 +178,7 @@ INSTALLED_APPS = (
     'esp.cache',
     'esp.cache_loader',
 #    'django_evolution',
-#    'django_command_extensions',
+    'django_extensions',
 )
 import os
 for app in ('django_evolution', 'django_command_extensions'):
