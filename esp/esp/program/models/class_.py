@@ -167,6 +167,7 @@ class ClassManager(ProcedureManager):
         classes = classes.extra(select=select, select_params=select_params)
         classes = classes.order_by('category', '_num_students', 'id')
         classes = classes.distinct()
+        classes = list(classes)
 
         # All class ID's; used by later query ugliness:
         class_ids = map(lambda x: x.id, classes)
@@ -268,6 +269,7 @@ class ClassSection(models.Model):
                          ]
 
         sections = queryset.extra(select=select, select_params=select_params)
+        sections = list(sections)
         section_ids = map(lambda x: x.id, sections)
 
         # Now, go get some events...
