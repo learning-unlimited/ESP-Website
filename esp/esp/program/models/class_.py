@@ -1179,7 +1179,7 @@ class ClassSubject(models.Model):
 
     def _get_capacity(self):
         c = 0
-        for s in self.sections.all():
+        for s in self.get_sections():
             c += s.capacity
         return c
     capacity = property(_get_capacity)
