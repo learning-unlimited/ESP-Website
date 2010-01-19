@@ -326,6 +326,7 @@ class ClassSection(models.Model):
 
         return rc
 
+    @cache_function
     def _get_capacity(self, ignore_changes=False):
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
@@ -335,11 +336,6 @@ class ClassSection(models.Model):
             ans = self.parent_class.class_size_max
         else:
             ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
-
-            # Only save the capacity if we do have rooms assigned;
-            # otherwise don't bother as this number will almost definitely change
-            self.max_class_capacity = ans
-            self.save()
             
         #   Apply dynamic capacity rule
         if not ignore_changes:
@@ -347,7 +343,14 @@ class ClassSection(models.Model):
             return int(ans * options.class_cap_multiplier + options.class_cap_offset)
         else:
             return int(ans)
-   
+
+    _get_capacity.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    _get_capacity.depend_on_model(lambda:ClassSubject)
+    _get_capacity.depend_on_model(lambda: Resource)
+    _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
+    _get_capacity.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
+
+       
     capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
