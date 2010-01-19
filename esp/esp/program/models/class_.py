@@ -53,7 +53,6 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
-from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models          import Program
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -439,7 +438,6 @@ class ClassSection(models.Model):
             return False
         else:
             td = time.time() - time.mktime(st.timetuple())
-            print td
             if td < 600 and td > -3000:
                 return True
             else:
@@ -1190,8 +1188,6 @@ class ClassSubject(models.Model):
 
     def get_section(self, timeslot=None):
         """ Cache sections for a class.  Always use this function to get a class's sections. """
-
-    
         # If we happen to know our own sections from a subquery:
         did_search = True
 
@@ -1217,7 +1213,6 @@ class ClassSubject(models.Model):
         # Encode None as a string... silly, I know.   -Michael P
         val = cache.get(key) 
         if val:
-            # print 'hit cache for %s' % key
             if val is not None:
                 if val == 'None':
                     return None
@@ -1233,7 +1228,6 @@ class ClassSubject(models.Model):
         else:
             result = self.default_section()
             
-        # print 'set cache for %s' % key
         if result is not None:
             cache.set(key, result)
         else:
