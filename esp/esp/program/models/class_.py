@@ -154,7 +154,8 @@ class ClassManager(ProcedureManager):
         select = SortedDict([( '_num_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "datatree_datatree"."id" AND "datatree_datatree"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
                              ('teacher_ids', 'SELECT list("users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
-                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')')])
+                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
+                             ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
         select_params = [ enrolled_node.id,
                           now,
@@ -1404,6 +1405,14 @@ class ClassSubject(models.Model):
         
         if anchor:
             anchor.delete(True)
+                
+    def numStudentAppQuestions(self):
+        # This field may be prepopulated by .objects.catalog()
+        if not hasattr(self, "_studentapps_count"):
+            self._studentapps_count = self.studentappquestion_set.count()
+            
+        return self._studentapps_count
+        
         
     def cache_time(self):
         return 99999
