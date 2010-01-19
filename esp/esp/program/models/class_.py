@@ -1200,14 +1200,12 @@ class ClassSubject(models.Model):
                 if not hasattr(s, "_events"):
                     did_search = False
                     break
-                if timeslot in s._events:
+                if timeslot in s._events or timeslot == None:
                     return s
 
             if did_search: # If we did successfully search all sections, but found none in this timeslot
                 return None
             #If we didn't successfully search all sections, go and do it the old-fashioned way:
-
-        print "Couldn't find section!"
             
         from django.core.cache import cache
 
