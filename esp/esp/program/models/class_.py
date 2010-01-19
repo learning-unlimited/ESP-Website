@@ -754,6 +754,11 @@ class ClassSection(models.Model):
         else:
             verbs = ['/' + scrmi.signup_verb.name]
         
+        # Disallow joining a no-app class that conflicts with an app class
+        # For HSSP Harvard Spring 2010
+        if self.parent_class.studentappquestion_set.count() == 0:
+            verbs += ['/Applied']
+        
         # check to see if there's a conflict:
         for sec in user.getSections(self.parent_program, verbs=verbs):
             for time in sec.meeting_times.all():
