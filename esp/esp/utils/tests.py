@@ -75,6 +75,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("twill")  # Used for unit testing against an actual server
         self.tryImport("flup")  # Used for interfacing with lighttpd via FastCGI
         self.tryImport("psycopg")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
+	self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
 
         self.assert_(not self._failed_import)
 
