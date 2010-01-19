@@ -352,13 +352,7 @@ class ClassSection(models.Model):
             if not ans:
                 ans = self.parent_class.class_size_max
         else:
-            rc = 0
-            for r in rooms:
-                rc += r.num_students
-            if ans:
-                ans = min(ans, rc)
-            else:
-                ans = min(self.parent_class.class_size_max, rc)
+            ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
             
         #   Apply dynamic capacity rule
         if not ignore_changes:
