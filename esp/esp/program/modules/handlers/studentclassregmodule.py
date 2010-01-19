@@ -497,23 +497,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         
-        def is_scheduled(cls):
-            for s in cls.sections.all():
-                if s.meeting_times.all().count() > 0:
-                    return True
-            return False
-        
         # using .extra() to select all the category text simultaneously
-        classes = ClassSubject.objects.catalog(self.program)        
-
-        # Sort classes
-        classes = list(classes)
-        options = prog.getModuleExtension('StudentClassRegModuleInfo')
-        if not options.show_unscheduled_classes:
-            classes = filter(is_scheduled, classes)
-        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
-        classes = sorted(classes, key=lambda cls: cls.friendly_times()[0] if len(cls.friendly_times()) > 0 else [])
-        classes = sorted(classes, key=lambda cls: cls.category.category)
+        classes = ClassSubject.objects.catalog(self.program)
 
         categories = {}
         for cls in classes:
