@@ -145,13 +145,15 @@ class DataTree(models.Model):
             obj = DataTree.objects.create(name=self.name, friendly_name=self.name, parent=self.parent, start_size=start_size, uri=self.uri)
             self.__dict__.update(obj.__dict__)
             return self
-
-        DataTree.objects.filter(QTree(below=self)).update(uri_correct=False)
-        self.uri_correct=False
         
         old_node = DataTree.objects.get(id=self.id)
         if old_node.parent_id != self.parent_id:
             raise NotImplementedError("Have not yet written the parent moving code.")
+        
+        if not uri_fix:
+            if not self.parent.uri_correct or self.uri != '%s%s%s' % (self.parent.uri, DataTree.DELIMITER, self.name):
+                DataTree.objects.filter(QTree(below=self)).update(uri_correct=False)
+                self.uri_correct=False
 
         self.save_db(*self.SAFE_COLS)
 
