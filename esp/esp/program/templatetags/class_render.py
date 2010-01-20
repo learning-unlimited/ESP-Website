@@ -66,6 +66,12 @@ def render_class_core(cls):
     colorstring = prog.getColor()
     if colorstring is not None:
         colorstring = ' background-color:#' + colorstring + ';'
+    
+    # HACK for Harvard HSSP -- show application counts with enrollment
+    if cls.studentappquestion_set.count():
+        cls.get_sections = list(cls.get_sections())
+        for sec in cls.get_sections:
+            sec.num_apps = sec.num_students(verbs=['/Applied'])
 
     return {'class': cls,
             'isfull': (cls.isFull()),
