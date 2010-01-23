@@ -1271,7 +1271,6 @@ class BooleanToken(models.Model):
         stack = list(stack)
         while (value is None) and (len(stack) > 0):
             token = stack.pop().subclass_instance()
-            #   print 'Popped token: %s' % token.text
             
             # Handle possibilities for what the token might be:
             if (token.text == '||') or (token.text.lower() == 'or'):
@@ -1292,8 +1291,7 @@ class BooleanToken(models.Model):
                 # - direct boolean value
                 # Pass along arguments
                 value = token.boolean_value(*args, **kwargs)
-                
-        #   print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
+
         return (value, stack)
 
     """ This function is meant to take extra arguments so subclasses can use additional
@@ -1327,18 +1325,15 @@ class BooleanExpression(models.Model):
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
         if type(token_or_value) == str:
-            print 'Adding new token %s to %s' % (token_or_value, unicode(self))
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
-            print 'Adding duplicate of token %d, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
             new_token = token_type()
             #   Copy over fields that don't describe relations
             for item in new_token._meta.fields:
                 if not item.__class__.__name__ in ['AutoField', 'OneToOneField']:
                     setattr(new_token, item.name, getattr(token_or_value, item.name))
         else:
-            print 'Adding new token %s to %s' % (token_or_value, unicode(self))
             new_token = token_or_value
         if seq is None:
             if my_stack.count() > 0:
@@ -1349,7 +1344,6 @@ class BooleanExpression(models.Model):
             new_token.seq = seq
         new_token.exp = self
         new_token.save()
-        print 'New token ID: %d' % new_token.id
         return new_token
     
     def evaluate(self, *args, **kwargs):
@@ -1452,7 +1446,6 @@ class ScheduleConstraint(models.Model):
         try:
             func_str = """def _f(schedule_map):
 %s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
-            #   print func_str
             exec func_str
             result = _f(self.schedule_map)
             return result
