@@ -53,7 +53,6 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
-from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models          import Program
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -108,13 +107,12 @@ class ClassManager(ProcedureManager):
         
         return self.filter(status = 10)
 
-    def catalog(self, program, ts=None, force_all=False, initial_queryset=None):
+    def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False):
         # Try getting the catalog straight from cache
-        print (program, ts, force_all, initial_queryset, True)
         catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True)
         if catalog is None:
             # Get it from the DB, then try prefetching class sizes
-            catalog = self.catalog_cached(program, ts, force_all, initial_queryset)
+            catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only)
         else:
             for cls in catalog:
                 for sec in cls.get_sections():
@@ -154,7 +152,8 @@ class ClassManager(ProcedureManager):
         select = SortedDict([( '_num_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "datatree_datatree"."id" AND "datatree_datatree"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
                              ('teacher_ids', 'SELECT list("users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
-                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')')])
+                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
+                             ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
         select_params = [ enrolled_node.id,
                           now,
@@ -166,6 +165,7 @@ class ClassManager(ProcedureManager):
         classes = classes.extra(select=select, select_params=select_params)
         classes = classes.order_by('category', '_num_students', 'id')
         classes = classes.distinct()
+        classes = list(classes)
 
         # All class ID's; used by later query ugliness:
         class_ids = map(lambda x: x.id, classes)
@@ -184,7 +184,7 @@ class ClassManager(ProcedureManager):
         
         # We got classes.  Now get teachers...
 
-        teachers = User.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+        teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
 
         teachers_by_id = {}
         for t in teachers:            
@@ -267,6 +267,7 @@ class ClassSection(models.Model):
                          ]
 
         sections = queryset.extra(select=select, select_params=select_params)
+        sections = list(sections)
         section_ids = map(lambda x: x.id, sections)
 
         # Now, go get some events...
@@ -309,7 +310,19 @@ class ClassSection(models.Model):
         return self.parent_class.title()
     title = property(_get_title)
     
+    def _get_room_capacity(self, rooms = None):
+        if rooms == None:
+            rooms = self.initial_rooms()
+
+        rc = 0
+        for r in rooms:
+            rc += r.num_students
+
+        return rc
+
+    @cache_function
     def _get_capacity(self, ignore_changes=False):
+
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
 
@@ -321,11 +334,6 @@ class ClassSection(models.Model):
             for r in rooms:
                 rc += r.num_students
             ans = min(self.parent_class.class_size_max, rc)
-
-            # Only save the capacity if we do have rooms assigned;
-            # otherwise don't bother as this number will almost definitely change
-            self.max_class_capacity = ans
-            self.save()
             
         #   Apply dynamic capacity rule
         if not ignore_changes:
@@ -333,9 +341,19 @@ class ClassSection(models.Model):
             return int(ans * options.class_cap_multiplier + options.class_cap_offset)
         else:
             return int(ans)
-   
+
+    _get_capacity.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    _get_capacity.depend_on_model(lambda:ClassSubject)
+    _get_capacity.depend_on_model(lambda: Resource)
+    _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
+    _get_capacity.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
+
+       
     capacity = property(_get_capacity)
 
+    def title(self):
+        return self.parent_class.title()
+    
     def __init__(self, *args, **kwargs):
         super(ClassSection, self).__init__(*args, **kwargs)
         self.cache = SectionCacheHelper(self)
@@ -430,7 +448,6 @@ class ClassSection(models.Model):
             return False
         else:
             td = time.time() - time.mktime(st.timetuple())
-            print td
             if td < 600 and td > -3000:
                 return True
             else:
@@ -456,35 +473,24 @@ class ClassSection(models.Model):
             return None
    
     #   Scheduling helper functions
-    
+
+    @cache_function
     def sufficient_length(self, event_list=None):
         """   This function tells if the class' assigned times are sufficient to cover the duration.
         If the duration is not set, 1 hour is assumed. """
         
-        # Only cache when no event list is provided.
-        caching = False
-        if not event_list:
-            cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
-            caching = True
-            retVal = cache.get(cache_key)
-            if retVal != None:
-                return retVal
-        
-        if self.duration == 0.0:
-            duration = 1.0
-        else:
-            duration = self.duration
-        
+        duration = self.duration or 1.0
+
         if event_list is None:
             event_list = list(self.meeting_times.all().order_by('start'))
         #   If you're 15 minutes short that's OK.
         time_tolerance = 15 * 60
         if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
-            if caching: cache.set(cache_key, False, timeout=86400)
             return False
         else:
-            if caching: cache.set(cache_key, True, timeout=86400)
             return True
+    sufficient_length.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    
     
     def extend_timeblock(self, event, merged=True):
         """ Return the Event list or (merged Event) for this class's duration if the class starts in the
@@ -1183,7 +1189,7 @@ class ClassSubject(models.Model):
 
     def _get_capacity(self):
         c = 0
-        for s in self.sections.all():
+        for s in self.get_sections():
             c += s.capacity
         return c
     capacity = property(_get_capacity)
@@ -1194,8 +1200,6 @@ class ClassSubject(models.Model):
 
     def get_section(self, timeslot=None):
         """ Cache sections for a class.  Always use this function to get a class's sections. """
-
-    
         # If we happen to know our own sections from a subquery:
         did_search = True
 
@@ -1204,14 +1208,12 @@ class ClassSubject(models.Model):
                 if not hasattr(s, "_events"):
                     did_search = False
                     break
-                if timeslot in s._events:
+                if timeslot in s._events or timeslot == None:
                     return s
 
             if did_search: # If we did successfully search all sections, but found none in this timeslot
                 return None
             #If we didn't successfully search all sections, go and do it the old-fashioned way:
-
-        print "Couldn't find section!"
             
         from django.core.cache import cache
 
@@ -1223,7 +1225,6 @@ class ClassSubject(models.Model):
         # Encode None as a string... silly, I know.   -Michael P
         val = cache.get(key) 
         if val:
-            # print 'hit cache for %s' % key
             if val is not None:
                 if val == 'None':
                     return None
@@ -1239,7 +1240,6 @@ class ClassSubject(models.Model):
         else:
             result = self.default_section()
             
-        # print 'set cache for %s' % key
         if result is not None:
             cache.set(key, result)
         else:
@@ -1414,6 +1414,14 @@ class ClassSubject(models.Model):
         
         if anchor:
             anchor.delete(True)
+                
+    def numStudentAppQuestions(self):
+        # This field may be prepopulated by .objects.catalog()
+        if not hasattr(self, "_studentapps_count"):
+            self._studentapps_count = self.studentappquestion_set.count()
+            
+        return self._studentapps_count
+        
         
     def cache_time(self):
         return 99999

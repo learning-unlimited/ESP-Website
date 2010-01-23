@@ -81,6 +81,16 @@ Then add this database using psql or pgadmin3:
 
 CREATE DATABASE [dbname] OWNER [username] WITH ENCODING 'utf8';
 
+You will also need to add the plpgsql language to your database.
+This language is used by some of our stored procedures.  To do this,
+from the psql prompt, first connect to the new database:
+
+\c [dbname]
+
+Then add the plpgsql language:
+
+CREATE LANGUAGE plpgsql;
+
 
 3) Configure Django.
 

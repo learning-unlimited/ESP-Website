@@ -35,7 +35,7 @@
                 </form>
                 {% endif %}
             {% else %}
-                {% for sec in class.sections.all %}
+                {% for sec in class.get_sections %}
                     {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
                     <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}">
                       <input type="hidden" name="class_id" value="{{ class.id }}" />
@@ -66,7 +66,7 @@
             {% endif %}
         {% endcomment %}
         {% else %}
-            {% for sec in class.sections.all %}
+            {% for sec in class.get_sections %}
                 {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
         register_form({id: "prereg_{{ sec.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
         register_fragment({id: "addbutton_catalog_sec{{ sec.id }}_html", url: ""});

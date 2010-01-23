@@ -12,9 +12,12 @@ Example Usage::
 """
 
 try:
-    import cmemcache as memcache
+    import pylibmc as memcache
 except ImportError:
-    import memcache
+    try:
+        import cmemcache as memcache
+    except ImportError:
+        import memcache
 
 __all__ = ['mem_db']
 
@@ -41,4 +44,4 @@ class MemDatabase(object):
         self._cache.delete(key)
 
 
-mem_db = MemDatabase('localhost:11011')
+mem_db = MemDatabase('localhost:11211')

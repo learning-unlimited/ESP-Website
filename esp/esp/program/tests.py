@@ -2,6 +2,7 @@ from django.contrib.auth.models import User, Group
 import datetime, random, hashlib
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import UserBit, GetNode
+from esp.program.models import ClassSection
 from django.test.client import Client
 
 from esp.datatree.models import *
@@ -770,18 +771,22 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         #   Check that multiplier works
         options.class_cap_multiplier = str(mult_test)
         options.save()
+        ClassSection._get_capacity.delete([sec])
         self.assertEqual(sec.capacity, int(initial_capacity * mult_test))
         #   Check that multiplier and offset work
         options.class_cap_offset = offset_test
         options.save()
+        ClassSection._get_capacity.delete([sec])
         self.assertEqual(sec.capacity, int(initial_capacity * mult_test + offset_test))
         #   Check that offset only works
         options.class_cap_multiplier = '1.0'
         options.save()
+        ClassSection._get_capacity.delete([sec])
         self.assertEqual(sec.capacity, int(initial_capacity + offset_test))
         #   Check that we can go back to normal
         options.class_cap_offset = 0
         options.save()
+        ClassSection._get_capacity.delete([sec])
         self.assertEqual(sec.capacity, initial_capacity)
 
 from esp.program.modules.tests import *
