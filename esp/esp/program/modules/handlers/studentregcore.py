@@ -28,6 +28,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.settings import DEFAULT_EMAIL_ADDRESSES
+from esp.cache           import cache_function
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.program.models  import Program
@@ -250,6 +251,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         except:
             return self.goToCore(tl)
 
+    @cache_function
+    def printer_names(self):
+        return GetNode('V/Publish/Print').children().values_list('name', flat=True)
+    printer_names.depend_on_row(lambda: DataTree, lambda node: {}, lambda node: node.get_uri().startswith('V/Publish/Print'))
+
     @main_call
     @needs_student
     @meets_grade
@@ -282,7 +288,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['isConfirmed'] = self.program.isConfirmed(self.user)            
         context['have_paid'] = self.have_paid()
         
-        context['printers'] = [ x.name for x in GetNode('V/Publish/Print').children() ]
+        context['printers'] = self.printer_names()
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
