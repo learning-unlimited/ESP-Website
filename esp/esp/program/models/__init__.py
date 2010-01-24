@@ -1015,10 +1015,10 @@ class RegistrationProfile(models.Model):
         self.last_ts = datetime.now()
         super(RegistrationProfile, self).save(*args, **kwargs)
         
-    @staticmethod
+    @cache_function
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')[:1]
+        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
             # Has this user already filled out a profile for the parent program?
             parent_program = program.getParentProgram()
@@ -1038,6 +1038,8 @@ class RegistrationProfile(models.Model):
         else:
             regProf = regProfList[0]
         return regProf
+    getLastForProgram.depend_on_row(lambda: RegistrationProfile, lambda rp: {'user': rp.user, 'program': rp.program})
+    getLastForProgram = staticmethod(getLastForProgram)
             
     def __unicode__(self):
         if self.program is None:
