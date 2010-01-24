@@ -320,12 +320,13 @@ class ProgramModuleObj(models.Model):
         return canView
 
     # important functions for hooks...
-
+    @cache_function
     def get_full_path(self):
         str_array = self.program.anchor.tree_encode()
         url = '/'+self.module.module_type \
               +'/'+'/'.join(str_array[-2:])+'/'+self.module.main_call
         return url
+    get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
 
     @classmethod
     def get_summary_path(cls, function):
@@ -343,7 +344,7 @@ class ProgramModuleObj(models.Model):
         self.user = user
         self.curUser = user
 
-
+    
     def makeLink(self):
         if not self.module.module_type == 'manage':
             link = u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
