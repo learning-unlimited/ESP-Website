@@ -61,13 +61,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             }
 
     def have_paid(self):
-        """ Whether the user has paid for this program or its parent program. Duplicated from creditcardmodule_cybersource. """
-        if ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(), txn__complete=True).count() > 0 ):
+        """ Whether the user has paid for this program or its parent program.  """
+        if ( len(Document.get_completed(self.user, self.program_anchor_cached())) > 0 ):
             return True
         else:
             parent_program = self.program.getParentProgram()
             if parent_program is not None:
-                return ( Document.objects.filter(user=self.user, anchor=parent_program.anchor, txn__complete=True).count() > 0 )
+                return ( len(Document.get_completed(self.user, parent_program.anchor)) > 0 )
+
+        return False
 
     def students(self, QObject = False):
         verb = GetNode('V/Flags/Public')
