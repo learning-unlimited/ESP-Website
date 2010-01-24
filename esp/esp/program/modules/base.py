@@ -158,10 +158,10 @@ class ProgramModuleObj(models.Model):
             
     @cache_function
     def findModuleObject(tl, call_txt, prog):
-        modules = ProgramModule.objects.filter(main_call = call_txt, module_type = tl)[:1]
+        modules = ProgramModule.objects.filter(main_call = call_txt, module_type = tl).select_related()[:1]
 
         if len(modules) == 0:
-            modules = ProgramModule.objects.filter(aux_calls__contains = call_txt, module_type = tl)
+            modules = ProgramModule.objects.filter(aux_calls__contains = call_txt, module_type = tl).select_related()
             for module in modules:
                 if call_txt in module.aux_calls.strip().split(','):
                     break
