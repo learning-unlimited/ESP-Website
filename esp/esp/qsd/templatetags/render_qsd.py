@@ -11,7 +11,6 @@ register = template.Library()
 def cache_key(qsd, user=None):
     return qsd_cache_key(qsd.path, qsd.name, user,)
 
-
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=DISABLED, cache_time=300)
 def render_qsd(qsd, user=None):
     edit_bits = False
@@ -19,13 +18,6 @@ def render_qsd(qsd, user=None):
         edit_bits = UserBit.UserHasPerms(user, qsd.path, DataTree.get_by_uri('V/Administer/Edit'))
     return {'qsdrec': qsd, 'edit_bits': edit_bits}
 
-def cache_inline_key(input_anchor, qsd, user=None):
-    if user:
-        return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s__%s' % (input_anchor, qsd, user.id))
-    else:
-        return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s' % (input_anchor, qsd))
-
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=cache_inline_key, cache_obj=DISABLED)
 def render_inline_qsd(input_anchor, qsd, user=None):
     if isinstance(input_anchor, basestring):
         try:

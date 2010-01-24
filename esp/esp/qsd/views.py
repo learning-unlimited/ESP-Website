@@ -161,13 +161,11 @@ def qsd(request, branch, name, section, action):
         if not have_read:
             raise Http403, 'You do not have permission to read this page.'
 
-        cached_html = qsd_rec.html()
-
         # Render response
         response = render_to_response('qsd/qsd.html', request, (branch, section), {
             'title': qsd_rec.title,
             'nav_category': qsd_rec.nav_category, 
-            'content': cached_html,
+            'content': qsd_rec.html(),
             'qsdrec': qsd_rec,
             'have_edit': have_edit,
             'edit_url': base_url + ".edit.html" })
