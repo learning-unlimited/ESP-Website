@@ -591,6 +591,7 @@ class ESPUser(User, AnonymousUser):
     def canRegToFullProgram(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
+    @cache_function
     def hasFinancialAid(self, anchor):
         from esp.program.models import Program, FinancialAidRequest
         progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
@@ -599,6 +600,11 @@ class ESPUser(User, AnonymousUser):
             if a.approved:
                 return True
         return False
+    #   Invalidate cache when any of the user's financial aid requests are changed
+    def get_finaid_model():
+        from esp.program.models import FinancialAidRequest
+        return FinancialAidRequest
+    hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
     def paymentStatus(self, anchor=None):
         """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate
