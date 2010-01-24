@@ -157,7 +157,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @needs_student
     def prepare(self, context={}):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-        timeslots = list(self.program.getTimeSlots(exclude_types=[]).order_by('start').select_related('event_type'))
+        timeslots = self.program.getTimeSlotList(exclude_compulsory=False)
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes())
         
         prevTimeSlot = None
