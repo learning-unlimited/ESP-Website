@@ -724,6 +724,7 @@ class Program(models.Model):
             return Program.objects.filter(id=-1)
         return Program.objects.filter(anchor__parent__in=self.anchor['Subprograms'].children())
 
+    @cache_function
     def getParentProgram(self):
         #   Ridiculous syntax is actually correct for our subprograms scheme.
         pl = []
@@ -733,6 +734,7 @@ class Program(models.Model):
             return pl[0]
         else:
             return None
+    getParentProgram.depend_on_model(lambda: Program)
 
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting_core.models import LineItemType, Balance
