@@ -807,6 +807,7 @@ class ESPUser(User, AnonymousUser):
             schoolyear = curyear + 1
         return schoolyear
 
+    @cache_function
     def getGrade(self, program = None):
         if hasattr(self, '_grade'):
             return self._grade
@@ -824,6 +825,8 @@ class ESPUser(User, AnonymousUser):
         self._grade = grade
 
         return grade
+    #   The cache will need to be cleared once per academic year.
+    getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
 
     def currentSchoolYear(self):
         return ESPUser.current_schoolyear()-1
