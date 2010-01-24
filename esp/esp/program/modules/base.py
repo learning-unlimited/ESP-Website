@@ -39,6 +39,7 @@ from django.utils.safestring import mark_safe
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser
 from esp.web.util import render_to_response
+from esp.cache import cache_function
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
@@ -154,36 +155,34 @@ class ProgramModuleObj(models.Model):
 
         context['modules'] = all_modules
         return render_to_response("myesp/mainpage.html", context)
+            
+    @cache_function
+    def findModuleObject(tl, call_txt, prog):
+        modules = ProgramModule.objects.filter(main_call = call_txt, module_type = tl)[:1]
 
-
-
-    @staticmethod
-    def findModule(request, tl, one, two, call_txt, extra, prog):
-        cache_key = "PROGRAMMODULE_FIND_MODULE_%s_%s_%s_%s" % (tl, one, two, call_txt)
-        moduleobj = cache.get(cache_key)
-        if moduleobj == None:
-
-            modules = ProgramModule.objects.filter(main_call = call_txt,
-                                                   module_type = tl)[:1]
-
-            module = None
-
-            if len(modules) == 0:
-                modules = ProgramModule.objects.filter(aux_calls__contains = call_txt,
-                                                       module_type = tl)
-                for module in modules:
-                    if call_txt in module.aux_calls.strip().split(','):
-                        break
-                if not module:
-                    raise Http404
-            else:
-                module = modules[0]
-
+        if len(modules) == 0:
+            modules = ProgramModule.objects.filter(aux_calls__contains = call_txt, module_type = tl)
+            for module in modules:
+                if call_txt in module.aux_calls.strip().split(','):
+                    break
             if not module:
                 raise Http404
+        else:
+            module = modules[0]
 
-            moduleobj = ProgramModuleObj.getFromProgModule(prog, module)
-            cache.add(cache_key, moduleobj, timeout=60)
+        if not module:
+            raise Http404
+        
+        return ProgramModuleObj.getFromProgModule(prog, module)
+    #   Invalidate cache when any program module related data is saved
+    #   Technically this should include the options (StudentClassRegModuleInfo, etc.)
+    findModuleObject.depend_on_model(lambda: ProgramModule)
+    findModuleObject.depend_on_model(lambda: ProgramModuleObj)
+    findModuleObject = staticmethod(findModuleObject)
+        
+    @staticmethod
+    def findModule(request, tl, one, two, call_txt, extra, prog):
+        moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
 
         moduleobj.request = request
         moduleobj.user    = ESPUser(request.user)
