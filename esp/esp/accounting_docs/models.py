@@ -33,6 +33,7 @@ from django.db.models import Q
 from django.contrib.auth.models import User
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
+from esp.cache import cache_function
 from esp.accounting_core.models import LineItemType, Balance, Transaction, LineItem, EmptyTransactionException, CompletedTransactionException
 from esp.accounting_docs.checksum import Checksum
 from esp.users.models import ESPUser
@@ -114,7 +115,7 @@ class Document(models.Model):
 
         return self.locator
 
-    @staticmethod
+    @cache_function
     def get_DOCTYPE(user, anchor, li_types=[], dont_duplicate=False, finaid=None, get_complete=False, doctype=None):
         """ Create an "empty shopping cart" for a particular user in a particular
         anchor (i.e. program). Or find the cart when they already have one. """
@@ -124,7 +125,7 @@ class Document(models.Model):
         
         #   Put the documents in descending order of ID so, in case there is more than 1, the result is
         #   consistent from run to run.
-        qs = Document.objects.filter(user=user, anchor=anchor, doctype=doctype, txn__complete=get_complete).order_by('-id').distinct()
+        qs = Document.objects.filter(user=user, anchor=anchor, doctype=doctype, txn__complete=get_complete).order_by('-id').select_related().distinct()
         
         """ if qs.count() > 1:
             raise MultipleDocumentError, 'Found multiple uncompleted transactions for this user and anchor.'
@@ -175,6 +176,9 @@ class Document(models.Model):
             new_doc.save()
             
             return new_doc
+    get_DOCTYPE.depend_on_row(lambda: Document, lambda doc: {'user': doc.user})
+    get_DOCTYPE.depend_on_row(lambda: LineItem, lambda item: {'user': item.user})
+    get_DOCTYPE = staticmethod(get_DOCTYPE)
 
     @classmethod
     def get_invoice(cls, user, anchor, li_types=[], dont_duplicate=False, finaid=None, get_complete=False):
