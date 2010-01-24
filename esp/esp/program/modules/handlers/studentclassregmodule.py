@@ -145,7 +145,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         return {'classreg': """Students who have have signed up for at least one class."""}
     
     def isCompleted(self):
-        return (len(self.user.getSections(self.program)[:1]) > 0)
+        return (len(self.user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
