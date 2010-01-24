@@ -512,6 +512,7 @@ class ESPUser(User, AnonymousUser):
     #   (since we would need to check for all verbs under 'V/Flags/Registration')
     getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user})
 
+
     def getEnrolledSections(self, program=None):
         if program is None:
             return self.getEnrolledSectionsAll()

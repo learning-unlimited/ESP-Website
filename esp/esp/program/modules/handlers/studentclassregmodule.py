@@ -190,7 +190,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     
     def isCompleted(self):
-        return (Tag.getTag("allow_confirm_without_classreg", target=self.program)) or (len(self.user.getSections(self.program)[:1]) > 0)
+        return (Tag.getTag("allow_confirm_without_classreg", target=self.program)) or (len(self.user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
