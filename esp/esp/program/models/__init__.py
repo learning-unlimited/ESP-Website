@@ -609,7 +609,17 @@ class Program(models.Model):
             are grabbed.  The default excludes 'compulsory' events, which are
             not intended to be used for classes (they're for lunch, photos, etc.)
         """
-        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).order_by('start')
+        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
+
+    #   In situations where you just want a list of all time slots in the program,
+    #   that can be cached.
+    @cache_function
+    def getTimeSlotList(self, exclude_compulsory=True):
+        if exclude_compulsory:
+            return list(self.getTimeSlots(exclude_types=['Compulsory']))
+        else:
+            return list(self.getTimeSlots(exclude_types=[]))
+    getTimeSlotList.depend_on_model(lambda: Event)
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
