@@ -1113,7 +1113,7 @@ class RegistrationProfile(models.Model):
 
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self):
-        return ESPUser(self.user).getSections(program=self.program)
+        return ESPUser(self.user).getSectionsFromProgram(self.program)
 
     def registered_classes(self):
         return ESPUser(self.user).getEnrolledSections(program=self.program)
