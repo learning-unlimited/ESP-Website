@@ -1168,8 +1168,16 @@ Student schedule for %s:
         studentList = []
         for student in students:
             paid_symbol = ''
+            finaid_status = 'None'
+            if student.appliedFinancialAid(prog):
+                if student.financialaidrequest_set.filter(program=prog).order_by('-id')[0].reduced_lunch:
+                    finaid_status = 'Req. (RL)'
+                else:
+                    finaid_status = 'Req. (No RL)'
+            
             if student.hasFinancialAid(self.program_anchor_cached()):
                 paid_symbol = 'X'
+                finaid_status = 'Approved'
             else:
                 li_types = prog.getLineItemTypes(student)
                 try:

@@ -164,6 +164,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['itemizedcosts'] = invoice.get_items()
 
         context['finaid'] = ESPUser(request.user).hasFinancialAid(prog.anchor)
+        if user.appliedFinancialAid(prog):
+            context['finaid_app'] = user.financialaidrequest_set.filter(program=prog).order_by('-id')[0]
+        else:
+            context['finaid_app'] = None
 
         try:
             context['balance'] = Decimal("%0.2f" % invoice.cost())
