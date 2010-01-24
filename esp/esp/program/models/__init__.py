@@ -984,7 +984,7 @@ class RegistrationProfile(models.Model):
         
         if isinstance(user.id, int):
             try:
-                regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
+                regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except:
                 pass
 
