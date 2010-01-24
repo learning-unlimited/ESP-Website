@@ -514,8 +514,7 @@ class ESPUser(User, AnonymousUser):
     #   Invalidate cache if bits are changed on either classes or sections.
     #   This should be less conservative but there's no easy way to filter the bits as they are saved
     #   (since we would need to check for all verbs under 'V/Flags/Registration')
-    getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent.parent)})    
-    getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)})    
+    getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user})
 
     def getEnrolledSections(self, program=None):
         if program is None:
