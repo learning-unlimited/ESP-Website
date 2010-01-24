@@ -187,8 +187,16 @@ class Document(models.Model):
     @classmethod
     def get_receipt(cls, user, anchor, li_types=[], dont_duplicate=False, finaid=None, get_complete=False):
         return cls.get_DOCTYPE(user, anchor, li_types=li_types, dont_duplicate=dont_duplicate, finaid=finaid, get_complete=get_complete, doctype=3)
-
     
+    @cache_function
+    def get_completed(user, anchor):
+        return list(Document.objects.filter(user=user, anchor=anchor, txn__complete=True))
+    #   This will be invalidated when a balance is posted to a transaction because doing so
+    #   modifies line items associated with the transaction.
+    get_completed.depend_on_row(lambda: Document, lambda doc: {'user': doc.user})
+    get_completed.depend_on_row(lambda: LineItem, lambda item: {'user': item.user})
+    get_completed = staticmethod(get_completed)
+
     @staticmethod
     def get_by_locator(loc):
         return Document.objects.get(locator=loc)
