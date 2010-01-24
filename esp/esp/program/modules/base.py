@@ -156,6 +156,7 @@ class ProgramModuleObj(models.Model):
         context['modules'] = all_modules
         return render_to_response("myesp/mainpage.html", context)
             
+    #   This function caches the customized (augmented) program module objects
     @cache_function
     def findModuleObject(tl, call_txt, prog):
         modules = ProgramModule.objects.filter(main_call = call_txt, module_type = tl).select_related()[:1]
@@ -179,37 +180,53 @@ class ProgramModuleObj(models.Model):
     findModuleObject.depend_on_model(lambda: ProgramModule)
     findModuleObject.depend_on_model(lambda: ProgramModuleObj)
     findModuleObject = staticmethod(findModuleObject)
+    
+    #   The list of modules in a particular category (student reg, teacher reg)
+    #   is accessed frequently and should be cached.
+    @cache_function
+    def findCategoryModules(self, include_optional):
+        prog = self.program
+        module_type = self.module.module_type
+
+        if include_optional:
+            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=module_type, required=True).select_related(depth=1).order_by('seq')
+        else:
+            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=module_type).select_related(depth=1).order_by('seq')
         
+        result_modules = list(other_modules)
+        for mod in result_modules:
+            mod.__class__ = mod.module.getPythonClass()
+            
+        return result_modules
+        
+    findCategoryModules.depend_on_model(lambda: ProgramModule)
+    findCategoryModules.depend_on_model(lambda: ProgramModuleObj)
+    
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
 
+        user = ESPUser(request.user)
+        
+        #   If a "core" module has been found:
+        #   Put the user through a sequence of all required modules in the same category.
+        if request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+            other_modules = moduleobj.findCategoryModules(False)
+            for m in other_modules:
+                m.request = request
+                m.user    = user
+                if not m.isCompleted() and hasattr(m, m.module.main_call):
+                    return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+
+        #   If the module isn't "core" or the user did all required steps,
+        #   call on the originally requested view.
         moduleobj.request = request
-        moduleobj.user    = ESPUser(request.user)
-
-        # Set this key if this user has
-        HAS_FINISHED_REQS_CACHE_KEY = "USER_%s__PROG_%s__TYPE_%s__DONE_REG_REQS" % (request.user.id, prog.id, moduleobj.module.module_type)
-        if not cache.get(HAS_FINISHED_REQS_CACHE_KEY):
-
-            #   For core modules, redirect to the incomplete required modules in the same section first.
-            #   The pages should all redirect to the core on completion.  If none are needed, the
-            #   code here won't do anything and the page will be returned as usual.
-            if request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
-                other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).select_related(depth=1).order_by('seq')
-                for m in other_modules:
-                    m.request = request
-                    m.user    = ESPUser(request.user)
-                    m.__class__ = m.module.getPythonClass()
-                    if not m.isCompleted() and hasattr(m, m.module.main_call):
-                        return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
-
-            cache.set(HAS_FINISHED_REQS_CACHE_KEY, True, timeout=600)
+        moduleobj.user    = user
 
         if hasattr(moduleobj, call_txt):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
 
         raise Http404
-
 
     @staticmethod
     def getFromProgModule(prog, mod):
