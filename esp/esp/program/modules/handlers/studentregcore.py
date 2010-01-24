@@ -166,7 +166,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['itemizedcosts'] = invoice.get_items()
 
         context['finaid'] = user.hasFinancialAid(prog.anchor)
-        if user.financialaidrequest_set.filter(program=prog).count() > 0:
+        if user.appliedFinancialAid(prog):
             context['finaid_app'] = user.financialaidrequest_set.filter(program=prog).order_by('-id')[0]
         else:
             context['finaid_app'] = None

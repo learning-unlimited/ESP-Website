@@ -1269,7 +1269,7 @@ Student schedule for %s:
         for student in students:
             paid_symbol = ''
             finaid_status = 'None'
-            if student.financialaidrequest_set.filter(program=prog).count() > 0:
+            if student.appliedFinancialAid(prog):
                 if student.financialaidrequest_set.filter(program=prog).order_by('-id')[0].reduced_lunch:
                     finaid_status = 'Req. (RL)'
                 else:
