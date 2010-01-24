@@ -585,6 +585,23 @@ class ESPUser(User, AnonymousUser):
             priority += 1
 
         return priority
+        
+    #   We often request the registration priority for all timeslots individually
+    #   because our schedules display enrollment status on a per-timeslot (rather
+    #   than per-class) basis.  This function is intended to speed that up.
+    @cache_function
+    def getRegistrationPriorities(self, timeslot_ids):
+        num_slots = len(timeslot_ids)
+        events = list(Event.objects.filter(id__in=timeslot_ids).order_by('id'))
+        result = [0 for i in range(num_slots)]
+        id_order = range(num_slots)
+        id_order.sort(key=lambda i: timeslot_ids[i])
+        for i in range(num_slots):
+            result[id_order[i]] = self.getRegistrationPriority([events[i]])
+        return result
+        
+    #   Invalidate on any user bit change (due to difficulty of screening registration bits)
+    getRegistrationPriorities.depend_on_row(lambda: UserBit, lambda bit: {'self': bit.user})
 
     def isEnrolledInClass(self, clsObj, request=None):
         verb_str = 'V/Flags/Registration/Enrolled'

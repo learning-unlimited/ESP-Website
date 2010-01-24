@@ -192,25 +192,20 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 else:
                     timeslot_dict[mt.id] = [section_dict]
 
-        for timeslot in timeslots:
+        user_priority = user.getRegistrationPriorities([t.id for t in timeslots])
+        for i in range(len(timeslots)):
+            timeslot = timeslots[i]
             daybreak = False
             if prevTimeSlot != None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
                     daybreak = True
 
-            #   Same change as above.  -Michael P
-            #   if scrmi.use_priority:
-            #       user_priority = user.getRegistrationPriority([timeslot])
-            #   else:
-            #       user_priority = None
-            user_priority = user.getRegistrationPriority([timeslot])
-
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user_priority))
+                schedule.append((timeslot, cls_list, blockCount + 1, user_priority[i]))
             else:
-                schedule.append((timeslot, [], blockCount + 1, user_priority))
+                schedule.append((timeslot, [], blockCount + 1, user_priority[i]))
 
         # Calculate invoice
         charges = []
