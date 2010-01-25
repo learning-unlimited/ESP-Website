@@ -653,7 +653,7 @@ class ClassSection(models.Model):
             return base_list
 
         teachers = self.parent_class.teachers()
-        num_teachers = teachers.count()
+        num_teachers = len(teachers)
 
         timeslot_list = []
         for t in teachers:
@@ -840,6 +840,7 @@ class ClassSection(models.Model):
             retVal = retVal | new_qs
             
         retVal = [ESPUser(u) for u in retVal.distinct()]
+        retVal.sort(key=lambda x: x.last_name.lower())
 
         if defaults:
             self.cache['students'] = retVal
