@@ -262,9 +262,7 @@ class Resource(models.Model):
         return Resource.objects.filter(group_id=self.group_id)
     
     def associated_resources(self):
-        rt1 = ResourceType.get_or_create('Classroom')
-        Q_assoc_types = Q(res_type=rt1)
-        return self.grouped_resources().exclude(id=self.id).exclude(Q_assoc_types)
+        return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
     
     #   Modified to handle assigning rooms to both classes and their individual sections.
     #   Resource assignments are always handled at the section level now. 
