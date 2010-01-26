@@ -32,7 +32,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_d
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django.template.loader      import render_to_string
@@ -805,6 +805,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 else: # This teacher never filled out their teacher profile!
                     mail_ctxt['from_mit'] = "[Teacher hasn't filled out teacher profile!]"
                     mail_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
+
+                # Get a list of the programs this person has taught for in the past, if any.
+                taught_programs = Program.objects.filter(anchor__child_set__child_set__userbit_qsc__user=self.user, \
+                                                         anchor__child_set__child_set__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'), \
+                                                         anchor__child_set__child_set__userbit_qsc__qsc__classsubject__status=10).distinct().exclude(id=self.program.id)
+                mail_ctxt['taught_programs'] = taught_programs
                     
                 # send mail to directors
                 if newclass_newmessage and self.program.director_email:
