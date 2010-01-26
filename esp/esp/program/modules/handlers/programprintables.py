@@ -777,7 +777,7 @@ Student schedule for %s:
 
         # Hack together a pseudocontext:
         context = { 'onsiteregform': True,
-                    'students': [{'classes': [{'friendly_times': [i.anchor.friendly_name],
+                    'students': [{'classes': [{'friendly_times': [i.pretty_time()],
                                                'classrooms': [''],
                                                'prettyrooms': ['______'],
                                                'title': '________________________________________',
@@ -931,11 +931,22 @@ Student schedule for %s:
             for val in rooms[room_name]:
                 scheditems.append(val)
 
-
+        # Lines ending with hash were added Fall 2009
         rmap = {"110-111A": "Building 110, Floor 1, Room 111A",
                 "20-21B": "Building 20, Floor 1, Room 21B",
                 "20-21G": "Building 20, Floor 1, Room 21G",
                 "20-22K": "Building 20, Floor 2, Room 22K",
+                "60-118": "Building 60, Floor 1, Room 118", #
+                "60-119": "Building 60, Floor 1, Room 119", #
+                "60-120": "Building 60, Floor 1, Room 120", #
+                "160-120": "Building 160, Floor 1, Room 120", #
+                "160-124": "Building 160, Floor 1, Room 124", #
+                "160-127": "Building 160, Floor 1, Room 127", #
+                "160-314": "Building 160, Floor 3, Room 314", #
+                "160-319": "Building 160, Floor 3, Room 319", #
+                "160-329": "Building 160, Floor 3, Room 329", #
+                "160-330": "Building 160, Floor 3, Room 330", #
+                "160-331": "Building 160, Floor 3, Room 331", #
                 "200-002": "Building 200, Basement, Room 002",
                 "200-013": "Building 200, Basement, Room 013",
                 "200-015": "Building 200, Basement, Room 015",
@@ -959,7 +970,17 @@ Student schedule for %s:
                 "240-202": "Building 240, Floor 2, Room 202",
                 "250-108": "Building 250, Floor 1, Room 108",
                 "250-201": "Building 250, Floor 2, Room 201",
+                "260-001": "Building 260, Basement, Room 001", #
+                "260-002": "Building 260, Basement, Room 002", #
+                "260-004": "Building 260, Basement, Room 004", #
+                "260-007": "Building 260, Basement, Room 007", #
+                "260-008": "Building 260, Basement, Room 008", #
+                "260-012": "Building 260, Basement, Room 012", #
+                "260-113": "Building 260, Floor 1, Room 113", #
+                "320-220": "Building 320, Floor 2, Room 220", #
+                "320-221": "Building 320, Floor 2, Room 221", #
                 "370-370": "Building 370, Floor 1, Room 370",
+                "380-380C": "Building 380, Basement, Room 380C", #
                 "380-380D": "Building 380, Basement, Room 380D",
                 "380-380F": "Building 380, Basement, Room 380F",
                 "380-380W": "Building 380, Basement, Room 380W",
@@ -975,7 +996,10 @@ Student schedule for %s:
                 "50-52E": "Building 50, Floor 2, Room 52E",
                 "50-52H": "Building 50, Floor 2, Room 52H",
                 "80-113": "Building 80, Floor 1, Room 113",
-                "80-115": "Building 80, Floor 1, Room 115"}
+                "80-115": "Building 80, Floor 1, Room 115",
+                "Roble 33": "Meeting Point R1", #
+                "Roble 42": "Meeting Point R2", #
+                "Roble 52": "Meeting Point R3" } #
         for scheditem in scheditems:
             if 'room' in scheditem:
                 if scheditem['room'] in rmap:

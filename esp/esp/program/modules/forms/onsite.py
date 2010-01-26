@@ -30,4 +30,4 @@ class OnSiteSATPrepRegForm(forms.Form):
 
 
 class OnSiteRapidCheckinForm(forms.Form):
-    user = AjaxForeignKeyNewformField(field=RegistrationProfile._meta.get_field_by_name('user')[0], label='Student')
+    user = AjaxForeignKeyNewformField(field=RegistrationProfile._meta.get_field_by_name('user')[0], help_text='Begin to type the student\'s name (last, first) and click on their name when it shows up.', label='Student')
