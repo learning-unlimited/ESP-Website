@@ -345,7 +345,7 @@ class ClassSection(models.Model):
     
         ans = None
         if self.max_class_capacity is not None:
-            ans = self.max_class_capacity
+            return self.max_class_capacity
 
         rooms = self.initial_rooms()
         if len(rooms) == 0:
@@ -368,6 +368,7 @@ class ClassSection(models.Model):
             return int(ans)
 
     _get_capacity.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    _get_capacity.depend_on_row(lambda:ClassSection, lambda r: {'self': r})
     _get_capacity.depend_on_model(lambda:ClassSubject)
     _get_capacity.depend_on_model(lambda: Resource)
     _get_capacity.depend_on_row(lambda:ClassSection, 'self')
