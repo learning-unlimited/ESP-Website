@@ -522,9 +522,9 @@ class Program(models.Model):
         from esp.resources.models import ResourceType
         
         if timeslot is not None:
-            return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom'))
+            return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom')).select_related()
         else:
-            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
+            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event').select_related()
     
     def getAvailableClassrooms(self, timeslot):
         #   Filters down classrooms to those that are not taken.
@@ -537,7 +537,6 @@ class Program(models.Model):
                 #   Make a dictionary with some helper variables for each resource.
                 result[c.name] = c
                 result[c.name].timeslots = [c.event]
-
                 result[c.name].furnishings = c.associated_resources()
                 result[c.name].sequence = c.schedule_sequence(self)
                 result[c.name].prog_available_times = c.available_times(self.anchor)
@@ -568,7 +567,7 @@ class Program(models.Model):
         
         classrooms = self.getClassrooms()
         
-        result = self.collapsed_dict(list(classrooms))
+        result = self.collapsed_dict(classrooms)
         key_list = result.keys()
         key_list.sort()
         #   Turn this into a list instead of a dictionary.
