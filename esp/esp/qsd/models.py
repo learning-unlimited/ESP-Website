@@ -203,9 +203,9 @@ def qsd_cache_key(path, name, user=None,):
     # Also, make sure the qsd/models.py's get_file_id method
     # is also updated. Otherwise, other things might break.
     if user and user.is_authenticated():
-        return hashlib.md5('%s-%s-%s' % (path.uri, name, user.id)).hexdigest()
+        return hashlib.md5('%s-%s-%s' % (path.get_uri(), name, user.id)).hexdigest()
     else:
-        return hashlib.md5('%s-%s' % (path.uri, name)).hexdigest()
+        return hashlib.md5('%s-%s' % (path.get_uri(), name)).hexdigest()
 
 
 class ESPQuotations(models.Model):

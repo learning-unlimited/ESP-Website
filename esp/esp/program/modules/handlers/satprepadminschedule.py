@@ -154,7 +154,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
             new_class.duration = timeslot.duration().seconds / 3600.0
             new_class.grade_min = 9
             new_class.grade_max = 12
-            new_class.anchor = DataTree.get_by_uri(prog.anchor.uri+'/Classes/Diag'+str(i+1), create=True)
+            new_class.anchor = DataTree.get_by_uri(prog.anchor.get_uri()+'/Classes/Diag'+str(i+1), create=True)
             new_class.category = ClassCategories.objects.get(category='SATPrep')
             new_class.status = 10
             new_class.save()
@@ -527,15 +527,13 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                 #   The sections are all held in the same room by default.  This can be changed
                 #   in the scheduling module later.
                 for ts in timeslots:
-                    new_room = Resource()
-                    new_room.name = room_num
-                    new_room.res_type = ResourceType.get_or_create('Classroom')
+                    new_room = Resource.objects.get_or_create(name=room_num, res_type=ResourceType.get_or_create('Classroom'), event=ts)
                     new_room.num_students = room_capacity
-                    new_room.event = ts
                     new_room.save()
                     sec = newclass.add_section(duration=(ts.duration().seconds / 3600.0))
                     sec.meeting_times.add(ts)
                     sec.assign_room(new_room)
+                    sec.accept()
         
         #dummy_anchor.delete()
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())

@@ -34,6 +34,7 @@ from esp.program.modules.forms.satprep import SATPrepInfoForm
 from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser, User
 from django.db.models.query   import Q
+from esp.dbmail.models import ActionHandler
 from django.template import Context, Template
 from esp.middleware import ESPError
 
@@ -101,8 +102,13 @@ class CommModule(ProgramModuleObj):
             raise ESPError(), "You seem to be trying to email 0 people!  Please go back, edit your search, and try again."
 
         htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
-        firstEspUser = ESPUser(firstuser)
-        renderedtext = Template(htmlbody).render(Context({'user': firstEspUser, 'program': self.program}))
+
+        esp_firstuser = ESPUser(firstuser)
+        contextdict = {'user'   : ActionHandler(esp_firstuser, esp_firstuser)),
+                       'program': ActionHandler(self.program, esp_firstuser)) }
+
+        renderedtext = Template(htmlbody).render(Context(contextdict))
+        renderedtext = renderedtext.replace('\n', '<br />')
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                   (prog, tl), {'filterid': filterid,

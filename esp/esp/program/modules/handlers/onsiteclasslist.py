@@ -35,6 +35,7 @@ from esp.program.models import ClassSubject, ClassSection
 from esp.web.util import render_to_response
 from esp.cal.models import Event
 from esp.datatree.models import *
+from django.db.models import Min
 
 class OnSiteClassList(ProgramModuleObj):
     @classmethod
@@ -68,10 +69,10 @@ class OnSiteClassList(ProgramModuleObj):
         curtime = Event.objects.filter(start__gte=window_start).order_by('start')
         if curtime:
             curtime = curtime[0]
-            classes = self.program.sections().filter(
+            classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
                 status=10, parent_class__status=10,
-                meeting_times__start__gte=curtime.start
-                ).order_by('parent_class__category', 'meeting_times').distinct()
+                begin_time__gte=curtime.start
+                ).order_by('parent_class__category', 'begin_time').distinct()
         else:
             curtime = None
             classes = []

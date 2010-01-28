@@ -4,7 +4,7 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
 	DragDrop.drag_proxy_el = $j('<div/>').addClass('class-dd-proxy');
 	
 	DragDrop.get_drag_proxy = function(section) {
-	    this.drag_proxy_el.text(section && section.id || '---');
+	    this.drag_proxy_el.text(section && section.code || '---');
 	    this.drag_proxy_el.css('width',Math.round(50*section.length_hr)+'px');
 	    return this.drag_proxy_el;
 	}.bind(DragDrop);
@@ -14,7 +14,9 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
 		    helper: function(){ return this.get_drag_proxy(get_section()); }.bind(this),
 		    revert: 'invalid', revertDuration: 350,
 		    scroll: false, cursorAt: {left:25,top:25}, cursor: 'default',
-		    opacity: .6, containment: 'window',
+		    opacity: 1.0, containment: 'window',
+		    zIndex: 24, // Just enough
+		    appendTo: 'body',
 		    start: function(e,ui) {
 			var blocks = ESP.Scheduling.data.blocks;
 			var section = get_section();

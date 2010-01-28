@@ -43,6 +43,7 @@ from django.http import HttpRequest
 from django.template import Context, loader
 from django.template.defaultfilters import urlencode
 
+from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
@@ -77,8 +78,27 @@ def admin_required(func):
     return wrapped
 
 
-class ESPUserManager(ProcedureManager):
+class UserAvailability(models.Model):
+    user = AjaxForeignKey(User)
+    event = models.ForeignKey(Event)
+    role = AjaxForeignKey(DataTree)
+    priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
+    def __unicode__(self):
+        return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
+
+    def save(self, *args, **kwargs):
+        #   Assign default role if not set.
+        #   Careful with this; the result may differ for users with multiple types.
+        #   (With this alphabetical ordering, you get roles in the order: teacher, student, guardian, educator, administrator)
+        if (not hasattr(self, 'role')) or self.role is None:
+            queryset = self.user.userbit_set.filter(QTree(verb__below=GetNode('V/Flags/UserRole'))).order_by('-verb__name')
+            if queryset.count() > 0:
+                self.role = queryset[0].verb
+        return super(UserAvailability, self).save(*args, **kwargs)
+
+
+class ESPUserManager(ProcedureManager):
     pass
 
 class ESPUser(User, AnonymousUser):
@@ -160,15 +180,15 @@ class ESPUser(User, AnonymousUser):
         return RegistrationProfile.getLastProfile(self)
 
     @cache_function
-    def getEditable_ids(self, objType):
+    def getEditable_ids(self, objType, qsc=None):
         # As far as I know, fbap's cache is still screwy, so we'll retain this cache at a higher level for now --davidben, 2009-04-06
-        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit')).values_list('id', flat=True)
+        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'), qsc).values_list('id', flat=True)
     getEditable_ids.get_or_create_token(('self',)) # Currently very difficult to determine type, given anchor
     getEditable_ids.depend_on_row(lambda:UserBit, lambda bit: {} if bit.user_id is None else {'self': bit.user},
                                                   lambda bit: bit.applies_to_verb('V/Administer/Edit'))
 
-    def getEditable(self, objType):
-        return objType.objects.filter(id__in=self.getEditable_ids(objType))
+    def getEditable(self, objType, qsc=None):
+        return objType.objects.filter(id__in=self.getEditable_ids(objType, qsc))
 
     def canEdit(self, object):
         return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
@@ -377,7 +397,7 @@ class ESPUser(User, AnonymousUser):
         from esp.resources.models import Resource
         from esp.cal.models import Event
 
-        valid_events = Event.objects.filter(resource__user=self, anchor=program.anchor)
+        valid_events = Event.objects.filter(useravailability__user=self, anchor=program.anchor).order_by('start')
 
         if ignore_classes:
             #   Subtract out the times that they are already teaching.
@@ -395,33 +415,31 @@ class ESPUser(User, AnonymousUser):
     # FIXME: Really should take into account section's teachers...
     # even though that shouldn't change often
     getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
-    getAvailableTimes.depend_on_row(lambda:Resource, lambda resource:
+    getAvailableTimes.depend_on_row(lambda:UserAvailability, lambda ua:
                                         # FIXME: What if resource.event.anchor somehow isn't a program?
                                         # Probably want a helper method return a special "nothing" object (XXX: NOT None)
                                         # and have key_sets discarded if they contain it
-                                        {'program': Program.objects.get(anchor=resource.event.anchor),
-                                            'self': resource.user})
+                                        {'program': Program.objects.get(anchor=ua.event.anchor),
+                                            'self': ua.user})
     # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
-        """ Clear all resources indicating this teacher's availability for a program """
-        from esp.resources.models import Resource
-
-        Resource.objects.filter(user=self, event__anchor=program.anchor).delete()
+        """ Clear this teacher's availability for a program """
+        self.useravailability_set.filter(QTree(event__anchor__below=program.anchor)).delete()
 
     def addAvailableTime(self, program, timeslot):
         from esp.resources.models import Resource, ResourceType
-
-        # if program.anchor is not timeslot.anchor:
-        #    BADNESS
-
-        r = Resource()
-        r.user = self
-        r.event = timeslot
-        r.name = 'Teacher Availability, %s at %s' % (self.name(), timeslot.short_description)
-        r.res_type = ResourceType.get_or_create('Teacher Availability')
-        r.save()
+        
+        #   Because the timeslot has an anchor, the program is unnecessary.
+        new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot)
+        new_availability.save()
+        
+    def convertAvailability(self):
+        resources = Resource.objects.filter(user=self)
+        for res in resources:
+            self.addAvailableTime(Program.objects.all()[0], res.event)
+        resources.delete()
 
     def getApplication(self, program, create=True):
         from esp.program.models.app_ import StudentApplication
@@ -485,7 +503,7 @@ class ESPUser(User, AnonymousUser):
                                               Q(anchor__userbit_qsc__user=self,
                                                 anchor__userbit_qsc__verb__uri__in=verb_uris)
                                               ).distinct()
-
+            
         return csl
 
     def getEnrolledSections(self, program=None):
@@ -615,7 +633,7 @@ class ESPUser(User, AnonymousUser):
         #   a necessity for HSSP/Spark.   -Michael
         previous_li = []
         for li in li_list:
-            li_str = '%.2f,%d' % (li.amount, li.anchor.id)
+            li_str = '%.2f,%d,%d' % (li.amount, li.li_type.id, li.anchor.id)
             if li_str not in previous_li:
                 previous_li.append(li_str)
             else:
@@ -800,7 +818,6 @@ ESPUser.create_membership_methods()
 ESPUser._meta.pk.attname = "id"
 ESPUser._meta.local_fields[0].column = "id"
 
-
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
@@ -907,7 +924,7 @@ class StudentInfo(models.Model):
         username = "N/A"
         if self.user != None:
             username = self.user.username
-        return 'ESP Student Info (%s) -- %s' % (username, str(self.school))
+        return 'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
@@ -915,7 +932,7 @@ class StudentInfo(models.Model):
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
-    graduation_year = models.CharField(max_length=4, blank=True, null=True)
+    graduation_year_int = models.IntegerField(help_text='Enter 1 for a grad student, or 0 if not applicable.')
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -939,7 +956,7 @@ class TeacherInfo(models.Model):
                 self.graduation_year_int = abs(int(value))
             except:
                 self.graduation_year_int = 0
-    #graduation_year = property( _graduation_year_get, _graduation_year_set )
+    graduation_year = property( _graduation_year_get, _graduation_year_set )
 
     class Meta:
         app_label = 'users'
@@ -1487,7 +1504,7 @@ class ESPUser_Profile(models.Model):
         pass
 
     def __unicode__(self):
-        return "ESPUser_Profile for user: %s" % str(self.user)
+        return "ESPUser_Profile for user: %s" % unicode(self.user)
 
 class PasswordRecoveryTicket(models.Model):
     """ A ticket for changing your password. """

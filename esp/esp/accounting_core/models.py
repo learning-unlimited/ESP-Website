@@ -216,7 +216,9 @@ class Transaction(models.Model):
     def get_balance(self):
         items = self.lineitem_set.all()
         if items.count() == 0: raise EmptyTransactionException
-        amounts = [li.amount for li in items]
+        amounts = []
+        for li in items:
+            amounts.append(li.amount)
         return -sum(amounts)
 
     @transaction.commit_on_success

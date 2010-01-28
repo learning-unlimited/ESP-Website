@@ -59,9 +59,9 @@ def get_smallest_section(cls, timeslot=None):
 def render_class_core(cls):
 
     prog = cls.parent_program
-    
-    # Show enrollment?
-    show_enrollment = prog.visibleEnrollments()
+
+    #   Show e-mail codes?  We need to look in the settings.
+    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     
     # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
     colorstring = prog.getColor()
@@ -71,29 +71,29 @@ def render_class_core(cls):
     return {'class': cls,
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
-            'show_enrollment': show_enrollment,
-            'show_meeting_times': prog.getModuleExtension('StudentClassRegModuleInfo').visible_meeting_times}
+            'show_enrollment': scrmi.visible_enrollments,
+            'show_meeting_times': scrmi.visible_meeting_times}
             
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
     errormsg = None
 
     section = cls.get_section(timeslot=timeslot)
-    
+        
     #   Add ajax_addclass to prereg_url if registering from catalog is allowed
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     if prereg_url is None and scrmi.register_from_catalog:
         if user is not None and ESPUser(user).is_authenticated():
             prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
 
-    if False and user and prereg_url:
+    if user and prereg_url:
         error1 = cls.cannotAdd(user, True, request=request)
         # If we can't add the class at all, then we take that error message
         if error1:
             errormsg = error1
         else:  # there's some section for which we can add this class; does that hold for this one?
             errormsg = section.cannotAdd(user, True, request=request)
-    
+        
     show_class =  (not filter) or (not errormsg)
     
     return {'class':      cls,

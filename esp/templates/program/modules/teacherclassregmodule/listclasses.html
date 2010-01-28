@@ -107,8 +107,8 @@ If you have any questions regarding the program, <br /> please email the
 
     {% if teacherclsmodule.allow_coteach %}
     <tr>
-    <td class="clsleft"><b>Coteachers: </b></td>
-    <td class="clsmiddle" colspan="4">{% for t in cls.teachers %}{% ifnotequal t request.user %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+    <td class="clsleft"><b>(Co-)Teachers: </b></td>
+    <td class="clsmiddle" colspan="4">{% for t in cls.teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
     <td class="clsright">
        <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}" />

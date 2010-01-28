@@ -269,6 +269,7 @@ class Program(models.Model):
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
     program_size_max = models.IntegerField(null=True)
+    program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
     class_categories = models.ManyToManyField('ClassCategories')
 
@@ -492,7 +493,7 @@ class Program(models.Model):
             cache.set(CACHE_KEY, isfull, CACHE_DURATION)
 
         return isfull
-
+    
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
@@ -633,8 +634,8 @@ class Program(models.Model):
     def getResourceTypes(self):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
-        exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
-
+        exclude_types = [ResourceType.get_or_create('Classroom')]
+        
         Q_filters = Q(program=self) | Q(program__isnull=True)
 
         #   Inherit resource types from parent programs.
@@ -652,8 +653,8 @@ class Program(models.Model):
     def getFloatingResources(self, timeslot=None, queryset=False):
         from esp.resources.models import ResourceType
         #   Don't include classrooms and teachers in the floating resources.
-        exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
-
+        exclude_types = [ResourceType.get_or_create('Classroom')]
+        
         if timeslot is not None:
             res_list = self.getResources().filter(event=timeslot, is_unique=True).exclude(res_type__in=exclude_types)
         else:
@@ -779,12 +780,23 @@ class Program(models.Model):
             for module in modules:
                 module.setUser(user)
         return modules
-
-    @cache_function
+    
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
         This avoids actually looking up the program module first. """
+        # We don't actually want to cache this in memcached:
+        # If its value changes in the middle of a page load, we don't want to switch to the new value.
+        # Also, the method is called quite often, so it adds cache load.
+        # Program objects are assumed to not persist across page loads generally,
+        # so the following should be marginally safer:
+        
+        if not hasattr(self, "_moduleExtension"):
+            self._moduleExtension = {}
 
+        key = (ext_name_or_cls, module_id)
+        if key in self._moduleExtension:
+            return self._moduleExtension[key]
+        
         ext_cls = None
         if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
             mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
@@ -804,16 +816,10 @@ class Program(models.Model):
                 extension = ext_cls.objects.filter(module__program__id=self.id)[0]
             except:
                 extension = None
-
+                
+        self._moduleExtension[key] = extension
+                
         return extension
-    #   Depend on all module extensions (kind of ugly, but at least we don't change those too frequently).
-    #   Ideally this could be autodetected by importing everything from module_ext first, but I ran into
-    #   a circular import problem.   -Michael P
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'ClassRegModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'StudentClassRegModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepAdminModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'CreditCardModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepTeacherModuleInfo'))
 
     def getColor(self):
         if hasattr(self, "_getColor"):
@@ -1223,14 +1229,26 @@ class FinancialAidRequest(models.Model):
         inv = Document.get_invoice(self.user, anchor)
         txn = inv.txn
         funding_node = anchor['Accounts']
-
-        #   Find the amount we're charging the student for the program and ensure
-        #   that we don't award more financial aid than charges.
-        charges = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='LineItemTypes',)
-
+        
+        #   Find the amount we're charging the student for the program.
+        #charges = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='LineItemTypes',)
+        charges = txn.lineitem_set.filter(QTree(anchor__below=anchor)).exclude(li_type__text__startswith='Financial Aid')
         chg_amt = 0
         for li in charges:
-            chg_amt += li.amount
+            chg_amt += li.amount - li.li_type.finaid_amount
+        
+        #   Check if the student was granted exactly the bare admission cost of the program.
+        required_types = LineItemType.objects.filter(anchor=self.program.anchor['LineItemTypes']['Required'])
+        admission_cost = 0
+        for type in required_types:
+            admission_cost += type.amount
+            
+        #   If they were, go ahead and give them financial aid for their other line items.
+        #   Otherwise, give them financial aid for the stated amount received.
+        if self.amount_received > 0 and admission_cost == -self.amount_received:
+            self.amount_received = -chg_amt
+
+        #   Ensure that the financial aid is not larger than the amount they owe.
         if self.amount_received > (-chg_amt):
             self.amount_received = -chg_amt
 
@@ -1325,7 +1343,6 @@ class BooleanToken(models.Model):
         stack = list(stack)
         while (value is None) and (len(stack) > 0):
             token = stack.pop().subclass_instance()
-            # print 'Popped token: %s' % str(token.__dict__)
             
             # Handle possibilities for what the token might be:
             if (token.text == '||') or (token.text.lower() == 'or'):
@@ -1346,8 +1363,6 @@ class BooleanToken(models.Model):
                 # - direct boolean value
                 # Pass along arguments
                 value = token.boolean_value(*args, **kwargs)
-                
-        # print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
         return (value, stack)
 
     """ This function is meant to take extra arguments so subclasses can use additional
@@ -1385,7 +1400,6 @@ class BooleanExpression(models.Model):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
-            print 'Adding duplicate of token %d, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
             new_token = token_type()
             #   Copy over fields that don't describe relations
             for item in new_token._meta.fields:
@@ -1425,7 +1439,7 @@ class ScheduleMap:
         self.program = program
         self.user = user
         self.populate()
-    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
+    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.get_uri().startswith('V/Flags/Registration'))
 
     @cache_function
     def populate(self):
@@ -1438,7 +1452,11 @@ class ScheduleMap:
                 result[m.id].append(s)
         self.map = result
         return self.map
-    populate.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
+    populate.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.verb.get_uri().startswith('V/Flags/Registration'))
+
+    def add_section(self, sec):
+        for t in sec.meeting_times.all().values_list('id'):
+            self.map[t[0]].append(sec)
 
     def add_section(self, sec):
         for t in sec.meeting_times.all().values_list('id'):
@@ -1506,7 +1524,6 @@ class ScheduleConstraint(models.Model):
         try:
             func_str = """def _f(schedule_map):
 %s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
-            #   print func_str
             exec func_str
             result = _f(self.schedule_map)
             return result

@@ -35,15 +35,20 @@ from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
+from django.template.loader      import render_to_string
 from esp.middleware              import ESPError
 from django.utils.datastructures import MultiValueDict
 from django.core.mail            import send_mail
+from django.template.loader      import render_to_string
+from django.http                 import HttpResponse
 from esp.miniblog.models         import Entry
 from django.core.cache           import cache
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
+from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeFormSet
 from datetime                    import timedelta
+import simplejson as json
 
 class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -113,7 +118,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
                 'class_rejected': """Teachers teaching a rejected class.""",
                 'class_full': """Teachers teaching a nearly-full class."""}
-
 
 
     def deadline_met(self):
@@ -261,9 +265,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             uri_base = 'V/Flags/Registration/'
             uri_start = len(uri_base)
             bits = sec.getRegBits(student)
-            student.bits = [bit.verb.uri[uri_start:] for bit in bits]
+            student.bits = [bit.verb.get_uri()[uri_start:] for bit in bits]
             student.app = student.getApplication(self.program, False)
-            student.other_classes = [(sec2, [bit.verb.uri[uri_start:] for bit in sec2.getRegBits(student)]) for sec2 in student.getSections(self.program).exclude(id=sec.id)]
+            student.other_classes = [(sec2, [bit.verb.get_uri()[uri_start:] for bit in sec2.getRegBits(student)]) for sec2 in student.getSections(self.program).exclude(id=sec.id)]
             prereg_bits = bits.exclude(verb__name__in=['Enrolled', 'Rejected'])
             if prereg_bits.count() != 0:
                student.added_class = prereg_bits[0].startdate
@@ -473,6 +477,93 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                                                                                          'coteachers':  coteachers,
                                                                                          'conflicts':   conflictingusers})
 
+    @needs_teacher
+    def ajax_requests(self, request, tl, one, two, module, extra, prog):
+        """ Handle a request for modifying a ResourceRequestFormSet. 
+            This view is customized to handle the dynamic form
+            (i.e. resource type is specified in advance and loaded
+            into a hidden field). 
+        """
+        #   Construct a formset from post data
+        resource_formset = ResourceRequestFormSet(request.POST, prefix='request')
+        validity = resource_formset.is_valid()
+        form_dicts = [x.__dict__ for x in resource_formset.forms]
+        
+        #   Retrieve data from forms
+        form_datas = [x.cleaned_data for x in resource_formset.forms if hasattr(x, 'cleaned_data')]
+        form_datas_filtered = [x for x in form_datas if x.has_key('resource_type')]
+        
+        if request.POST.has_key('action'):
+            #   Modify form if an action is specified
+            if request.POST['action'] == 'add':
+                #   Construct initial data including new form
+                new_restype = ResourceType.objects.get(id=request.POST['restype'])
+                if len(new_restype.choices) > 0:
+                    new_data = form_datas_filtered + [{'desired_value': new_restype.choices[0]}]
+                else:
+                    new_data = form_datas_filtered + [{}]
+                new_types = [x['resource_type'] for x in form_datas_filtered] + [new_restype]
+            elif request.POST['action'] == 'remove':
+                #   Construct initial data removing undesired form
+                form_to_remove = int(request.POST['form'])
+                new_data = form_datas_filtered[:form_to_remove] + form_datas_filtered[(form_to_remove + 1):]
+                new_types = [x['resource_type'] for x in new_data]
+            
+            #   Instantiate a new formset having the additional form
+            new_formset = ResourceRequestFormSet(initial=new_data, resource_type=new_types, prefix='request')
+        else:
+            #   Otherwise, just send back the original form
+            new_formset = resource_formset
+        
+        #   Render an HTML fragment with the new formset
+        context = {}
+        context['program'] = prog
+        context['formset'] = new_formset
+        context['ajax_request'] = True
+        formset_str = render_to_string(self.baseDir()+'requests_form_fragment.html', context)
+        formset_script = render_to_string(self.baseDir()+'requests_form_fragment.js', context)
+        return HttpResponse(json.dumps({'request_forms_html': formset_str, 'script': formset_script}))
+
+    @needs_teacher
+    def ajax_restypes(self, request, tl, one, two, module, extra, prog):
+        """ Handle a request for modifying a ResourceTypeFormSet. 
+            This is pretty straightforward and should be generalized for
+            all further applications.
+        """
+        #   Construct a formset from post data
+        resource_formset = ResourceTypeFormSet(request.POST, prefix='restype')
+        validity = resource_formset.is_valid()
+        form_dicts = [x.__dict__ for x in resource_formset.forms]
+        
+        #   Retrieve data from forms
+        form_datas = [x.cleaned_data for x in resource_formset.forms if hasattr(x, 'cleaned_data')]
+        form_datas_filtered = form_datas
+        
+        if request.POST.has_key('action'):
+            #   Modify form if an action is specified
+            if request.POST['action'] == 'add':
+                #   Construct initial data including new form
+                new_data = form_datas_filtered + [{}]
+            elif request.POST['action'] == 'remove':
+                #   Construct initial data removing undesired form
+                form_to_remove = int(request.POST['form'])
+                new_data = form_datas_filtered[:form_to_remove] + form_datas_filtered[(form_to_remove + 1):]
+
+            #   Instantiate a new formset having the additional form
+            new_formset = ResourceTypeFormSet(initial=new_data, prefix='restype')
+        else:
+            #   Otherwise, just send back the original form
+            new_formset = resource_formset
+        
+        #   Render an HTML fragment with the new formset
+        context = {}
+        context['program'] = prog
+        context['formset'] = new_formset
+        context['ajax_request'] = True
+        formset_str = render_to_string(self.baseDir()+'restype_form_fragment.html', context)
+        formset_script = render_to_string(self.baseDir()+'restype_form_fragment.js', context)
+        return HttpResponse(json.dumps({'restype_forms_html': formset_str, 'script': formset_script}))
+        
     @aux_call
     @meets_deadline("/Classes/Edit")
     @needs_teacher
@@ -501,8 +592,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 return self.goToCore(tl)
 
             reg_form = TeacherClassRegForm(self, request.POST)
+            resource_formset = ResourceRequestFormSet(request.POST, prefix='request')
+            restype_formset = ResourceTypeFormSet(request.POST, prefix='restype')
             # Silently drop errors from section wizard when we're not using it
-            if reg_form.is_valid():
+            if reg_form.is_valid() and resource_formset.is_valid() and restype_formset.is_valid():
                 new_data = reg_form.cleaned_data
 
                 # Some defaults
@@ -564,7 +657,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 if num_sections < len(section_list):
                     for class_section in section_list[num_sections:]:
                         class_section.delete()
-
+                        
                 # Set duration of sections
                 for section in newclass.sections.all():
                     section.duration = newclass.duration
@@ -651,12 +744,24 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                             section.update_cache()
                             for i in range(0, section_count):
                                 subsection = section.add_section(duration=section_data['duration'])
-                                # create resource requests for each section
-                                for res_type_id in new_data['resources']:
-                                    if res_type_id in subprogram_module.getResourceTypes():
+                                #   Create resource requests for each section
+                                #   Create new resource types (with one request per type) if desired
+                                for resform in resource_formset.forms:
+                                    rr = ResourceRequest()
+                                    rr.target = subsection
+                                    rr.res_type = resform.cleaned_data['resource_type']
+                                    rr.desired_value = resform.cleaned_data['desired_value']
+                                    rr.save()
+                                for resform in restype_formset.forms:
+                                    #   Save new types; handle imperfect validation
+                                    if len(resform.cleaned_data['name']) > 0:
+                                        rt = ResourceType.get_or_create(resform.cleaned_data['name'])
+                                        rt.choices = ['Yes']
+                                        rt.save()
                                         rr = ResourceRequest()
                                         rr.target = subsection
-                                        rr.res_type = ResourceType.objects.get(id=res_type_id)
+                                        rr.res_type = rt
+                                        rr.desired_value = 'Yes'
                                         rr.save()
 
                         newclassimplication.member_id_ints = implied_id_ints
@@ -666,25 +771,35 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 #   Note that resource requests now belong to the sections
                 for sec in newclass.sections.all():
                     sec.clearResourceRequests()
-                    for res_type_id in new_data['resources'] + new_data['global_resources']:
+                    for resform in resource_formset.forms:
                         rr = ResourceRequest()
                         rr.target = sec
-                        rr.res_type = ResourceType.objects.get(id=res_type_id)
+                        rr.res_type = resform.cleaned_data['resource_type']
+                        rr.desired_value = resform.cleaned_data['desired_value']
                         rr.save()
+                    for resform in restype_formset.forms:
+                        #   Save new types; handle imperfect validation
+                        if len(resform.cleaned_data['name']) > 0:
+                            rt = ResourceType.get_or_create(resform.cleaned_data['name'])
+                            rt.choices = ['Yes']
+                            rt.save()
+                            rr = ResourceRequest()
+                            rr.target = sec
+                            rr.res_type = rt
+                            rr.desired_value = 'Yes'
+                            rr.save()
 
-                #   Add a component to the message for directors if the teacher is providing their own space.
-                prepend_str = '*** Notice *** \n The teacher has specified that they will provide their own space for this class.  Please contact them for the size and resources the space provides (if they have not specified below) and create the appropriate resources for scheduling. \n**************\n\n'
+                
+                mail_ctxt = dict(new_data) # context for email sent to directors
 
-                if ( new_data['has_own_space'] == 'True' ):
-                    message_for_directors = prepend_str + new_data['message_for_directors']
-                else:
-                    message_for_directors = new_data['message_for_directors']
+                # Make some of the fields in new_data nicer for viewing.
+                mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category']).category
+                mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
 
                 # send mail to directors
                 if newclass_newmessage and self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
-                              """Teacher Registration Notification\n--------------------------------- \n\nClass Title: %s\n\nClass Description: \n%s\n\nSpecial Resources:\n%s\n\nComments to Director:\n%s\n\n""" % \
-                              (new_data['title'], new_data['class_info'], new_data['requested_special_resources'], message_for_directors) , \
+                              render_to_string(self.baseDir() + 'classreg_email', mail_ctxt) , \
                               ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
                               [self.program.director_email], True)
 
@@ -725,21 +840,31 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data['duration'] = rounded_duration
                 current_data['category'] = newclass.category.id
                 current_data['num_sections'] = newclass.sections.count()
-                current_data['global_resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=True).distinct().values('res_type') ]
-                current_data['resources'] = [ req['res_type'] for req in newclass.getResourceRequests().filter(res_type__program__isnull=False).distinct().values('res_type') ] or '' # Use an empty string instead of an empty list.
                 current_data['allow_lateness'] = newclass.allow_lateness
-                current_data['has_own_space'] = False
                 current_data['title'] = newclass.anchor.friendly_name
                 current_data['url']   = newclass.anchor.name
                 context['class'] = newclass
                 reg_form = TeacherClassRegForm(self, current_data)
+                
+                #   Todo...
+                ds = newclass.default_section()
+                class_requests = ResourceRequest.objects.filter(target=ds)
+                resource_formset = ResourceRequestFormSet(initial=[{'resource_type': x.res_type, 'desired_value': x.desired_value} for x in class_requests], resource_type=[x.res_type for x in class_requests], prefix='request')
+                restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
             else:
                 reg_form = TeacherClassRegForm(self)
+                type_labels = ['Classroom', 'A/V']
+                #   Provide initial forms: a request for each provided type, but no requests for new types.
+                resource_formset = ResourceRequestFormSet(initial=[{} for x in type_labels], resource_type=[ResourceType.get_or_create(x) for x in type_labels], prefix='request')
+                restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
         context['one'] = one
         context['two'] = two
         context['form'] = reg_form
-
+        context['formset'] = resource_formset
+        context['restype_formset'] = restype_formset
+        context['resource_types'] = ResourceType.objects.all()
+        
         if newclass is None:
             context['addoredit'] = 'Add'
             if prog.getSubprograms().count() > 0:
@@ -771,7 +896,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return self.goToCore(tl)
 
         queryset = User.objects.filter(Q_teacher)
-
+        
         if not request.GET.has_key('name'):
             startswith = request.POST['name']
         else:

@@ -47,6 +47,7 @@ Back to teacher reg
 <b>In the table below:</b>
 <ul>
 <li>Hover over the student's name to see their enrollment status for other classes.  
+<li>Click a student's name to see their application.
 <li>Hover over an application score to see comments left by the reviewer.
 </ul>
 </p>
@@ -69,7 +70,7 @@ Back to teacher reg
 {% for student in students_list %}
   <tr>
     <td>
-  <a class="tooltip tooltip_wide"> {{ student.name }}
+  <a class="tooltip tooltip_wide" href="/teach/{{ program.getUrlBase }}/review_student/{{ sec.parent_class.id }}/?student={{ student.id }}"> {{ student.name }}
   <span>
     {% if not student.other_classes|length_is:0 %}
     {% for cls in student.other_classes %}

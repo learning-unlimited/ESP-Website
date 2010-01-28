@@ -174,3 +174,7 @@ input.addbutton_disabled {
     width: 100%;
     font-family: Helvetica, Arial, sans-serif;
 }
+
+img.LaTeX {
+    vertical-align: middle;
+}

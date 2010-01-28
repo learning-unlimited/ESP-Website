@@ -46,7 +46,6 @@ from esp.db.fields import AjaxForeignKey
 # Models to depend on.
 from esp.datatree.models import *
 from esp.middleware import ESPError
-from esp.program.models import ClassSubject, ClassSection, Program
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to 
@@ -79,7 +78,7 @@ class ListField(object):
         if not data:
             return ()
         else:
-            return tuple(str(data).split(self.separator))
+            return tuple(data.split(self.separator))
 
     def __set__(self, instance, value):
         data = self.separator.join(map(str, value))
@@ -95,11 +94,13 @@ class Survey(models.Model):
     category = models.CharField(max_length=32) # teach|learn|etc
     
     def __unicode__(self):
-        return '%s (%s) for %s' % (self.name, self.category, str(self.anchor))
+        return '%s (%s) for %s' % (self.name, self.category, unicode(self.anchor))
     
     def num_participants(self):
         #   If there is a program anchored to the anchor, select the appropriate number
         #   of participants based on the category.
+        from esp.program.models import Program
+        
         progs = Program.objects.filter(anchor=self.anchor)
         if progs.count() == 1:
             prog = progs[0]
@@ -119,8 +120,19 @@ class SurveyResponse(models.Model):
 
     def set_answers(self, get_or_post, save=False):
         """ For a given get or post, get a set of answers. """
-        answers = []
+        from esp.program.models import ClassSubject
+        
+        # First, set up attendance dictionary based on the attendance questions
+        # If there were no attendance questions, this wasn't a student survey
+        attendances = {}
+        keys = filter(lambda x: x.startswith('attendance_'), get_or_post.keys())
+        for key in keys:
+            try:
+                attendances[ int( key[11:] ) ] = int(get_or_post.getlist(key)[0])
+            except (TypeError, ValueError):
+                pass
 
+        answers = []
         keys = filter(lambda x: x.startswith('question_'), get_or_post.keys())
         for key in keys:
             value = get_or_post.getlist(key)
@@ -136,6 +148,10 @@ class SurveyResponse(models.Model):
                 try:
                     qid = int(str_list[1])
                     cid = int(str_list[2])
+                    if attendances.has_key(cid):
+                        cid = attendances[cid]
+                    if not cid:
+                        continue
                     question = Question.objects.get(id=qid)
                     cls = ClassSubject.objects.get(id=cid)
                 except ClassSubject.DoesNotExist:

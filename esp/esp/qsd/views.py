@@ -45,7 +45,7 @@ from django.core.cache import cache
 from django.template.defaultfilters import urlencode
 from esp.datatree.decorators import branch_find
 from esp.middleware import ESPError, Http403
-
+from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
@@ -174,7 +174,7 @@ def qsd(request, branch, name, section, action):
         #    cache.set('quasistaticdata_html:' + cache_id, cached_html)
 
         # Render response
-        return render_to_response('qsd/qsd.html', request, (branch, section), {
+        response = render_to_response('qsd/qsd.html', request, (branch, section), {
             'title': qsd_rec.title,
             'nav_category': qsd_rec.nav_category,
             'content': cached_html,
@@ -182,7 +182,16 @@ def qsd(request, branch, name, section, action):
             'have_edit': have_edit,
             'edit_url': base_url + ".edit.html" })
 
+        patch_vary_headers(response, ['Cookie'])
+        if have_edit:
+            add_never_cache_headers(response)
+            patch_cache_control(response, no_cache=True, no_store=True)
+        else:
+            patch_cache_control(response, max_age=3600)
 
+        return response
+
+            
     # Detect POST
     if request.POST.has_key('post_edit'):
         if not have_edit:

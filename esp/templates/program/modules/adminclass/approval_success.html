@@ -1,0 +1,35 @@
+{% extends "outlines/theme.html" %}
+{% load subsection %}
+
+{% block title %}Class Approval Success{% endblock %}
+
+{% block keywords %}{% endblock %}
+{% block description %}{% endblock %}
+
+{% block subsection %}{% endblock %}
+
+{% block content %}
+
+<h1>Class Approval Success</h1>
+
+<br />
+The following classes were successfully approved:<br />
+<ul>
+{% for cls in updated_classes %}
+<li> {{ cls.emailcode }}: {{ cls.title }} ({{ cls.pretty_teachers }})
+{% endfor %}
+</ul>
+
+<br />
+{% ifnotequal num_failures 0 %}
+The following class ids could not be recognized (they were
+invalid ids or not in this program) and were therefore not 
+approved:<br />
+<ul>
+{% for id in failed_ids %}
+<li> {{ id }}
+{% endfor %}
+</ul>
+{% endifnotequal %}
+
+{% endblock %}

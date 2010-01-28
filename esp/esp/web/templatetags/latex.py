@@ -48,12 +48,19 @@ def texescape(value):
     # $$ and $$. Thus you can write math symbols like $$\sqrt{3}$$ and
     # get away with it.
     strings = value.split('$$')
+
+    # But not if we don't have something of the form "asdf $$ fghj $$ hjkl"; then someone's just messing with us
+    if len(strings) % 2 == 0:
+        strings = [ value ]
+
     for i in range(len(strings)):
         if i % 2 == 1 and i < len(strings) - 1:
             continue
         strings[i] = strings[i].replace('\\', special_backslash)
         for char in '&$%#_{}':
             strings[i] = strings[i].replace(char, '\\' + char)
+        strings[i] = strings[i].replace('^', '\\textasciicircum')
+        strings[i] = strings[i].replace('~', '$\sim$')
         strings[i] = strings[i].replace(special_backslash, '$\\backslash$')
     
 

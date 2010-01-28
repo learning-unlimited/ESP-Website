@@ -417,6 +417,17 @@ class ArgCache(WithDelayableMethods):
             _self.send(key_set=key_set)
     delete_key_set.alters_data = True
 
+    def delete_key_sets(self, list_or_set):
+        """ Delete one or multiple (including nested lists) key sets. 
+            - Michael P 11/1/2009
+        """
+        if type(list_or_set) == list:
+            for item in list_or_set:
+                self.delete_key_sets(item)
+        else:
+            self.delete_key_set(**list_or_set)
+    delete_key_sets.alters_data = True
+
     def has_key(self, arg_list):
         """ Returns true if arg_list is cached. """
         return self.get(arg_list) is not None
@@ -453,7 +464,7 @@ class ArgCache(WithDelayableMethods):
         if create_token:
             self.get_or_create_token(token_list_for(key_set))
         def delete_cb(sender, **kwargs):
-            self.delete_key_set(**key_set)
+            self.delete_key_sets(key_set)
         signals.post_save.connect(delete_cb, sender=Model, weak=False)
         signals.post_delete.connect(delete_cb, sender=Model, weak=False)
     depend_on_model.alters_data = True
@@ -494,7 +505,7 @@ class ArgCache(WithDelayableMethods):
                 return None
             new_key_set = selector(instance)
             if new_key_set is not None:
-                self.delete_key_set(**new_key_set)
+                self.delete_key_sets(new_key_set)
         signals.post_save.connect(delete_cb, sender=Model, weak=False)
         signals.post_delete.connect(delete_cb, sender=Model, weak=False)
     depend_on_row.alters_data = True
@@ -525,7 +536,7 @@ class ArgCache(WithDelayableMethods):
                 return None
             new_key_set = mapping_func(**key_set)
             if new_key_set is not None:
-                self.delete_key_set(**new_key_set)
+                self.delete_key_sets(new_key_set)
         # TODO: Handle timeouts and take the min of a timeout
         cache_obj.connect(delete_cb)
     depend_on_cache.alters_data = True
@@ -558,7 +569,7 @@ class ArgCache(WithDelayableMethods):
                 return None
             new_key_set = add_func(instance, object)
             if new_key_set is not None:
-                self.delete_key_set(**new_key_set)
+                self.delete_key_sets(new_key_set)
         def rem_cb(sender, instance, field, object, **kwargs):
             if field != m2m_field:
                 return None
@@ -566,7 +577,7 @@ class ArgCache(WithDelayableMethods):
                 return None
             new_key_set = rem_func(instance, object)
             if new_key_set is not None:
-                self.delete_key_set(**new_key_set)
+                self.delete_key_sets(new_key_set)
         m2m_added.connect(add_cb, sender=Model, weak=False)
         m2m_removed.connect(rem_cb, sender=Model, weak=False)
 

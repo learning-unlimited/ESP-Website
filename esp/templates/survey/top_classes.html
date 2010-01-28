@@ -94,7 +94,7 @@
 <h2>Show categories</h2>
 <form action="#" method="get">
     {% for cat in categories %}
-        <div><input type="checkbox" name="cat_{{ cat.0|upper }}" id="cat_{{ cat.0|upper }}" checked="checked" onchange="togglecat(&quot;{{ cat.0|upper }}&quot;, this.checked)" /><label for="cat_{{ cat.0|upper }}">{{ cat }}</label></div>
+        <div><input type="checkbox" name="cat_{{ cat.symbol }}" id="cat_{{ cat.symbol }}" checked="checked" onchange="togglecat(&quot;{{ cat.symbol }}&quot;, this.checked)" /><label for="cat_{{ cat.symbol }}">{{ cat }}</label></div>
     {% endfor %}
 </form>
 </div>

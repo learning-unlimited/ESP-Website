@@ -2,10 +2,12 @@ from django.contrib.auth.models import User, Group
 import datetime, random, hashlib
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import UserBit, GetNode
+from esp.program.models import ClassSection
 from django.test.client import Client
 
 from esp.datatree.models import *
 from esp.users.models import ESPUser
+from esp.resources.models import ResourceType
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
@@ -316,11 +318,17 @@ class ProgramHappenTest(TestCase):
             'grade_max': self.prog.grade_max,
             'class_size_max': '10',
             'allow_lateness': 'False',
-            'has_own_space': 'False',
-            'requested_special_resources': 'Two doorstops and a first-aid kit.',
             'message_for_directors': 'Hi chairs!',
-
-            'class_reg_page': '1'
+            'class_reg_page': '1',
+            #   Resource forms in default configuration
+            'request-TOTAL_FORMS': '2',
+            'request-INITIAL_FORMS': '2',
+            'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
+            'request-0-desired_value': 'Lecture',
+            'request-1-resource_type': str(ResourceType.get_or_create('A/V').id),
+            'request-1-desired_value': 'LCD projector',
+            'restype-TOTAL_FORMS': '0',
+            'restype-INITIAL_FORMS': '0',
         }
         self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
 
@@ -515,12 +523,13 @@ class ProgramFrameworkTest(TestCase):
         if not pcf.is_valid():
             print pcf.data
             print pcf.errors
+            print prog_form_values
             raise Exception()
         
         temp_prog = pcf.save(commit=False)
         datatrees, userbits, modules = prepare_program(temp_prog, pcf.cleaned_data)
         costs = (pcf.cleaned_data['base_cost'], pcf.cleaned_data['finaid_cost'])
-        anchor = GetNode(pcf.cleaned_data['anchor'].uri + "/" + pcf.cleaned_data["term"])
+        anchor = GetNode(pcf.cleaned_data['anchor'].get_uri() + "/" + pcf.cleaned_data["term"])
         anchor.friendly_name = pcf.cleaned_data['term_friendly']
         anchor.save()
         new_prog = pcf.save(commit=False)
@@ -547,7 +556,7 @@ class ProgramFrameworkTest(TestCase):
         for t in self.teachers:
             for i in range(settings['classes_per_teacher']):
                 current_category = self.categories[subject_count % settings['num_categories']]
-                class_anchor = GetNode('%s/Classes/%s%d' % (self.program.anchor.uri, current_category.symbol, subject_count + 1))
+                class_anchor = GetNode('%s/Classes/%s%d' % (self.program.anchor.get_uri(), current_category.symbol, subject_count + 1))
                 new_class, created = ClassSubject.objects.get_or_create(anchor=class_anchor, category=current_category, grade_min=7, grade_max=12, parent_program=self.program, class_size_max=settings['room_capacity'])
                 subject_count += 1
                 for j in range(settings['sections_per_class']):
@@ -762,18 +771,22 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         #   Check that multiplier works
         options.class_cap_multiplier = str(mult_test)
         options.save()
+        ClassSection._get_capacity.delete([sec])
         self.assertEqual(sec.capacity, int(initial_capacity * mult_test))
         #   Check that multiplier and offset work
         options.class_cap_offset = offset_test
         options.save()
+        ClassSection._get_capacity.delete([sec])
         self.assertEqual(sec.capacity, int(initial_capacity * mult_test + offset_test))
         #   Check that offset only works
         options.class_cap_multiplier = '1.0'
         options.save()
+        ClassSection._get_capacity.delete([sec])
         self.assertEqual(sec.capacity, int(initial_capacity + offset_test))
         #   Check that we can go back to normal
         options.class_cap_offset = 0
         options.save()
+        ClassSection._get_capacity.delete([sec])
         self.assertEqual(sec.capacity, initial_capacity)
 
 from esp.program.modules.tests import *

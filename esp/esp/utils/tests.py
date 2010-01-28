@@ -5,11 +5,98 @@ Test cases for Django-ESP utilities
 import unittest
 import doctest
 import subprocess
-import memcache
+import pylibmc as memcache
 import os
+import sys
 from utils.memcached_multihost import CacheClass as MultihostCacheClass
 from esp import utils
 from esp import settings
+
+# Code from <http://snippets.dzone.com/posts/show/6313>
+# My understanding is that snippets from this site are public domain,
+# though I've had trouble finding documentation to clarify this.
+def find_executable(executable, path=None):
+    """Try to find 'executable' in the directories listed in 'path' (a
+    string listing directories separated by 'os.pathsep'; defaults to
+    os.environ['PATH']).  Returns the complete filename or None if not
+    found
+    """
+    if path is None:
+        path = os.environ['PATH']
+    paths = path.split(os.pathsep)
+    extlist = ['']
+    if os.name == 'os2':
+        (base, ext) = os.path.splitext(executable)
+        # executable files on OS/2 can have an arbitrary extension, but
+        # .exe is automatically appended if no dot is present in the name
+        if not ext:
+            executable = executable + ".exe"
+    elif sys.platform == 'win32':
+        pathext = os.environ['PATHEXT'].lower().split(os.pathsep)
+        (base, ext) = os.path.splitext(executable)
+        if ext.lower() not in pathext:
+            extlist = pathext
+    for ext in extlist:
+        execname = executable + ext
+        if os.path.isfile(execname):
+            return execname
+        else:
+            for p in paths:
+                f = os.path.join(p, execname)
+                if os.path.isfile(f):
+                    return f
+    else:
+        return None
+
+class DependenciesTestCase(unittest.TestCase):
+    def tryImport(self, mod):
+        try:
+            foo = __import__(mod)
+        except Exception, e:
+            print "Error importing required module '%s': %s" % (mod, e)
+            self._failed_import = True
+    
+    def tryExecutable(self, exe):
+        if not find_executable(exe):
+            print "Executable not found:  '%s'" % exe
+            self._exe_not_found = True
+
+    def testDeps(self):
+        self._failed_import = False
+        self._exe_not_found = False
+        
+        self.tryImport("django")  # If this fails, we lose.
+        self.tryImport("PIL")  # Needed for Django Image fields, which we use for (among other things) teacher bio's
+        self.tryImport("_imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
+        self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
+        self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
+        self.tryImport("simplejson")  # Used for some of our AJAX magic
+        self.tryImport("icalendar")  # Currently not significantly used, but we have some hanging imports.  Originally used for exporting .ics calendar files, usable by many calendaring applications; we may do this again at some point.
+        self.tryImport("twill")  # Used for unit testing against an actual server
+        self.tryImport("flup")  # Used for interfacing with lighttpd via FastCGI
+        self.tryImport("psycopg")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
+	self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
+
+        self.assert_(not self._failed_import)
+
+        # Make sure that we're actually using pylibmc.
+        # Note that this requires a patch to Django.
+        # Patch can be found at:  <http://code.djangoproject.com/ticket/11675>
+        from pylibmc import Client
+        from django.core.cache import cache
+        if hasattr(cache, "_cache"):
+            self.assert_(isinstance(cache._cache, Client))
+        elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
+            self.assert_(isinstance(cache._wrapped_cache._cache, Client))
+
+        self.tryExecutable("latex")  # Used for a whole pile of program printables, as well as inline LaTeX
+        self.tryExecutable("dvips")  # Used to convert LaTeX output (.dvi) to .ps files
+        self.tryExecutable("convert")  # Used in the generation of inline LaTeX chunks.  Also for some cases of generating .png images from LaTeX output; the student-schedule generator currently does dvips then convert to get .png's so that barcodes work
+        self.tryExecutable("dvipng")  # Used to convert LaTeX output (.dvi) to .png files
+        self.tryExecutable("ps2pdf")  # Used to convert LaTeX output (.dvi) to .pdf files (must go to .ps first because we use some LaTeX packages that depend on Postscript)
+        self.tryExecutable("inkscape")  # Used to render LaTeX output (once converted to .pdf) to .svg image files
+        
+        self.assert_(not self._exe_not_found)
 
 class MemcachedTestCase(unittest.TestCase):
     """
@@ -217,4 +304,11 @@ class MultihostCacheClassTest(MemcachedTestCase):
         self.cacheclass.incr('test_math')
         self.assertEqual(3, self.cacheclass.get('test_math'))
         
-UtilFunctionsDocTestSuite = doctest.DocTestSuite(utils)
+def suite():
+    """Choose tests to expose to the Django tester."""
+    s = unittest.TestSuite()
+    # Scan this file for TestCases
+    s.addTest(unittest.defaultTestLoader.loadTestsFromModule(utils.tests))
+    # Add doctests from esp.utils.__init__.py
+    s.addTest(doctest.DocTestSuite(utils))
+    return s

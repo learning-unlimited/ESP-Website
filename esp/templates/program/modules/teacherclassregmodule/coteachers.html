@@ -90,7 +90,7 @@ You currently have no coteachers for this class.
                 dojo.require("dojo.data.ItemFileReadStore");
                 dojo.require("dojox.data.JsonRestStore");
             </script>
-            <div dojoType="dojox.data.JsonRestStore" jsId="stateStore" target="/teach/Splash/2009_Fall/teacherlookup/" idAttribute="id">
+            <div dojoType="dojox.data.JsonRestStore" jsId="stateStore" target="/teach/{{ program.getUrlBase }}/teacherlookup/" idAttribute="id">
             </div>
             <input dojoType="dijit.form.FilteringSelect" value="" store="stateStore" searchAttr="name" name="teacher_selected" id="stateInput">
         </td>

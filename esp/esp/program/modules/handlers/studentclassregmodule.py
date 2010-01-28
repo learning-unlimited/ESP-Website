@@ -259,6 +259,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['one'] = one
         context['two'] = two
         context['num_classes'] = self.user.getEnrolledSections(self.program).count()
+        #context['num_classes'] = self.user.getSections(self.program).count()
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}
@@ -303,7 +304,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classid = request.POST['class_id']
             sectionid = request.POST['section_id']
         else:
-            from esp.dblog.models import error
             raise ESPError(False), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
 
         enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
@@ -531,17 +531,19 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     return True
             return False
         
-        # using .extra() to select all the category text simultaneously
-        classes = ClassSubject.objects.catalog(self.program)        
+        #classes = ClassSubject.objects.catalog(self.program)        
 
         # Sort classes
-        classes = list(classes)
-        options = prog.getModuleExtension('StudentClassRegModuleInfo')
-        if not options.show_unscheduled_classes:
-            classes = filter(is_scheduled, classes)
-        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
-        classes = sorted(classes, key=lambda cls: cls.friendly_times()[0] if len(cls.friendly_times()) > 0 else [])
-        classes = sorted(classes, key=lambda cls: cls.category.category)
+        #classes = list(classes)
+        #options = prog.getModuleExtension('StudentClassRegModuleInfo')
+        #if not options.show_unscheduled_classes:
+        #    classes = filter(is_scheduled, classes)
+        #classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
+        #classes = sorted(classes, key=lambda cls: cls.friendly_times()[0] if len(cls.friendly_times()) > 0 else [])
+        #classes = sorted(classes, key=lambda cls: cls.category.category)
+
+        # using .extra() to select all the category text simultaneously
+        classes = ClassSubject.objects.catalog(self.program)
 
         categories = {}
         for cls in classes:

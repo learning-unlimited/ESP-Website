@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 
-# aseering 8-13-2008 -- Temporary hack until we switch globally to
-# Django 1.0.  Don't commit to SVN!
-import sys
-sys.path.insert(0, "/esp/web/stanford/django/")
-
 from django.core.management import execute_manager
 try:
     import settings # Assumed to be in the same directory.

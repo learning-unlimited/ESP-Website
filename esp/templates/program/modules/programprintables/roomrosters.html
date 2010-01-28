@@ -68,7 +68,7 @@ td.newday { border-width: 2px 1px 0 1px;}
 {% endifchanged %}
 {% autoescape off %}
 <tr>
-  <td>{{ scheditem.timeblock.short_time }}</td>
+  <td>{{ scheditem.timeblock.start|date:"b j"|capfirst }}, {{ scheditem.timeblock.short_time }}</td>
   <td>{{ scheditem.cls.title }}</td>
 {% autoescape off %}
   <td>{{ scheditem.cls.parent_class.getTeacherNames|join:"<br />" }}</td> 
