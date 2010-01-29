@@ -1,7 +1,9 @@
 from esp.dbmail.base import BaseHandler
 from esp.users.models import ESPUser
 from esp.program.models import Program, ClassSubject, ClassSection
-from esp.mailman import create_list, load_list_settings, add_list_member
+from esp.mailman import create_list, load_list_settings, add_list_member, set_list_moderator_password, apply_list_settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
 class SectionList(BaseHandler):
 
@@ -20,11 +22,20 @@ class SectionList(BaseHandler):
         create_list(list_name, "esp-moderators@mit.edu")
         load_list_settings(list_name, "lists/class_mailman.config")
 
-        add_list_member(list_name, cls.parent_program.director_email)
-        add_list_member(list_name, ["%s@esp.mit.edu" % x.username for x in cls.teachers()])
-
         if user_type != "teachers":
             add_list_member(list_name, ["%s@esp.mit.edu" % x.username for x in section.students()])
+
+            apply_list_settings(list_name, {'moderator': ['esp-moderators@mit.edu', '%s-teachers@esp.mit.edu' % cls.emailcode()]})
+            send_mail("[ESP] Activated class mailing list: %s@esp.mit.edu", 
+                      render_to_string("mailman/new_list_intro_teachers.txt", 
+                                       { 'classname': str(cls),
+                                         'mod_password': set_list_moderator_password(list_name) }),
+                      "esp@mit.edu", "%s-teachers@esp.mit.edu" % cls.emailcode())
+        else:
+            apply_list_settings(list_name, {'default_member_moderation': False})
+
+        add_list_member(list_name, cls.parent_program.director_email)
+        add_list_member(list_name, ["%s@esp.mit.edu" % x.username for x in cls.teachers()])
 
         self.recipients = ["%s@esp.mit.edu" % list_name]
         self.send = True

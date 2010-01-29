@@ -1,9 +1,13 @@
+from __future__ import with_statement
 
 from subprocess import call, Popen, PIPE
 from esp.settings import USE_MAILMAN, PROJECT_ROOT
 from esp.utils.decorators import enable_with_setting
 from esp.database_settings import MAILMAN_PASSWORD
 from esp.users.models import ESPUser, User
+from tempfile import NamedTemporaryFile
+from django.contrib.auth.models import User
+
 
 MM_PATH = "/usr/sbin/"
 
@@ -35,6 +39,74 @@ def load_list_settings(list, listfile):
         listpath = PROJECT_ROOT + listfile
 
     return call([MM_PATH + "config_list", "-i", listpath, list])
+
+
+@enable_with_setting(USE_MAILMAN)
+def apply_raw_list_settings(list, data):
+    """
+    Apply the settings in 'data' to the specified list.
+    This is functionally equivalent to writing 'data' to a file and calling "load_list_settings()" on that file.
+    """
+    with NamedTemporaryFile() as f:
+        f.write(data)
+        f.file.flush()
+        return call([MM_PATH + "config_list", "-i", f.name, list])
+
+
+@enable_with_setting(USE_MAILMAN)
+def apply_list_settings(list, data):
+    """
+    Apply the settings in 'data' to the specified list.
+    'data' is a key-value dictionary for Mailman variables to be set.
+    Keys should be valid Python variable names expressed as strings.
+    Values should be either strings, or objects that, when converted to a string via repr(), represent valid Python expressions in the configuration file.
+    """
+
+    with NamedTemporaryFile() as f:
+        f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in data.iteritems() ) )
+        f.file.flush()
+        return call([MM_PATH + "config_list", "-i", f.name, list])
+
+
+@enable_with_setting(USE_MAILMAN)
+def set_list_owner_password(list, password=None):
+    """
+    Set the list-owner password for the specified list.
+    If 'password' isn't specified, a random password will be generated.
+    Return the password that is ultimately used.
+    """
+    data_str_template = """import sha
+mlist.password = sha.new('%s').hexdigest()
+del sha
+"""
+    if not password:
+        password = User.objects.make_random_password()
+
+    data_str = data_str_template % (password)
+
+    apply_raw_list_settings(list, data_str)
+    return password
+
+
+@enable_with_setting(USE_MAILMAN)
+def set_list_moderator_password(list, password=None):
+    """
+    Set the list-owner password for the specified list.
+    If 'password' isn't specified, a random password will be generated.
+    Return the password that is ultimately used.
+    """
+    data_str_template = """import sha
+mlist.mod_password = sha.new('%s').hexdigest()
+del sha
+"""
+    if not password:
+        password = User.objects.make_random_password()
+
+    data_str = data_str_template % (password)
+
+    apply_raw_list_settings(list, data_str)
+    return password
+
 
 @enable_with_setting(USE_MAILMAN)
 def add_list_member(list, member):
