@@ -217,6 +217,13 @@ class ESPUser(User, AnonymousUser):
 
         if type(user) == ESPUser:
             user = user.getOld()
+
+        if ESPUser(user).isAdministrator():
+            # Disallow morphing into Administrators.
+            # It's too broken, from a security perspective.
+            # -- aseering 1/29/2010
+            raise ESPError(), "User '%s' is an administrator; morphing into administrators is not permitted." % user.username
+
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         login(request, user)
