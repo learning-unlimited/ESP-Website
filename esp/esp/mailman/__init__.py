@@ -7,6 +7,7 @@ from esp.database_settings import MAILMAN_PASSWORD
 from esp.users.models import ESPUser, User
 from tempfile import NamedTemporaryFile
 from django.contrib.auth.models import User
+from django.db.models import Q
 
 
 MM_PATH = "/usr/sbin/"
@@ -125,7 +126,7 @@ def add_list_member(list, member):
     if not isinstance(member, basestring):       
         member = "\n".join(member)
 
-    return Popen([MM_PATH + "add_members", "--regular-members-file=-", list], stdin=PIPE).communicate(member)
+    return Popen([MM_PATH + "add_members", "--regular-members-file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
 @enable_with_setting(USE_MAILMAN)
 def remove_list_member(list, member):
@@ -144,12 +145,12 @@ def remove_list_member(list, member):
     if not isinstance(member, basestring):       
         member = "\n".join(member)
 
-    return Popen([MM_PATH + "remove_members", "--file=-", list], stdin=PIPE).communicate(member)
+    return Popen([MM_PATH + "remove_members", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
 @enable_with_setting(USE_MAILMAN)
-def list_contents(list):
+def list_contents(lst):
     """ Return the list of e-mail addresses on the specified mailing list """
-    return Popen([MM_PATH + "list_members", list]).communicate()[0].split('\n')
+    return Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
 
 @enable_with_setting(USE_MAILMAN)
 def list_members(list):
