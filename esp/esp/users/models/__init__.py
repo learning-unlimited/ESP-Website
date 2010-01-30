@@ -1278,6 +1278,17 @@ class ContactInfo(models.Model):
         app_label = 'users'
         db_table = 'users_contactinfo'
 
+    def _distance_from(self, zip):
+        try:
+            myZip = ZipCode.objects.get(zip_code = self.address_zip)
+            remoteZip = ZipCode.objects.get(zip_code = zip)
+            return myZip.distance(remoteZip)
+        except:
+            return -1
+
+
+
+
     def address(self):
         return '%s, %s, %s %s' % \
             (self.address_street,
@@ -1341,6 +1352,11 @@ class ContactInfo(models.Model):
             self.address_postal = str(self.address_postal)
 
         super(ContactInfo, self).save(*args, **kwargs)
+
+        if self._distance_from("02139") < 50:
+            from esp.mailman import add_list_member
+            add_list_member("announcements_local", self.e_mail)
+            
 
     def __unicode__(self):
         username = ""
