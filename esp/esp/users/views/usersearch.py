@@ -82,7 +82,7 @@ def get_user_list(request, listDict2, extra=''):
         # map of operators that can be done on lists (appropriately, Q Objects)
         opmapping = {'and'  : operator.and_,
                      'or'   : operator.or_,
-                     'not'  : (lambda x: ~x), # aseering 7/12/2008 -- Should with with Django SVN HEAD
+                     'not'  : (lambda x: ~x), # aseering 7/12/2008 -- Should work with Django SVN HEAD
                      'ident': (lambda x: x) # for completeness
                      }
 
