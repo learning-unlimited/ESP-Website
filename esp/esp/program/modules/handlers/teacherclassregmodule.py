@@ -48,6 +48,7 @@ from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
 from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeFormSet
 from datetime                    import timedelta
+from esp.mailman                 import add_list_member
 import simplejson as json
 
 class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
@@ -393,6 +394,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             coteachers = [ x for x in coteachers if x != '' ]
             coteachers = [ ESPUser(User.objects.get(id=userid))
                            for userid in coteachers                ]
+            add_list_member("%s_%s-teachers" % (prog.anchor.parent.name, prog.anchor.name), coteachers)
 
         op = ''
         if request.POST.has_key('op'):
@@ -589,6 +591,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context = {'module': self}
         
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
+            add_list_member("%s_%s-teachers" % (prog.anchor.parent.name, prog.anchor.name), request.user)
             if not self.deadline_met():
                 return self.goToCore(tl)
             
