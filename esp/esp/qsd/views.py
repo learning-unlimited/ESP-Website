@@ -199,7 +199,7 @@ def qsd(request, branch, name, section, action):
         qsd_rec_new.title = request.POST['title']
         qsd_rec_new.description = request.POST['description']
         qsd_rec_new.keywords    = request.POST['keywords']
-        qsd_rec_new.save(user=request.user)
+        qsd_rec_new.save()
 
         qsd_rec = qsd_rec_new
 
@@ -225,9 +225,6 @@ def qsd(request, branch, name, section, action):
                     
             m.handle_file(file, local_filename)
             m.save()
-
-        cache.delete(urlencode('quasistaticdata:' + cache_id))
-        cache.delete(urlencode('quasistaticdata_html:' + cache_id))
 
 
     # Detect the edit verb
@@ -280,7 +277,8 @@ def ajax_qsd(request):
         qsd = qsdold.copy()
         qsd.content = post_dict['data']
         qsd.load_cur_user_time(request, )
-        qsd.save(user=request.user,)
+        # Local change here, to enable QSD editing.
+        qsd.save()
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
         result['id'] = qsd.id
@@ -291,7 +289,7 @@ def ajax_qsd(request):
         qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path,defaults={'author': request.user})
         qsd.content = post_dict['data']
         qsd.author = request.user
-        qsd.save(user=request.user,)
+        qsd.save()
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
         result['id'] = qsd.id
