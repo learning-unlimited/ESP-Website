@@ -69,8 +69,8 @@ def render_class_core(cls):
     
     # HACK for Harvard HSSP -- show application counts with enrollment
     if cls.studentappquestion_set.count():
-        cls.get_sections = list(cls.get_sections())
-        for sec in cls.get_sections:
+        cls._sections = list(cls.get_sections())
+        for sec in cls._sections:
             sec.num_apps = sec.num_students(verbs=['/Applied'])
 
     return {'class': cls,
