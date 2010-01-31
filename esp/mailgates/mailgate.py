@@ -53,6 +53,16 @@ try:
         if not instance.send:
             continue
 
+        if hasattr(instance, "direct_send") and instance.direct_send:
+            if message['Bcc']:
+                bcc_recipients = [x.strip() for x in message['Bcc'].split(',')]
+                bcc_recipients += [ARCHIVE]
+                del(message['Bcc'])
+                message['Bcc'] = ", ".join(bcc_recipients)
+            else:
+                message['Bcc'] = ARCHIVE
+
+            send_mail(str(message))
         
         del(message['to'])
         del(message['cc'])
