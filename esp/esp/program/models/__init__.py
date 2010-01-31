@@ -468,6 +468,8 @@ class Program(models.Model):
         students_dict = self.students(QObjects = True)
         if students_dict.has_key('classreg'):
             students_count = User.objects.filter(students_dict['classreg']).distinct().count()
+        elif students_dict.has_key('satprepinfo'):
+            students_count = User.objects.filter(students_dict['satprepinfo']).distinct().count()
         else:
             students_count = User.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
 #            students_count = 0
