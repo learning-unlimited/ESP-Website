@@ -89,7 +89,7 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
         if user is not None and ESPUser(user).is_authenticated():
             prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
 
-    if user and prereg_url:
+    if user and prereg_url and timeslot:
         error1 = cls.cannotAdd(user, True, request=request)
         # If we can't add the class at all, then we take that error message
         if error1:
