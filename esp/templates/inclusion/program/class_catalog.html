@@ -59,17 +59,23 @@
     function initialize_prereg_{{ class.id }}() 
     {
         {% if section %}
-        {% comment %} This code would allow fillslot pages to use Ajax too.  But we don't want that yet.  -Michael P 
+            //  Section defined!
             {% if not section.isRegClosed %}
+                {% if not sec.friendly_times|length_is:0 %}
         register_form({id: "prereg_{{ section.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
         register_fragment({id: "addbutton_fillslot_sec{{ section.id }}_html", url: ""});
+                {% endif %}
             {% endif %}
-        {% endcomment %}
         {% else %}
+            //  Section not defined!
             {% for sec in class.get_sections %}
-                {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
+                {% if not sec.isRegClosed %}
+                    {% if sec.isAccepted %}
+                        {% if not sec.friendly_times|length_is:0 %}
         register_form({id: "prereg_{{ sec.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
         register_fragment({id: "addbutton_catalog_sec{{ sec.id }}_html", url: ""});
+                        {% endif %}
+                    {% endif %}
                 {% endif %}
             {% endfor %}
         {% endif %}

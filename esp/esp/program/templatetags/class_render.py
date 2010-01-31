@@ -77,8 +77,11 @@ def render_class_core(cls):
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
     errormsg = None
-
-    section = cls.get_section(timeslot=timeslot)
+    
+    if timeslot:
+        section = cls.get_section(timeslot=timeslot)
+    else:
+        section = None
         
     #   Add ajax_addclass to prereg_url if registering from catalog is allowed
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
