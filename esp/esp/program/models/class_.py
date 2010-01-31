@@ -1101,6 +1101,7 @@ class ClassSection(models.Model):
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
                 add_list_member(list_name, "%s@esp.mit.edu" % user.username)
+                add_list_member("%s_%s-students" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name), "%s@esp.mit.edu" % user.username)
 
             return True
         else:
