@@ -82,7 +82,7 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
         section = cls.get_section(timeslot=timeslot)
     else:
         section = None
-        
+
     #   Add ajax_addclass to prereg_url if registering from catalog is allowed
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     if prereg_url is None and scrmi.register_from_catalog:
@@ -95,7 +95,8 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
         if error1:
             errormsg = error1
         else:  # there's some section for which we can add this class; does that hold for this one?
-            errormsg = section.cannotAdd(user, True, request=request)
+            if section:
+                errormsg = section.cannotAdd(user, True, request=request)
         
     show_class =  (not filter) or (not errormsg)
     

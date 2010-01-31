@@ -23,6 +23,7 @@
         {% else %}
             {% if section %}
                 {% if not section.isRegClosed %}
+                {% if not section.friendly_times|length_is:0 %}
                 <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}">
                   <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ section.id }}" />
@@ -33,6 +34,7 @@
                       <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ sec.id }}" disabled />
                       {% endif %}
                 </form>
+                {% endif %}
                 {% endif %}
             {% else %}
                 {% for sec in class.get_sections %}
