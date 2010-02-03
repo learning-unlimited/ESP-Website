@@ -36,7 +36,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, UserBit, User
-from django.db.models.query import Q
+from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
 from django.http import HttpResponse
 from django.views.decorators.cache import cache_control
@@ -237,17 +237,20 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}
         
         #   Rewrite registration button if a particular section was named.  (It will be in extra).
-        sec_id = None
-        try:
-            sec_id = int(extra)
-        except:
-            pass
+        sec_ids = []
+        if isinstance(extra, list) or isinstance(extra, QuerySet):
+            sec_ids = list(extra)
+        else:
+            try:
+                sec_ids = [int(x) for x in extra.split(',')]
+            except:
+                pass
             
-        if sec_id:
+        for sec_id in sec_ids:
             try:
                 section = ClassSection.objects.get(id=sec_id)
                 cls = section.parent_class
-                button_context = {'section': section, 'cls': cls}
+                button_context = {'sec': section, 'cls': cls}
                 if section in self.user.getEnrolledSections(self.program):
                     button_context['label'] = 'Registered!'
                     button_context['disabled'] = True
@@ -413,7 +416,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if is_onsite and not request.GET.has_key('filter'):
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+            classes = filter(lambda c: c.grade_min >= user_grade and c.grade_max <= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
             classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
@@ -497,23 +500,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         
-        def is_scheduled(cls):
-            for s in cls.sections.all():
-                if s.meeting_times.all().count() > 0:
-                    return True
-            return False
-        
         # using .extra() to select all the category text simultaneously
-        classes = ClassSubject.objects.catalog(self.program)        
-
-        # Sort classes
-        classes = list(classes)
-        options = prog.getModuleExtension('StudentClassRegModuleInfo')
-        if not options.show_unscheduled_classes:
-            classes = filter(is_scheduled, classes)
-        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
-        classes = sorted(classes, key=lambda cls: cls.friendly_times()[0] if len(cls.friendly_times()) > 0 else [])
-        classes = sorted(classes, key=lambda cls: cls.category.category)
+        classes = ClassSubject.objects.catalog(self.program)
 
         categories = {}
         for cls in classes:
@@ -609,8 +597,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             for implication in ClassImplication.objects.filter(cls=cls, enforce=True):
                 for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     auto_class.unpreregister_student(self.user)
-                        
-        return True
+            
+        #   Return the ID of classes that were removed.
+        return oldclasses.values_list('id', flat=True)
 
     @aux_call
     @needs_student
@@ -625,9 +614,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @meets_any_deadline(['/Classes/OneClass','/Removal'])
     def ajax_clearslot(self,request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
-        success = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if success:
-            return self.ajax_schedule(request, tl, one, two, module, extra, prog)
+        cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        if len(cleared_ids) > 0:
+            #   The 'extra' value should be the ID list
+            return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)
 
     @aux_call
     @needs_student

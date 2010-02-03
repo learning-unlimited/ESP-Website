@@ -54,7 +54,6 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
-from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models          import Program
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -155,7 +154,8 @@ class ClassManager(ProcedureManager):
         select = SortedDict([( '_num_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "datatree_datatree"."id" AND "datatree_datatree"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
                              ('teacher_ids', 'SELECT list("users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
-                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')')])
+                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
+                             ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
         select_params = [ enrolled_node.id,
                           now,
@@ -167,6 +167,7 @@ class ClassManager(ProcedureManager):
         classes = classes.extra(select=select, select_params=select_params)
         classes = classes.order_by('category', '_num_students', 'id')
         classes = classes.distinct()
+        classes = list(classes)
 
         # All class ID's; used by later query ugliness:
         class_ids = map(lambda x: x.id, classes)
@@ -271,6 +272,7 @@ class ClassSection(models.Model):
                          ]
 
         sections = queryset.extra(select=select, select_params=select_params)
+        sections = list(sections)
         section_ids = map(lambda x: x.id, sections)
 
         # Now, go get some events...
@@ -323,20 +325,16 @@ class ClassSection(models.Model):
 
         return rc
 
+    @cache_function
     def _get_capacity(self, ignore_changes=False):
         if self.max_class_capacity is not None:
-            ans = self.max_class_capacity
+            return self.max_class_capacity
 
         rooms = self.initial_rooms()
         if len(rooms) == 0:
             ans = self.parent_class.class_size_max
         else:
             ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
-
-            # Only save the capacity if we do have rooms assigned;
-            # otherwise don't bother as this number will almost definitely change
-            self.max_class_capacity = ans
-            self.save()
             
         #   Apply dynamic capacity rule
         if not ignore_changes:
@@ -344,7 +342,15 @@ class ClassSection(models.Model):
             return int(ans * options.class_cap_multiplier + options.class_cap_offset)
         else:
             return int(ans)
-   
+
+    _get_capacity.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    _get_capacity.depend_on_row(lambda:ClassSection, lambda r: {'self': r})
+    _get_capacity.depend_on_model(lambda:ClassSubject)
+    _get_capacity.depend_on_model(lambda: Resource)
+    _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
+    _get_capacity.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
+
+       
     capacity = property(_get_capacity)
 
     def __init__(self, *args, **kwargs):
@@ -441,7 +447,6 @@ class ClassSection(models.Model):
             return False
         else:
             td = time.time() - time.mktime(st.timetuple())
-            print td
             if td < 600 and td > -3000:
                 return True
             else:
@@ -1096,6 +1101,7 @@ class ClassSection(models.Model):
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
                 add_list_member(list_name, "%s@esp.mit.edu" % user.username)
+                add_list_member("%s_%s-students" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name), "%s@esp.mit.edu" % user.username)
 
             return True
         else:
@@ -1196,7 +1202,7 @@ class ClassSubject(models.Model):
 
     def _get_capacity(self):
         c = 0
-        for s in self.sections.all():
+        for s in self.get_sections():
             c += s.capacity
         return c
     capacity = property(_get_capacity)
@@ -1207,8 +1213,6 @@ class ClassSubject(models.Model):
 
     def get_section(self, timeslot=None):
         """ Cache sections for a class.  Always use this function to get a class's sections. """
-
-    
         # If we happen to know our own sections from a subquery:
         did_search = True
 
@@ -1217,14 +1221,12 @@ class ClassSubject(models.Model):
                 if not hasattr(s, "_events"):
                     did_search = False
                     break
-                if timeslot in s._events:
+                if timeslot in s._events or timeslot == None:
                     return s
 
             if did_search: # If we did successfully search all sections, but found none in this timeslot
                 return None
             #If we didn't successfully search all sections, go and do it the old-fashioned way:
-
-        print "Couldn't find section!"
             
         from django.core.cache import cache
 
@@ -1236,7 +1238,6 @@ class ClassSubject(models.Model):
         # Encode None as a string... silly, I know.   -Michael P
         val = cache.get(key) 
         if val:
-            # print 'hit cache for %s' % key
             if val is not None:
                 if val == 'None':
                     return None
@@ -1252,7 +1253,6 @@ class ClassSubject(models.Model):
         else:
             result = self.default_section()
             
-        # print 'set cache for %s' % key
         if result is not None:
             cache.set(key, result)
         else:
@@ -1427,6 +1427,14 @@ class ClassSubject(models.Model):
         
         if anchor:
             anchor.delete(True)
+                
+    def numStudentAppQuestions(self):
+        # This field may be prepopulated by .objects.catalog()
+        if not hasattr(self, "_studentapps_count"):
+            self._studentapps_count = self.studentappquestion_set.count()
+            
+        return self._studentapps_count
+        
         
     def cache_time(self):
         return 99999

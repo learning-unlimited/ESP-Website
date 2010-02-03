@@ -522,9 +522,9 @@ class Program(models.Model):
         from esp.resources.models import ResourceType
         
         if timeslot is not None:
-            return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom'))
+            return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom')).select_related()
         else:
-            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
+            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event').select_related()
     
     def getAvailableClassrooms(self, timeslot):
         #   Filters down classrooms to those that are not taken.
@@ -537,7 +537,6 @@ class Program(models.Model):
                 #   Make a dictionary with some helper variables for each resource.
                 result[c.name] = c
                 result[c.name].timeslots = [c.event]
-
                 result[c.name].furnishings = c.associated_resources()
                 result[c.name].sequence = c.schedule_sequence(self)
                 result[c.name].prog_available_times = c.available_times(self.anchor)
@@ -568,7 +567,7 @@ class Program(models.Model):
         
         classrooms = self.getClassrooms()
         
-        result = self.collapsed_dict(list(classrooms))
+        result = self.collapsed_dict(classrooms)
         key_list = result.keys()
         key_list.sort()
         #   Turn this into a list instead of a dictionary.
@@ -783,10 +782,21 @@ class Program(models.Model):
                 module.setUser(user)
         return modules
     
-    @cache_function
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
         This avoids actually looking up the program module first. """
+        # We don't actually want to cache this in memcached:
+        # If its value changes in the middle of a page load, we don't want to switch to the new value.
+        # Also, the method is called quite often, so it adds cache load.
+        # Program objects are assumed to not persist across page loads generally,
+        # so the following should be marginally safer:
+        
+        if not hasattr(self, "_moduleExtension"):
+            self._moduleExtension = {}
+
+        key = (ext_name_or_cls, module_id)
+        if key in self._moduleExtension:
+            return self._moduleExtension[key]
         
         ext_cls = None
         if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
@@ -808,15 +818,9 @@ class Program(models.Model):
             except:
                 extension = None
                 
+        self._moduleExtension[key] = extension
+                
         return extension
-    #   Depend on all module extensions (kind of ugly, but at least we don't change those too frequently).
-    #   Ideally this could be autodetected by importing everything from module_ext first, but I ran into
-    #   a circular import problem.   -Michael P
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'ClassRegModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'StudentClassRegModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepAdminModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'CreditCardModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepTeacherModuleInfo'))
 
     def getColor(self):
         if hasattr(self, "_getColor"):

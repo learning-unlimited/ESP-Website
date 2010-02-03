@@ -217,6 +217,13 @@ class ESPUser(User, AnonymousUser):
 
         if type(user) == ESPUser:
             user = user.getOld()
+
+        if ESPUser(user).isAdministrator():
+            # Disallow morphing into Administrators.
+            # It's too broken, from a security perspective.
+            # -- aseering 1/29/2010
+            raise ESPError(), "User '%s' is an administrator; morphing into administrators is not permitted." % user.username
+
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         login(request, user)
@@ -1271,6 +1278,17 @@ class ContactInfo(models.Model):
         app_label = 'users'
         db_table = 'users_contactinfo'
 
+    def _distance_from(self, zip):
+        try:
+            myZip = ZipCode.objects.get(zip_code = self.address_zip)
+            remoteZip = ZipCode.objects.get(zip_code = zip)
+            return myZip.distance(remoteZip)
+        except:
+            return -1
+
+
+
+
     def address(self):
         return '%s, %s, %s %s' % \
             (self.address_street,
@@ -1334,6 +1352,11 @@ class ContactInfo(models.Model):
             self.address_postal = str(self.address_postal)
 
         super(ContactInfo, self).save(*args, **kwargs)
+
+        if self._distance_from("02139") < 50:
+            from esp.mailman import add_list_member
+            add_list_member("announcements_local", self.e_mail)
+            
 
     def __unicode__(self):
         username = ""
