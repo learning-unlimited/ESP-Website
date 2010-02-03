@@ -2,8 +2,12 @@
 from subprocess import call, Popen, PIPE
 from esp.settings import USE_MAILMAN, PROJECT_ROOT
 from esp.utils.decorators import enable_with_setting
-from esp.database_settings import MAILMAN_PASSWORD
 from esp.users.models import ESPUser, User
+
+if USE_MAILMAN:
+    from esp.database_settings import MAILMAN_PASSWORD
+else:
+    MAILMAN_PASSWORD = ''
 
 MM_PATH = "/usr/sbin/"
 
