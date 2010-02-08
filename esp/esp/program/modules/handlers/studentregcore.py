@@ -45,7 +45,7 @@ from django.contrib import admin
 from django.template import Context, Template
 from django.http import HttpResponse
 from django.core.mail import send_mail
-from django.template.loader import render_to_string, get_template
+from django.template.loader import render_to_string, get_template, select_template
 from esp.lib.markdown import markdown
 import operator
 
@@ -200,7 +200,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             try:
                 receipt_template = Template(DBReceipt.objects.get(program=self.program, action='confirmemail').receipt)
             except:
-                receipt_template = get_template('program/confirm_email.txt')
+                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confirm_email.txt'])
             send_mail("Thank you for registering for %s!" %(self.program.niceName()), \
                       receipt_template.render(Context({'user': self.user, 'program': self.program}, autoescape=False)), \
                       ("%s <%s>" %(self.program.niceName() + " Directors", self.program.director_email)), \

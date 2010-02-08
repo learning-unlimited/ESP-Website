@@ -48,7 +48,7 @@ class ClassManageForm(ManagementForm):
     def load_data(self, cls, prefix=''):
         self.initial = {prefix+'status': cls.status,
             prefix+'reg_status': None,
-            prefix+'min_grade': cls.grade_min, 
+            prefix+'min_grade': cls.grade_min,
             prefix+'max_grade': cls.grade_max,
             prefix+'notes': cls.directors_notes,
             prefix+'clsid': cls.id,
@@ -84,6 +84,7 @@ class SectionManageForm(ManagementForm):
     secid = forms.IntegerField(initial=-1, widget=forms.HiddenInput)
     times = forms.MultipleChoiceField(required=False, choices=())
     room = forms.MultipleChoiceField(required=False, choices=())
+    size = forms.IntegerField(required=False, min_value=0, help_text="Warning: this field overrides both the teacher-specified value and the physical limits of the classroom that this class is in!  Clear it and click 'Save' to go back to using the class's defaults.")
     resources = forms.MultipleChoiceField(label='Floating Resources', required=False, choices=())
     status = forms.ChoiceField(choices=())
     reg_status = forms.ChoiceField(required=False, choices=())
@@ -104,9 +105,10 @@ class SectionManageForm(ManagementForm):
     def load_data(self, sec, prefix=''):
         self.initial = {prefix+'status': sec.status,
             prefix+'reg_status': sec.registration_status,
-            prefix+'progress': [cm.id for cm in sec.checklist_progress.all()],
+            prefix+'progress': sec.checklist_progress.all().values_list('id', flat=True),
             prefix+'secid': sec.id,
-            prefix+'times': [ts.id for ts in sec.meeting_times.all()]}
+            prefix+'times': sec.meeting_times.all().values_list('id', flat=True),
+            prefix+'size': sec.capacity}
         ir = sec.initial_rooms()
         self.initial[prefix+'room'] = [r.name for r in ir]
         self.initial[prefix+'resources'] = [r.resource.name for r in sec.resourceassignments()]
@@ -136,4 +138,9 @@ class SectionManageForm(ManagementForm):
         for r in self.cleaned_data['resources']:
             for ts in sec.meeting_times.all():
                 sec.parent_program.getFloatingResources(timeslot=ts, queryset=True).filter(name=r)[0].assign_to_section(sec)
+        if self.cleaned_data['size']:
+            if self.cleaned_data['size'] != sec.capacity:
+                sec.max_class_capacity = self.cleaned_data['size']
+        else:
+            sec.max_class_capacity = None
         sec.save()

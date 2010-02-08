@@ -328,7 +328,7 @@ class ClassSection(models.Model):
     @cache_function
     def _get_capacity(self, ignore_changes=False):
         if self.max_class_capacity is not None:
-            ans = self.max_class_capacity
+            return self.max_class_capacity
 
         rooms = self.initial_rooms()
         if len(rooms) == 0:
@@ -344,6 +344,7 @@ class ClassSection(models.Model):
             return int(ans)
 
     _get_capacity.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    _get_capacity.depend_on_row(lambda:ClassSection, lambda r: {'self': r})
     _get_capacity.depend_on_model(lambda:ClassSubject)
     _get_capacity.depend_on_model(lambda: Resource)
     _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
@@ -1100,6 +1101,7 @@ class ClassSection(models.Model):
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
                 add_list_member(list_name, "%s@esp.mit.edu" % user.username)
+                add_list_member("%s_%s-students" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name), "%s@esp.mit.edu" % user.username)
 
             return True
         else:

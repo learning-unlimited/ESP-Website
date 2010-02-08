@@ -59,8 +59,38 @@ def get_user_list(request, listDict2, extra=''):
                          'description': value['description']}
 
 
+    if request.POST.has_key('select_mailman'):
+        from esp.mailman import list_members
+        import operator
+
+        lists = request.POST['select_mailman']
+        all_list_members = reduce(operator.or_, (list_members(x) for x in lists))
+        filterObj = PersistentQueryFilter.getFilterFromQ(Q(id__in=[x.id for x in all_list_members]), User, 'Custom Mailman filter: ' + ", ".join(lists))
+
+        if request.POST['submitform'] == 'I want to search within this list':
+            getUser, found = search_for_user(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
+            if found:
+                if type(getUser) == User or type(getUser) == ESPUser:
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+                else:
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, User, 'Custom user filter')
+                return (newfilterObj, True)
+            else:
+                return (getUser, False)
+
+        elif request.POST['submitform'] == 'I want a subset of this list':
+            getUsers, found = get_user_checklist(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+            if found:
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, User, 'Custom list')
+                return (newfilterObj, True)
+            else:
+                return (getUsers, False)
+
+        return (filterObj, True) # We got the list, return it.
+        
+
     if request.POST.has_key('submit_checklist') and \
-       request.POST['submit_checklist'] == 'true':
+            request.POST['submit_checklist'] == 'true':
 
         # If we're coming back after having checked off users from a checklist...
         filterObj = PersistentQueryFilter.getFilterFromID(request.POST['extra'], User)
@@ -82,7 +112,7 @@ def get_user_list(request, listDict2, extra=''):
         # map of operators that can be done on lists (appropriately, Q Objects)
         opmapping = {'and'  : operator.and_,
                      'or'   : operator.or_,
-                     'not'  : (lambda x: ~x), # aseering 7/12/2008 -- Should with with Django SVN HEAD
+                     'not'  : (lambda x: ~x), # aseering 7/12/2008 -- Should work with Django SVN HEAD
                      'ident': (lambda x: x) # for completeness
                      }
 
@@ -167,21 +197,27 @@ def get_user_list(request, listDict2, extra=''):
         else:
             return (getUser, False)
 
-    # we're going to prepare a list to send out.
-    arrLists = []
 
-    pickled_post = pickle.dumps(request.POST)
-    pickled_get  = pickle.dumps(request.GET)
+    if request.GET.has_key('advanced'):
+        # we're going to prepare a list to send out.
+        arrLists = []
 
-    request.session['usersearch_containers'] = (pickled_post, pickled_get)
+        pickled_post = pickle.dumps(request.POST)
+        pickled_get  = pickle.dumps(request.GET)
 
-    for key, value in listDict.items():
-        arrLists.append(DBList(key = key, QObject = value['list'], description = value['description'].strip('.'))) # prepare a nice list thing.
+        request.session['usersearch_containers'] = (pickled_post, pickled_get)
         
-    arrLists.sort(reverse=True) 
+        for key, value in listDict.items():
+            arrLists.append(DBList(key = key, QObject = value['list'], description = value['description'].strip('.'))) # prepare a nice list thing.
+        
+        arrLists.sort(reverse=True) 
 
-    return (render_to_response('users/create_list.html', request, None, {'lists': arrLists}), False) # No, we didn't find it yet...
-
+        return (render_to_response('users/create_list.html', request, None, {'lists': arrLists}), False) # No, we didn't find it yet...
+    else:
+        from esp.mailman import all_lists
+        public_lists = all_lists()
+        nonpublic_lists = list( set(all_lists(show_nonpublic=True)) - set(public_lists) )
+        return (render_to_response('users/select_mailman_list.html', request, None, {'public_lists': public_lists, 'nonpublic_lists': nonpublic_lists}), False) # No, we didn't find it yet...
 
 def get_user_checklist(request, userList, extra=''):
     """ Generate a checklist of users given an initial list of users to pick from.

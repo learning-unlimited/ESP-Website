@@ -48,6 +48,7 @@ from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType, CompletedTransactionException
+from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
 
 import pickle
 import operator
@@ -297,6 +298,25 @@ def newprogram(request):
             commit_program(new_prog, context['datatrees'], context['userbits'], context['modules'], context['costs'])
             
             manage_url = '/manage/' + new_prog.url() + '/resources'
+
+            # While we're at it, create the program's mailing list
+            mailing_list_name = "%s_%s" % (new_prog.anchor.parent.name, new_prog.anchor.name)
+            teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
+            students_list_name = "%s-%s" % (mailing_list_name, "students")
+
+            create_list(students_list_name, "esp-moderators@mit.edu")
+            create_list(teachers_list_name, "esp-moderators@mit.edu")
+
+            load_list_settings(teachers_list_name, "lists/program_mailman.config")
+            load_list_settings(students_list_name, "lists/program_mailman.config")
+        
+            apply_list_settings(teachers_list_name, {'owner': ['esp-moderators@mit.edu', new_prog.director_email]})
+            apply_list_settings(students_list_name, {'owner': ['esp-moderators@mit.edu', new_prog.director_email]})
+
+            add_list_member(students_list_name, [new_prog.director_email, "esparchive@gmail.com"])
+            add_list_member(teachers_list_name, [new_prog.director_email, "esparchive@gmail.com"])
+            
+
             return HttpResponseRedirect(manage_url)
         else:
             raise ESPError(False), "Improper form data submitted."
