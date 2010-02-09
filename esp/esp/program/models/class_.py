@@ -54,6 +54,7 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
+from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models          import Program
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -407,7 +408,8 @@ class ClassSection(models.Model):
         """   Get all assignments pertaining to floating resources like projectors. """
         from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
-        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype)
+        ta_restype = ResourceType.get_or_create('Teacher Availability')
+        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
     
     def classrooms(self):
         """ Returns the list of classroom resources assigned to this class."""
@@ -767,6 +769,11 @@ class ClassSection(models.Model):
             verbs = ['/Enrolled']
         else:
             verbs = ['/' + scrmi.signup_verb.name]
+        
+        # Disallow joining a no-app class that conflicts with an app class
+        # For HSSP Harvard Spring 2010
+        if self.parent_class.studentappquestion_set.count() == 0:
+            verbs += ['/Applied']
         
         # check to see if there's a conflict:
         for sec in user.getSections(self.parent_program, verbs=verbs):

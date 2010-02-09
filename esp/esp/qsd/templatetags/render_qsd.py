@@ -6,17 +6,13 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.models import qsd_cache_key
 from urllib import quote
 
-from esp.utils.file_cache import FileCache
-
 register = template.Library()
-
-render_qsd_cache = FileCache(4, 'render_qsd')
 
 def cache_key(qsd, user=None):
     return qsd_cache_key(qsd.path, qsd.name, user,)
 
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=render_qsd_cache, cache_time=300)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=DISABLED, cache_time=300)
 def render_qsd(qsd, user=None):
     edit_bits = False
     if user:

@@ -14,9 +14,13 @@ class UserEmail(BaseHandler):
 
         user = ESPUser(user)
 
-        if user.isTeacher():
-            self.recipients = ['%s <%s>' % (user.name(),
-                                            user.email)]
+        if user.isTeacher() or (self.message['List-Id'] and (".esp.mit.edu" in self.message['List-Id'])):
+            #self.recipients = ['%s <%s>' % (user.name(),
+            #                                user.email)]
+
+            del(self.message['to'])
+            self.message['to'] = user.email
+            self.direct_send = True
             self.send = True
 
         return
