@@ -32,7 +32,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_d
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django.template.loader      import render_to_string
@@ -49,6 +49,7 @@ from esp.resources.models        import ResourceType, ResourceRequest
 from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeFormSet
 from datetime                    import timedelta
 from esp.mailman                 import add_list_member
+from django.http                 import HttpResponseRedirect
 import simplejson as json
 
 class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
@@ -586,6 +587,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         # back to @meets_deadline's behavior appropriately
         if newclass is None and not self.deadline_met():
             return meets_deadline(lambda: True)(self, request, tl, one, two, module)
+
+        do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
         
         new_data = MultiValueDict()
         context = {'module': self}
@@ -839,6 +842,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 newclass.update_cache()                
                 #   This line is for testing only. -Michael P
                 #   return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
+
+                if do_question:
+                    return HttpResponseRedirect("app_questions")
                 return self.goToCore(tl)
         else:
             errors = {}
@@ -870,6 +876,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 class_requests = ResourceRequest.objects.filter(target=ds)
                 resource_formset = ResourceRequestFormSet(initial=[{'resource_type': x.res_type, 'desired_value': x.desired_value} for x in class_requests], resource_type=[x.res_type for x in class_requests], prefix='request')
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
+
             else:
                 reg_form = TeacherClassRegForm(self)
                 type_labels = ['Classroom', 'A/V']
@@ -896,7 +903,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                                                     'section_duration_field': context['form']['section_duration_' + subprogram_string]})
         else:
             context['addoredit'] = 'Edit'
-            
+
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 
