@@ -1,6 +1,7 @@
 from django import forms
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import SplitDateWidget
+from esp.program.models import RegistrationProfile
 import re
 
 # SRC: esp/program/manipulators.py
@@ -103,6 +104,22 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     studentrep_error = True
 
+    def __init__(self, user=None, *args, **kwargs):
+        super(StudentInfoForm, self).__init__(user, *args, **kwargs)
+
+        if kwargs.has_key('initial'):
+            initial_data = kwargs['initial']
+
+            print initial_data
+
+            # Disable the age and grade fields if they already exist.
+            if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
+                self.fields['graduation_year'].widget.attrs['disabled'] = "true"
+                self.fields['dob'].widget.attrs['disabled'] = "true"
+
+        self._user = user
+
+
     def repress_studentrep_expl_error(self):
         self.studentrep_error = False
 
@@ -120,6 +137,30 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             if gy != 'G':
                 gy = 'N/A'
         return gy
+            
+
+    def clean(self):
+        cleaned_data = self.cleaned_data
+        user = self._user
+
+        orig_prof = RegistrationProfile.getLastProfile(user)
+
+        # If graduation year and dob were disabled, get old data.
+        if (orig_prof.id is not None) and (orig_prof.student_info is not None):
+            print "There exists student info!"
+            if not cleaned_data.has_key('graduation_year'):
+                cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
+
+                # Get rid of the error saying this is missing
+                del self.errors['graduation_year']
+
+            if not cleaned_data.has_key('dob'):
+                cleaned_data['dob'] = orig_prof.student_info.dob
+
+                del self.errors['dob']
+
+        return cleaned_data
+        
     
 StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
 StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
