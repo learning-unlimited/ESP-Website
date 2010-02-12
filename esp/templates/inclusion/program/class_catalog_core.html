@@ -7,6 +7,18 @@
           {% else %}
            {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }} {% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% endif %}
           {% endif %}
+	 
+	 {% ifnotequal class.hardness_rating "Normal"  %} <br />
+	   <font style="font-size:10px">Difficulty:
+	   {% ifequal class.hardness_rating "Hard" %}
+	     Hard - This class may be exceptionally difficult
+	   {% endifequal %}
+	   {% ifequal class.hardness_rating "Easy" %}
+	     Easy - Even an elementary school student could take this class
+	   {% endifequal %}
+	   </font>
+	 {% endifnotequal %}
+
       </th>
       <th style="width: 30%;{{ colorstring }}">
        <span class="teachers">
@@ -44,6 +56,7 @@
       <td style="width: 50%;" colspan="2">
          <strong>Grades:</strong>
            {{ class.grade_min }}-{{ class.grade_max }}
+
          {% if show_enrollment %} <br />
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}
