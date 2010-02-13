@@ -11,8 +11,11 @@ register = template.Library()
 def cache_key(qsd, user=None):
     return qsd_cache_key(qsd.path, qsd.name, user,)
 
-def inline_cache_key(input_anchor, qsd, user=None):
-    return '%s_%s_inline' % (input_anchor, qsd_cache_key(qsd.path, qsd.name, user))
+def inline_cache_key(input_anchor, path, user=None):
+    if user:
+        return '%s_%s_%d_inline' % (input_anchor.id, path, user.id)
+    else:
+        return '%s_%s_anon_inline' % (input_anchor.id, path)
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_time=300)
 def render_qsd(qsd, user=None):

@@ -48,7 +48,7 @@ class QSDManager(FileDBManager):
         # aseering 11-15-2009 -- Punt FileDB for this purpose;
         # it has consistency issues in multi-computer load-balanced setups,
         # and memcached doesn't have a clear performance disadvantage.
-        return self.filter(path=path, name=name).latest('create_date').select_related()
+        return self.filter(path=path, name=name).select_related().latest('create_date')
     get_by_path__name.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'path': qsd.path, 'name': qsd.name})
 
     def __str__(self):
