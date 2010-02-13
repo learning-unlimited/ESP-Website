@@ -11,13 +11,17 @@ register = template.Library()
 def cache_key(qsd, user=None):
     return qsd_cache_key(qsd.path, qsd.name, user,)
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=DISABLED, cache_time=300)
+def inline_cache_key(input_anchor, qsd, user=None):
+    return '%s_%s_inline' % (input_anchor, qsd_cache_key(qsd.path, qsd.name, user))
+
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_time=300)
 def render_qsd(qsd, user=None):
     edit_bits = False
     if user:
         edit_bits = UserBit.UserHasPerms(user, qsd.path, DataTree.get_by_uri('V/Administer/Edit'))
     return {'qsdrec': qsd, 'edit_bits': edit_bits}
 
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=inline_cache_key, cache_time=300)
 def render_inline_qsd(input_anchor, qsd, user=None):
     if isinstance(input_anchor, basestring):
         try:
