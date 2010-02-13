@@ -110,8 +110,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if kwargs.has_key('initial'):
             initial_data = kwargs['initial']
 
-            print initial_data
-
             # Disable the age and grade fields if they already exist.
             if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
                 self.fields['graduation_year'].widget.attrs['disabled'] = "true"
@@ -147,17 +145,18 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         # If graduation year and dob were disabled, get old data.
         if (orig_prof.id is not None) and (orig_prof.student_info is not None):
-            print "There exists student info!"
-            if not cleaned_data.has_key('graduation_year'):
-                cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
 
+            if not cleaned_data.has_key('graduation_year'):
                 # Get rid of the error saying this is missing
                 del self.errors['graduation_year']
 
             if not cleaned_data.has_key('dob'):
-                cleaned_data['dob'] = orig_prof.student_info.dob
-
                 del self.errors['dob']
+
+            # Always use the old birthdate if it exists, so that people can't
+            # use something like Firebug to change their age/grade
+            cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
+            cleaned_data['dob'] = orig_prof.student_info.dob
 
         return cleaned_data
         
