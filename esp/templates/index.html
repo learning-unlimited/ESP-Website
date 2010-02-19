@@ -45,7 +45,7 @@
 {% load render_qsd %}
 {% render_inline_qsd "Q/Web" "homepage_qsdpart" request.user %}
 
-{% if request.user.get_profile.prof.isOnsite %}
+{% if request.user.isOnsite %}
 <a href="/myesp/onsite/">On-Site Registration</a>
 {% endif %}
 

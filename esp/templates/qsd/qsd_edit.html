@@ -70,6 +70,6 @@
   <p><input type="submit" name="post_edit" value="Save Changes!" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
 </form>
 <div id="divmainqsddatetimestamp">
-  <p>Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date }}</p>
+  <p>Last modified by {{ qsdrec.author.first_name }} on {{ qsdrec.create_date }}</p>
 </div>
 {% endblock %}

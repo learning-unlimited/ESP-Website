@@ -13,4 +13,6 @@ urlpatterns = patterns('esp.users.views',
                        (r'^signedout/?$', 'signed_out_message',),
                        (r'^login/?$',   'login_checked',),
                        (r'^disableaccount/?$', 'disable_account'),
+                       (r'^emailpref/?$', 'emailpref'),
+                       (r'^emailpref/(success)?/?$', 'emailpref'),
                        )

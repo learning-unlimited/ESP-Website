@@ -2,10 +2,11 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from esp.utils.forms import CaptchaForm
+from esp.utils.forms import CaptchaForm, SizedCharField
+from esp.users.forms.user_profile import PhoneNumberField
 
 role_choices = (
-    ('Student', 'Student (up through 12th grade)'),
+    ('Student', 'Student (12th grade or lower)'),
     ('Teacher', 'Volunteer Teacher'),
     ('Guardian', 'Guardian of Student'),
     ('Educator', 'K-12 Educator'),
@@ -40,8 +41,10 @@ class UserRegForm(forms.Form):
     """
     A form for users to register for the ESP web site.
     """
-    first_name = forms.CharField(max_length=30)
-    last_name  = forms.CharField(max_length=30)
+    email = ValidHostEmailField(help_text = "Please provide a valid email address.",max_length=75)
+
+    first_name = forms.CharField(label = "First Name", max_length=30)
+    last_name  = forms.CharField(label = "Last Name", max_length=30)
 
     username = forms.CharField(help_text="At least 5 characters, must contain only alphanumeric characters.",
                                min_length=5, max_length=30)
@@ -53,9 +56,7 @@ class UserRegForm(forms.Form):
     confirm_password = forms.CharField(widget = forms.PasswordInput(),
                                        min_length=5)
 
-    initial_role = forms.ChoiceField(choices = role_choices)
-
-    email = ValidHostEmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75)
+    initial_role = forms.ChoiceField(label = "I am a...", choices = role_choices)
 
 
     def clean_username(self):
@@ -86,3 +87,11 @@ class UserRegForm(forms.Form):
 class EmailUserForm(CaptchaForm):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
 
+
+class EmailPrefForm(forms.Form):
+    email = ValidHostEmailField(label='E-Mail Address', required = True)
+    first_name = SizedCharField(label='First Name', length=30, max_length=64, required=True)
+    last_name = SizedCharField(label='Last Name', length=30, max_length=64, required=True)
+    sms_number = PhoneNumberField(label='Cell Phone', required = False,
+                                  help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
+#    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)

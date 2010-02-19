@@ -1,0 +1,69 @@
+{% extends "main.html" %}
+
+{% block title %}Teacher Registration{% endblock %}
+
+{% block subsection_name %}Teach for {{one}} <br>{% endblock %}
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+
+<h1>{{ addoredit }}ing a class for {{ program.niceName }}</h1>
+
+<p>
+Thank you for your interest in teaching for {{ one }}!  Please ensure that you are available to teach your class at any of the times you have <a href="/teach/{{ program.url }}/availability">specified that you are available</a>.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form; <a href="mailto:{{ program.director_email }}">contact the program directors</a>.<p>
+
+<p>Please fill out or update the form below.  (The required fields are bordered in red.)  If you would like to co-teach this class with others, please click the "Modify Coteachers" button next to the appropriate class at the teacher registration page afterwards.</p>
+
+<p align="center"><div class="info">If you would like to teach multiple
+sections of the
+same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div>
+</p>
+
+<form action="{{request.path}}" name="clsform" method="post">
+
+<div id="program_form">
+<center>
+<table width="550">
+    <tr><th colspan="2">Course Creation/Editing Form</th></tr>
+    {{ form }}
+    <tr>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+    <tr>
+        <th colspan="2">Submit</th>
+    </tr>
+    <tr>
+        <th colspan="2" class="smaller"><p>
+        Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
+        </p></th>
+    </tr>
+    <tr>
+        <td align="center" colspan="2">
+            <br />
+            {% if class.id %}
+                <input type="hidden" name="class_id" value="{{ class.id }}" />
+            {% endif %}
+            <input type="hidden" name="class_reg_page" value="" />
+
+            {% if module.deadline_met %}
+                <input class="button" type="submit"
+                {% if class.id %}
+                    value="Save course!" />
+                {% else %}
+                    value="Teach for {{ one }}!" />
+                {% endif %}
+            {% endif %}
+            &nbsp; &nbsp; &nbsp; | &nbsp; &nbsp; &nbsp;
+            <input class="button" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
+            <br /><br />
+        </td>
+    </tr>
+</table>
+</center>
+</form>
+</div>
+
+{% endblock %}

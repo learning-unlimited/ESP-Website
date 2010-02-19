@@ -932,7 +932,8 @@ class StudentInfo(models.Model):
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
-    graduation_year_int = models.IntegerField(help_text='Enter 1 for a grad student, or 0 if not applicable.')
+    #graduation_year_int = models.IntegerField(help_text='Enter 1 for a grad student, or 0 if not applicable.')
+    graduation_year = models.CharField(max_length=4, blank=True, null=True)
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -956,7 +957,7 @@ class TeacherInfo(models.Model):
                 self.graduation_year_int = abs(int(value))
             except:
                 self.graduation_year_int = 0
-    graduation_year = property( _graduation_year_get, _graduation_year_set )
+    #graduation_year = property( _graduation_year_get, _graduation_year_set )
 
     class Meta:
         app_label = 'users'
@@ -1636,7 +1637,13 @@ class DBList(object):
     def __unicode__(self):
         return self.key
 
-
+class EmailPref(models.Model):
+    email = models.EmailField(max_length=64, blank=True, null=True, unique=True)
+    email_opt_in = models.BooleanField(default = True)
+    first_name = models.CharField(max_length=64)
+    last_name = models.CharField(max_length=64)
+    sms_number = PhoneNumberField(blank=True, null=True)
+    sms_opt_in = models.BooleanField(default = False)
 
 
 def install():

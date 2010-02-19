@@ -1,0 +1,129 @@
+{% extends "main.html" %}
+
+{% block title %}{{prog.niceName }} Teacher Registration{% endblock %}
+
+{% block subsection_name %}Teacher{% endblock %}
+
+{% block xtrajs %}
+{% include "load_ajax_scripts.html" %}
+<script type="text/javascript">
+<!--
+   dojo.require("dojo.parser");
+   dojo.require("dijit.form.ComboBox");
+   dojo.require("dojo.data.ItemFileReadStore");
+//-->
+</script>
+{% endblock %}
+     
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/scripts/dojo-release-1.3.0/dijit/themes/tundra/tundra.css">
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css">
+{% endblock %}
+
+{% block content %}
+
+<h1>Setting Coteachers for &quot;<u>{{ class|escape }}</u>&quot;</h1>
+
+<<<<<<< HEAD:esp/templates/program/modules/teacherclassregmodule/coteachers.html
+<center><p style="color: red; font-weight: bold">Setting up co-teachers is currently broken. We're working on it; please check back Monday Sept. 28 or email <a href="mailto:stanfordesp@gmail.com">stanfordesp@gmail.com</a>.</p></center>
+=======
+<p>Please list all others that will be helping you teach this class.  They will need to create accounts and mark their available times through the teacher registration page (for scheduling purposes).</p>
+>>>>>>> f36a534d7283943ca87a147ef19d016278fae6f7:esp/templates/program/modules/teacherclassregmodule/coteachers.html
+
+<<<<<<< HEAD:esp/templates/program/modules/teacherclassregmodule/coteachers.html
+<!--
+=======
+>>>>>>> f36a534d7283943ca87a147ef19d016278fae6f7:esp/templates/program/modules/teacherclassregmodule/coteachers.html
+{% if conflicts|length %}
+    <p style="color:red; font-weight: bold;">
+    The following teachers have conflicting schedules:<br />
+    {{ conflicts|join:"<br />" }}
+    </p>
+{% endif %}
+
+{% if error %}
+<p style="color:red; font-weight: bold;">
+{{ error }}
+</p>
+{% endif %}
+<div id="program_form">
+{% if not coteachers|length %}
+You currently have no coteachers for this class.
+{% else %}
+<form action="{{request.path}}" method="post" name="manage_coteachers">
+<table align="center" width="400">
+    <tr>
+        <th colspan="2">Current Coteachers</th>
+    </tr>
+    <tr>
+        <td width="50%">
+            <input type="hidden" name="op" value="del" />
+            <input type="hidden" name="clsid" value="{{ class.id }}" />
+            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
+
+            <select id="current_coteachers"
+                    class="coteachers" name="delete_coteachers" 
+                    size="5" multiple="multiple">
+            {% for teacher in coteachers %}
+                <option value="{{teacher.id}}">{{teacher.last_name }}, 
+                    {{teacher.first_name}} ({{teacher.username}})</option>
+            {% endfor %}
+            </select>
+            <br />
+            
+        </td>
+        <td>
+            <input type="submit" class="button" value="Delete Selected" /><br />
+        </td>
+    </tr>
+</table>
+</form>
+{% endif %}
+<form action="{{request.path}}" method="post" name="addteacher">
+<table align="center" width="400">
+    <tr>
+        <th colspan="2">Add More Coteachers</th>
+    </tr>
+    <tr>
+        <td colspan="2">Begin typing your coteacher's name in `Last, First' format to find them.</td>
+    </tr>
+    <tr>
+        <td width="50%">
+            <input type="hidden" name="clsid" value="{{ class.id }}" />
+            <input type="hidden" name="op" value="add" />
+            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
+            <script type="text/javascript">
+                dojo.require("dijit.form.FilteringSelect");
+                dojo.require("dojo.data.ItemFileReadStore");
+                dojo.require("dojox.data.JsonRestStore");
+            </script>
+            <div dojoType="dojox.data.JsonRestStore" jsId="stateStore" target="/teach/Splash/2009_Fall/teacherlookup/" idAttribute="id">
+            </div>
+            <input dojoType="dijit.form.FilteringSelect" value="" store="stateStore" searchAttr="name" name="teacher_selected" id="stateInput">
+        </td>
+        <td>
+            <input type="submit" class="button" value="Add Teacher" />
+        </td>
+    </tr>
+</table>
+</form>
+<table align="center" width="400">
+    <tr>
+        <td align="center" colspan="2">When you are done, click the button below to return to teacher registration.</td>
+    </tr>
+    <tr>
+        <td align="center" colspan="2">
+            <form action="{{request.path}}" method="post" name="submit">
+            <input type="hidden" name="op" value="save" />
+            <input type="hidden" name="clsid" value="{{ class.id }}" />
+            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
+            <input type="submit" class="button" value="Save and Continue" /><br />
+            </form>
+        </td>
+    </tr>
+</table>
+</div>
+
+{% endblock %}
+-->

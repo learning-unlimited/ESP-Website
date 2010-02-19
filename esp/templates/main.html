@@ -114,12 +114,12 @@
 <div id="left_menu_bottom"></div>
 {% endblock %}
 
-{% if request.user.is_staff or request.user.get_profile.prof.isAdministrator %}
+{% if request.user.is_staff or request.user.isAdministrator %}
     <br />
     <div id="left_menu">
     <div class="text_padding">
     <h1>Admin options</h1>
-    {% if request.user.get_profile.prof.isAdministrator %}
+    {% if request.user.isAdministrator %}
     <p class="small">
         <a href="/manage/programs">Manage programs</a><br />
         <a href="/manage/pages">Manage static pages</a>
@@ -180,6 +180,23 @@
 {% endblock %}
 
 </div>
+
+{% block idebug %}
+{% if idebug %}
+
+<hr />
+
+<table style="width: 1000px; border: 1px solid black;">
+{% for item in idebug %}
+  <tr style="border: 1px solid black;">
+    <th style="border: 1px solid black;"> {{ item.0 }} </th>
+    <td style="border: 1px solid black;"> <pre style="text-align: left"> {{ item.1 }} </pre> </td>
+  </tr>
+{% endfor %}
+</table>
+
+{% endif %}
+{% endblock %}
 
 </body>
 </html>

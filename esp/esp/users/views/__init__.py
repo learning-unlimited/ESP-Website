@@ -1,6 +1,7 @@
 from esp.users.views.usersearch import *
 from esp.users.views.registration import *
 from esp.users.views.password_reset import *
+from esp.users.views.emailpref import *
 
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.web.util.main import render_to_response
@@ -24,7 +25,17 @@ def ajax_login(request, *args, **kwargs):
         username = request.POST['username']
         password = request.POST['password']
 
+    if username and '@' in username:
+        accounts = User.objects.filter(email = username)
+        matches = []
+        for u in accounts:
+            if u.check_password(password):
+                matches.append(u)
+        if len(matches) > 0:
+            username = matches[0].username
+
     user = authenticate(username=username, password=password)
+
     if user is not None:
         if user.is_active:
             auth_login(request, user)

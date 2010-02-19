@@ -104,8 +104,8 @@ class CommModule(ProgramModuleObj):
         htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
 
         esp_firstuser = ESPUser(firstuser)
-        contextdict = {'user'   : ActionHandler(esp_firstuser, esp_firstuser)),
-                       'program': ActionHandler(self.program, esp_firstuser)) }
+        contextdict = {'user'   : ActionHandler(esp_firstuser, esp_firstuser),
+                       'program': ActionHandler(self.program, esp_firstuser) }
 
         renderedtext = Template(htmlbody).render(Context(contextdict))
         renderedtext = renderedtext.replace('\n', '<br />')

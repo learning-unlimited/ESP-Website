@@ -28,12 +28,3 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.middleware.statsmiddleware import *
-from esp.middleware.esperrormiddleware import *
-from esp.middleware.whitespacemiddleware import *
-from esp.middleware.fixiemiddleware import *
-from esp.middleware.espcachemiddleware import *
-from esp.middleware.prettyerroremail import *
-from esp.middleware.espauthmiddleware import *
-from esp.middleware.servernameredirect import *
-from esp.middleware.idebug import *
