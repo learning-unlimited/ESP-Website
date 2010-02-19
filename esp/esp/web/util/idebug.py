@@ -45,7 +45,7 @@ CUSTOM_DEBUG_PRINT = {
 #
 def idebug_hook(request, context):
 
-    if not request.idebug:
+    if not hasattr(request, 'idebug') or not request.idebug:
         return
 
     # Exit quickly if we're not logged in and no GET flag was given
@@ -73,8 +73,9 @@ def idebug_hook(request, context):
         show = False
         request.session['idebug'] = False
 
-    if len(settings.IDEBUG_PASSWORD) > 4 and (idebug_pw == settings.IDEBUG_PASSWORD):
-        show = True
+    if hasattr(settings, 'IDEBUG_PASSWORD') and len(settings.IDEBUG_PASSWORD) > 4:
+        if idebug_pw == settings.IDEBUG_PASSWORD:
+            show = True
 
     if not show:
        return
