@@ -208,7 +208,7 @@ class ProgramModuleObj(models.Model):
         
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
-        if request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+        if tl != "manage" and request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
             other_modules = moduleobj.findCategoryModules(False)
             for m in other_modules:
                 m.request = request
