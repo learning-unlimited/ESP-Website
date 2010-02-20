@@ -63,7 +63,7 @@ def nav_category(node, section=''):
     
     #   If all else fails, make something up.
     return NavBarCategory.default()
-    
+
 
 def qsd_tree_program(qsdTree, node, section, user):
     """

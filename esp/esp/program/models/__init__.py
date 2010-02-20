@@ -612,7 +612,17 @@ class Program(models.Model):
             are grabbed.  The default excludes 'compulsory' events, which are
             not intended to be used for classes (they're for lunch, photos, etc.)
         """
-        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).order_by('start')
+        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
+
+    #   In situations where you just want a list of all time slots in the program,
+    #   that can be cached.
+    @cache_function
+    def getTimeSlotList(self, exclude_compulsory=True):
+        if exclude_compulsory:
+            return list(self.getTimeSlots(exclude_types=['Compulsory']))
+        else:
+            return list(self.getTimeSlots(exclude_types=[]))
+    getTimeSlotList.depend_on_model(lambda: Event)
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
@@ -717,6 +727,7 @@ class Program(models.Model):
             return Program.objects.filter(id=-1)
         return Program.objects.filter(anchor__parent__in=self.anchor['Subprograms'].children())
     
+    @cache_function
     def getParentProgram(self):
         #   Ridiculous syntax is actually correct for our subprograms scheme.
         pl = []
@@ -726,6 +737,7 @@ class Program(models.Model):
             return pl[0]
         else:
             return None
+    getParentProgram.depend_on_model(lambda: Program)
         
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting_core.models import LineItemType, Balance
@@ -971,7 +983,7 @@ class RegistrationProfile(models.Model):
         
         if isinstance(user.id, int):
             try:
-                regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
+                regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except:
                 pass
 
@@ -1002,10 +1014,10 @@ class RegistrationProfile(models.Model):
         self.last_ts = datetime.now()
         super(RegistrationProfile, self).save(*args, **kwargs)
         
-    @staticmethod
+    @cache_function
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')[:1]
+        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
             # Has this user already filled out a profile for the parent program?
             parent_program = program.getParentProgram()
@@ -1025,6 +1037,8 @@ class RegistrationProfile(models.Model):
         else:
             regProf = regProfList[0]
         return regProf
+    getLastForProgram.depend_on_row(lambda: RegistrationProfile, lambda rp: {'user': rp.user, 'program': rp.program})
+    getLastForProgram = staticmethod(getLastForProgram)
             
     def __unicode__(self):
         if self.program is None:
@@ -1052,7 +1066,7 @@ class RegistrationProfile(models.Model):
     
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self):
-        return ESPUser(self.user).getSections(program=self.program)
+        return ESPUser(self.user).getSectionsFromProgram(self.program)
     
     def registered_classes(self):
         return ESPUser(self.user).getEnrolledSections(program=self.program)

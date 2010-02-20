@@ -508,6 +508,14 @@ class ESPUser(User, AnonymousUser):
             
         return csl
 
+    @cache_function
+    def getSectionsFromProgram(self, program):
+        return self.getSections(program, verbs=None)
+    #   Invalidate cache if bits are changed on either classes or sections.
+    #   This should be less conservative but there's no easy way to filter the bits as they are saved
+    #   (since we would need to check for all verbs under 'V/Flags/Registration')
+    getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user})
+
     def getEnrolledSections(self, program=None):
         if program is None:
             return self.getEnrolledSectionsAll()
@@ -575,6 +583,23 @@ class ESPUser(User, AnonymousUser):
             priority += 1
 
         return priority
+        
+    #   We often request the registration priority for all timeslots individually
+    #   because our schedules display enrollment status on a per-timeslot (rather
+    #   than per-class) basis.  This function is intended to speed that up.
+    @cache_function
+    def getRegistrationPriorities(self, timeslot_ids):
+        num_slots = len(timeslot_ids)
+        events = list(Event.objects.filter(id__in=timeslot_ids).order_by('id'))
+        result = [0 for i in range(num_slots)]
+        id_order = range(num_slots)
+        id_order.sort(key=lambda i: timeslot_ids[i])
+        for i in range(num_slots):
+            result[id_order[i]] = self.getRegistrationPriority([events[i]])
+        return result
+        
+    #   Invalidate on any user bit change (due to difficulty of screening registration bits)
+    getRegistrationPriorities.depend_on_row(lambda: UserBit, lambda bit: {'self': bit.user})
 
     def isEnrolledInClass(self, clsObj, request=None):
         verb_str = 'V/Flags/Registration/Enrolled'
@@ -591,6 +616,18 @@ class ESPUser(User, AnonymousUser):
     def canRegToFullProgram(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
+    #   This is needed for cache dependencies on financial aid functions
+    def get_finaid_model():
+        from esp.program.models import FinancialAidRequest
+        return FinancialAidRequest
+
+    @cache_function
+    def appliedFinancialAid(self, program):
+        return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
+    #   Invalidate cache when any of the user's financial aid requests are changed
+    appliedFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
+
+    @cache_function
     def hasFinancialAid(self, anchor):
         from esp.program.models import Program, FinancialAidRequest
         progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
@@ -599,6 +636,7 @@ class ESPUser(User, AnonymousUser):
             if a.approved:
                 return True
         return False
+    hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
     def paymentStatus(self, anchor=None):
         """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate
@@ -774,6 +812,7 @@ class ESPUser(User, AnonymousUser):
             schoolyear = curyear + 1
         return schoolyear
 
+    @cache_function
     def getGrade(self, program = None):
         if hasattr(self, '_grade'):
             return self._grade
@@ -791,6 +830,8 @@ class ESPUser(User, AnonymousUser):
         self._grade = grade
 
         return grade
+    #   The cache will need to be cleared once per academic year.
+    getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
 
     def currentSchoolYear(self):
         return ESPUser.current_schoolyear()-1

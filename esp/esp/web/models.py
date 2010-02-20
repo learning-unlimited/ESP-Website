@@ -33,7 +33,7 @@ from django.db.models.query import Q
 from esp.datatree.models import *
 from esp.lib.markdown import markdown
 from esp.users.models import UserBit
-from esp.db.fields import AjaxForeignKey
+from esp.db.fields import AjaxForeignKey  
         
 # Create your models here.
 
@@ -49,7 +49,9 @@ class NavBarCategory(models.Model):
     @classmethod
     def default(cls):
         """ Default navigation category.  For now, the one with the lowest ID. """
-        return cls.objects.all().order_by('id')[0]
+        if not hasattr(cls, '_default'):
+            cls._default = cls.objects.all().order_by('id')[0]
+        return cls._default
     
     def __unicode__(self):
         if self.anchor:

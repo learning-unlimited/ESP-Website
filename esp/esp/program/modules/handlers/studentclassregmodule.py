@@ -145,7 +145,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         return {'classreg': """Students who have have signed up for at least one class."""}
     
     def isCompleted(self):
-        return (len(self.user.getSections(self.program)[:1]) > 0)
+        return (len(self.user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -157,7 +157,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @needs_student
     def prepare(self, context={}):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-        timeslots = list(self.program.getTimeSlots(exclude_types=[]).order_by('start'))
+        timeslots = self.program.getTimeSlotList(exclude_compulsory=False)
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes())
         
         prevTimeSlot = None
@@ -194,25 +194,20 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 else:
                     timeslot_dict[mt.id] = [section_dict]
                     
-        for timeslot in timeslots:
+        user_priority = user.getRegistrationPriorities([t.id for t in timeslots])
+        for i in range(len(timeslots)):
+            timeslot = timeslots[i]
             daybreak = False
             if prevTimeSlot != None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
                     daybreak = True
 
-            #   Same change as above.  -Michael P
-            #   if scrmi.use_priority:
-            #       user_priority = user.getRegistrationPriority([timeslot])
-            #   else:
-            #       user_priority = None
-            user_priority = user.getRegistrationPriority([timeslot])
-
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user_priority))
+                schedule.append((timeslot, cls_list, blockCount + 1, user_priority[i]))
             else:                
-                schedule.append((timeslot, [], blockCount + 1, user_priority))
+                schedule.append((timeslot, [], blockCount + 1, user_priority[i]))
 
             prevTimeSlot = timeslot
                 
@@ -227,18 +222,28 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
         import simplejson as json
         from django.template.loader import render_to_string
+        user_sections = self.user.getSections(self.program)
         context = self.prepare({})
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
-        context['num_classes'] = self.user.getSections(self.program).count()
+        context['num_classes'] = user_sections.count()
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}
         
+        #   Look at the 'extra' data and act appropriately:
+        #   -   List, query set, or comma-separated ID list of class sections:
+        #       Add the buttons for those class sections to the returned data.
+        #   -   String 'all':
+        #       Add the buttons for all of the student's class sections to the returned data
+        #   -   Anything else:
+        #       Don't do anything.
         #   Rewrite registration button if a particular section was named.  (It will be in extra).
         sec_ids = []
-        if isinstance(extra, list) or isinstance(extra, QuerySet):
+        if extra == 'all':
+            sec_ids = user_sections.values_list('id', flat=True)
+        elif isinstance(extra, list) or isinstance(extra, QuerySet):
             sec_ids = list(extra)
         else:
             try:
