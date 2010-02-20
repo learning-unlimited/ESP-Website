@@ -4,7 +4,10 @@ Test cases for Django-ESP utilities
 
 import unittest
 import subprocess
-import memcache
+try:
+    import pylibmc as memcache
+except:
+    import memcache
 import os
 from utils.memcached_multihost import CacheClass as MultihostCacheClass
 from esp import settings
