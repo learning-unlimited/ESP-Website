@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -1392,12 +1391,15 @@ class ContactInfo(models.Model):
         if self.address_postal != None:
             self.address_postal = str(self.address_postal)
 
-        super(ContactInfo, self).save(*args, **kwargs)
-
         if self._distance_from("02139") < 50:
             from esp.mailman import add_list_member
-            add_list_member("announcements_local", self.e_mail)
+            try:
+                add_list_member("announcements_local", self.e_mail)
+            except:
+                pass
             
+        super(ContactInfo, self).save(*args, **kwargs)
+
 
     def __unicode__(self):
         username = ""
