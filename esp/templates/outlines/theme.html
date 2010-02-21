@@ -63,7 +63,9 @@
 
 {% block javascript %}
 {{ block.super }}
-
+<!--[if lt IE 9]>
+<script src="http://ie7-js.googlecode.com/svn/version/2.1(beta1)/IE9.js"></script>
+<![endif]-->
     {# general dependencies on YUI #}
     <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script> 
     {% if request.user.is_authenticated %}
