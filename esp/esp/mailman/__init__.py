@@ -128,7 +128,7 @@ def add_list_member(list, member):
         member = [x.email for x in member]
 
     if not isinstance(member, basestring):       
-        member = "\n".join(member)
+        member = "\n".join(str(x) for x in member)
 
     return Popen([MM_PATH + "add_members", "--regular-members-file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
