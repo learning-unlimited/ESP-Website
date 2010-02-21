@@ -6,7 +6,7 @@
 import sys, os, operator, email, re, smtplib, socket, sha, random
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
-sys.path.insert(0, "/esp/web/stanfordesp.org/esp")
+sys.path.insert(0, "/lu/sites/stanford/esp")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 from esp import cache_loader # Needed to block an annoying circular-dependency issue
@@ -16,7 +16,7 @@ host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
 MAIL_PATH = '/usr/sbin/sendmail'
 server = smtplib.SMTP('localhost')
-ARCHIVE = 'esparchive@gmail.com'
+ARCHIVE = 'learninguarchive@gmail.com'
 
 DEBUG=False
 
