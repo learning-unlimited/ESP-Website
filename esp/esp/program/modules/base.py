@@ -159,21 +159,19 @@ class ProgramModuleObj(models.Model):
     @cache_function
     def findModuleObject(tl, call_txt, prog):
         modules = ProgramModule.objects.filter(main_call = call_txt, module_type = tl).select_related()[:1]
+        module = None
 
         if len(modules) == 0:
             modules = ProgramModule.objects.filter(aux_calls__contains = call_txt, module_type = tl).select_related()
             for module in modules:
                 if call_txt in module.aux_calls.strip().split(','):
-                    break
-            if not module:
-                raise Http404
+                    return ProgramModuleObj.getFromProgModule(prog, module)
         else:
             module = modules[0]
+            return ProgramModuleObj.getFromProgModule(prog, module)
 
-        if not module:
-            raise Http404
+        raise Http404
         
-        return ProgramModuleObj.getFromProgModule(prog, module)
     #   Invalidate cache when any program module related data is saved
     #   Technically this should include the options (StudentClassRegModuleInfo, etc.)
     findModuleObject.depend_on_model(lambda: ProgramModule)
@@ -208,13 +206,13 @@ class ProgramModuleObj(models.Model):
         
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
-        if tl != "manage" and request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
-            other_modules = moduleobj.findCategoryModules(False)
-            for m in other_modules:
-                m.request = request
-                m.user    = user
-                if not m.isCompleted() and hasattr(m, m.module.main_call):
-                    return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+        #if tl != "manage" and request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+        #    other_modules = moduleobj.findCategoryModules(False)
+        #    for m in other_modules:
+        #        m.request = request
+        #        m.user    = user
+        #        if not m.isCompleted() and hasattr(m, m.module.main_call):
+        #            return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
         #   call on the originally requested view.
