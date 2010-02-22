@@ -154,7 +154,15 @@ def remove_list_member(list, member):
 @enable_with_setting(USE_MAILMAN)
 def list_contents(lst):
     """ Return the list of e-mail addresses on the specified mailing list """
-    return Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+
+    try:
+        # It seems the empty string gets dragged into this list.
+        contents.remove('')
+    except: 
+        pass
+
+    return contents
 
 @enable_with_setting(USE_MAILMAN)
 def list_members(lst):
