@@ -63,13 +63,9 @@ def get_user_list(request, listDict2, extra=''):
         from esp.mailman import list_members
         import operator
 
-        lists = request.POST['select_mailman']
+        lists = request.POST.getlist('select_mailman')
 
-        # Check whether we have one list or a bunch.
-        if isinstance(lists, str):
-            all_list_members = list_members(lists)
-        else:
-            all_list_members = reduce(operator.or_, (list_members(x) for x in lists))
+        all_list_members = reduce(operator.or_, (list_members(x) for x in lists))
         filterObj = PersistentQueryFilter.getFilterFromQ(Q(id__in=[x.id for x in all_list_members]), User, 'Custom Mailman filter: ' + ", ".join(lists))
 
         if request.POST['submitform'] == 'I want to search within this list':
