@@ -83,6 +83,9 @@ class UserAvailability(models.Model):
     role = AjaxForeignKey(DataTree)
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
+    class Meta:
+        db_table = 'users_useravailability'
+
     def __unicode__(self):
         return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
 
