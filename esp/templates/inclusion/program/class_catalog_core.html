@@ -1,6 +1,6 @@
 {% load latex %}
 {% load smartypants %}
-    <tr onclick="swap_visible('{{ class.id }}_details');swap_visible('{{ class.id }}_content');" style="cursor: pointer;">
+    <tr onclick="swap_visible('{{ class.id }}_details');swap_visible('{{ class.id }}_content');swap_visible('{{ class.id }}_regbuttons');" style="cursor: pointer;">
       <th colspan="2" style="padding: 5px; width: 70%;{{ colorstring }}">
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
@@ -17,7 +17,7 @@
        </span>
        </th>
      </tr>
-     <tr id="{{ class.id }}_content">
+     <tr id="{{ class.id }}_content" class="classcontent">
        <td colspan="3" class="info">
         {% autoescape off %}
          {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
@@ -31,7 +31,7 @@
        {% endif %}
        </td>
      </tr>
-    <tr id="{{ class.id }}_details">
+    <tr id="{{ class.id }}_details" class="classdetails">
       <td style="width: 50%;" valign="top">
         {% if show_meeting_times %}
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
@@ -45,7 +45,7 @@
 
       <td style="width: 50%;" colspan="2">
          <strong>Grades:</strong>
-           {{ class.grade_min }}-{{ class.grade_max }}<br />
+           <span class="gradelisting grademin" id="{{ class.id }}_grade_min">{{ class.grade_min }}</span>-<span class="gradelisting grademax" id="{{ class.id }}_grade_max">{{ class.grade_max }}</span><br />
          {% if show_enrollment %} 
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}
@@ -60,7 +60,7 @@
       </td>
     </tr>
     {% if class.media_count %}
-    <tr>
+    <tr id="{{ cls.id }}_media" class="classmedia">
       <th colspan="3" class="materials">
        <b>Materials for this class include:</b>
 	<span class="doclist">
