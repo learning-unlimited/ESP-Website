@@ -1,8 +1,22 @@
+
+<hr>
+<p><font style="font-size: 18pt;"><center>
+<a href="/learn/{{one}}/{{two}}/catalog">Click Here</a> to select your
+classes!</center></font>
+</p>
+<hr>
+<br />
 <p>
-Below is your class schedule for {{ program.niceName }}.  Please use the links in the right-hand column to select classes to fill each time slot.  You may also <a target="_blank" href='/learn/{{one}}/{{two}}/catalog'> open a full catalog in a separate window</a>.
+Below is your class schedule for {{ program.niceName }}.  You can
+<a href="/learn/{{one}}/{{two}}/catalog">click here</a> to sign up for
+classes, or you can click the edit buttons in the course listing below.
 </p>
 
-<p>  <b>Please note</b>: Your classes are saved immediately when you click the "Add this Class!" button.  You do not need to confirm or save your entire registration to save your spot in classes. 
+<p>  <b>Please note</b>: Your space in a class is saved immediately when it
+appears in the schedule below.  However, please do
+click the "Confirm" button below to mark your registration as complete and
+receive instructions on how to get to the program and what to do when
+you arrive. 
 </p>
 
 {% if not module.deadline_met %}
@@ -61,6 +75,9 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
         {% if not timeslot.1|length_is:0 %}
             {% if module.deadline_met %}
             <td width='25%' align='center' style="vertical-align: top !important;">
+	      <input type="button" value="Edit My Schedule"
+            onclick="window.location='/learn/{{one}}/{{two}}/catalog';">
+	      <br />Or: 
             {% for cls in timeslot.1 %}
                 <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a>
                 {% if cls.changeable %}
@@ -88,6 +105,9 @@ Below is your class schedule for {{ program.niceName }}.  Please use the links i
         {% else %}
             {% if module.deadline_met %}
                 <td width='20%' align='center'>
+		  <input type="button" value="Edit My Schedule"
+		  onclick="window.location='/learn/{{one}}/{{two}}/catalog';">
+		  <br />Or: 
                 <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
                 </td>
             {% endif %}	
