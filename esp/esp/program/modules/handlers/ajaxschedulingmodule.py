@@ -37,7 +37,7 @@ from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserBit
+from esp.users.models            import User, ESPUser, UserBit, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from esp.datatree.models         import DataTree
@@ -167,17 +167,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_teachers_cached(self, prog):
         teachers = ESPUser.objects.filter(userbit__verb=GetNode('V/Flags/Registration/Teacher')).filter(userbit__qsc__classsubject__isnull=False, userbit__qsc__parent__parent__program=prog).distinct()
 
-        restype = ResourceType.get_or_create('Teacher Availability')
-        resources = Resource.objects.filter(user__in = [t.id for t in teachers],
-                                            res_type = restype,
-                                            ).filter(
-            QTree(event__anchor__below = prog.anchor)).values('user_id', 'event__id')
-
-
+        resources = UserAvailability.objects.filter(user__in=teachers).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
         resources_for_user = defaultdict(list)
 
         for resource in resources:
-            resources_for_user[resource['user_id']].append(resource['event__id'])
+            resources_for_user[resource['user_id']].append(resource['event_id'])
         
         teacher_dicts = [
             {   'uid': t.id,
