@@ -1223,7 +1223,7 @@ class ClassSubject(models.Model):
     meeting_times = models.ManyToManyField(Event, blank=True)
 
     def get_sections(self):
-        if not hasattr(self, "_sections"):
+        if not hasattr(self, "_sections") or self._sections is None:
             self._sections = self.sections.all()
 
         return self._sections
@@ -1344,6 +1344,8 @@ class ClassSubject(models.Model):
         new_section.status = status
         new_section.save()
         self.sections.add(new_section)
+        
+        self._sections = None
 
         return new_section
 
