@@ -499,6 +499,18 @@ class Program(models.Model):
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
+    @cache_function
+    def getScheduleConstraints(self):
+        return ScheduleConstraint.objects.filter(program=self).select_related()
+    def get_sc_model():
+        from esp.program.models import ScheduleConstraint
+        return ScheduleConstraint
+    def get_bt_model():
+        from esp.program.models import BooleanToken
+        return BooleanToken    
+    getScheduleConstraints.depend_on_model(get_sc_model)
+    getScheduleConstraints.depend_on_model(get_bt_model)
+
     def isConfirmed(self, espuser):
         v = GetNode('V/Flags/Public')
         userbits = UserBit.objects.filter(verb = v, user = espuser,

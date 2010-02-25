@@ -754,11 +754,9 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
-        # Test any scheduling constraints based on this class
-        relevantFilters = ScheduleTestSectionList.filter_by_section(self)
-        #relevantConstraints = ScheduleConstraint.objects.filter(Q(requirement__booleantoken__in=relevantFilters) | Q(condition__booleantoken__in=relevantFilters))
-
-        relevantConstraints = ScheduleConstraint.objects.filter(program=self.parent_program)
+        # Test any scheduling constraints
+        relevantConstraints = self.parent_program.getScheduleConstraints()
+        
         # Set up a ScheduleMap; fake-insert this class into it
         sm = ScheduleMap(user, self.parent_program)
         sm.add_section(self)
