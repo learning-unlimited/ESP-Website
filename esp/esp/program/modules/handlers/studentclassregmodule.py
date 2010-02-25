@@ -192,7 +192,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 else:
                     timeslot_dict[mt.id] = [section_dict]
 
-        user_priority = user.getRegistrationPriorities([t.id for t in timeslots])
+        user_priority = user.getRegistrationPriorities(self.program, [t.id for t in timeslots])
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             daybreak = False
@@ -301,10 +301,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         else:
             raise ESPError(False), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
 
-        enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
-
         # Can we register for more than one class yet?
         if (not self.user.onsite_local) and (not UserBit.objects.UserHasPerms(request.user, prog.anchor, reg_verb ) ):
+            enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
             # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
             classes_registered = 0
             for cls in enrolled_classes:
@@ -327,21 +326,24 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                         datestring = d.strftime(' on %B %d')
                 raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
 
-        cobj = ClassSubject.objects.get(id=classid)
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
             error = section.cannotAdd(self.user,self.enforce_max,use_cache=False)
         if scrmi.use_priority or not error:
+            cobj = ClassSubject.objects.get(id=classid)
             error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False)
 
-        priority = self.user.getRegistrationPriority(section.meeting_times.all())
+        if scrmi.use_priority:
+            priority = self.user.getRegistrationPriority(prog, section.meeting_times.all())
+        else:
+            priority = 1
 
         # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
         auto_classes = []
         blocked_class = None
         cannotadd_error = ''
 
-        for implication in ClassImplication.objects.filter(cls=cobj, parent__isnull=True):
+        for implication in ClassImplication.objects.filter(cls__id=classid, parent__isnull=True):
             if implication.fails_implication(self.user):
                 for cls in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     #   Override size limits on subprogram classes (checkFull=False). -Michael P
