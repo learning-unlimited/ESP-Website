@@ -7,7 +7,7 @@
     <table cellpadding="0" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
     {% render_class_core class %}
     {% if prereg_url %}
-        <tr>
+        <tr id="{{ class.id }}_regbuttons" class="classregbuttons">
         <td colspan="3" align="center" valign="center" class="add_class">
         {% if errormsg %}
             <span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
@@ -23,6 +23,7 @@
         {% else %}
             {% if section %}
                 {% if not section.isRegClosed %}
+                {% if not section.friendly_times|length_is:0 %}
                 <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}">
                   <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ section.id }}" />
@@ -34,6 +35,7 @@
                       {% endif %}
                 </form>
                 {% endif %}
+                {% endif %}
             {% else %}
                 {% for sec in class.get_sections %}
                     {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
@@ -41,7 +43,7 @@
                       <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ sec.id }}" />
                       <div id="addbutton_catalog_sec{{ sec.id }}">
-                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" />
+                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }} (Please choose just one section)" />
 <!--                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" /> -->
                       </div>
                     </form>
@@ -59,17 +61,23 @@
     function initialize_prereg_{{ class.id }}() 
     {
         {% if section %}
-        {% comment %} This code would allow fillslot pages to use Ajax too.  But we don't want that yet.  -Michael P 
+            //  Section defined!
             {% if not section.isRegClosed %}
+                {% if not sec.friendly_times|length_is:0 %}
         register_form({id: "prereg_{{ section.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
         register_fragment({id: "addbutton_fillslot_sec{{ section.id }}_html", url: ""});
+                {% endif %}
             {% endif %}
-        {% endcomment %}
         {% else %}
+            //  Section not defined!
             {% for sec in class.get_sections %}
-                {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
+                {% if not sec.isRegClosed %}
+                    {% if sec.isAccepted %}
+                        {% if not sec.friendly_times|length_is:0 %}
         register_form({id: "prereg_{{ sec.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
         register_fragment({id: "addbutton_catalog_sec{{ sec.id }}_html", url: ""});
+                        {% endif %}
+                    {% endif %}
                 {% endif %}
             {% endfor %}
         {% endif %}

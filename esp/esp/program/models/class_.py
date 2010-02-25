@@ -54,6 +54,7 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
+from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models          import Program
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -328,7 +329,7 @@ class ClassSection(models.Model):
     @cache_function
     def _get_capacity(self, ignore_changes=False):
         if self.max_class_capacity is not None:
-            ans = self.max_class_capacity
+            return self.max_class_capacity
 
         rooms = self.initial_rooms()
         if len(rooms) == 0:
@@ -344,6 +345,7 @@ class ClassSection(models.Model):
             return int(ans)
 
     _get_capacity.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    _get_capacity.depend_on_row(lambda:ClassSection, lambda r: {'self': r})
     _get_capacity.depend_on_model(lambda:ClassSubject)
     _get_capacity.depend_on_model(lambda: Resource)
     _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
@@ -406,7 +408,8 @@ class ClassSection(models.Model):
         """   Get all assignments pertaining to floating resources like projectors. """
         from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
-        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype)
+        ta_restype = ResourceType.get_or_create('Teacher Availability')
+        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
     
     def classrooms(self):
         """ Returns the list of classroom resources assigned to this class."""
@@ -748,11 +751,9 @@ class ClassSection(models.Model):
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
 
-        # Test any scheduling constraints based on this class
-        relevantFilters = ScheduleTestSectionList.filter_by_section(self)
-        #relevantConstraints = ScheduleConstraint.objects.filter(Q(requirement__booleantoken__in=relevantFilters) | Q(condition__booleantoken__in=relevantFilters))
-
-        relevantConstraints = ScheduleConstraint.objects.filter(program=self.parent_program)
+        # Test any scheduling constraints
+        relevantConstraints = self.parent_program.getScheduleConstraints()
+        #   relevantConstraints = ScheduleConstraint.objects.none()
         # Set up a ScheduleMap; fake-insert this class into it
         sm = ScheduleMap(user, self.parent_program)
         sm.add_section(self)
@@ -767,11 +768,16 @@ class ClassSection(models.Model):
         else:
             verbs = ['/' + scrmi.signup_verb.name]
         
+        # Disallow joining a no-app class that conflicts with an app class
+        # For HSSP Harvard Spring 2010
+        if self.parent_class.studentappquestion_set.count() == 0:
+            verbs += ['/Applied']
+        
         # check to see if there's a conflict:
         for sec in user.getSections(self.parent_program, verbs=verbs):
             for time in sec.meeting_times.all():
                 if len(self.meeting_times.filter(id = time.id)) > 0:
-                    return 'This section conflicts with your schedule--check out the other sections!'
+                    return 'This class conflicts with your schedule!'
                     
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
@@ -1100,6 +1106,7 @@ class ClassSection(models.Model):
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
                 add_list_member(list_name, "%s@esp.mit.edu" % user.username)
+                add_list_member("%s_%s-students" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name), "%s@esp.mit.edu" % user.username)
 
             return True
         else:
@@ -1160,7 +1167,7 @@ class ClassSubject(models.Model):
     meeting_times = models.ManyToManyField(Event, blank=True)
 
     def get_sections(self):
-        if not hasattr(self, "_sections"):
+        if not hasattr(self, "_sections") or self._sections is None:
             self._sections = self.sections.all()
 
         return self._sections
@@ -1281,6 +1288,8 @@ class ClassSubject(models.Model):
         new_section.status = status
         new_section.save()
         self.sections.add(new_section)
+        
+        self._sections = None
         
         return new_section
 
@@ -1861,6 +1870,15 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def save(self, *args, **kwargs):
         super(ClassSubject, self).save(*args, **kwargs)
         self.update_cache()
+        if self.status < 0:
+            # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
+            teachers = self.teachers()
+            for t in teachers:
+                if ESPUser(t).getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
+                    from esp.mailman import remove_list_member
+                    mailing_list_name = "%s_%s" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name)
+                    teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
+                    remove_list_member(teachers_list_name, t.email)
 
     class Meta:
         db_table = 'program_class'

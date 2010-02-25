@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -83,6 +82,9 @@ class UserAvailability(models.Model):
     event = models.ForeignKey(Event)
     role = AjaxForeignKey(DataTree)
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
+
+    class Meta:
+        db_table = 'users_useravailability'
 
     def __unicode__(self):
         return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
@@ -217,6 +219,13 @@ class ESPUser(User, AnonymousUser):
 
         if type(user) == ESPUser:
             user = user.getOld()
+
+        if ESPUser(user).isAdministrator():
+            # Disallow morphing into Administrators.
+            # It's too broken, from a security perspective.
+            # -- aseering 1/29/2010
+            raise ESPError(), "User '%s' is an administrator; morphing into administrators is not permitted." % user.username
+
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         login(request, user)
@@ -465,12 +474,25 @@ class ESPUser(User, AnonymousUser):
             verb_list = ['/Applied']
             
         return self.getClasses(program, verbs=verb_list)
-       
+
     def getEnrolledClasses(self, program=None, request=None):
-        """ A new version of getEnrolledClasses that accepts arbitrary registration
-        verbs.  If it's too slow we can implement caching like in previous SVN
-        revisions. """
+        if program is None:
+            return self.getEnrolledClassesAll()
+        else:
+            return self.getEnrolledClassesFromProgram(program)
+
+    @cache_function
+    def getEnrolledClassesFromProgram(self, program):
         return self.getClasses(program, verbs=['/Enrolled'])
+    getEnrolledClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent.parent)},
+                                                 lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
+
+    @cache_function
+    def getEnrolledClassesAll(self):
+        return self.getClasses(None, verbs=['/Enrolled'])
+    getEnrolledClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user}, 
+                                         lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
+
 
     def getSections(self, program=None, verbs=None):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
@@ -500,6 +522,14 @@ class ESPUser(User, AnonymousUser):
                                               ).distinct()
             
         return csl
+
+    @cache_function
+    def getSectionsFromProgram(self, program):
+        return self.getSections(program, verbs=None)
+    #   Invalidate cache if bits are changed on either classes or sections.
+    #   This should be less conservative but there's no easy way to filter the bits as they are saved
+    #   (since we would need to check for all verbs under 'V/Flags/Registration')
+    getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user})
 
     def getEnrolledSections(self, program=None):
         if program is None:
@@ -531,7 +561,7 @@ class ESPUser(User, AnonymousUser):
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_cache(getEnrolledSectionsFromProgram, lambda self=wildcard, program=wildcard, **kwargs: {'self':self, 'program':program})
 
-    def getRegistrationPriority(self, timeslots):
+    def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. 
             Returns 0 if the student is already enrolled in one or more of the timeslots. """
         from esp.program.models import Program, RegistrationProfile
@@ -539,7 +569,6 @@ class ESPUser(User, AnonymousUser):
         if len(timeslots) < 1:
             return 0
         
-        prog = Program.objects.get(anchor=timeslots[0].anchor)
         prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
         
         priority_dict = {}
@@ -568,6 +597,23 @@ class ESPUser(User, AnonymousUser):
             priority += 1
 
         return priority
+        
+    #   We often request the registration priority for all timeslots individually
+    #   because our schedules display enrollment status on a per-timeslot (rather
+    #   than per-class) basis.  This function is intended to speed that up.
+    @cache_function
+    def getRegistrationPriorities(self, prog, timeslot_ids):
+        num_slots = len(timeslot_ids)
+        events = list(Event.objects.filter(id__in=timeslot_ids).order_by('id'))
+        result = [0 for i in range(num_slots)]
+        id_order = range(num_slots)
+        id_order.sort(key=lambda i: timeslot_ids[i])
+        for i in range(num_slots):
+            result[id_order[i]] = self.getRegistrationPriority(prog, [events[i]])
+        return result
+        
+    #   Invalidate on any user bit change (due to difficulty of screening registration bits)
+    getRegistrationPriorities.depend_on_row(lambda: UserBit, lambda bit: {'self': bit.user})
 
     def isEnrolledInClass(self, clsObj, request=None):
         verb_str = 'V/Flags/Registration/Enrolled'
@@ -584,6 +630,18 @@ class ESPUser(User, AnonymousUser):
     def canRegToFullProgram(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
+    #   This is needed for cache dependencies on financial aid functions
+    def get_finaid_model():
+        from esp.program.models import FinancialAidRequest
+        return FinancialAidRequest
+
+    @cache_function
+    def appliedFinancialAid(self, program):
+        return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
+    #   Invalidate cache when any of the user's financial aid requests are changed
+    appliedFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
+
+    @cache_function
     def hasFinancialAid(self, anchor):
         from esp.program.models import Program, FinancialAidRequest
         progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
@@ -592,6 +650,7 @@ class ESPUser(User, AnonymousUser):
             if a.approved:
                 return True
         return False
+    hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
     def paymentStatus(self, anchor=None):
         """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate
@@ -767,6 +826,7 @@ class ESPUser(User, AnonymousUser):
             schoolyear = curyear + 1
         return schoolyear
 
+    @cache_function
     def getGrade(self, program = None):
         if hasattr(self, '_grade'):
             return self._grade
@@ -784,6 +844,8 @@ class ESPUser(User, AnonymousUser):
         self._grade = grade
 
         return grade
+    #   The cache will need to be cleared once per academic year.
+    getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
 
     def currentSchoolYear(self):
         return ESPUser.current_schoolyear()-1
@@ -1271,6 +1333,17 @@ class ContactInfo(models.Model):
         app_label = 'users'
         db_table = 'users_contactinfo'
 
+    def _distance_from(self, zip):
+        try:
+            myZip = ZipCode.objects.get(zip_code = self.address_zip)
+            remoteZip = ZipCode.objects.get(zip_code = zip)
+            return myZip.distance(remoteZip)
+        except:
+            return -1
+
+
+
+
     def address(self):
         return '%s, %s, %s %s' % \
             (self.address_street,
@@ -1333,7 +1406,15 @@ class ContactInfo(models.Model):
         if self.address_postal != None:
             self.address_postal = str(self.address_postal)
 
+        if self._distance_from("02139") < 50:
+            from esp.mailman import add_list_member
+            try:
+                add_list_member("announcements_local", self.e_mail)
+            except:
+                pass
+            
         super(ContactInfo, self).save(*args, **kwargs)
+
 
     def __unicode__(self):
         username = ""

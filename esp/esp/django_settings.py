@@ -208,3 +208,6 @@ USE_I18N = False
 AUTH_PROFILE_MODULE='users.ESPUser_Profile'
 
 FORCE_SCRIPT_NAME = ''
+
+USE_MAILMAN = False
+

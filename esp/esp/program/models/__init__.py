@@ -483,6 +483,8 @@ class Program(models.Model):
         students_dict = self.students(QObjects = True)
         if students_dict.has_key('classreg'):
             students_count = User.objects.filter(students_dict['classreg']).distinct().count()
+        elif students_dict.has_key('satprepinfo'):
+            students_count = User.objects.filter(students_dict['satprepinfo']).distinct().count()
         else:
             students_count = User.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
 #            students_count = 0
@@ -498,6 +500,18 @@ class Program(models.Model):
     
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
+
+    @cache_function
+    def getScheduleConstraints(self):
+        return ScheduleConstraint.objects.filter(program=self).select_related()
+    def get_sc_model():
+        from esp.program.models import ScheduleConstraint
+        return ScheduleConstraint
+    def get_bt_model():
+        from esp.program.models import BooleanToken
+        return BooleanToken    
+    getScheduleConstraints.depend_on_model(get_sc_model)
+    getScheduleConstraints.depend_on_model(get_bt_model)
 
     def isConfirmed(self, espuser):
         v = GetNode('V/Flags/Public')
@@ -522,9 +536,9 @@ class Program(models.Model):
         from esp.resources.models import ResourceType
         
         if timeslot is not None:
-            return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom'))
+            return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom')).select_related()
         else:
-            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event')
+            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event').select_related()
     
     def getAvailableClassrooms(self, timeslot):
         #   Filters down classrooms to those that are not taken.
@@ -537,7 +551,6 @@ class Program(models.Model):
                 #   Make a dictionary with some helper variables for each resource.
                 result[c.name] = c
                 result[c.name].timeslots = [c.event]
-
                 result[c.name].furnishings = c.associated_resources()
                 result[c.name].sequence = c.schedule_sequence(self)
                 result[c.name].prog_available_times = c.available_times(self.anchor)
@@ -568,7 +581,7 @@ class Program(models.Model):
         
         classrooms = self.getClassrooms()
         
-        result = self.collapsed_dict(list(classrooms))
+        result = self.collapsed_dict(classrooms)
         key_list = result.keys()
         key_list.sort()
         #   Turn this into a list instead of a dictionary.
@@ -611,7 +624,17 @@ class Program(models.Model):
             are grabbed.  The default excludes 'compulsory' events, which are
             not intended to be used for classes (they're for lunch, photos, etc.)
         """
-        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).order_by('start')
+        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
+
+    #   In situations where you just want a list of all time slots in the program,
+    #   that can be cached.
+    @cache_function
+    def getTimeSlotList(self, exclude_compulsory=True):
+        if exclude_compulsory:
+            return list(self.getTimeSlots(exclude_types=['Compulsory']))
+        else:
+            return list(self.getTimeSlots(exclude_types=[]))
+    getTimeSlotList.depend_on_model(lambda: Event)
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
@@ -716,6 +739,7 @@ class Program(models.Model):
             return Program.objects.filter(id=-1)
         return Program.objects.filter(anchor__parent__in=self.anchor['Subprograms'].children())
     
+    @cache_function
     def getParentProgram(self):
         #   Ridiculous syntax is actually correct for our subprograms scheme.
         pl = []
@@ -725,6 +749,7 @@ class Program(models.Model):
             return pl[0]
         else:
             return None
+    getParentProgram.depend_on_model(lambda: Program)
         
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting_core.models import LineItemType, Balance
@@ -970,7 +995,7 @@ class RegistrationProfile(models.Model):
         
         if isinstance(user.id, int):
             try:
-                regProf = RegistrationProfile.objects.filter(user__exact=user).latest('last_ts')
+                regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except:
                 pass
 
@@ -1001,10 +1026,10 @@ class RegistrationProfile(models.Model):
         self.last_ts = datetime.now()
         super(RegistrationProfile, self).save(*args, **kwargs)
         
-    @staticmethod
+    @cache_function
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).order_by('-last_ts','-id')[:1]
+        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
             # Has this user already filled out a profile for the parent program?
             parent_program = program.getParentProgram()
@@ -1024,6 +1049,8 @@ class RegistrationProfile(models.Model):
         else:
             regProf = regProfList[0]
         return regProf
+    getLastForProgram.depend_on_row(lambda: RegistrationProfile, lambda rp: {'user': rp.user, 'program': rp.program})
+    getLastForProgram = staticmethod(getLastForProgram)
             
     def __unicode__(self):
         if self.program is None:
@@ -1051,7 +1078,7 @@ class RegistrationProfile(models.Model):
     
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self):
-        return ESPUser(self.user).getSections(program=self.program)
+        return ESPUser(self.user).getSectionsFromProgram(self.program)
     
     def registered_classes(self):
         return ESPUser(self.user).getEnrolledSections(program=self.program)
@@ -1343,7 +1370,7 @@ class BooleanExpression(models.Model):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
-            print 'Adding duplicate of token %d, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
+            print 'Adding duplicate of token %s, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
             new_token = token_type()
             #   Copy over fields that don't describe relations
             for item in new_token._meta.fields:

@@ -60,11 +60,11 @@ def handle_ajax_mover(method):
     """
 
     def ajax_mover(request, *args, **kwargs):
-        START = 'nav_entry__'
-
         if not request.GET.has_key('ajax_movepage') or \
            not request.GET.has_key('seq'):
             return method(request, *args, **kwargs)
+
+        START = 'nav_entry__'
 
         entries = request.GET['seq'].strip(',').split(',')
         try:
@@ -107,9 +107,6 @@ def qsd(request, branch, name, section, action):
 
     READ_VERB = 'V/Flags/Public'
     EDIT_VERB = 'V/Administer/Edit/QSD'
-
-    # Pages are global per-user (not unique per-user)
-    cache_id = '%s_%s' % (branch.id, name)
 
     if action == 'read':
         base_url = request.path[:-5]
@@ -164,20 +161,11 @@ def qsd(request, branch, name, section, action):
         if not have_read:
             raise Http403, 'You do not have permission to read this page.'
 
-        # This caching code is commented out
-        # My guess (Alex Dehnert, speaking as somebody who started work
-        # on ESP after this had happened) is that this was commented out
-        # when the render_qsd template tag started getting cached
-        #cached_html = cache.get('quasistaticdata_html:' + cache_id)
-        #if cached_html == None:
-        cached_html = qsd_rec.html()
-        #    cache.set('quasistaticdata_html:' + cache_id, cached_html)
-
         # Render response
         response = render_to_response('qsd/qsd.html', request, (branch, section), {
             'title': qsd_rec.title,
             'nav_category': qsd_rec.nav_category, 
-            'content': cached_html,
+            'content': qsd_rec.html(),
             'qsdrec': qsd_rec,
             'have_edit': have_edit,
             'edit_url': base_url + ".edit.html" })
@@ -209,7 +197,7 @@ def qsd(request, branch, name, section, action):
         qsd_rec_new.title = request.POST['title']
         qsd_rec_new.description = request.POST['description']
         qsd_rec_new.keywords    = request.POST['keywords']
-        qsd_rec_new.save(user=request.user)
+        qsd_rec_new.save()
 
         qsd_rec = qsd_rec_new
 
@@ -235,9 +223,6 @@ def qsd(request, branch, name, section, action):
                     
             m.handle_file(file, local_filename)
             m.save()
-
-        cache.delete(urlencode('quasistaticdata:' + cache_id))
-        cache.delete(urlencode('quasistaticdata_html:' + cache_id))
 
 
     # Detect the edit verb
@@ -290,7 +275,8 @@ def ajax_qsd(request):
         qsd = qsdold.copy()
         qsd.content = post_dict['data']
         qsd.load_cur_user_time(request, )
-        qsd.save(user=request.user,)
+        # Local change here, to enable QSD editing.
+        qsd.save()
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
         result['id'] = qsd.id
@@ -301,7 +287,7 @@ def ajax_qsd(request):
         qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path,defaults={'author': request.user})
         qsd.content = post_dict['data']
         qsd.author = request.user
-        qsd.save(user=request.user,)
+        qsd.save()
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
         result['id'] = qsd.id

@@ -11,19 +11,13 @@ Example Usage::
     'hello'
 """
 
-try:
-    import pylibmc as memcache
-except ImportError:
-    try:
-        import cmemcache as memcache
-    except ImportError:
-        import memcache
+from django.core.cache import cache
 
 __all__ = ['mem_db']
 
 class MemDatabase(object):
     def __init__(self, server):
-        self._cache = memcache.Client(server.split(';'))
+        self._cache = cache
 
     def get(self, key, default=None):
         val = self._cache.get(str(key))

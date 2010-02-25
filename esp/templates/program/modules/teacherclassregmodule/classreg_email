@@ -2,8 +2,11 @@
 ---------------------------------
 {% if not from_mit %}
 *** This teacher is not from MIT. ***
-Teacher's school/employer: {{ college }}
-{% endif %}
+Teacher's school/employer: {{ college }} {% endif %}
+
+{% if not taught_programs %}*** This teacher is a first-time teacher. ***
+{% else %}Programs this teacher has taught in: {% for prog in taught_programs %}{{ prog.niceName }}, {% endfor %}{% endif %}
+
 Class Title: {{ title }}
 
 Category: {{ category }}

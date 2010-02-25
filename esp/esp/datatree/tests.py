@@ -40,10 +40,16 @@ class DataTreeTest(TestCase, custom_cache):
         uri.name = "uri2"
         uri.save()
 
+        # Make sure the URI is marked dirty
+        self.assertEqual(uri.uri_correct, False)
+
         # Make sure the URI's of the child nodes are updated
         self.assertEqual(DataTree.get_by_uri("test/get/by/uri2", create=True).get_uri(), "test/get/by/uri2")
         self.assertEqual(DataTree.get_by_uri("test/get/by/uri2/node", create=True).get_uri(), "test/get/by/uri2/node")
         self.assertEqual(DataTree.get_by_uri("test/get/by/uri2/node/child", create=True).get_uri(), "test/get/by/uri2/node/child")
+
+        # Is it marked clean now that get_uri() has been called?
+        self.assertEqual(DataTree.objects.get(uri="test/get/by/uri2").uri_correct, True)
 
         # Try deleting a node; make sure it goes away
         child.delete()

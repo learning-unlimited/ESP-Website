@@ -95,7 +95,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
     def dashboard(self, request, tl, one, two, module, extra, prog):
         """ The administration panel showing statistics for the program, and a list
         of classes with the ability to edit each one.  """
-        
         context = {}
         modules = self.program.getModules(self.user, 'manage')
         

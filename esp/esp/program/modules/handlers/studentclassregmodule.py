@@ -36,7 +36,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, UserBit, User
-from django.db.models.query import Q
+from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
 from django.http import HttpResponse
 from django.views.decorators.cache import cache_control
@@ -145,7 +145,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         return {'classreg': """Students who have have signed up for at least one class."""}
     
     def isCompleted(self):
-        return (len(self.user.getSections(self.program)[:1]) > 0)
+        return (len(self.user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -157,7 +157,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @needs_student
     def prepare(self, context={}):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-        timeslots = list(self.program.getTimeSlots(exclude_types=[]).order_by('start'))
+        timeslots = self.program.getTimeSlotList(exclude_compulsory=False)
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes())
         
         prevTimeSlot = None
@@ -194,25 +194,20 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 else:
                     timeslot_dict[mt.id] = [section_dict]
                     
-        for timeslot in timeslots:
+        user_priority = user.getRegistrationPriorities(self.program, [t.id for t in timeslots])
+        for i in range(len(timeslots)):
+            timeslot = timeslots[i]
             daybreak = False
             if prevTimeSlot != None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
                     daybreak = True
 
-            #   Same change as above.  -Michael P
-            #   if scrmi.use_priority:
-            #       user_priority = user.getRegistrationPriority([timeslot])
-            #   else:
-            #       user_priority = None
-            user_priority = user.getRegistrationPriority([timeslot])
-
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user_priority))
+                schedule.append((timeslot, cls_list, blockCount + 1, user_priority[i]))
             else:                
-                schedule.append((timeslot, [], blockCount + 1, user_priority))
+                schedule.append((timeslot, [], blockCount + 1, user_priority[i]))
 
             prevTimeSlot = timeslot
                 
@@ -227,27 +222,40 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
         import simplejson as json
         from django.template.loader import render_to_string
+        user_sections = self.user.getSections(self.program)
         context = self.prepare({})
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
-        context['num_classes'] = self.user.getSections(self.program).count()
+        context['num_classes'] = user_sections.count()
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}
         
+        #   Look at the 'extra' data and act appropriately:
+        #   -   List, query set, or comma-separated ID list of class sections:
+        #       Add the buttons for those class sections to the returned data.
+        #   -   String 'all':
+        #       Add the buttons for all of the student's class sections to the returned data
+        #   -   Anything else:
+        #       Don't do anything.
         #   Rewrite registration button if a particular section was named.  (It will be in extra).
-        sec_id = None
-        try:
-            sec_id = int(extra)
-        except:
-            pass
+        sec_ids = []
+        if extra == 'all':
+            sec_ids = user_sections.values_list('id', flat=True)
+        elif isinstance(extra, list) or isinstance(extra, QuerySet):
+            sec_ids = list(extra)
+        else:
+            try:
+                sec_ids = [int(x) for x in extra.split(',')]
+            except:
+                pass
             
-        if sec_id:
+        for sec_id in sec_ids:
             try:
                 section = ClassSection.objects.get(id=sec_id)
                 cls = section.parent_class
-                button_context = {'section': section, 'cls': cls}
+                button_context = {'sec': section, 'cls': cls}
                 if section in self.user.getEnrolledSections(self.program):
                     button_context['label'] = 'Registered!'
                     button_context['disabled'] = True
@@ -278,10 +286,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         else:
             raise ESPError(False), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
 
-        enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
-
         # Can we register for more than one class yet?
         if (not self.user.onsite_local) and (not UserBit.objects.UserHasPerms(request.user, prog.anchor, reg_verb ) ):
+            enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
             # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
             classes_registered = 0
             for cls in enrolled_classes:
@@ -304,21 +311,24 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                         datestring = d.strftime(' on %B %d')
                 raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
 
-        cobj = ClassSubject.objects.get(id=classid)
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
             error = section.cannotAdd(self.user,self.enforce_max,use_cache=False)
         if scrmi.use_priority or not error:
+            cobj = ClassSubject.objects.get(id=classid)
             error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False)
         
-        priority = self.user.getRegistrationPriority(section.meeting_times.all())
+        if scrmi.use_priority:
+            priority = self.user.getRegistrationPriority(prog, section.meeting_times.all())
+        else:
+            priority = 1
 
         # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
         auto_classes = []
         blocked_class = None
         cannotadd_error = ''
 
-        for implication in ClassImplication.objects.filter(cls=cobj, parent__isnull=True):
+        for implication in ClassImplication.objects.filter(cls__id=classid, parent__isnull=True):
             if implication.fails_implication(self.user):
                 for cls in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     #   Override size limits on subprogram classes (checkFull=False). -Michael P
@@ -413,7 +423,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if is_onsite and not request.GET.has_key('filter'):
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+            classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
             classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
@@ -594,8 +604,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             for implication in ClassImplication.objects.filter(cls=cls, enforce=True):
                 for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     auto_class.unpreregister_student(self.user)
-                        
-        return True
+            
+        #   Return the ID of classes that were removed.
+        return oldclasses.values_list('id', flat=True)
 
     @aux_call
     @needs_student
@@ -610,9 +621,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @meets_any_deadline(['/Classes/OneClass','/Removal'])
     def ajax_clearslot(self,request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
-        success = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if success:
-            return self.ajax_schedule(request, tl, one, two, module, extra, prog)
+        cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        if len(cleared_ids) > 0:
+            #   The 'extra' value should be the ID list
+            return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)
 
     @aux_call
     @needs_student

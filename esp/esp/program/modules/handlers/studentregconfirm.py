@@ -29,10 +29,10 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
-from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call
 from django.http import HttpResponseRedirect
 
-class StudentRegConfirm(ProgramModuleObj, CoreModule):
+class StudentRegConfirm(ProgramModuleObj):
     """ Basically, a dirty hack to add a link to registration confirmation into the list of stuffs to do during reg """
     @classmethod
     def module_properties(cls):

@@ -1,0 +1,1 @@
+UPDATE program_programmodule SET aux_calls = aux_calls || ',ajax_schedule,ajax_addclass,ajax_clearslot' WHERE handler = 'StudentClassRegModule' AND aux_calls NOT LIKE '%,ajax_schedule,ajax_addclass,ajax_clearslot%';

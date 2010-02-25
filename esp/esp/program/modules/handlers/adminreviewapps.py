@@ -29,7 +29,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, CoreModule, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.users.models import ESPUser, UserBit, User
@@ -42,7 +42,7 @@ from django.db.models.query import Q
 
 __all__ = ['AdminReviewApps']
 
-class AdminReviewApps(ProgramModuleObj, CoreModule):
+class AdminReviewApps(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {

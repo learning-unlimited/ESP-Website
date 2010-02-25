@@ -13,7 +13,7 @@ as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
+ut WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
@@ -78,13 +78,12 @@ class AdminClass(ProgramModuleObj):
             room_choices = [(c.name, c.name) for c in self.program.groupedClassrooms()]
             return [(None, 'Unassigned')] + room_choices
         if field_str == 'progress':
-            return ((str(x.id),x.title) for x in self.program.checkitems.all())
+            return self.program.checkitems.all().values_list('id', 'title')
         if field_str == 'resources':
             resources = self.program.getFloatingResources()
             return ((x.name, x.name) for x in resources)
         if field_str == 'times':
-            times = self.program.getTimeSlots()
-            return ((str(x.id),x.short_description) for x in times)
+            return self.program.getTimeSlots().values_list('id', 'short_description')
         if field_str == 'min_grade' or field_str == 'max_grade':
             min_grade, max_grade = (7, 12)
             if self.program.grade_min:

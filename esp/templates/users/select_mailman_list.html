@@ -1,0 +1,46 @@
+{% extends "outlines/theme.html" %}
+
+{% block title %}Generate List{% endblock %}
+
+{% block subsection_name %}Generate Users List{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Select Mailing List(s)</h1>
+<br />
+
+<p>Please select the mailing list or lists whose users you would like to e-mail.</p>
+
+<p>Note that we're <b>not permitted to send advertisements</b> through this Web interface, because it doesn't provide Unsubscribe support properly like the regular mailing lists do.  These are also real mailing lists; just send mail to them instead.</p>
+
+<p>If you need to e-mail a list of people that's not here, poke a Webmin!  They're really not that hard to make.</p>
+
+<p>You can click <a href="{{request.path}}?advanced">here</a> to use the Advanced User-Search Panel to generate lists of users via database queries.  If you're sending e-mail, though, please don't use the Advanced version unless you really know what you're doing!</p>
+
+<!-- Future Webmins, in case you're wondering why not to use the Advanced Comm Panel to send e-mail:  First, that whole codepath has lots of issues that can cause it to produce a slightly different set of users than you're expecting, particularly for more-complex combination queries.  It turns out that relational logic is complicated and subtle...  Second, there's not only no Unsubscribe mechanism for Advanced Comm Panel e-mails; there's no reasonable way of making one. -->
+
+
+<form action="{{request.path}}" method="post" name="comm">
+
+<p>Click on a list to select it.  Ctrl-click to select multiple lists; your e-mail will be sent once to each user whose e-mail address is on any of the lists.</p>
+
+<p>
+<select name="select_mailman" multiple size=10>
+{% for lst in nonpublic_lists %}<option value="{{ lst }}">{{ lst }}@esp.mit.edu</option>
+{% endfor %}{% for lst in public_lists %}<option value="{{ lst }}">{{ lst }}@esp.mit.edu</option>
+{% endfor %}</select>
+</p>
+
+<input type="submit" value="I have my list, go on!" name="submitform" /> &nbsp;
+<input type="submit" value="I want to search within this list" name="submitform" /> &nbsp;
+<input type="submit" value="I want a subset of this list" name="submitform" />
+</form>
+{% endblock %}

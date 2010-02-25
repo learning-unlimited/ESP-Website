@@ -73,7 +73,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 'studentfinaid_approved': """Students who have been granted financial aid."""}
     
     def isCompleted(self):
-        return self.user.financialaidrequest_set.all().filter(program = self.program, done = True).count() > 0
+        return self.user.appliedFinancialAid(self.program)
 
     @main_call
     @needs_student
