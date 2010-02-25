@@ -33,9 +33,17 @@ function swap_visible(div_id) {
 	}
 }
 
-var student_grade = parseInt("{{ user.getGrade }}"); {% comment %} Convert from int to string to int in case user.getGrade returns null or errors {% endcomment %}
+var student_grade = "{{ user.getGrade }}"; {% comment %} Convert from int to string to int in case user.getGrade returns null or errors {% endcomment %}
+
+if (student_grade != "") {
+  student_grade = parseInt(student_grade);
+}
 
 function hideClassesOutOfGradeRange(stu_grade) {
+  if (student_grade == "") {
+    return;
+  }
+
   mins = {};
   maxes = {};
 

@@ -501,6 +501,18 @@ class Program(models.Model):
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
+    @cache_function
+    def getScheduleConstraints(self):
+        return ScheduleConstraint.objects.filter(program=self).select_related()
+    def get_sc_model():
+        from esp.program.models import ScheduleConstraint
+        return ScheduleConstraint
+    def get_bt_model():
+        from esp.program.models import BooleanToken
+        return BooleanToken    
+    getScheduleConstraints.depend_on_model(get_sc_model)
+    getScheduleConstraints.depend_on_model(get_bt_model)
+
     def isConfirmed(self, espuser):
         v = GetNode('V/Flags/Public')
         userbits = UserBit.objects.filter(verb = v, user = espuser,
@@ -1285,8 +1297,10 @@ class BooleanToken(models.Model):
     def __unicode__(self):
         return '[%d] %s' % (self.seq, self.text)
 
+    @cache_function
     def subclass_instance(self):
         return get_subclass_instance(BooleanToken, self)
+    subclass_instance.depend_on_row(lambda:BooleanToken, lambda bt: {'self': bt})
 
     @staticmethod
     def evaluate(stack, *args, **kwargs):
