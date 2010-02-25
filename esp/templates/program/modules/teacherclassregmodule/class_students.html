@@ -43,7 +43,7 @@ Here are your class' students.  Only those who have enrolled will show up on you
     <tr>
         <th colspan="3" class="small">Registration status: {{ kv.key }}</th>
     </tr>
-    {% for student in kv.value %}
+    {% for student in kv.value.distinct %}
     <tr>
         <th class="small">{{ forloop.counter }}</th>
         <td>{{ student.name }}</td>
