@@ -470,10 +470,23 @@ class ESPUser(User, AnonymousUser):
         return self.getClasses(program, verbs=verb_list)
        
     def getEnrolledClasses(self, program=None, request=None):
-        """ A new version of getEnrolledClasses that accepts arbitrary registration
-        verbs.  If it's too slow we can implement caching like in previous SVN
-        revisions. """
+        if program is None:
+            return self.getEnrolledClassesAll()
+        else:
+            return self.getEnrolledClassesFromProgram(program)
+
+    @cache_function
+    def getEnrolledClassesFromProgram(self, program):
         return self.getClasses(program, verbs=['/Enrolled'])
+    getEnrolledClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent.parent)},
+                                                 lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
+
+    @cache_function
+    def getEnrolledClassesAll(self):
+        return self.getClasses(None, verbs=['/Enrolled'])
+    getEnrolledClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user}, 
+                                         lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
+
 
     def getSections(self, program=None, verbs=None):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
