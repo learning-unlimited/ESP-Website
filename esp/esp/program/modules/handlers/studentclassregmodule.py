@@ -423,7 +423,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if is_onsite and not request.GET.has_key('filter'):
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = filter(lambda c: c.grade_min >= user_grade and c.grade_max <= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
+            classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
             classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 

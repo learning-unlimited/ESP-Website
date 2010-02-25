@@ -1,1 +1,1 @@
-<input type="submit" class="addbutton" name="action" value="{% if label %}{{ label }}{% else %}Add this class{% endif %}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" {% if disabled %}disabled{% endif %}/>
+<input type="submit" class="addbutton{% if label %}_added{% endif %}" name="action" value="{% if label %}{{ label }}{% else %}Add this class{% endif %}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" {% if disabled %}disabled{% endif %}/>
