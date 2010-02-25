@@ -1297,8 +1297,10 @@ class BooleanToken(models.Model):
     def __unicode__(self):
         return '[%d] %s' % (self.seq, self.text)
 
+    @cache_function
     def subclass_instance(self):
         return get_subclass_instance(BooleanToken, self)
+    subclass_instance.depend_on_row(lambda:BooleanToken, lambda bt: {'self': bt})
 
     @staticmethod
     def evaluate(stack, *args, **kwargs):
