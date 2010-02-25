@@ -152,7 +152,7 @@ class ClassManager(ProcedureManager):
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
         
-        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "datatree_datatree"."id" AND "datatree_datatree"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
+        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "users_userbit"."user_id") FROM "users_userbit", "datatree_datatree" AS "foo" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "foo"."id" AND "foo"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
                              ('teacher_ids', 'SELECT list(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
                              ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
