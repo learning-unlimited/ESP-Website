@@ -369,7 +369,9 @@ def submit_transaction(request):
             recipient_list = [contact[1] for contact in settings.ADMINS]
             refs = 'Cybersource request ID: %s' % post_id
             if cc_receipts:
-                recipient_list.append('esp-treasurer@mit.edu')
+                #recipient_list.append('esp-treasurer@mit.edu')
+                #recipient_list.append('ageng@mit.edu') # Because I want to play space invaders too!
+                recipient_list.append('esp-credit-cards@mit.edu') 
                 subject = 'DUPLICATE PAYMENT'
                 refs += '\n\nPrevious payments\' Cybersource IDs: ' + ( u', '.join([x.cc_ref for x in cc_receipts]) )
             else:
