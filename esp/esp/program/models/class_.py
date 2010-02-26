@@ -152,8 +152,8 @@ class ClassManager(ProcedureManager):
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
         
-        select = SortedDict([( '_num_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "datatree_datatree"."id" AND "datatree_datatree"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
-                             ('teacher_ids', 'SELECT list("users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
+        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "users_userbit"."user_id") FROM "users_userbit", "datatree_datatree" AS "foo" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "foo"."id" AND "foo"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
+                             ('teacher_ids', 'SELECT list(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
                              ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
@@ -264,7 +264,7 @@ class ClassSection(models.Model):
         now = datetime.datetime.now()
         enrolled_node=GetNode("V/Flags/Registration/Enrolled")
 
-        select = SortedDict([( '_count_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_classsection"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
+        select = SortedDict([( '_count_students', 'SELECT COUNT(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_classsection"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
                              ('event_ids', 'SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")')])
         
         select_params = [ enrolled_node.id,
@@ -907,15 +907,8 @@ class ClassSection(models.Model):
                     self._count_students = retVal
                     return retVal
 
-
-        qs = UserBit.objects.none()
-        for verb_str in verbs:
-            v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            # NOTE: This assumes that no user can be both Enrolled and Rejected
-            # from the same class. Otherwise, this is pretty silly.
-            new_qs = UserBit.objects.filter(qsc=self.anchor, verb=v)
-            new_qs = new_qs.filter(enddate__gte=datetime.datetime.now())
-            qs = qs | new_qs
+        v = [ DataTree.get_by_uri('V/Flags/Registration' + verb_str) for verb_str in verbs ]
+        qs = User.objects.filter(userbit__qsc=self.anchor, userbit__verb__in=v).distinct()
         
         retVal = qs.count()
 
