@@ -133,7 +133,7 @@ MIDDLEWARE_GLOBAL = [
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
    #( 600, 'esp.middleware.psycomiddleware.PsycoMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
-   #( 800, 'esp.middleware.esp_sessions.SessionMiddleware'),
+   #( 800, 'esp.middleware.esp_sessions.SessionMiddleware'),  # DEPRECATED -- Relies on mem_db, which is currently nonfunctional
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
     (1000, 'esp.middleware.ESPAuthMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),

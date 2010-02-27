@@ -41,7 +41,6 @@ from django.db import connection
 from django.db import transaction
 from django.core.cache import cache
 from esp.db.fields import AjaxForeignKey
-from esp.utils.memdb import mem_db
 from esp.datatree.sql.query_utils import *
 from esp.datatree.sql.manager import DataTreeManager
 from esp.cache import cache_function
@@ -486,8 +485,6 @@ class DataTree(models.Model):
         lock = 1
         if hard_lock: lock = 2
 
-        mem_db.set('datatree_lock', str(lock))
-
         root.lock_table = lock
 
         root.save(old_save = True)
@@ -497,8 +494,6 @@ class DataTree(models.Model):
         " Unlock the entire tree. "
         root = DataTree.root()
         root.lock_table = 0
-
-        mem_db.set('datatree_lock', '0')
 
         root.save(old_save = True)
 
@@ -529,13 +524,7 @@ class DataTree(models.Model):
     @staticmethod
     def locked():
         " Get the lock status of this tree. "
-        try:
-            lock_table = int(mem_db.get('datatree_lock'))
-        except (TypeError, ValueError):
-            lock_table = DataTree.root().lock_table
-            mem_db.set('datatree_lock', lock_table)
-
-        return lock_table
+        return DataTree.root().lock_table
 
     @staticmethod
     def wait_if_locked():
