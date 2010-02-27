@@ -146,7 +146,6 @@ ROOT_URLCONF = 'esp.urls'
 APPEND_SLASH=False
 
 INSTALLED_APPS = (
-    'debug_toolbar',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

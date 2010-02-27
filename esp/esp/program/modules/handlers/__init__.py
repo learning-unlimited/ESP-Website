@@ -23,8 +23,6 @@ oldglobals = globals()
 
 files.sort()
 
-files.sort()
-
 for filename in files:
 
     globals().update(oldglobals)
