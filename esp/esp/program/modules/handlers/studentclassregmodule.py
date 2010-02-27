@@ -393,6 +393,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @meets_deadline('/Classes/OneClass')
     def ajax_addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class and return an updated inline schedule """
+        if not request.is_ajax():
+            return self.addclass(request, tl, one, two, module, extra, prog)
         try:
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
             if success:
@@ -653,9 +655,13 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @meets_any_deadline(['/Classes/OneClass','/Removal'])
     def ajax_clearslot(self,request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
-        success = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if success:
-            return self.ajax_schedule(request, tl, one, two, module, extra, prog)
+        if not request.is_ajax():
+            return self.clearslot(request, tl, one, two, module, extra, prog)
+        
+        cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        if len(cleared_ids) > 0:
+            #   The 'extra' value should be the ID list
+            return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)
 
     @aux_call
     @needs_student
