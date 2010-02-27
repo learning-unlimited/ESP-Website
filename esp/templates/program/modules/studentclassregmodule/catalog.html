@@ -5,7 +5,9 @@
 
 {% block xtrajs %}
 {{ block.super }}
-<script type="text/javascript">
+<script language="javascript" src="/media/scripts/ajax_tools.js"></script>
+
+<script language="javascript">
 <!--
   function submit_prereg(clsid) {
      // prereg for a class
@@ -37,6 +39,24 @@ var student_grade = "{{ user.getGrade }}"; {% comment %} Convert from int to str
 
 if (student_grade != "") {
   student_grade = parseInt(student_grade);
+}
+
+if (document.getElementsByClassName == null) {
+// Alternate implementation from http://lawrence.ecorp.net/inet/samples/js-getelementsbyclassname.shtml
+document.getElementsByClassName = function(class_name) {
+    var docList = this.all || this.getElementsByTagName('*');
+    var matchArray = new Array();
+
+    /*Create a regular expression object for class*/
+    var re = new RegExp("(?:^|\\s)"+class_name+"(?:\\s|$)");
+    for (var i = 0; i < docList.length; i++) {
+        if (re.test(docList[i].className) ) {
+            matchArray[matchArray.length] = docList[i];
+        }
+    }
+
+			return matchArray;
+}//eof annonymous function
 }
 
 function hideClassesOutOfGradeRange(stu_grade) {
@@ -174,6 +194,12 @@ Viewing classes for: {{ timeslot.friendly_name }}
 
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:catalog" request.user %}
+
+<script language="javascript">
+<!--
+register_fragment({id: "student_schedule_html", url: "/learn/Spark/2010/ajax_schedule"});
+-->
+</script>
 
 {% load class_render %}
 {% for class in classes %}
