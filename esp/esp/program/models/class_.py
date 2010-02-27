@@ -908,7 +908,7 @@ class ClassSection(models.Model):
                     return retVal
 
         v = [ DataTree.get_by_uri('V/Flags/Registration' + verb_str) for verb_str in verbs ]
-        qs = User.objects.filter(userbit__qsc=self.anchor, userbit__verb__in=v).distinct()
+        qs = User.objects.filter(userbit__qsc=self.anchor, userbit__verb__in=v, userbit__enddate__gte=datetime.datetime.now()).distinct()
         
         retVal = qs.count()
 
