@@ -908,14 +908,7 @@ class ClassSection(models.Model):
                     return retVal
 
 
-        qs = UserBit.objects.none()
-        for verb_str in verbs:
-            v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            # NOTE: This assumes that no user can be both Enrolled and Rejected
-            # from the same class. Otherwise, this is pretty silly.
-            new_qs = UserBit.objects.filter(qsc=self.anchor, verb=v)
-            new_qs = new_qs.filter(enddate__gte=datetime.datetime.now())
-            qs = qs | new_qs
+        qs = User.objects.filter(userbit__qsc=self.anchor, userbit__verb__in=v, userbit__enddate__gte=datetime.datetime.now()).distinct()
         
         retVal = qs.count()
 
@@ -1154,7 +1147,7 @@ class ClassSubject(models.Model):
     meeting_times = models.ManyToManyField(Event, blank=True)
 
     def get_sections(self):
-        if not hasattr(self, "_sections"):
+        if not hasattr(self, "_sections") or self._sections is None:
             self._sections = self.sections.all()
 
         return self._sections
@@ -1275,6 +1268,8 @@ class ClassSubject(models.Model):
         new_section.status = status
         new_section.save()
         self.sections.add(new_section)
+        
+        self._sections = None
         
         return new_section
 
