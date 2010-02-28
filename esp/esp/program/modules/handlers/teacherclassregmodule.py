@@ -634,6 +634,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 if self.user.getTaughtTime(prog, include_scheduled=True) + timedelta(hours=new_duration) > self.program.total_duration() + newclass_oldtime:
                     raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
 
+                #   If the teacher has not filled out any availability yet, make them always-available by default
+                #   (this is what the availability page shows, but the data isn't there yet)
+                if self.user.getAvailableTimes(self.program).count() == 0:
+                    for ts in self.program.getTimeSlots():
+                        self.user.addAvailableTime(self.program, ts)
+
                 # datatree maintenance
                 if newclass_isnew:
                     newclass.parent_program = self.program
