@@ -276,10 +276,16 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 student.enrolled = True
             elif bits.filter(verb__name='Rejected').count() > 0:
                 student.rejected = True
+                
+        #   Detect if there is an application module
+        from esp.program.modules.handlers.studentjunctionappmodule import StudentJunctionAppModule
+        has_app_module = False
+        for module in prog.getModules():
+            if isinstance(module, StudentJunctionAppModule):
+                has_app_module = True
 
-        return render_to_response(self.baseDir()+'select_students.html', request, (prog, tl), {'prog': prog, 'sec': sec, 'students_list': students_list})
+        return render_to_response(self.baseDir()+'select_students.html', request, (prog, tl), {'has_app_module': has_app_module, 'prog': prog, 'sec': sec, 'students_list': students_list})
 
-        
     @aux_call
     @needs_teacher
     @meets_deadline('/Classes')
