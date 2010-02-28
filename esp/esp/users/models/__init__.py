@@ -821,6 +821,7 @@ class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
+    k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, default = False)
@@ -1324,6 +1325,12 @@ class ContactInfo(models.Model):
         search_fields = ['first_name','last_name','user__username']
 
 
+class K12SchoolManager(models.Manager):
+    def other(self):
+        return self.get_or_create(name='Other')[0]
+    def most(self):
+        return self.exclude(name='Other').order_by('name')
+
 class K12School(models.Model):
     """
     All the schools that we know about.
@@ -1334,6 +1341,8 @@ class K12School(models.Model):
     school_id   = models.CharField(max_length=128,blank=True,null=True)
     contact_title = models.TextField(blank=True,null=True)
     name          = models.TextField(blank=True,null=True)
+
+    objects = K12SchoolManager()
 
     class Meta:
         app_label = 'users'

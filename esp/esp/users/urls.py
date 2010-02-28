@@ -12,5 +12,15 @@ urlpatterns = patterns('esp.users.views',
                        (r'^cancelrecover/?$', 'email_passwd_cancel',),
                        (r'^signedout/?$', 'signed_out_message',),
                        (r'^login/?$',   'login_checked',),
+                       (r'^login/byschool/?$',   'login_byschool.login_byschool',),
+                       (r'^login/byschool/([0-9]+)/?$',   'login_byschool.login_byschool_pickname',),
+                       (r'^login/byschool/new/?$',   'login_byschool.login_byschool_new',),
+                       (r'^login/bybday/?$',   'login_by_bday.login_by_bday',),
+                       (r'^login/bybday/([0-9]+)/([0-9]+)/?$',   'login_by_bday.login_by_bday_pickname',),
+                       (r'^login/bybday/new/?$',   'login_by_bday.login_by_bday_new',),
                        (r'^disableaccount/?$', 'disable_account'),
+                       )
+
+urlpatterns += patterns('esp.web.views.main',
+                        (r'^redirect/?$', 'registration_redirect',),
                        )

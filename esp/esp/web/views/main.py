@@ -242,3 +242,41 @@ def contact(request, section='esp'):
 	return render_to_response('contact.html', request, GetNode('Q/Web/about'),
 						 {'contact_form': form})
 
+
+def registration_redirect(request):
+    """ A view which returns:
+        - A redirect to the currently open registration if exactly one registration is open
+        - A list of open registration links otherwise
+    """
+    from esp.users.models import ESPUser, UserBit
+    from esp.program.models import Program
+
+    #   Make sure we have an ESPUser
+    user = ESPUser(request.user)
+
+    # prepare the rendered page so it points them to open student/teacher reg's
+    ctxt = {}
+    userrole = {}
+    if user.isStudent():
+        userrole['name'] = 'Student'
+        userrole['base'] = 'learn'
+        userrole['reg'] = 'studentreg'
+        regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
+    elif user.isTeacher():
+        userrole['name'] = 'Teacher'
+        userrole['base'] = 'teach'
+        userrole['reg'] = 'teacherreg'
+        regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
+    ctxt['userrole'] = userrole
+    
+    if user.isStudent() or user.isTeacher():
+        progs = UserBit.find_by_anchor_perms(Program, user=user, verb=regverb)
+        nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
+        ctxt['prog'] = progs[0]
+        ctxt['nextreg'] = list(nextreg)
+        if len(progs) == 1:
+            return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+        else:
+            return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+    else:
+        return render_to_response('users/profile_complete.html', request, navnode, ctxt)

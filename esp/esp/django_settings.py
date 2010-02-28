@@ -207,3 +207,7 @@ USE_I18N = False
 AUTH_PROFILE_MODULE='users.ESPUser_Profile'
 
 FORCE_SCRIPT_NAME = ''
+
+# Page to redirect people to when they log in
+# (Could be '/' for example)
+DEFAULT_REDIRECT = '/myesp/redirect'
