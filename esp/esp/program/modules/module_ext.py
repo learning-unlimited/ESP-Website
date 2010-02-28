@@ -311,8 +311,8 @@ class SATPrepTeacherModuleInfo(models.Model):
         return 'SATPrep Information for teacher %s in %s' % \
                  (str(self.user), str(self.program))
 
-    class Admin:
-        pass
+    class Meta:
+        unique_together = ('user', 'program')
     
     def get_subject_display(self):
         if self.subject in SATPrepTeacherModuleInfo.SUBJECT_DICT:
