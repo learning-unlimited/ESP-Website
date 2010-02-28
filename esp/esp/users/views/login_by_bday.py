@@ -60,6 +60,10 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
         form = BarePasswordForm()
         action = '/myesp/login/'
     else:
+        #   Add the birthday information to the user's session
+        request.session['birth_month'] = month
+        request.session['birth_day'] = day
+        
         # Prepare a new student-select box
         user_filter = Q(registrationprofile__student_info__dob__month=month, registrationprofile__student_info__dob__day=day)
         candidate_users = ESPUser.objects.filter(is_active=True).filter(user_filter).distinct().order_by('first_name', 'id')
