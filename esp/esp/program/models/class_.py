@@ -42,6 +42,7 @@ from django.utils.datastructures import SortedDict
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.db.cache import GenericCacheHelper
+from esp.utils.property import PropertyDict
 
 # django models
 from django.contrib.auth.models import User
