@@ -134,16 +134,25 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 if cls.parent_program.id == self.program.id ]
 
     def getClassSizes(self):
-        min_size, max_size, class_size_step = (0, 200, 10)
+        #   Default values
+        min_size = 0
+        max_size = 30
+        size_step = 1
+        other_sizes = range(40, 210, 10)
 
         if self.class_max_size:
             max_size = self.class_max_size
-            
+            other_sizes = []
         if self.class_size_step:
-            class_size_step = self.class_size_step
+            size_step = self.class_size_step
+            other_sizes = []
+        if self.class_min_cap:
+            min_size = self.class_min_cap
+            other_sizes = []
+        if self.class_other_sizes and len(self.class_other_sizes) > 0:
+            other_sizes = [int(x) for x in self.class_other_sizes.split(',')]
 
-        ret_range = range(0, 23) + [30, 35, 40, 150]
-        ret_range = filter(lambda x: ((x >= min_size) and (x <= max_size)), ret_range)
+        ret_range = range(min_size, max_size + 1, size_step) + other_sizes
 
         return ret_range
 
