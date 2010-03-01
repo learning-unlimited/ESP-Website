@@ -61,7 +61,6 @@ def home(request):
     return render_to_response('index.html', request, GetNode('Q/Web'), context)
 
 @vary_on_headers('Cookie')
-@cache_control(private=True)
 def myesp(request, module):
 	""" Return page handled by myESP (generally, a user-specific page) """
 	if myesp_handlers.has_key(module):
