@@ -2,6 +2,7 @@
 
 {% block javascript %}
     {{ block.super }}
+    <script type="text/javascript" src="{{ MEDIA_URL }}scripts/match_heights.js"></script>
     {% comment %}{% if request.user.is_authenticated %}{% endcomment %}
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/yahoo/yahoo-min.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
@@ -121,6 +122,12 @@ body {
 </div>
 
 </div>
+
+<script type="text/javascript">
+<!--
+    match_heights(['main_content', 'navbar']);
+-->
+</script>
 
 <div id="footer">
 Your footer here
