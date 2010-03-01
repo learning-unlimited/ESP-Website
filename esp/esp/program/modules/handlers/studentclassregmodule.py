@@ -20,7 +20,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 Contact Us:
 ESP Web Group
 MIT Educational Studies Program,
@@ -40,6 +39,7 @@ from django.db.models.query import Q
 from django.template.loader import get_template
 from django.http import HttpResponse
 from django.views.decorators.cache import cache_control
+from django.views.decorators.vary import vary_on_cookie
 from esp.cal.models import Event, EventType
 from datetime import datetime
 from decimal import Decimal
@@ -378,6 +378,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog, inst:
+            print inst
             if inst[0]:
                 msg = inst[0]
                 raise AjaxError(msg)
@@ -513,7 +514,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 'two':        two,
                 })
     
-    @cache_control(max_age=3600)
+    @cache_control(public=True, max_age=3600)
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
@@ -534,6 +535,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     # This function gets called and branches off to the two above depending on the user's role
     @aux_call
+    @cache_control(public=True, max_age=180)
+    @vary_on_cookie
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
         
