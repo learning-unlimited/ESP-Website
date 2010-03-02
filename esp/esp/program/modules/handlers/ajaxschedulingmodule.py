@@ -37,7 +37,7 @@ from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserBit
+from esp.users.models            import User, ESPUser, UserBit, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from esp.datatree.models         import DataTree
