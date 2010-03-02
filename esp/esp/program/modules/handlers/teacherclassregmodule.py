@@ -584,7 +584,15 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @meets_deadline("/Classes/Edit")
     @needs_teacher
     def editclass(self, request, tl, one, two, module, extra, prog):
+        try:
+            int(extra)
+        except: 
+            raise ESPError("False"), "Invalid integer for class ID!"
+
         classes = ClassSubject.objects.filter(id = extra)
+        if len(classes) == 0:
+            raise ESPError("False"), "No class found matching this ID!"
+
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
