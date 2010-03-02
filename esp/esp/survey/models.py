@@ -121,7 +121,7 @@ class SurveyResponse(models.Model):
 
     def set_answers(self, get_or_post, save=False):
         """ For a given get or post, get a set of answers. """
-        from esp.program.models import ClassSubject
+        from esp.program.models import ClassSection
         
         # First, set up attendance dictionary based on the attendance questions
         # If there were no attendance questions, this wasn't a student survey
@@ -154,15 +154,15 @@ class SurveyResponse(models.Model):
                     if not cid:
                         continue
                     question = Question.objects.get(id=qid)
-                    cls = ClassSubject.objects.get(id=cid)
-                except ClassSubject.DoesNotExist:
+                    sec = ClassSection.objects.get(id=cid)
+                except ClassSection.DoesNotExist:
                     raise ESPError(), 'Error finding class from %s' % key
                 except Question.DoesNotExist:
                     raise ESPError(), 'Error finding question from %s' % key
                 except ValueError:
                     raise ESPError(), 'Error getting IDs from %s' % key
 
-                new_answer.anchor = cls.anchor
+                new_answer.anchor = sec.anchor
                 
             elif len(str_list) == 2:
                 try:

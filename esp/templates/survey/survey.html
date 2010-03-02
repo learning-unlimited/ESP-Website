@@ -89,7 +89,7 @@
                 <select name="attendance_{{ ts.id }}" id="id_attendance_{{ ts.id }}">
                     <option value="0">[None]</option>
                     {% for sec in ts.classsections %}
-                        <option value="{{ sec.parent_class.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
+                        <option value="{{ sec.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
                     {% endfor %}
                 </select>
             </td>
