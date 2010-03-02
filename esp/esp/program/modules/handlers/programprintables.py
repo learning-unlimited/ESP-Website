@@ -896,7 +896,7 @@ Student schedule for %s:
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
             
-        if format == 'html':
+        if file_type == 'html':
             return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
