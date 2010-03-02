@@ -13,26 +13,19 @@
     <script type="text/javascript" src="/media/scripts/qsd.js"></script>
 {% endblock %}
 
-
-<div class="admin admin_hidden">
-    <div class="qsd_header admin admin_hidden" onclick="qsd_inline_edit({{ qsdrec.id }});">This is quasi-static content.  Click here to edit the text; click outside the box to save changes.</div>
-    <div class="qsd_edit_hidden admin admin_hidden" id="inline_edit_{{ qsdrec.id }}">
-    <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.id }}" onblur="qsd_inline_upload({{ qsdrec.id }});" name="qsd_content" class="qsd_editor qsd_fullsize admin admin_hidden">
+{% if edit_bits %}
+    <div class="qsd_header" onclick="qsd_inline_edit({{ qsdrec.id }});">This is quasi-static content.  Click here to edit the text; click outside the box to save changes.</div>
+    <div class="qsd_edit_hidden" id="inline_edit_{{ qsdrec.id }}">
+    <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.id }}" onblur="qsd_inline_upload({{ qsdrec.id }});" name="qsd_content" class="qsd_editor qsd_fullsize">
         {% autoescape off %}{{ qsdrec.content }}{% endautoescape %}
     </textarea>
     </div>
-</div>
-<div class="qsd_view_visible" id="inline_qsd_{{ qsdrec.id }}">
+    <div class="qsd_view_visible" id="inline_qsd_{{ qsdrec.id }}">
     {% autoescape off %}{{ qsdrec.content|markdown|smartypants|teximages }}{% endautoescape %}
-</div>
-
-<script language="JavaScript">
-$(document).ready(function() {
-  if (esp_user.cur_admin != "1") {
-    $(".qsd_view_visible").removeClass("qsd_view_visible");
-  }
-});
-</script>
+    </div>
+{% else %}
+    {% autoescape off %}{{ qsdrec.content|markdown|smartypants|teximages }}{% endautoescape %}
+{% endif %}
 
 <br /><br />
 <div id="divmainqsddatetimestamp">

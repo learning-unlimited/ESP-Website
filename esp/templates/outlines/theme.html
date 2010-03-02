@@ -83,35 +83,7 @@
         <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
     {% endif %}
 
-<script type="text/javascript" src="/media/scripts/jquery.js"> </script>
-<script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
-<script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
-
-<style type="text/css">
-.admin_hidden {
-  display: none;
-}
-.logged_in_hidden {
-  display: none;
-}
-.not_logged_in_hidden {
-  display: none;
-}
-</style>
-
-<script language="JavaScript">
-$(document).ready(function() {
-  if (esp_user.cur_admin == "1") {
-    $(".admin").removeClass("admin_hidden");
-  }
-
-  if (esp_user.cur_username != null) {
-    $(".not_logged_in").addClass("not_logged_in_hidden");
-    $(".logged_in").removeClass("logged_in_hidden");
-  }
-});
-</script>
-
+<!--<script type="text/javascript" src="/media/scripts/jquery.js"> </script>-->
 <script type="text/javascript">
 YAHOO.util.Event.on(window, "load", function(){
 
@@ -146,6 +118,22 @@ wrap(document.getElementById('search_field'),'Enter search term');
   });
 });*/
 
+{% comment %}
+{% if request.user.is_authenticated %}
+var showadmin = function(){
+  this.innerHTML = '&ndash;';
+  this.onclick = hideadmin;
+  document.getElementById('adminbar_content').style.display = 'block';
+};
+var hideadmin = function(){
+  this.innerHTML = '+';
+  this.onclick = showadmin;
+  document.getElementById('adminbar_content').style.display = 'none';
+};
+
+document.getElementById('adminbar_toggle').onclick = hideadmin;
+{% endif %}
+{% endcomment %}
 });
 
 </script>
@@ -154,7 +142,7 @@ wrap(document.getElementById('search_field'),'Enter search term');
 
 {% block body %}
 
-<div class="admin admin_hidden">
+{% if request.user.isAdministrator %}
 <div id="adminbar">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
@@ -215,7 +203,7 @@ content_html:
 name: 'User Search'
 });
 </script>
-</div>
+{% endif %}
 
 <div id="page" class="{{ request.path|extract_theme }}">
   <div id="sidebar">
@@ -244,12 +232,13 @@ name: 'User Search'
 	{% endif %}
 	{% endwith %}
 	{% endwith %}
+	{# <li id="tab_myesp" class="grey" ><a href="/myesp/accountmanage.html">PROFILE</a></li> #}
 {% with request.path|split:"/"|index:1 as split_url %}{% ifequal split_url "teach" %}
 	<li id="tab_logistics" class="grey"><a href="/teach/logistics/index.html">LOGISTICS</a></li>
 {% endifequal %}{% endwith %}
-<div class="admin admin_hidden">
+{% if request.user.isAdministrator %}
 	<li id="tab_admin" class="black" ><a href="/manage/programs/">ADMIN</a></li>
-</div>
+{% endif %}
 
       </ul>
   </div>
@@ -298,8 +287,8 @@ name: 'User Search'
 {% block login %}
 <div id="login_box">
 
+{% if not request.user.is_authenticated %}
 <!-- login -->
-<div class="not_logged_in">
 <form name="login_form" id="login_form" method="post" action="/myesp/login/">
   <input type="hidden" name="next" value="{{ request.path }}" />
   <input type="text" id="login_user" name="username" />
@@ -308,11 +297,12 @@ name: 'User Search'
   <a href="/myesp/register" id="login_signup"></a>
   <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
 </form>
-</div>
-<div class="logged_in logged_in_hidden">
-  Hello, <script language="JavaScript">document.write(esp_user.cur_first_name + " " + esp_user.cur_last_name);</script>!<br />
+
+{% else %}
+<!-- logout -->
+  Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
   <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage.html">My Profile</a></span>
-</div>
+{% endif %}
 
 </div>
 {% endblock %}
@@ -328,6 +318,16 @@ name: 'User Search'
 <div id="divannouncements">
 <ul>
 {% load preview %}
+{# Display custom list for logged-in users #}
+{% if request.user.id %}
+    {% miniblog_for_user request.user as announcements 3 %}
+{% else %}
+    {% if request.path|equal:"/teach/index.html" %}
+	{% miniblog_for_user request.user as announcements teach 3 %}
+    {% else %}
+	{% miniblog_for_user request.user as announcements learn 3 %}
+    {% endif %}
+{% endif %}
 {% for announce in announcements.announcementList %}
        <li>
 	<a href="{{ announce.get_absolute_url }}" title="{{ announce.makeTitle }}">
@@ -342,6 +342,12 @@ name: 'User Search'
 {% if announcements.overflowed %}
 <div id="divannouncemore">
   <a href="/myesp/home/">more announcements...</a></div>
+{% comment %}
+     {{ announcements.total }} total ...
+     <a href="/blog/announcements" title="See all announcements!">
+        see all
+     </a>
+{% endcomment %}
 {% endif %}
 {% else %}
 <h1 class="title">{% block content_title %}&nbsp;{% endblock %}</h1>

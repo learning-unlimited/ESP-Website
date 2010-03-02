@@ -128,8 +128,6 @@ class ESPErrorMiddleware(object):
     """
 
     def process_response(self, request, response):
-        from esp.users.models import ESPUser
-
         user = getattr(request, '_cached_user', -1)
         if user == -1:
             return response
@@ -160,7 +158,7 @@ class ESPErrorMiddleware(object):
                           'cur_last_name': urllib.quote(user.last_name.encode(encoding)),
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
                           'cur_retTitle': ret_title,
-                          'cur_admin': ESPUser(user).isAdministrator() and '1' or '0',
+                          
                           }
 
             for key, value in new_values.iteritems():
@@ -171,8 +169,7 @@ class ESPErrorMiddleware(object):
         else:
             map(response.delete_cookie, ('cur_username','cur_email',
                                          'cur_first_name','cur_last_name',
-                                         'cur_other_user','cur_retTitle',
-                                         'cur_admin'))
+                                         'cur_other_user','cur_retTitle'))
         return response
 
     def process_exception(self, request, exception):

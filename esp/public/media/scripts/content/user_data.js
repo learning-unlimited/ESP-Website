@@ -10,7 +10,7 @@ if (typeof(window["$"]) == "undefined") {
 }
 
 var esp_user = {};
-var esp_user_keys = new Array('cur_username','cur_email','cur_first_name','cur_last_name','cur_other_user','cur_retTitle', 'cur_admin');
+var esp_user_keys = new Array('cur_username','cur_email','cur_first_name','cur_last_name','cur_other_user','cur_retTitle');
 
 for (var i=0; i < esp_user_keys.length; i++) {
     var tmp = $.cookie(esp_user_keys[i]);
