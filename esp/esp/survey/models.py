@@ -173,11 +173,8 @@ class SurveyResponse(models.Model):
                 except ValueError:
                     raise ESPError(), 'Error getting IDs from %s' % key
                 new_answer.anchor = self.survey.anchor
-                
-            if not isinstance(value, basestring):
-                new_answer.value = '+' + pickle.dumps(value)
-            else:
-                new_answer.value = ':' + value
+            
+            new_answer.answer = value
             new_answer.question = question 
             answers.append(new_answer)
 
@@ -356,6 +353,8 @@ class Answer(models.Model):
         """ The actual, unpickled answer. """
         if not self.value:
             return None
+        if hasattr(self, '_answer'):
+            return self._answer
 
         if self.value[0] == '+':
             try:
@@ -365,8 +364,16 @@ class Answer(models.Model):
         else:
             value = self.value[1:]
 
+        self._answer = value
         return value
 
+    @answer.setter
+    def answer(self, value):
+        self._answer = value
+        if not isinstance(value, basestring):
+            self.value = '+' + pickle.dumps(value)
+        else:
+            self.value = ':' + value
 
     class Admin:
         pass
