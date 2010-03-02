@@ -195,11 +195,6 @@ def display_survey(user, prog, surveys, request, tl, format):
             classes = user.getTaughtSections(prog).order_by('parent_class', 'id')
         perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(anchor__in=(x.anchor, x.parent_class.anchor)) } for y in perclass_questions ] } for x in classes ]
     
-    #   Prune blank answers to textual questions
-    for dict in perclass_data:
-        for q in dict['questions']:
-            q['answers'] = [x for x in q['answers'] if (type(x) != str or (len(x) > 0 and not x.isspace()))]            
-            
     context = {'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data}
     
     #   Choose+use appropriate output format
