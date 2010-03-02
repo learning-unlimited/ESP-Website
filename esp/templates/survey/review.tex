@@ -76,7 +76,7 @@ Students were also asked a few questions about each of their classes.  The resul
     \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\
     \multicolumn{2}{|c|}{\cellcolor{esphead} \Large {Responses for {{ c.class.emailcode }}: {{ c.class.title|texescape }}} } \\ 
     \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\\hline
-    \multicolumn{2}{|c|}{Teachers: {{ c.class.getTeacherNames|join:", "|texescape }} } \\ \hline
+    \multicolumn{2}{|c|}{Teachers: {{ c.class.parent_class.getTeacherNames|join:", "|texescape }} } \\ \hline
     {% for q in c.questions %} 
         {% if q.question.question_type.is_countable %}
             \begin{minipage}[b]{3in} {{ q.question.name }}: \\

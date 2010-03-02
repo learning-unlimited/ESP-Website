@@ -165,23 +165,16 @@ def display_survey(user, prog, surveys, request, tl, format):
     
     perclass_data = []
     
-    cls = None
-    try:
-        cls = ClassSubject.objects.get( id = int( request.REQUEST['classsubject_id'] ) )
-    except (ValueError, KeyError, DoesNotExist):
-        pass
+    def getByIdOrNone(model, key):
+        q = model.objects.filter(id = request.REQUEST.get(key, None))[:1]
+        if q:
+            return q[0]
+        return None
     
-    if cls is not None:
-        perclass_questions = surveys[0].questions.filter(anchor__name="Classes", anchor__parent = prog.anchor).order_by('seq')
-        perclass_data = [ { 'class': cls, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(anchor=cls.anchor) } for y in perclass_questions ] } ]
-        surveys = []
-    elif tl == 'teach' or ( tl == 'manage' and user.id is not request.user.id ):
-        #   In the teach category, show only class-specific questions
-        classes = user.getTaughtClasses(prog)
-        perclass_questions = surveys[0].questions.filter(anchor__name="Classes", anchor__parent = prog.anchor).order_by('seq')
-        perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(anchor=x.anchor) } for y in perclass_questions ] } for x in classes ]
-        surveys = []
-    elif tl == 'manage':
+    sec = getByIdOrNone(ClassSection, 'classsection_id')
+    cls = getByIdOrNone(ClassSubject, 'classsubject_id')
+    
+    if tl == 'manage' and not request.REQUEST.has_key('teacher_id'):
         #   In the manage category, pack the data in as extra attributes to the surveys
         surveys = list(surveys)
         for s in surveys:
@@ -189,7 +182,19 @@ def display_survey(user, prog, surveys, request, tl, format):
             s.display_data = {'questions': [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]}
             questions2 = s.questions.filter(anchor__parent = prog.anchor, question_type__is_numeric = True).order_by('seq')
             s.display_data['questions'].extend([{ 'question': y, 'answers': Answer.objects.filter(question=y) } for y in questions2])
-            
+    else:
+        perclass_questions = surveys[0].questions.filter(anchor__name="Classes", anchor__parent = prog.anchor).order_by('seq')
+        surveys = []
+        classes = []
+        if sec is not None:
+            classes = [ sec ]
+        elif cls is not None:
+            classes = cls.get_sections()
+        elif tl == 'teach' or tl == 'manage':
+            #   In the teach category, show only class-specific questions
+            classes = user.getTaughtSections(prog).order_by('parent_class', 'id')
+        perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(anchor__in=(x.anchor, x.parent_class.anchor)) } for y in perclass_questions ] } for x in classes ]
+    
     #   Prune blank answers to textual questions
     for dict in perclass_data:
         for q in dict['questions']:
