@@ -46,6 +46,7 @@ from esp.db.fields import AjaxForeignKey
 # Models to depend on.
 from esp.datatree.models import *
 from esp.middleware import ESPError
+from esp.program.models import Program
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to 
