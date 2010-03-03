@@ -99,9 +99,9 @@ def weighted_avg(dct):
         return s / n
 
 @register.filter
-def stripempty(lst):
-    #   Takes a list and deletes empty entries. Whitespace-only is empty.
-    return [ item for item in lst if len(str(item).strip()) > 0 ]
+def drop_empty_answers(lst):
+    #   Takes a list of answers and drops empty ones. Whitespace-only is empty.
+    return [ ans for ans in lst if (not isinstance(ans.answer, basestring)) or ans.answer.strip() ]
 
 @register.filter
 def makelist(lst):

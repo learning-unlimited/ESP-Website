@@ -278,33 +278,6 @@ class Question(models.Model):
 
         return loader.render_to_string(self.question_type.template_file, params)
 
-    def dump(self, data_dict=None):
-        """ Dump this question's responses.
-        
-        If specified, data_dict will contain the pre-filled data
-        from a GET or POST operation. Probably not relevant here.
-        
-        So far, it differs from question.render only in its template files.
-        """
-
-        ##########
-        # Get any pre-filled data
-        if not data_dict:
-            data_dict = {}
-        value = self.get_value(data_dict)
-
-        ##########
-        # Render the HTML
-        params = self.get_params()
-        params['name'] = self.name
-        params['id'] = self.id
-        params['value'] = value
-        
-        if self.anchor.name == 'Classes':
-            params['for_class'] = True
-
-        return loader.render_to_string(self.question_type.answers_template_file, params)
-
     def global_average(self):
         def pretty_val(val):
             if val == 0:

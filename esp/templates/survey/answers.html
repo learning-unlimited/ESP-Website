@@ -1,0 +1,58 @@
+{% comment %}
+Expects:
+    "q": a list of dictionaries {
+        'question': <Question object>,
+        'answers': [iterable of <Answer object>s],
+        }
+    "num_students": Total count of people who could have answered the question
+{% endcomment %}
+
+{% load survey %}
+
+<table width="600">
+<tr>
+    <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
+{% if q.question.question_type.is_countable %}
+    <td>
+        {% if not q.answers|length_is:0 %}
+            {{ q.answers|unpack_answers|histogram:"html"|safe }}
+            {% with q.question.get_params as params %}
+                {% if params.lower_text %}
+                <div style="font-weight:bold; font-size:0.8em; width:216px;">
+                    {# I have moral qualms about fixing this width in pixels; hopefully someone will find a better way. -ageng 2008-10-20 #}
+                    <div style="float:left;">1 = {{ params.lower_text }}</div>
+                    <div style="float:right;">{{ params.upper_text }} = {{ params.number_of_ratings }}</div>
+                    <div style="text-align:center;">{{ params.middle_text }}</div>
+                </div>
+                {% endif %}
+            {% endwith %}
+        {% else %} 
+            There are no responses to this question.
+        {% endif %}
+    </td>
+    <td>
+        <b>Statistics:</b>
+        <ul>
+            <li>Number of responses: {{ q.answers|length }}/{{ num_participants }}</li>
+            {% if q.question.question_type.is_numeric %}
+                <li>Average: {{ q.answers|unpack_answers|average }}</li>
+                <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
+                {% ifequal q.question.anchor.name "Classes" %}
+                    <li>Average for all classes: {{ q.question.global_average }}</li>
+                {% endifequal %}
+            {% endif %}
+        </ul>
+    </td>
+{% else %}
+    <td>
+        <ul>
+        {% for ans in q.answers|drop_empty_answers %}
+            <li><a href="review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses">{{ ans.answer }}</a></li>
+        {% empty %}
+            <li>There are no responses to this question.</li>
+        {% endfor %}
+        </ul>
+    </td>
+{% endif %}
+</tr>
+</table>
