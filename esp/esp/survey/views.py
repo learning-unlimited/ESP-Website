@@ -43,7 +43,6 @@ from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
 from django.http import Http404, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
-from esp.survey.templatetags.survey import tally, weighted_avg  # I don't know precisely why, but this feels wrong. -ageng
 
 @login_required
 def survey_view(request, tl, program, instance):
@@ -315,7 +314,7 @@ def top_classes(request, tl, program, instance):
             c['numratings'] = len(c['ratings'])
             if c['numratings'] < num_cut:
                 continue
-            c['avg'] = weighted_avg(tally(c['ratings']))
+            c['avg'] = sum(c['ratings']) * 1.0 / c['numratings']
             if c['avg'] < rating_cut:
                 continue
             teachers = list(c['class'].teachers())
