@@ -23,6 +23,16 @@
         \textbf{Number of responses:} {{ q.answers|length }}/{{ num_participants }} \\
     \end{minipage} &
     \begin{minipage}{3in}
+    {% ifequal q.question.question_type.name "Favorite Class" %}
+        \vspace*{0.1in} \small
+        \begin{enumerate}
+        {% for fav in q.answers|unpack_answers|favorite_classes:20 %}
+            \item {{ fav.title|texescape }} ({{fav.votes}} votes)
+        {% empty %}
+            \item There are no responses to this question.
+        {% endfor %}
+        \end{enumerate} \vspace*{0.1in}
+    {% else %}
         {% if not q.answers|length_is:0 %}
         \vspace*{0.1in} Responses include: \\ 
         \small
@@ -32,5 +42,6 @@
         \end{itemize2} \vspace*{0.1in} 
         {% else %} There are no responses to this question.
         {% endif %}
+    {% endifequal %}
     \end{minipage} \\ \hline
 {% endif %}

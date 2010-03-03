@@ -45,6 +45,15 @@ Expects:
     </td>
 {% else %}
     <td>
+    {% ifequal q.question.question_type.name "Favorite Class" %}
+        <ol>
+        {% for fav in q.answers|unpack_answers|favorite_classes:20 %}
+            <li>{{ fav.title }} ({{fav.votes}} votes)</li>
+        {% empty %}
+            <li>There are no responses to this question.</li>
+        {% endfor %}
+        </ol>
+    {% else %}
         <ul>
         {% for ans in q.answers|drop_empty_answers %}
             <li><a href="review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses">{{ ans.answer }}</a></li>
@@ -52,6 +61,7 @@ Expects:
             <li>There are no responses to this question.</li>
         {% endfor %}
         </ul>
+    {% endifequal %}
     </td>
 {% endif %}
 </tr>

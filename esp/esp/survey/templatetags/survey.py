@@ -281,11 +281,8 @@ def list_classes(ans):
     return '<ul>\n' + makelist( newlist ) + '</ul>\n'
 
 @register.filter
-def favorite_classes(answer_list, limit):
-    result_header = '<ol>\n'
-    result_footer = '</ol>\n'
-    result_body = ''
-    
+def favorite_classes(answer_list, limit=20):
+    result_list = []
     class_dict = {}
     
     for a in answer_list:
@@ -304,7 +301,6 @@ def favorite_classes(answer_list, limit):
     for key in key_list[:max_count]:
         cl = ClassSubject.objects.filter(id=key)
         if cl.count() == 1:
-            result_body += '<li>%s: %s (%d votes)\n' % (cl[0].emailcode(), cl[0].title(), class_dict[key])
+            result_list.append({'title': '%s: %s' % (cl[0].emailcode(), cl[0].title()), 'votes': class_dict[key]})
 
-    return result_header + result_body + result_footer
-        
+    return result_list
