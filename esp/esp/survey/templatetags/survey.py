@@ -67,38 +67,6 @@ def unpack_answers(lst):
     return [x.answer for x in lst]
 
 @register.filter
-def tally(lst):
-    #   Takes a list and returns a dictionary of entry: frequency
-    d = {}
-    for item in lst:
-        if d.has_key(str(item)):
-            d[str(item)] += 1
-        else:
-            d[str(item)] = 1
-    return d
-
-@register.filter
-def weighted_avg(dct):
-    #   Takes a dictionary of number: freq. and returns weighted avg. (float)
-    #   Accepts "Yes", "True" as 1 and "No", "False" as 0.
-    s = 0.0
-    n = 0
-    for key in dct.keys():
-        try:
-            weight = int(key, 10)
-        except:
-            weight = 0
-            if ['yes', 'true'].count(key.lower()) > 0:
-                weight = 1
-        s += weight * dct[key]
-        n += dct[key]
-    
-    if n == 0:
-        return 0
-    else:
-        return s / n
-
-@register.filter
 def drop_empty_answers(lst):
     #   Takes a list of answers and drops empty ones. Whitespace-only is empty.
     return [ ans for ans in lst if (not isinstance(ans.answer, basestring)) or ans.answer.strip() ]
@@ -111,49 +79,6 @@ def makelist(lst):
     result = ''
     for item in lst:
         result += '<li>' + str(item) + '</li>' + '\n'
-    return result
-
-@register.filter
-def list_answers(lst):
-    #   Takes a list of Answer objects and makes an unordered list, with special links!
-    #   This isn't HTML-safe. I think this is dead code by now anyway, seeing as we only really uesd it for text-entry answers. -ageng 2008-10-20
-    newlist = [ item for item in lst if len(str(item.answer).strip()) > 0 ]
-    
-    if len(newlist) == 0:
-        return "No responses"
-    result = ""
-    for item in newlist:
-        result += '<li>' + str(item.answer) + '<a href="review_single?' + str(item.survey_response.id) + '" title="View this person&quot;s other responses">&raquo;</a></li>' + '\n'
-    return result
-
-@register.filter
-def numeric_stats(lst, n):
-    if len(lst) == 0:
-        return "No responses"
-    t = tally(lst)
-    a = weighted_avg(t)
-    result = '<ul><li> mean: ' + ( '%.2f' % a ) + '</li></ul>'
-    result += '<ul>'
-    for i in range(1, n+1):
-        if not t.has_key(str(i)):
-            t[str(i)] = 0
-        result += '<li>' + str(i) + ': ' + str(t[str(i)]) + '</li>'
-    result += '</ul>'
-    return result
-
-@register.filter
-def boolean_stats(lst):
-    if len(lst) == 0:
-        return "No responses"
-    t = tally(lst)
-    a = 100 * weighted_avg(t)
-    result = '<ul><li> % "Yes": ' + ( '%.2f' % a ) + '</li></ul>'
-    result += '<ul>'
-    for i in ['Yes', 'No']:
-        if not t.has_key(str(i)):
-            t[str(i)] = 0
-        result += '<li>' + str(i) + ': ' + str(t[str(i)]) + '</li>'
-    result += '</ul>'
     return result
 
 @register.filter

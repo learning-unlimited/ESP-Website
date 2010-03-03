@@ -208,10 +208,6 @@ class QuestionType(models.Model):
     def template_file(self):
         return 'survey/questions/%s.html' % self.name.replace(' ', '_').lower()
     
-    @property
-    def answers_template_file(self):
-        return 'survey/answers/%s.html' % self.name.replace(' ', '_').lower()
-
     def __unicode__(self):
         return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
 
