@@ -316,8 +316,7 @@ class Answer(models.Model):
     question = models.ForeignKey(Question, db_index=True)
     value = models.TextField()
 
-    @property
-    def answer(self):
+    def _answer_getter(self):
         """ The actual, unpickled answer. """
         if not self.value:
             return None
@@ -335,13 +334,14 @@ class Answer(models.Model):
         self._answer = value
         return value
 
-    @answer.setter
-    def answer(self, value):
+    def _answer_setter(self, value):
         self._answer = value
         if not isinstance(value, basestring):
             self.value = '+' + pickle.dumps(value)
         else:
             self.value = ':' + value
+
+    answer = property(_answer_getter, _answer_setter)
 
     class Admin:
         pass
