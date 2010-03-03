@@ -72,16 +72,6 @@ def drop_empty_answers(lst):
     return [ ans for ans in lst if (not isinstance(ans.answer, basestring)) or ans.answer.strip() ]
 
 @register.filter
-def makelist(lst):
-    #   Because I can't understand Django's built-in unordered_list -ageng
-    if len(lst) == 0:
-        return 'No responses'
-    result = ''
-    for item in lst:
-        result += '<li>' + str(item) + '</li>' + '\n'
-    return result
-
-@register.filter
 def average(lst):
     if len(lst) == 0:
         return 'N/A'
@@ -185,25 +175,18 @@ def histogram(answer_list, format='html'):
         return '<img src="%s.png" />' % ('/media/' + HISTOGRAM_PATH + file_base)
     
 @register.filter
-def list_classes(ans):
-    # If the answer is a list of classes, render a shiny list of their titles.
-    # If the answer is an ordinary list, prettify the list.
-    # Otherwise just spit the answer back out.
-    # Kind of inelegant, but I didn't want to make yet another set of templates.
-    if not isinstance(ans, list):
-        return ans
-    newlist = []
-    for key in ans:
-        try:
-            intkey = int(key)
-        except ValueError:
-            return '<ul>\n' + makelist( ans ) + '</ul>\n' # If we get a non-integer answer, quit early.
-        q = ClassSubject.objects.filter(id=intkey)
-        if q.count() == 1:
-            newlist.extend( [ c.emailcode() + ': ' + c.title() for c in q ] )
-        else:
-            newlist.append( key ) # If no class matches, spit out the raw answer.
-    return '<ul>\n' + makelist( newlist ) + '</ul>\n'
+def answer_to_list(ans):
+    # If the answer is not a list, turn it into a one-element list.
+    # Then if the answer is a list of classes, return a list of their titles.
+    if isinstance(ans.answer, list):
+        value = ans.answer
+    else:
+        value = [ ans.answer ]
+    
+    if ans.question.question_type.name == 'Favorite Class':
+        return [ c.emailcode() + ': ' + c.title() for c in ClassSubject.objects.filter(id__in=value) ]
+    
+    return value
 
 @register.filter
 def favorite_classes(answer_list, limit=20):
@@ -221,7 +204,7 @@ def favorite_classes(answer_list, limit=20):
                 class_dict[ind] += 1
             else:
                 class_dict[ind] = 1
-               
+    
     key_list = class_dict.keys()
     key_list.sort(key=lambda x: -class_dict[x])
    
