@@ -286,7 +286,11 @@ def favorite_classes(answer_list, limit=20):
     class_dict = {}
     
     for a in answer_list:
-        for i in a:
+        if isinstance(a, list):
+            l = a
+        else:
+            l = [ a ]
+        for i in l:
             ind = int(i)
             if class_dict.has_key(ind):
                 class_dict[ind] += 1
