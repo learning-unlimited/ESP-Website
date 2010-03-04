@@ -35,6 +35,7 @@ class ClassList(BaseHandler):
                       "esp@mit.edu", "%s-teachers@esp.mit.edu" % cls.emailcode())
         else:
             apply_list_settings(list_name, {'default_member_moderation': False})
+            apply_list_settings(list_name, {'generic_nonmember_action': 0})
 
         add_list_member(list_name, cls.parent_program.director_email)
         add_list_member(list_name, ["%s@esp.mit.edu" % x.username for x in cls.teachers()])
