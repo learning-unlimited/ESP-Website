@@ -1,0 +1,25 @@
+Hi {{ name }},
+   The mailing list for your class, "{{ classname }}", has just been activated.  The list's moderator password is:
+
+{{ mod_password }}
+
+
+   We've had some confusion and annoyance in the past with class mailing lists.  So, we'd like to clarify a few things:
+
+- First:  If you unfortunately absolutely have to cancel your class, please talk to the program's directors first, so that we can remove the class from the catalog and you don't get even more students signing up!
+
+- Second: No illegal activities, no private financial gain, etc, on these lists; the MITNet Rules of Use[1] do apply to us.  This includes your students!; feel free to moderate inappropriate messages if you see them.
+
+- Third, just a heads-up:  Program directors do have access to mailing lists and list archives.  This is mostly for teachers who e-mail special instructions or directions to their class and forget to tell us (please still do tell us!), so that the directors can figure out what's going on in a class if they need to.  (For example, a student shows up late and needs to catch up with a class that's on a field trip, etc.)
+
+
+    Well, that's it for depressing warnings and such.  Don't get too worried about them; they come up quite rarely, but they're a big headache for us when they do, so we're trying to make sure things run smoothly.
+
+
+Thanks,
+MIT ESP Program Organizers
+
+
+
+[1] http://ist.mit.edu/services/athena/olh/rules
+
