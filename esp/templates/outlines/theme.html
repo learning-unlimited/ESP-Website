@@ -248,14 +248,14 @@ name: 'User Search'
       <div id="cross_link">
 	{% with request.path|split:"/"|index:1 as split_url %}
 	{% if split_url|notequal:"teach" %}
-	<span class="teach inactive"><a href="/teach/index.html">Teach</a></span>
+	<span class="teach inactive"><a href="{{ request.path|mux_tl:"teach" }}">Teach</a></span>
 	{% else %}
-	<span class="teach"><a href="/teach/index.html">Teach</a></span>
+	<span class="teach"><a href="{{ request.path|mux_tl:"teach" }}">Teach</a></span>
 	{% endif %}
 	{% if split_url|notequal:"learn" %}
-	<span class="learn inactive"><a href="/learn/index.html">Learn</a></span>
+	<span class="learn inactive"><a href="{{ request.path|mux_tl:"learn" }}">Learn</a></span>
 	{% else %}
-	<span class="learn"><a href="/learn/index.html">Learn</a></span>
+	<span class="learn"><a href="{{ request.path|mux_tl:"learn" }}">Learn</a></span>
 	{% endif %}
 	{% if split_url|notequal:"volunteer" %}
 	<span class="volunteer inactive"><a href="/volunteer/index.html">Volunteer</a></span>
