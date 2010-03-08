@@ -2,7 +2,7 @@
 
 {% load main %} {# helpful functions #}
 
-{% block title %}Home [MOCKUP]{% endblock %}
+{% block title %}Home{% endblock %}
 {% block stylesheets %}
 <meta name="author" content="Tony Valderrama, Vincent Lee, and others" />
 <link rel="stylesheet" type="text/css" href="/media/styles/theme.css" media="all" />
@@ -248,14 +248,14 @@ name: 'User Search'
       <div id="cross_link">
 	{% with request.path|split:"/"|index:1 as split_url %}
 	{% if split_url|notequal:"teach" %}
-	<span class="teach inactive"><a href="/teach/index.html">Teach</a></span>
+	<span class="teach inactive"><a href="{{ request.path|mux_tl:"teach" }}">Teach</a></span>
 	{% else %}
-	<span class="teach"><a href="/teach/index.html">Teach</a></span>
+	<span class="teach"><a href="{{ request.path|mux_tl:"teach" }}">Teach</a></span>
 	{% endif %}
 	{% if split_url|notequal:"learn" %}
-	<span class="learn inactive"><a href="/learn/index.html">Learn</a></span>
+	<span class="learn inactive"><a href="{{ request.path|mux_tl:"learn" }}">Learn</a></span>
 	{% else %}
-	<span class="learn"><a href="/learn/index.html">Learn</a></span>
+	<span class="learn"><a href="{{ request.path|mux_tl:"learn" }}">Learn</a></span>
 	{% endif %}
 	{% if split_url|notequal:"volunteer" %}
 	<span class="volunteer inactive"><a href="/volunteer/index.html">Volunteer</a></span>
@@ -280,7 +280,7 @@ name: 'User Search'
 	<span class="title accentcolor">MIT Educational Studies Program</span>
       <span class="normal">84 Massachusetts Avenue, Room W20-467</span>
       <span class="normal">Cambridge, MA 02139</span>
-      <span class="normal">Tel: 617-253-4882</span>
+      <span class="normal">E-mail: <a href="mailto:esp@mit.edu">esp@mit.edu</a></span>
       <span class="normal"><a href="/contact.html">contact us</a></span>
       <span class="normal"><a href="/faq.html">FAQ</a></span>
       </div>
@@ -377,7 +377,7 @@ name: 'User Search'
       {% endwith %}
     </div>
     <div id="footer">
-      &copy; MIT Educational Studies Program, 2009
+      &copy; MIT Educational Studies Program, 2010
     </div>
   </div>
 </div>

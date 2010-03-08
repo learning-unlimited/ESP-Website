@@ -1046,7 +1046,7 @@ class ClassSection(models.Model):
         # Remove the student from any existing class mailing lists
         list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
         for list_name in list_names:
-            remove_list_member(list_name, "%s@esp.mit.edu" % user.username)
+            remove_list_member(list_name, user.email)
 
 
         self.cache['students'] = students
@@ -1098,8 +1098,8 @@ class ClassSection(models.Model):
             #   Add the student to the class mailing lists, if they exist
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
-                add_list_member(list_name, "%s@esp.mit.edu" % user.username)
-                add_list_member("%s_%s-students" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name), "%s@esp.mit.edu" % user.username)
+                add_list_member(list_name, user.email)
+                add_list_member("%s_%s-students" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name), user.email)
 
             return True
         else:
