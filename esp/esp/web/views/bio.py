@@ -158,6 +158,7 @@ def bio_user(request, founduser):
     if teacherbio.bio is None or len(teacherbio.bio.strip()) == 0:
         teacherbio.bio     = 'Not Available.'
 
+    now = datetime.now()
 
     # Only show classes that were approved and that have already run
     # If we show classes that are yet to run, it's possible that
@@ -166,7 +167,7 @@ def bio_user(request, founduser):
     # Also, sort by the order of the corresponding program's DataTree node.
     # This should roughly order by program date; at the least, it will
     # cluster listed classes by program.
-    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).filter(meeting_times__end__lte=datetime.now()).order_by('-anchor__parent__parent__id')
+    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=datetime.now()).filter(sections__resourceassignment__resource__res_type__name="Classroom").order_by('-anchor__parent__parent__id')
 
     # Ignore archived classes where we still have a log of the original class
     # Archives lose information; so, display the original form if we still have it
