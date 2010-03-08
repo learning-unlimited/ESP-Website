@@ -1778,7 +1778,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         if self.prereqs and len(self.prereqs) > 0:
             result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
         result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.teachers()]) + '|'
-        all_students = self.students() + self.students_old()
+        all_students = self.students()
         result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
         result.original_id = self.id
         
@@ -1787,7 +1787,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         
         return result
         
-    def archive(self):
+    def archive(self, delete=False):
         """ Archive a class to reduce the size of the database. """
         from esp.resources.models import ResourceRequest, ResourceAssignment
         
@@ -1796,12 +1796,13 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         
         #   Delete user bits and resource stuff associated with the class.
         #   (Currently leaving ResourceAssignments alone so that schedules can be viewed.)
-        UserBit.objects.filter(qsc=self.anchor).delete()
-        ResourceRequest.objects.filter(target_subj=self).delete()
-        #   ResourceAssignment.objects.filter(target_subj=self).delete()
-        for s in self.sections.all():
-            ResourceRequest.objects.filter(target=s).delete()
-            #   ResourceAssignment.objects.filter(target=s).delete()
+        if delete:
+            UserBit.objects.filter(qsc=self.anchor).delete()
+            ResourceRequest.objects.filter(target_subj=self).delete()
+            #   ResourceAssignment.objects.filter(target_subj=self).delete()
+            for s in self.sections.all():
+                ResourceRequest.objects.filter(target=s).delete()
+                #   ResourceAssignment.objects.filter(target=s).delete()
         
         #   This function leaves the actual ClassSubject object, its ClassSections,
         #   and the QSD pages alone.
