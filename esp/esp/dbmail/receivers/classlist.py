@@ -28,7 +28,7 @@ class ClassList(BaseHandler):
                 add_list_member(list_name, [x.email for x in section.students()])
 
             apply_list_settings(list_name, {'moderator': ['esp-moderators@mit.edu', '%s-teachers@esp.mit.edu' % cls.emailcode()]})
-            send_mail("[ESP] Activated class mailing list: %s@esp.mit.edu", 
+            send_mail("[ESP] Activated class mailing list: %s@esp.mit.edu" % list_name,
                       render_to_string("mailman/new_list_intro_teachers.txt", 
                                        { 'classname': str(cls),
                                          'mod_password': set_list_moderator_password(list_name) }), 
