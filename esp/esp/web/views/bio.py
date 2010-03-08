@@ -37,6 +37,7 @@ from esp.datatree.models  import *
 from django.http          import HttpResponseRedirect, Http404
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
+from datetime             import datetime
 
 @login_required
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
@@ -158,9 +159,12 @@ def bio_user(request, founduser):
         teacherbio.bio     = 'Not Available.'
 
 
+    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).filter(meeting_times__end__lte=datetime.now()).order_by('anchor__parent__parent')
     classes = ArchiveClass.getForUser(founduser)
 
-    return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'), {'biouser': founduser,
-                                               'bio': teacherbio,
-                                               'classes': classes})
+    return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'),
+                              {'biouser': founduser,
+                               'bio': teacherbio,
+                               'classes': classes,
+                               'recent_classes': recent_classes})
 
