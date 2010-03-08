@@ -14,7 +14,6 @@
 {% block subsection_name %}Archives/Resources{% endblock %}
 
 {% block content %}
-<div id="header">
 <h1>ESP Archives: Past Classes</h1>
 
 <div id="battlescreen">
@@ -48,8 +47,6 @@ Old sort params:
 <form method="post" action="{{request.path}}">
 
 <table cellspacing="0" cellpadding="4" class="fullwidth" align="center">
-
-
 <tr><th colspan="2">
 Archive Viewing Options
 </th></tr>
@@ -158,7 +155,7 @@ disabled
 </div>
 <div id="archives">
 <center>
-<table width="610" cellspacing="4" cellpadding="2">
+<table width="600" cellspacing="4" cellpadding="2">
 {% for entry in results %}
 <tr><td>
 
