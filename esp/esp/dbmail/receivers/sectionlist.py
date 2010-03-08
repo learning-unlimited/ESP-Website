@@ -26,15 +26,15 @@ class SectionList(BaseHandler):
         load_list_settings(list_name, "lists/class_mailman.config")
 
         if user_type != "teachers":
-            add_list_member(list_name, [x.email for x in section.students()])
+            add_list_member(list_name, ["%s %s <%s>" % (x.first_name, x.last_name, x.email, ) for x in section.students()])
 
             apply_list_settings(list_name, {'moderator': ['esp-moderators@mit.edu', '%s-teachers@esp.mit.edu' % cls.emailcode()]})
             if DEBUG: print "Settings applied..."
-            #send_mail("[ESP] Activated class mailing list: %s@esp.mit.edu", 
-            #          render_to_string("mailman/new_list_intro_teachers.txt", 
-            #                           { 'classname': str(cls),
-            #                             'mod_password': set_list_moderator_password(list_name) }),
-            #          "esp@mit.edu", "%s-teachers@esp.mit.edu" % cls.emailcode())
+            send_mail("[ESP] Activated class mailing list: %s@esp.mit.edu", 
+                      render_to_string("mailman/new_list_intro_teachers.txt", 
+                                       { 'classname': str(cls),
+                                         'mod_password': set_list_moderator_password(list_name) }),
+                      "esp@mit.edu", ["%s-teachers@esp.mit.edu" % cls.emailcode(), ])
         else:
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
