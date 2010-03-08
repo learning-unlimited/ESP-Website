@@ -607,6 +607,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         # back to @meets_deadline's behavior appropriately
         if newclass is None and not self.deadline_met():
             return meets_deadline(lambda: True)(self, request, tl, one, two, module)
+
+        do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
         
         new_data = MultiValueDict()
         context = {'module': self}
@@ -850,6 +852,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 newclass.update_cache()                
                 #   This line is for testing only. -Michael P
                 #   return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
+
+                if do_question:
+                    return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
                 return self.goToCore(tl)
         else:
             errors = {}
