@@ -1047,9 +1047,7 @@ class ClassSection(models.Model):
             blank_responses.delete()
         
         # update the students cache
-        students = list(self.students())
-        students = [ student for student in students
-                     if student.id != user.id ]
+        students = [x for x in self.students() if x.id != user.id]
         self.cache['students'] = students
         self.update_cache_students()
 
