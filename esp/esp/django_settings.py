@@ -177,8 +177,8 @@ INSTALLED_APPS = (
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
     'esp.cache_loader',
-#    'django_evolution',
     'django_extensions',
+    'south',
 )
 import os
 for app in ('django_evolution', 'django_command_extensions'):
