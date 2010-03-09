@@ -43,6 +43,17 @@ Back to teacher reg
 {% if has_app_module %}
 <li><b>Student applications:</b> <a href="/teach/{{ program.getUrlBase }}/review_students/{{ sec.parent_class.id }}">Click here</a> to review your students (if applicable).
 {% endif %}
+<li><b>Application questions:</b>
+{% with sec.parent_class.studentappquestion_set.all as questions %}
+{% if questions %}
+{% for q in questions %}
+<br />
+{{ q.question }} <i>{{ q.directions }}</i>
+{% endfor %}
+{% else %}
+<i>none</i>
+{% endif %}
+{% endwith %}
 </ul>
 </p>
 <p>
