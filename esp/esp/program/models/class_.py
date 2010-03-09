@@ -1040,7 +1040,7 @@ class ClassSection(models.Model):
             blank_responses.delete()
         
         # update the students cache
-        students = list(self.students().exclude(id=user.id))
+        students = [x for x in self.students() if x.id != user.id]
         # Remove the student from any existing class mailing lists
         list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
         for list_name in list_names:
