@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 
 from django.contrib import admin
 
-from esp.resources.models import ResourceType, ResourceRequest
+from esp.resources.models import ResourceType, ResourceRequest, Resource
 
 class ResourceTypeAdmin(admin.ModelAdmin):
     def rt_choices(self, obj):
@@ -46,3 +46,4 @@ class ResourceRequestAdmin(admin.ModelAdmin):
 
 admin.site.register(ResourceType, ResourceTypeAdmin)
 admin.site.register(ResourceRequest, ResourceRequestAdmin)
+admin.site.register(Resource)
