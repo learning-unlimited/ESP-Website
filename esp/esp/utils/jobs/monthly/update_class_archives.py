@@ -22,7 +22,7 @@ class Job(MonthlyJob):
         # Exclude programs that we've already archived
         # Note that this excludes programs that have been partially archived, from getting auto-re-archived.
         # This is a safety feature, since it's indicative of something being borked...
-        programs_to_archive = programs_to_archive.exclude(classsubject__id__in=ArchiveClass.objects.all().values_list('id', flat=True))
+        programs_to_archive = programs_to_archive.exclude(classsubject__id__in=ArchiveClass.objects.all().values_list('original_id', flat=True))
 
         # 'Cause with all these joins, we're going to have duplicates
         programs_to_archive = programs_to_archive.distinct()
