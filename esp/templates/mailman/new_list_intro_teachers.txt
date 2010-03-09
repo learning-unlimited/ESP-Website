@@ -1,4 +1,4 @@
-Hi {{ name }},
+Hi,
    The mailing list for your class, "{{ classname }}", has just been activated.  The list's moderator password is:
 
 {{ mod_password }}

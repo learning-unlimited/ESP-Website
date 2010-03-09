@@ -130,6 +130,9 @@ def add_list_member(list, member):
     if not isinstance(member, basestring):       
         member = "\n".join(str(x) for x in member)
 
+    if isinstance(member, unicode):
+        member = str(member)
+
     return Popen([MM_PATH + "add_members", "--regular-members-file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
 @enable_with_setting(USE_MAILMAN)
@@ -149,7 +152,7 @@ def remove_list_member(list, member):
     if not isinstance(member, basestring):       
         member = "\n".join(member)
 
-    return Popen([MM_PATH + "remove_members", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
+    return Popen([MM_PATH + "remove_members", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(str(member))
 
 @enable_with_setting(USE_MAILMAN)
 def list_contents(lst):

@@ -3,7 +3,6 @@ register = template.Library()
 
 @register.filter
 def mux_tl(str,type):
-    print "mux_tl:  '%s' '%s'" % (str, type)
     splitstr = str.split("/") # String should be of the format "/learn/foo/bar/index.html"
     if len(splitstr) < 2 or splitstr[0] != "":
         return str
