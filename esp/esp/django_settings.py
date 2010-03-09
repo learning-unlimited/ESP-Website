@@ -210,10 +210,11 @@ FORCE_SCRIPT_NAME = ''
 
 USE_MAILMAN = False
 
-import logging
-logging.basicConfig(
-    level = logging.DEBUG,
-    format = '%(asctime)s %(levelname)s %(message)s',
-    filename = '/tmp/mit-esp.log',
-    filemode = 'w'
-)
+if False:
+    import logging
+    logging.basicConfig(
+        level = logging.DEBUG,
+        format = '%(asctime)s %(levelname)s %(message)s',
+        filename = '/tmp/mit-esp.log',
+        filemode = 'w'
+    )
