@@ -38,7 +38,7 @@ class SectionList(BaseHandler):
         else:
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
-            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-students-owner@esp.mit.edu" % (cls.emailcode(), )})
+            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-students-.*@esp.mit.edu" % (cls.emailcode(), )})
 
         if DEBUG: print "Settings applied still..."
         add_list_member(list_name, [cls.parent_program.director_email])
