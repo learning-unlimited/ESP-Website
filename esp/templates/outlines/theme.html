@@ -328,6 +328,11 @@ name: 'User Search'
 <div id="divannouncements">
 <ul>
 {% load preview %}
+{% if request.path|equal:"/teach/index.html" %}
+    {% miniblog_for_user AnonymousUser as announcements teach 3 %}
+{% else %}
+    {% miniblog_for_user AnonymousUser as announcements learn 3 %}
+{% endif %}
 {% for announce in announcements.announcementList %}
        <li>
 	<a href="{{ announce.get_absolute_url }}" title="{{ announce.makeTitle }}">
