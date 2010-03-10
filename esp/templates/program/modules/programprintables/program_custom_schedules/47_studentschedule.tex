@@ -1,0 +1,203 @@
+{% autoescape off %} {% load latex %}
+\documentclass[letterpaper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage{pst-barcode}
+\usepackage{textpos}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{amsfonts, amsmath, amsthm, amssymb}
+\usepackage{multirow}
+\usepackage[left=.5in,top=1cm,right=.5in]{geometry}
+\graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
+
+\pagestyle{fancy}
+% \fancyhead[C]{% templatetag openbrace %}{% comment %}\includegraphics[scale = 1]{header-top}{% endcomment %}\includegraphics[scale = 1]{header-line}}
+\setlength\headheight{20pt}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt} 
+\fancyfoot{}
+
+\begin{document}
+{% for student in students %}
+\begin{multicols}{3}
+
+\begin{center}
+\vspace{1cm}
+
+%%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%
+\begin{tabular}{|l|l|l|}
+\hline
+\multirow{3}{1in}{\centering \textbf{\small Amount \\ Due:} \\ 
+\vspace{0.05cm}
+\textbf{\large  \${{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
+{ {% if student.saturday_lunch %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
+\cline{2-3}
+& \multicolumn{2}{|p{1.5in}|}
+{ {% if student.saturday_dinner %} Saturday Dinner (\$10) {% endif %}} \\
+\cline{2-3}
+& \multicolumn{2}{|p{1.5in}|}
+{ {% if student.sunday_lunch %} Sunday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %}} \\
+\hline
+\multicolumn{2}{|p{1.25in}|}
+{ {% if student.shirtcount %}T-shirt (\$10) x {{ student.shirtcount }} {% endif %} } & 
+\multicolumn{1}{|p{1.25in}|}
+{ {% if student.photocount %}Photo (\$10) x {{ student.photocount }} {% endif %} } \\
+\hline
+\multicolumn{2}{|p{1.25in}|}
+{ Admission: \${% if student.has_financial_aid %}0{% else %}30{% endif %} } & 
+\multicolumn{1}{|p{1.25in}|}
+{ \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}\${{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
+\hline
+\end{tabular}
+%%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%
+
+{% comment %}
+\begin{tabular}{ c }
+Total Amount Owed: \\
+\fbox{\textbf{ \${{ student.itemizedcosttotal|floatformat:"-2" }} } } \\
+\end{tabular}
+
+\vspace{0.3cm}
+
+\begin{tabular} { | c | }
+{% for item in student.admission %} \hline
+{{ item.li_type.text|texescape }} (\${% if student.has_financial_aid %}{{ item.li_type.finaid_amount|cut:"-"|floatformat:"-2" }}{% else %}{{ item.amount|cut:"-"|floatformat:"-2" }}{% endif %}) \\
+{% endfor %} \hline
+\end{tabular}
+
+\vspace{0.2cm}
+
+Additional items: \\
+\vspace{0.1cm}
+\begin{tabular}{ | c | }
+{% for item in student.meals %}\hline
+{{ item.li_type.text|texescape }} (\${% if student.has_financial_aid %}{{ item.li_type.finaid_amount|cut:"-"|floatformat:"-2" }}{% else %}{{ item.amount|cut:"-"|floatformat:"-2" }}{% endif %}) \\
+{% endfor %}\hline
+\end{tabular}
+
+{% if student.paid_online %}
+\vspace{0.2cm}
+\begin{tabular} { | c | }
+{% for item in student.paid_online %} \hline
+\textbf{ Paid Online: \${{ item.amount|floatformat:"-2" }} } \\ 
+{% endfor %}\hline
+\end{tabular}
+{% endif %}
+{% endcomment %}
+\end{center}
+
+\columnbreak
+\begin{center}
+$ $ \\
+{\Large \textbf{ {{ program.niceName }} } } \\
+\vspace{0.2cm}
+Student Schedule for \\
+\vspace{0.5cm}
+
+{\setlength{\baselineskip}{1.5\baselineskip} 
+\begin{tabular}{ c }
+\LARGE \textbf{ {{ student.first_name|texescape }} } \\ 
+\vspace{0.2cm}
+\LARGE \textbf{ {{ student.last_name|texescape }} } 
+\end{tabular} }
+\end{center}
+
+\columnbreak
+
+\begin{flushleft}
+\textbf{
+Name: {{ student.name|texescape }} \\
+Username: {{ student.username|texescape }} \\
+User ID: {{ student.id }} \\
+}
+\end{flushleft}
+
+\end{multicols}
+
+\begin{center}
+
+\vspace{0.3cm}
+
+For help finding your classrooms, please consult the directions and map on your Student Info sheet. \\
+If you have any questions or would like to switch classes, please go to the {% comment %}program office{% endcomment %}Bush Room (10-105). \\
+{% if student.shirtcount %}Reserved shirts MUST be picked up by Sunday at noon.{% endif %}
+
+\vspace{0.3cm}
+
+{\large \textbf{Schedule} \\}
+
+\vspace{0.25cm}
+
+\begin{tabularx}{18cm}{|p{3.45cm}|p{1.5cm}|X|{% comment %}p{3cm}|{% endcomment %}}
+\hline
+\textbf{Time} & \textbf{Room} & \textbf{Class} {% comment %}& \textbf{Teacher(s)} {% endcomment %}\\
+{% for cls in student.classes %}\hline
+{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }} : {{ cls.title|texescape }}{% comment %} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }}{% endcomment %} \\ 
+{% endfor %}\hline
+\end{tabularx}
+
+\end{center}
+\[\]
+\[\]
+\begin{center}
+\textbf{Nothing to do?}
+\end{center}
+\begin{center}
+There will be walk-in classes happening from 2:30-5:30 in Lobby 13 (where you checked in). If you have unfilled time blocks, you can go to Lobby 13 to learn about a little bit of everything!  No sign-up necessary.
+\end{center}
+
+
+
+\vfill
+\begin{tabular}{lr}
+\begin{minipage}{4in}
+\begin{pspicture}(3.0, 0.7in)
+\psbarcode{% templatetag openbrace %}{{ student.invoice_id }}{% templatetag closebrace %}{includetext height=0.4}{code39}
+\end{pspicture} \\
+\vspace{0pt} \\
+{{ student.name }} ({{ student.id }}) \\
+Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
+\end{minipage}
+&
+
+%%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%
+\begin{tabular}{|l|l|l|}
+\hline
+\multirow{3}{1in}{\centering \textbf{\small Amount \\ Due:} \\ 
+\vspace{0.05cm}
+\textbf{\large  \${{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
+{ {% if student.saturday_lunch %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
+\cline{2-3}
+& \multicolumn{2}{|p{1.5in}|}
+{ {% if student.saturday_dinner %} Saturday Dinner (\$10) {% endif %}} \\
+\cline{2-3}
+& \multicolumn{2}{|p{1.5in}|}
+{ {% if student.sunday_lunch %} Sunday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %}} \\
+\hline
+\multicolumn{2}{|p{1.25in}|}
+{ {% if student.shirtcount %}T-shirt (\$10) x {{ student.shirtcount }} {% endif %} } & 
+\multicolumn{1}{|p{1.25in}|}
+{ {% if student.photocount %}Photo (\$10) x {{ student.photocount }} {% endif %} } \\
+\hline
+\multicolumn{2}{|p{1.25in}|}
+{ Admission: \${% if student.has_financial_aid %}0{% else %}30{% endif %} } & 
+\multicolumn{1}{|p{1.25in}|}
+{ \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}\${{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
+\hline
+\end{tabular}
+%%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%
+
+\end{tabular}
+
+
+
+
+\vspace{2.5cm}
+{% if not forloop.last %}\pagebreak{% endif %}
+{% endfor %}
+
+\end{document}
+{% endautoescape %}
