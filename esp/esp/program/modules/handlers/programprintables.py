@@ -913,6 +913,7 @@ Student schedule for %s:
             student.photocount = student.meals.filter(text__contains='Photo').count()
             student.saturday_lunch = student.meals.filter(text__contains='Saturday Lunch').count()
             student.sunday_lunch = student.meals.filter(text__contains='Sunday Lunch').count()
+            student.lunches = student.meals.filter(text__contains='Lunch')
             student.saturday_dinner = student.meals.filter(text__contains='Saturday Dinner').count()
             ### HARDCODED IN FOR SPLASH 2009 ###
 
