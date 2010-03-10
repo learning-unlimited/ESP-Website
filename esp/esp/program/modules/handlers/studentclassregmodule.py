@@ -548,8 +548,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     # This function gets called and branches off to the two above depending on the user's role
     @aux_call
-    @cache_control(public=True, max_age=180)
-    @vary_on_cookie
+    @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
         user = ESPUser(request.user)

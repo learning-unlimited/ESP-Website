@@ -105,7 +105,6 @@ def handle_ajax_mover(method):
 
 @handle_ajax_mover
 @branch_find
-@vary_on_cookie
 @cache_control(max_age=180)
 def qsd(request, branch, name, section, action):
 
