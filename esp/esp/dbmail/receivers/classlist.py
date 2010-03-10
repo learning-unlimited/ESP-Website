@@ -25,20 +25,21 @@ class ClassList(BaseHandler):
 
         if user_type != "teachers":
             for section in sections:
-                add_list_member(list_name, ["%s@esp.mit.edu" % x.username for x in section.students()])
+                add_list_member(list_name, [x.email for x in section.students()])
 
             apply_list_settings(list_name, {'moderator': ['esp-moderators@mit.edu', '%s-teachers@esp.mit.edu' % cls.emailcode()]})
-            send_mail("[ESP] Activated class mailing list: %s@esp.mit.edu", 
+            send_mail("[ESP] Activated class mailing list: %s@esp.mit.edu" % list_name,
                       render_to_string("mailman/new_list_intro_teachers.txt", 
                                        { 'classname': str(cls),
                                          'mod_password': set_list_moderator_password(list_name) }), 
-                      "esp@mit.edu", "%s-teachers@esp.mit.edu" % cls.emailcode())
+                      "esp@mit.edu", ["%s-teachers@esp.mit.edu" % cls.emailcode(), ])
         else:
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
+            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-students-.*@esp.mit.edu" % (cls.emailcode(), )})
 
-        add_list_member(list_name, cls.parent_program.director_email)
-        add_list_member(list_name, ["%s@esp.mit.edu" % x.username for x in cls.teachers()])
+        add_list_member(list_name, [cls.parent_program.director_email])
+        add_list_member(list_name, [x.email for x in cls.teachers()])
 
         self.recipients = ["%s@esp.mit.edu" % list_name]
 

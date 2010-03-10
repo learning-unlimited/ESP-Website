@@ -154,7 +154,7 @@ class ArchiveClass(models.Model):
     program = models.CharField(max_length=256)
     year = models.CharField(max_length=4)
     date = models.CharField(max_length=128)
-    category = models.CharField(max_length=16)
+    category = models.CharField(max_length=32)
     teacher = models.CharField(max_length=1024)
     title = models.CharField(max_length=1024)
     description = models.TextField()

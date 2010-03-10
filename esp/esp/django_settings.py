@@ -177,8 +177,8 @@ INSTALLED_APPS = (
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
     'esp.cache_loader',
-#    'django_evolution',
     'django_extensions',
+    'south',
 )
 import os
 for app in ('django_evolution', 'django_command_extensions'):
@@ -210,3 +210,11 @@ FORCE_SCRIPT_NAME = ''
 
 USE_MAILMAN = False
 
+if False:
+    import logging
+    logging.basicConfig(
+        level = logging.DEBUG,
+        format = '%(asctime)s %(levelname)s %(message)s',
+        filename = '/tmp/mit-esp.log',
+        filemode = 'w'
+    )

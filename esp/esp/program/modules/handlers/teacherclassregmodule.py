@@ -852,7 +852,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 #   return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
                 if do_question:
-                    return HttpResponseRedirect("app_questions")
+                    return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
                 return self.goToCore(tl)
         else:
             errors = {}
