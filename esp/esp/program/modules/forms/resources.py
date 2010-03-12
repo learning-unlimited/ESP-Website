@@ -104,7 +104,7 @@ class EquipmentForm(forms.Form):
           
 class ClassroomForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
-    orig_room_number = forms.CharField(widget=forms.HiddenInput)
+    orig_room_number = forms.CharField(required=False, widget=forms.HiddenInput)
     room_number = forms.CharField(widget=forms.TextInput(attrs={'size':'15'}))
     furnishings = forms.MultipleChoiceField(required=False)
     times_available = forms.MultipleChoiceField()
