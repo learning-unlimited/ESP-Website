@@ -75,12 +75,12 @@
 {% if perclass_questions %}
 {% if timeslots %}
     {% for ts in timeslots %}
-        <table width="600">
+        <table class="fullwidth">
         <tr>
             <th>Questions for {{ ts.description }}</th>
         </tr>
         </table>
-        <table width="600">
+        <table class="fullwidth">
         <tr>
             <td width="35%">
                 <label for="id_attendance_{{ ts.id }}"><b>Which class did you attend in this timeblock?</b></label>
@@ -103,7 +103,7 @@
     {% endfor %}
 {% else %}
     {% for sec in sections %}
-        <table width="600">
+        <table class="fullwidth">
         <tr>
             <th>Questions for {{ sec.emailcode }}: {{ sec.title }}</th>
         </tr>
