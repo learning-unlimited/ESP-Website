@@ -179,7 +179,7 @@ def display_survey(user, prog, surveys, request, tl, format):
     sec = getByIdOrNone(ClassSection, 'classsection_id')
     cls = getByIdOrNone(ClassSubject, 'classsubject_id')
     
-    if tl == 'manage' and not request.REQUEST.has_key('teacher_id'):
+    if tl == 'manage' and not request.REQUEST.has_key('teacher_id') and sec is None and cls is None:
         #   In the manage category, pack the data in as extra attributes to the surveys
         surveys = list(surveys)
         for s in surveys:
