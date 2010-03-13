@@ -40,6 +40,7 @@ from esp.users.models import UserBit
 from datetime         import datetime
 from django.db.models.query   import Q
 from esp.accounting_docs.models import Document, MultipleDocumentError
+from django.template.loader import select_template
 
 class OnsitePrintSchedules(ProgramModuleObj):
     @classmethod
