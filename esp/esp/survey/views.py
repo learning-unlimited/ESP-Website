@@ -100,6 +100,7 @@ def survey_view(request, tl, program, instance):
         questions = survey.questions.filter(anchor = prog.anchor).order_by('seq')
         perclass_questions = survey.questions.filter(anchor__name="Classes", anchor__parent = prog.anchor)
         
+        classes = sections = timeslots = []
         if tl == 'learn':
             classes = user.getEnrolledClasses(prog, request)
             timeslots = prog.getTimeSlots().order_by('start')
@@ -111,12 +112,17 @@ def survey_view(request, tl, program, instance):
                         sec.selected = True
         elif tl == 'teach':
             classes = user.getTaughtClasses(prog)
-            timeslots = []
-        else:
-            classes = []
-            timeslots = []
+            sections = user.getTaughtSections(prog).order_by('parent_class__anchor__friendly_name')
 
-        context = { 'survey': survey, 'questions': questions, 'perclass_questions': perclass_questions, 'program': prog, 'classes': classes, 'timeslots': timeslots }
+        context = {
+            'survey': survey,
+            'questions': questions,
+            'perclass_questions': perclass_questions,
+            'program': prog,
+            'classes': classes,
+            'sections': sections,
+            'timeslots': timeslots,
+        }
 
         return render_to_response('survey/survey.html', request, prog.anchor, context)
 
