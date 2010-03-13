@@ -37,14 +37,14 @@
         {% ifchanged answer.anchor %}{% if not forloop.first or classes_only %}
             <table class="fullwidth">
             <tr>
-                <th>Responses for Class {{ answer.anchor.name }}: {{ answer.anchor.friendly_name }}</th>
+                <th>Responses for Class {{ answer.anchor.name }}: {{ answer.anchor.parent.friendly_name }} {{ answer.anchor.friendly_name }}</th>
             </tr>
             </table>
         {% endif %}{% endifchanged %}
         <table class="fullwidth">
         <tr>
             <td width="35%" valign="top"><b>{{ answer.question.name }}</b></td>
-            <td>{{ answer.answer|list_classes }}</td>
+            <td><ul>{{ answer|answer_to_list|unordered_list }}</ul></td>
         </tr>
         </table>
     {% endfor %}

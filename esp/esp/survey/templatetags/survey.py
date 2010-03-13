@@ -67,94 +67,9 @@ def unpack_answers(lst):
     return [x.answer for x in lst]
 
 @register.filter
-def tally(lst):
-    #   Takes a list and returns a dictionary of entry: frequency
-    d = {}
-    for item in lst:
-        if d.has_key(str(item)):
-            d[str(item)] += 1
-        else:
-            d[str(item)] = 1
-    return d
-
-@register.filter
-def weighted_avg(dct):
-    #   Takes a dictionary of number: freq. and returns weighted avg. (float)
-    #   Accepts "Yes", "True" as 1 and "No", "False" as 0.
-    s = 0.0
-    n = 0
-    for key in dct.keys():
-        try:
-            weight = int(key, 10)
-        except:
-            weight = 0
-            if ['yes', 'true'].count(key.lower()) > 0:
-                weight = 1
-        s += weight * dct[key]
-        n += dct[key]
-    
-    if n == 0:
-        return 0
-    else:
-        return s / n
-
-@register.filter
-def stripempty(lst):
-    #   Takes a list and deletes empty entries. Whitespace-only is empty.
-    return [ item for item in lst if len(str(item).strip()) > 0 ]
-
-@register.filter
-def makelist(lst):
-    #   Because I can't understand Django's built-in unordered_list -ageng
-    if len(lst) == 0:
-        return 'No responses'
-    result = ''
-    for item in lst:
-        result += '<li>' + str(item) + '</li>' + '\n'
-    return result
-
-@register.filter
-def list_answers(lst):
-    #   Takes a list of Answer objects and makes an unordered list, with special links!
-    #   This isn't HTML-safe. I think this is dead code by now anyway, seeing as we only really uesd it for text-entry answers. -ageng 2008-10-20
-    newlist = [ item for item in lst if len(str(item.answer).strip()) > 0 ]
-    
-    if len(newlist) == 0:
-        return "No responses"
-    result = ""
-    for item in newlist:
-        result += '<li>' + str(item.answer) + '<a href="review_single?' + str(item.survey_response.id) + '" title="View this person&quot;s other responses">&raquo;</a></li>' + '\n'
-    return result
-
-@register.filter
-def numeric_stats(lst, n):
-    if len(lst) == 0:
-        return "No responses"
-    t = tally(lst)
-    a = weighted_avg(t)
-    result = '<ul><li> mean: ' + ( '%.2f' % a ) + '</li></ul>'
-    result += '<ul>'
-    for i in range(1, n+1):
-        if not t.has_key(str(i)):
-            t[str(i)] = 0
-        result += '<li>' + str(i) + ': ' + str(t[str(i)]) + '</li>'
-    result += '</ul>'
-    return result
-
-@register.filter
-def boolean_stats(lst):
-    if len(lst) == 0:
-        return "No responses"
-    t = tally(lst)
-    a = 100 * weighted_avg(t)
-    result = '<ul><li> % "Yes": ' + ( '%.2f' % a ) + '</li></ul>'
-    result += '<ul>'
-    for i in ['Yes', 'No']:
-        if not t.has_key(str(i)):
-            t[str(i)] = 0
-        result += '<li>' + str(i) + ': ' + str(t[str(i)]) + '</li>'
-    result += '</ul>'
-    return result
+def drop_empty_answers(lst):
+    #   Takes a list of answers and drops empty ones. Whitespace-only is empty.
+    return [ ans for ans in lst if (not isinstance(ans.answer, basestring)) or ans.answer.strip() ]
 
 @register.filter
 def average(lst):
@@ -260,42 +175,36 @@ def histogram(answer_list, format='html'):
         return '<img src="%s.png" />' % ('/media/' + HISTOGRAM_PATH + file_base)
     
 @register.filter
-def list_classes(ans):
-    # If the answer is a list of classes, render a shiny list of their titles.
-    # If the answer is an ordinary list, prettify the list.
-    # Otherwise just spit the answer back out.
-    # Kind of inelegant, but I didn't want to make yet another set of templates.
-    if not isinstance(ans, list):
-        return ans
-    newlist = []
-    for key in ans:
-        try:
-            intkey = int(key)
-        except ValueError:
-            return '<ul>\n' + makelist( ans ) + '</ul>\n' # If we get a non-integer answer, quit early.
-        q = ClassSubject.objects.filter(id=intkey)
-        if q.count() == 1:
-            newlist.extend( [ c.emailcode() + ': ' + c.title() for c in q ] )
-        else:
-            newlist.append( key ) # If no class matches, spit out the raw answer.
-    return '<ul>\n' + makelist( newlist ) + '</ul>\n'
+def answer_to_list(ans):
+    # If the answer is not a list, turn it into a one-element list.
+    # Then if the answer is a list of classes, return a list of their titles.
+    if isinstance(ans.answer, list):
+        value = ans.answer
+    else:
+        value = [ ans.answer ]
+    
+    if ans.question.question_type.name == 'Favorite Class':
+        return [ c.emailcode() + ': ' + c.title() for c in ClassSubject.objects.filter(id__in=value) ]
+    
+    return value
 
 @register.filter
-def favorite_classes(answer_list, limit):
-    result_header = '<ol>\n'
-    result_footer = '</ol>\n'
-    result_body = ''
-    
+def favorite_classes(answer_list, limit=20):
+    result_list = []
     class_dict = {}
     
     for a in answer_list:
-        for i in a:
+        if isinstance(a, list):
+            l = a
+        else:
+            l = [ a ]
+        for i in l:
             ind = int(i)
             if class_dict.has_key(ind):
                 class_dict[ind] += 1
             else:
                 class_dict[ind] = 1
-               
+    
     key_list = class_dict.keys()
     key_list.sort(key=lambda x: -class_dict[x])
    
@@ -304,7 +213,6 @@ def favorite_classes(answer_list, limit):
     for key in key_list[:max_count]:
         cl = ClassSubject.objects.filter(id=key)
         if cl.count() == 1:
-            result_body += '<li>%s: %s (%d votes)\n' % (cl[0].emailcode(), cl[0].title(), class_dict[key])
+            result_list.append({'title': '%s: %s' % (cl[0].emailcode(), cl[0].title()), 'votes': class_dict[key]})
 
-    return result_header + result_body + result_footer
-        
+    return result_list
