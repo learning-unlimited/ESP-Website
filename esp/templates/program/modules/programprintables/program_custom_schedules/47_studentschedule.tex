@@ -33,7 +33,7 @@
 \multirow{3}{1in}{\centering \textbf{\small Amount \\ Due:} \\ 
 \vspace{0.05cm}
 \textbf{\large  \${{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
-{ {% if student.saturday_lunch %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
+{ {% if student.lunches %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
 \cline{2-3}
 & \multicolumn{2}{|p{1.5in}|}
 { {% if student.saturday_dinner %} Saturday Dinner (\$10) {% endif %}} \\
@@ -47,7 +47,7 @@
 { {% if student.photocount %}Photo (\$10) x {{ student.photocount }} {% endif %} } \\
 \hline
 \multicolumn{2}{|p{1.25in}|}
-{ Admission: \${% if student.has_financial_aid %}0{% else %}30{% endif %} } & 
+{ Admission: \${% if student.has_financial_aid %}0{% else %}20{% endif %} } & 
 \multicolumn{1}{|p{1.25in}|}
 { \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}\${{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
 \hline
@@ -140,6 +140,16 @@ If you have any questions or would like to switch classes, please go to the {% c
 \end{tabularx}
 
 \end{center}
+\[\]
+\[\]
+\begin{center}
+\textbf{Nothing to do?}
+\end{center}
+\begin{center}
+There will be walk-in classes happening from 2:30-5:30 in Lobby 13 (where you checked in). If you have unfilled time blocks, you can go to Lobby 13 to learn about a little bit of everything!  No sign-up necessary.
+\end{center}
+
+
 
 \vfill
 \begin{tabular}{lr}

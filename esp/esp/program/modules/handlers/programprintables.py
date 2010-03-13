@@ -40,6 +40,7 @@ from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.middleware import ESPError
+from django.template.loader import select_template
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -912,6 +913,7 @@ Student schedule for %s:
             student.photocount = student.meals.filter(text__contains='Photo').count()
             student.saturday_lunch = student.meals.filter(text__contains='Saturday Lunch').count()
             student.sunday_lunch = student.meals.filter(text__contains='Sunday Lunch').count()
+            student.lunches = student.meals.filter(text__contains='Lunch')
             student.saturday_dinner = student.meals.filter(text__contains='Saturday Dinner').count()
             ### HARDCODED IN FOR SPLASH 2009 ###
 
@@ -935,7 +937,8 @@ Student schedule for %s:
             return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
-            return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
+            schedule_template = select_template([self.baseDir()+'program_custom_schedules/%s_studentschedule.tex' %(self.program.id), self.baseDir()+'studentschedule.tex'])
+            return render_to_latex(schedule_template, context, file_type)
 
     @aux_call
     @needs_admin
