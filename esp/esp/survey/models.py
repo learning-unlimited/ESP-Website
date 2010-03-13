@@ -46,7 +46,6 @@ from esp.db.fields import AjaxForeignKey
 # Models to depend on.
 from esp.datatree.models import *
 from esp.middleware import ESPError
-from esp.program.models import Program
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to 
@@ -79,7 +78,7 @@ class ListField(object):
         if not data:
             return ()
         else:
-            return tuple(str(data).split(self.separator))
+            return tuple(data.split(self.separator))
 
     def __set__(self, instance, value):
         data = self.separator.join(map(str, value))
@@ -100,6 +99,8 @@ class Survey(models.Model):
     def num_participants(self):
         #   If there is a program anchored to the anchor, select the appropriate number
         #   of participants based on the category.
+        from esp.program.models import Program
+        
         progs = Program.objects.filter(anchor=self.anchor)
         if progs.count() == 1:
             prog = progs[0]
@@ -119,6 +120,7 @@ class SurveyResponse(models.Model):
 
     def set_answers(self, get_or_post, save=False):
         """ For a given get or post, get a set of answers. """
+        from esp.program.models import ClassSection
         
         # First, set up attendance dictionary based on the attendance questions
         # If there were no attendance questions, this wasn't a student survey
@@ -151,15 +153,15 @@ class SurveyResponse(models.Model):
                     if not cid:
                         continue
                     question = Question.objects.get(id=qid)
-                    cls = ClassSubject.objects.get(id=cid)
-                except ClassSubject.DoesNotExist:
+                    sec = ClassSection.objects.get(id=cid)
+                except ClassSection.DoesNotExist:
                     raise ESPError(), 'Error finding class from %s' % key
                 except Question.DoesNotExist:
                     raise ESPError(), 'Error finding question from %s' % key
                 except ValueError:
                     raise ESPError(), 'Error getting IDs from %s' % key
 
-                new_answer.anchor = cls.anchor
+                new_answer.anchor = sec.anchor
                 
             elif len(str_list) == 2:
                 try:
@@ -170,11 +172,8 @@ class SurveyResponse(models.Model):
                 except ValueError:
                     raise ESPError(), 'Error getting IDs from %s' % key
                 new_answer.anchor = self.survey.anchor
-                
-            if not isinstance(value, basestring):
-                new_answer.value = '+' + pickle.dumps(value)
-            else:
-                new_answer.value = ':' + value
+            
+            new_answer.answer = value
             new_answer.question = question 
             answers.append(new_answer)
 
@@ -209,10 +208,6 @@ class QuestionType(models.Model):
     def template_file(self):
         return 'survey/questions/%s.html' % self.name.replace(' ', '_').lower()
     
-    @property
-    def answers_template_file(self):
-        return 'survey/answers/%s.html' % self.name.replace(' ', '_').lower()
-
     def __unicode__(self):
         return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
 
@@ -278,33 +273,6 @@ class Question(models.Model):
 
         return loader.render_to_string(self.question_type.template_file, params)
 
-    def dump(self, data_dict=None):
-        """ Dump this question's responses.
-        
-        If specified, data_dict will contain the pre-filled data
-        from a GET or POST operation. Probably not relevant here.
-        
-        So far, it differs from question.render only in its template files.
-        """
-
-        ##########
-        # Get any pre-filled data
-        if not data_dict:
-            data_dict = {}
-        value = self.get_value(data_dict)
-
-        ##########
-        # Render the HTML
-        params = self.get_params()
-        params['name'] = self.name
-        params['id'] = self.id
-        params['value'] = value
-        
-        if self.anchor.name == 'Classes':
-            params['for_class'] = True
-
-        return loader.render_to_string(self.question_type.answers_template_file, params)
-
     def global_average(self):
         def pretty_val(val):
             if val == 0:
@@ -348,11 +316,12 @@ class Answer(models.Model):
     question = models.ForeignKey(Question, db_index=True)
     value = models.TextField()
 
-    @property
-    def answer(self):
+    def _answer_getter(self):
         """ The actual, unpickled answer. """
         if not self.value:
             return None
+        if hasattr(self, '_answer'):
+            return self._answer
 
         if self.value[0] == '+':
             try:
@@ -362,8 +331,17 @@ class Answer(models.Model):
         else:
             value = self.value[1:]
 
+        self._answer = value
         return value
 
+    def _answer_setter(self, value):
+        self._answer = value
+        if not isinstance(value, basestring):
+            self.value = '+' + pickle.dumps(value)
+        else:
+            self.value = ':' + value
+
+    answer = property(_answer_getter, _answer_setter)
 
     class Admin:
         pass

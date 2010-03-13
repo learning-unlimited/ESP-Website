@@ -43,7 +43,6 @@ from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
 from django.http import Http404, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
-from esp.survey.templatetags.survey import tally, weighted_avg  # I don't know precisely why, but this feels wrong. -ageng
 
 @login_required
 def survey_view(request, tl, program, instance):
@@ -101,6 +100,7 @@ def survey_view(request, tl, program, instance):
         questions = survey.questions.filter(anchor = prog.anchor).order_by('seq')
         perclass_questions = survey.questions.filter(anchor__name="Classes", anchor__parent = prog.anchor)
         
+        classes = sections = timeslots = []
         if tl == 'learn':
             classes = user.getEnrolledClasses(prog, request)
             timeslots = prog.getTimeSlots().order_by('start')
@@ -112,12 +112,17 @@ def survey_view(request, tl, program, instance):
                         sec.selected = True
         elif tl == 'teach':
             classes = user.getTaughtClasses(prog)
-            timeslots = []
-        else:
-            classes = []
-            timeslots = []
+            sections = user.getTaughtSections(prog).order_by('parent_class__anchor__friendly_name')
 
-        context = { 'survey': survey, 'questions': questions, 'perclass_questions': perclass_questions, 'program': prog, 'classes': classes, 'timeslots': timeslots }
+        context = {
+            'survey': survey,
+            'questions': questions,
+            'perclass_questions': perclass_questions,
+            'program': prog,
+            'classes': classes,
+            'sections': sections,
+            'timeslots': timeslots,
+        }
 
         return render_to_response('survey/survey.html', request, prog.anchor, context)
 
@@ -161,28 +166,40 @@ def get_survey_info(request, tl, program, instance):
 
 def display_survey(user, prog, surveys, request, tl, format):
     """ Wrapper doing the necessary work for the survey output. """
+    from esp.program.models import ClassSubject, ClassSection
+    
     perclass_data = []
     
-    if tl == 'teach' or ( tl == 'manage' and user.id is not request.user.id ):
-        #   In the teach category, show only class-specific questions
-        classes = user.getTaughtClasses(prog)
-        perclass_questions = surveys[0].questions.filter(anchor__name="Classes", anchor__parent = prog.anchor).order_by('seq')
-        perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': Answer.objects.filter(anchor=x.anchor, question=y) } for y in perclass_questions ] } for x in classes ]
-        surveys = []
-    elif tl == 'manage':
+    def getByIdOrNone(model, key):
+        q = model.objects.filter(id = request.REQUEST.get(key, None))[:1]
+        if q:
+            return q[0]
+        return None
+    
+    sec = getByIdOrNone(ClassSection, 'classsection_id')
+    cls = getByIdOrNone(ClassSubject, 'classsubject_id')
+    
+    if tl == 'manage' and not request.REQUEST.has_key('teacher_id') and sec is None and cls is None:
         #   In the manage category, pack the data in as extra attributes to the surveys
         surveys = list(surveys)
         for s in surveys:
             questions = s.questions.filter(anchor = prog.anchor).order_by('seq')
-            s.display_data = {'questions': [ { 'question': y, 'answers': Answer.objects.filter(question=y) } for y in questions ]}
+            s.display_data = {'questions': [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]}
             questions2 = s.questions.filter(anchor__parent = prog.anchor, question_type__is_numeric = True).order_by('seq')
             s.display_data['questions'].extend([{ 'question': y, 'answers': Answer.objects.filter(question=y) } for y in questions2])
-            
-    #   Prune blank answers to textual questions
-    for dict in perclass_data:
-        for q in dict['questions']:
-            q['answers'] = [x for x in q['answers'] if (type(x) != str or (len(x) > 0 and not x.isspace()))]            
-            
+    else:
+        perclass_questions = surveys[0].questions.filter(anchor__name="Classes", anchor__parent = prog.anchor).order_by('seq')
+        surveys = []
+        classes = []
+        if sec is not None:
+            classes = [ sec ]
+        elif cls is not None:
+            classes = cls.get_sections()
+        elif tl == 'teach' or tl == 'manage':
+            #   In the teach category, show only class-specific questions
+            classes = user.getTaughtSections(prog).order_by('parent_class', 'id')
+        perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(anchor__in=(x.anchor, x.parent_class.anchor)) } for y in perclass_questions ] } for x in classes ]
+    
     context = {'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data}
     
     #   Choose+use appropriate output format
@@ -296,7 +313,6 @@ def top_classes(request, tl, program, instance):
                 pass
         
         categories = prog.class_categories.all().order_by('category')
-        categories = [ x.category for x in categories ]
         
         perclass_data = []
         initclass_data = [ { 'class': x, 'ratings': [ x.answer for x in Answer.objects.filter(anchor=x.anchor, question=rating_question) ] } for x in classes ]
@@ -304,13 +320,14 @@ def top_classes(request, tl, program, instance):
             c['numratings'] = len(c['ratings'])
             if c['numratings'] < num_cut:
                 continue
-            c['avg'] = weighted_avg(tally(c['ratings']))
+            c['avg'] = sum(c['ratings']) * 1.0 / c['numratings']
             if c['avg'] < rating_cut:
                 continue
-            c['teacher'] = c['class'].teachers()[0]
-            c['numteachers'] = c['class'].teachers().count()
+            teachers = list(c['class'].teachers())
+            c['teacher'] = teachers[0]
+            c['numteachers'] = len(teachers)
             if c['numteachers'] > 1:
-                c['coteachers'] = c['class'].teachers()[1:]
+                c['coteachers'] = teachers[1:]
             del c['ratings']
             perclass_data.append(c)
     context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data, 'rating_cut': rating_cut, 'num_cut': num_cut, 'categories': categories }
