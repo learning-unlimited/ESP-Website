@@ -1,7 +1,7 @@
 
 from collections import defaultdict
 from esp.survey.models import Answer, SurveyResponse, Survey
-from esp.program.models import Program, ClassSubject
+from esp.program.models import Program, ClassSubject, ClassSection
 from datetime import datetime, date, time
 
 try:
@@ -27,6 +27,7 @@ def get_all_data():
     # and 100,000 of any sort of query, no matter how cheap, takes an extremely long time.
     all_answers = list( Answer.objects.all().select_related('anchor',
                                                             'anchor__parent',
+                                                            'anchor__parent__parent',
                                                             'question',
                                                             'question__questiontype',
                                                             'survey_response',
@@ -46,6 +47,8 @@ def get_all_data():
     # Don't bother using the cache for this; it doesn't fit.
     all_classes = ClassSubject.objects.catalog(None, use_cache=False)
 
+    all_sections = ClassSection.objects.all().select_related('anchor')
+
     gc.collect()
 
     # So, we now basically have a tree structure, with Answers at the leaves
@@ -56,6 +59,10 @@ def get_all_data():
     all_classes_dict = {}
     for c in all_classes:
         all_classes_dict[c.anchor_id] = c        
+
+    all_sections_dict = {}
+    for s in all_sections:
+        all_sections_dict[s.anchor_id] = s
 
     # Survey responses for a program share an anchor with that program
     all_programs_dict = {}
@@ -83,16 +90,33 @@ def get_all_data():
         # Get the parent program
         # We could be a per-class question; figure this out from our anchor
         a._is_per_class = not(a.anchor_id in all_programs_dict)
-        a._program = all_programs_dict[ ( a.anchor_id if not a._is_per_class else a.anchor.parent.parent_id ) ]
+        
+        if not a._is_per_class:
+            anchor_id = a.anchor_id
+        elif "Section" in a.anchor.name:
+            anchor_id = a.anchor.parent.parent.parent_id
+        else:
+            anchor_id = a.anchor.parent.parent_id
+
+        a._program = all_programs_dict[anchor_id]
+
         a._program_name = a._program.niceName()
 
         if a._is_per_class:
-            try:
+            if a.anchor.parent_id in all_classes_dict:
+                a._class = all_classes_dict[a.anchor.parent_id]
+            elif a.anchor_id in all_classes_dict:
                 a._class = all_classes_dict[a.anchor_id]
-            except KeyError:
-                pass # Class doesn't turn up in the Catalog for some reason, despite being surveyable.  Ignore it.
+            else:
+                a._class = None
+
+            if a.anchor_id in all_sections_dict:
+                a._section = all_sections_dict[a.anchor_id]
+            else:
+                a._section = None
         else:
             a._class = None
+            a._section = None
 
         s = all_survey_responses_dict[a.survey_response_id]
         s._answers.append(a)
@@ -277,8 +301,8 @@ def build_workbook_data():
             row += 1
 
         # PER-CLS:
-        this_column_names = []
-        this_question_ids = []
+        this_column_names = ["Class ID", "Section Number"]
+        this_question_ids = [-1, -2]
         
         # Iterate through per-class questions this time
         for q in s._per_class_questions:
@@ -305,12 +329,15 @@ def build_workbook_data():
 
                 for ans in resp:
                     ans_dict[ans.question_id] = auto_cell_type(ans.answer)
+                    ans_dict[-1] = ans._class.emailcode() if ans._class != None else ans_dict[-1]
+                    ans_dict[-2] = ans._section.anchor.name[7:] if ans._section != None else ans_dict[-2]
 
                 this_answers = [ans_dict[q] for q in this_question_ids]
-
-                write_xls_row(ws, row, surveyresponse_answers + this_answers)
-
-                row += 1
+                
+                # If we actually have any data; ie., we're not about to print out the empty string
+                if not reduce(lambda comb, val: comb and (val == ""), this_answers, True):
+                    write_xls_row(ws, row, surveyresponse_answers + this_answers)
+                    row += 1
 
     # Output to a StringIO instance, so that we can work with the data in memory some more.
     # It turns out that xlwt is much more efficient than Django, at storing data in-memory;
