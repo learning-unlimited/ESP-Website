@@ -769,8 +769,8 @@ class ClassSection(models.Model):
         
         # Disallow joining a no-app class that conflicts with an app class
         # For HSSP Harvard Spring 2010
-        if self.parent_class.studentappquestion_set.count() == 0:
-            verbs += ['/Applied']
+        #if self.parent_class.studentappquestion_set.count() == 0:
+        #    verbs += ['/Applied']
         
         # check to see if there's a conflict:
         for sec in user.getSections(self.parent_program, verbs=verbs):
@@ -1062,8 +1062,8 @@ class ClassSection(models.Model):
         prereg_verb_base = scrmi.signup_verb
         
         #   Override the registration verb if the class has application questions
-        if self.parent_class.studentappquestion_set.count() > 0:
-            prereg_verb_base = GetNode('V/Flags/Registration/Applied')
+        #if self.parent_class.studentappquestion_set.count() > 0:
+        #    prereg_verb_base = GetNode('V/Flags/Registration/Applied')
         
         if scrmi.use_priority:
             prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)

@@ -92,7 +92,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
         for i in range(len(responses)):
             response_dict[response_question_ids[i]] = responses[i]
         print 'Responses to questions: %s' % response_question_ids
-        
+
         #   Check that they responded to everything.
         classes = self.user.getAppliedClasses(self.program)
         for cls in classes:
@@ -127,5 +127,6 @@ class StudentJunctionAppModule(ProgramModuleObj):
             return self.goToCore(tl)
         else:
             forms = app.get_forms()
+
         return render_to_response(self.baseDir()+'application.html', request, (self.program, tl), {'forms': forms, 'app': app})
     
