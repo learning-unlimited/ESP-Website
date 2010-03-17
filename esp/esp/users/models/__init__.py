@@ -569,7 +569,7 @@ class ESPUser(User, AnonymousUser):
         if len(timeslots) < 1:
             return 0
         
-        prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
+        prereg_sections = self.getSectionsFromProgram(prog)
         
         priority_dict = {}
         for t in timeslots:
