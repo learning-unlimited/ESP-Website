@@ -307,7 +307,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             error = section.cannotAdd(self.user,self.enforce_max,use_cache=False)
         if scrmi.use_priority or not error:
             error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False)
-        
+
         priority = self.user.getRegistrationPriority(section.meeting_times.all())
 
         # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
