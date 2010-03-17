@@ -317,7 +317,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
             error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False)
-        
+
         if scrmi.use_priority:
             priority = self.user.getRegistrationPriority(prog, section.meeting_times.all())
         else:
