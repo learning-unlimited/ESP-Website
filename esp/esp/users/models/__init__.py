@@ -539,8 +539,7 @@ class ESPUser(User, AnonymousUser):
         if len(timeslots) < 1:
             return 0
         
-        prog = Program.objects.get(anchor=timeslots[0].anchor)
-        prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
+        prereg_sections = self.getSectionsFromProgram(prog)
         
         priority_dict = {}
         for t in timeslots:
@@ -568,6 +567,23 @@ class ESPUser(User, AnonymousUser):
             priority += 1
 
         return priority
+        
+    #   We often request the registration priority for all timeslots individually
+    #   because our schedules display enrollment status on a per-timeslot (rather
+    #   than per-class) basis.  This function is intended to speed that up.
+    @cache_function
+    def getRegistrationPriorities(self, prog, timeslot_ids):
+        num_slots = len(timeslot_ids)
+        events = list(Event.objects.filter(id__in=timeslot_ids).order_by('id'))
+        result = [0 for i in range(num_slots)]
+        id_order = range(num_slots)
+        id_order.sort(key=lambda i: timeslot_ids[i])
+        for i in range(num_slots):
+            result[id_order[i]] = self.getRegistrationPriority(prog, [events[i]])
+        return result
+        
+    #   Invalidate on any user bit change (due to difficulty of screening registration bits)
+    getRegistrationPriorities.depend_on_row(lambda: UserBit, lambda bit: {'self': bit.user})
 
     def isEnrolledInClass(self, clsObj, request=None):
         verb_str = 'V/Flags/Registration/Enrolled'
@@ -584,6 +600,18 @@ class ESPUser(User, AnonymousUser):
     def canRegToFullProgram(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
+    #   This is needed for cache dependencies on financial aid functions
+    def get_finaid_model():
+        from esp.program.models import FinancialAidRequest
+        return FinancialAidRequest
+
+    @cache_function
+    def appliedFinancialAid(self, program):
+        return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
+    #   Invalidate cache when any of the user's financial aid requests are changed
+    appliedFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
+
+    @cache_function
     def hasFinancialAid(self, anchor):
         from esp.program.models import Program, FinancialAidRequest
         progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
@@ -592,6 +620,7 @@ class ESPUser(User, AnonymousUser):
             if a.approved:
                 return True
         return False
+    hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
     def paymentStatus(self, anchor=None):
         """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate
@@ -767,6 +796,7 @@ class ESPUser(User, AnonymousUser):
             schoolyear = curyear + 1
         return schoolyear
 
+    @cache_function
     def getGrade(self, program = None):
         if hasattr(self, '_grade'):
             return self._grade
@@ -784,6 +814,8 @@ class ESPUser(User, AnonymousUser):
         self._grade = grade
 
         return grade
+    #   The cache will need to be cleared once per academic year.
+    getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
 
     def currentSchoolYear(self):
         return ESPUser.current_schoolyear()-1
@@ -945,7 +977,7 @@ class TeacherInfo(models.Model):
     def _graduation_year_get(self):
         return TeacherInfo._graduation_year_pretty(self.graduation_year_int)
     def _graduation_year_set(self, value):
-        if value == 'G':
+        if value.strip() == 'G':
             self.graduation_year_int = 1
         else:
             try:
@@ -1245,6 +1277,17 @@ class ContactInfo(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_contactinfo'
+
+    def _distance_from(self, zip):
+        try:
+            myZip = ZipCode.objects.get(zip_code = self.address_zip)
+            remoteZip = ZipCode.objects.get(zip_code = zip)
+            return myZip.distance(remoteZip)
+        except:
+            return -1
+
+
+
 
     def address(self):
         return '%s, %s, %s %s' % \

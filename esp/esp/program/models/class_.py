@@ -753,7 +753,6 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
-
         # Test any scheduling constraints based on this class
         relevantFilters = ScheduleTestSectionList.filter_by_section(self)
         #relevantConstraints = ScheduleConstraint.objects.filter(Q(requirement__booleantoken__in=relevantFilters) | Q(condition__booleantoken__in=relevantFilters))
@@ -782,6 +781,12 @@ class ClassSection(models.Model):
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
             return 'Registration for this section is not currently open.'
+
+        # check to make sure they haven't already registered for too many classes in this section
+        if scrmi.use_priority:
+            priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
+            if priority > scrmi.priority_limit:
+                return 'You are only allowed to select up to %s top classes' % (scrmi.priority_limit)
 
         # this user *can* add this class!
         return False
