@@ -201,6 +201,7 @@ class StudentApplication(models.Model):
         existing_list = self.questions.all().values_list('id', flat=True)
         new_list = list(StudentAppQuestion.objects.filter(program=self.program).values_list('id', flat=True))
         new_list += list(StudentAppQuestion.objects.filter(subject__in=new_user.getAppliedClasses(self.program)).values_list('id', flat=True))
+
         to_remove = [e for e in existing_list if (e not in new_list)]
         for i in to_remove:
             self.questions.remove(i)

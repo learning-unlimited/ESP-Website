@@ -912,7 +912,7 @@ class ClassSection(models.Model):
                     self._count_students = retVal
                     return retVal
 
-
+        v = [ DataTree.get_by_uri('V/Flags/Registration' + verb_str) for verb_str in verbs ]
         qs = User.objects.filter(userbit__qsc=self.anchor, userbit__verb__in=v, userbit__enddate__gte=datetime.datetime.now()).distinct()
         
         retVal = qs.count()
@@ -1056,10 +1056,7 @@ class ClassSection(models.Model):
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     
         prereg_verb_base = scrmi.signup_verb
-        
-        #   Override the registration verb if the class has application questions
-        if self.parent_class.studentappquestion_set.count() > 0:
-            prereg_verb_base = GetNode('V/Flags/Registration/Applied')
+
         
         if scrmi.use_priority:
             prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
