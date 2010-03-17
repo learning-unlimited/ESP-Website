@@ -33,6 +33,9 @@
 <div id="program_form">
 <form action="{{ request.path }}" method="post" name="application_form">
 <table align="center" id="appform" class="fullwidth">
+{% load smartypants %}
+{% load markdown %}
+{% load latex %}
 {% for form in forms %}
 <tr>
  <th colspan="2">
@@ -41,7 +44,7 @@
 </tr>
 <tr>
  <td colspan="2">
-    {{ form.target.question.question }}
+    {% autoescape off %}{{ form.target.question.question|markdown|smartypants|teximages|safe }}{% endautoescape %}
     {% if form.target.question.directions %}<br /><br /><b>Additional directions:</b> {{ form.target.question.directions }}{% endif %}
  </td>
 </tr>
