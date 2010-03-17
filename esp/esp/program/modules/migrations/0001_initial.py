@@ -195,7 +195,7 @@ class Migration:
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
         'cal.event': {
-            'anchor': ('AjaxForeignKey', ["orm['datatree.DataTree']"], {}),
+            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
             'description': ('django.db.models.fields.TextField', [], {}),
             'end': ('django.db.models.fields.DateTimeField', [], {}),
             'event_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['cal.EventType']"}),
@@ -221,7 +221,7 @@ class Migration:
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'lock_table': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'parent': ('AjaxForeignKey', ["orm['datatree.DataTree']"], {'related_name': "'child_set'", 'null': 'True', 'blank': 'True'}),
+            'parent': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'child_set'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
             'range_correct': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
             'rangeend': ('django.db.models.fields.IntegerField', [], {}),
             'rangestart': ('django.db.models.fields.IntegerField', [], {}),
@@ -273,7 +273,7 @@ class Migration:
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'need_bus': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True', 'blank': 'True'}),
-            'user': ('AjaxForeignKey', ["orm['auth.User']"], {'null': 'True', 'blank': 'True'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'}),
             'volunteer': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'volunteer_times': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['cal.Event']", 'blank': 'True'})
         },
@@ -291,7 +291,7 @@ class Migration:
             'sat_writ': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
             'section': ('django.db.models.fields.CharField', [], {'max_length': '5'}),
             'subject': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
-            'user': ('AjaxForeignKey', ["orm['auth.User']"], {'null': 'True', 'blank': 'True'})
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
         },
         'modules.studentclassregmoduleinfo': {
             'cancel_button_dereg': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
@@ -308,7 +308,7 @@ class Migration:
             'send_confirmation': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'show_emailcodes': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
             'show_unscheduled_classes': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'signup_verb': ('AjaxForeignKey', ["orm['datatree.DataTree']"], {'default': " lambda :GetNode(REG_VERB_BASE+'/Enrolled')"}),
+            'signup_verb': ('django.db.models.fields.related.ForeignKey', [], {'default': "orm['datatree.DataTree'].objects.get(pk=30043)", 'to': "orm['datatree.DataTree']"}),
             'temporarily_full_text': ('django.db.models.fields.CharField', [], {'default': "'Class temporarily full; please check back later'", 'max_length': '255'}),
             'use_priority': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'view_button_text': ('django.db.models.fields.CharField', [], {'default': "'View Receipt'", 'max_length': '80'}),
@@ -321,7 +321,7 @@ class Migration:
             'symbol': ('django.db.models.fields.CharField', [], {'default': "'?'", 'max_length': '1'})
         },
         'program.program': {
-            'anchor': ('AjaxForeignKey', ["orm['datatree.DataTree']"], {}),
+            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
             'class_categories': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ClassCategories']"}),
             'class_size_max': ('django.db.models.fields.IntegerField', [], {}),
             'class_size_min': ('django.db.models.fields.IntegerField', [], {}),
