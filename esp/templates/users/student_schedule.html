@@ -6,9 +6,12 @@ classes!</center></font>
 <hr>
 <br /> {% endcomment %}
 <p>
+{% load render_qsd %}
+{% inline_qsd_block program.anchor class_schedule_header_text request.user %}
 Below is your class schedule for {{ program.niceName }}.  You can
 <a href="/learn/{{one}}/{{two}}/catalog">click here</a> to view the full 
 catalog, or you can use the course listing below.
+{% end_inline_qsd_block %}
 </p>
 
 <p>  <b>Please note</b>: Your space in a class is saved immediately when it
