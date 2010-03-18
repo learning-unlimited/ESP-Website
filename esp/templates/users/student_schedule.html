@@ -1,9 +1,18 @@
 
 <p>
-Below is your class schedule for {{ program.niceName }}.  Please use the links in the right-hand column to select classes to fill each time slot.  You may also <a target="_blank" href='/learn/{{one}}/{{two}}/catalog'> open a full catalog in a separate window</a>.
+{% load render_qsd %}
+{% inline_qsd_block program.anchor class_schedule_header_text request.user %}
+Below is your class schedule for {{ program.niceName }}.  You can
+<a href="/learn/{{one}}/{{two}}/catalog">click here</a> to view the full 
+catalog, or you can use the course listing below.
+{% end_inline_qsd_block %}
 </p>
 
-<p>  <b>Please note</b>: Your classes are saved immediately when you click the "Add this Class!" button.  You do not need to confirm or save your entire registration to save your spot in classes. 
+<p>  <b>Please note</b>: Your space in a class is saved immediately when it
+appears in the schedule below.  However, please do
+click the "Confirm" button below to mark your registration as complete and
+receive instructions on how to get to the program and what to do when
+you arrive. 
 </p>
 
 {% if not module.deadline_met %}
