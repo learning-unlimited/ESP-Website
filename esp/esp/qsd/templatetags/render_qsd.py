@@ -1,6 +1,6 @@
 from django import template
-from django.template import Context
 from django.shortcuts import render_to_response
+from django.core.cache import cache
 from esp.datatree.models import *
 from esp.users.models import UserBit
 from esp.web.util.template import cache_inclusion_tag, DISABLED
@@ -8,30 +8,25 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.models import qsd_cache_key
 from urllib import quote
 
-from esp.utils.file_cache import FileCache
-
 register = template.Library()
-
-render_qsd_cache = FileCache(4, 'render_qsd')
 
 def cache_key(qsd, user=None):
     return qsd_cache_key(qsd.path, qsd.name, user,)
 
+def inline_cache_key(input_anchor, path, user=None):
+    if user and hasattr(user, 'id') and user.id is not None:
+        return '%s_%s_%d_inline' % (input_anchor.id, path, user.id)
+    else:
+        return '%s_%s_anon_inline' % (input_anchor.id, path)
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=render_qsd_cache, cache_time=300)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_time=300)
 def render_qsd(qsd, user=None):
     edit_bits = False
     if user:
         edit_bits = UserBit.UserHasPerms(user, qsd.path, DataTree.get_by_uri('V/Administer/Edit'))
     return {'qsdrec': qsd, 'edit_bits': edit_bits}
 
-def cache_inline_key(input_anchor, qsd, user=None):
-    if user:
-        return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s__%s' % (input_anchor, qsd, user.id))
-    else:
-        return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s' % (input_anchor, qsd))
-
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=cache_inline_key, cache_obj=DISABLED)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=inline_cache_key, cache_time=1)
 def render_inline_qsd(input_anchor, qsd, user=None):
     if isinstance(input_anchor, basestring):
         try:
@@ -47,10 +42,9 @@ def render_inline_qsd(input_anchor, qsd, user=None):
     edit_bits = False
     if user:
         edit_bits = UserBit.UserHasPerms(user, anchor, DataTree.get_by_uri('V/Administer/Edit'))
-    qsd_obj = anchor.quasistaticdata_set.filter(name=qsd).order_by('-id')
-    if len(qsd_obj) == 0:
+    qsd_obj = QuasiStaticData.objects.get_by_path__name(anchor, qsd)
+    if qsd_obj == None:
         return {'edit_bits': edit_bits, 'qsdname': qsd, 'anchor_id': anchor.id}
-    qsd_obj = qsd_obj[0]
     
     return {'qsdrec': qsd_obj, 'edit_bits': edit_bits}
 
@@ -75,8 +69,8 @@ class InlineQSDNode(template.Node):
 
         edit_bits = UserBit.UserHasPerms(user, anchor, DataTree.get_by_uri('V/Administer/Edit'))
 
-        qsd_obj = anchor.quasistaticdata_set.filter(name=qsd).order_by('-id')[:1]
-        if len(qsd_obj) == 0:
+        qsd_obj = QuasiStaticData.objects.get_by_path__name(anchor, qsd)
+        if qsd_obj == None:
             new_qsd = QuasiStaticData()
             new_qsd.path = anchor
             new_qsd.name = qsd
@@ -85,11 +79,8 @@ class InlineQSDNode(template.Node):
             new_qsd.author = user
             new_qsd.save()
             qsd_obj = new_qsd
-        else:
-            qsd_obj = qsd_obj[0]
 
         return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj, 'edit_bits': edit_bits}, context_instance=context).content
-
         
 @register.tag
 def inline_qsd_block(parser, token):

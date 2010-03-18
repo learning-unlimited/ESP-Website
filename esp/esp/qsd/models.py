@@ -43,22 +43,22 @@ from esp.cache import cache_function
 from esp.web.models import NavBarCategory
 
 class QSDManager(FileDBManager):
+    @cache_function
     def get_by_path__name(self, path, name):
-        # This writes to file_db, and caches the *data retrieval*
-        # It exists because the kernel filesystem caches are possibly better
-        # for retrieving large (>=4KB) data chunks than PostgreSQL
-        # See Mike Axiak's email to esp-webmasters@mit.edu on 2008-09-27 (around 12:35)
-        # No user ID --- this caches simple DB access, so user-invariant
-        file_id = qsd_cache_key(path, name, None)
-        retVal = self.get_by_id(file_id)
-        if retVal is not None:
-            return retVal
+        # aseering 11-15-2009 -- Punt FileDB for this purpose;
+        # it has consistency issues in multi-computer load-balanced setups,
+        # and memcached doesn't have a clear performance disadvantage.
         try:
-            obj = self.filter(path=path, name=name).order_by('-create_date')[:1][0]
-            self.obj_to_file(obj)
-            return obj
-        except IndexError:
-            raise QuasiStaticData.DoesNotExist("No QSD found.")
+            return self.filter(path=path, name=name).select_related().latest('create_date')
+        except QuasiStaticData.DoesNotExist:
+            return None
+    get_by_path__name.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'path': qsd.path, 'name': qsd.name})
+
+    def __str__(self):
+        return "QSDManager()"
+
+    def __repr__(self):
+        return "QSDManager()"
 
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
@@ -115,20 +115,6 @@ class QuasiStaticData(models.Model):
         self.author = request.user
         self.create_date = datetime.now()
 
-    def save(self, user=None, *args, **kwargs):
-        # Invalidate the file cache of the render_qsd template tag
-        from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func, render_qsd_cache
-        render_qsd_cache.delete(cache_key_func(self))
-
-        # Invalidate per user cache entry --- really, we should do this for
-        # all users, but just this one is easy and almost as good
-        render_qsd_cache.delete(cache_key_func(self, user))
-
-        retVal = super(QuasiStaticData, self).save(*args, **kwargs)
-        QuasiStaticData.objects.obj_to_file(self)
-        
-        return retVal
-
     # Really, I think the correct solution here is to key it by path.get_uri and name
     # is_descendant_of is slightly more expensive, but whatever.
     @cache_function
@@ -174,8 +160,10 @@ class QuasiStaticData(models.Model):
     def __unicode__(self):
         return (self.path.full_name() + ':' + self.name + '.html' )
 
+    @cache_function
     def html(self):
         return markdown(self.content)
+    html.depend_on_row(lambda:QuasiStaticData, 'self')
 
     @staticmethod
     def find_by_url_parts(base, parts):
