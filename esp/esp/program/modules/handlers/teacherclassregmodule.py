@@ -214,7 +214,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         
     @aux_call
     @needs_teacher
-    @meets_deadline("/Classes/View")
+    @meets_deadline("/Classes/SelectStudents")
     def select_students(self, request, tl, one, two, module, extra, prog):
         from esp.users.models import UserBit
         #   Get preregistered and enrolled students

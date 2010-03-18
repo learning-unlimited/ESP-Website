@@ -61,6 +61,7 @@ tree_template = [
     'V/Deadline/Registration/Teacher/Catalog',
     'V/Deadline/Registration/Teacher/Classes',
     'V/Deadline/Registration/Teacher/Classes/View',
+    'V/Deadline/Registration/Teacher/Classes/SelectStudents',
     'V/Deadline/Registration/Teacher/MainPage',
     'V/Publish',
     'V/Create',
