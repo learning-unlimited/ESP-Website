@@ -301,8 +301,8 @@ def build_workbook_data():
             row += 1
 
         # PER-CLS:
-        this_column_names = ["Class ID", "Section Number"]
-        this_question_ids = [-1, -2]
+        this_column_names = ["Class ID", "Section Number", "Teachers"]
+        this_question_ids = [-1, -2, -3]
         
         # Iterate through per-class questions this time
         for q in s._per_class_questions:
@@ -331,6 +331,7 @@ def build_workbook_data():
                     ans_dict[ans.question_id] = auto_cell_type(ans.answer)
                     ans_dict[-1] = ans._class.emailcode() if ans._class != None else ans_dict[-1]
                     ans_dict[-2] = ans._section.anchor.name[7:] if ans._section != None else ans_dict[-2]
+                    ans_dict[-3] = ", ".join("%s %s" % (x.first_name, x.last_name) for x in ans._class.teachers()) if ans._class != None else ans_dict[-3]
 
                 this_answers = [ans_dict[q] for q in this_question_ids]
                 
