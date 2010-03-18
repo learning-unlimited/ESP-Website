@@ -1544,7 +1544,7 @@ class ClassSubject(models.Model):
                 return 'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
-        if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb]).count() == 0:
+        if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
             return False
 
         for section in self.sections.all():
