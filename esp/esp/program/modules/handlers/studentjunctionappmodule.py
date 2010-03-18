@@ -91,7 +91,6 @@ class StudentJunctionAppModule(ProgramModuleObj):
         response_dict = {}
         for i in range(len(responses)):
             response_dict[response_question_ids[i]] = responses[i]
-        print 'Responses to questions: %s' % response_question_ids
 
         #   Check that they responded to everything.
         classes = self.user.getAppliedClasses(self.program)
