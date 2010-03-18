@@ -45,6 +45,7 @@ Back to teacher reg
   <th>Name</th>
   <th>Grade</th>
   <th>Time signed up for your class</th>
+  <th>Has completed application?</th>
   <th>Review Date/Time</th>
   <th>Review</th>
 </tr>
@@ -60,6 +61,9 @@ Back to teacher reg
     </td>
     <td>
     {{student.added_class|date:"M/d/Y @ h:i:s" }}
+    </td>
+    <td>
+      {% if student.app_completed %}<b>Yes</b>{% else %}<b>No</b>{% endif %}
     </td>
     <td>
   {% if student.app_reviewed %}

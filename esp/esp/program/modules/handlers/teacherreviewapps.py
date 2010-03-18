@@ -78,13 +78,21 @@ class TeacherReviewApps(ProgramModuleObj):
 
             if student.app:
                 reviews = student.app.reviews.all().filter(reviewer=self.user, score__isnull=False)
+                questions = student.app.questions.all().filter(subject=cls)
             else:
                 reviews = []
+                questions = []
 
             if len(reviews) > 0:
                 student.app_reviewed = reviews[0]
             else:
                 student.app_reviewed = None
+            
+            student.app_completed = False
+            for i in questions:
+                for j in i.studentappresponse_set.all():
+                    if j.complete:
+                        student.app_completed = True
 
         students = list(students)
         students.sort(lambda x,y: cmp(x.added_class,y.added_class))
