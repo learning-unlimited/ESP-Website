@@ -272,7 +272,7 @@ class ESPUser(User, AnonymousUser):
                       'retTitle': retTitle,
                       'onsite'  : onsite}
 
-        if user.isAdministrator():
+        if user.isAdministrator() or user.is_staff or user.is_superuser:
             # Disallow morphing into Administrators.
             # It's too broken, from a security perspective.
             # -- aseering 1/29/2010
