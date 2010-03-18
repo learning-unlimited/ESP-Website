@@ -83,17 +83,21 @@ class BaseAppElement:
             django_field = get_field_by_name(field)
             if type(django_field) == models.TextField:
                 form_class.base_fields[field].widget = forms.Textarea(attrs={'cols': 80, 'rows': 8})
+                form_class.base_fields[field].required = False
         
         if len(args) > 0:
             initial_dict = args[0].copy()
+            populating_from_form = (initial_dict != {})
             args = args[1:]
         else:
             initial_dict = {}
+            populating_from_form = False
         
         #   Don't overwrite existing data supplied as an argument.
-        for field_name in self._field_names:
-            if not initial_dict.has_key(form_prefix + '-' + field_name):
-                initial_dict[form_prefix + '-' + field_name] = getattr(self, field_name)
+        #   BooleanFields are weird; if un-set, they're simply not given in the POST dictionary.
+        if not populating_from_form:
+            for field_name in self._field_names:            
+                initial_dict[form_prefix + '-' + field_name] = getattr(self, field_name)                    
 
         form = form_class(initial_dict, prefix=form_prefix, *args, **kwargs)
         form.target = self
