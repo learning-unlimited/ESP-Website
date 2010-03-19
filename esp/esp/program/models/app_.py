@@ -158,7 +158,7 @@ class StudentAppReview(BaseAppElement, models.Model):
         
     reviewer = AjaxForeignKey(User, editable=False)
     date = models.DateTimeField(default=datetime.datetime.now, editable=False)
-    score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student on an integer scale from 0 to 10.')
+    score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
     reject = models.BooleanField(default=False, editable=False)
         
