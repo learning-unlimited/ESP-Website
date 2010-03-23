@@ -12,6 +12,7 @@ except:
 import os
 import sys
 from utils.memcached_multihost import CacheClass as MultihostCacheClass
+from utils.defaultclass import defaultclass
 from esp import utils
 from esp import settings
 
@@ -306,6 +307,39 @@ class MultihostCacheClassTest(MemcachedTestCase):
         self.cacheclass.incr('test_math')
         self.cacheclass.incr('test_math')
         self.assertEqual(3, self.cacheclass.get('test_math'))
+
+
+class DefaultclassTestCase(unittest.TestCase):
+    def testDefaultclass(self):
+        """ Verify that defaultclass correctly lets you select out a custom instance of a class """
+        class kls(object):
+            @classmethod
+            def get_name(cls):
+                return cls.__name__
+            def get_hi(self):
+                return "hi!"
+                
+        kls = defaultclass(kls)
+
+        myKls = kls()
+        self.assertEqual(myKls.get_name(), "kls")
+
+        myKls2 = kls[0]()
+        self.assertEqual(myKls.get_name(), "kls")
+
+        class otherKls(kls.real):
+            pass
+
+        myOtherKls = otherKls()
+        self.assertEqual(myOtherKls.get_name(), "otherKls")
+        
+        kls[0] = otherKls
+    
+        myOtherKls2 = kls[0]()
+        self.assertEqual(myOtherKls2.get_name(), "otherKls")
+        
+        
+
         
 def suite():
     """Choose tests to expose to the Django tester."""
@@ -315,3 +349,6 @@ def suite():
     # Add doctests from esp.utils.__init__.py
     s.addTest(doctest.DocTestSuite(utils))
     return s
+
+
+
