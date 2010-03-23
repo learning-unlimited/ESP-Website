@@ -34,11 +34,11 @@ class Tag(models.Model):
     EMPTY_TAG = " "
 
     @cache_function
-    def getTag(cls, key, target=None):
+    def getTag(cls, key, target=None, default=None):
         """ 
         Given a key (as a slug) and a target row from any database table,
         return the corresponding value as a string,
-        or None if no such value exists.
+        or the value specified by the 'default' argument if no such value exists.
         """
         try:
             if target != None:
