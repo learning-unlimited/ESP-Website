@@ -177,6 +177,7 @@ INSTALLED_APPS = (
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
     'esp.cache_loader',
+    'esp.tagdict',
     'django_extensions',
     'south',
 )
