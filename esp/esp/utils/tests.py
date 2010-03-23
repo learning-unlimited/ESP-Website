@@ -323,6 +323,8 @@ class DefaultclassTestCase(unittest.TestCase):
 
         myKls = kls()
         self.assertEqual(myKls.get_name(), "kls")
+        self.assertEqual(myKls.get_hi(), "hi!")
+        self.assertEqual(kls.get_name(), "kls")
 
         myKls2 = kls[0]()
         self.assertEqual(myKls.get_name(), "kls")

@@ -34,4 +34,8 @@ class defaultclass(object):
         """ If we're called directly, generate a new instance of our default class """
         return self._target_cls(*args, **kwargs)
 
-    
+    def __getattr__(self, name):
+        if name in self.__dict__:
+            return self.__dict__[name]
+        else:
+            return getattr(self.real, name)
