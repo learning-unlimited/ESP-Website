@@ -47,9 +47,8 @@ class Tag(models.Model):
             else:
                 return cls.objects.get(key=key, content_type__isnull=True, object_id__isnull=True).value
         except cls.DoesNotExist:
-            return None
-    #getTag.depend_on_row(lambda: Tag, lambda tag: {'key': tag.key, 'target': tag.target})
-    getTag.depend_on_model(lambda: Tag)
+            return default
+    getTag.depend_on_row(lambda: Tag, lambda tag: {'key': tag.key, 'target': tag.target})
     getTag = classmethod(getTag)
     
     @classmethod
