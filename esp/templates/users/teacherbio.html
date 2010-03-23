@@ -42,9 +42,6 @@ img.biophoto { border: 1px solid black; }
   <strong>Major:</strong> {{biouser.getLastProfile.teacher_info.major|default:"Not available."}} <br /><br />
   <strong>College:</strong> {{biouser.getLastProfile.teacher_info.college|default:"Not available."}} <br /><br />
   <strong>Year of Graduation:</strong> {{biouser.getLastProfile.teacher_info.graduation_year|default:"Not available."}} <br /><br />
-  {% load mask_email %}
-  <strong>Email Address:</strong> <tt style="text-size: 130%;">{{biouser.username|mask_email_concat:"esp.mit.edu"}}</tt>
-      
 
   </td>
   <td>
