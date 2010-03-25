@@ -69,8 +69,8 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
     if isinstance(template, (basestring,)):
         template = [ template ]
 
-    if prog and auto_per_program_templates:
-        template = [_per_program_template_name(prog, t) for t in template] + template
+    if isinstance(prog, (list, tuple)) and auto_per_program_templates:
+        template = [_per_program_template_name(prog[0], t) for t in template] + template
 
     # if there are only two arguments
     if context is None and prog is None:
