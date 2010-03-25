@@ -5,10 +5,16 @@ from django.contrib.auth.models import User
 from esp.utils.forms import CaptchaForm
 
 role_choices = (
+    ('Teacher', 'Volunteer Splash/Cascade Teacher'),
     ('Student', 'Student (up through 12th grade)'),
-    ('Teacher', 'Volunteer Teacher'),
-    ('Guardian', 'Guardian of Student'),
-    ('Educator', 'K-12 Educator'),
+    ('Guardian', 'Parent or Guardian of Student'),
+    ('Educator', 'K-12 Teacher'),
+    ('UTEPAlum', 'Teacher and UTEP Alum'),
+    ('TeacherAndUofCAlum', 'Teacher and UofC Alum'),
+    ('UofCAlum', 'Other UofC Alum'),
+    ('UofCProfessor', 'UofC Professor'),
+    ('UTEPStudent', 'Current UTEP Student'),
+    ('UofCStudent', 'Other UofC Student'),
     )
 
 class ValidHostEmailField(forms.EmailField):
