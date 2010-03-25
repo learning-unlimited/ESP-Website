@@ -4,6 +4,8 @@ from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget, BlankSelectWidget
 
 from esp.users.models import StudentInfo
+from esp.utils.defaultclass import defaultclass
+
 import re
 
 # SRC: esp/program/manipulators.py
@@ -196,6 +198,7 @@ GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
+StudentProfileForm = defaultclass(StudentProfileForm)
 
 class TeacherProfileForm(TeacherContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
@@ -205,4 +208,26 @@ class GuardianProfileForm(UserContactForm, GuardianInfoForm):
 
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
+
+class UserContactFormSansPhone(UserContactForm):
+    phone_day = None
+    clean_phone_cell = None
+
+class BasicTeacherInfoForm(TeacherInfoForm):
+    school = None
+    shirt_size = None
+    shirt_type = None
+    full_legal_name = None
+    university_email = None
+    student_id = None
+    mail_reimbursement = None
+
+class VisitingUserInfo(FormUnrestrictedOtherUser):
+    profession = SizedCharField(length=12, max_length=64, required=False)
+
+class VisitingTeacherProfileFormRipple(UserContactFormSansPhone, BasicTeacherInfoForm):
+    """ This is the visiting-teacher contact form as used by UChicago's Ripple program """
+
+class VisitingGenericUserProfileForm(UserContactFormSansPhone, VisitingUserInfo):
+    """ This is a form for a generic visitor user """
 
