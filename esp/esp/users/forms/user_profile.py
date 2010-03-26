@@ -6,6 +6,7 @@ from esp.utils.widgets import SplitDateWidget, BlankSelectWidget
 from esp.users.models import StudentInfo
 from esp.utils.defaultclass import defaultclass
 
+from datetime import datetime
 import re
 
 # SRC: esp/program/manipulators.py
@@ -213,21 +214,52 @@ class UserContactFormSansPhone(UserContactForm):
     phone_day = None
     clean_phone_cell = None
 
-class BasicTeacherInfoForm(TeacherInfoForm):
-    school = None
-    shirt_size = None
-    shirt_type = None
-    full_legal_name = None
-    university_email = None
-    student_id = None
-    mail_reimbursement = None
-
 class VisitingUserInfo(FormUnrestrictedOtherUser):
     profession = SizedCharField(length=12, max_length=64, required=False)
 
-class VisitingTeacherProfileFormRipple(UserContactFormSansPhone, BasicTeacherInfoForm):
-    """ This is the visiting-teacher contact form as used by UChicago's Ripple program """
+class MinimalUserInfo(FormUnrestrictedOtherUser):
+    first_name = SizedCharField(length=25, max_length=64)
+    last_name = SizedCharField(length=30, max_length=64)
+    e_mail = forms.EmailField()
+    address_street = SizedCharField(length=40, max_length=100)
+    address_city = SizedCharField(length=20, max_length=50)
+    address_state = forms.ChoiceField(choices=zip(_states,_states), initial="IL")
+    address_zip = SizedCharField(length=5, max_length=5)
+    address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
-class VisitingGenericUserProfileForm(UserContactFormSansPhone, VisitingUserInfo):
+_grad_years = range(datetime.now().year, datetime.now().year + 6)
+
+class UofCProfileForm(MinimalUserInfo):
+    graduation_year = forms.ChoiceField(choices=zip(_grad_years, _grad_years))
+    major = SizedCharField(length=30, max_length=32, required=False)
+
+    def clean_graduation_year(self):
+        gy = self.cleaned_data['graduation_year'].strip()
+        try:
+            gy = str(abs(int(gy)))
+        except:
+            if gy != 'G':
+                gy = 'N/A'
+        return gy
+    
+class AlumProfileForm(MinimalUserInfo):
+    """ This is the visiting-teacher contact form as used by UChicago's Ripple program """
+    graduation_year = SizedCharField(length=4, max_length=4, required=False)
+    major = SizedCharField(length=30, max_length=32, required=False)
+
+    def clean_graduation_year(self):
+        gy = self.cleaned_data['graduation_year'].strip()
+        try:
+            gy = str(abs(int(gy)))
+        except:
+            if gy != 'G':
+                gy = 'N/A'
+        return gy
+
+class UofCProfForm(MinimalUserInfo):
+    major = SizedCharField(length=30, max_length=32, label="Department", required=False)
+
+class VisitingGenericUserProfileForm(MinimalUserInfo):
     """ This is a form for a generic visitor user """
+    major = SizedCharField(length=30, max_length=32, label="Profession", required=False)
 

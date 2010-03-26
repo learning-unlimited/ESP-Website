@@ -41,7 +41,7 @@ import datetime
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
-from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm
+from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm, UofCProfileForm, AlumProfileForm, UofCProfForm, VisitingGenericUserProfileForm
 from django.db.models.query import Q
 
 
@@ -250,7 +250,8 @@ def edit_profile(request, module):
 		return profile_editor(request, None, True, 'educator')	
 
 	else:
-		return profile_editor(request, None, True, '')
+		user_types = UserBit.valid_objects().filter(verb__parent=GetNode("V/Flags/UserRole")).select_related().order_by('-id')
+		return profile_editor(request, None, True, user_types[0].verb.name if user_types else '')
 
 @login_required
 def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
@@ -276,18 +277,25 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     curUser.updateOnsite(request)
 
     FormClass = {'': UserContactForm,
-               'student': StudentProfileForm,
-               'teacher': TeacherProfileForm,
-               'guardian': GuardianProfileForm,
-               'educator': EducatorProfileForm}[role]
+		 'student': StudentProfileForm,
+		 'teacher': TeacherProfileForm,
+		 'guardian': GuardianProfileForm,
+		 'educator': EducatorProfileForm,
+		 'UTEPAlum': EducatorProfileForm,
+		 'TeacherAndUofCAlum': EducatorProfileForm,
+		 'UofCAlum': AlumProfileForm,
+		 'UofCProfessor': UofCProfForm,
+		 'UofCStudent': UofCProfileForm,
+		 'Other': VisitingGenericUserProfileForm,
+		 }[role]
     context['profiletype'] = role
 
     if request.method == 'POST' and request.POST.has_key('profile_page'):
-        form = FormClass(curUser, request.POST)
+	form = FormClass(curUser, request.POST)
 
         # Don't suddenly demand an explanation from people who are already student reps
         if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
-            if hasattr(form, 'repress_studentrep_expl_error'):
+	    if hasattr(form, 'repress_studentrep_expl_error'):
                 form.repress_studentrep_expl_error()
 
         if form.is_valid():
@@ -325,8 +333,13 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
             elif role == 'guardian':
                 regProf.guardian_info = GuardianInfo.addOrUpdate(curUser, regProf, new_data)
-            elif role == 'educator':
+	    elif role == 'educator':
                 regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
+	    else:
+	        # TeacherInfo is the default form for now
+		regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
+		
+	    
             blah = regProf.__dict__
             regProf.save()
 
