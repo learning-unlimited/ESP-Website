@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import User, AnonymousUser
@@ -1034,6 +1035,7 @@ class TeacherInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a TeacherInfo record """
+        new_data = defaultdict(str, new_data) # Don't require all fields to be present
         if regProfile.teacher_info is None:
             teacherInfo = TeacherInfo()
             teacherInfo.user = curUser
