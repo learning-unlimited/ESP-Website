@@ -60,7 +60,7 @@ def render_response(req, *args, **kwargs):
 
 def _per_program_template_name(prog, templatename):
     tpath = templatename.split("/")
-    new_tpath = tpath[:-1] + ["per-program", "%s_%s" % (prog.id, tpath[-1])]
+    new_tpath = tpath[:-1] + ["per_program", "%s_%s" % (prog.id, tpath[-1])]
     return "/".join(new_tpath)
 
 def render_to_response(template, requestOrContext, prog = None, context = None, auto_per_program_templates = True):
