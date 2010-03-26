@@ -15,6 +15,7 @@ role_choices = (
     ('UofCProfessor', 'UofC Professor'),
     ('UTEPStudent', 'Current UTEP Student'),
     ('UofCStudent', 'Other UofC Student'),
+    ('Other', 'Other...'),
     )
 
 class ValidHostEmailField(forms.EmailField):
