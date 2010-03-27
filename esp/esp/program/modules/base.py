@@ -45,6 +45,10 @@ from django.conf import settings
 from urllib import quote
 from django.db.models.query import Q
 from django.core.cache import cache
+from django.template.loader import get_template
+from django.template import TemplateDoesNotExist
+
+from os.path import exists
 
 LOGIN_URL = settings.LOGIN_URL
 
@@ -371,8 +375,18 @@ class ProgramModuleObj(models.Model):
         return []
 
     def getTemplate(self):
-        return 'program/modules/'+self.__class__.__name__.lower()+'/'+ \
-               self.module.main_call+'.html'
+        baseDir = 'program/modules/'+self.__class__.__name__.lower()+'/'
+        mainCallTemp = self.module.main_call+'.html'
+
+        per_program_template = baseDir+'per_program/'+str(self.program.id)+ \
+            '_'+ mainCallTemp
+
+        try:
+            get_template(per_program_template)
+            return per_program_template
+        except TemplateDoesNotExist:
+            return baseDir + mainCallTemp
+                
 
     def teachers(self, QObject = False):
         return {}
