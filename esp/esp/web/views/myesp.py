@@ -286,6 +286,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		 'UofCAlum': AlumProfileForm,
 		 'UofCProfessor': UofCProfForm,
 		 'UofCStudent': UofCProfileForm,
+		 'UTEPStudent': UofCProfileForm,
 		 'Other': VisitingGenericUserProfileForm,
 		 }[role]
     context['profiletype'] = role

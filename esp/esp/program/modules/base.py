@@ -37,8 +37,10 @@ from django.db import models
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, UserBit
+from esp.datatree.models import GetNode
 from esp.web.util import render_to_response
+from esp.tagdict.models import Tag
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
@@ -567,7 +569,10 @@ def needs_student(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
         if not moduleObj.user.isStudent() and not moduleObj.user.isAdmin(moduleObj.program):
-            return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
+            allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
+            matching_user_types = UserBit.valid_objects().filter(user=moduleObj.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
+            if not matching_user_types:
+                return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkStudent        
