@@ -1,0 +1,5 @@
+aseering, Spark 2010
+
+This is a script that uses curl to hammer on the add/remove class link as fast as possible.
+
+Note that launching this script many times in parallel doesn't actually do what you want (despite the fact that I included a script to help do so) because most of your page requests will be "Error, you already added that class!" or "Error: You're not in that class, you can't remove it!".  The script would need to be modified such that each instance of the script tried to add/remove a different class.
