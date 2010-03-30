@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 from esp.utils.forms import CaptchaForm
 
 role_choices = (
-    ('Teacher', 'Volunteer Splash/Cascade Teacher'),
+    ('', 'Pick one...'),
+#    ('Teacher', 'Volunteer Splash/Cascade Teacher'),
     ('Student', 'Student (up through 12th grade)'),
     ('Guardian', 'Parent or Guardian of Student'),
     ('Educator', 'K-12 Teacher'),
