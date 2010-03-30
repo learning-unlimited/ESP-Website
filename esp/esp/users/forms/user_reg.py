@@ -64,6 +64,11 @@ class UserRegForm(forms.Form):
 
     email = ValidHostEmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75)
 
+    def clean_initial_role(self):
+        data = self.cleaned_data['initial_role']
+        if data == u'':
+            raise forms.ValidationError('Please select an initial role')
+        return data
 
     def clean_username(self):
         """ Make sure that 'username' (as provided as input to this form)
