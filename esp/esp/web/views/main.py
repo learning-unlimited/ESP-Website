@@ -267,6 +267,7 @@ def registration_redirect(request):
         userrole['reg'] = 'teacherreg'
         regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
     ctxt['userrole'] = userrole
+    ctxt['navnode'] = GetNode('Q/Web/myesp')
     
     if user.isStudent() or user.isTeacher():
         progs = UserBit.find_by_anchor_perms(Program, user=user, verb=regverb)
@@ -274,6 +275,7 @@ def registration_redirect(request):
         ctxt['prog'] = progs[0]
         ctxt['nextreg'] = list(nextreg)
         if len(progs) == 1:
+            ctxt['navnode'] = progs[0].anchor
             return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
         else:
             return render_to_response('users/profile_complete.html', request, navnode, ctxt)
