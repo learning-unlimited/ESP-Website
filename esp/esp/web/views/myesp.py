@@ -362,8 +362,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                     userrole['base'] = 'teach'
                     userrole['reg'] = 'teacherreg'
                     regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
-                ctxt['userrole'] = userrole
-                
+                ctxt['userrole'] = userrole                
+		ctxt['navnode'] = navnode
+
                 if curUser.isStudent() or curUser.isTeacher():
                     progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
                     nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
