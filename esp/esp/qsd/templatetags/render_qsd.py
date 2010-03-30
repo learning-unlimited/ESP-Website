@@ -55,7 +55,7 @@ class InlineQSDNode(template.Node):
         self.nodelist = nodelist
         self.qsd_name = qsd_name
         self.user_variable = template.Variable(user_variable)
-        self.input_anchor = template.Variable(input_anchor)
+        self.input_anchor = input_anchor
         
     def render(self, context):
         try:
@@ -63,7 +63,11 @@ class InlineQSDNode(template.Node):
         except template.VariableDoesNotExist:
             user = None
 
-        anchor = self.input_anchor.resolve(context)
+        try:
+            anchor = template.Variable(self.input_anchor)
+            anchor = anchor.resolve(context)
+        except:
+            anchor = GetNode(self.input_anchor)
 
         qsd = self.qsd_name
 
@@ -77,7 +81,10 @@ class InlineQSDNode(template.Node):
             new_qsd.title = qsd
             new_qsd.content = self.nodelist.render(context)
             new_qsd.author = user
-            new_qsd.save()
+            
+            if user.id:
+                new_qsd.save()
+
             qsd_obj = new_qsd
 
         return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj, 'edit_bits': edit_bits}, context_instance=context).content
