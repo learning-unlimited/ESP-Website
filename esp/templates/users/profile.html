@@ -25,10 +25,12 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 {% block content %}
 <h1>Your Profile Information</h1>
-<p>Please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
+{% load render_qsd %}
+{% inline_qsd_block Q/Web/myesp account_creation_basic_info request.user %}
+<p>First, please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
 
 <p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
-
+{% end_inline_qsd_block %}
 {% if form.errors %}
 <h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h2><br />
 {% endif %}

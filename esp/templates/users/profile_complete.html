@@ -28,7 +28,8 @@ Continue on to:<br />
 </p>
 
 <div class="note">
-<strong>Note:</strong> Registering for an account <u>does not</u> register you for a program.<br /><br />
+{% load render_qsd %}
+{% inline_qsd_block navnode account_registration_notice request.user %}<strong>Note:</strong> Registering for an account <u>does not</u> register you for a program.<br /><br />{% end_inline_qsd_block %}
 Please head over to our <a href="/teach/index.html" title="Teach a class!">Teach</a> or 
 <a href="/learn/index.html" title="Take a Class!">Learn</a> section to join a program.
 </div>

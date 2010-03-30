@@ -14,13 +14,14 @@
 
 {% block content %}
 <h1>Create a new account</h1>
-
+{% load render_qsd %}
+{% inline_qsd_block Q/Web/myesp create_new_account_headertext request.user %}
 <p>
   Welcome to ESP! To do almost anything with ESP, you first need to register
 an account with us. After you register account, you will be allowed to register
 for programs, sign up for classes, among other things.
 </p>
-
+{% end_inline_qsd_block %}
 <div id="program_form">
 <form action="{{ request.path }}" method="post" name="newuser_form">
 <table>
