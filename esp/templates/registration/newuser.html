@@ -14,11 +14,12 @@
 
 {% block content %}
 <h1>Create a new account</h1>
-
+{% load render_qsd %}
+{% inline_qsd_block Q/Web/myesp create_new_account_headertext request.user %}
 <p>
 First, you need to create an account. After you do this and give us some basic information, you can sign up for classes. (Note: you will need to create a new account for Cascade even if you've registered for Splash in the past.)
 </p>
-
+{% end_inline_qsd_block %}
 <div id="program_form">
 <form action="{{ request.path }}" method="post" name="newuser_form">
 <table>
