@@ -413,10 +413,8 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtSections()
-                    if cls.parent_program == self.program
-                    and cls.isAccepted()
-                    and cls.meeting_times.count() > 0]
+            classes = [ cls for cls in teacher.getTaughtSections(self.program)
+                    if cls.isAccepted() and cls.meeting_times.count() > 0 ]
             # now we sort them by time/title
             classes.sort()
 
@@ -821,11 +819,12 @@ Student schedule for %s:
             except MultipleDocumentError:
                 invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
 
-            writer.writerow((invoice.locator, student.id, student.last_name, student.first_name, invoice.cost()))
+            writer.writerow((invoice.locator, student.id, student.last_name.encode('ascii', 'replace'), student.first_name.encode('ascii', 'replace'), invoice.cost()))
                 
         return response
         
     @aux_call
+    @needs_onsite_no_switchback
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
         """ generate student schedules """
         
@@ -888,6 +887,7 @@ Student schedule for %s:
             student.classes = classes
             
         context['students'] = students
+        context['program'] = self.program
         
         if extra:
             file_type = extra.strip()
