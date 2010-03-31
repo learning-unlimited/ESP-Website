@@ -72,7 +72,7 @@ class TeacherReviewApps(ProgramModuleObj):
 
         for student in students:
             now = datetime.now()
-            #student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
+            student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
             student.added_userbits = student.userbit_set.filter(startdate__lte=now, enddate__gte=now).filter(qsc__parent = cls.anchor).order_by('-startdate').distinct()
 
             try:
