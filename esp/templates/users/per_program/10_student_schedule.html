@@ -6,6 +6,19 @@
     color: #FFFFFF;
   }
 
+input.addbutton
+  {
+    background-color: #BCCAF5;
+    border: 0 solid black;
+    color: #497CCA;
+    font-family: georgia,serif;
+  }
+input.addbutton:hover
+  {
+    color: #CC66FF;
+    cursor: pointer;
+  }
+
 </style>
 
 
@@ -53,7 +66,21 @@
         
             
         <td width='20%' align='center'>
-           <a href="/learn/Ripple/2010_Spring/fillslot/51">[OPT OUT]</a>
+	    {% for timeslot in timeslots %}
+	       {% ifequal timeslot.0.id 51 %}
+               {% if not timeslot.1|length_is:0 %}
+	        <a href="/learn/Ripple/2010_Spring/clearslot/51">[opt back in!]</a>
+               {% else %}
+		<form id="prereg_587" name="prereg_587" method="post" action="/learn/Ripple/2010_Spring/addclass/">
+		  <input type="hidden" name="class_id" value="522" />
+		  <input type="hidden" name="section_id" value="587" />
+		  <div id="addbutton_fillslot_sec587">
+		    <input type="submit" class="addbutton" name="action" value="[opt out]" id="submitbutton522" />
+		  </div>
+		</form>
+               {% endif %}
+               {% endifequal %}
+            {% endfor %}
         </td>
 
             	
@@ -114,8 +141,21 @@
         </td>
               
                 <td width='20%' align='center'>
-                <a href="/learn/Ripple/2010_Spring/fillslot/50">[OPT OUT]</a>
-
+	    {% for timeslot in timeslots %}
+	       {% ifequal timeslot.0.id 50 %}
+               {% if not timeslot.1|length_is:0 %}
+	        <a href="/learn/Ripple/2010_Spring/clearslot/50">[opt back in!]</a>
+               {% else %}
+		<form id="prereg_587" name="prereg_588" method="post" action="/learn/Ripple/2010_Spring/addclass/">
+		  <input type="hidden" name="class_id" value="523" />
+		  <input type="hidden" name="section_id" value="588" />
+		  <div id="addbutton_fillslot_sec588">
+		    <input type="submit" class="addbutton" name="action" value="[opt out]" id="submitbutton523" />
+		  </div>
+		</form>
+               {% endif %}
+               {% endifequal %}
+            {% endfor %}
                 </td>
             	
         
@@ -227,8 +267,21 @@
         
             
                 <td width='20%' align='center'>
-                <a href="/learn/Ripple/2010_Spring/fillslot/52">[OPT OUT]</a>
-
+	    {% for timeslot in timeslots %}
+	       {% ifequal timeslot.0.id 52 %}
+               {% if not timeslot.1|length_is:0 %}
+	        <a href="/learn/Ripple/2010_Spring/clearslot/52">[opt back in!]</a>
+               {% else %}
+		<form id="prereg_587" name="prereg_589" method="post" action="/learn/Ripple/2010_Spring/addclass/">
+		  <input type="hidden" name="class_id" value="524" />
+		  <input type="hidden" name="section_id" value="589" />
+		  <div id="addbutton_fillslot_sec589">
+		    <input type="submit" class="addbutton" name="action" value="[opt out]" id="submitbutton524" />
+		  </div>
+		</form>
+               {% endif %}
+               {% endifequal %}
+            {% endfor %}
                 </td>
             	
         
