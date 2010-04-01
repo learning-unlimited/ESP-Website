@@ -1522,13 +1522,13 @@ class ClassSubject(models.Model):
         else:
             verb_override = GetNode('V/Flags/Registration/GradeOverride')
 
-        if Tag.getTag("allowed_student_types", target=self.parent_program) or \
-                user.getGrade() < self.grade_min or \
-                user.getGrade() > self.grade_max:
-            if not UserBit.UserHasPerms(user = user,
-                                        qsc  = self.anchor,
-                                        verb = verb_override):
-                return 'You are not in the requested grade range for this class.'
+        if not Tag.getTag("allowed_student_types", target=self.parent_program):
+            if user.getGrade() < self.grade_min or \
+                    user.getGrade() > self.grade_max:
+                if not UserBit.UserHasPerms(user = user,
+                                            qsc  = self.anchor,
+                                            verb = verb_override):
+                    return 'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
         if user.getEnrolledClasses(self.parent_program, request).count() == 0:
