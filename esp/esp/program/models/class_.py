@@ -43,6 +43,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.db.cache import GenericCacheHelper
 from esp.utils.property import PropertyDict
+from esp.tagdict.models import Tag
 
 # django models
 from django.contrib.auth.models import User
@@ -802,6 +803,8 @@ class ClassSection(models.Model):
                 for time in sec.meeting_times.all():
                     if self.meeting_times.filter(id = time.id).count() > 0:
                         return True
+		
+		return False
 
     def students_dict(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
@@ -1505,7 +1508,7 @@ class ClassSubject(models.Model):
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
-        if not user.isStudent():
+        if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
             return 'You are not a student!'
         
         if not self.isAccepted():
@@ -1523,8 +1526,9 @@ class ClassSubject(models.Model):
         else:
             verb_override = GetNode('V/Flags/Registration/GradeOverride')
 
-        if user.getGrade() < self.grade_min or \
-               user.getGrade() > self.grade_max:
+        if Tag.getTag("allowed_student_types", target=self.parent_program) or \
+                user.getGrade() < self.grade_min or \
+                user.getGrade() > self.grade_max:
             if not UserBit.UserHasPerms(user = user,
                                         qsc  = self.anchor,
                                         verb = verb_override):
