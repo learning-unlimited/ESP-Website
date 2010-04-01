@@ -103,12 +103,21 @@ def survey_view(request, tl, program, instance):
         
         if tl == 'learn':
             classes = user.getEnrolledClasses(prog, request)
+            timeslots = prog.getTimeSlots().order_by('start')
+            for ts in timeslots:
+                # The order by string really means "title"
+                ts.classsections = prog.sections().filter(meeting_times=ts).exclude(meeting_times__start__lt=ts.start).order_by('parent_class__anchor__friendly_name').distinct()
+                for sec in ts.classsections:
+                    if user in sec.students():
+                        sec.selected = True
         elif tl == 'teach':
             classes = user.getTaughtClasses(prog)
+            timeslots = []
         else:
             classes = []
+            timeslots = []
 
-        context = { 'survey': survey, 'questions': questions, 'perclass_questions': perclass_questions, 'program': prog, 'classes': classes }
+        context = { 'survey': survey, 'questions': questions, 'perclass_questions': perclass_questions, 'program': prog, 'classes': classes, 'timeslots': timeslots }
 
         return render_to_response('survey/survey.html', request, prog.anchor, context)
 
@@ -287,7 +296,6 @@ def top_classes(request, tl, program, instance):
                 pass
         
         categories = prog.class_categories.all().order_by('category')
-        categories = [ x.category for x in categories ]
         
         perclass_data = []
         initclass_data = [ { 'class': x, 'ratings': [ x.answer for x in Answer.objects.filter(anchor=x.anchor, question=rating_question) ] } for x in classes ]
@@ -298,10 +306,11 @@ def top_classes(request, tl, program, instance):
             c['avg'] = weighted_avg(tally(c['ratings']))
             if c['avg'] < rating_cut:
                 continue
-            c['teacher'] = c['class'].teachers()[0]
-            c['numteachers'] = c['class'].teachers().count()
+            teachers = list(c['class'].teachers())
+            c['teacher'] = teachers[0]
+            c['numteachers'] = len(teachers)
             if c['numteachers'] > 1:
-                c['coteachers'] = c['class'].teachers()[1:]
+                c['coteachers'] = teachers[1:]
             del c['ratings']
             perclass_data.append(c)
     context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data, 'rating_cut': rating_cut, 'num_cut': num_cut, 'categories': categories }

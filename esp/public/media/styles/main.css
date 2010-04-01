@@ -45,7 +45,6 @@ body {
   margin-left: auto;
   margin-right: auto;
   background: #141414;
-  overflow: hidden;
 }
 
 #footer {
@@ -254,4 +253,14 @@ a.navbutton:hover {
   font-family: Arial, Lucida, Helvetica, sans-serif;
   width: 100px;
   margin: 1px;
+}
+
+div.note, div.info, div.errormsg, div.question { 
+  text-align: left;
+  font-family: arial;
+  padding: 5px 0px 5px 38px;
+  border: 2px groove #999;
+  margin: 10px;
+  overflow: visible;
+  width: 450px;
 }

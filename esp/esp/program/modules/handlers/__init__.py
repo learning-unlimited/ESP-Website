@@ -21,6 +21,8 @@ base  = 'esp.program.modules.handlers.'
 
 oldglobals = globals()
 
+files.sort()
+
 for filename in files:
 
     globals().update(oldglobals)

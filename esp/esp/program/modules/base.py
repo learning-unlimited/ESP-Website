@@ -37,14 +37,20 @@ from django.db import models
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, UserBit
+from esp.datatree.models import GetNode
 from esp.web.util import render_to_response
+from esp.tagdict.models import Tag
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
 from urllib import quote
 from django.db.models.query import Q
 from django.core.cache import cache
+from django.template.loader import get_template
+from django.template import TemplateDoesNotExist
+
+from os.path import exists
 
 LOGIN_URL = settings.LOGIN_URL
 
@@ -371,8 +377,18 @@ class ProgramModuleObj(models.Model):
         return []
 
     def getTemplate(self):
-        return 'program/modules/'+self.__class__.__name__.lower()+'/'+ \
-               self.module.main_call+'.html'
+        baseDir = 'program/modules/'+self.__class__.__name__.lower()+'/'
+        mainCallTemp = self.module.main_call+'.html'
+
+        per_program_template = baseDir+'per_program/'+str(self.program.id)+ \
+            '_'+ mainCallTemp
+
+        try:
+            get_template(per_program_template)
+            return per_program_template
+        except TemplateDoesNotExist:
+            return baseDir + mainCallTemp
+                
 
     def teachers(self, QObject = False):
         return {}
@@ -553,7 +569,10 @@ def needs_student(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
         if not moduleObj.user.isStudent() and not moduleObj.user.isAdmin(moduleObj.program):
-            return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
+            allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
+            matching_user_types = UserBit.valid_objects().filter(user=moduleObj.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
+            if not matching_user_types:
+                return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkStudent        

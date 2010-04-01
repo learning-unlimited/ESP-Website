@@ -1,0 +1,120 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript">
+<!--
+function submit_check()
+{
+    if (confirm('Your registration is incomplete, perhaps because you have not registered for an activity during each time block.  Please review each of the above steps.  Are sure that all of the above information is correct?'))
+    {
+        return true;
+    }
+    return false;
+}
+
+-->
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+  function submit_cancel() {
+     {% if scrmi.cancel_button_dereg %}
+     var confirm_note = 'Are you sure you want to cancel your registration and remove yourself from any classes you have signed up for?';
+     {% else %}
+     var confirm_note = 'Are you sure you want to cancel your registration?';
+     {% endif %}
+     if (confirm(confirm_note)) {
+        return true;
+     }
+     return false;
+  }
+//-->
+</script>
+{% endblock %}
+
+{% block content %}
+<h1 class="catalog">Step 3: Plan Your Day</h1>
+
+{% if not request.user.onsite_local %}
+    <div id="catalog">
+{% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
+{% if program.isFull %}{% if program.program_allow_waitlist %}
+<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+{% else %}{% if not canRegToFullProgram %}
+<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+{% endif %}
+{% endif %}
+{% endif %}
+{% endif %}
+
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
+
+{% endif %}
+
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentreg" request.user %}
+
+<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
+
+{% for module in modules %}
+{% if module.useTemplate %}
+<a name="module-{{module.id}}"></a>
+<br />
+{% include module.getTemplate %}
+{% endif %}
+{% endfor %}
+</div>
+<br />
+
+{% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
+<center>
+    {% if program.isFull %}
+        {% if program.program_allow_waitlist %}
+        <div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+        {% else %}
+            {% if not canRegToFullProgram %}
+            <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+            {% endif %}
+        {% endif %}
+    {% endif %}
+</center>
+{% endif %}
+
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:studentregfooter" request.user %}
+
+{% if not request.user.onsite_local %}
+    <center>
+    <a name="confirmreg"></a>
+    {% if program.isFull and program.program_allow_waitlist and not isConfirmed %}
+        </form>
+        <form action="/learn/{{one}}/{{two}}/waitlist_subscribe" method="post">
+        <input class="button" type="submit" value="Join Waiting List"/>
+        </form>
+    {% else %}
+        <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}Finish Registration! (you're not done until you click here){% else %}View Confirmation Ticket{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull and not canRegToFullProgram and not isConfirmed %}disabled{% endif %}/></form>
+        {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}
+            <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
+            <input id="cancelbutton" class="button" type="submit" onsubmit="return submit_cancel();" value="{{ scrmi.cancel_button_text }}" />
+            </form>
+        {% endif %}{% endif %}
+    {% endif %}
+    </center>
+{% endif %}
+{% endblock %}
+

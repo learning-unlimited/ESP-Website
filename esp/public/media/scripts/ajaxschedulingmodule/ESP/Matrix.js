@@ -3,7 +3,8 @@
  */
 ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 	initialize: function(times, rooms, blocks){
-		this.table = $j("<div/>").addClass('matrix');
+		this.matrix = $j("<div/>").addClass('matrix');
+		this.el = this.matrix;
 
 		var Matrix = ESP.Scheduling.Widgets.Matrix;
 		
@@ -14,24 +15,27 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		var block_cells = this.block_cells = {};
 		
 		// set up header
-		var th = $j('<div/>').addClass('matrix-header')
-		th.append((new Matrix.InvalidCell()).td.addClass('corner-cell')); // do we want to keep a ref?
-		var tr = $j('<div/>').addClass('matrix-row-body');
-		th.append(tr);
+		var header = $j('<div/>').addClass('matrix-header')
+		this.matrix.append(header);
+		header.append($j('<div/>').addClass('matrix-corner-box'));
+		
+		var col_header = $j('<table/>').addClass('matrix-column-header-box');
+		header.append(col_header);
+		var tr = $j('<tr/>').addClass('matrix-row-body');
+		col_header.append(tr);
 		for (var i = 0; i < times.length; i++) {
 			var c = new Matrix.TimeCell(times[i]);
 			time_cells[times[i].uid] = c;
 			if (!times[i].seq) c.td.addClass('non-sequential');
 			tr.append(c.td);
 		}
-		this.table.append(th);
 		
-		var tb = $j('<div/>').addClass('matrix-body');
-		th = $j('<div/>').addClass('matrix-row-header-box');
-		tr = $j('<div/>').addClass('matrix-cell-body');
-		this.table.append(tb);
-		tb.append(th);
-		tb.append(tr);
+		var body = $j('<div/>').addClass('matrix-body');
+		this.matrix.append(body);
+		var row_header = $j('<table/>').addClass('matrix-row-header-box');
+		var cell_body = $j('<table/>').addClass('matrix-cell-body');
+		body.append(row_header);
+		body.append(cell_body);
 		
 		// create rows
 		for (var i = 0; i < rooms.length; i++) {
@@ -41,8 +45,10 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		    room_cells[room.uid] = rc;
 		    
 		    block_cells[room.uid] = {};
-		    th.append(rc.td);
-		    tr.append(rc.tr);
+		    var tr = $j('<tr/>');
+		    tr.append(rc.td);
+		    row_header.append(tr);
+		    cell_body.append(rc.tr);
 		}
 		
 		// create individual blocks
@@ -65,6 +71,13 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			lt = t;
 		    }
 		}
+		
+		// set up scrolling
+		cell_body.scroll(function(evt){
+			row_header.css('top','-'+cell_body.attr('scrollTop')+'px');
+			col_header.children('tbody').css('left','-'+cell_body.attr('scrollLeft')+'px');
+		    });
+		
 		var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
 		// listen for assignments
 		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
@@ -72,8 +85,22 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			for (var i = 0; i < blocks.length; i++) {
 			    var block = blocks[i];
 			    var cell = this.block_cells[block.room.uid][block.time.uid];
-			    cell.td.text(data.section.uid);
+                //  cell.td.text(data.section.class_id);
+			    cell.td.html(data.section.block_contents);
 			    cell.status(BlockStatus.RESERVED);
+			}
+		    }.bind(this));
+		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
+			if (!(data.nowriteback) && data.blocks.length > 0) {
+			    var req = { action: 'assignreg',
+					cls: data.section.uid,
+					block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
+
+			    $j.post('ajax_schedule_class', req, function(data, status) {
+				    if (status == "success") {
+					ESP.version_uuid = data.val;
+				    }
+			        }, "json");
 			}
 		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
@@ -84,8 +111,19 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    cell.td.text('');
 			    cell.status(BlockStatus.AVAILABLE);
 			}
-		    }.bind(this));
+		    }.bind(this))
+		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
+			if (!(data.nowriteback)) {
+			    var req = { action: 'deletereg',
+					cls: data.section.uid };
 
+			    $j.post('ajax_schedule_class', req, function(data, status) {
+				    if (status == "success") {
+					ESP.version_uuid = data.val;
+				    }
+			        }, "json");
+			}
+		    }.bind(this));
 	    }
 	}));
 
@@ -106,7 +144,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 	 */
 	Matrix.Cell = Class.create({
 		initialize: function(){
-		        this.td = $j('<div/>').addClass('matrix-cell');
+		        this.td = $j('<td/>').addClass('matrix-cell');
 			this.td.data(Matrix.CELL_CACHE, this);
 		}
 	});
@@ -116,7 +154,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			this.td.addClass('header-cell');
 		}
 	});
-	Matrix.InvalidCell = Class.create(Matrix.HeaderCell,{
+	Matrix.InvalidCell = Class.create(Matrix.Cell,{
 		initialize: function($super){
 			$super();
 			this.td.addClass('invalid-cell');
@@ -134,8 +172,8 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		initialize: function($super, room){
 			$super()
 			this.room = room;
-			this.tr = $j('<div/>').addClass('matrix-row-body');
-			this.td.text(room.text);
+			this.tr = $j('<tr/>').addClass('matrix-row-body');
+			this.td.html(room.block_contents);
 			this.td.addClass('matrix-row-header');
 			//this.tr.append(this.td);
 		}
@@ -176,3 +214,27 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		}
 	});
 })();
+
+ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
+	    initialize: function(){
+		this.el = $j('<div/>').addClass('garbage');
+		var target = this.el;
+		var activeClass = 'dd-highlight';
+		var options = $j.extend({
+		    hoverClass: 'dd-hover',
+		    tolerance: 'pointer',
+		    accept: function(d){ return true; },
+		    drop: function(e, ui) {
+			    target.removeClass(activeClass);
+			    ESP.Utilities.evm.fire('drag_dropped',{
+				event: e, ui: ui, draggable:ui.draggable, droppable:this,
+				blocks:[], section:ui.draggable.data('section')
+			    });
+		    },
+		    activate: function(e, ui) { target.addClass(activeClass); },
+		    deactivate: function(e, ui) { target.removeClass(activeClass); }
+		}, options || {});
+		target.droppable(options);
+	    }
+	}));
+

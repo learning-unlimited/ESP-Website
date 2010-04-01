@@ -32,8 +32,10 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
+from esp.cal.models import Event
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
+from django.db.models.query import Q
 from esp.program.models  import ClassSubject, ClassSection
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
@@ -190,7 +192,10 @@ class ProgramPrintables(ProgramModuleObj):
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list })
 
         
-        classes = list(ClassSubject.objects.filter(parent_program = self.program, status=10))
+        classes = list(ClassSubject.objects.catalog(prog))
+
+        if request.GET.has_key("only_nonfull"):
+            classes = [x for x in classes if not x.isFull()]
 
         sort_list_reversed = sort_list
         sort_list_reversed.reverse()
@@ -411,21 +416,26 @@ class ProgramPrintables(ProgramModuleObj):
             # get list of valid classes
             classes = [ cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
-                    and cls.isAccepted()                       ]
+                    and cls.isAccepted()
+                    and cls.meeting_times.count() > 0]
             # now we sort them by time/title
             classes.sort()
 
             # aseering 9-29-2007, 1:30am: There must be a better way to do this...
-            ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
-            if ci.count() > 0:
-                phone_cell = ci[0].phone_cell
-            else:
-                phone_cell = 'N/A'
+            # price 9-28-2009: There is.
+            ci = teacher.getLastProfile().contact_user
+            if ci is None:
+                try:
+                    ci = teacher.contactinfo_set.all().order_by('-id')[0]
+                except:
+                    ci = None
+            if ci is not None:
+                phone_day = ci.phone_day
 
             if len(classes) > 0:
                 scheditems.append({'name': teacher.name(),
                                'user': teacher,
-                               'phonenum': phone_cell,
+                               'phone_day': phone_day,
                                'cls' : classes[0]})
         
         scheditems = filter(filt_exp, scheditems)
@@ -534,7 +544,17 @@ class ProgramPrintables(ProgramModuleObj):
         from esp.program.models import RegistrationProfile
         
         def emergency_stuff(student):
-            return {'emerg_contact': RegistrationProfile.getLastForProgram(student, prog).contact_emergency}
+            #  Try to get some kind of emergency contact info even if it wasn't entered for this program.
+            program_profile = RegistrationProfile.getLastForProgram(student, prog)
+            if program_profile.contact_emergency:
+                return {'emerg_contact': program_profile.contact_emergency}
+            else:
+                other_profiles = RegistrationProfile.objects.filter(user=student).order_by('-last_ts')
+                for prof in other_profiles:
+                    if prof.contact_emergency:
+                        return {'emerg_contact': prof.contact_emergency}
+                
+                return {}
         
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff)
 
@@ -783,7 +803,35 @@ Student schedule for %s:
 
     @aux_call
     @needs_admin
-    def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
+    def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
+        if onsite:
+            students = [ESPUser(User.objects.get(id=request.GET['userid']))]
+        else:
+            filterObj, found = get_user_list(request, self.program.getLists(True))
+    
+            if not found:
+                return filterObj
+
+            students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
+
+        import csv
+        from django.http import HttpResponse
+        response = HttpResponse(mimetype='text/csv')
+        writer = csv.writer(response)
+
+        for student in students:            
+            li_types = prog.getLineItemTypes(student)
+            try:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+            except MultipleDocumentError:
+                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+
+            writer.writerow((invoice.locator, student.id, student.last_name, student.first_name, invoice.cost()))
+                
+        return response
+        
+    @aux_call
+    def studentschedules(self, request, tl, one, two, module, extra, prog, format='pdf', onsite=False):
         """ generate student schedules """
         
         context = {'module': self }
@@ -810,6 +858,8 @@ Student schedule for %s:
             if parent_program_students.has_key('classreg'):
                 parent_program_students_classreg = parent_program_students['classreg']
         
+        all_events = Event.objects.filter(anchor=self.program.anchor).order_by('start')
+
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -817,6 +867,15 @@ Student schedule for %s:
                                 if cls.parent_program == self.program and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
+
+            # now we insert compulsory events and empty blocks
+            for c in all_events:
+                # find the first class that begins after the compulsory event ends
+                for i in range(0, len(classes)):
+                    if type(classes[i]) == ClassSection and classes[i].start_time().start > c.end:
+                        if i == 0 or (type(classes[i-1]) == ClassSection and classes[i-1].start_time().end < c.end) or (type(classes[i-1]) == Event and classes[i-1].end < c.end):
+                            classes.insert(i, c)
+                            break
             
             # note whether student is in parent program
             student.in_parent_program = False
@@ -854,8 +913,11 @@ Student schedule for %s:
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
             
-        from esp.web.util.latex import render_to_latex
-        return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
+        if format == 'html':
+            return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+        else:  # elif format == 'pdf':
+            from esp.web.util.latex import render_to_latex
+            return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
 
     @aux_call
     @needs_admin
@@ -898,8 +960,8 @@ Student schedule for %s:
         """ generate class room rosters"""
         from esp.cal.models import Event
         
-        classes = [ cls for cls in self.program.sections()
-                    if cls.isAccepted()                      ]
+        classes = list(self.program.sections().filter(status=10, parent_class__status=10))
+
         context = {}
         classes.sort()
 
@@ -918,13 +980,13 @@ Student schedule for %s:
                         rooms[room.name] = [update_dict]
             
         for room_name in rooms:
-            rooms[room_name].sort(key=lambda x: x['timeblock'])
+            rooms[room_name].sort(key=lambda x: x['timeblock'].start)
             for val in rooms[room_name]:
                 scheditems.append(val)
                 
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
+        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)
         
     @aux_call
     @needs_admin
@@ -1009,6 +1071,110 @@ Student schedule for %s:
 
     @aux_call
     @needs_admin
+    def student_tickets(self, request, tl, one, two, module, extra, prog):
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+        
+        students = ESPUser.objects.filter(filterObj.get_Q()).distinct().order_by('last_name')
+        lastnames = students.values_list('last_name')
+        num_lastnames = len(lastnames)
+        context = {'name_groups': []}
+
+        try:
+            context['colors'] = request.GET['colors'].split(',')
+        except:
+            context['colors'] = ['Yellow', 'Blue', 'Pink', 'Green', 'Turquoise', 'Purple', 'Yellow', 'Blue']
+        
+        get_data = request.GET.copy()
+        try:
+            name_groups = get_data['name_groups']
+        except:
+            name_groups = 'a,c,e,h,k,o,s,u'
+            get_data['name_groups'] = name_groups
+            
+
+        if 'name_groups' in get_data:
+            name_group_start = get_data['name_groups'].split(',')
+            for i in range(len(name_group_start)):
+                gs = name_group_start[i]
+                if i < len(name_group_start) - 1:
+                    gs_end = name_group_start[i + 1]
+                    context['name_groups'].append(students.filter(last_name__gte=gs, last_name__lt=gs_end))
+                else:
+                    context['name_groups'].append(students.filter(last_name__gte=gs))
+                    
+        else:
+
+            try:
+                num_name_groups = int(extra)
+            except:
+                num_name_groups = 7
+            
+            names_per_set = float(num_lastnames) / num_name_groups
+            for i in range(num_name_groups):
+                start_index = int(i * names_per_set)
+                end_index = int((i + 1) * names_per_set)
+                context['name_groups'].append(students[start_index:end_index])
+
+        context['joint_groups'] = zip(context['colors'], context['name_groups'])
+
+        return render_to_response(self.baseDir()+'student_tickets.html', request, (prog, tl), context)
+    
+    @aux_call
+    @needs_admin
+    def student_tickets(self, request, tl, one, two, module, extra, prog):
+        filterObj, found = get_user_list(request, self.program.getLists(True))
+        if not found:
+            return filterObj
+        
+        students = ESPUser.objects.filter(filterObj.get_Q()).distinct().order_by('last_name')
+        lastnames = students.values_list('last_name')
+        num_lastnames = len(lastnames)
+        context = {'name_groups': []}
+
+        try:
+            context['colors'] = request.GET['colors'].split(',')
+        except:
+            context['colors'] = ['Yellow', 'Blue', 'Pink', 'Green', 'Turquoise', 'Purple', 'Yellow', 'Blue']
+        
+        get_data = request.GET.copy()
+        try:
+            name_groups = get_data['name_groups']
+        except:
+            name_groups = 'a,c,e,h,k,o,s,u'
+            get_data['name_groups'] = name_groups
+            
+
+        if 'name_groups' in get_data:
+            name_group_start = get_data['name_groups'].split(',')
+            for i in range(len(name_group_start)):
+                gs = name_group_start[i]
+                if i < len(name_group_start) - 1:
+                    gs_end = name_group_start[i + 1]
+                    context['name_groups'].append(students.filter(last_name__gte=gs, last_name__lt=gs_end))
+                else:
+                    context['name_groups'].append(students.filter(last_name__gte=gs))
+                    
+        else:
+
+            try:
+                num_name_groups = int(extra)
+            except:
+                num_name_groups = 7
+            
+            names_per_set = float(num_lastnames) / num_name_groups
+            for i in range(num_name_groups):
+                start_index = int(i * names_per_set)
+                end_index = int((i + 1) * names_per_set)
+                context['name_groups'].append(students[start_index:end_index])
+
+        context['joint_groups'] = zip(context['colors'], context['name_groups'])
+
+        return render_to_response(self.baseDir()+'student_tickets.html', request, (prog, tl), context)
+    
+    @aux_call
+    @needs_admin
     def classrosters(self, request, tl, one, two, module, extra, prog):
         """ generate class rosters """
 
@@ -1026,7 +1192,7 @@ Student schedule for %s:
         scheditems = []
 
         for teacher in teachers:
-            for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
+            for cls in teacher.getTaughtSections(self.program):
                 if cls.isAccepted():
                     scheditems.append({'teacher': teacher,
                                        'cls'    : cls})
@@ -1235,6 +1401,14 @@ Student schedule for %s:
     @aux_call
     @needs_admin
     def oktimes_spr(self, request, tl, one, two, module, extra, prog):
+        """
+        Create a spreadsheet with all classes, with info and the times
+        at which they can be scheduled to start.
+
+        An extra argument of 'unscheduled' shows only the currently-
+        unscheduled classes, taking into account the classes the teacher
+        is already teaching and have been scheduled.
+        """
         import csv
         from django.http import HttpResponse
 
@@ -1243,8 +1417,17 @@ Student schedule for %s:
 
         # get the list of all the sections, and all the times for this program.
         sections = prog.sections()
+
+        # get only the unscheduled sections, rather than all of them
+        # also, only approved classes in the spreadsheet; can be changed
+        if extra == "unscheduled":
+            sections = sections.filter(meeting_times__isnull=True, status=10)
+
         times = prog.getTimeSlots()
-        sections_possible_times = [(section, section.viable_times()) for section in sections]
+        if extra == "unscheduled":
+            sections_possible_times = [(section, section.viable_times(True)) for section in sections]
+        else:
+            sections_possible_times = [(section, section.viable_times(False)) for section in sections]
 
         # functions to determine what will fill in the spreadsheet cell for each thing
         def time_possible(time, sections_list):

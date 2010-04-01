@@ -1,0 +1,36 @@
+{% autoescape off %}Teacher Registration Notification
+---------------------------------
+
+Class Title: {{ title }}
+
+Category: {{ category }}
+
+Class Description: 
+{{ class_info }}
+
+Prerequisites:
+{{ prereqs }}
+
+Duration: {{ duration|floatformat }} hours
+
+Number of sections: {{ num_sections }}
+
+Grade range: {{ grade_min }}-{{ grade_max }}
+
+Maximum class size: {{ class_size_max }}
+
+Have own space? {{ has_own_space }}
+
+Room request: {{ requested_room }}
+
+Planned purchases:
+{{ purchase_requests }}
+
+Comments to Director:
+{% ifequal has_own_space "True" %}*** Notice ***
+The teacher has specified that they will provide their own space for this class.  Please contact them for the size and resources the space provides (if they have not specified below) and create the appropriate resources for scheduling.
+**************
+
+{% endifequal %}{{ message_for_directors }}
+
+{% endautoescape %}

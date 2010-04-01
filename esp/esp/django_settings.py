@@ -125,7 +125,7 @@ TEMPLATE_LOADERS = (
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
-    ( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
+   #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
    #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
@@ -178,8 +178,9 @@ INSTALLED_APPS = (
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
     'esp.cache_loader',
-#    'django_evolution',
-#    'django_command_extensions',
+    'esp.tagdict',
+    'django_extensions',
+    'south',
 )
 import os
 for app in ('django_evolution', 'django_command_extensions'):
@@ -189,7 +190,7 @@ for app in ('django_evolution', 'django_command_extensions'):
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
-#SESSION_ENGINE="django.contrib.sessions.backends.cache"
+SESSION_ENGINE="django.contrib.sessions.backends.cached_db"
 
 TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this one after all branches are transitioned
                                'esp.context_processors.esp_user',

@@ -35,7 +35,8 @@ Your profile has now been successfully completed.
 </p>
 
 <div class="note">
-<strong>Note:</strong> Registering for an account <u>does not</u> register you for a program.<br />
+{% load render_qsd %}
+{% inline_qsd_block navnode account_registration_notice request.user %}<strong>Note:</strong> Registering for an account <u>does not</u> register you for a program.<br /><br />{% end_inline_qsd_block %}
 {% if progs %}
   Please follow the above link to join a program.
 {% else %}

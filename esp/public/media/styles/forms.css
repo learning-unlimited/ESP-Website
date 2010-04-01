@@ -264,12 +264,12 @@ th .program_form_small{
 }
 
 #program_form input.button:hover {
-    background-color: #333399;
+    background-color: #00003C;
     color: #BCCAF5;
 }
 
 #program_form a.button:hover {
-    background-color: #333399;
+    background-color: #00003C;
     text-decoration: none;
     color: #BCCAF5;
 }
@@ -296,6 +296,23 @@ th .program_form_small{
     padding-left: 0;
     margin-left: 0;
 }
+
+/* Volunteer signup form */
+
+#volunteer_form thead th {
+   padding: 5px;
+   font-weight: bold;
+   background-color: #141414;
+   text-align: center;
+   color: #ffffff;
+}
+
+#volunteer_form tbody th {
+   padding: 5px;
+   font-weight: bold;
+   text-align: center;
+}
+
 
 div.raw_id_admin {
     visibility: hidden;

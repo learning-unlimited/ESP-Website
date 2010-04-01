@@ -27,12 +27,14 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Scheduling.js'></script>
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Resources.js'></script>
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/DragDrop.js'></script>
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Widgets.js'></script>
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Directory.js'></script>
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Matrix.js'></script>
 <!-- ENDLIBS -->
 
 <!-- STYLE -->
 <link id='sch_css' href='/media/styles/scheduling.css' type='text/css' rel='stylesheet' />
+<link id='tooltip_css' href='/media/styles/tooltips.css' type='text/css' rel='stylesheet' />
 <!-- ENDSTYLE -->
 
 <!-- APP -->
@@ -41,6 +43,7 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
 </head>
 
 <body>
+<div id='statusbar-wrapper'><span id='statusbar'>Loading...</span></div>
 <div id='body'>
 <div id='matrix-target'></div>
 <div id='directory-target'></div>

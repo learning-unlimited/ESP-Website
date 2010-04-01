@@ -55,11 +55,15 @@ class OnsitePrintSchedules(ProgramModuleObj):
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
-        if not request.GET.has_key('sure'):
+        if not request.GET.has_key('sure') and not request.GET.has_key('gen_img'):
             printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
 
             return render_to_response(self.baseDir()+'instructions.html',
                                     request, (prog, tl), {'printers': printers})
+
+        if request.GET.has_key('sure'):
+            return render_to_response(self.baseDir()+'studentschedulesrenderer.html',
+                            request, (prog, tl), {})
 
         verb_path = 'V/Publish/Print'
         if extra and extra != '':
@@ -71,7 +75,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
         Q_qsc  = Q(qsc  = qsc.id)
         Q_verb = Q(verb__in = [ verb.id ] + list( verb.children() ) )
         
-        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')[:5]
+        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')[:1]
         
         for ubit in ubits:
             ubit.enddate = datetime.now()
@@ -116,18 +120,18 @@ class OnsitePrintSchedules(ProgramModuleObj):
 
         if len(students) == 0:
             response = HttpResponse('')
-            # set the refresh rate
-            response['Refresh'] = '2'
         else:
             from django.conf import settings
             from esp.web.util.latex import render_to_latex
 
-            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, 'pdf')
-            #response =  render_to_response(self.baseDir()+'studentschedules.html',
-            #                request, (prog, tl), {'students': students})
+            if request.GET.has_key('img_format'):
+                img_format = request.GET['img_format']
+            else:
+                img_format = 'png'
 
+            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, img_format)
             # set the refresh rate
-            response['Refresh'] = '2'
+            #response['Refresh'] = '2'
 
         return response
 

@@ -39,7 +39,7 @@ class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
     action  = models.CharField(max_length=80, default='confirm')
-    program = models.OneToOneField(Program)
+    program = models.ForeignKey(Program)
     receipt = models.TextField()
     
     def __unicode__(self):
@@ -86,11 +86,21 @@ class StudentClassRegModuleInfo(models.Model):
     #   Set to true to allow classes to be added (via Ajax) using buttons on the catalog
     register_from_catalog = models.BooleanField(default=False, help_text='Check this box to allow students to add classes from the catalog page if they are logged in.')
     
+    #   Enrollment visibility
+    visible_enrollments = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing enrollments on the catalog.')
+    #   Meeting times visibility
+    visible_meeting_times = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing classes\' meeting times on the catalog.')
+    
+    #   Show classes that have not yet been scheduled?
+    show_unscheduled_classes = models.BooleanField(default=True, help_text='Uncheck this box to prevent people from seeing classes in the catalog before they have been scheduled.')
+    
     #   Customize buttons
     #   - Labels
     confirm_button_text = models.CharField(max_length=80, default='Confirm', help_text='Label for the "confirm" button at the bottom of student reg.')
     view_button_text    = models.CharField(max_length=80, default='View Receipt', help_text='Label for the "get receipt" button (for already confirmed students) at the bottom of student reg.')
     cancel_button_text  = models.CharField(max_length=80, default='Cancel Registration', help_text='Label for the "cancel" button at the bottom of student reg.')
+    temporarily_full_text = models.CharField(max_length=255, default='Class temporarily full; please check back later', help_text='The text that replaces the "Add class" button when the class has reached its adjusted capacity')
+    
     #   - Set to true to make the cancel button remove the student from classes they have registered for
     cancel_button_dereg = models.BooleanField(default=False, help_text='Check this box to remove a student from all of their classes when they cancel their registration.')
     
@@ -98,6 +108,11 @@ class StudentClassRegModuleInfo(models.Model):
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
     progress_mode = models.IntegerField(default=1, help_text='Select which to use on student reg: 1=checkboxes, 2=progress bar, 0=neither.')
     
+    #   Choose whether an e-mail is sent the first time a student confirms registration.
+    send_confirmation = models.BooleanField(default=False, help_text='Check this box to send each student an e-mail the first time they confirm their registration.  You must define an associated DBReceipt of type "confirmemail".')
+    
+    #   Choose whether class IDs are shown on catalog.
+    show_emailcodes = models.BooleanField(default=True, help_text='Uncheck this box to prevent e-mail codes (i.e. E534, H243) from showing up on catalog and fillslot pages.')
     
     def __init__(self, *args, **kwargs):
         #   Trying to fetch self.signup_verb directly throws a DoesNotExist for some reason.
@@ -113,12 +128,12 @@ class StudentClassRegModuleInfo(models.Model):
             verb_list = []
             for i in range(0, self.priority_limit):
                 if uris:
-                    verb_list.append(self.signup_verb.uri[len(REG_VERB_BASE):] + '/%d' % (i + 1))
+                    verb_list.append(self.signup_verb.get_uri()[len(REG_VERB_BASE):] + '/%d' % (i + 1))
                 else:
-                    verb_list.append(DataTree.get_by_uri(self.signup_verb.uri + '/%d' % (i + 1)))
+                    verb_list.append(DataTree.get_by_uri(self.signup_verb.get_uri() + '/%d' % (i + 1)))
         else:
             if uris:
-                verb_list = [self.signup_verb.uri[len(REG_VERB_BASE):]]
+                verb_list = [self.signup_verb.get_uri()[len(REG_VERB_BASE):]]
             else:
                 verb_list = [self.signup_verb]
         

@@ -92,6 +92,7 @@ class NameTagModule(ProgramModuleObj):
 
         users = []
 
+        user_title = idtype
         
         if idtype == 'students':
             student_dict = self.program.students(QObjects = True)
@@ -106,9 +107,9 @@ class NameTagModule(ProgramModuleObj):
             students = filter(lambda x: len(x.first_name+x.last_name), students)
             students.sort()
 
-            
+            user_title = "Student"
             for student in students:
-                users.append({'title': 'Student',
+                users.append({'title': user_title,
                               'name' : '%s %s' % (student.first_name, student.last_name),
                               'id'   : student.id})
                 
@@ -122,8 +123,9 @@ class NameTagModule(ProgramModuleObj):
             teachers = filter(lambda x: len(x.first_name+x.last_name), teachers)
             teachers.sort()
 
+            user_title = "Teacher"
             for teacher in teachers:
-                users.append({'title': 'Teacher',
+                users.append({'title': user_title,
                               'name' : '%s %s' % (teacher.first_name, teacher.last_name),
                               'id'   : teacher.id})
 
@@ -134,15 +136,17 @@ class NameTagModule(ProgramModuleObj):
                 arruser = user.split(",", 1)
                 
                 if len(arruser) >= 2:
-                    users.append({'title': arruser[1].strip(),
+                    user_title = arruser[1].strip()
+                    users.append({'title': user_title,
                                   'name' : arruser[0].strip(),
                                   'id'   : ''})
                 
                 
         elif idtype == 'blank':
             users = []
+            user_title = request.POST['blanktitle']
             for i in range(int(request.POST['number'])):
-                users.append({'title': request.POST['blanktitle'],
+                users.append({'title': user_title,
                               'name' : '',
                               'id'   : ''})
                 
@@ -164,7 +168,7 @@ class NameTagModule(ProgramModuleObj):
         for i in range(len(expanded[0])):
             for j in range(len(expanded)):
                 if len(expanded[j]) <= i:
-                    users.append({'title': 'Student',
+                    users.append({'title': user_title,
                                   'name' : '',
                                   'id'   : ''})
                 else:

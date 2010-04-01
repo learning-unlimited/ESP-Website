@@ -1,4 +1,6 @@
 from django import forms
+from esp.program.models import RegistrationProfile
+from esp.db.forms import AjaxForeignKeyNewformField
 
 class OnSiteRegForm(forms.Form):
     first_name = forms.CharField(max_length=30, widget=forms.TextInput({'size':20, 'class':'required'}))
@@ -26,3 +28,6 @@ class OnSiteSATPrepRegForm(forms.Form):
     old_verb_score = SATScoreField(required = False)
     old_writ_score = SATScoreField(required = False)
 
+
+class OnSiteRapidCheckinForm(forms.Form):
+    user = AjaxForeignKeyNewformField(field=RegistrationProfile.user.field, label='Student')

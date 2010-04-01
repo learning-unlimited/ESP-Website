@@ -3,21 +3,21 @@ from urllib import quote as urlencode
 from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
 
-def cache_key(context):
+def cache_key(context, navbar_type='left'):
     try:
         request = context['request']
     except KeyError:
         return None
 
     if not request.user.is_authenticated():
-        return ('LEFTBAR',"LEFTBAR__%s" % urlencode(str(request.path)))
+        return ('NAVBAR',"%sBAR__%s" % (navbar_type.upper(), urlencode(str(request.path))))
 
-    return ('LEFTBAR','LEFTBAR__%s__%s' % (urlencode(str(request.path)),
+    return ('NAVBAR','%sBAR__%s__%s' % (navbar_type.upper(), urlencode(str(request.path)),
                                 request.user.id))
 
 
 @cache_inclusion_tag(register,'inclusion/web/navbar_left.html', takes_context = True, cache_key_func=cache_key)
-def navbar_gen(context):
+def navbar_gen(context, navbar_type='left'):
     try:
         request = context['request']
     except KeyError:
@@ -29,4 +29,5 @@ def navbar_gen(context):
         navbar = None
     
     return {'navbar_list': navbar,
-            'request':     request}
+            'request':     request,
+            'navbar_type': navbar_type}

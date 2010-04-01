@@ -5,10 +5,18 @@ from django.contrib.auth.models import User
 from esp.utils.forms import CaptchaForm
 
 role_choices = (
+    ('', 'Pick one...'),
+#    ('Teacher', 'Volunteer Splash/Cascade Teacher'),
     ('Student', 'Student (up through 12th grade)'),
-    ('Teacher', 'Volunteer Teacher'),
-    ('Guardian', 'Guardian of Student'),
-    ('Educator', 'K-12 Educator'),
+    ('Guardian', 'Parent or Guardian of Student'),
+    ('Educator', 'K-12 Teacher'),
+    ('UTEPAlum', 'Teacher and UTEP Alum'),
+    ('TeacherAndUofCAlum', 'Teacher and UofC Alum'),
+    ('UofCAlum', 'Other UofC Alum'),
+    ('UofCProfessor', 'UofC Professor'),
+    ('UTEPStudent', 'Current UTEP Student'),
+    ('UofCStudent', 'Other UofC Student'),
+    ('Other', 'Other...'),
     )
 
 class ValidHostEmailField(forms.EmailField):
@@ -57,6 +65,11 @@ class UserRegForm(forms.Form):
 
     email = ValidHostEmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75)
 
+    def clean_initial_role(self):
+        data = self.cleaned_data['initial_role']
+        if data == u'':
+            raise forms.ValidationError('Please select an initial role')
+        return data
 
     def clean_username(self):
         """ Make sure that 'username' (as provided as input to this form)

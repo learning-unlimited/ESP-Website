@@ -283,7 +283,7 @@ class Document(models.Model):
                 return self.txn.get_balance()
             else:
                 bal = 0
-                for li in self.txn.lineitem_set.all():
+                for li in self.get_items():
                     if li.anchor not in receivable_parent:
                         bal -= li.amount
                 return bal

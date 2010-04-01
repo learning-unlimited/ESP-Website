@@ -43,22 +43,22 @@ from esp.cache import cache_function
 from esp.web.models import NavBarCategory
 
 class QSDManager(FileDBManager):
+    @cache_function
     def get_by_path__name(self, path, name):
-        # This writes to file_db, and caches the *data retrieval*
-        # It exists because the kernel filesystem caches are possibly better
-        # for retrieving large (>=4KB) data chunks than PostgreSQL
-        # See Mike Axiak's email to esp-webmasters@mit.edu on 2008-09-27 (around 12:35)
-        # No user ID --- this caches simple DB access, so user-invariant
-        file_id = qsd_cache_key(path, name, None)
-        retVal = self.get_by_id(file_id)
-        if retVal is not None:
-            return retVal
+        # aseering 11-15-2009 -- Punt FileDB for this purpose;
+        # it has consistency issues in multi-computer load-balanced setups,
+        # and memcached doesn't have a clear performance disadvantage.
         try:
-            obj = self.filter(path=path, name=name).order_by('-create_date')[:1][0]
-            self.obj_to_file(obj)
-            return obj
-        except IndexError:
-            raise QuasiStaticData.DoesNotExist("No QSD found.")
+            return self.filter(path=path, name=name).select_related().latest('create_date')
+        except QuasiStaticData.DoesNotExist:
+            return None
+    get_by_path__name.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'path': qsd.path, 'name': qsd.name})
+
+    def __str__(self):
+        return "QSDManager()"
+
+    def __repr__(self):
+        return "QSDManager()"
 
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
@@ -203,9 +203,9 @@ def qsd_cache_key(path, name, user=None,):
     # Also, make sure the qsd/models.py's get_file_id method
     # is also updated. Otherwise, other things might break.
     if user and user.is_authenticated():
-        return hashlib.md5('%s-%s-%s' % (path.uri, name, user.id)).hexdigest()
+        return hashlib.md5('%s-%s-%s' % (path.get_uri(), name, user.id)).hexdigest()
     else:
-        return hashlib.md5('%s-%s' % (path.uri, name)).hexdigest()
+        return hashlib.md5('%s-%s' % (path.get_uri(), name)).hexdigest()
 
 
 class ESPQuotations(models.Model):

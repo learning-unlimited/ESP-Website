@@ -74,11 +74,11 @@ class Media(models.Model):
         """ Delete entry; provide hack to fix old absolute-path-storing. """
         import os
         # If needby, strip URL prefix
-        if os.path.isabs(self.target_file._name) and self.target_file._name.startswith(MEDIA_URL):
-            self.target_file._name = self.target_file._name[len(MEDIA_URL):]
+        if os.path.isabs(self.target_file.name) and self.target_file.name.startswith(MEDIA_URL):
+            self.target_file.name = self.target_file.name[len(MEDIA_URL):]
             # In case trailing slash missing
-            if self.target_file._name[0] is '/':
-                self.target_file._name = self.target_file._name[1:]
+            if self.target_file.name[0] is '/':
+                self.target_file.name = self.target_file.name[1:]
         super(Media, self).delete(*args, **kwargs)
 
     def __unicode__(self):

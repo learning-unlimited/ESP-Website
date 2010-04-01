@@ -1,0 +1,29 @@
+<table width="550">
+    {{ formset.management_form }}
+    {% for form in formset.forms %}
+        {% for field in form.visible_fields %}    
+        <tr>
+            <th width="30%">
+                {{ field.label_tag }}:
+            </th>
+            <td>
+                {% if forloop.first %}
+                    {% for hidden in form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+                {% endif %}
+                {% if field.errors %}{{ field.errors }}<br />{% endif %}
+                {{ field }} <a id="remove_restype_{{ forloop.parentloop.counter0 }}" href="/teach/{{ program.getUrlBase }}/makeaclass">Remove</a>
+            </td>
+        </tr>
+        {% endfor %}
+    {% endfor %}
+</table>
+{% if not ajax_request %}
+<script type="text/javascript">
+<!--
+    {% for form in formset.forms %}
+    register_link({id: "remove_restype_{{ forloop.counter0 }}", url: "/teach/{{ program.getUrlBase }}/ajax_restypes", content: {action: "remove", form: "{{ forloop.counter0 }}"}, post_form: "clsform"});{% endfor %}
+-->
+</script>
+{% endif %}

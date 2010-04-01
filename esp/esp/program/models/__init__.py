@@ -27,6 +27,9 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+import copy
+import random
+
 from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
@@ -36,7 +39,7 @@ from datetime import datetime, timedelta
 from django.core.cache import cache
 from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
-from esp.middleware import ESPError
+from esp.middleware import ESPError, AjaxError
 from esp.cache import cache_function
 
 #   A function to lazily import models that is occasionally needed for cache dependencies.
@@ -151,7 +154,7 @@ class ArchiveClass(models.Model):
     program = models.CharField(max_length=256)
     year = models.CharField(max_length=4)
     date = models.CharField(max_length=128)
-    category = models.CharField(max_length=16)
+    category = models.CharField(max_length=32)
     teacher = models.CharField(max_length=1024)
     title = models.CharField(max_length=1024)
     description = models.TextField()
@@ -268,6 +271,7 @@ class Program(models.Model):
     class_size_min = models.IntegerField()
     class_size_max = models.IntegerField()
     program_size_max = models.IntegerField(null=True)
+    program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
     class_categories = models.ManyToManyField('ClassCategories')
     
@@ -414,9 +418,9 @@ class Program(models.Model):
         # This technically has a bug because of copy-on-write, but the other code has it too, and
         # our copy-on-write system isn't good enough yet to make checking duplicates feasible
         lists['all_current_students'] = {'description': 'Current students in all of ESP',
-                'list': students_Q & Q(registrationprofile__student_info__graduation_year__lte = yog_12)}
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__gte = yog_12)}
         lists['all_former_students'] = {'description': 'Former students in all of ESP',
-                'list': students_Q & Q(registrationprofile__student_info__graduation_year__gt = yog_12)}
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__lt = yog_12)}
 
         lists['emaillist'] = {'description':
                       """All users in our mailing list without an account.""",
@@ -491,7 +495,7 @@ class Program(models.Model):
             cache.set(CACHE_KEY, isfull, CACHE_DURATION)
 
         return isfull
-
+    
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
@@ -629,10 +633,14 @@ class Program(models.Model):
         else:
             return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
 
-    def getResourceTypes(self):
+    def getResourceTypes(self, include_classroom=False):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
-        exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
+        
+        if include_classroom:
+            exclude_types = []
+        else:
+            exclude_types = [ResourceType.get_or_create('Classroom')]
         
         Q_filters = Q(program=self) | Q(program__isnull=True)
         
@@ -651,7 +659,7 @@ class Program(models.Model):
     def getFloatingResources(self, timeslot=None, queryset=False):
         from esp.resources.models import ResourceType
         #   Don't include classrooms and teachers in the floating resources.
-        exclude_types = [ResourceType.get_or_create('Classroom'), ResourceType.get_or_create('Teacher Availability')]
+        exclude_types = [ResourceType.get_or_create('Classroom')]
         
         if timeslot is not None:
             res_list = self.getResources().filter(event=timeslot, is_unique=True).exclude(res_type__in=exclude_types)
@@ -779,10 +787,21 @@ class Program(models.Model):
                 module.setUser(user)
         return modules
     
-    @cache_function
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
         This avoids actually looking up the program module first. """
+        # We don't actually want to cache this in memcached:
+        # If its value changes in the middle of a page load, we don't want to switch to the new value.
+        # Also, the method is called quite often, so it adds cache load.
+        # Program objects are assumed to not persist across page loads generally,
+        # so the following should be marginally safer:
+        
+        if not hasattr(self, "_moduleExtension"):
+            self._moduleExtension = {}
+
+        key = (ext_name_or_cls, module_id)
+        if key in self._moduleExtension:
+            return self._moduleExtension[key]
         
         ext_cls = None
         if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
@@ -804,15 +823,9 @@ class Program(models.Model):
             except:
                 extension = None
                 
+        self._moduleExtension[key] = extension
+                
         return extension
-    #   Depend on all module extensions (kind of ugly, but at least we don't change those too frequently).
-    #   Ideally this could be autodetected by importing everything from module_ext first, but I ran into
-    #   a circular import problem.   -Michael P
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'ClassRegModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'StudentClassRegModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepAdminModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'CreditCardModuleInfo'))
-    getModuleExtension.depend_on_model(lambda: get_model('esp.program.modules.module_ext', 'SATPrepTeacherModuleInfo'))
 
     def getColor(self):
         if hasattr(self, "_getColor"):
@@ -839,26 +852,11 @@ class Program(models.Model):
     def visibleEnrollments(self):
         """
         Returns whether class enrollments should show up in the catalog.
-        Current policy is that after everybody can sign up for one class, this returns True.
+        This originally returned true if class registration was fully open.
+        Now it's just a checkbox in the StudentClassRegModuleInfo.
         """
-        if hasattr(self, "_visibleEnrollments"):
-            return self._visibleEnrollments
-        
-        cache_key = 'PROGRAM_VISIBLEENROLLMENTS_%s' % self.id
-        retVal = cache.get(cache_key)
-        
-        if retVal is None:
-            reg_verb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
-            retVal = False
-            if UserBit.objects.filter(user__isnull=True, qsc=self.anchor_id, verb=reg_verb, startdate__lte=datetime.now()).count() > 0:
-                retVal = True
-            else:
-                if UserBit.objects.filter(QTree(qsc__above=self.anchor_id, verb__above=reg_verb), user__isnull=True, recursive=True, startdate__lte=datetime.now()).count() > 0:
-                    retVal = True
-            cache.set(cache_key, retVal, 9999)
-
-        self._visibleEnrollments = retVal
-        return retVal
+        options = self.getModuleExtension('StudentClassRegModuleInfo')
+        return options.visible_enrollments
     
     def archive(self):
         archived_classes = []
@@ -1175,14 +1173,26 @@ class FinancialAidRequest(models.Model):
         inv = Document.get_invoice(self.user, anchor)
         txn = inv.txn
         funding_node = anchor['Accounts']
-       
-        #   Find the amount we're charging the student for the program and ensure
-        #   that we don't award more financial aid than charges.
-        charges = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='LineItemTypes',)
-       
+        
+        #   Find the amount we're charging the student for the program.
+        #charges = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='LineItemTypes',)
+        charges = txn.lineitem_set.filter(QTree(anchor__below=anchor)).exclude(li_type__text__startswith='Financial Aid')
         chg_amt = 0
         for li in charges:
-            chg_amt += li.amount
+            chg_amt += li.amount - li.li_type.finaid_amount
+        
+        #   Check if the student was granted exactly the bare admission cost of the program.
+        required_types = LineItemType.objects.filter(anchor=self.program.anchor['LineItemTypes']['Required'])
+        admission_cost = 0
+        for type in required_types:
+            admission_cost += type.amount
+            
+        #   If they were, go ahead and give them financial aid for their other line items.
+        #   Otherwise, give them financial aid for the stated amount received.
+        if self.amount_received > 0 and admission_cost == -self.amount_received:
+            self.amount_received = -chg_amt
+
+        #   Ensure that the financial aid is not larger than the amount they owe.
         if self.amount_received > (-chg_amt):
             self.amount_received = -chg_amt
         
@@ -1277,7 +1287,6 @@ class BooleanToken(models.Model):
         stack = list(stack)
         while (value is None) and (len(stack) > 0):
             token = stack.pop().subclass_instance()
-            #   print 'Popped token: %s' % token.text
             
             # Handle possibilities for what the token might be:
             if (token.text == '||') or (token.text.lower() == 'or'):
@@ -1298,8 +1307,7 @@ class BooleanToken(models.Model):
                 # - direct boolean value
                 # Pass along arguments
                 value = token.boolean_value(*args, **kwargs)
-                
-        #   print 'Returning value: %s, stack: %s' % (value, [s.text for s in stack])
+
         return (value, stack)
 
     """ This function is meant to take extra arguments so subclasses can use additional
@@ -1326,13 +1334,21 @@ class BooleanExpression(models.Model):
 
     def get_stack(self):
         return self.booleantoken_set.all().order_by('seq')
+        
+    def reset(self):
+        self.booleantoken_set.all().delete()
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
         if type(token_or_value) == str:
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
-            new_token = BooleanToken(text=token_or_value.text)
+            token_type = type(token_or_value)
+            new_token = token_type()
+            #   Copy over fields that don't describe relations
+            for item in new_token._meta.fields:
+                if not item.__class__.__name__ in ['AutoField', 'OneToOneField']:
+                    setattr(new_token, item.name, getattr(token_or_value, item.name))
         else:
             new_token = token_or_value
         if seq is None:
@@ -1365,7 +1381,7 @@ class ScheduleMap:
         self.program = program
         self.user = user
         self.populate()
-    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
+    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.get_uri().startswith('V/Flags/Registration'))
 
     @cache_function
     def populate(self):
@@ -1378,7 +1394,11 @@ class ScheduleMap:
                 result[m.id].append(s)
         self.map = result
         return self.map
-    populate.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.verb.uri.startswith('V/Flags/Registration'))
+    populate.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.verb.get_uri().startswith('V/Flags/Registration'))
+
+    def add_section(self, sec):
+        for t in sec.meeting_times.all().values_list('id'):
+            self.map[t[0]].append(sec)
 
     def __marinade__(self):
         import hashlib
@@ -1406,22 +1426,50 @@ class ScheduleConstraint(models.Model):
 
     condition = models.ForeignKey(BooleanExpression, related_name='condition_constraint')
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint')
+    #   This is a function of one argument, schedule_map, which returns an updated schedule_map.
+    on_failure = models.TextField()
     
     def __unicode__(self):
-        return '%s: %s -> %s' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+        return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
     
     @cache_function
-    def evaluate(self, smap):
-        self.schedule_map = smap.map
-        cond_state = self.condition.evaluate(map=self.schedule_map)
+    def evaluate(self, smap, recursive=True):
+        self.schedule_map = smap
+        cond_state = self.condition.evaluate(map=self.schedule_map.map)
         if cond_state:
-            return self.requirement.evaluate(map=self.schedule_map)
+            result = self.requirement.evaluate(map=self.schedule_map.map)
+            if result:
+                return True
+            else:
+                if recursive:
+                    #   Try using the execution hook for arbitrary code... and running again to see if it helped.
+                    (fail_result, data) = self.handle_failure()
+                    if type(fail_result) == ScheduleMap:
+                        self.schedule_map = fail_result
+                    #   raise AjaxError('ScheduleConstraint says %s' % data)
+                    return self.evaluate(self.schedule_map, recursive=False)
+                else:
+                    return False
         else:
             return True
     # It's okay to flush the cache if any of the boolean expressions change, since
     # that isn't very frequent.
     evaluate.depend_on_model(lambda: BooleanToken)
     evaluate.depend_on_model(lambda: BooleanExpression)
+
+    def handle_failure(self):
+        #   Try the on_failure callback but be very lenient about it (fail silently)
+        try:
+            func_str = """def _f(schedule_map):
+%s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
+            exec func_str
+            result = _f(self.schedule_map)
+            return result
+        except Exception, inst:
+            #   raise ESPError(False), 'Schedule constraint handler error: %s' % inst
+            pass
+        #   If we got nothing from the on_failure function, just provide Nones.
+        return (None, None)
 
 class ScheduleTestTimeblock(BooleanToken):
     """ A boolean value that keeps track of a timeblock. 
@@ -1470,6 +1518,19 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
                 if sec.id in section_id_list:
                     return True
         return False
+        
+    @classmethod
+    def filter_by_section(cls, section):
+        return cls.filter_by_sections([section])
+
+    @classmethod
+    def filter_by_sections(cls, sections):
+        import operator
+        q_list = []
+        for section in sections:
+            q_list.append(Q(Q(section_ids='%s' % section.id) | Q(section_ids__startswith='%s,' % section.id) | Q(section_ids__contains=',%s,' % section.id) | Q(section_ids__endswith=',%s' % section.id)))
+
+        return cls.objects.filter( reduce(operator.or_, q_list) )
            
 def schedule_constraint_test(prog):
     sc = ScheduleConstraint(program=prog)

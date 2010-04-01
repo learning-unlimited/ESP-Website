@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from esp.users.models.userbits import UserBit, UserBitImplication
-from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School
 
 
 class UserBitAdmin(admin.ModelAdmin):
@@ -9,7 +9,11 @@ class UserBitAdmin(admin.ModelAdmin):
                      'qsc__uri','verb__uri']
 admin.site.register(UserBit, UserBitAdmin)
 
-admin.site.register(UserBitImplication)
+
+class UserBitImplicationAdmin(admin.ModelAdmin):
+    exclude = ('created_bits',)
+
+admin.site.register(UserBitImplication, UserBitImplicationAdmin)
 
 admin.site.register(ContactInfo)
 admin.site.register(StudentInfo)
@@ -18,6 +22,7 @@ admin.site.register(GuardianInfo)
 admin.site.register(EducatorInfo)
 admin.site.register(ZipCode)
 admin.site.register(ZipCodeSearches)
+admin.site.register(UserAvailability)
 
 class K12SchoolAdmin(admin.ModelAdmin):
     list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
