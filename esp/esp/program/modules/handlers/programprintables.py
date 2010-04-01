@@ -1009,8 +1009,7 @@ Student schedule for %s:
             return filterObj
 
         context = {'module': self     }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
-
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         students.sort()
                                     
         finished_verb = GetNode('V/Finished')
@@ -1020,7 +1019,13 @@ Student schedule for %s:
             
         expanded = [[] for i in range(numperpage)]
 
-        users = students
+        users = []
+        for u in students:
+            if u and u.id:
+                for sec in u.getSections(prog):
+                    u = ESPUser(u)
+                    u.sec = sec
+                    users.append(u)
             
         for i in range(len(users)):
             expanded[(i*numperpage)/len(users)].append(users[i])
@@ -1034,6 +1039,7 @@ Student schedule for %s:
                 else:
                     users.append(expanded[j][i])
         students = users
+
         return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
 
             
@@ -1125,7 +1131,7 @@ Student schedule for %s:
         scheditems = []
 
         for teacher in teachers:
-            for cls in teacher.getTaughtSections(self.program):
+            for cls in teacher.getTaughtClasses(self.program):
                 if cls.isAccepted():
                     scheditems.append({'teacher': teacher,
                                        'cls'    : cls})

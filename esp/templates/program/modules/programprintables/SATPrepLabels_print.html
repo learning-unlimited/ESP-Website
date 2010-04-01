@@ -17,6 +17,7 @@ span { text-decoration: none; }
 </head>
 <body>
 {% for student in students %}
+{% with student.sec as sec %}
 {% if forloop.counter0|divisibleby:10 %}
 {% if not forloop.first %}
 </table>
@@ -37,6 +38,7 @@ span { text-decoration: none; }
   </td>
 </tr>
 {% endif %}
+{% endwith %}
 {% endfor %}
 </body>
 </html>
