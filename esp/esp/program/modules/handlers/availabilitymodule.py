@@ -135,7 +135,9 @@ class AvailabilityModule(ProgramModuleObj):
             if len(available_slots) == 0:
                 #   If they didn't enter anything, make everything checked by default.
                 available_slots = self.program.getTimeSlots()
-                
+                for a in available_slots:
+                    teacher.addAvailableTime(self.program, a)
+
             context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
             context['prog'] = self.program
             
