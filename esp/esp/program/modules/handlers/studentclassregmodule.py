@@ -35,6 +35,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, UserBit, User
+from esp.tagdict.models  import Tag
 from django.db.models.query import Q
 from django.template.loader import get_template
 from django.http import HttpResponse
@@ -132,14 +133,24 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         from django.db.models import Q
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
+        now = datetime.now()
+
         Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
         Reg = QTree(userbit__verb__below = verb_base)
-        Unexpired = Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
-        
+        Unexpired = Q(userbit__enddate__gte=now, userbit__startdate__lte=now) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
+
         if QObject:
             return {'classreg': self.getQForUser(Par & Unexpired & Reg)}
         else:
-            return {'classreg': User.objects.filter(Par & Unexpired & Reg).distinct()}
+            retVal = {'classreg': User.objects.filter(Par & Unexpired & Reg).distinct()}
+            
+            allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
+            if allowed_student_types:
+                allowed_student_types = allowed_student_types.split(",")
+                for stutype in allowed_student_types:
+                    retVal[stutype] = retVal['classreg'].filter(userbit__enddate__gte=now, userbit__startdate__lte=now, userbit__verb__parent=GetNode("V/Flags/UserRole"), userbit__verb__name=stutype).distinct() 
+
+            return retVal
 
     def studentDesc(self):
         return {'classreg': """Students who have have signed up for at least one class."""}
