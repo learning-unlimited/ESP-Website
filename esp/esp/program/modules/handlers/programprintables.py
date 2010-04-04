@@ -1268,8 +1268,16 @@ Student schedule for %s:
         studentList = []
         for student in students:
             paid_symbol = ''
+            finaid_status = 'None'
+            if student.financialaidrequest_set.filter(program=prog).count() > 0:
+                if student.financialaidrequest_set.filter(program=prog).order_by('-id')[0].reduced_lunch:
+                    finaid_status = 'Req. (RL)'
+                else:
+                    finaid_status = 'Req. (No RL)'
+            
             if student.hasFinancialAid(self.program_anchor_cached()):
                 paid_symbol = 'X'
+                finaid_status = 'Approved'
             else:
                 li_types = prog.getLineItemTypes(student)
                 try:
@@ -1279,10 +1287,11 @@ Student schedule for %s:
                 if invoice.cost() == 0:
                     paid_symbol = 'X'
 
-            studentList.append({'user': student, 'paid': paid_symbol})
+            studentList.append({'user': student, 'paid': paid_symbol, 'finaid': finaid_status})
 
         context['students'] = students
         context['studentList'] = studentList
+        
         return render_to_response(self.baseDir()+'studentchecklist.html', request, (prog, tl), context)
 
     @aux_call

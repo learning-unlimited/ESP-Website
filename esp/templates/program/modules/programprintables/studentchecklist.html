@@ -41,6 +41,7 @@ body { font-family: georgia; }
    <th>Paid?</th>
    <th>Med/Liability?</th>
    <th>Agreement?</th>
+   <th>Aid Status</th>
    <th>Name</th>
    <th>Email</th>
    <th>DOB</th>
@@ -53,6 +54,7 @@ body { font-family: georgia; }
    <td><div class="box">{{ student.paid }}</div></td>
    <td><div class="box">&nbsp;</div></td>
    <td><div class="box">&nbsp;</div></td>
+   <td>{{ student.finaid }}</td>
    <td>{{ student.user.name }}</td>
    <td>{{ student.user.email}}</td>
    <td>{{ student.user.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>

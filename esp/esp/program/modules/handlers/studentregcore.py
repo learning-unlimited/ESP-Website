@@ -149,6 +149,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             giving them the option of printing a confirmation            """
         from esp.program.modules.module_ext import DBReceipt
 
+        user = ESPUser(request.user)
+
         try:
             invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
         except:
@@ -163,7 +165,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         context['itemizedcosts'] = invoice.get_items()
 
-        context['finaid'] = ESPUser(request.user).hasFinancialAid(prog.anchor)
+        context['finaid'] = user.hasFinancialAid(prog.anchor)
+        if user.financialaidrequest_set.filter(program=prog).count() > 0:
+            context['finaid_app'] = user.financialaidrequest_set.filter(program=prog).order_by('-id')[0]
+        else:
+            context['finaid_app'] = None
 
         try:
             context['balance'] = Decimal("%0.2f" % invoice.cost())

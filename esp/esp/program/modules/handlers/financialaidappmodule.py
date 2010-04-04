@@ -97,8 +97,11 @@ class FinancialAidAppModule(ProgramModuleObj):
                                                                 program = self.program)
 
         class Form(forms.ModelForm):
+            extra_explaination = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}))
             class Meta:
                 model = FinancialAidRequest
+                fields = ('reduced_lunch', 'extra_explaination')
+                
       
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)

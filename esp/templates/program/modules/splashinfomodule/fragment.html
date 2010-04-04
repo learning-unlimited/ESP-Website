@@ -30,8 +30,7 @@
             <br />{{ splashinfo.pretty_sunlunch }}
         </td>
     </tr>
-    </tr>
-        <tr>
+    <tr>
         <td valign="top">
             Sibling Discount:
         </td>
@@ -44,4 +43,16 @@
             {% endif %}
         </td>
     </tr>
+    {% if finaid_app %}
+        <tr>
+        <td valign="top" colspan="2">
+        {% if finaid_app.reduced_lunch %}
+            <b>Financial aid requested</b> (free/reduced lunch)
+        {% else %}
+            <b>Financial aid requested</b> (not free/reduced lunch)
+        {% endif %}
+        {% if finaid_app.approved %} - Approved {% endif %}
+        </td>
+    </tr>
+    {% endif %}
 </table>
