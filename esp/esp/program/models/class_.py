@@ -844,6 +844,12 @@ class ClassSection(models.Model):
         else:
             verbs = ['/' + scrmi.signup_verb.name]
 
+        # check to see if there's a conflict:
+        for sec in user.getSections(self.parent_program, verbs=verbs):
+            for time in sec.meeting_times.all():
+                if len(self.meeting_times.filter(id = time.id)) > 0:
+                    return 'This class conflicts with your schedule!'
+
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
             return 'Registration for this section is not currently open.'
