@@ -268,16 +268,23 @@ def registration_redirect(request):
         regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
     ctxt['userrole'] = userrole
     ctxt['navnode'] = GetNode('Q/Web/myesp')
-    
-    if user.isStudent() or user.isTeacher():
-        progs = UserBit.find_by_anchor_perms(Program, user=user, verb=regverb)
-        nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
+
+    progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb))
+    progs_tag = list(t.target \
+            for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
+            if isinstance(t.target, Program) \
+                and (set(curUser.getUserTypes()) & set(t.value.split(","))))
+    progs = set(progs_userbit + progs_tag)
+    print progs
+        
+    nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
+    if len(progs) == 1:
+        progs = list(progs)
         ctxt['prog'] = progs[0]
-        ctxt['nextreg'] = list(nextreg)
-        if len(progs) == 1:
-            ctxt['navnode'] = progs[0].anchor
-            return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
-        else:
-            return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+        ctxt['navnode'] = progs[0].anchor
+        return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
-        return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+        ctxt['prog'] = prog
+        ctxt['nextreg'] = list(nextreg)
+        return render_to_response('users/profile_complete.html', request, navnode, ctxt)		    
+    
