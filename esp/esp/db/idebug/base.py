@@ -1,9 +1,19 @@
 # Database wrapper which lets us turn SQL timing/debugging on 
 # and off on the production server.
 
-from django.db.backends.postgresql.base import *
+import sys
+from django.conf import settings
 
-class IDebugDatabaseWrapper(DatabaseWrapper):
+### THIS DOES: from <realfile> import *
+realfile = 'django.db.backends.%s.base' % settings.REAL_DATABASE_ENGINE
+__import__(realfile, globals(), locals(), [], -1)
+globals().update(sys.modules[realfile].__dict__)
+### 
+
+
+RealDatabaseWrapper = DatabaseWrapper
+
+class DatabaseWrapper(RealDatabaseWrapper):
     idebug = False
 
     def idebug_on(self):
@@ -15,7 +25,8 @@ class IDebugDatabaseWrapper(DatabaseWrapper):
         self.queries = []
 
 
-    # This function should mirror "django.db.backends.BaseDatabaseWrapper.cursor"
+    # This function should mirror 
+    # "django.db.backends.BaseDatabaseWrapper.cursor".
     # The only thing added is the "or self.idebug"
     def cursor(self):
         from django.conf import settings
@@ -23,7 +34,3 @@ class IDebugDatabaseWrapper(DatabaseWrapper):
         if settings.DEBUG or self.idebug:
             return self.make_debug_cursor(cursor)
         return cursor
-
-
-IDebugDatabaseWrapper.__name__ = DatabaseWrapper.__name__
-DatabaseWrapper = IDebugDatabaseWrapper
