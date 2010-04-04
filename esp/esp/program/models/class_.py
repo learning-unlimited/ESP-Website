@@ -834,7 +834,7 @@ class ClassSection(models.Model):
         
         for exp in relevantConstraints:
             if not exp.evaluate(sm):
-                return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title, exp.requirement.label)
+                return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title(), exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if scrmi.use_priority:
