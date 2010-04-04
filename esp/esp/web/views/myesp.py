@@ -35,6 +35,7 @@ from esp.datatree.models import *
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSubject
+from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect
 #from icalendar import Calendar, Event as CalEvent, UTC
 import datetime
@@ -352,30 +353,38 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 # prepare the rendered page so it points them to open student/teacher reg's
                 ctxt = {}
                 userrole = {}
-                if curUser.isStudent():
-                    userrole['name'] = 'Student'
-                    userrole['base'] = 'learn'
-                    userrole['reg'] = 'studentreg'
-                    regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
-                elif curUser.isTeacher():
+
+                if curUser.isTeacher():
                     userrole['name'] = 'Teacher'
                     userrole['base'] = 'teach'
                     userrole['reg'] = 'teacherreg'
                     regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
+                else:
+		    regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
+		    userrole['name'] = 'Student'
+		    userrole['base'] = 'learn'
+		    userrole['reg'] = 'studentreg'		    
+ 
+	    
                 ctxt['userrole'] = userrole                
 		ctxt['navnode'] = navnode
 
-                if curUser.isStudent() or curUser.isTeacher():
-                    progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
-                    nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
-                    ctxt['prog'] = prog
-                    ctxt['nextreg'] = list(nextreg)
-                    if len(progs) == 1:
-                        return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
-                    else:
-                        return render_to_response('users/profile_complete.html', request, navnode, ctxt)
-                else:
-                    return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+		progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb))
+		progs_tag = list(t.target \
+				 for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
+				 if isinstance(t.target, Program) \
+				    and (set(curUser.getUserTypes()) & set(t.value.split(","))))
+		progs = set(progs_userbit + progs_tag)
+		print progs
+			
+		nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
+		if len(progs) == 1:
+			progs = list(progs)
+			return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+		else:
+			ctxt['prog'] = prog
+			ctxt['nextreg'] = list(nextreg)
+                        return render_to_response('users/profile_complete.html', request, navnode, ctxt)		    
             else:
                 return True
         else:
