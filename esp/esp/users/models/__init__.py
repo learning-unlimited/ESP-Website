@@ -754,6 +754,10 @@ class ESPUser(User, AnonymousUser):
 
     isAdmin = isAdministrator
 
+    def getUserTypes(self):
+        """ Return the set of types for this user """
+        return UserBit.valid_objects().filter(user=self, verb__parent=GetNode("V/Flags/UserRole")).values_list('verb__name', flat=True).distinct()
+        
     @classmethod
     def create_membership_methods(cls):
         """
