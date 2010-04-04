@@ -640,7 +640,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     auto_class.unpreregister_student(self.user)
 
-        return True
+        #   Return the ID of classes that were removed.
+        return oldclasses.values_list('id', flat=True)
+
 
     @aux_call
     @needs_student
