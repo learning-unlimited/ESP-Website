@@ -160,21 +160,19 @@ class ProgramModuleObj(models.Model):
     @cache_function
     def findModuleObject(tl, call_txt, prog):
         modules = ProgramModule.objects.filter(main_call = call_txt, module_type = tl).select_related()[:1]
+        module = None
 
         if len(modules) == 0:
             modules = ProgramModule.objects.filter(aux_calls__contains = call_txt, module_type = tl).select_related()
             for module in modules:
                 if call_txt in module.aux_calls.strip().split(','):
-                    break
-            if not module:
-                raise Http404
+                    return ProgramModuleObj.getFromProgModule(prog, module)
         else:
             module = modules[0]
+            return ProgramModuleObj.getFromProgModule(prog, module)
 
-        if not module:
-            raise Http404
+        raise Http404
         
-        return ProgramModuleObj.getFromProgModule(prog, module)
     #   Invalidate cache when any program module related data is saved
     #   Technically this should include the options (StudentClassRegModuleInfo, etc.)
     findModuleObject.depend_on_model(lambda: ProgramModule)
@@ -188,7 +186,7 @@ class ProgramModuleObj(models.Model):
         prog = self.program
         module_type = self.module.module_type
 
-        if include_optional:
+        if not include_optional:
             other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=module_type, required=True).select_related(depth=1).order_by('seq')
         else:
             other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=module_type).select_related(depth=1).order_by('seq')
@@ -205,29 +203,27 @@ class ProgramModuleObj(models.Model):
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
-
         user = ESPUser(request.user)
-        
+        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
-        if request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+        if tl != "manage" and request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
             other_modules = moduleobj.findCategoryModules(False)
             for m in other_modules:
                 m.request = request
                 m.user    = user
-                if not m.isCompleted() and hasattr(m, m.module.main_call):
+                if not isinstance(m, CoreModule) and not m.isCompleted() and hasattr(m, m.module.main_call):
                     return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
         #   call on the originally requested view.
         moduleobj.request = request
         moduleobj.user    = user
-
         if hasattr(moduleobj, call_txt):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
 
         raise Http404
-
     @staticmethod
     def getFromProgModule(prog, mod):
         import esp.program.modules.models
