@@ -231,7 +231,6 @@ class ProgramModuleObj(models.Model):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
 
         raise Http404
-
     @staticmethod
     def getFromProgModule(prog, mod):
         import esp.program.modules.models
