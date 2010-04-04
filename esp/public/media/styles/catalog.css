@@ -31,6 +31,18 @@
     padding: 5px;
 }
 
+.addbutton_error {
+    background-color: #ffcccc;
+    color: #000000;
+    border: 0px;
+    font-weight: normal;
+    font-size: 1.0em;
+    padding: 3px;
+    margin: 0px !important;
+    width: 100%;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
 .doclist {
    font-family: sans-serif;
    text-indent: 20px;

@@ -10,7 +10,7 @@
         <tr>
         <td colspan="3" align="center" valign="center" class="add_class">
         {% if errormsg %}
-            <span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
+             <p class="addbutton_error">{{ errormsg }}</p>
             {% if user.onsite_local %}
                 <br />
                 <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ section.id }}');" method="post" action="{{ prereg_url }}">
