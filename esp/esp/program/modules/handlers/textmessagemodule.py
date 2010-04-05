@@ -36,7 +36,7 @@ from esp.users.forms.user_profile import PhoneNumberField
 from esp.program.models import RegistrationProfile
 
 class TextMessageForm(forms.Form):
-    phone_number = PhoneNumberField(local_areacode='773')
+    phone_number = PhoneNumberField(local_areacode='650')
 
 class TextMessageModule(ProgramModuleObj):
     @classmethod
@@ -55,10 +55,14 @@ class TextMessageModule(ProgramModuleObj):
     def onConfirm(self, request):
         form = TextMessageForm(request.POST)
         student = request.user
-        if form.is_valid():
+        if form.is_valid() and len(form.cleaned_data['phone_number']) > 0:
             profile = RegistrationProfile.getLastForProgram(student, self.program)
             profile.text_reminder = True
             profile.save()
             profile.contact_user.phone_cell = form.cleaned_data['phone_number']
             profile.contact_user.save()
-
+        else:
+            profile = RegistrationProfile.getLastForProgram(student, self.program)
+            profile.text_reminder = False
+            profile.save()
+            
