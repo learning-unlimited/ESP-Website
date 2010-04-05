@@ -26,19 +26,11 @@ Please log in below.
 
 <div id="login_form">
 <form action="{{ request.action }}" method="post">
-<table cellpadding="2" align="center">
+<table cellpadding="2" align="center" style="width: 500px">
 <thead>
 <tr>
  <th colspan="2">Login</th>
 </tr>
-<tr>
- <td colspan="2">
-{% if form.username.errors %}
-   <div class="errors">
-     {{ form.username.errors|last }}
-   </div>
-{% endif %}
-</thead>
 <tbody>
 <tr>
  <th><label class="required" for="id_username">Username:</label></th>
@@ -50,11 +42,6 @@ Please log in below.
 <tr>
  <th><label class="required" for="id_password">Password:</label></th>
  <td>
-   {% if form.password.errors %}
-   <ul class="errorlist">
-     {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
-   </ul>
-   {% endif %}
    {{ form.password }}
  </td>
 </tr>
@@ -65,14 +52,14 @@ Please log in below.
   </th>
 </tr>
 
+{% if form.errors %}
 <tr>
-  <td colspan="2">
-    <p>
-      Forgot your password? Head on over to the <a href="/myesp/passwdrecover/"
-       title="Click for account recovery">Account Recovery Page</a>.
-    </p>
-  </td>
+  <th colspan="2" style="font-size: 14px; color: red">
+    Login incorrect.<br/>Please try again or use <a href="/myesp/passwdrecover/">password recovery.</a>
+  </th>
 </tr>
+{% endif %}
+
 
 </tbody>
 </table>
@@ -88,7 +75,17 @@ document.getElementById('id_username').focus();
 </script>
 <br />
 
+<center>
 <h2>
-  Don't already have an account?  <a href="/myesp/register/">Click here</a> to create one!
+      Forgot your password?<br/>
+      Try the <a href="/myesp/passwdrecover/" title="Click for account recovery">Account Recovery Page</a>.
 </h2>
+</center>
+<br/>
+<center>
+<h2>
+  Don't already have an account?<br/>
+<a href="/myesp/register/">Click here to create one!</a>
+</h2>
+</center>
 {% endblock %}
