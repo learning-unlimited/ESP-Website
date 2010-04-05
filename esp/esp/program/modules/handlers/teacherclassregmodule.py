@@ -131,7 +131,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         tmpModule = ProgramModuleObj()
         tmpModule.__dict__ = self.__dict__
-        return tmpModule.deadline_met('/Classes')
+        return tmpModule.deadline_met('/Classes/Create')
     
     def clslist(self):
         return [cls for cls in self.user.getTaughtClasses()
@@ -607,11 +607,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @meets_deadline('/Classes/Create')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
-        # this is ugly...but it won't recurse and falls
-        # back to @meets_deadline's behavior appropriately
-        if newclass is None and not self.deadline_met():
-            return meets_deadline(lambda: True)(self, request, tl, one, two, module)
-
         do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
         
         new_data = MultiValueDict()
