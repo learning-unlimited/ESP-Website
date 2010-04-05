@@ -74,6 +74,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         """ prepare returns the context for the main teacherreg page. This will just set the teacherclsmodule as this module,
             since everything else can be gotten from hooks. """
 
+        context['can_edit'] = self.deadline_met('/Classes/Edit')
+        context['can_create'] = self.deadline_met('/Classes/Create')
         context['teacherclsmodule'] = self # ...
         return context
 
@@ -120,9 +122,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_full': """Teachers teaching a nearly-full class."""}
 
 
-    def deadline_met(self):
+    def deadline_met(self, extension=''):
         if self.user.isAdmin(self.program):
             return True
+
+        if len(extension) > 0:
+            return super(TeacherClassRegModule, self).deadline_met(extension)
 
         tmpModule = ProgramModuleObj()
         tmpModule.__dict__ = self.__dict__
@@ -576,7 +581,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return self.makeaclass(request, tl, one, two, module, extra, prog, cls)
 
     @aux_call
-    @meets_deadline('/Classes')
+    @meets_deadline('/Classes/Create')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         # this is ugly...but it won't recurse and falls

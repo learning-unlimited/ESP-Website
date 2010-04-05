@@ -91,7 +91,7 @@ ADMINS = (
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@esp.mit.edu'
+SERVER_EMAIL = 'server@stanfordesp.org'
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 
 # Default addresses to send archive/bounce info to
