@@ -958,8 +958,8 @@ class StudentInfo(models.Model):
         if new_data['studentrep']:
             #   E-mail membership notifying them of the student rep request.
             subj = '[ESP Membership] Student Rep Request: ' + curUser.first_name + ' ' + curUser.last_name
-            to_email = ['esp-membership@mit.edu']
-            from_email = 'ESP Profile Editor <regprofile@esp.mit.edu>'
+            to_email = ['stanfordesp@gmail.com']
+            from_email = 'ESP Profile Editor <regprofile@stanfordesp.org>'
             t = loader.get_template('email/studentreprequest')
             msgtext = t.render(Context({'user': curUser, 'info': studentInfo, 'prog': regProfile.program}))
             send_mail(subj, msgtext, from_email, to_email, fail_silently = True)
