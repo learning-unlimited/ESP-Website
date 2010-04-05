@@ -31,6 +31,7 @@ Email: web@esp.mit.edu
 import datetime
 import time
 from collections import defaultdict
+from esp.utils.property import PropertyDict
 
 # django Util
 from django.db import models
