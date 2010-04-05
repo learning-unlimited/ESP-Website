@@ -53,7 +53,9 @@ def volunteer_signup(request):
 def mercury_redirect(request):
 
     ipaddr = ''
-    if 'REMOTE_ADDR' in request.META:
+    if 'HTTP_X_FORWARDED_FOR' in request.META:
+      ipaddr = request.META['HTTP_X_FORWARDED_FOR']
+    elif 'REMOTE_ADDR' in request.META:
       ipaddr = request.META['REMOTE_ADDR']
 
     agent = ''
