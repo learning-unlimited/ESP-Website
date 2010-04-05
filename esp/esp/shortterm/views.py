@@ -1,7 +1,8 @@
 # Create your views here.
 
+import datetime
 from django import forms
-from esp.shortterm.models import ResponseForm, VolunteerRegistration
+from esp.shortterm.models import ResponseForm, VolunteerRegistration, AdLogEntry
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.web.util.main import render_to_response
 from esp.utils.forms import EmailModelForm
@@ -47,3 +48,21 @@ def volunteer_signup(request):
         response = VolunteerRegistrationForm()
 
     return render_to_response("shortterm/volunteer_signup/form.html", request, context={'form': response, 'anchor': volunteer_anchor})
+
+
+def mercury_redirect(request):
+
+    ipaddr = ''
+    if 'REMOTE_ADDR' in request.META:
+      ipaddr = request.META['REMOTE_ADDR']
+
+    agent = ''
+    if 'HTTP_USER_AGENT' in request.META:
+      agent = request.META['HTTP_USER_AGENT']
+
+    entry = AdLogEntry()
+    entry.ts = datetime.datetime.today()
+    entry.ipaddr = ipaddr[0:31]
+    entry.agent = agent[0:255]
+    entry.save()
+    return HttpResponseRedirect("/learn/index.html")

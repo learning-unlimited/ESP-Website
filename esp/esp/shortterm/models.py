@@ -4,6 +4,11 @@ from django.core.mail import send_mail
 
 # Create your models here.
 
+class AdLogEntry(models.Model):
+    ts = models.DateTimeField(editable=False)
+    ipaddr = models.CharField(max_length=32)
+    agent = models.CharField(max_length=256)
+
 class VolunteerRegistration(models.Model):
     your_name = models.CharField(max_length=100)
     email_address = models.EmailField()
