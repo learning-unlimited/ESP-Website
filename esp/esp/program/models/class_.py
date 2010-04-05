@@ -1510,6 +1510,10 @@ class ClassSubject(models.Model):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
             return 'You are not a student!'
+
+        blocked_student_types = Tag.getTag("blocked_student_types", target=self)
+        if blocked_student_types and not (set(user.getUserTypes()) & set(blocked_student_types.split(","))):
+            return "Cannot accept more users of your account type!"
         
         if not self.isAccepted():
             return 'This class is not accepted.'
