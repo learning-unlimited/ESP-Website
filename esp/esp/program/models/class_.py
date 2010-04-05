@@ -1618,7 +1618,7 @@ class ClassSubject(models.Model):
                             return True
         return False
 
-    def isAccepted(self): return self.status == 10
+    def isAccepted(self): return self.status > 0
     def isReviewed(self): return self.status != 0
     def isRejected(self): return self.status == -10
     def isCancelled(self): return self.status == -20
