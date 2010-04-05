@@ -6,7 +6,7 @@ class SplashInfoForm(forms.Form):
                   ('chicken', 'Yes, Chicken'),
                   ('steak', 'Yes, Steak'),
                   ('spicy_thai', 'Yes, Spicy Thai'),
-                  ('veggie', 'Yes, Vegeterian')]
+                  ('veggie', 'Yes, Vegetarian')]
 
     sunchoices = [('no', 'No thanks; I will bring my own lunch'),
                   ('cheese', 'Yes, Cheese Pizza'),
