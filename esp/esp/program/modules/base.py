@@ -197,11 +197,12 @@ class ProgramModuleObj(models.Model):
         # Set this key if this user has 
         HAS_FINISHED_REQS_CACHE_KEY = "USER_%s__PROG_%s__TYPE_%s__DONE_REG_REQS" % (request.user.id, prog.id, moduleobj.module.module_type)
         if not cache.get(HAS_FINISHED_REQS_CACHE_KEY):
-
+            scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+            
             #   For core modules, redirect to the incomplete required modules in the same section first.
             #   The pages should all redirect to the core on completion.  If none are needed, the
             #   code here won't do anything and the page will be returned as usual.
-            if request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+            if request.user.is_authenticated() and isinstance(moduleobj, CoreModule) and not scrmi.force_show_required_modules:
                 other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).select_related(depth=1).order_by('seq')
                 for m in other_modules:
                     m.request = request

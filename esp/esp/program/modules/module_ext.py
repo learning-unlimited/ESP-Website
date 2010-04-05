@@ -113,6 +113,10 @@ class StudentClassRegModuleInfo(models.Model):
     
     #   Choose whether class IDs are shown on catalog.
     show_emailcodes = models.BooleanField(default=True, help_text='Uncheck this box to prevent e-mail codes (i.e. E534, H243) from showing up on catalog and fillslot pages.')
+
+    #   Choose whether users have to fill out "required" modules before they can see the main StudentReg page
+    #   (They still have to fill them out before confirming their registration, regardless of this setting)
+    force_show_required_modules = models.BooleanField(default=True, help_text = "Check this box to require that users see and fill out \"required\" modules before they can see the main StudentReg page")
     
     def __init__(self, *args, **kwargs):
         #   Trying to fetch self.signup_verb directly throws a DoesNotExist for some reason.
