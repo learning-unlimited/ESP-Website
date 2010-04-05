@@ -80,6 +80,12 @@ class RegProfileModule(ProgramModuleObj):
         from esp.web.views.myesp import profile_editor
         role = {'teach': 'teacher','learn': 'student'}[tl]
 
+        # Make sure we are editing the right type of profile
+        if role == 'teacher' and not request.user.isTeacher():
+            return needs_teacher(self.profile)(self, request)
+        if role == 'student' and not request.user.isStudent():
+            return needs_student(self.profile)(self, request)
+
         #   Reset e-mail address for program registrations.
         if prog is None:
             regProf = RegistrationProfile.getLastProfile(request.user)
