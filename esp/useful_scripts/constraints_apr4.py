@@ -2,15 +2,16 @@
     Michael Price (price@kilentra.net)
 """
 
-
+"""
 #   Stuff specific to Spring Splash 2010 - Saturday
 #   Run this script and then comment out this block of lines, uncomment the similar lines for "Sunday", and run it again
 program_id = 11
 morning_ids = [61, 62]
 lunch_ids = [63, 64]
 afternoon_ids = [65, 66, 67, 68]
+title_prefix = 'Saturday '
+constraint_suffix = ' on Saturday (see "Lunch" category)'
 #   End of stuff for Spring Splash 2010 - Saturday
-
 """
 #   Stuff specific to Spring Splash 2010 - Sunday
 program_id = 11
@@ -20,7 +21,7 @@ afternoon_ids = [73, 74, 75, 76]
 title_prefix = 'Sunday '
 constraint_suffix = ' on Sunday (see "Lunch" category)'
 #   End of stuff for Spring Splash 2010 - Sunday
-"""
+
 
 ON_FAILURE_CODE = """
 # This code is part of a function: on_failure(schedule_map)
