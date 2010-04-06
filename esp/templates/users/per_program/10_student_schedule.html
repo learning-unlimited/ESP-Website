@@ -118,7 +118,7 @@ input.addbutton:hover
 
                {% else %}
 
-                <a href="/learn/Ripple/2010_Spring/fillslot/47">[add class]</a>
+                <a href="/learn/Ripple/2010_Spring/fillslot/47">[add workshop]</a>
 
                {% endif %}
                 </td>
@@ -170,7 +170,7 @@ input.addbutton:hover
         
         <td style="vertical-align: top !important;">
 
-	  Workshop Session B:
+	  Midday Panels:
 	    {% for timeslot in timeslots %}
 
 	        {% ifequal timeslot.0.id 48 %}
@@ -189,7 +189,7 @@ input.addbutton:hover
 		  {% if not timeslot.1|length_is:0 %}
 		  <a href="/learn/Ripple/2010_Spring/clearslot/48">[remove]</a>
 		  {% else %}
-                  <a href="/learn/Ripple/2010_Spring/fillslot/48">[add class]</a>
+                  <a href="/learn/Ripple/2010_Spring/fillslot/48">[add panel]</a>
 		  {% endif %}
                 </td>
             	{% endifequal %} {% endfor %}
@@ -214,7 +214,7 @@ input.addbutton:hover
         
         <td style="vertical-align: top !important;">
         
-          Workshop Session C:
+          Workshop Session B:
 	    {% for timeslot in timeslots %}
 
 	        {% ifequal timeslot.0.id 49 %}
@@ -233,7 +233,7 @@ input.addbutton:hover
 		  {% if not timeslot.1|length_is:0 %}
 		  <a href="/learn/Ripple/2010_Spring/clearslot/49">[remove]</a>
 		  {% else %}
-                  <a href="/learn/Ripple/2010_Spring/fillslot/49">[add class]</a>
+                  <a href="/learn/Ripple/2010_Spring/fillslot/49">[add workshop]</a>
 		  {% endif %}
                 </td>
             	{% endifequal %} {% endfor %}
