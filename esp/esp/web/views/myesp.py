@@ -355,34 +355,39 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 userrole = {}
 
                 if curUser.isTeacher():
-                    userrole['name'] = 'Teacher'
-                    userrole['base'] = 'teach'
-                    userrole['reg'] = 'teacherreg'
                     regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
                 else:
 		    regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
+
+		progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb))
+		progs_student_tag = list(t.target \
+						 for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
+						 if isinstance(t.target, Program) \
+						 and (set(curUser.getUserTypes()) & set(t.value.split(","))))
+		progs_teacher_tag = list(t.target \
+						 for t in Tag.objects.filter(key = "allowed_teacher_types").select_related() \
+						 if isinstance(t.target, Program) \
+						 and (set(curUser.getUserTypes()) & set(t.value.split(","))))
+		progs = set(progs_userbit + progs_student_tag + progs_teacher_tag)
+			
+                if curUser.isTeacher() or (len(progs_teacher_tag) > 0):
+                    userrole['name'] = 'Teacher'
+                    userrole['base'] = 'teach'
+                    userrole['reg'] = 'teacherreg'
+                else:
 		    userrole['name'] = 'Student'
 		    userrole['base'] = 'learn'
-		    userrole['reg'] = 'studentreg'		    
- 
+		    userrole['reg'] = 'studentreg'
 	    
                 ctxt['userrole'] = userrole                
 		ctxt['navnode'] = navnode
 
-		progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb))
-		progs_tag = list(t.target \
-				 for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
-				 if isinstance(t.target, Program) \
-				    and (set(curUser.getUserTypes()) & set(t.value.split(","))))
-		progs = set(progs_userbit + progs_tag)
-		print progs
-			
 		nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 		if len(progs) == 1:
-			progs = list(progs)
-			return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+			prog = progs.pop()
+			return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], prog.getUrlBase(), userrole['reg']))
 		else:
-			ctxt['prog'] = prog
+			ctxt['progs'] = progs
 			ctxt['nextreg'] = list(nextreg)
                         return render_to_response('users/profile_complete.html', request, navnode, ctxt)		    
             else:
