@@ -165,7 +165,7 @@ class ClassManager(ProcedureManager):
                           now,
                          ]
         classes = classes.extra(select=select, select_params=select_params)
-        classes = classes.order_by('category', '_num_students', 'id')
+        classes = classes.order_by('sections__meeting_times__start', 'category', '_num_students', 'id')
         classes = classes.distinct()
         classes = list(classes)
 
