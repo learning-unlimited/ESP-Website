@@ -1260,10 +1260,15 @@ class ClassSubject(models.Model):
         else:
             return sec_qs[0]
 
-    def add_section(self, duration=0.0, status=0):
+    def add_section(self, duration=None, status=None):
         """ Add a ClassSection belonging to this class. Can be run multiple times. """
         
         section_index = self.sections.count() + 1
+
+        if duration is None:
+            duration = self.duration
+        if status is None:
+            status = self.status
         
         new_section = ClassSection()
         new_section.parent_class = self
