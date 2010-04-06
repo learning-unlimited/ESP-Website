@@ -155,7 +155,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         return {'classreg': """Students who have have signed up for at least one class."""}
     
     def isCompleted(self):
-        return (len(self.user.getSections(self.program)[:1]) > 0)
+        return (Tag.getTag("allow_confirm_without_classreg", target=self.program)) or (len(self.user.getSections(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -422,11 +422,13 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
-            classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
+            if user_grade != 0:
+                classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
             classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=False), classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
         #   Sort class list
+
         classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
         classes = sorted(classes, key=lambda cls: cls.category.category)
 
