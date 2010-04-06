@@ -1,0 +1,134 @@
+
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}}{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript">
+<!--
+  function submit_prereg(clsid) {
+     // prereg for a class
+     document.getElementById('submitbutton'+clsid).setAttribute("class", "addbutton_disabled");
+     return true;
+  }
+
+  function submit_override_prereg(clsid) {
+     // prereg for a class
+     if (confirm('Are you sure you want to override this block?') &&
+         confirm('Are you really sure?!?')) {
+        document.getElementById('submitbutton'+clsid).disabled = true;
+        return true;
+     }
+     return false;
+  }
+//-->
+
+function swap_visible(div_id) {
+	var div = document.getElementById(div_id);
+	if (div.style.display == 'none') {
+		div.style.display = '';
+	} else {
+		div.style.display = 'none';
+	}
+}
+</script>
+{% endblock %}
+
+{% load subsection %}
+
+{% block subsection %}
+{% autoescape off %}{{ "Program"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+{% endblock %}
+
+{% block content %}
+<div id="catalog">
+<h1 class="catalog">
+    {{ program.niceName }}
+        Program
+</h1>
+
+{% if timeslot %}
+<h2 style="text-align: center;">
+Viewing classes for: {{ timeslot.short_description }}
+</h2>
+{% endif %}
+{% if request.user.onsite_local %}
+
+{% if not request.GET.filter %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}?filter=True">Filter out invalid classes</a>
+</h2>
+{% else %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}">Show all classes</a>
+</h2>
+{% endif %}
+{% endif %}
+
+{% comment %}
+<table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
+ <tr>
+  <th colspan="2">
+   <a name="top"></a>Jump to Categories
+  </th>
+ </tr>
+
+{% for category in categories %}
+{% if forloop.counter0|divisibleby:2 %}
+<tr>{% endif %}
+  <td style="width: 50%; vertical-align: top;" valign="top" align="center">
+
+    <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
+              {{category.category}}
+    </a>
+  </td>
+ {% if forloop.counter|divisibleby:2 %}
+</tr>{% endif %} 
+{% endfor %}
+{% if not categories|length|divisibleby:2 %}
+</tr>
+{% endif %}
+
+</table>
+{% endcomment %}
+</div>
+<div id="catalog">
+{% load class_render %}
+{% for class in classes %}
+
+{% comment %}
+{% ifchanged class.category_id %}<hr size="1"/>
+
+    <a name="cat{{class.category_id}}"></a>
+      <p style="font-size: 1.2em;" class="category">
+         {{ class.category.category }}
+      </p>
+{% if request.user.onsite_local %}
+{% if not request.GET.filter %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}?filter=True">Filter out invalid classes</a>
+</h2>
+{% else %}
+<h2 style="text-align: center;">
+<a href="{{request.path}}">Show all classes</a>
+</h2>
+{% endif %}
+{% endif %}
+      <p class="linktop">
+         <a href="#top">[ Return to Category List ]</a>
+      </p> {% endifchanged %}
+{% endcomment %}
+
+{% render_class class request.user prereg_url request.GET.filter timeslot request %}
+
+<br />
+{% endfor %}
+</div>
+
+{% endblock %}
