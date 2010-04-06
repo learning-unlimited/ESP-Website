@@ -3,7 +3,7 @@
     <tr onclick="swap_visible('{{ class.id }}_details');swap_visible('{{ class.id }}_content');swap_visible('{{ class.id }}_regbuttons');" style="cursor: pointer;">
       <th colspan="2" style="padding: 5px; width: 70%;{{ colorstring }}">
           {% if class.got_index_qsd %}
-           <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
+           <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
            {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }} {% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% endif %}
           {% endif %}
