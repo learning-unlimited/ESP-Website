@@ -3,7 +3,7 @@
     <tr onclick="swap_visible('{{ class.id }}_details');swap_visible('{{ class.id }}_content');" style="cursor: pointer;">
       <th colspan="2" style="padding: 5px; width: 70%;{{ colorstring }}">
           {% if class.got_index_qsd %}
-           <a href="Classes/{{ class.emailcode }}/index.html">{{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }}</a>
+           <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
            {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}
           {% endif %}
@@ -44,19 +44,20 @@
       </td>
 
       <td style="width: 50%;" colspan="2">
-         <strong>Grades:</strong>
+{% comment %}         <strong>Grades:</strong>
            {{ class.grade_min }}-{{ class.grade_max }}<br />
          {% if show_enrollment %} 
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}
               {% with sec.isRegClosed as is_closed %}
               {% if is_closed %}<font color="#999999">(Closed) {% endif %}
-              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />{% endif %} 
+              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />{% endif %}
               {% if is_closed %}</font>{% endif %}
               {% endwith %}
            {% endfor %}
         {% endif %}
         <br />
+{% endcomment %}
       </td>
     </tr>
     {% if class.media_count %}
