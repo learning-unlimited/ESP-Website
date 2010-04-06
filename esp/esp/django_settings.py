@@ -42,7 +42,7 @@ Email: web@esp.mit.edu
 #  you really don't want to leave this as is. #
 ###############################################
 
-SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
+SITE_INFO = (1, 'splashchicago.learningu.org', 'Main ESP Site')
 
 # Must be unique for every site hosted
 CACHE_PREFIX="ESP"
@@ -88,7 +88,7 @@ ADMINS = (
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@esp.mit.edu'
+SERVER_EMAIL = 'server@splashchicago.learningu.org'
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 
 # Default addresses to send archive/bounce info to
