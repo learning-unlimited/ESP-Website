@@ -12,13 +12,12 @@
 Your profile has now been successfully completed.
 </p>
 
-{% if userrole %}
 <p>
 {% if progs %}
   Continue on to:<br />
   {% for prog in progs %}
   <span style="font-weight: bold;">
-   <a href="/{{userrole.base}}/{{prog.getUrlBase}}/{{userrole.reg}}">{{userrole.name}} Registration for {{prog.niceName}}</a>
+   <a href="/{{prog.1.base}}/{{prog.0.getUrlBase}}/{{prog.1.reg}}">{{prog.1.name}} Registration for {{prog.0.niceName}}</a>
   </span>
   <br />
   {% endfor %}
@@ -29,7 +28,6 @@ Your profile has now been successfully completed.
   <br />
 {% endfor %}
 
-{% endif %}
 <br />
 <br />
 </p>

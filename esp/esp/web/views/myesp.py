@@ -352,40 +352,48 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             if responseuponCompletion == True:
                 # prepare the rendered page so it points them to open student/teacher reg's
                 ctxt = {}
-                userrole = {}
+		class UserRole(object):
+                    pass
+
+                userrole = UserRole()
+		userrole_teachers = UserRole()
+		userrole_students = UserRole()
+
+		userrole_teachers.name = 'Teacher'
+		userrole_teachers.base = 'teach'
+		userrole_teachers.reg = 'teacherreg'
+
+		userrole_students.name = 'Student'
+		userrole_students.base = 'learn'
+		userrole_students.reg = 'studentreg'
 
                 if curUser.isTeacher():
+                    userrole = userrole_teachers
                     regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
                 else:
+                    userrole = userrole_students
 		    regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
 
-		progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb))
-		progs_student_tag = list(t.target \
-						 for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
-						 if isinstance(t.target, Program) \
-						 and (set(curUser.getUserTypes()) & set(t.value.split(","))))
-		progs_teacher_tag = list(t.target \
-						 for t in Tag.objects.filter(key = "allowed_teacher_types").select_related() \
-						 if isinstance(t.target, Program) \
-						 and (set(curUser.getUserTypes()) & set(t.value.split(","))))
+		progs_userbit = [(x, userrole) for x in UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)]
+		progs_student_tag = [(x, userrole_students) for x in \
+					      list(t.target \
+							   for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
+							   if isinstance(t.target, Program) \
+							   and (set(curUser.getUserTypes()) & set(t.value.split(","))))]
+		progs_teacher_tag = [(x, userrole_teacher) for x in \
+					     list(t.target \
+							  for t in Tag.objects.filter(key = "allowed_teacher_types").select_related() \
+							  if isinstance(t.target, Program) \
+							  and (set(curUser.getUserTypes()) & set(t.value.split(","))))]
 		progs = set(progs_userbit + progs_student_tag + progs_teacher_tag)
 			
-                if curUser.isTeacher() or (len(progs_teacher_tag) > 0):
-                    userrole['name'] = 'Teacher'
-                    userrole['base'] = 'teach'
-                    userrole['reg'] = 'teacherreg'
-                else:
-		    userrole['name'] = 'Student'
-		    userrole['base'] = 'learn'
-		    userrole['reg'] = 'studentreg'
-	    
                 ctxt['userrole'] = userrole                
 		ctxt['navnode'] = navnode
 
 		nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 		if len(progs) == 1:
 			prog = progs.pop()
-			return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], prog.getUrlBase(), userrole['reg']))
+			return HttpResponseRedirect(u'/%s/%s/%s' % (prog[1]['base'], prog[0].getUrlBase(), prog[1]['reg']))
 		else:
 			ctxt['progs'] = progs
 			ctxt['nextreg'] = list(nextreg)
