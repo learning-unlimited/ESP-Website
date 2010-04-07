@@ -6,6 +6,8 @@
 
 {% block content %}
 
+{% load override %}
+
 <h1>Congratulations</h1>
 
 <p>
@@ -17,7 +19,11 @@ Your profile has now been successfully completed.
   Continue on to:<br />
   {% for prog in progs %}
   <span style="font-weight: bold;">
-   <a href="/{{prog.1.base}}/{{prog.0.getUrlBase}}/{{prog.1.reg}}">{{prog.1.name}} Registration for {{prog.0.niceName}}</a>
+   <a href="/{{prog.1.base}}/{{prog.0.getUrlBase}}/{{prog.1.reg}}">
+{% check_override "%d_%s_reg_link" prog.0.id userrole.base %}
+    {{prog.1.name}} Registration for {{prog.0.niceName}}
+{% end_check_override %}
+</a>
   </span>
   <br />
   {% endfor %}
