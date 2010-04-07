@@ -38,6 +38,8 @@ Here are your class' students.  Only those who have enrolled will show up on you
  </th>
 </tr>
 </thead>
+{% for section in cls.get_sections %}
+<thead><tr><td colspan="3">Section {{ section.index }}</td></tr></thead>
 <tbody>
 {% for kv in section.students_dict.flatten %}
     <tr>
@@ -52,6 +54,7 @@ Here are your class' students.  Only those who have enrolled will show up on you
     {% endfor %}
 {% endfor %}
 </tbody>
+{% endfor %}
 </table>
 
 </div>
