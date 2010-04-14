@@ -1433,15 +1433,16 @@ class ClassSubject(models.Model):
     def cache_time(self):
         return 99999
     
+    @cache_function
     def title(self):
-        retVal = self.cache['title']
-        if retVal:
-            return retVal
-        
-        retVal = self.anchor.friendly_name
-
-        self.cache['title'] = retVal
-        return retVal
+        print 'recomputing title for cls#%d' % self.id
+        return self.anchor.friendly_name
+    def title_selector(node):
+        print 'checking title; %s' % node.classsubject_set.all()
+        if node.classsubject_set.all().count == 1:
+            return {'self': node.classsubject_set.all()[0]}
+        return {}
+    title.depend_on_row(lambda: DataTree, title_selector)
     
     @cache_function
     def teachers(self):
