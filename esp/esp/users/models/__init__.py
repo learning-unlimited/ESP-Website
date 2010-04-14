@@ -280,7 +280,13 @@ class ESPUser(User, AnonymousUser):
         
         #   Why is it that we had a find_by_anchor_perms function again?
         tr_node = GetNode('V/Flags/Registration/Teacher')
-        all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
+        when = datetime.now()
+        all_classes = ClassSubject.objects.filter(
+            anchor__userbit_qsc__verb__id=tr_node.id,
+            anchor__userbit_qsc__user=self,
+            anchor__userbit_qsc__startdate__lte=when,
+            anchor__userbit_qsc__enddate__gte=when,
+        ).distinct()
 
         if type(program) != Program: # if we did not receive a program
             error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
@@ -298,7 +304,13 @@ class ESPUser(User, AnonymousUser):
         
         #   Why is it that we had a find_by_anchor_perms function again?
         tr_node = GetNode('V/Flags/Registration/Teacher')
-        return ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
+        when = datetime.now()
+        return ClassSubject.objects.filter(
+            anchor__userbit_qsc__verb__id=tr_node.id,
+            anchor__userbit_qsc__user=self,
+            anchor__userbit_qsc__startdate__lte=when,
+            anchor__userbit_qsc__enddate__gte=when,
+        ).distinct()
     getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
                                                       lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                   bit.qsc.parent.name == 'Classes' and
