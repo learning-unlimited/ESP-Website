@@ -153,7 +153,22 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             return retVal
 
     def studentDesc(self):
-        return {'classreg': """Students who have have signed up for at least one class."""}
+        #   Label these heading nicely like the user registration form
+        from esp.users.forms.user_reg import role_choices
+        role_dict = {}
+        for item in role_choices:
+            role_dict[item[0]] = item[1]
+
+        result = {'classreg': """Students who have have signed up for at least one class."""}
+        allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
+        if allowed_student_types:
+            allowed_student_types = allowed_student_types.split(",")
+            for stutype in allowed_student_types:
+                if stutype in role_dict:
+                    result[stutype] = role_dict[stutype]
+
+        return result
+
     
     def isCompleted(self):
         return (Tag.getTag("allow_confirm_without_classreg", target=self.program)) or (len(self.user.getSections(self.program)[:1]) > 0)
