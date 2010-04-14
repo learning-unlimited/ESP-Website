@@ -393,7 +393,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 		if len(progs) == 1:
 			prog = progs.pop()
-			return HttpResponseRedirect(u'/%s/%s/%s' % (prog[1]['base'], prog[0].getUrlBase(), prog[1]['reg']))
+			return HttpResponseRedirect(u'/%s/%s/%s' % (prog[1].base, prog[0].getUrlBase(), prog[1].reg))
 		else:
 			ctxt['progs'] = progs
 			ctxt['nextreg'] = list(nextreg)
