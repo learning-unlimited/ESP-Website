@@ -164,14 +164,16 @@ class ProgramModuleObj(models.Model):
     #   This function caches the customized (augmented) program module objects
     @cache_function
     def findModuleObject(tl, call_txt, prog):
+        # Make sure all modules exist
+        modules = prog.program_modules.all()
+        for module in modules:
+            ProgramModuleObj.getFromProgModule(prog, module)
+
         modules = ProgramModule.objects.filter(main_call = call_txt, module_type = tl).select_related()[:1]
         module = None
 
         if len(modules) == 0:
             modules = ProgramModule.objects.filter(aux_calls__contains = call_txt, module_type = tl).select_related()
-            for module in modules:
-                if call_txt in module.aux_calls.strip().split(','):
-                    return ProgramModuleObj.getFromProgModule(prog, module)
         else:
             module = modules[0]
             return ProgramModuleObj.getFromProgModule(prog, module)
