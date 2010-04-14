@@ -380,7 +380,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 							   for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
 							   if isinstance(t.target, Program) \
 							   and (set(curUser.getUserTypes()) & set(t.value.split(","))))]
-		progs_teacher_tag = [(x, userrole_teacher) for x in \
+		progs_teacher_tag = [(x, userrole_teachers) for x in \
 					     list(t.target \
 							  for t in Tag.objects.filter(key = "allowed_teacher_types").select_related() \
 							  if isinstance(t.target, Program) \
