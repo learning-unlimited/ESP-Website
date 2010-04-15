@@ -158,9 +158,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     Please change this if you have a preferred behavior and a way to
                     implement it.           - Michael P, 4/14/2010
                 """
+                VerbParent = Q(userbit__verb__parent=GetNode("V/Flags/UserRole"))
+                VerbName = Q(userbit__verb__name=stutype)
+                          
                 if QObject:
-                    VerbParent = Q(userbit__verb__parent=GetNode("V/Flags/UserRole"))
-                    VerbName = Q(userbit__verb__name=stutype)
                     retVal[stutype] = self.getQForUser(Unexpired & VerbName & VerbParent)
                     #   This would be nice, but unfortunately doesn't work:
                     #   retVal[stutype] = self.getQForUser(Par & Unexpired & Reg & VerbName & VerbParent)
