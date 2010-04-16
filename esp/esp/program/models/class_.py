@@ -750,7 +750,6 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
-
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
         #   relevantConstraints = ScheduleConstraint.objects.none()
@@ -770,8 +769,8 @@ class ClassSection(models.Model):
         
         # Disallow joining a no-app class that conflicts with an app class
         # For HSSP Harvard Spring 2010
-        if self.parent_class.studentappquestion_set.count() == 0:
-            verbs += ['/Applied']
+        #if self.parent_class.studentappquestion_set.count() == 0:
+        #    verbs += ['/Applied']
         
         # check to see if there's a conflict:
         for sec in user.getSections(self.parent_program, verbs=verbs):
@@ -782,6 +781,12 @@ class ClassSection(models.Model):
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
             return 'Registration for this section is not currently open.'
+
+        # check to make sure they haven't already registered for too many classes in this section
+        if scrmi.use_priority:
+            priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
+            if priority > scrmi.priority_limit:
+                return 'You are only allowed to select up to %s top classes' % (scrmi.priority_limit)
 
         # this user *can* add this class!
         return False
@@ -1057,8 +1062,8 @@ class ClassSection(models.Model):
         prereg_verb_base = scrmi.signup_verb
         
         #   Override the registration verb if the class has application questions
-        if self.parent_class.studentappquestion_set.count() > 0:
-            prereg_verb_base = GetNode('V/Flags/Registration/Applied')
+        #if self.parent_class.studentappquestion_set.count() > 0:
+        #    prereg_verb_base = GetNode('V/Flags/Registration/Applied')
         
         if scrmi.use_priority:
             prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
@@ -1137,6 +1142,7 @@ class ClassSubject(models.Model):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)
+    hardness_rating = models.TextField()
     class_size_max = models.IntegerField()
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
@@ -1538,7 +1544,7 @@ class ClassSubject(models.Model):
                 return 'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
-        if user.getEnrolledClasses(self.parent_program, request).count() == 0:
+        if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
             return False
 
         for section in self.sections.all():

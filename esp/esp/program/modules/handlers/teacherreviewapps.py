@@ -37,6 +37,7 @@ from esp.program.models import ClassSubject, StudentApplication, StudentAppQuest
 from django.contrib.auth.decorators import login_required
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect
+from datetime import datetime
 
 __all__ = ['TeacherReviewApps']
 
@@ -70,7 +71,10 @@ class TeacherReviewApps(ProgramModuleObj):
             students += students_dict[key]
 
         for student in students:
+            now = datetime.now()
             student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
+            student.added_userbits = student.userbit_set.filter(startdate__lte=now, enddate__gte=now).filter(qsc__parent = cls.anchor).order_by('-startdate').distinct()
+
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except:
@@ -78,13 +82,21 @@ class TeacherReviewApps(ProgramModuleObj):
 
             if student.app:
                 reviews = student.app.reviews.all().filter(reviewer=self.user, score__isnull=False)
+                questions = student.app.questions.all().filter(subject=cls)
             else:
                 reviews = []
+                questions = []
 
             if len(reviews) > 0:
                 student.app_reviewed = reviews[0]
             else:
                 student.app_reviewed = None
+            
+            student.app_completed = False
+            for i in questions:
+                for j in i.studentappresponse_set.all():
+                    if j.complete:
+                        student.app_completed = True
 
         students = list(students)
         students.sort(lambda x,y: cmp(x.added_class,y.added_class))

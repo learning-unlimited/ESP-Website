@@ -91,15 +91,14 @@ class StudentJunctionAppModule(ProgramModuleObj):
         response_dict = {}
         for i in range(len(responses)):
             response_dict[response_question_ids[i]] = responses[i]
-        print 'Responses to questions: %s' % response_question_ids
-        
+
         #   Check that they responded to everything.
         classes = self.user.getAppliedClasses(self.program)
         for cls in classes:
             for i in [x['id'] for x in cls.studentappquestion_set.all().values('id')]:
                 if i not in response_question_ids:
                     return False
-                elif not response_dict[i].complete:
+                elif (not response_dict[i].complete) or response_dict[i].response == "":
                     return False
         return True
         
@@ -127,5 +126,6 @@ class StudentJunctionAppModule(ProgramModuleObj):
             return self.goToCore(tl)
         else:
             forms = app.get_forms()
+
         return render_to_response(self.baseDir()+'application.html', request, (self.program, tl), {'forms': forms, 'app': app})
     

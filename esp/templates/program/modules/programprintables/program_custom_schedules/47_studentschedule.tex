@@ -32,8 +32,9 @@
 \hline
 \multirow{3}{1in}{\centering \textbf{\small Amount \\ Due:} \\ 
 \vspace{0.05cm}
-\textbf{\large  \${{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
-{ {% if student.saturday_lunch %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
+%%% So we have one student who added a lunch ticket after he'd already paid. Also, there was some weirdness with people owing $\pm 5 and $40. -ageng 2010-03-10
+\textbf{\large  \${% ifequal student.id 50335 %}5{% else %}{% with student.itemizedcosttotal|floatformat:"-2" as amt_owed %}{% ifequal amt_owed "40" %}20{% else %}{% ifequal amt_owed|cut:"-" "5" %}0{% else %}{{ amt_owed }}{% endifequal %}{% endifequal %}{% endwith %}{% endifequal %} }} & \multicolumn{2}{|p{1.5in}|}
+{ {% if student.lunches %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
 \cline{2-3}
 & \multicolumn{2}{|p{1.5in}|}
 { {% if student.saturday_dinner %} Saturday Dinner (\$10) {% endif %}} \\
@@ -47,7 +48,7 @@
 { {% if student.photocount %}Photo (\$10) x {{ student.photocount }} {% endif %} } \\
 \hline
 \multicolumn{2}{|p{1.25in}|}
-{ Admission: \${% if student.has_financial_aid %}0{% else %}30{% endif %} } & 
+{ Admission: \${% if student.has_financial_aid %}0{% else %}20{% endif %} } & 
 \multicolumn{1}{|p{1.25in}|}
 { \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}\${{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
 \hline
@@ -122,7 +123,7 @@ User ID: {{ student.id }} \\
 \vspace{0.3cm}
 
 For help finding your classrooms, please consult the directions and map on your Student Info sheet. \\
-If you have any questions or would like to switch classes, please go to the {% comment %}program office{% endcomment %}Bush Room (10-105). \\
+If you have any questions or would like to switch classes, please go to {% comment %}program office{% endcomment %}Lobby 10. \\
 {% if student.shirtcount %}Reserved shirts MUST be picked up by Sunday at noon.{% endif %}
 
 \vspace{0.3cm}
@@ -140,6 +141,16 @@ If you have any questions or would like to switch classes, please go to the {% c
 \end{tabularx}
 
 \end{center}
+\[\]
+\[\]
+\begin{center}
+\textbf{Nothing to do?}
+\end{center}
+\begin{center}
+There will be walk-in classes happening from 1:15-4:30 in Lobby 13 (where you checked in). If you have unfilled time blocks, you can go to Lobby 13 to learn about a little bit of everything!  No sign-up necessary.
+\end{center}
+
+
 
 \vfill
 \begin{tabular}{lr}
@@ -158,7 +169,8 @@ Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
 \hline
 \multirow{3}{1in}{\centering \textbf{\small Amount \\ Due:} \\ 
 \vspace{0.05cm}
-\textbf{\large  \${{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
+\textbf{\large  \${% ifequal student.id 50335 %}5{% else %}{% with student.itemizedcosttotal|floatformat:"-2" as amt_owed %}{% ifequal amt_owed "40" %}20{% else %}{% ifequal amt_owed|cut:"-" "5" %}0{% else %}{{ amt_owed }}{% endifequal %}{% endifequal %}{% endwith %}{% endifequal %} }} & \multicolumn{2}{|p{1.5in}|}
+%%% \textbf{\large  \${{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
 { {% if student.saturday_lunch %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
 \cline{2-3}
 & \multicolumn{2}{|p{1.5in}|}
@@ -173,7 +185,7 @@ Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
 { {% if student.photocount %}Photo (\$10) x {{ student.photocount }} {% endif %} } \\
 \hline
 \multicolumn{2}{|p{1.25in}|}
-{ Admission: \${% if student.has_financial_aid %}0{% else %}30{% endif %} } & 
+{ Admission: \${% if student.has_financial_aid %}0{% else %}20{% endif %} } & 
 \multicolumn{1}{|p{1.25in}|}
 { \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}\${{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
 \hline

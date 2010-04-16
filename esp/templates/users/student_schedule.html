@@ -1,4 +1,3 @@
-
 {% comment %} <hr>
 <p><font style="font-size: 18pt;"><center>
 <a href="/learn/{{one}}/{{two}}/catalog">Click Here</a> to select your
@@ -7,9 +6,11 @@ classes!</center></font>
 <hr>
 <br /> {% endcomment %}
 <p>
+{% load render_qsd %}
+{% inline_qsd_block program.anchor class_schedule_header_text request.user %}
 Below is your class schedule for {{ program.niceName }}.  You can
-<a href="/learn/{{one}}/{{two}}/catalog">click here</a> to sign up for
-classes, or you can use the course listing below.
+<a href="/learn/{{one}}/{{two}}/catalog">click here</a> to view the full 
+catalog, or you can use the course listing below.
 </p>
 
 <p>  <b>Please note</b>: Your space in a class is saved immediately when it
@@ -18,6 +19,7 @@ click the "Confirm" button below to mark your registration as complete and
 receive instructions on how to get to the program and what to do when
 you arrive. 
 </p>
+{% end_inline_qsd_block %}
 
 {% if not module.deadline_met %}
     <center>

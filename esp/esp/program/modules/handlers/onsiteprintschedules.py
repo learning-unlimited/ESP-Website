@@ -40,6 +40,7 @@ from esp.users.models import UserBit
 from datetime         import datetime
 from django.db.models.query   import Q
 from esp.accounting_docs.models import Document, MultipleDocumentError
+from django.template.loader import select_template
 
 class OnsitePrintSchedules(ProgramModuleObj):
     @classmethod
@@ -142,7 +143,9 @@ class OnsitePrintSchedules(ProgramModuleObj):
             else:
                 img_format = 'png'
 
-            response = render_to_latex(self.baseDir()+'../programprintables/studentschedule.tex', {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, img_format)
+            schedule_template = select_template([self.baseDir()+'../programprintables/program_custom_schedules/%s_studentschedule.tex' %(self.program.id), self.baseDir()+'../programprintables/studentschedule.tex'])
+
+            response = render_to_latex(schedule_template, {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, img_format)
             # set the refresh rate
             #response['Refresh'] = '2'
 

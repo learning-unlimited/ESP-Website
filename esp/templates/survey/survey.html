@@ -75,12 +75,12 @@
 {% if perclass_questions %}
 {% if timeslots %}
     {% for ts in timeslots %}
-        <table width="600">
+        <table class="fullwidth">
         <tr>
             <th>Questions for {{ ts.description }}</th>
         </tr>
         </table>
-        <table width="600">
+        <table class="fullwidth">
         <tr>
             <td width="35%">
                 <label for="id_attendance_{{ ts.id }}"><b>Which class did you attend in this timeblock?</b></label>
@@ -89,7 +89,7 @@
                 <select name="attendance_{{ ts.id }}" id="id_attendance_{{ ts.id }}">
                     <option value="0">[None]</option>
                     {% for sec in ts.classsections %}
-                        <option value="{{ sec.parent_class.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
+                        <option value="{{ sec.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
                     {% endfor %}
                 </select>
             </td>
@@ -102,14 +102,14 @@
         </div>
     {% endfor %}
 {% else %}
-    {% for class in classes %}
-        <table width="600">
+    {% for sec in sections %}
+        <table class="fullwidth">
         <tr>
-            <th>Questions for {{ class.emailcode }}: {{ class.title }}</th>
+            <th>Questions for {{ sec.emailcode }}: {{ sec.title }}</th>
         </tr>
         </table>
         {% for question in perclass_questions %}
-            {{ question.render|substitute:class }}
+            {{ question.render|substitute:sec }}
         {% endfor %}
     {% endfor %}
 {% endif %}

@@ -40,6 +40,7 @@ from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.middleware import ESPError
+from django.template.loader import select_template
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -419,9 +420,8 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtSections()
-                    if cls.parent_program == self.program
-                    and cls.isAccepted() and cls.meeting_times.count() > 0 ]
+            classes = [ cls for cls in teacher.getTaughtSections(self.program)
+                    if cls.isAccepted() and cls.meeting_times.count() > 0 ]
             # now we sort them by time/title
             classes.sort()
 
@@ -912,6 +912,7 @@ Student schedule for %s:
             student.photocount = student.meals.filter(text__contains='Photo').count()
             student.saturday_lunch = student.meals.filter(text__contains='Saturday Lunch').count()
             student.sunday_lunch = student.meals.filter(text__contains='Sunday Lunch').count()
+            student.lunches = student.meals.filter(text__contains='Lunch')
             student.saturday_dinner = student.meals.filter(text__contains='Saturday Dinner').count()
             ### HARDCODED IN FOR SPLASH 2009 ###
 
@@ -935,7 +936,8 @@ Student schedule for %s:
             return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
-            return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
+            schedule_template = select_template([self.baseDir()+'program_custom_schedules/%s_studentschedule.tex' %(self.program.id), self.baseDir()+'studentschedule.tex'])
+            return render_to_latex(schedule_template, context, file_type)
 
     @aux_call
     @needs_admin
@@ -1042,8 +1044,7 @@ Student schedule for %s:
             return filterObj
 
         context = {'module': self     }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
-
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         students.sort()
                                     
         finished_verb = GetNode('V/Finished')
@@ -1053,7 +1054,13 @@ Student schedule for %s:
             
         expanded = [[] for i in range(numperpage)]
 
-        users = students
+        users = []
+        for u in students:
+            if u and u.id:
+                for sec in u.getSections(prog):
+                    u = ESPUser(u)
+                    u.sec = sec
+                    users.append(u)
             
         for i in range(len(users)):
             expanded[(i*numperpage)/len(users)].append(users[i])
@@ -1067,6 +1074,7 @@ Student schedule for %s:
                 else:
                     users.append(expanded[j][i])
         students = users
+
         return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
 
             
@@ -1158,7 +1166,7 @@ Student schedule for %s:
         scheditems = []
 
         for teacher in teachers:
-            for cls in teacher.getTaughtSections(self.program):
+            for cls in teacher.getTaughtClasses(self.program):
                 if cls.isAccepted():
                     scheditems.append({'teacher': teacher,
                                        'cls'    : cls})

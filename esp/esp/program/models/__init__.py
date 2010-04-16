@@ -830,7 +830,7 @@ class Program(models.Model):
             ext_cls = getattr(mod, ext_name_or_cls)
         else:
             ext_cls = ext_name_or_cls
-            
+
         if module_id:
             try:
                 extension = ext_cls.objects.filter(module__id=module_id)[0]

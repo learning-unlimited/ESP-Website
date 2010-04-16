@@ -44,7 +44,8 @@ Back to teacher reg
 <tr>
   <th>Name</th>
   <th>Grade</th>
-  <th>Time signed up for your class</th>
+  <th>Time applied for your class</th>
+  <th>Finished App?</th>
   <th>Review Date/Time</th>
   <th>Review</th>
 </tr>
@@ -59,11 +60,14 @@ Back to teacher reg
    {{ student.getGrade }}
     </td>
     <td>
-    {{student.added_class|date:"M/d/Y @ h:i:s" }}
+    {% for bit in student.added_userbits %}{{ bit.startdate|date:"n/d/y gA" }}: {{ bit.verb.friendly_name }}{% if not forloop.last %}<br />{% endif %}{% endfor %}
+    </td>
+    <td>
+      <center>{% if student.app_completed %}<b>Yes</b>{% else %}<b>No</b>{% endif %}</center>
     </td>
     <td>
   {% if student.app_reviewed %}
-    {{ student.app_reviewed.date|date:"M/d/Y @ h:i:s" }}
+    {{ student.app_reviewed.date|date:"n/d/y gA" }}
     (Score: {{ student.app_reviewed.score }})
   {% else %}
     <strong>Not Reviewed</strong>
