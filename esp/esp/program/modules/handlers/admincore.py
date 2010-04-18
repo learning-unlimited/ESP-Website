@@ -35,9 +35,13 @@ from django.contrib.auth.decorators import login_required
 from esp.datatree.models import *
 from esp.users.models import User, UserBit
 from django import forms
+from django.forms.formsets import formset_factory
+
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
 from esp.middleware import ESPError
+
+from datetime import datetime
 
 
 
@@ -67,6 +71,14 @@ class UserBitForm(forms.ModelForm):
     
     class Meta:
         model = UserBit
+
+class EditUserbitForm(forms.Form):
+    
+    startdate = forms.DateTimeField(widget=DateTimeWidget())
+    enddate = forms.DateTimeField(widget=DateTimeWidget(), required=False)
+    recursive = forms.ChoiceField(choices=((True, 'Recursive'), (False, 'Individual')), widget=forms.RadioSelect, required=False) 
+    id = forms.IntegerField(required=True, widget=forms.HiddenInput)
+
 
 class AdminCore(ProgramModuleObj, CoreModule):
 
@@ -111,73 +123,68 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def deadline_management(self, request, tl, one, two, module, extra, prog):
-        """ View for controlling program deadlines (V/Deadline/Registration/*) """
-        deadline_verb = GetNode("V/Deadline/Registration")
-        
-        def try_else(fn1, fn2):
-            try:
-                return fn1()
-            except:
-                return fn2()
-
-        nodes = deadline_verb.descendants().exclude(id = deadline_verb.id)
-
-        saved_successfully = "not_saving"
-        
-        if request.method == "POST":
-            saved_successfully = False
+        #   Define a formset for editing multiple user bits simultaneously.
+        EditUserbitFormset = formset_factory(EditUserbitForm)
+    
+        #   Handle 'open' / 'close' actions
+        if extra == 'open' and 'id' in request.GET:
+            bit = UserBit.objects.get(id=request.GET['id'])
+            bit.renew()
+        elif extra == 'close' and 'id' in request.GET:
+            bit = UserBit.objects.get(id=request.GET['id'])
+            bit.expire()
             
-            forms = [ { 'verb': v,
-                        'ub_form': UserBitForm(None, request.POST, prefix = "%d_"%v.id),
-                        'delete_status': request.POST.has_key("delete_bit_%d" % v.id) and request.POST['delete_bit_%d' % v.id] != ""
-                        }
-                      for v in nodes ]
-
-            
-            for form in forms:
-                # Get rid of any bits we're deleting
-                if form['delete_status']:
-                    for bit in UserBit.objects.filter(qsc=self.program_anchor_cached(),
-                                                      verb=v,
-                                                      user__isnull=True):
-                        bit.expire()
-                # Save any bits we're updating
-                if not form['delete_status'] and form['ub_form'].is_valid():
-                    bit = form['ub_form'].save(commit=False)
-                    bit.verb = form['verb']
-                    bit.qsc = self.program_anchor_cached()
-                    bit.user = None
-                    if UserBit.objects.filter(qsc=bit.qsc, verb=bit.verb, user__isnull=True).count() > 0:
-                        preexist_bit = UserBit.objects.filter(qsc=bit.qsc, verb=bit.verb, user__isnull=True)[0]
-                        preexist_bit.startdate = bit.startdate
-                        preexist_bit.enddate = bit.enddate
-                        preexist_bit.recursive = bit.recursive
-                        preexist_bit.save()
-                    else:
+        #   Check incoming form data
+        if request.method == 'POST':
+            edit_formset = EditUserbitFormset(request.POST.copy())
+            if edit_formset.is_valid(): 
+                for form in edit_formset.forms:
+                    if 'id' in form.cleaned_data:
+                        bit = UserBit.objects.get(id=form.cleaned_data['id'])
+                        bit.startdate = form.cleaned_data['startdate']
+                        bit.enddate = form.cleaned_data['enddate']
+                        bit.recursive = (form.cleaned_data['recursive'] == u'True')
                         bit.save()
-                    
-                    saved_successfully = True
-        else:
-            forms = [ { 'verb': v,
-                        'ub_form': try_else( lambda: UserBitForm( UserBit.objects.get(qsc=self.program_anchor_cached(),
-                                                                                      verb=v,
-                                                                                      user__isnull=True),
-                                                                  prefix = "%d_"%v.id ),
-                                             lambda: UserBitForm( prefix = "%d_"%v.id ) )
-                        }
-                      for v in nodes ]
+    
+        #   Get a list of Datatree nodes corresponding to user bit verbs
+        deadline_verb = GetNode("V/Deadline/Registration")
+        nodes = deadline_verb.descendants().exclude(id=deadline_verb.id).order_by('uri')
 
-            for f in forms:
-                f['delete_status'] = ( UserBit.objects.filter( qsc=self.program_anchor_cached(),
-                                                               verb=f['verb'],
-                                                               user__isnull = True ).count() == 0 )
-        context= {}
-                
-        context['userbit_forms'] = forms
-        context['saved_successfully'] = saved_successfully
+        #   Build a list of user bits that reference the relevant verbs
+        bits = []
+        bit_map = {}
+        for v in nodes:
+            selected_bits = UserBit.objects.filter(qsc=self.program_anchor_cached(), verb=v, user__isnull=True).order_by('-id')
+            if selected_bits.count() > 0:
+                bits.append(selected_bits[0])
+                bit_map[v.uri] = selected_bits[0]
+
+        #   Render page with forms
+        context = {}
+
+        for bit in bits:
+            if bit.enddate > datetime.now():
+                bit.open_now = True
+            else:
+                bit.open_now = False
+            bit.includes = bit.verb.descendants().exclude(id=bit.verb.id)
+            for node in bit.includes:
+                if node in nodes and node.uri in bit_map:
+                    node.overridden = True
+                    node.overridden_by = bit_map[node.uri]
+            
+        #   Supply initial data from user bits for forms
+        formset = EditUserbitFormset(initial=[bit.__dict__ for bit in bits])
+        for i in range(len(bits)):
+            bits[i].form = formset.forms[i]
         
-        return render_to_response(self.baseDir()+'deadlines.html', request, (prog, tl), context)        
+        context['manage_form'] = formset.management_form
+        context['bits'] = bits
         
+        return render_to_response(self.baseDir()+'deadlines.html', request, (prog, tl), context) 
+        
+    #   Alias for deadline management
+    deadlines = deadline_management
         
     def isStep(self):
         return True
