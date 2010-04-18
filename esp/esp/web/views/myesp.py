@@ -282,6 +282,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                'teacher': TeacherProfileForm,
                'guardian': GuardianProfileForm,
                'educator': EducatorProfileForm}[role]
+		 'Student': StudentProfileForm,
+		 'Teacher': TeacherProfileForm,
+		 'Guardian': GuardianProfileForm,
+		 'Educator': EducatorProfileForm,
     context['profiletype'] = role
 
     if request.method == 'POST' and request.POST.has_key('profile_page'):
