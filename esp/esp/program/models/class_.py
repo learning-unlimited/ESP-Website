@@ -1520,7 +1520,8 @@ class ClassSubject(models.Model):
             return 'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull(use_cache=use_cache):
-            return 'Class is full!'
+            scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            return scrmi.temporarily_full_text
 
         if request:
             verb_override = request.get_node('V/Flags/Registration/GradeOverride')
