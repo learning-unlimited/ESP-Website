@@ -6,10 +6,18 @@
   background: #ccc;
 }
 
-span.error {
+div.error {
   //font-family: Arial;
-  font-variant: small-caps;
-  font-size: 50px;
+#  font-variant: small-caps;
+#  font-size: 50px;
+    background-color: #00003C;
+    color: red;
+    border: 0px solid black;
+    font-weight: bold;
+    font-size: 0.9em;
+    padding: 3px;
+    width: 100%;
+    font-family: Helvetica, Arial, sans-serif;
 }
 
 #catalog table {
