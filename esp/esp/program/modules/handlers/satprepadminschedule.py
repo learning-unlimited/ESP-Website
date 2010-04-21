@@ -181,7 +181,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
 
 
     @aux_call
-    @login_required
+    @needs_admin
     def enter_scores(self, request, tl, one, two, module, extra, prog):
         """ Allow bulk entry of scores from a spreadsheet.  This works for either the diagnostic or
         practice exams. """
@@ -539,6 +539,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
 
     @aux_call
+    @needs_admin
     def satprep_teachassign(self, request, tl, one, two, module, extra, prog):
         """ This will allow the program director to assign sections to teachers. """
         import string
