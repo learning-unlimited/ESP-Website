@@ -58,6 +58,7 @@ class ResourceModule(ProgramModuleObj):
             }
 
     @main_call
+    @needs_admin
     def resources(self, request, tl, one, two, module, extra, prog):
 	context = {}
         
