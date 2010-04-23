@@ -78,7 +78,15 @@ class RegProfileModule(ProgramModuleObj):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
         from esp.web.views.myesp import profile_editor
-        role = {'teach': 'teacher','learn': 'student'}[tl]
+        
+        #   Check user role.  Some users may have multiple roles; if one of them
+        #   is 'student' or 'teacher' then use that to set up the profile.
+        #   Otherwise, make a wild guess.
+        user_roles = ESPUser(request.user).getUserTypes()
+        if 'teacher' in user_roles or 'student' in user_roles:
+            role = {'teach': 'teacher','learn': 'student'}[tl]
+        else:
+            role = user_roles[0]
 
         #   Reset e-mail address for program registrations.
         if prog is None:

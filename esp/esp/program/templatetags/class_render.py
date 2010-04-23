@@ -1,5 +1,5 @@
 from django import template
-from esp.web.util.template import cache_inclusion_tag
+from esp.web.util.template import cache_inclusion_tag, DISABLED
 from esp.users.models import ESPUser
     
 register = template.Library()
@@ -55,7 +55,7 @@ def get_smallest_section(cls, timeslot=None):
 
     return section
 
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func, cache_obj=DISABLED)
 def render_class_core(cls):
 
     prog = cls.parent_program

@@ -282,6 +282,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		 'teacher': TeacherProfileForm,
 		 'guardian': GuardianProfileForm,
 		 'educator': EducatorProfileForm,
+		 'Student': StudentProfileForm,
+		 'Teacher': TeacherProfileForm,
+		 'Guardian': GuardianProfileForm,
+		 'Educator': EducatorProfileForm,
 		 'UTEPAlum': EducatorProfileForm,
 		 'TeacherAndUofCAlum': EducatorProfileForm,
 		 'UofCAlum': AlumProfileForm,
@@ -380,7 +384,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 							   for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
 							   if isinstance(t.target, Program) \
 							   and (set(curUser.getUserTypes()) & set(t.value.split(","))))]
-		progs_teacher_tag = [(x, userrole_teacher) for x in \
+		progs_teacher_tag = [(x, userrole_teachers) for x in \
 					     list(t.target \
 							  for t in Tag.objects.filter(key = "allowed_teacher_types").select_related() \
 							  if isinstance(t.target, Program) \
@@ -393,7 +397,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 		nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
 		if len(progs) == 1:
 			prog = progs.pop()
-			return HttpResponseRedirect(u'/%s/%s/%s' % (prog[1]['base'], prog[0].getUrlBase(), prog[1]['reg']))
+			return HttpResponseRedirect(u'/%s/%s/%s' % (prog[1].base, prog[0].getUrlBase(), prog[1].reg))
 		else:
 			ctxt['progs'] = progs
 			ctxt['nextreg'] = list(nextreg)

@@ -151,8 +151,8 @@ class ClassManager(ProcedureManager):
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
         
-        select = SortedDict([( '_num_students', 'SELECT COUNT(*) FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "datatree_datatree"."id" AND "datatree_datatree"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
-                             ('teacher_ids', 'SELECT list("users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
+        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "users_userbit"."user_id") FROM "users_userbit", "datatree_datatree" AS "foo" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "foo"."id" AND "foo"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
+                             ('teacher_ids', 'SELECT list(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
                              ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
@@ -1429,15 +1429,16 @@ class ClassSubject(models.Model):
     def cache_time(self):
         return 99999
     
+    @cache_function
     def title(self):
-        retVal = self.cache['title']
-        if retVal:
-            return retVal
-        
-        retVal = self.anchor.friendly_name
-
-        self.cache['title'] = retVal
-        return retVal
+        print 'recomputing title for cls#%d' % self.id
+        return self.anchor.friendly_name
+    def title_selector(node):
+        print 'checking title; %s' % node.classsubject_set.all()
+        if node.classsubject_set.all().count == 1:
+            return {'self': node.classsubject_set.all()[0]}
+        return {}
+    title.depend_on_row(lambda: DataTree, title_selector)
     
     @cache_function
     def teachers(self):
@@ -1519,7 +1520,8 @@ class ClassSubject(models.Model):
             return 'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull(use_cache=use_cache):
-            return 'Class is full!'
+            scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            return scrmi.temporarily_full_text
 
         if request:
             verb_override = request.get_node('V/Flags/Registration/GradeOverride')
