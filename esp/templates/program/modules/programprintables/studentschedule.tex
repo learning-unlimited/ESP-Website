@@ -1,5 +1,5 @@
 {% autoescape off %}
-\documentclass[landscape,letterpaper,12pt]{article}
+\documentclass[letterpaper,12pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{fullpage}
 \usepackage{textpos}
@@ -13,7 +13,7 @@
 \graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
 
 \pagestyle{empty}
-\renewcommand*\arraystretch{1.5}
+\renewcommand*\arraystretch{1.25}
 \newcolumntype{+}{>{\global \let \currentrowstyle \relax }}
 \newcolumntype{^}{>{\currentrowstyle }}
 \newcommand{\rowstyle}[1]{\gdef \currentrowstyle{#1} #1\ignorespaces}
@@ -23,42 +23,54 @@
 \begin{document}
 {% for student in students %}
 ~\\
-\vspace*{0.25in}
-\begin{center}
-\begin{tabularx}{17cm}{X r}
-\noindent
-{% spaceless %}
-\begin{minipage}[b]{4in}
-\Huge\textbf{% templatetag openbrace %}{{ student.getGrade|texescape }} $\bullet$ {{ student.last_name|texescape }} } \\
- \Large \textbf{ {{ student.first_name|texescape }} $\bullet$ {{ student.username|texescape }} $\bullet$ {{ student.id }} } \\
-\end{minipage}
-{% endspaceless %}
-&
-\includegraphics[width=1in]{splogol}\vspace{-0.2in}
 
-\end{tabularx}
-\end{center}
+
+\vspace*{3in}
+
 
 
 
 \normalsize
 
 \begin{center}
-\begin{tabularx}{17cm}{|X|c|m{4in}|}
+\begin{tabularx}{17cm}{|X|c|m{4.15in}|}
 \hline
-\multicolumn{3}{c}{
+\multicolumn{1}{l}{
 \rowstyle{\color{white}\cellcolor{black} } 
-\textbf{Class Schedule for {{ student.name|texescape }} } }  \\
-\multicolumn{1}{|c|}{\textbf{Class Time} } & \textbf{Room} & \multicolumn{1}{c|}{\textbf{Class} } \\
+\textbf{ {{ student.last_name|texescape }} }
+} &
+\multicolumn{2}{r}{
+\rowstyle{\color{white}\cellcolor{black} } 
+{{ student.name|texescape }}'s Ripple Day }   \\
+\multicolumn{1}{|c|}{\textbf{Time} } & \textbf{Room} & \multicolumn{1}{c|}{\textbf{Event} } \\
 {% for cls in student.classes %}\hline
 {% ifequal cls.event_type.description "Compulsory" %}
   \multicolumn{3}{|c|}{ \textbf{\textit{ {{ cls.description }} } } }
 {% else %}
   {% ifequal cls.event_type.description "Class" %}
-  \multicolumn{1}{|c|}{ {{ cls.start|date:"f" }} -- {{ cls.end|date:"f A" }} } & \multicolumn{2}{c|}{[NO CLASS]}
+
+{% ifequal cls.id 51 %} 
+ \multicolumn{1}{|c|}{ 9:45 -- 11 AM } & IdaCinema & Introductory Remarks and Opening Panel
+{% else %}
+  {% ifequal cls.id 50 %} 
+  \multicolumn{1}{|c|}{ 12:30 -- 1:30 PM } & IdaCloister & Lunch and Open Conversation 
   {% else %}
-  \multicolumn{1}{|c|}{ {{ cls.start_time.start|date:"f" }} -- {{ cls.start_time.end|date:"f A" }} } & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }}: {{ cls.title|truncatewords:5|texescape }}
+    {% ifequal cls.id 52 %} 
+    \multicolumn{1}{|c|}{ 4:20 -- 5:30 PM } & IdaCinema & Keynote Speech and Closing Remarks 
+    {% else %}
+    \multicolumn{1}{|c|}{ {{ cls.start|date:"f" }} -- {{ cls.end|date:"f A" }} } &
+    \multicolumn{2}{|c|}{ Break }
+    {% endifequal %}
   {% endifequal %}
+{% endifequal %}
+
+  {% else %}
+
+{% if cls.start_time %}
+  \multicolumn{1}{|c|}{ {{ cls.start_time.start|date:"f" }} -- {{ cls.start_time.end|date:"f A" }} } & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.title|texescape }}
+{% endif %}
+  {% endifequal %}
+
 {% endifequal %}
 \\ 
 {% endfor %}\hline
@@ -66,17 +78,10 @@
 \end{center}
 
 
-\begin{center}
-\begin{tabularx}{17cm}{X c}
-\multicolumn{2}{c}{\small
-\textit{Please see attached map for building directions, or ask anyone in yellow and gray shirts for help.}
-\normalsize } \\
-\multicolumn{2}{c}{
-  \rowstyle{\color{white}\cellcolor{black} 
-    \textbf{\includegraphics[width=0.6in]{twitterlogo}Follow us on Twitter: twitter.com/splashchicago} } } \\
-~ & ~ 
-\end{tabularx}
-\end{center}
+
+\vspace*{2in}
+
+
 
 {% if not forloop.last %}\pagebreak{% endif %}
 {% endfor %}

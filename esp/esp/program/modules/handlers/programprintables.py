@@ -868,6 +868,7 @@ Student schedule for %s:
             # now we sort them by time/title
             classes.sort()
 
+            """
             # now we insert compulsory events and empty blocks
             for c in all_events:
                 # find the first class that begins after the compulsory event ends
@@ -876,7 +877,26 @@ Student schedule for %s:
                         if i == 0 or (type(classes[i-1]) == ClassSection and classes[i-1].start_time().end < c.end) or (type(classes[i-1]) == Event and classes[i-1].end < c.end):
                             classes.insert(i, c)
                             break
-            
+            """
+            # actually, just insert every block that isn't taken by a class
+            all_class_events = []
+            for cls in classes:
+                for t in cls.meeting_times.all():
+                    if t.id not in all_class_events:
+                        all_class_events.append(t.id)
+            ts = all_events.exclude(id__in=all_class_events)
+            for t in ts:
+                after_end = True
+                for i in range(0, len(classes)):
+                     if type(classes[i]) == ClassSection and classes[i].start_time().start >= t.end:
+                         classes.insert(i, t)
+                         after_end = False
+                         break
+                     if type(classes[i]) == ClassSection and classes[i].meeting_times.order_by('-end')[0].end > t.end:
+                         after_end = False
+                if after_end:
+                    classes.append(t)
+           
             # note whether student is in parent program
             student.in_parent_program = False
             if parent_program_students_classreg is not None:
