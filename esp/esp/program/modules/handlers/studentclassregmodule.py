@@ -166,9 +166,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     #   This would be nice, but unfortunately doesn't work:
                     #   retVal[stutype] = self.getQForUser(Par & Unexpired & Reg & VerbName & VerbParent)
                 else:
-                    retVal[stutype] = User.objects.filter(Unexpired & VerbName & VerbParent).distinct()
-                    #   Same issue here - returns 0 students
-                    #   retVal[stutype] = retVal['classreg'].filter(userbit__enddate__gte=now, userbit__startdate__lte=now, userbit__verb__parent=GetNode("V/Flags/UserRole"), userbit__verb__name=stutype).distinct() 
+                    #   retVal[stutype] = User.objects.filter(Unexpired & VerbName & VerbParent).distinct()
+                    retVal[stutype] = retVal['classreg'].filter(userbit__enddate__gte=now, userbit__startdate__lte=now, userbit__verb__parent=GetNode("V/Flags/UserRole"), userbit__verb__name=stutype).distinct() 
 
         return retVal
 
