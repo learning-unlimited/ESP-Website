@@ -452,19 +452,19 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         is_onsite = user.isOnsite(self.program)
         
         #   Override both grade limits and size limits during onsite registration
-        if is_onsite:
-            classes = list(ClassSubject.objects.catalog(self.program, ts))
-        else:
-            classes = list(ClassSubject.objects.catalog(self.program, ts))
-            if user_grade != 0:
-                classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
-            classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=False), classes)
-            classes = filter(lambda c: not c.isRegClosed(), classes)
+        #if is_onsite:
+        classes = list(ClassSubject.objects.catalog(self.program, ts))
+        #else:
+        #    classes = list(ClassSubject.objects.catalog(self.program, ts))
+        #    if user_grade != 0:
+        #        classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
+        #    classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=False), classes)
+        #    classes = filter(lambda c: not c.isRegClosed(), classes)
 
         #   Sort class list
 
-        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
         classes = sorted(classes, key=lambda cls: cls.category.category)
+        classes = sorted(classes, key=lambda cls: cls.num_students())
 
         categories = {}
 
