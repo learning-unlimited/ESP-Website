@@ -68,13 +68,13 @@ class TeacherPreviewModule(ProgramModuleObj):
         else:
             raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.' 
 
-    # No need for needs_teacher, since it depends on request.user
     @aux_call
+    # No need for needs_teacher, since it depends on request.user
     def teacherschedule(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='teacherschedule.html')
 
-    # No need for needs_teacher, since it depends on request.user
     @aux_call
+    # No need for needs_teacher, since it depends on request.user
     def classroster(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='classrosters.html')
 
