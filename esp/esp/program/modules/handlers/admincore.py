@@ -40,45 +40,21 @@ from django.forms.formsets import formset_factory
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
 from esp.middleware import ESPError
+from esp.datatree.forms import AjaxTreeField
 
 from datetime import datetime
 
-
-
-class UserBitForm(forms.ModelForm):
-    def __init__(self, bit = None, *args, **kwargs):
-        super(UserBitForm, self).__init__(*args, **kwargs)
-
-        if bit != None:
-            self.fields['startdate'] = forms.DateTimeField(initial=bit.startdate, widget=DateTimeWidget())
-            self.fields['enddate'] = forms.DateTimeField(initial=bit.enddate, widget=DateTimeWidget(), required=False)
-            self.fields['id'] = forms.IntegerField(initial=bit.id, widget=forms.HiddenInput())
-            self.fields['qsc'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.qsc.id, widget=forms.HiddenInput())
-            self.fields['verb'] = forms.ModelChoiceField(queryset=DataTree.objects.all(), initial=bit.verb.id, widget=forms.HiddenInput())
-        else:
-            self.fields['startdate'] = forms.DateTimeField(widget=DateTimeWidget(), required=False)
-            self.fields['enddate'] = forms.DateTimeField(widget=DateTimeWidget(), required=False)
-            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput(), required=False)
-
-        self.fields['user'] = forms.ModelChoiceField(queryset=User.objects.all(), widget=forms.HiddenInput(), required=False)
-        
-        self.fields['startdate'].line_group = 1
-        self.fields['enddate'].line_group = 1
-        self.fields['recursive'] = forms.BooleanField(label = 'Covers deadlines beneath it ("Recursive")', required=False) # I consider this a bug, though it makes sense in context of the form protocol: Un-checked BooleanFields are marked as having not been filled out
-        self.fields['recursive'].line_group = 2
-        
-    as_table = grouped_as_table
-    
-    class Meta:
-        model = UserBit
-
 class EditUserbitForm(forms.Form):
-    
     startdate = forms.DateTimeField(widget=DateTimeWidget())
     enddate = forms.DateTimeField(widget=DateTimeWidget(), required=False)
     recursive = forms.ChoiceField(choices=((True, 'Recursive'), (False, 'Individual')), widget=forms.RadioSelect, required=False) 
     id = forms.IntegerField(required=True, widget=forms.HiddenInput)
 
+class NewUserbitForm(forms.Form):
+    verb = AjaxTreeField(label='Activity', root=GetNode("V/Deadline/Registration").id)
+    startdate = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget())
+    enddate = forms.DateTimeField(label='Closing date/time', initial=datetime(9999, 01, 01), widget=DateTimeWidget(), required=False)
+    recursive = forms.ChoiceField(label='Scope', choices=((True, 'Recursive'), (False, 'Individual')), initial=False, widget=forms.RadioSelect, required=False) 
 
 class AdminCore(ProgramModuleObj, CoreModule):
 
@@ -87,6 +63,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
         return {
             "link_title": "Program Dashboard",
             "module_type": "manage",
+            "main_call": "dashboard",
+            "aux_calls": "deadlines",
             "seq": -9999
             }
 
@@ -126,25 +104,47 @@ class AdminCore(ProgramModuleObj, CoreModule):
         #   Define a formset for editing multiple user bits simultaneously.
         EditUserbitFormset = formset_factory(EditUserbitForm)
     
+        #   Define a status message
+        message = ''
+    
         #   Handle 'open' / 'close' actions
         if extra == 'open' and 'id' in request.GET:
             bit = UserBit.objects.get(id=request.GET['id'])
             bit.renew()
+            message = 'Deadline opened: %s.' % bit.verb.friendly_name
         elif extra == 'close' and 'id' in request.GET:
             bit = UserBit.objects.get(id=request.GET['id'])
             bit.expire()
-            
+            message = 'Deadline closed: %s.' % bit.verb.friendly_name
+
         #   Check incoming form data
         if request.method == 'POST':
-            edit_formset = EditUserbitFormset(request.POST.copy())
+            edit_formset = EditUserbitFormset(request.POST.copy(), prefix='edit')
+            create_form = NewUserbitForm(request.POST.copy())
             if edit_formset.is_valid(): 
+                num_forms = 0
                 for form in edit_formset.forms:
                     if 'id' in form.cleaned_data:
+                        num_forms += 1
                         bit = UserBit.objects.get(id=form.cleaned_data['id'])
                         bit.startdate = form.cleaned_data['startdate']
                         bit.enddate = form.cleaned_data['enddate']
                         bit.recursive = (form.cleaned_data['recursive'] == u'True')
                         bit.save()
+                if num_forms > 0:
+                    message = 'Changes saved.'
+            if create_form.is_valid():
+                bit, created = UserBit.objects.get_or_create(user=None, verb=create_form.cleaned_data['verb'], qsc=prog.anchor)
+                if not created:
+                    message = 'Deadline already exists: %s.  Please modify the existing deadline.' % bit.verb.friendly_name
+                else:
+                    bit.startdate = create_form.cleaned_data['startdate']
+                    bit.enddate = create_form.cleaned_data['enddate']
+                    bit.recursive = (create_form.cleaned_data['recursive'] == u'True')
+                    bit.save()
+                    message = 'Deadline created: %s.' % bit.verb.friendly_name
+            else:
+                message = 'No activities selected.  Please select a deadline type from the tree before creating a deadline.'
     
         #   Get a list of Datatree nodes corresponding to user bit verbs
         deadline_verb = GetNode("V/Deadline/Registration")
@@ -157,29 +157,36 @@ class AdminCore(ProgramModuleObj, CoreModule):
             selected_bits = UserBit.objects.filter(qsc=self.program_anchor_cached(), verb=v, user__isnull=True).order_by('-id')
             if selected_bits.count() > 0:
                 bits.append(selected_bits[0])
-                bit_map[v.uri] = selected_bits[0]
+                bit_map[v.uri] = bits[-1]
 
-        #   Render page with forms
+        #   Populate template context to render page with forms
         context = {}
 
+        #   Set a flag on each bit for whether it is currently open
         for bit in bits:
             if bit.enddate > datetime.now():
                 bit.open_now = True
             else:
                 bit.open_now = False
+        #   For each bit B, get a list of other bits that B overrides or are overriden by B
+        for bit in bits:
+            bit.uri_rel = bit.verb.uri[(len(deadline_verb.uri) + 1):]
             bit.includes = bit.verb.descendants().exclude(id=bit.verb.id)
             for node in bit.includes:
                 if node in nodes and node.uri in bit_map:
                     node.overridden = True
                     node.overridden_by = bit_map[node.uri]
+                    node.bit_open = bit_map[node.uri].open_now
             
         #   Supply initial data from user bits for forms
-        formset = EditUserbitFormset(initial=[bit.__dict__ for bit in bits])
+        formset = EditUserbitFormset(initial=[bit.__dict__ for bit in bits], prefix='edit')
         for i in range(len(bits)):
             bits[i].form = formset.forms[i]
         
+        context['message'] = message
         context['manage_form'] = formset.management_form
         context['bits'] = bits
+        context['create_form'] = NewUserbitForm()
         
         return render_to_response(self.baseDir()+'deadlines.html', request, (prog, tl), context) 
         

@@ -1,0 +1,56 @@
+{% comment %}
+This is a tree selector widget.  The Django template system merges in the field name and a DataTree node that forms the parent of the search space.  The user navigates the search space using an expanding series of submenus.  The initial list of choices branches out to reveal children of each item that the mouse moves over.
+{% endcomment %}
+
+<style type="text/css">
+#{{ field_name }}_target_name {
+    border: 1px solid #CCCCCC;
+    background-color: #FFFF99;
+    font-size: 12px;
+}
+</style>
+
+<input type="hidden" id="{{ field_name }}" name="{{ field_name }}" value="{{ initial_node.id }}" />
+<table border="0">
+<tr>
+    <td>
+        <div style="width: 350px" id="{{ field_name }}_target_name">{{ initial_node.friendly_name }}</div>
+        <br /><div id="treeOne"></div>
+    </td>
+</tr>
+</table>
+
+<script type="text/javascript">
+<!--
+
+dojo.require("dojo.data.ItemFileReadStore");
+dojo.require("dojox.data.JsonRestStore");
+dojo.require("dijit.Tree");
+
+dojo.addOnLoad(function() {
+    var store = new dojo.data.ItemFileReadStore({
+        url: "/admin/ajax_children/?id={{ root.id }}"
+    });
+    
+var treeModel = new dijit.tree.ForestStoreModel({
+            store: store,
+            query: {
+                "parent_id": "{{ root.id }}"
+            },
+            rootId: "{{ root.id }}",
+            rootLabel: "{{ root.name }}",
+            childrenAttrs: ["children"]
+        });
+
+    new dijit.Tree({
+        model: treeModel,
+        onClick: function (item) {
+            document.getElementById('{{ field_name }}').value = store.getValue(item, 'id');
+            document.getElementById('{{ field_name }}_target_name').innerHTML = store.getValue(item, 'friendly_name');
+        }
+    },
+    "treeOne");
+});
+
+-->
+</script>

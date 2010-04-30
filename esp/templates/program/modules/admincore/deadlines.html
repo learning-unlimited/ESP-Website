@@ -136,14 +136,32 @@
 <div id="userbitforms">
 <p><h1>Deadline Management</h1></p>
 
+{% if message %}
+    <p><span style="color: #990000;">{{ message }}</span></p>
+{% endif %}
+
 <p>Access to each program's Web pages (including registration pages) is controlled by a set of deadlines, each of which prescribes when a certain set of activities can be performed.  "Recursive" deadlines can control a range of activities jointly; you may open all registration features using a single recursive deadline (i.e. "Main Student Registration"), or specify several non-recursive deadlines (catalog viewing, surveys, etc.) for finer control.</p>
+
+<p>If you use recursive deadlines, keep in mind that the "inner" (subset) deadlines can only be used to open registration features when the recursive deadline is closed; you cannot close inner deadlines to override an open recursive deadline.  Hence it is wise to make the deadlines non-recursive when controlling individual registration features.</p>
 
 <p>Please proceed to edit <a href="#existing">existing deadlines</a> or <a href="#new">create a new deadline</a> if necessary.</p>
 
 <a name="existing"></a>
 <h2>Existing Deadlines</h2>
 
-<form method="post" action="" id="manage_form">
+<h3>Jump to Deadlines</h3>
+
+<div style="font-size: 0.8em">
+<ul class="nodelist">
+{% for bit in bits %}
+    <li><a href="#userbit_form_{{ bit.id }}">{{ bit.uri_rel }}</a>: {{ bit.verb.friendly_name }}</li>
+{% endfor %}
+</ul>
+</div>
+
+<h3>Edit Deadlines</h3>
+
+<form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_form">
 {% autoescape off %}
 {{ manage_form }}
 {% for bit in bits %}
@@ -160,10 +178,22 @@
         <td valign="top" width="100px">Scope: {{ bit.form.recursive }}</td>
         <td valign="top">
             <div id="bit_{{ bit.id }}_recursive" style="display: {% if bit.recursive %}block{% else %}none{% endif %};">
-            {% if not bit.includes|length_is:0 %}Recursive scope includes: 
+            {% if bit.open_now %}
+                {% if not bit.includes|length_is:0 %}The recursive scope of this deadline includes: {% endif %}
+            {% else %}
+                This deadline is closed; click 'Open' to open it along with all {{ bit.includes|length }} inner deadlines.
+            {% endif %}
             <ul class="nodelist">
             {% for node in bit.includes %}
-                <li>{% if node.overridden %}<span class="override"><a href="#userbit_form_{{ node.overridden_by.id }}">Subset: </a>{% endif %}
+                {% if bit.open_now or node.bit_open %}
+                <li>{% if node.overridden %}<span class="override">
+                    <a href="#userbit_form_{{ node.overridden_by.id }}">
+                        {% if bit.open_now %}
+                            Overrides: 
+                        {% else %}
+                            Overridden by:
+                        {% endif %}
+                    </a>{% endif %}
                     {% if node.friendly_name %}
                         {{ node.friendly_name }}
                     {% else %}
@@ -171,12 +201,14 @@
                     {% endif %}
                     {% if node.overridden %}</span>{% endif %}
                 </li>
+                {% endif %}
             {% endfor %}
             </ul>
-            {% else %}
+            {% if bit.includes|length_is:0 %}
             <span style="color: #999999">No dependent activities - "recursive" and "individual" are equivalent</span>
             {% endif %}
             </div>
+            
             <div id="bit_{{ bit.id }}_nonrecursive" style="display: {% if bit.recursive %}none{% else %}block{% endif %};">
             {% if not bit.includes|length_is:0 %}
             {{ bit.includes|length }} dependent activit{% if bit.includes|length_is:1 %}y{% else %}ies{% endif %} can be enabled jointly 
@@ -198,12 +230,23 @@
     <br />
 {% endfor %}
 {% endautoescape %}
-</form>
 
 <a name="new"></a>
 <h2>Create new deadlines</h2>
 
-<p>Not available yet; please create deadlines using <a href="/admin/users/userbit/add/">the Django administrative interface</a>.</p>
+<p>If you have made changes to the current deadlines, please click "Save Changes" above before creating a new deadline.</p>
+
+{% autoescape off %}
+<table cellspacing="0" width="550px" cellpadding="3">
+{{ create_form }}
+<tr>
+    <td align="center" valign="center" colspan="2">
+        <input class="button" type="Submit" name="submit" value="Save Deadline" />
+    </td>
+</tr>
+</table>
+{% endautoescape %}
+</form>
 
 </div>
 {% endblock %}
