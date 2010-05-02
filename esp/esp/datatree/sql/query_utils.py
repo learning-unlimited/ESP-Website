@@ -107,7 +107,6 @@ class QTree(Q):
         information to the query object.
         """
         _import_datatree()
-        query.pre_sql_setup()
 
         for item in self.children:
             self._handle_filter(query, item, used_aliases)
@@ -147,7 +146,6 @@ class QTree(Q):
 
     def _update_where(self, query, where, value):
         _import_datatree()
-        qn = query.quote_name_unless_alias
         new_children = []
         datatree_id = getattr(value, 'id', value)
 
@@ -167,8 +165,13 @@ class QTree(Q):
 
             if len(child) == 6: # Django 1.0 data-structure format
                 table_alias, name, db_type, lookup_type, value_annot, params = child
-            else: # Django 1.1 data format
+            elif type(child[0]) == tuple: # Django 1.1 data format
                 (table_alias, name, db_type), lookup_type, value_annot, params = child
+            else:   # Django 1.2 format
+                constraint, lookup_type, value_annot, params = child
+                table_alias = constraint.alias
+                name = constraint.field.name
+                db_type = None
 
             if params:
                 for i in range(len(COLUMNS)):
@@ -182,12 +185,22 @@ class QTree(Q):
                                        DataTree._meta.pk.column)
                             new_children.append(SubWhereNode(where_query, symbols, [datatree_id]))
                             break
-                    else: # Django 1.1 data format
+                    elif type(child[0]) == tuple: # Django 1.1 data format
                         if child[0][1] == COLUMNS[i] and child[3][0] == TOKENS[i]:
                             new_child = list(child)
                             where_query = WHERE_QUERY % (connection.operators[child[1]][:-3])
                             
                             symbols = (child[0][0], child[0][1], child[0][1],
+                                       DataTree._meta.db_table,
+                                       DataTree._meta.pk.column)
+                            new_children.append(SubWhereNode(where_query, symbols, [datatree_id]))
+                            break
+                    else:   # Django 1.2 format
+                        if name == COLUMNS[i] and child[3] == TOKENS[i]:
+                            new_child = list(child)
+                            where_query = WHERE_QUERY % (connection.operators[child[1]][:-3])
+                            
+                            symbols = (table_alias, name, name,
                                        DataTree._meta.db_table,
                                        DataTree._meta.pk.column)
                             new_children.append(SubWhereNode(where_query, symbols, [datatree_id]))
@@ -233,7 +246,7 @@ class SubWhereNode(object):
         self.cols = list(cols)
         self.params = params
 
-    def as_sql(self, qn):
+    def as_sql(self, qn, connection):
         query = self.query % (tuple(map(qn, map(str, self.cols))))
         return query, self.params
 
