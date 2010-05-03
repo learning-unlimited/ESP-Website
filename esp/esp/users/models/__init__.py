@@ -501,6 +501,14 @@ class ESPUser(User, AnonymousUser):
             
         return csl
 
+    @cache_function
+    def getSectionsFromProgram(self, program):
+        return self.getSections(program, verbs=None)
+    #   Invalidate cache if bits are changed on either classes or sections.
+    #   This should be less conservative but there's no easy way to filter the bits as they are saved
+    #   (since we would need to check for all verbs under 'V/Flags/Registration')
+    getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user})
+
     def getEnrolledSections(self, program=None):
         if program is None:
             return self.getEnrolledSectionsAll()
@@ -531,7 +539,7 @@ class ESPUser(User, AnonymousUser):
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_cache(getEnrolledSectionsFromProgram, lambda self=wildcard, program=wildcard, **kwargs: {'self':self, 'program':program})
 
-    def getRegistrationPriority(self, timeslots):
+    def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. 
             Returns 0 if the student is already enrolled in one or more of the timeslots. """
         from esp.program.models import Program, RegistrationProfile

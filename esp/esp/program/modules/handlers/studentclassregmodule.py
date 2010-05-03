@@ -157,7 +157,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @needs_student
     def prepare(self, context={}):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
-        timeslots = list(self.program.getTimeSlots(exclude_types=[]).order_by('start'))
+        timeslots = self.program.getTimeSlotList(exclude_compulsory=False)
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes())
         
         prevTimeSlot = None
@@ -191,25 +191,20 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 else:
                     timeslot_dict[mt.id] = [section_dict]
                     
-        for timeslot in timeslots:
+        user_priority = user.getRegistrationPriorities(self.program, [t.id for t in timeslots])
+        for i in range(len(timeslots)):
+            timeslot = timeslots[i]
             daybreak = False
             if prevTimeSlot != None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
                     daybreak = True
 
-            #   Same change as above.  -Michael P
-            #   if scrmi.use_priority:
-            #       user_priority = user.getRegistrationPriority([timeslot])
-            #   else:
-            #       user_priority = None
-            user_priority = user.getRegistrationPriority([timeslot])
-
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user_priority))
+                schedule.append((timeslot, cls_list, blockCount + 1, user_priority[i]))
             else:                
-                schedule.append((timeslot, [], blockCount + 1, user_priority))
+                schedule.append((timeslot, [], blockCount + 1, user_priority[i]))
 
             prevTimeSlot = timeslot
                 
@@ -218,6 +213,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['allow_removal'] = self.deadline_met('/Removal')
 
         return context
+
 
     @aux_call
     @needs_student
@@ -307,8 +303,11 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             error = section.cannotAdd(self.user,self.enforce_max,use_cache=False)
         if scrmi.use_priority or not error:
             error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False) or section.cannotAdd(self.user, self.enforce_max, use_cache=False)
-
-        priority = self.user.getRegistrationPriority(section.meeting_times.all())
+        
+        if scrmi.use_priority:
+            priority = self.user.getRegistrationPriority(prog, section.meeting_times.all())
+        else:
+            priority = 1
 
         # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
         auto_classes = []
@@ -413,7 +412,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if is_onsite:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = list(ClassSubject.objects.catalog(self.program, ts).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+            classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, ClassSubject.objects.catalog(self.program, ts))
             classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
