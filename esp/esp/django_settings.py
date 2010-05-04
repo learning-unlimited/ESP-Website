@@ -79,7 +79,7 @@ INTERNAL_IPS = (
 # Default admins #
 ##################
 ADMINS = (
-    ('ESP Webmasters','esp-webmasters@mit.edu'),
+    ('LU Web Team','serverlog@lists.learningu.org'),
 )
 
 
@@ -88,13 +88,13 @@ ADMINS = (
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@esp.mit.edu'
+SERVER_EMAIL = 'server@diogenes.learningu.org'
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
-    'archive': 'esparchive@gmail.com',
-    'bounces': 'esp-bounces@mit.edu'
+    'archive': 'learninguarchive@gmail.com',
+    'bounces': 'learningubounces@gmail.com'
 }
 
 
@@ -146,7 +146,6 @@ ROOT_URLCONF = 'esp.urls'
 APPEND_SLASH=False
 
 INSTALLED_APPS = (
-    'south',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
