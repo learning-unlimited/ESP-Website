@@ -97,17 +97,10 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             progbio.save()
             # save the image
             if form.cleaned_data['picture'] is not None:
-                try:
-                    picture = form.cleaned_data['picture']
-                    picture.seek(0)
-                    progbio.picture.save(picture.name, ContentFile(picture.read()))
-                except:
-                    #   If you run into a problem processing the image, just ignore it.
-                    progbio.picture = lastbio.picture
-                    progbio.save()
-            else:
+                progbio.picture = form.cleaned_data['picture']
+           else:
                 progbio.picture = lastbio.picture
-                progbio.save()
+            progbio.save()
             if external:
                 return True
             return HttpResponseRedirect(progbio.url())
