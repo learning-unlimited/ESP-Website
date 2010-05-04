@@ -171,7 +171,7 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             where [field] is the field in a model (i.e. ForeignKey) 
     """
     def __init__(self, field_name='', field=None, key_type=None, to_field=None,
-                 to_field_name=None, required=True, label='', initial=None,
+                 to_field_name=None, required=True, label='', localize=False, initial=None,
                  widget=None, help_text='', ajax_func=None, queryset=None,
                  error_messages=None, show_hidden_initial=False, *args, **kwargs):
 
@@ -179,6 +179,8 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             self.widget.ajax_func = 'ajax_autocomplete'
         else:
             self.widget.ajax_func = ajax_func
+        
+        self.localize = localize
         
         # ---
         # We don't do anything with these arguments, but maybe we should.
