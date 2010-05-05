@@ -98,7 +98,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             # save the image
             if form.cleaned_data['picture'] is not None:
                 progbio.picture = form.cleaned_data['picture']
-           else:
+            else:
                 progbio.picture = lastbio.picture
             progbio.save()
             if external:
