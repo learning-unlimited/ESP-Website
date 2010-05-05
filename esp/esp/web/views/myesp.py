@@ -41,7 +41,7 @@ import datetime
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
-from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm
+from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm, MinimalUserInfo
 from django.db.models.query import Q
 
 
@@ -285,7 +285,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         'Student': StudentProfileForm,
         'Teacher': TeacherProfileForm,
         'Guardian': GuardianProfileForm,
-        'Educator': EducatorProfileForm}[role]
+        'Educator': EducatorProfileForm,
+        'Administrator': MinimalUserInfo,
+        }[role]
 
     context['profiletype'] = role
 
