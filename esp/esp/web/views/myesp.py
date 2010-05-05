@@ -278,14 +278,15 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     curUser.updateOnsite(request)
 
     FormClass = {'': UserContactForm,
-               'student': StudentProfileForm,
-               'teacher': TeacherProfileForm,
-               'guardian': GuardianProfileForm,
-               'educator': EducatorProfileForm}[role]
-		 'Student': StudentProfileForm,
-		 'Teacher': TeacherProfileForm,
-		 'Guardian': GuardianProfileForm,
-		 'Educator': EducatorProfileForm,
+        'student': StudentProfileForm,
+        'teacher': TeacherProfileForm,
+        'guardian': GuardianProfileForm,
+        'educator': EducatorProfileForm,
+        'Student': StudentProfileForm,
+        'Teacher': TeacherProfileForm,
+        'Guardian': GuardianProfileForm,
+        'Educator': EducatorProfileForm}[role]
+
     context['profiletype'] = role
 
     if request.method == 'POST' and request.POST.has_key('profile_page'):
