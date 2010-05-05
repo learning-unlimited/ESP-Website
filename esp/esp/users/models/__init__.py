@@ -109,8 +109,7 @@ class ESPUser(User, AnonymousUser):
     This user extends the auth.User of django"""
 
     class Meta:
-        app_label = 'auth'
-        db_table = 'auth_user'
+        proxy = True
         
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:
@@ -870,9 +869,6 @@ class ESPUser(User, AnonymousUser):
 
 
 ESPUser.create_membership_methods()
-
-ESPUser._meta.pk.attname = "id"
-ESPUser._meta.local_fields[0].column = "id"
 
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
