@@ -14,6 +14,8 @@ def cache_key(qsd, user=None):
     return qsd_cache_key(qsd.path, qsd.name, user,)
 
 def inline_cache_key(input_anchor, path, user=None):
+    if isinstance(input_anchor, basestring):
+        input_anchor = GetNode(input_anchor)
     if user and hasattr(user, 'id') and user.id is not None:
         return '%s_%s_%d_inline' % (input_anchor.id, path, user.id)
     else:
