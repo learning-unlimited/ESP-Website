@@ -8,30 +8,27 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.models import qsd_cache_key
 from urllib import quote
 
-from esp.utils.file_cache import FileCache
-
 register = template.Library()
-
-render_qsd_cache = FileCache(4, 'render_qsd')
 
 def cache_key(qsd, user=None):
     return qsd_cache_key(qsd.path, qsd.name, user,)
 
+def inline_cache_key(input_anchor, path, user=None):
+    if isinstance(input_anchor, basestring):
+        input_anchor = GetNode(input_anchor)
+    if user and hasattr(user, 'id') and user.id is not None:
+        return '%s_%s_%d_inline' % (input_anchor.id, path, user.id)
+    else:
+        return '%s_%s_anon_inline' % (input_anchor.id, path)
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_obj=render_qsd_cache, cache_time=300)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_key_func=cache_key, cache_time=300)
 def render_qsd(qsd, user=None):
     edit_bits = False
     if user:
         edit_bits = UserBit.UserHasPerms(user, qsd.path, DataTree.get_by_uri('V/Administer/Edit'))
     return {'qsdrec': qsd, 'edit_bits': edit_bits}
 
-def cache_inline_key(input_anchor, qsd, user=None):
-    if user:
-        return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s__%s' % (input_anchor, qsd, user.id))
-    else:
-        return quote('QUASISTATICDATA__INLINE__BLOCK__%s__%s' % (input_anchor, qsd))
-
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=cache_inline_key, cache_obj=DISABLED)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_key_func=inline_cache_key, cache_time=1)
 def render_inline_qsd(input_anchor, qsd, user=None):
     if isinstance(input_anchor, basestring):
         try:

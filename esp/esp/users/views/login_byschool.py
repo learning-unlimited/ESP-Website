@@ -1,9 +1,11 @@
 from django import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import REDIRECT_FIELD_NAME
+from esp.settings import DEFAULT_REDIRECT
 from esp.utils.forms import SizedCharField, FormWithRequiredCss
 from esp.utils.widgets import BlankSelectWidget
 from esp.web.util.main import render_to_response
+from esp.web.views.main import registration_redirect
 from esp.users.models import ESPUser, K12School
 
 class SchoolSelectForm(FormWithRequiredCss):
@@ -15,21 +17,22 @@ class SchoolSelectForm(FormWithRequiredCss):
 
 class StudentSelectForm(FormWithRequiredCss):
     """ Form that lets a student pick themselves from a list. """    
-    username = forms.ChoiceField(label='Your name', choices=[], widget=BlankSelectWidget(blank_choice=('','Pick your name from this list...')))
+    username = forms.ChoiceField(label='Your name', choices=[], widget=BlankSelectWidget(attrs={'id': 'id_selectusername'}, blank_choice=('','Pick your name from this list...')))
     def __init__(self, students=[], *args, **kwargs):
         super(StudentSelectForm, self).__init__(*args, **kwargs)
         self.fields['username'].choices=students
 
 class BarePasswordForm(FormWithRequiredCss):
     """ Just a password. """
-    password = forms.CharField(label='Password', widget=forms.PasswordInput(), help_text='If you forgot your password, email <a href="mailto:lukejoy@uchicago.edu">us</a>. Please do not create a new account.')
+    password = forms.CharField(label='Password', widget=forms.PasswordInput(), help_text='If you forgot your password, please use the <a href="/myesp/passwdrecover">password recovery function</a> or e-mail us. Please do not create a new account.')
 
 def login_byschool(request, *args, **kwargs):
     """ Let a student pick their school. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/learn/Cascade/2009_Spring/studentreg')
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Spring/studentreg')
+        return registration_redirect(request)
+        
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
@@ -49,8 +52,8 @@ def login_byschool_pickname(request, school_id, *args, **kwargs):
     """ Let a student pick their name. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/learn/Cascade/2009_Spring/studentreg')
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/learn/Cascade/2009_Spring/studentreg')
+        return registration_redirect(request)
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)

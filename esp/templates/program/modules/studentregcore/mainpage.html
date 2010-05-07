@@ -60,24 +60,20 @@ function submit_check()
 {% endif %}
 {% endif %}
 {% endif %}
-{% comment %} (removed for Cascade -rye 1-7-09)
-    <p>
+{% load render_qsd %}
+{% inline_qsd_block program.anchor registration_steps request.user %}    <p>
     Please complete the following steps to register for {{ program.niceName }}.
     When each step is completed, the corresponding box in the right-hand column will
     be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
     button at the bottom of the page. -->
     </p>
-{% endcomment %}
+{% end_inline_qsd_block %}
 
-<!-- (also removed for Cascade) -rye 1-7-09)
-<p>
-  After finishing all the steps, click the &#8220;{% if isConfirmed %}View Receipt{% else %}Save!{% endif %}&#8221;
-  button at the bottom of the page, and you'll be good to go.
-</p> -->
-
-{% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
-
+    <center><div class="note">
+    <b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
+    </div></center>
+    
 {% ifequal scrmi.progress_mode 1 %}
     {% include "program/modules/checkboxes.html" %}
 {% endifequal %}
@@ -104,15 +100,16 @@ function submit_check()
 
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
-    {% if program.isFull %}
-        {% if program.program_allow_waitlist %}
-        <div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
-        {% else %}
-            {% if not canRegToFullProgram %}
-            <div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
-            {% endif %}
-        {% endif %}
-    {% endif %}
+
+
+{% if program.isFull %}{% if program.program_allow_waitlist %}
+<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+{% else %}{% if not canRegToFullProgram %}
+<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+{% endif %}
+{% endif %}
+{% endif %}
+
 </center>
 {% endif %}
 
@@ -130,8 +127,8 @@ function submit_check()
     {% else %}
         <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull and not canRegToFullProgram and not isConfirmed %}disabled{% endif %}/></form>
         {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}
-            <form action="/learn/{{one}}/{{two}}/cancelreg" method="get">
-            <input id="cancelbutton" class="button" type="submit" onsubmit="return submit_cancel();" value="{{ scrmi.cancel_button_text }}" />
+           <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
+           <input id="cancelbutton" class="button" type="submit" value="{{ scrmi.cancel_button_text }}" />
             </form>
         {% endif %}{% endif %}
     {% endif %}

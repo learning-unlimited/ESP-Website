@@ -1,0 +1,38 @@
+\documentclass[10pt]{article}  % standard LaTeX, 12 point type
+\usepackage{amsfonts,latexsym}
+\usepackage{amsthm, amssymb, amsmath}
+\usepackage{longtable}
+\usepackage[left=0.75in,right=0.75in,top=0.75in, bottom=.5in,nohead,nofoot]{geometry}
+\usepackage{lastpage}
+\usepackage{color, colortbl}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{enumerate}
+\usepackage{subfigure}
+\usepackage{boxedminipage}
+
+{% block headers %}
+\definecolor{esphead}{rgb}{0.773,0.867,0.965}
+\newenvironment{itemize2}{
+\begin{itemize}
+  \setlength{\itemsep}{1pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}}{\end{itemize}
+}
+{% load latex %}
+{% endblock %}
+
+\begin{document}
+
+\vspace{.1in}
+\begin{center}
+\begin{minipage}{7in}
+
+\end{minipage}
+\end{center}
+{% autoescape off %}
+{% block content %}
+
+{% endblock %}
+{% endautoescape %}
+\end{document}

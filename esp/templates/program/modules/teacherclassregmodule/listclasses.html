@@ -19,16 +19,24 @@ function deleteClass() {
 <br />
 <br />
 
-{% if not module.deadline_met %}
+{% if not can_create %}
 <div class="info">
 <b>Note:</b> Class registration is closed. 
 You are welcome to use this page to view your classes' status and upload documents related to it.
-
+{% if can_edit %}
+However, you may edit classes that you have already created.
+{% endif %}
 {% if module.classRegInfo.director_email %}<br />
 If you have any questions regarding the program, <br /> please email the 
-<a href="mailto:{{module.classRegInfo.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{module.classRegInfo.director_email }}</span>).
+<a href="mailto:{{program.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{program.director_email }}</span>).
 {% endif %}
 </div>
+{% else %}
+{% if not can_edit %}
+<div class="info">
+<b>Note:</b> Class editing has been disabled.  Please contact the <a href="mailto:{{module.program.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{module.program.director_email }}</span>) if you need to make changes.
+</div>
+{% endif %}
 {% endif %}
 
 <div id="battlescreen">
@@ -68,7 +76,7 @@ If you have any questions regarding the program, <br /> please email the
     <td class="clsmiddle bordertop2">
        <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
-{% if module.deadline_met %}
+{% if can_edit %}
          <input class="button" type="submit" value="Edit">
 {% else %}
          <input class="button" type="submit" value="View">
@@ -136,7 +144,8 @@ If you have any questions regarding the program, <br /> please email the
         </td>
         <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}</td>
         <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
-            <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>) (<a href="/teach/{{ one }}/{{ two }}/select_students/{{ sec.id }}">enroll/reject</a>)</td>
+            <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>) 
+            <!-- (<a href="/teach/{{ one }}/{{ two }}/select_students/{{ sec.id }}">enroll/reject</a>) --> </td>
         {% comment %}
         <td class="clsright" valign="top"><a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ request.META.HTTP_HOST }}">E-mail students</a></td>
         {% endcomment %}
@@ -144,14 +153,14 @@ If you have any questions regarding the program, <br /> please email the
     {% endfor %}
 
    {% endfor %}
-   {% if module.deadline_met %}
+   {% if can_create %}
    <tr>
-   <td colspan="4">
-
-<font size="+1">Click <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">here</a> to submit a class for {{ program.niceName }}</font>
-<!--       Add a new class for {{ program.niceName }}! -->
+   <td colspan="6" class="clsleft bordertop2"><b>Registration form:</b>
+     <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
+       Add a new class for {{ program.niceName }}!
      </a>
    </td>
    </tr>
    {% endif %}
 </table>
+

@@ -79,7 +79,7 @@ INTERNAL_IPS = (
 # Default admins #
 ##################
 ADMINS = (
-    ('LU Webmasters', 'serverlog@lists.learningu.org'),
+    ('LU Web Team','serverlog@lists.learningu.org'),
 )
 
 
@@ -93,8 +93,8 @@ EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
-    'archive': 'esparchive@gmail.com',
-    'bounces': 'esp-bounces@mit.edu'
+    'archive': 'learninguarchive@gmail.com',
+    'bounces': 'learningubounces@gmail.com'
 }
 
 
@@ -208,3 +208,7 @@ USE_I18N = False
 AUTH_PROFILE_MODULE='users.ESPUser_Profile'
 
 FORCE_SCRIPT_NAME = ''
+
+# Page to redirect people to when they log in
+# (Could be '/' for example)
+DEFAULT_REDIRECT = '/myesp/redirect'

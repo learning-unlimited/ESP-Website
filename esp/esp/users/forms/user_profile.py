@@ -263,3 +263,13 @@ class VisitingGenericUserProfileForm(MinimalUserInfo):
     """ This is a form for a generic visitor user """
     major = SizedCharField(length=30, max_length=32, label="Profession", required=False)
 
+class MinimalUserInfo(FormUnrestrictedOtherUser):
+    first_name = SizedCharField(length=25, max_length=64)
+    last_name = SizedCharField(length=30, max_length=64)
+    e_mail = forms.EmailField()
+    address_street = SizedCharField(length=40, max_length=100)
+    address_city = SizedCharField(length=20, max_length=50)
+    address_state = forms.ChoiceField(choices=zip(_states,_states), initial="IL")
+    address_zip = SizedCharField(length=5, max_length=5)
+    address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
+

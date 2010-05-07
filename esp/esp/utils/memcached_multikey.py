@@ -16,6 +16,9 @@ CACHE_WARNING_SIZE = 1 * 1024**2
 CACHE_SIZE = 2 * 1024**2
 
 class CacheClass(BaseCache):
+    idebug = False
+    queries = []
+
     def __init__(self, server, params):
         BaseCache.__init__(self, params)
         self._wrapped_cache = MemcacheCacheClass(server, params)
@@ -37,20 +40,26 @@ class CacheClass(BaseCache):
                 print "Data size for key '%s' is dangerously large: %d bytes" % (key, data_size)
     
     def add(self, key, value, timeout=0):
+        if self.idebug: self._idebuglog("add", key, value)
         self._failfast_test(key, value)
         return self._wrapped_cache.add(self.make_key(key), value, timeout=timeout)
 
     def get(self, key, default=None):
-        return self._wrapped_cache.get(self.make_key(key), default=default)
+        val = self._wrapped_cache.get(self.make_key(key), default=default)
+        if self.idebug: self._idebuglog("get", key, val)
+        return val
 
     def set(self, key, value, timeout=0):
+        if self.idebug: self._idebuglog("set", key, value)
         self._failfast_test(key, value)
         return self._wrapped_cache.set(self.make_key(key), value, timeout=timeout)
 
     def delete(self, key):
+        if self.idebug: self._idebuglog("delete", key, None)
         return self._wrapped_cache.delete(self.make_key(key))
 
     def get_many(self, keys):
+        if self.idebug: self._idebuglog("get_many", keys)
         wrapped_ans = self._wrapped_cache.get_many([self.make_key(key) for key in keys])
         ans = {}
         for k,v in wrapped_ans.items():
@@ -68,3 +77,16 @@ class CacheClass(BaseCache):
     def close(self, **kwargs):
         self._wrapped_cache.close()
 
+    def _idebuglog(self, method, key, val = None):
+        if self.idebug:
+            self.queries.append( {'method': method, 
+                                  'key': str(key),
+                                  'value': str(val) if val is not None else '' } )
+
+    def idebug_on(self):
+        self.idebug = True
+        self.queries = []
+
+    def idebug_off(self):
+        self.idebug = False
+        self.queries = []

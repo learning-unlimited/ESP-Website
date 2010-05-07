@@ -84,8 +84,6 @@ table.loginform {
   background-color: white;
   float: right;
   width: 600px;
-  margin-bottom: -250cm;
-  padding-bottom: 250cm;
 }
 
 #main_content {
@@ -110,8 +108,6 @@ table.loginform {
   float: left;  
   width: 200px;
   background: #141414;
-  margin-bottom: -250cm;
-  padding-bottom: 250cm;
 }
 
 #navbar_content {

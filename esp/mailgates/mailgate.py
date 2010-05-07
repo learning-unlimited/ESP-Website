@@ -17,7 +17,12 @@ MAIL_PATH = '/usr/sbin/sendmail'
 server = smtplib.SMTP('localhost')
 ARCHIVE = 'esparchive@gmail.com'
 
+DEBUG=True
 DEBUG=False
+
+if DEBUG:
+    sys.stdout = open('/tmp/stdout', 'w',)
+    sys.stderr = open('/tmp/stderr', 'w',)
 
 #os.environ['LOCAL_PART'] = 'axiak'
 

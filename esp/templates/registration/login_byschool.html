@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Register for Cascade!{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% load subsection %}
 {% block subsection %}
@@ -62,7 +62,7 @@ function getStudents( e ) {
         insert2 = document.getElementById('id_insert2');
         insert2.innerHTML = r.responseText;
         insert2.style.display = 'table-row-group';
-        document.getElementById('id_username').onchange = showPasswordEntry;
+        document.getElementById('id_selectusername').onchange = showPasswordEntry;
     }
     document.getElementById('id_form_title').innerHTML = 'Step 2: Find Your Name';
 }
@@ -80,7 +80,7 @@ function preparePage() {
 
 
 {% block content %}
-<h1>Register for Cascade!</h1>
+<h1>Registration</h1>
 
 
 <div id="login_form">

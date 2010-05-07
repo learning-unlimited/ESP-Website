@@ -82,9 +82,9 @@ class AvailabilityModule(ProgramModuleObj):
         if QObject is True:
             return {'availability': self.getQForUser(Q(resource__event__anchor = self.program_anchor_cached()))}
         
-        teacher_list = Resource.objects.filter(event__anchor=self.program_anchor_cached()).values('user').distinct()
+        teacher_list = Resource.objects.filter(event__anchor=self.program_anchor_cached(), user__isnull=False).values_list('user', flat=True).distinct()
         
-        return {'availability': [t['user'] for t in teacher_list]}
+        return {'availability': teacher_list }#[t['user'] for t in teacher_list]}
 
     def teacherDesc(self):
         return {'availability': """Teachers who have indicated their scheduled availability for the program."""}
@@ -135,7 +135,9 @@ class AvailabilityModule(ProgramModuleObj):
             if len(available_slots) == 0:
                 #   If they didn't enter anything, make everything checked by default.
                 available_slots = self.program.getTimeSlots()
-                
+                for a in available_slots:
+                    teacher.addAvailableTime(self.program, a)
+
             context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
             context['prog'] = self.program
             

@@ -52,11 +52,13 @@ def get_from_id(id, module, strtype = 'object', error = True):
         return None
     return foundobj
     
-
-def render_response(req, *args, **kwargs):
-    kwargs['context_instance'] = RequestContext(req)
-    return django.shortcuts.render_to_response(*args, **kwargs)
-
+def render_response(request, template, dictionary):
+    from esp.web.util.idebug import idebug_hook
+    inst = RequestContext(request)
+    inst.update(dictionary)
+    idebug_hook(request, inst)
+    
+    return django.shortcuts.render_to_response(template, {}, context_instance = inst)
 
 def _per_program_template_name(prog, templatename):
     tpath = templatename.split("/")

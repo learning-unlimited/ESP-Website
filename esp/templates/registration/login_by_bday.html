@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Register for Cascade!{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% load subsection %}
 {% block subsection %}
@@ -19,6 +19,8 @@
 
 pwform = "{{ pwform|escapejs }}";
 function showPasswordEntry( e ) {
+    console.log("Showing password entry");
+
     // Check for required functionality
     if ( ! document.getElementById )
         return;
@@ -42,6 +44,8 @@ function showPasswordEntry( e ) {
     insert3.style.display = 'table-row-group';
     
     document.getElementById('id_form_title').innerHTML = 'Step 3: Login';
+    
+    console.log("Done");
 }
 
 function getStudents( e ) {
@@ -63,9 +67,12 @@ function getStudents( e ) {
         insert2 = document.getElementById('id_insert2');
         insert2.innerHTML = r.responseText;
         insert2.style.display = 'table-row-group';
-        document.getElementById('id_username').onchange = showPasswordEntry;
+        document.getElementById('id_selectusername').onchange = showPasswordEntry;
+        console.log("Set onchange");
     }
     document.getElementById('id_form_title').innerHTML = 'Step 2: Find Your Name';
+    
+    console.log("Got student list");
 }
 
 function preparePage() {
@@ -81,7 +88,7 @@ function preparePage() {
 
 
 {% block content %}
-<h1>Register for Cascade!</h1>
+<h1>Registration</h1>
 
 <p>Please go through a few steps to log in to your account. Follow the steps whether or not you already have an account in our system.</p>
 
@@ -112,7 +119,9 @@ function preparePage() {
 </tbody>
 </table>
 
+{% if next %}
 <input type="hidden" name="{{ redirect_field_name }}" value="{{ next }}" />
+{% endif %}
 </form>
 </div>
 

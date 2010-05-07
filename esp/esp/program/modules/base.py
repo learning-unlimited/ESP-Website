@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,6 +39,7 @@ from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, UserBit
 from esp.datatree.models import GetNode
 from esp.web.util import render_to_response
+from esp.cache import cache_function
 from esp.tagdict.models import Tag
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
@@ -161,64 +161,76 @@ class ProgramModuleObj(models.Model):
         context['modules'] = all_modules
         return render_to_response("myesp/mainpage.html", context)
             
+    #   This function caches the customized (augmented) program module objects
+    @cache_function
+    def findModuleObject(tl, call_txt, prog):
+        modules = ProgramModule.objects.filter(main_call = call_txt, module_type = tl).select_related()[:1]
+        module = None
+
+        if len(modules) == 0:
+            modules = ProgramModule.objects.filter(aux_calls__contains = call_txt, module_type = tl).select_related()
+            for module in modules:
+                if call_txt in module.aux_calls.strip().split(','):
+                    return ProgramModuleObj.getFromProgModule(prog, module)
+        else:
+            module = modules[0]
+            return ProgramModuleObj.getFromProgModule(prog, module)
+
+        raise Http404
         
+    #   Invalidate cache when any program module related data is saved
+    #   Technically this should include the options (StudentClassRegModuleInfo, etc.)
+    findModuleObject.depend_on_model(lambda: ProgramModule)
+    findModuleObject.depend_on_model(lambda: ProgramModuleObj)
+    findModuleObject = staticmethod(findModuleObject)
+    
+    #   The list of modules in a particular category (student reg, teacher reg)
+    #   is accessed frequently and should be cached.
+    @cache_function
+    def findCategoryModules(self, include_optional):
+        prog = self.program
+        module_type = self.module.module_type
+
+        if not include_optional:
+            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=module_type, required=True).select_related(depth=1).order_by('seq')
+        else:
+            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=module_type).select_related(depth=1).order_by('seq')
         
+        result_modules = list(other_modules)
+        for mod in result_modules:
+            mod.__class__ = mod.module.getPythonClass()
+            
+        return result_modules
+        
+    findCategoryModules.depend_on_model(lambda: ProgramModule)
+    findCategoryModules.depend_on_model(lambda: ProgramModuleObj)
+    
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        cache_key = "PROGRAMMODULE_FIND_MODULE_%s_%s_%s_%s" % (tl, one, two, call_txt)
-        moduleobj = cache.get(cache_key)
-        if moduleobj == None:
+        moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
+        user = ESPUser(request.user)
+        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
 
-            modules = ProgramModule.objects.filter(main_call = call_txt,
-                                                   module_type = tl)[:1]
-
-            module = None
-
-            if len(modules) == 0:
-                modules = ProgramModule.objects.filter(aux_calls__contains = call_txt,
-                                                       module_type = tl)
-                for module in modules:
-                    if call_txt in module.aux_calls.strip().split(','):
-                        break
-                if not module:
-                    raise Http404
-            else:
-                module = modules[0]
-
-            if not module:
-                raise Http404
-            
-            moduleobj = ProgramModuleObj.getFromProgModule(prog, module)
-            cache.add(cache_key, moduleobj, timeout=60)
-
-        moduleobj.request = request
-        moduleobj.user    = ESPUser(request.user)
-        
-        # Set this key if this user has 
-        HAS_FINISHED_REQS_CACHE_KEY = "USER_%s__PROG_%s__TYPE_%s__DONE_REG_REQS" % (request.user.id, prog.id, moduleobj.module.module_type)
-        if not cache.get(HAS_FINISHED_REQS_CACHE_KEY):
-            scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
-            
-            #   For core modules, redirect to the incomplete required modules in the same section first.
-            #   The pages should all redirect to the core on completion.  If none are needed, the
-            #   code here won't do anything and the page will be returned as usual.
-            if request.user.is_authenticated() and isinstance(moduleobj, CoreModule) and not scrmi.force_show_required_modules:
-                other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=moduleobj.module.module_type, required=True).select_related(depth=1).order_by('seq')
+        #   If a "core" module has been found:
+        #   Put the user through a sequence of all required modules in the same category.
+        #   Only do so if we've not blocked this behavior, though
+        if scrmi.force_show_required_modules:
+            if tl != "manage" and request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+                other_modules = moduleobj.findCategoryModules(False)
                 for m in other_modules:
                     m.request = request
-                    m.user    = ESPUser(request.user)
-                    m.__class__ = m.module.getPythonClass()
-                    if not m.isCompleted() and hasattr(m, m.module.main_call):
+                    m.user    = user
+                    if not isinstance(m, CoreModule) and not m.isCompleted() and hasattr(m, m.module.main_call):
                         return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
 
-            cache.set(HAS_FINISHED_REQS_CACHE_KEY, True, timeout=600)
-
+        #   If the module isn't "core" or the user did all required steps,
+        #   call on the originally requested view.
+        moduleobj.request = request
+        moduleobj.user    = user
         if hasattr(moduleobj, call_txt):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
 
         raise Http404
-
-
     @staticmethod
     def getFromProgModule(prog, mod):
         import esp.program.modules.models
@@ -314,12 +326,13 @@ class ProgramModuleObj(models.Model):
         return canView
 
     # important functions for hooks...
-
+    @cache_function
     def get_full_path(self):
         str_array = self.program.anchor.tree_encode()
         url = '/'+self.module.module_type \
               +'/'+'/'.join(str_array[-2:])+'/'+self.module.main_call
         return url
+    get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
 
     @classmethod
     def get_summary_path(cls, function):
@@ -337,7 +350,7 @@ class ProgramModuleObj(models.Model):
         self.user = user
         self.curUser = user
 
-
+    
     def makeLink(self):
         if not self.module.module_type == 'manage':
             link = u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
@@ -523,7 +536,7 @@ def needs_teacher(method):
         allowed_teacher_types = Tag.getTag("allowed_teacher_types", moduleObj.program, default='').split(",")
         if not moduleObj.user or not moduleObj.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-        if not moduleObj.user.isTeacher() and not moduleObj.user.isAdmin(moduleObj.program) and not (set(moduleObj.user.getUserTypes()) & set(allowed_teacher_types)):
+        if not moduleObj.user.isTeacher() and not moduleObj.user.isAdmin(moduleObj.program) and not (set(moduleObj.getUserTypes()) & set(allowed_teacher_types)):
             return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
         return method(moduleObj, request, *args, **kwargs)
 
@@ -563,6 +576,21 @@ def needs_onsite(method):
 
     return _checkAdmin
 
+def needs_onsite_no_switchback(method):
+    def _checkAdmin(moduleObj, request, *args, **kwargs):
+        if not moduleObj.user or not moduleObj.user.is_authenticated():
+            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+
+        if not moduleObj.user.isOnsite(moduleObj.program) and not moduleObj.user.isAdmin(moduleObj.program):
+            user = moduleObj.user
+            user = ESPUser(user)
+            user.updateOnsite(request)
+            ouser = user.get_old(request)
+            if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
+                return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
+        return method(moduleObj, request, *args, **kwargs)
+
+    return _checkAdmin
 
 def needs_student(method):
     def _checkStudent(moduleObj, request, *args, **kwargs):

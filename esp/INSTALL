@@ -31,15 +31,21 @@ PostgreSQL      System  8.3             postgresql-8.3
 python          System  2.5             python
 
 django          Python  1.0.2           python-django*
-PIL             Python                  python-imaging
 DNS             Python                  python-dns
 setuptools      Python                  python-setuptools
-twill           Python                  python-twill
 cmemcached      Python                  http://gijsbert.org/cmemcache/index.html
-flup            Python                  python-flup
-psycopg         Python                  python-psycopg
-simplejson      Python                  python-simplejson
-pycurl          Python                  python-pycurl
+
+pylibmc         Python (easy_install)   N/A           
+PIL             Python (easy_install)   N/A            
+twill           Python (easy_install)   N/A                      
+flup            Python (easy_install)   N/A                      
+simplejson      Python (easy_install)   N/A                      
+pycurl          Python (easy_install)   N/A                      
+xlwt            Python (easy_install)   N/A                      
+South           Python (easy_install)   N/A    
+psycopg         Python (easy_install)   N/A    * Choose psycopg or psycopg2 and update local_settings.py DATABASE_BACKEND
+psycopg2        Python (easy_install)   N/A      (default is psycopg2)
+django-debug-toolbar    Python (easy_install)   N/A       * Optional
 
 LaTeX           System                  texlive, texlive-latex-extra
 libmemcache0    System                  libmemcache0

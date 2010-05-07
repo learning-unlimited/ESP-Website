@@ -166,9 +166,12 @@ class ClassRegModuleInfo(models.Model):
     #   The maximum length of a class, in minutes.
     class_max_duration   = models.IntegerField(blank=True, null=True, help_text='The maximum length of a class, in minutes.')
     
-    class_max_size       = models.IntegerField(blank=True, null=True)
+    #   Class size options: teachers will see [min:step:max] plus other_sizes
+    class_min_cap       = models.IntegerField(blank=True, null=True, help_text='The minimum number of students a teacher can choose as their class capacity.')
+    class_max_size       = models.IntegerField(blank=True, null=True, help_text='The maximum number of students a teacher can choose as their class capacity.')
+    class_size_step      = models.IntegerField(blank=True, null=True, help_text='The interval for class capacity choices.')
+    class_other_sizes    = models.CommaSeparatedIntegerField(blank=True, null=True, max_length=100, help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
     
-    class_size_step      = models.IntegerField(blank=True, null=True)
     director_email       = models.EmailField(blank=True, null=True)
     class_durations      = models.CharField(max_length=128, blank=True, null=True)
     teacher_class_noedit = models.DateTimeField(blank=True, null=True, help_text='Teachers will not be able to edit their classes after this time.')
@@ -315,8 +318,8 @@ class SATPrepTeacherModuleInfo(models.Model):
         return 'SATPrep Information for teacher %s in %s' % \
                  (str(self.user), str(self.program))
 
-    class Admin:
-        pass
+    class Meta:
+        unique_together = ('user', 'program')
     
     def get_subject_display(self):
         if self.subject in SATPrepTeacherModuleInfo.SUBJECT_DICT:

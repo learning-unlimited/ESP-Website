@@ -136,8 +136,8 @@ class UserBitManager(ProcedureManager):
         if retVal is not None:
             return retVal
         else:
-            
-            retVal = bool(self.filter(QTree(**{col_filter: node_id}), user = user))
+            now = datetime.datetime.now()
+            retVal = bool(self.filter(QTree(**{col_filter: node_id}), user = user, startdate__lte=now, enddate__gte=now))
             self.cache(user)[cache_key] = retVal
 
         return retVal
