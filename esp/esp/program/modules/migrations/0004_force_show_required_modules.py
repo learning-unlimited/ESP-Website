@@ -162,7 +162,7 @@ class Migration:
             'send_confirmation': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'show_emailcodes': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
             'show_unscheduled_classes': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'signup_verb': ('django.db.models.fields.related.ForeignKey', [], {'default': "orm['datatree.DataTree'].objects.get(pk=30043)", 'to': "orm['datatree.DataTree']"}),
+            'signup_verb': ('django.db.models.fields.related.ForeignKey', [], {'default': "orm['datatree.DataTree'].objects.get(pk=590)", 'to': "orm['datatree.DataTree']"}),
             'temporarily_full_text': ('django.db.models.fields.CharField', [], {'default': "'Class temporarily full; please check back later'", 'max_length': '255'}),
             'use_priority': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'view_button_text': ('django.db.models.fields.CharField', [], {'default': "'View Receipt'", 'max_length': '80'}),
