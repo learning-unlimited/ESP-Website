@@ -22,7 +22,7 @@ password you would like to use.
 
 <br />
 
-<form action="{{request.path}}" name="recoverpwform" method="post">
+<form action="{{request.path}}" name="recoverpwform" method="post">{% csrf_token %}
 <input type="hidden" name="code" value="{{code}}" />
 <table width='65%' cellpadding='2' align='center' border='0'>
 <tr>

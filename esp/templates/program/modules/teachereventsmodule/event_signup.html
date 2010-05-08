@@ -19,7 +19,7 @@ Please let us know which events you will attend.
 {% load render_qsd %}
 {% render_inline_qsd prog.anchor "teach:eventsignupheader" request.user %}
 
-<form method="post" action="{{ request.path }}">
+<form method="post" action="{{ request.path }}">{% csrf_token %}
 <table cellpadding="4" cellspacing="0" align="center" width="300">
     {{ form }}
     <tr>

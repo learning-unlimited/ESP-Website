@@ -18,7 +18,7 @@
 </p>
 
 <div id="program_form">
-<form name="classmanage" action="{{ request.path }}" method="POST">
+<form name="classmanage" action="{{ request.path }}" method="POST">{% csrf_token %}
 
 <br />
 

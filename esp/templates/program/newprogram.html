@@ -55,7 +55,7 @@ Use a past program as a template:
 </p>
 
 <div id="alumni_form">
-  <form action="{{ request.path }}" method="post">
+  <form action="{{ request.path }}" method="post">{% csrf_token %}
   <table class="contact" align="center" width="550">
   <thead>
     <tr>

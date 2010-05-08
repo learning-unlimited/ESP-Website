@@ -20,7 +20,7 @@
   Just enter in the username you started to reset your password with, and enter in the password you want to have.
 </p>
 
-<form action="{{ request.path }}" method="post" name="passreset_form_complete">
+<form action="{{ request.path }}" method="post" name="passreset_form_complete">{% csrf_token %}
 <table>
 <thead>
 <tr>

@@ -37,7 +37,7 @@ The following teachers have conflicting schedules:<br />
 </p>
 {% endif %}
 <p>
-<form action="{{request.path}}" method="post" name="submit">
+<form action="{{request.path}}" method="post" name="submit">{% csrf_token %}
 <input type="hidden" name="op" value="save" />
 <input type="hidden" name="clsid" value="{{ class.id }}" />
 <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
@@ -47,7 +47,7 @@ The following teachers have conflicting schedules:<br />
 You currently have no coteachers for this class.
 {% else %}
 Here are your current coteachers:<br />
-<form action="{{request.path}}" method="post" name="delteacher">
+<form action="{{request.path}}" method="post" name="delteacher">{% csrf_token %}
 <input type="hidden" name="op" value="del" />
 <input type="hidden" name="clsid" value="{{ class.id }}" />
 <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
@@ -71,7 +71,7 @@ Here are your current coteachers:<br />
 Select a user to add:
 </p>
 <br />
-<form action="{{request.path}}" method="post" name="addteacher">
+<form action="{{request.path}}" method="post" name="addteacher">{% csrf_token %}
 <input type="hidden" name="clsid" value="{{ class.id }}" />
 <input type="hidden" name="op" value="add" />
 <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />

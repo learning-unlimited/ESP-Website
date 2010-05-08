@@ -42,13 +42,13 @@
     <tr>
         <td colspan="1">&nbsp;</td>
         <td>
-            <form action="/manage/{{ module.program.getUrlBase }}/deletesection/{{ sec.parent_class.id }}?sec_id={{ sec.id }}" method="post">
+            <form action="/manage/{{ module.program.getUrlBase }}/deletesection/{{ sec.parent_class.id }}?sec_id={{ sec.id }}" method="post">{% csrf_token %}
                 <input type="hidden" name="sure" value="False" />
                 <input class="fancybutton" type="submit" value="Cancel" />
             </form>
         </td>
         <td>
-            <form action="/manage/{{ module.program.getUrlBase }}/deletesection/{{ sec.parent_class.id }}?sec_id={{ sec.id }}" method="post">
+            <form action="/manage/{{ module.program.getUrlBase }}/deletesection/{{ sec.parent_class.id }}?sec_id={{ sec.id }}" method="post">{% csrf_token %}
                 <input type="hidden" name="sure" value="True" />
                 <input class="fancybutton" type="submit" value="Confirm Deletion" />
             </form>

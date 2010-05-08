@@ -17,7 +17,7 @@
 <h2 style="color:red">Please make sure to fill in all the required fields.  Thanks! </h2>
 {% endif %}
 
-<form action='/learn/{{one}}/{{two}}/profile/' method="post">
+<form action='/learn/{{one}}/{{two}}/profile/' method="post">{% csrf_token %}
 <table cellpadding='2' align='center' border='0'>
 <tr>
  <td><label for="id_full_name">Name: *</label></td>

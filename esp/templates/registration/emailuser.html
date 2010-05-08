@@ -26,7 +26,7 @@ Note: By creating an account, you will automatically
 be in our mailing list.
 </div>
 
-<form action="{{ request.path }}" method="post" name="emaillist_form">
+<form action="{{ request.path }}" method="post" name="emaillist_form">{% csrf_token %}
 <table>
 <thead>
 <tr>

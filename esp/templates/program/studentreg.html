@@ -41,7 +41,7 @@
 {% endif %}
 {% endfor %}
 <br />
-<form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">
+<form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">{% csrf_token %}
 <p style="text-align: center">
 <input type="submit" value="Save!" {% if not completedAll %}disabled{% endif %}/><br />
 {% if not completedAll %}<em>(Please complete the above steps first!)</em>{% endif %}

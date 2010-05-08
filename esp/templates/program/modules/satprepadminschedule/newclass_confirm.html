@@ -25,7 +25,7 @@ Please fill in the form below and press the "Submit" button to create all the cl
 </p>
 
 <div id="program_form">
-<form method="post" action="{{ request.path }}" name="confirm">
+<form method="post" action="{{ request.path }}" name="confirm">{% csrf_token %}
 <table width="400">
 <tr><th colspan="4">Scheduling Options for {{ program.niceName }}</th></tr>
 <tr>

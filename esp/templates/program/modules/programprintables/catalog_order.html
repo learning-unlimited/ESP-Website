@@ -39,7 +39,7 @@ Get Catalog:
 
 <tr>
     <td colspan="6">
-        <form action="" method="get">
+        <form action="" method="get">{% csrf_token %}
         Sort by
         <select name="first_sort">
         {% for op in sorting_options %}

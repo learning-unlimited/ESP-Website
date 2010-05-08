@@ -93,7 +93,7 @@ function preparePage() {
 <p>Please go through a few steps to log in to your account. Follow the steps whether or not you already have an account in our system.</p>
 
 <div id="login_form">
-<form id="login_form_form" action="{{ action }}" method="post">
+<form id="login_form_form" action="{{ action }}" method="post">{% csrf_token %}
 <table cellpadding="2" align="center">
 <thead>
 <tr>

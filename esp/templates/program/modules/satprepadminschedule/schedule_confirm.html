@@ -24,7 +24,7 @@ This is a magic button to schedule all of the students into their remaining SAT 
 </p>
 
 <div id="program_form">
-<form method="post" action="{{ request.path }}" name="confirm">
+<form method="post" action="{{ request.path }}" name="confirm">{% csrf_token %}
 <table>
 <tr>
     <th>Section Assignments for {{ program.niceName }}</th>

@@ -67,7 +67,7 @@
 <p>Please complete this form to request financial aid for {{ program.niceName }}.  You can always <strong>Save Progress</strong> to keep your work and return to this page at any time to continue filling it out.  Once you're finished, please let us know by clicking <strong>Complete</strong>.  If you've finished filling out the form, but you discover that information on the form is inaccurate or you wish to cancel the application, click <strong>Mark as Incomplete</strong>.</p>
 <p>All information is completely optional.  However, the better we can understand your current need, the easier it is for us to grant financial aid when necessary (and determine an appropriate amount).</p>
 
-<form action="{{ request.path }}" method="post" name="application_form">
+<form action="{{ request.path }}" method="post" name="application_form">{% csrf_token %}
 <table id="appform" cellspacing="0" cellpadding="4">
 <tr style="background-color: #c6def7">
 <th colspan="2" style="text-align: center;">

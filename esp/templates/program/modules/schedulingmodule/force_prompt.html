@@ -32,13 +32,13 @@ However, in order to schedule classes the teachers' availability will need to be
 </tr>
 <tr>
     <td align="center">
-        <form method="post" action="/manage/{{ prog.getUrlBase }}/force_availability">
+        <form method="post" action="/manage/{{ prog.getUrlBase }}/force_availability">{% csrf_token %}
         <input type="hidden" name="sure" value="False" />
         <input class="fancybutton" type="submit" value="Return to Scheduling" />
         </form>
     </td>
     <td align="center">
-        <form method="post" action="/manage/{{ prog.getUrlBase }}/force_availability">
+        <form method="post" action="/manage/{{ prog.getUrlBase }}/force_availability">{% csrf_token %}
         <input type="hidden" name="sure" value="True" />
         <input class="fancybutton" type="submit" value="Mark Teachers Available" />
         </form>

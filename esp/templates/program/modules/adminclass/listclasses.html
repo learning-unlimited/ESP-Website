@@ -302,7 +302,7 @@ and <tt>M100-class@esp.mit.edu</tt> will email everyone in the class.
 <div id="classmanager">
 <div class="hd"><!--Please enter your information--></div>
   <div class="bd">
-    <form method="POST" action="../assets/post.php">
+    <form method="POST" action="../assets/post.php">{% csrf_token %}
     </form>
   </div>
 </div>

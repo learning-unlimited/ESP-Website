@@ -15,7 +15,7 @@
 {% if Problem %}
 <h2 color="red">Sorry!  You need to enter an email address.</h2>
 {% endif %}
-<form action='/myesp/emailfin/' method="post">
+<form action='/myesp/emailfin/' method="post">{% csrf_token %}
 <table width='65%' cellpadding='2' align='center' border='0'>
 <tr>
  <td><b>Email:</b></td>
