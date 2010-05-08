@@ -45,7 +45,7 @@ Email: web@esp.mit.edu
 SITE_INFO = (1, 'splashchicago.learningu.org', 'Main ESP Site')
 
 # Must be unique for every site hosted
-CACHE_PREFIX="ESP"
+CACHE_PREFIX="ChicagoESP"
 
 
 ###########################
