@@ -217,11 +217,11 @@ class ProgramModuleObj(models.Model):
         if scrmi.force_show_required_modules:
             if tl != "manage" and request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
                 other_modules = moduleobj.findCategoryModules(False)
-            for m in other_modules:
-                m.request = request
-                m.user    = user
-                if not isinstance(m, CoreModule) and not m.isCompleted() and hasattr(m, m.module.main_call):
-                    return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+                for m in other_modules:
+                    m.request = request
+                    m.user    = user
+                    if not isinstance(m, CoreModule) and not m.isCompleted() and hasattr(m, m.module.main_call):
+                        return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
         
         #   If the module isn't "core" or the user did all required steps,
         #   call on the originally requested view.
