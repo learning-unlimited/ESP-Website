@@ -138,16 +138,25 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 if cls.parent_program.id == self.program.id ]
 
     def getClassSizes(self):
-        min_size, max_size, class_size_step = (0, 200, 10)
+        #   Default values
+        min_size = 0
+        max_size = 30
+        size_step = 1
+        other_sizes = range(40, 210, 10)
 
         if self.class_max_size:
             max_size = self.class_max_size
-
+            other_sizes = []
         if self.class_size_step:
-            class_size_step = self.class_size_step
+            size_step = self.class_size_step
+            other_sizes = []
+        if self.class_min_cap:
+            min_size = self.class_min_cap
+            other_sizes = []
+        if self.class_other_sizes and len(self.class_other_sizes) > 0:
+            other_sizes = [int(x) for x in self.class_other_sizes.split(',')]
 
-        ret_range = range(0, 23) + [30, 35, 40, 80, 100, 150]
-        ret_range = filter(lambda x: ((x >= min_size) and (x <= max_size)), ret_range)
+        ret_range = range(min_size, max_size + 1, size_step) + other_sizes
 
         return ret_range
 
@@ -280,9 +289,15 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 student.enrolled = True
             elif bits.filter(verb__name='Rejected').count() > 0:
                 student.rejected = True
+                
+        #   Detect if there is an application module
+        from esp.program.modules.handlers.studentjunctionappmodule import StudentJunctionAppModule
+        has_app_module = False
+        for module in prog.getModules():
+            if isinstance(module, StudentJunctionAppModule):
+                has_app_module = True
 
-        return render_to_response(self.baseDir()+'select_students.html', request, (prog, tl), {'prog': prog, 'sec': sec, 'students_list': students_list})
-
+        return render_to_response(self.baseDir()+'select_students.html', request, (prog, tl), {'has_app_module': has_app_module, 'prog': prog, 'sec': sec, 'students_list': students_list})
 
     @aux_call
     @needs_teacher
@@ -573,7 +588,15 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @meets_deadline("/Classes/Edit")
     @needs_teacher
     def editclass(self, request, tl, one, two, module, extra, prog):
+        try:
+            int(extra)
+        except: 
+            raise ESPError("False"), "Invalid integer for class ID!"
+
         classes = ClassSubject.objects.filter(id = extra)
+        if len(classes) == 0:
+            raise ESPError("False"), "No class found matching this ID!"
+
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
@@ -584,10 +607,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @meets_deadline('/Classes/Create')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
-        # this is ugly...but it won't recurse and falls
-        # back to @meets_deadline's behavior appropriately
-        # if newclass is None and not self.deadline_met():
-        #    return meets_deadline(lambda: True)(self, request, tl, one, two, module)
+        do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
 
         new_data = MultiValueDict()
         context = {'module': self}
@@ -637,6 +657,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 self.user = ESPUser(self.user)
                 if self.user.getTaughtTime(prog, include_scheduled=True) + timedelta(hours=new_duration) > self.program.total_duration() + newclass_oldtime:
                     raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
+
+                #   If the teacher has not filled out any availability yet, make them always-available by default
+                #   (this is what the availability page shows, but the data isn't there yet)
+                if self.user.getAvailableTimes(self.program).count() == 0:
+                    for ts in self.program.getTimeSlots():
+                        self.user.addAvailableTime(self.program, ts)
 
                 # datatree maintenance
                 if newclass_isnew:
@@ -825,6 +851,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 newclass.update_cache()
                 #   This line is for testing only. -Michael P
                 #   return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
+
+                if do_question:
+                    return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
                 return self.goToCore(tl)
         else:
             errors = {}
@@ -868,7 +897,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['form'] = reg_form
         context['formset'] = resource_formset
         context['restype_formset'] = restype_formset
-        context['resource_types'] = ResourceType.objects.all()
+        context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         
         if newclass is None:
             context['addoredit'] = 'Add'

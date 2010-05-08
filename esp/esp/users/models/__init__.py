@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import User, AnonymousUser
@@ -83,6 +84,8 @@ class UserAvailability(models.Model):
     event = models.ForeignKey(Event)
     role = AjaxForeignKey(DataTree)
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
+    class Meta:
+        db_table = 'users_useravailability'
 
     class Meta:
         db_table = 'users_useravailability'
@@ -109,8 +112,7 @@ class ESPUser(User, AnonymousUser):
     This user extends the auth.User of django"""
 
     class Meta:
-        app_label = 'auth'
-        db_table = 'auth_user'
+        proxy = True
         
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:
@@ -530,6 +532,7 @@ class ESPUser(User, AnonymousUser):
     #   (since we would need to check for all verbs under 'V/Flags/Registration')
     getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user})
 
+
     def getEnrolledSections(self, program=None):
         if program is None:
             return self.getEnrolledSectionsAll()
@@ -568,7 +571,7 @@ class ESPUser(User, AnonymousUser):
         if len(timeslots) < 1:
             return 0
 
-        prereg_sections = RegistrationProfile.getLastForProgram(self, prog).preregistered_classes()
+        prereg_sections = self.getSectionsFromProgram(prog)
 
         priority_dict = {}
         for t in timeslots:
@@ -774,6 +777,10 @@ class ESPUser(User, AnonymousUser):
 
     isAdmin = isAdministrator
 
+    def getUserTypes(self):
+        """ Return the set of types for this user """
+        return UserBit.valid_objects().filter(user=self, verb__parent=GetNode("V/Flags/UserRole")).values_list('verb__name', flat=True).distinct()
+        
     @classmethod
     def create_membership_methods(cls):
         """
@@ -871,9 +878,6 @@ class ESPUser(User, AnonymousUser):
 
 ESPUser.create_membership_methods()
 
-ESPUser._meta.pk.attname = "id"
-ESPUser._meta.local_fields[0].column = "id"
-
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
@@ -882,6 +886,7 @@ class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
+    k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, default = False)
@@ -1006,7 +1011,7 @@ class TeacherInfo(models.Model):
     def _graduation_year_get(self):
         return TeacherInfo._graduation_year_pretty(self.graduation_year_int)
     def _graduation_year_set(self, value):
-        if value == 'G':
+        if value.strip() == 'G':
             self.graduation_year_int = 1
         else:
             try:
@@ -1055,6 +1060,7 @@ class TeacherInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a TeacherInfo record """
+        new_data = defaultdict(str, new_data) # Don't require all fields to be present
         if regProfile.teacher_info is None:
             teacherInfo = TeacherInfo()
             teacherInfo.user = curUser
@@ -1307,6 +1313,17 @@ class ContactInfo(models.Model):
         app_label = 'users'
         db_table = 'users_contactinfo'
 
+    def _distance_from(self, zip):
+        try:
+            myZip = ZipCode.objects.get(zip_code = self.address_zip)
+            remoteZip = ZipCode.objects.get(zip_code = zip)
+            return myZip.distance(remoteZip)
+        except:
+            return -1
+
+
+
+
     def address(self):
         return '%s, %s, %s %s' % \
             (self.address_street,
@@ -1386,6 +1403,12 @@ class ContactInfo(models.Model):
         search_fields = ['first_name','last_name','user__username']
 
 
+class K12SchoolManager(models.Manager):
+    def other(self):
+        return self.get_or_create(name='Other')[0]
+    def most(self):
+        return self.exclude(name='Other').order_by('name')
+
 class K12School(models.Model):
     """
     All the schools that we know about.
@@ -1396,6 +1419,8 @@ class K12School(models.Model):
     school_id   = models.CharField(max_length=128,blank=True,null=True)
     contact_title = models.TextField(blank=True,null=True)
     name          = models.TextField(blank=True,null=True)
+
+    objects = K12SchoolManager()
 
     class Meta:
         app_label = 'users'

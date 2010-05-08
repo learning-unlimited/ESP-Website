@@ -42,7 +42,7 @@ import codecs
 TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
 
-def render_to_latex(filepath, context_dict=None, filetype='pdf'):
+def render_to_latex(filepath, context_dict=None, filetype='pdf', landscape=None):
     """ Render some tex source to latex. This will run the latex
         interpreter and generate the necessary file type
         (either pdf, tex, ps, dvi, or a log file)   """
@@ -54,22 +54,32 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     #   This is a hack to satisfy Django's requirement that the 'extends' tag come first.
     #   So, if you make a template, put the 'extends' tag in the first line.
     #   Especially if it's for Latex. :)
-    src = loader.find_template_source(filepath)[0]
-    src_lines = src.lstrip('\n').split('\n')
-    src = src_lines[0] + '\n{% load latex %}' + '\n'.join(src_lines[1:])
+    if isinstance(filepath, Template):
+        t = filepath
+    else:
+        src = loader.find_template_source(filepath)[0]
+        src_lines = src.lstrip('\n').split('\n')
+        src = src_lines[0] + '\n{% load latex %}' + '\n'.join(src_lines[1:])
+        t = Template(src)
+
     context = Context(context_dict)
 
     context['MEDIA_ROOT'] = settings.MEDIA_ROOT
     context['file_type'] = filetype
-
-    t = Template(src)
+        
 
     rendered_source = t.render(context)
     
-    return gen_latex(rendered_source, filetype)
+    #   Autodetect landscape mode if 'landscape' is in the first 10 lines of output
+    top_lines = rendered_source.split('\n')[:10]
+    if landscape is None:
+        if 'landscape' in '\n'.join(top_lines):
+            landscape=True
+    
+    return gen_latex(rendered_source, filetype, landscape)
     
 
-def gen_latex(texcode, type='pdf'):
+def gen_latex(texcode, type='pdf', landscape=False):
     """ Generate the latex code. """
 
     remove_files = True
@@ -92,10 +102,15 @@ def gen_latex(texcode, type='pdf'):
     import shutil
     shutil.copy( "%s/esp/3rdparty/pspicture.ps" % settings.PROJECT_ROOT, TEX_TEMP )
     
+    #   Set dvips options
+    dvips_options = '-t letter'
+    if landscape:
+        dvips_options += ' -t landscape'
+
     if type=='pdf':
         mime = 'application/pdf'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvips %s %s.dvi' % (TEX_TEMP, dvips_options, file_base))
         os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
@@ -108,7 +123,7 @@ def gen_latex(texcode, type='pdf'):
     elif type=='ps':
         mime = 'application/postscript'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips %s -o %s.ps' % (TEX_TEMP, file_base, file_base))
+        os.system('cd %s; dvips %s %s -o %s.ps' % (TEX_TEMP, dvips_options, file_base, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
         
@@ -119,7 +134,7 @@ def gen_latex(texcode, type='pdf'):
     elif type=='svg':
         mime = 'image/svg+xml'
         os.system('cd %s; pwd; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvips %s %s.dvi' % (TEX_TEMP, dvips_options, file_base))
         os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
         os.system('cd %s; inkscape %s.pdf -l %s.svg' % (TEX_TEMP, file_base, file_base))
         if remove_files:
@@ -130,7 +145,7 @@ def gen_latex(texcode, type='pdf'):
     elif type=='png':
         mime = 'application/postscript'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvips %s %s.dvi' % (TEX_TEMP, dvips_options, file_base))
         os.system('cd %s; convert %s.ps %s.png' % (TEX_TEMP, file_base, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)

@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -40,6 +40,7 @@ from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.middleware import ESPError
+from django.template.loader import select_template
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -414,10 +415,8 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtSections()
-                    if cls.parent_program == self.program
-                    and cls.isAccepted()
-                    and cls.meeting_times.count() > 0]
+            classes = [ cls for cls in teacher.getTaughtSections(self.program)
+                    if cls.isAccepted() and cls.meeting_times.count() > 0 ]
             # now we sort them by time/title
             classes.sort()
 
@@ -778,7 +777,7 @@ Student schedule for %s:
             else:
                 rooms = ' ' + ", ".join(rooms)
 
-            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title).ljust(40), rooms)
+            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
 
         return schedule
 
@@ -821,11 +820,12 @@ Student schedule for %s:
             except MultipleDocumentError:
                 invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
 
-            writer.writerow((invoice.locator, student.id, student.last_name, student.first_name, invoice.cost()))
+            writer.writerow((invoice.locator, student.id, student.last_name.encode('ascii', 'replace'), student.first_name.encode('ascii', 'replace'), invoice.cost()))
                 
         return response
         
     @aux_call
+    @needs_onsite_no_switchback
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
         """ generate student schedules """
 
@@ -899,11 +899,12 @@ Student schedule for %s:
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
             
-        if format == 'html':
+        if file_type == 'html':
             return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
-            return render_to_latex(self.baseDir()+'studentschedule.tex', context, file_type)
+            schedule_template = select_template([self.baseDir()+'program_custom_schedules/%s_studentschedule.tex' %(self.program.id), self.baseDir()+'studentschedule.tex'])
+            return render_to_latex(schedule_template, context, file_type)
 
     @aux_call
     @needs_admin
@@ -1086,8 +1087,7 @@ Student schedule for %s:
             return filterObj
 
         context = {'module': self     }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
-
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         students.sort()
 
         finished_verb = GetNode('V/Finished')
@@ -1097,7 +1097,13 @@ Student schedule for %s:
 
         expanded = [[] for i in range(numperpage)]
 
-        users = students
+        users = []
+        for u in students:
+            if u and u.id:
+                for sec in u.getSections(prog):
+                    u = ESPUser(u)
+                    u.sec = sec
+                    users.append(u)
 
         for i in range(len(users)):
             expanded[(i*numperpage)/len(users)].append(users[i])
@@ -1111,6 +1117,7 @@ Student schedule for %s:
                 else:
                     users.append(expanded[j][i])
         students = users
+
         return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
 
 
@@ -1231,7 +1238,7 @@ Student schedule for %s:
         scheditems = []
 
         for teacher in teachers:
-            for cls in teacher.getTaughtSections(self.program):
+            for cls in teacher.getTaughtClasses(self.program):
                 if cls.isAccepted():
                     scheditems.append({'teacher': teacher,
                                        'cls'    : cls})

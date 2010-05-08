@@ -48,7 +48,10 @@ class QSDManager(FileDBManager):
         # aseering 11-15-2009 -- Punt FileDB for this purpose;
         # it has consistency issues in multi-computer load-balanced setups,
         # and memcached doesn't have a clear performance disadvantage.
-        return self.filter(path=path, name=name).select_related().latest('create_date')
+        try:
+            return self.filter(path=path, name=name).select_related().latest('create_date')
+        except QuasiStaticData.DoesNotExist:
+            return None
     get_by_path__name.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'path': qsd.path, 'name': qsd.name})
 
     def __str__(self):
@@ -66,7 +69,7 @@ class QuasiStaticData(models.Model):
     name = models.SlugField()
     title = models.CharField(max_length=256)
     content = models.TextField()
-
+    
     nav_category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
     create_date = models.DateTimeField(default=datetime.now, editable=False)
@@ -81,7 +84,7 @@ class QuasiStaticData(models.Model):
         This is used by the FileDBManager as a cache key, so be careful when updating.
         Changes here *may* cause caching to break in annoying ways elsewhere. We
         recommend grepping through any related files for "cache".
-
+        
         In particular, IF you change this, update qsd/models.py's QSDManager class
         Otherwise, the cache *may* be used wrong elsewhere."""
         return qsd_cache_key(self.path, self.name, None) # DB access cache --- user invariant
@@ -91,7 +94,7 @@ class QuasiStaticData(models.Model):
 
         This could be used for versioning QSDs, for example. It will not be
         saved to the DB until .save is called.
-
+        
         Note that this method maintains the author and created date.
         Client code should probably reset the author to request.user
         and date to datetime.now (possibly with load_cur_user_time)"""
@@ -111,20 +114,6 @@ class QuasiStaticData(models.Model):
     def load_cur_user_time(self, request, ):
         self.author = request.user
         self.create_date = datetime.now()
-
-    def save(self, user=None, *args, **kwargs):
-        # Invalidate the file cache of the render_qsd template tag
-        from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func, render_qsd_cache
-        render_qsd_cache.delete(cache_key_func(self))
-
-        # Invalidate per user cache entry --- really, we should do this for
-        # all users, but just this one is easy and almost as good
-        render_qsd_cache.delete(cache_key_func(self, user))
-
-        retVal = super(QuasiStaticData, self).save(*args, **kwargs)
-        QuasiStaticData.objects.obj_to_file(self)
-
-        return retVal
 
     # Really, I think the correct solution here is to key it by path.get_uri and name
     # is_descendant_of is slightly more expensive, but whatever.
@@ -146,7 +135,7 @@ class QuasiStaticData(models.Model):
             result = '/' + '/'.join(path_parts[2:]) + '/' + self.name + '.html'
         else:
             result = '/' + '/'.join(path_parts[1:]) + '/' + self.name + '.html'
-
+        
         return result
     url.depend_on_row(lambda:QuasiStaticData, 'self')
     # This never really happens in this case, still... something to think about:
@@ -167,30 +156,32 @@ class QuasiStaticData(models.Model):
     #    Special-case DataTree?? :-(
     #
     # url.depend_on_row(lambda:DataTree, lambda instance: {'self': QuasiStaticData.objects.blahbalh})
-
+            
     def __unicode__(self):
         return (self.path.full_name() + ':' + self.name + '.html' )
 
+    @cache_function
     def html(self):
         return markdown(self.content)
+    html.depend_on_row(lambda:QuasiStaticData, 'self')
 
     @staticmethod
     def find_by_url_parts(base, parts):
         """ Fetch a QSD record by its url parts """
         # Extract the last part
         filename = parts.pop()
-
+        
         # Find the branch
         try:
             branch = base.tree_decode( parts )
         except DataTree.NoSuchNodeException:
             raise QuasiStaticData.DoesNotExist
-
+        
         # Find the record
         qsd = QuasiStaticData.objects.filter( path = branch, name = filename )
         if len(qsd) < 1:
             raise QuasiStaticData.DoesNotExist
-
+        
         # Operation Complete!
         return qsd[0]
 
@@ -232,7 +223,7 @@ class ESPQuotations(models.Model):
 
         return random.choice(current_pool)
 
-
+        
     class Meta:
         verbose_name_plural = 'ESP Quotations'
 

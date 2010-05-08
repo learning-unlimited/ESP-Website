@@ -81,11 +81,11 @@ class OnSiteRegister(ProgramModuleObj):
     @main_call
     @needs_onsite
     def onsite_create(self, request, tl, one, two, module, extra, prog):
-	if request.method == 'POST':
-	    form = OnSiteRegForm(request.POST)
+        if request.method == 'POST':
+            form = OnSiteRegForm(request.POST)
             
-	    if form.is_valid():
-		new_data = form.cleaned_data
+            if form.is_valid():
+                new_data = form.cleaned_data
                 username = base_uname = (new_data['first_name'][0]+ \
                                          new_data['last_name']).lower()
                 if User.objects.filter(username = username).count() > 0:
@@ -139,13 +139,13 @@ class OnSiteRegister(ProgramModuleObj):
 
                 self.createBit('OnSite')
 
-		v = GetNode( 'V/Flags/UserRole/Student')
-		ub = UserBit()
-		ub.user = new_user
-		ub.recursive = False
-		ub.qsc = GetNode('Q')
-		ub.verb = v
-		ub.save()
+                v = GetNode( 'V/Flags/UserRole/Student')
+                ub = UserBit()
+                ub.user = new_user
+                ub.recursive = False
+                ub.qsc = GetNode('Q')
+                ub.verb = v
+                ub.save()
 
                 new_user.recoverPassword()
                 
@@ -153,8 +153,6 @@ class OnSiteRegister(ProgramModuleObj):
                                                                                                    (self.program.getUrlBase(), new_user.id)})
 
         else:
-	    form = OnSiteRegForm()
+            form = OnSiteRegForm()
 
-	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form})
-        
- 
+	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form, 'current_year':ESPUser.current_schoolyear()})

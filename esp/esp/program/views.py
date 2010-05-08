@@ -296,6 +296,9 @@ def newprogram(request):
 
             commit_program(new_prog, context['datatrees'], context['userbits'], context['modules'], context['costs'])
 
+            #   Force all ProgramModuleObjs and their extensions to be created now
+            new_prog.getModules()
+            
             manage_url = '/manage/' + new_prog.url() + '/resources'
             return HttpResponseRedirect(manage_url)
         else:

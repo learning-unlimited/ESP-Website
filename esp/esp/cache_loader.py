@@ -1,5 +1,9 @@
 """ Lame hack to ensure all caches are inserted. """
 
+#   Attempt to make newer versions of Django properly realize that this module
+#   does not have models.
+__path__ = ''
+
 # This is in a separate app because example caches may be in unit tests and
 # whatnot for esp.cache. This is probably fine if done properly, but I'd rather
 # not have to think about that.

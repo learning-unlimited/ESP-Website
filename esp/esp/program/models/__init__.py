@@ -154,7 +154,7 @@ class ArchiveClass(models.Model):
     program = models.CharField(max_length=256)
     year = models.CharField(max_length=4)
     date = models.CharField(max_length=128)
-    category = models.CharField(max_length=16)
+    category = models.CharField(max_length=32)
     teacher = models.CharField(max_length=1024)
     title = models.CharField(max_length=1024)
     description = models.TextField()
@@ -632,7 +632,17 @@ class Program(models.Model):
         else:
             return list(self.getTimeSlots(exclude_types=[]))
     getTimeSlotList.depend_on_model(lambda: Event)
-
+    
+    #   In situations where you just want a list of all time slots in the program,
+    #   that can be cached.
+    @cache_function
+    def getTimeSlotList(self, exclude_compulsory=True):
+        if exclude_compulsory:
+            return list(self.getTimeSlots(exclude_types=['Compulsory']))
+        else:
+            return list(self.getTimeSlots(exclude_types=[]))
+    getTimeSlotList.depend_on_model(lambda: Event)
+    
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
         ts_list = Event.collapse(list(self.getTimeSlots()), tol=timedelta(minutes=15))
@@ -653,10 +663,14 @@ class Program(models.Model):
         else:
             return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
 
-    def getResourceTypes(self):
+    def getResourceTypes(self, include_classroom=False):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
-        exclude_types = [ResourceType.get_or_create('Classroom')]
+        
+        if include_classroom:
+            exclude_types = []
+        else:
+            exclude_types = [ResourceType.get_or_create('Classroom')]
         
         Q_filters = Q(program=self) | Q(program__isnull=True)
 

@@ -57,7 +57,13 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
 
     # The below stolen from send_mail in django.core.mail
     connection = CustomSMTPConnection(username=None, password=None, fail_silently=fail_silently, return_path=return_path)
-    EmailMessage(subject, message, from_email, new_list, bcc=(bcc,), connection=connection, headers=extra_headers).send()
+    msg = EmailMessage(subject, message, from_email, new_list, bcc=(bcc,), connection=connection, headers=extra_headers)
+    
+    #   Detect HTML tags in message and change content-type if they are found
+    if '<html>' in message:
+        msg.content_subtype = 'html'
+    
+    msg.send()
 
 
 

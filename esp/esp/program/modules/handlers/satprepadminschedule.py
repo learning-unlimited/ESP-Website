@@ -33,7 +33,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.datatree.models import *
-from esp.users.models    import ESPUser, User
+from esp.users.models    import ESPUser, User, UserBit
 from esp.users.views import get_user_list
 from django.http import HttpResponseRedirect
 from esp.program.models import SATPrepRegInfo, ClassSubject, ClassCategories
@@ -181,7 +181,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
 
 
     @aux_call
-    @login_required
+    @needs_admin
     def enter_scores(self, request, tl, one, two, module, extra, prog):
         """ Allow bulk entry of scores from a spreadsheet.  This works for either the diagnostic or
         practice exams. """
@@ -307,18 +307,11 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
         from esp.program.modules.module_ext import SATPrepTeacherModuleInfo
         import string
         import random
-        
-        def cmp_scores(test):
-            def _cmp(one, two):
-                return cmp(one[test], two[test])
-
-            return _cmp
+        import copy
 
         #   Get confirmation and a list of users first.
         if not request.method == 'POST' and not request.POST.has_key('schedule_confirm'):
             return render_to_response(self.baseDir()+'schedule_confirm.html', request, (prog, tl), {})
-
-        num_divisions = self.num_divisions
 
         filterObj, found = get_user_list(request, self.program.getLists(True))
         if not found:
@@ -326,85 +319,204 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
 
         #   Find the user's scores and put them in a python list.
         users = list(filterObj.getList(User).distinct())
-        random.shuffle(users)
-        user_scores = []
+        subjects = ['math', 'verb', 'writ']
+        
+        #   Expire existing enrollments
+        reg_bits = UserBit.valid_objects().filter(verb=DataTree.get_by_uri('V/Flags/Registration/Enrolled')).filter(QTree(qsc__below=prog.anchor))
+        """
+        print 'Expiring %d enrollment bits' % reg_bits.count()
+        """
+        for bit in reg_bits:
+            bit.expire()
+        
+        #   Add scores to each user
         for user in users:
             satprepreginfo = SATPrepRegInfo.getLastForProgram(user, self.program)
-            user_scores.append({'user': user,
-                                'math': SATPrepAdminSchedule.getScore(satprepreginfo, 'math'),
-                                'writ': SATPrepAdminSchedule.getScore(satprepreginfo, 'writ'),
-                                'verb': SATPrepAdminSchedule.getScore(satprepreginfo, 'verb')})
+            user.scores = {}
+            for subject in subjects:
+                user.scores[subject] = SATPrepAdminSchedule.getScore(satprepreginfo, subject)
 
-        separated_list = {'math': {'none': [x['user'] for x in user_scores if x['math'] is None]},
-                          'verb': {'none': [x['user'] for x in user_scores if x['verb'] is None]},
-                          'writ': {'none': [x['user'] for x in user_scores if x['writ'] is None]}}
+        #   Get an independently sorted list for each subject
+        sorted_lists = {}
+        for subject in subjects:
+            sorted_lists[subject] = copy.deepcopy(users)
+            sorted_lists[subject].sort(key=lambda x: x.scores[subject])
+            
+        #   Generate list of possible orderings
+        def combinations(lst):
+            if len(lst) == 1:
+                return [lst]
+            else:
+                result = []
+                for i in range(len(lst)):
+                    other_items = [y for y in lst if y != lst[i]]
+                    result += [[lst[i]] + x for x in combinations(other_items)]
+                return result
+        orderings = combinations(subjects)
+            
+        #   Divide students into orderings
+        num_orderings = len(orderings)
+        num_subjects = len(subjects)
+        ordering_index = 0
+        subject_index = 0
+        def lists_non_empty():
+            for subject in subjects:
+                if len(sorted_lists[subject]) > 0:
+                    return True
+            return False
+        ordering_lists = [[] for ordering in orderings]
+        while lists_non_empty():
+            #   Pull a student from the top of the list in the current subject
+            new_student = sorted_lists[subjects[subject_index]].pop()
+            #   Put them in the list for the current ordering
+            ordering_lists[ordering_index].append(new_student)
+            #   Remove them from the other lists
+            for subject in subjects:
+                if subject != subjects[subject_index]:
+                    sorted_lists[subject].remove(new_student)
+                    
+            #   Debug statement:
+            #   print 'Took %s (scores: %s) from %s list to ordering %s' % (new_student, new_student.scores, subjects[subject_index], orderings[ordering_index])
+                    
+            #   Move to the next subject list
+            subject_index = (subject_index + 1) % num_subjects 
+            #   Move to the next ordering list
+            ordering_index = (ordering_index + 1) % num_orderings
 
-        sections = list(string.ascii_uppercase[0:num_divisions])
-        sections.sort(reverse = True)
+        """
+        #   Debug statements
+        print '--------------'
+        for i in range(num_orderings):
+            print 'Ordering %s: %d students' % (orderings[i], len(ordering_lists[i]))
+        """
         
-        #   Divide the users into sections.
-        for test in ['math','verb','writ']:
-            cur_list = [x for x in user_scores if x[test] is not None]
-            cur_list.sort(cmp_scores(test))
-
-            num_each = len(cur_list) / num_divisions
-
-            for i in range(len(cur_list)):
-                section_num = i / num_each
-                if section_num == num_divisions:
-                    section_num -= 1
-
-                cur_section = sections[section_num]
-
-                if separated_list[test].has_key(cur_section):
-                    separated_list[test][cur_section].append((cur_list[i]['user'],cur_list[i][test]))
-                else:
-                    separated_list[test][cur_section] = [(cur_list[i]['user'],cur_list[i][test])]
-
         #   Retrieve the class sections of the program, keeping track of their subject and level
         #   in the class_list dictionary.
         tmi = SATPrepTeacherModuleInfo.objects.filter(program=prog)
-
-        class_list = {'verb': {}, 'writ': {}, 'math': {}}
+        class_list = {}
+        timeslots = prog.getTimeSlots()
+        for timeslot in timeslots:
+            class_list[timeslot] = {}
+            for subject in subjects:
+                class_list[timeslot][subject] = {}
         for t in tmi:
             section = t.section
             subject = t.get_subject_display().lower()[:4]
             cl = ESPUser(t.user).getTaughtClasses(prog)
             for c in cl:
-                for s in c.sections.all():
-                    if class_list[subject].has_key(section):
-                        class_list[subject][section].append({'cls': s, 'numstudents': 0, 'maxstudents': s.room_capacity()})
+                for s in c.get_sections():
+                    timeslot = s.start_time()
+                    if section not in class_list[timeslot][subject]:
+                        class_list[timeslot][subject][section] = []
+                    class_list[timeslot][subject][section].append((s, s.room_capacity()))
+
+        """
+        #   Debug statements
+        #   print class_list
+        """
+
+        #   For each timeslot/subject combination, find the orderings that include it
+        for timeslot_index in range(len(timeslots)):
+            for subject in subjects:
+                valid_orderings = filter(lambda o: o[timeslot_index] == subject, orderings)
+                
+                #   Get a list of students in those orderings sorted by their score in the current subject
+                #   (Exclude students that have no score)
+                timeslot = timeslots[timeslot_index]
+                students = []
+                for ordering in valid_orderings:
+                    students += ordering_lists[orderings.index(ordering)]
+                students = filter(lambda s: s.scores[subject] >= 200, students)
+                students.sort(key=lambda s: s.scores[subject])
+                students.reverse()
+                
+                """
+                #   Debug statement
+                print 'Timeslot %s; subject %s: %d students' % (timeslots[timeslot_index], subject, len(students))
+                """
+                
+                #   Parcel out the spots in each level proportional to space
+                num_students = len(students)
+                num_spots = 0
+                section_dict = class_list[timeslot][subject]
+                level_space = {}
+                level_thresholds = {}
+                indiv_thresholds = {}
+                ordered_sections = section_dict.keys()
+                ordered_sections.sort()
+                prev_section = None
+                for section in ordered_sections:
+                    level_space[section] = 0
+                    for item in section_dict[section]:
+                        num_spots += item[1]
+                        level_space[section] += item[1]
+                for section in ordered_sections:
+                    if prev_section is None:
+                        prev_threshold = 0
                     else:
-                        class_list[subject][section] = [{'cls': s, 'numstudents': 0, 'maxstudents': s.room_capacity()}] 
-        
-        schedule = {} # userids -> list of time ids
+                        prev_threshold = level_thresholds[prev_section]
+                    section_size = level_space[section] * float(num_students) / num_spots
+                    level_thresholds[section] = prev_threshold + section_size
+                    indiv_thresholds[section] = [section_size * item[1] / level_space[section] + prev_threshold for item in section_dict[section]]
+                    prev_section = section
 
-        dry_run = False
-        scheduling_log = []
-        sched_nums = {}
+                    """
+                    #   Debug statement
+                    #   print ' -> Section %s (%d/%d students): threshold = %f, indiv = %s' % (section, level_thresholds[section] - prev_threshold, level_space[section], level_thresholds[section], indiv_thresholds[section])
+                    """
 
-        #   Assign students one by one to the appropriate class section in each subject.
-        for test in ['writ','math','verb']:
-            sched_nums[test] = 0
-            new_list = separated_list[test]
-            for section, userList in new_list.items():
-                if section != 'none':
-                    clsList = class_list[test][section]
-                    for user, score in userList:
-                        if not schedule.has_key(user.id):
-                            schedule[user.id] = []
+                #   Assign students
+                num_students_assigned = 0
+                section_index = 0
+                current_item = 0
+                for student in students:
+                    if (section_index >= len(ordered_sections)):
+                        raise ESPError(False), 'Overran number of sections'
+                    current_section = ordered_sections[section_index]
+                    if (current_item >= len(indiv_thresholds[current_section])):
+                        raise ESPError(False), 'Overran number of sections in section'
+                        
+                    target_section = section_dict[current_section][current_item][0]
+                    
+                    if not hasattr(target_section, 'min_score'):
+                        target_section.min_score = 800
+                    if not hasattr(target_section, 'max_score'):
+                        target_section.max_score = 200
 
-                        cls = SATPrepAdminSchedule.getSmallestClass(clsList, schedule[user.id])
-                        cls['numstudents'] += 1
-                        sched_nums[test] += 1
-                        scheduling_log.append('Added %s to %s at %s' % (user, cls['cls'], cls['cls'].meeting_times.all()[0]))
+                    target_section.preregister_student(student, overridefull=True)
+                    if student.scores[subject] < target_section.min_score:
+                        target_section.min_score = student.scores[subject]
+                    if student.scores[subject] > target_section.max_score:
+                        target_section.max_score = student.scores[subject]
+                    
+                    num_students_assigned += 1
 
-                        if not dry_run:
-                            cls['cls'].preregister_student(user, overridefull=True)
-                            cls['cls'].update_cache_students()
-                            
-                        for ts in cls['cls'].meeting_times.all():
-                            schedule[user.id].append(ts.id)
+                    """
+                    #   Debug statements
+                    print '  Assigning student %s (scores: %s) to %s' % (student, student.scores, target_section)
+                    print '  -> %d assigned (current thresholds are %f, %f)' % (num_students_assigned, indiv_thresholds[current_section][current_item], level_thresholds[current_section])
+                    """
+                    
+                    #   Increment section if necessary
+                    if num_students_assigned > level_thresholds[current_section]:
+                        section_index += 1
+                        current_item = 0
+                    #   Increment item if necessary
+                    elif num_students_assigned > indiv_thresholds[current_section][current_item]:
+                        current_item += 1
+
+                """ 
+                #   Check results
+                for section in ordered_sections:
+                    #   This code assumes multiple sections per level+timeblock+subject
+                    print ' -> Section %s' % section
+                    for item in section_dict[section]:
+                        print '    (%d/%d) %s' % (item[0].num_students(), item[1], item[0])
+                    
+                    #   This code assumes one section per level+timeblock+subject
+                    item = section_dict[section][0]
+                    print ' -> Section %s (%d/%d) %s: Scores %d-%d' % (section, item[0].num_students(), item[1], item[0], item[0].min_score, item[0].max_score)
+                """
 
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
 
@@ -539,6 +651,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())
 
     @aux_call
+    @needs_admin
     def satprep_teachassign(self, request, tl, one, two, module, extra, prog):
         """ This will allow the program director to assign sections to teachers. """
         import string

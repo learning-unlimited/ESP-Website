@@ -70,7 +70,7 @@ SHOW_TEMPLATE_ERRORS = DEBUG
 # Database     #
 ################
 
-DATABASE_ENGINE = 'postgresql'
+DATABASE_ENGINE = 'postgresql_psycopg2'
 DATABASE_NAME = 'django'
 DATABASE_HOST = 'localhost'
 DATABASE_PORT = '5432'

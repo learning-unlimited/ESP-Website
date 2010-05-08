@@ -52,7 +52,6 @@ def get_from_id(id, module, strtype = 'object', error = True):
         return None
     return foundobj
 
-
 def render_response(request, template, dictionary):
     from esp.web.util.idebug import idebug_hook
     inst = RequestContext(request)
@@ -61,10 +60,19 @@ def render_response(request, template, dictionary):
     
     return django.shortcuts.render_to_response(template, {}, context_instance = inst)
 
+def _per_program_template_name(prog, templatename):
+    tpath = templatename.split("/")
+    new_tpath = tpath[:-1] + ["per_program", "%s_%s" % (prog.id, tpath[-1])]
+    return "/".join(new_tpath)
 
-def render_to_response(template, requestOrContext, prog = None, context = None):
+def render_to_response(template, requestOrContext, prog = None, context = None, auto_per_program_templates = True):
     from esp.web.views.navBar import makeNavBar
 
+    if isinstance(template, (basestring,)):
+        template = [ template ]
+
+    if isinstance(prog, (list, tuple)) and auto_per_program_templates:
+        template = [_per_program_template_name(prog[0], t) for t in template] + template
 
     # if there are only two arguments
     if context is None and prog is None:

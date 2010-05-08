@@ -42,10 +42,15 @@ TMP      = tempfile.gettempdir()
 LATEX_DPI     = 150
 LATEX_BG      = 'Transparent' #'white'
 
-COMMANDS = {'latex'  : '/usr/bin/latex',
-            'dvips'  : '/usr/bin/dvips',
-            'convert': '/usr/bin/convert',
-            'dvipng' : '/usr/bin/dvipng'}
+COMMANDS = {'latex'  : 'latex',
+            'dvips'  : 'dvips',
+            'convert': 'convert',
+            'dvipng' : 'dvipng'}
+
+try:
+    from esp.settings import NULL_FILE
+except:
+    NULL_FILE = '/dev/null'
 
 class InlineLatex(GenImageBase):
     """ A generated LaTeX image for use in inlining. """
@@ -95,10 +100,10 @@ class InlineLatex(GenImageBase):
         tex_file.write(tex.encode('utf-8'))
         tex_file.close()
 
-        if os.system('cd %s && %s -interaction=nonstopmode %s > /dev/null' % \
-                (TMP, COMMANDS['latex'], tmppath)) is not 0:
+        if os.system('cd %s && %s -interaction=nonstopmode %s > %s' % \
+                (TMP, COMMANDS['latex'], tmppath, NULL_FILE)) is not 0:
             raise ESPError(False), 'latex compilation failed.'
 
-        if os.system( '%s -q -T tight -bg %s -D %s -o %s %s.dvi > /dev/null' % \
-                (COMMANDS['dvipng'], LATEX_BG, self.dpi, self.local_path, tmppath)) is not 0:
+        if os.system( '%s -q -T tight -bg %s -D %s -o %s %s.dvi > %s' % \
+                (COMMANDS['dvipng'], LATEX_BG, self.dpi, self.local_path, tmppath, NULL_FILE)) is not 0:
             raise ESPError(False), 'dvipng failed.'

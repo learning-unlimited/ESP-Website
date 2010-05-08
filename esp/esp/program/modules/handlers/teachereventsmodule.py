@@ -162,8 +162,8 @@ class TeacherEventsModule(ProgramModuleObj):
             form = TeacherEventSignupForm(self, initial=data)
         return render_to_response( self.baseDir()+'event_signup.html', request, (prog, tl), {'prog':prog, 'form': form} )
 
-    @needs_admin
     @main_call
+    @needs_admin
     def teacher_events(self, request, tl, one, two, module, extra, prog):
         interview_times = self.getTimes('interview').select_related('anchor__userbit_qsc__user')
         training_times = self.getTimes('training').select_related('anchor__userbit_qsc__user')

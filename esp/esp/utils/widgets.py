@@ -10,7 +10,7 @@ import time
 from esp.utils import captcha
 
 # DATETIMEWIDGET
-calbtn = u"""<img src="%simages/calbutton.gif" alt="calendar" id="%s_btn" style="cursor: pointer; border: none;" title="Select date and time"
+calbtn = u"""<img src="%simages/calbutton_tight.png" alt="calendar" id="%s_btn" style="cursor: pointer; border: none;" title="Select date and time"
             onmouseover="this.style.background='#444444';" onmouseout="this.style.background=''" />
 <script type="text/javascript">
     Calendar.setup({
@@ -23,7 +23,7 @@ calbtn = u"""<img src="%simages/calbutton.gif" alt="calendar" id="%s_btn" style=
 </script>"""
 
 class DateTimeWidget(forms.widgets.TextInput):
-    dformat = '%Y-%m-%d %H:%M'
+    dformat = '%m/%d/%Y %H:%M'
 
     class Media:
         css = {

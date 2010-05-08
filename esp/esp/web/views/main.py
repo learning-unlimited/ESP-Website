@@ -242,3 +242,50 @@ def contact(request, section='esp'):
 	return render_to_response('contact.html', request, GetNode('Q/Web/about'),
 						 {'contact_form': form})
 
+
+def registration_redirect(request):
+    """ A view which returns:
+        - A redirect to the currently open registration if exactly one registration is open
+        - A list of open registration links otherwise
+    """
+    from esp.users.models import ESPUser, UserBit
+    from esp.program.models import Program
+
+    #   Make sure we have an ESPUser
+    user = ESPUser(request.user)
+
+    # prepare the rendered page so it points them to open student/teacher reg's
+    ctxt = {}
+    userrole = {}
+    if user.isStudent():
+        userrole['name'] = 'Student'
+        userrole['base'] = 'learn'
+        userrole['reg'] = 'studentreg'
+        regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
+    elif user.isTeacher():
+        userrole['name'] = 'Teacher'
+        userrole['base'] = 'teach'
+        userrole['reg'] = 'teacherreg'
+        regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
+    ctxt['userrole'] = userrole
+    ctxt['navnode'] = GetNode('Q/Web/myesp')
+
+    progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb))
+    progs_tag = list(t.target \
+            for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
+            if isinstance(t.target, Program) \
+                and (set(curUser.getUserTypes()) & set(t.value.split(","))))
+    progs = set(progs_userbit + progs_tag)
+    print progs
+        
+    nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
+    if len(progs) == 1:
+        progs = list(progs)
+        ctxt['prog'] = progs[0]
+        ctxt['navnode'] = progs[0].anchor
+        return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+    else:
+        ctxt['prog'] = prog
+        ctxt['nextreg'] = list(nextreg)
+        return render_to_response('users/profile_complete.html', request, navnode, ctxt)		    
+    

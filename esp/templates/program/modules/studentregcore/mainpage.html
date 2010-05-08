@@ -46,14 +46,15 @@
 {% endif %}
 {% endif %}
 {% endif %}
-    <p>
+{% load render_qsd %}
+{% inline_qsd_block program.anchor registration_steps request.user %}    <p>
     Please complete the following steps to register for {{ program.niceName }}.
     When each step is completed, the corresponding box in the right-hand column will
     be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
     button at the bottom of the page. -->
     </p>
+{% end_inline_qsd_block %}
 
-{% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
     <center><div class="note">
     <b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
@@ -112,9 +113,8 @@
     {% else %}
         <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull and not canRegToFullProgram and not isConfirmed %}disabled{% endif %}/></form>
         {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}
-            <br/><br/><br/>
-            <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
-            <input id="cancelbutton" class="button" type="submit" value="{{ scrmi.cancel_button_text }}" />
+           <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
+           <input id="cancelbutton" class="button" type="submit" value="{{ scrmi.cancel_button_text }}" />
             </form>
         {% endif %}{% endif %}
     {% endif %}
