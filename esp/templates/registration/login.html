@@ -26,6 +26,7 @@ Please log in below.
 
 <div id="login_form">
 <form action="{{ request.action }}" method="post">
+{% csrf_token %}
 <table cellpadding="2" align="center">
 <thead>
 <tr>
