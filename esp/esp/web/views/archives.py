@@ -137,8 +137,8 @@ def archive_classes(request, category, options, sortorder = None):
     criteria_list += extract_criteria(request.POST)
     criteria_list += extract_criteria(request.GET)
 
-    category_list = [n['category'] for n in ArchiveClass.objects.all().values('category').distinct()]
-    program_list = [p['program'] for p in ArchiveClass.objects.all().values('program').distinct()]
+    category_list = list(ArchiveClass.objects.all().values_list('category', flat=True).distinct())
+    program_list = list(ArchiveClass.objects.all().values_list('program', flat=True).distinct())
     
     category_dict = {}
     classcatList = ClassCategories.objects.all()

@@ -57,8 +57,9 @@ We appreciate your interest!  If you have any questions, please <a href="mailto:
     <span class="date">{{ blogentry.timestamp|date:"N d, Y @ f a" }}</span>
     <span class="title">{{ blogentry.title }}</span>
   </p>
-  <p class="contents">
+  <p class="contents">{% autoescape off %}
     {{ blogentry.html }}
+    {% endautoescape %}
   </p>
 </div>
 {% endfor %}

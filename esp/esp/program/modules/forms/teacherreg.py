@@ -44,6 +44,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
                             (False, "I would like a classroom to be provided for my class.")]
     lateness_choices = [    (True, "Students may join this class up to 20 minutes after the official start time."),
                             (False, "My class is not suited to late additions.")]
+    hardness_choices = [    ("Hard","Hard - My class would be exceptionally difficult for your average high school student"),
+                            ("Normal","Normal"),
+                            ("Easy","Easy - My class could probably be taught to elementary school students")] 
 
     # Grr, TypedChoiceField doesn't seem to exist yet
     title          = SizedCharField(    label='Course Title', length=50, max_length=200 )
@@ -60,10 +63,11 @@ class TeacherClassRegForm(FormWithRequiredCss):
     session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1,1)], widget=BlankSelectWidget(),
                                         help_text='(How many days will your class take to complete?)' )
 
-    grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 12)], widget=BlankSelectWidget() )
-    grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(7, 12)], widget=BlankSelectWidget() )
+    grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
+    grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(),
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
+    hardness_rating = forms.ChoiceField( label='Hardness',choices=hardness_choices, initial="Normal")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
     has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect(), required=False )

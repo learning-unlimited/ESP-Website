@@ -41,7 +41,7 @@ import datetime
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
-from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm
+from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm, MinimalUserInfo
 from django.db.models.query import Q
 
 
@@ -257,6 +257,8 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
     from esp.users.models import K12School
+    from esp.web.views.main import registration_redirect
+    
     STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
     STUDREP_QSC  = GetNode('Q')
 
@@ -276,10 +278,17 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     curUser.updateOnsite(request)
 
     FormClass = {'': UserContactForm,
-               'student': StudentProfileForm,
-               'teacher': TeacherProfileForm,
-               'guardian': GuardianProfileForm,
-               'educator': EducatorProfileForm}[role]
+        'student': StudentProfileForm,
+        'teacher': TeacherProfileForm,
+        'guardian': GuardianProfileForm,
+        'educator': EducatorProfileForm,
+        'Student': StudentProfileForm,
+        'Teacher': TeacherProfileForm,
+        'Guardian': GuardianProfileForm,
+        'Educator': EducatorProfileForm,
+        'Administrator': MinimalUserInfo,
+        }[role]
+
     context['profiletype'] = role
 
     if request.method == 'POST' and request.POST.has_key('profile_page'):
@@ -335,35 +344,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             curUser.email     = new_data['e_mail']
             curUser.save()
             if responseuponCompletion == True:
-                # prepare the rendered page so it points them to open student/teacher reg's
-                ctxt = {}
-                userrole = {}
-                if curUser.isStudent():
-                    userrole['name'] = 'Student'
-                    userrole['base'] = 'learn'
-                    userrole['reg'] = 'studentreg'
-                    regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
-                elif curUser.isTeacher():
-                    userrole['name'] = 'Teacher'
-                    userrole['base'] = 'teach'
-                    userrole['reg'] = 'teacherreg'
-                    regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
-                ctxt['userrole'] = userrole
-                
-                if curUser.isStudent() or curUser.isTeacher():
-                    progs = UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb)
-                    nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
-                    ctxt['prog'] = prog
-                    ctxt['nextreg'] = list(nextreg)
-
-                    return HttpResponseRedirect(u'/%s/index.html' % (userrole['base'],) )
-
-                    #if len(progs) == 1:
-                    #    return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
-                    #else:
-                    #    return render_to_response('users/profile_complete.html', request, navnode, ctxt)
-                else:
-                    return render_to_response('users/profile_complete.html', request, navnode, ctxt)
+                return registration_redirect(request)
             else:
                 return True
         else:

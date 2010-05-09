@@ -137,13 +137,12 @@ var handle_submit = function(mode, attrs, element)
     {
         attrs.form = attrs.id;
     }
-    params = {
-        url: attrs.url,
-        form: attrs.form,
-        content: attrs.content,
-        handleAs: "json",
-        handle: dojo_handle,
-    };
+    params = {};
+    params["url"] = attrs.url;
+    params["form"] = attrs.form;
+    params["content"] = attrs.content;
+    params["handleAs"] = "json";
+    params["handle"] = dojo_handle;
     if (mode == 'post')
     {
         dojo.xhrPost(params);

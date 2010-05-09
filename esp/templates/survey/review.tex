@@ -23,40 +23,10 @@ Students from {{ prog.niceName }} filled out an online survey asking some questi
     \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\
     \multicolumn{2}{|c|}{\cellcolor{esphead} \Large {Responses for {{ s.name }}} } \\ 
     \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\\hline
-    {% for q in s.display_data.questions %} 
-        {% if q.question.question_type.is_countable %}
-            \begin{minipage}[b]{3in} {{ q.question.name }}: \\
-                (Numerical responses) \vspace*{0.5in}
-
-                \textbf{Number of responses:} {{ q.answers|length }}/{{ s.num_participants }} \\
-                {% if q.question.question_type.is_numeric %}
-                    \textbf{Average:} {{ q.answers|unpack_answers|average }} \\
-                    \textbf{Std. deviation:} {{ q.answers|unpack_answers|stdev }} \\ ~\\
-                    \textbf{Global average:} {{ q.question.global_average }}
-                {% endif %}
-            \end{minipage} & 
-            {% if not q.answers|length_is:0 %}
-            {{ q.answers|unpack_answers|histogram:"tex" }} 
-            {% else %} There are no responses to this question.
-            {% endif %} \\ \hline
-        {% else %}
-            \begin{minipage}{3in} 
-                {{ q.question.name }} \vspace*{0.5in} 
-
-                \textbf{Number of responses:} {{ q.answers|length }}/{{ s.num_participants }} \\
-            \end{minipage} &
-            \begin{minipage}{3in}
-            {% if not q.answers|unpack_answers|length_is:0 %}
-            \vspace*{0.1in} Responses include: \\ 
-            \small
-            \begin{itemize2}
-            {% for a in q.answers|unpack_answers %}{% if not a|length_is:0 %}\item {{ a|texescape }}
-            {% endif %}{% endfor %}
-            \end{itemize2} \vspace*{0.1in} 
-            {% else %} There are no responses to this question.
-            {% endif %}
-            \end{minipage} \\ \hline
-        {% endif %}
+    {% for q in s.display_data.questions %}
+        {% with s.num_participants as num_participants %}
+            {% include "survey/answers.tex" %}
+        {% endwith %}
     {% endfor %}
     \end{longtable}
     \end{center}
@@ -76,41 +46,11 @@ Students were also asked a few questions about each of their classes.  The resul
     \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\
     \multicolumn{2}{|c|}{\cellcolor{esphead} \Large {Responses for {{ c.class.emailcode }}: {{ c.class.title|texescape }}} } \\ 
     \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\\hline
-    \multicolumn{2}{|c|}{Teachers: {{ c.class.getTeacherNames|join:", "|texescape }} } \\ \hline
-    {% for q in c.questions %} 
-        {% if q.question.question_type.is_countable %}
-            \begin{minipage}[b]{3in} {{ q.question.name }}: \\
-                (Numerical responses) \vspace*{0.5in}
-
-                \textbf{Number of responses:} {{ q.answers|length }}/{{ c.class.num_students }} \\
-                {% if q.question.question_type.is_numeric %}
-                    \textbf{Average:} {{ q.answers|unpack_answers|average }} \\
-                    \textbf{Std. deviation:} {{ q.answers|unpack_answers|stdev }} \\ ~\\
-                    \textbf{Global average:} {{ q.question.global_average }}
-                {% endif %}
-            \end{minipage} & 
-            {% if not q.answers|length_is:0 %}
-    	    {{ q.answers|unpack_answers|histogram:"tex" }} 
-            {% else %} There are no responses to this question.
-            {% endif %} \\ \hline
-        {% else %}
-            \begin{minipage}{3in} 
-                {{ q.question.name }} \vspace*{0.5in} 
-
-                \textbf{Number of responses:} {{ q.answers|length }}/{{ c.class.num_students }} \\
-            \end{minipage} &
-    	    \begin{minipage}{3in}
-            {% if not q.answers|length_is:0 %}
-            \vspace*{0.1in} Responses include: \\ 
-            \small
-            \begin{itemize2}
-            {% for a in q.answers|unpack_answers %}{% if not a|length_is:0 %}\item {{ a|texescape }}
-            {% endif %}{% endfor %}
-            \end{itemize2} \vspace*{0.1in} 
-            {% else %} There are no responses to this question.
-            {% endif %}
-            \end{minipage} \\ \hline
-        {% endif %}
+    \multicolumn{2}{|c|}{Teachers: {{ c.class.parent_class.getTeacherNames|join:", "|texescape }} } \\ \hline
+    {% for q in c.questions %}
+        {% with c.class.num_students as num_participants %}
+            {% include "survey/answers.tex" %}
+        {% endwith %}
     {% endfor %}
     \end{longtable}
     \end{center}

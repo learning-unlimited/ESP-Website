@@ -134,6 +134,8 @@ def qsd(request, branch, name, section, action):
     # Fetch the QSD object
     try:
         qsd_rec = QuasiStaticData.objects.get_by_path__name(branch, name)
+        if qsd_rec == None:
+            raise QuasiStaticData.DoesNotExist
         if qsd_rec.disabled:
             raise QuasiStaticData.DoesNotExist
 

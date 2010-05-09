@@ -35,6 +35,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, UserBit, User
+from esp.tagdict.models  import Tag
 from django.db.models.query import Q
 from esp.program.models import SplashInfo
 from django.template.loader import get_template
@@ -133,20 +134,64 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         from django.db.models import Q
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
+        now = datetime.now()
+
         Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
         Reg = QTree(userbit__verb__below = verb_base)
-        Unexpired = Q(userbit__enddate__gte=datetime.now()) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
+        Unexpired = Q(userbit__enddate__gte=now, userbit__startdate__lte=now) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
 
         if QObject:
-            return {'classreg': self.getQForUser(Par & Unexpired & Reg)}
+            retVal = {'classreg': self.getQForUser(Par & Unexpired & Reg)}
         else:
-            return {'classreg': User.objects.filter(Par & Unexpired & Reg).distinct()}
+            retVal = {'classreg': User.objects.filter(Par & Unexpired & Reg).distinct()}
+            
+        allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
+        if allowed_student_types:
+            allowed_student_types = allowed_student_types.split(",")
+            for stutype in allowed_student_types:
+                """ This code can't find registered students of the allowed types
+                    because the Q object needs to check for 2 different user 
+                    bits: the one that shows they're registered for classes and the 
+                    one that shows they have the right user role.
+                    As it is now, this selects all users of the allowed types;
+                    intersections with the 'classreg' students can be performed via
+                    the comm panel.
+                    Please change this if you have a preferred behavior and a way to
+                    implement it.           - Michael P, 4/14/2010
+                """
+                VerbParent = Q(userbit__verb__parent=GetNode("V/Flags/UserRole"))
+                VerbName = Q(userbit__verb__name=stutype)
+                          
+                if QObject:
+                    retVal[stutype] = self.getQForUser(Unexpired & VerbName & VerbParent)
+                    #   This would be nice, but unfortunately doesn't work:
+                    #   retVal[stutype] = self.getQForUser(Par & Unexpired & Reg & VerbName & VerbParent)
+                else:
+                    #   retVal[stutype] = User.objects.filter(Unexpired & VerbName & VerbParent).distinct()
+                    retVal[stutype] = retVal['classreg'].filter(userbit__enddate__gte=now, userbit__startdate__lte=now, userbit__verb__parent=GetNode("V/Flags/UserRole"), userbit__verb__name=stutype).distinct() 
+
+        return retVal
 
     def studentDesc(self):
-        return {'classreg': """Students who have have signed up for at least one class."""}
+        #   Label these heading nicely like the user registration form
+        from esp.users.forms.user_reg import role_choices
+        role_dict = {}
+        for item in role_choices:
+            role_dict[item[0]] = item[1]
+
+        result = {'classreg': """Students who have have signed up for at least one class."""}
+        allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
+        if allowed_student_types:
+            allowed_student_types = allowed_student_types.split(",")
+            for stutype in allowed_student_types:
+                if stutype in role_dict:
+                    result[stutype] = role_dict[stutype]
+
+        return result
+
 
     def isCompleted(self):
-        return (len(self.user.getSectionsFromProgram(self.program)[:1]) > 0)
+        return (Tag.getTag("allow_confirm_without_classreg", target=self.program)) or (len(self.user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -243,6 +288,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['allow_removal'] = self.deadline_met('/Removal')
 
         return context
+
 
     @aux_call
     @needs_student
@@ -441,8 +487,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if is_onsite:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
+            classes = list(ClassSubject.objects.catalog(self.program, ts))
             classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
+            if user_grade != 0:
+                classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
         #   Sort class list

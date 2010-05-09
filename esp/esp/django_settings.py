@@ -45,7 +45,7 @@ Email: web@esp.mit.edu
 SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
 
 # Must be unique for every site hosted
-CACHE_PREFIX="ESP"
+CACHE_PREFIX="StanfordESP"
 
 
 ###########################
@@ -79,7 +79,6 @@ INTERNAL_IPS = (
 # Default admins #
 ##################
 ADMINS = (
-    ('ESP Webmasters','esp-serverlog@mit.edu'),
     ('David Meyer',   'pdox@alum.mit.edu'),
     ('LU Webmasters', 'serverlog@lists.learningu.org'),
     ('J.D. Zamfirescu', 'zamfire+esperrors@gmail.com'),
@@ -96,8 +95,8 @@ EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
-    'archive': 'esparchive@gmail.com',
-    'bounces': 'esp-bounces@mit.edu'
+    'archive': 'learninguarchive@gmail.com',
+    'bounces': 'learningubounces@gmail.com'
 }
 
 
@@ -180,8 +179,9 @@ INSTALLED_APPS = (
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
     'esp.cache_loader',
-#    'django_evolution',
+    'esp.tagdict',
     'django_extensions',
+    'south',
 )
 import os
 for app in ('django_evolution', 'django_command_extensions'):
@@ -210,3 +210,7 @@ USE_I18N = False
 AUTH_PROFILE_MODULE='users.ESPUser_Profile'
 
 FORCE_SCRIPT_NAME = ''
+
+# Page to redirect people to when they log in
+# (Could be '/' for example)
+DEFAULT_REDIRECT = '/myesp/redirect'

@@ -71,7 +71,7 @@ class AdminClass(ProgramModuleObj):
         management forms. """
         
         if field_str == 'status':
-            return ((-20, 'Cancelled'), (-10, 'Rejected'), (0, 'Unreviewed'), (10, 'Accepted'))
+            return ((-20, 'Cancelled'), (-10, 'Rejected'), (0, 'Unreviewed'), (5, 'Accepted but hidden'), (10, 'Accepted'))
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
@@ -284,13 +284,33 @@ class AdminClass(ProgramModuleObj):
                 sf.is_bound = True
                 valid = (valid and sf.is_valid())
             
+            cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
+            orig_cls_status = cls_alter.status
+            cls_form.save_data(cls_alter)
+
+            # Leave a loophole:  You can set a class to "Unreviewed" (ie., status = 0),
+            # then cancel it, and it won't kick all the students out
+            should_cancel_sections = (int(orig_cls_status) > 0 and int(cls_alter.status) < 0)
+
             if valid:
                 for sf in sec_forms:
                     sec_alter = ClassSection.objects.get(id=sf.cleaned_data['secid'])
+                    orig_sec_status = sec_alter.status
+
                     sf.save_data(sec_alter)
-                cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
-                cls_form.save_data(cls_alter)
-                return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))
+                    
+                    # If the parent class was canceled, cancel the sections
+                    if should_cancel_sections and int(sec_alter.status) > 0:
+                        sec_alter.status = cls_alter.status
+                        sec_alter.save()
+
+                    # Kick all the students out of a class if it was rejected
+                    if int(sec_alter.status) < 0 and int(orig_sec_status) > 0:
+                        for student in sec_alter.students():
+                            sec_alter.unpreregister_student(student)
+
+
+                return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))            
             
         context['class'] = cls
         context['sections'] = sections

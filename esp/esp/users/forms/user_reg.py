@@ -58,6 +58,11 @@ class UserRegForm(forms.Form):
 
     initial_role = forms.ChoiceField(label = "I am a...", choices = role_choices)
 
+    def clean_initial_role(self):
+        data = self.cleaned_data['initial_role']
+        if data == u'':
+            raise forms.ValidationError('Please select an initial role')
+        return data
 
     def clean_username(self):
         """ Make sure that 'username' (as provided as input to this form)

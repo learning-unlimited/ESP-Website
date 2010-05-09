@@ -1,12 +1,19 @@
 
 <p>
-Below is your class schedule for {{ program.niceName }}.  Please use the links in the right-hand column to select classes to fill each time slot.  You may also <a href='/learn/{{one}}/{{two}}/catalog'> register directly from the full catalog</a>.
+{% load render_qsd %}
+{% inline_qsd_block program.anchor class_schedule_header_text request.user %}
+Below is your class schedule for {{ program.niceName }}.  You can
+<a href="/learn/{{one}}/{{two}}/catalog">click here</a> to view the full 
+catalog, or you can use the course listing below.
 </p>
 
-<p>Your classes are saved immediately when you click the "Add this Class!" button.  You do not need to confirm or save your entire registration
-to save your spot in classes.</p>
-
-<p><b>Please note:</b> You must take a one hour lunch break on each day, either from 12 to 1 PM, or from 1 to 2 PM.</p>
+<p>  <b>Please note</b>: Your space in a class is saved immediately when it
+appears in the schedule below.  However, please do
+click the "Confirm" button below to mark your registration as complete and
+receive instructions on how to get to the program and what to do when
+you arrive. 
+</p>
+{% end_inline_qsd_block %}
 
 {% if not module.deadline_met %}
     <center>
@@ -30,6 +37,9 @@ to save your spot in classes.</p>
     {% ifchanged timeslot.0.start.day %}
         <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th></tr>
     {% endifchanged %}
+    {% ifchanged timeslot.2 %}
+        <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
+    {% endifchanged %}
     {% ifequal timeslot.0.event_type.description "Compulsory" %}
     <tr>
         <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
@@ -38,19 +48,16 @@ to save your spot in classes.</p>
     {% else %}
     <tr>
         <td width="25%" valign="top" align="center">{{ timeslot.0.short_description }}</td>
-
+        
         <td style="vertical-align: top !important;">
-      {% if timeslot.4 %}
-        <i>Lunch</i>
-      {% else %}
         {% for cls in timeslot.1 %}
 	{% comment %}{% if use_priority %}{% endcomment %}
             {% if not cls.section.verbs|length_is:0 %}
                 <i>{% for v in cls.section.verbs %}{{ v.friendly_name }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
 	{% comment %}{% endif %}{% endcomment %}
-	{{ cls.section.title }}
-
+	{{ cls.section.title }} 
+            
             {% if request.user.onsite_local %}
                 ({{ cls.section.prettyrooms|join:", " }})
             {% endif %}
@@ -59,9 +66,8 @@ to save your spot in classes.</p>
         {% if timeslot.1|length_is:0 %}
             Nothing Selected
         {% endif %}
-      {% endif %}
         </td>
-
+        
         {% if not timeslot.1|length_is:0 %}
             {% if module.deadline_met %}
             <td width='25%' align='center' style="vertical-align: top !important;">
@@ -90,20 +96,15 @@ to save your spot in classes.</p>
             {% endif %}
             {% endif %}
         {% else %}
-          <td width='20%' align='center'>
-          {% if timeslot.4 %}
-              -
-          {% else %}
             {% if module.deadline_met %}
+                <td width='20%' align='center'>
                 <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
-            {% endif %}
-          {% endif %}
-          </td>
+                </td>
+            {% endif %}	
         {% endif %}
     </tr>
     {% endifequal %}
 {% endfor %}
-
-</table>
+</table> 
 </div>
 <br/>

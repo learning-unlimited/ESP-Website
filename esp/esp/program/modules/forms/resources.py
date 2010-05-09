@@ -104,6 +104,7 @@ class EquipmentForm(forms.Form):
           
 class ClassroomForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
+    orig_room_number = forms.CharField(required=False, widget=forms.HiddenInput)
     room_number = forms.CharField(widget=forms.TextInput(attrs={'size':'15'}))
     furnishings = forms.MultipleChoiceField(required=False)
     times_available = forms.MultipleChoiceField()
@@ -126,10 +127,11 @@ class ClassroomForm(forms.Form):
     #   the different timeslots that it is available for.
     def load_classroom(self, program, room):
         self.fields['id'].initial = room.id
+        self.fields['orig_room_number'].initial = room.name
         self.fields['room_number'].initial = room.name
         self.fields['num_students'].initial = room.num_students
-        self.fields['times_available'].initial = [mt.short_description for mt in room.matching_times()]
-        self.fields['furnishings'].initial = [f.res_type.name for f in room.associated_resources()]
+        self.fields['times_available'].initial = [mt.id for mt in room.matching_times()]
+        self.fields['furnishings'].initial = [f.res_type.id for f in room.associated_resources()]
         
     def save_classroom(self, program):
         """ Steps for saving a classroom:
@@ -139,16 +141,22 @@ class ClassroomForm(forms.Form):
         -   Delete old resources
         """
 
-        initial_rooms = Resource.objects.filter(name=self.cleaned_data['room_number'], event__anchor=program.anchor)
-        initial_furnishings = [r.associated_resources() for r in initial_rooms]
+        orig_room_number = self.cleaned_data['orig_room_number']
+        if orig_room_number == "":
+            orig_room_number = self.cleaned_data['room_number']
+
+        initial_rooms = program.getClassrooms().filter(name=orig_room_number).distinct()
+        initial_furnishings = {}
+        for r in initial_rooms:
+            initial_furnishings[r] = list(r.associated_resources())
         
-        new_timeslots = [Event.objects.get(id=int(id_str)) for id_str in self.cleaned_data['times_available']]
-        new_furnishings = [ResourceType.objects.get(id=int(id_str)) for id_str in self.cleaned_data['furnishings']]
-        
-        #   Evaluate the lists so the new stuff doesn't get deleted.
-        initial_rooms = list(initial_rooms)
-        for fl in initial_furnishings:
-            fl = list(fl)
+        timeslots = Event.objects.filter(id__in=[int(id_str) for id_str in self.cleaned_data['times_available']])
+        furnishings = ResourceType.objects.filter(id__in=[int(id_str) for id_str in self.cleaned_data['furnishings']])
+
+        rooms_to_keep = list(initial_rooms.filter(event__in=timeslots))
+        rooms_to_delete = list(initial_rooms.exclude(event__in=timeslots))
+
+        new_timeslots = timeslots.exclude(id__in=[x.event_id for x in rooms_to_keep])
         
         #   Make up new rooms specified by the form
         for t in new_timeslots:
@@ -161,7 +169,7 @@ class ClassroomForm(forms.Form):
             new_room.save()
             t.new_room = new_room
             
-            for f in new_furnishings:
+            for f in furnishings:
                 #   Create associated resource
                 new_resource = Resource()
                 new_resource.event = t
@@ -172,19 +180,38 @@ class ClassroomForm(forms.Form):
                 f.new_resource = new_resource
                 
                 
-        #   Take care of old resources
-        for i in range(0, len(initial_rooms)):
+        #   Delete old, no-longer-valid resources
+        for rm in rooms_to_delete:
             #   Find assignments pertaining to the old room
-            ra_room = initial_rooms[i].assignments()
+            ra_room = rm.assignments()
             for ra in ra_room:
                 if ra.resource.event in new_timeslots:
-                    ra.resource = new_timeslots[new_timeslots.index(ra.resource.event)].new_room
+                    ra.resource = timeslots[new_timeslots.index(ra.resource.event)].new_room
                     ra.save()
 
             #   Delete old resources... associated resources, then the room itself
-            for f in initial_furnishings[i]:
+            for f in initial_furnishings[rm]:
                 f.delete()
-            initial_rooms[i].delete()
+            rm.delete()
+
         
-        
-    
+        #   Sync existing rooms
+        for room in rooms_to_keep:
+            room.num_students = self.cleaned_data['num_students']
+            room.name = self.cleaned_data['room_number']
+            room.save()
+            
+            # Add furnishings that we didn't have before
+            for f in furnishings.exclude(resource__group_id=room.group_id):
+                #   Create associated resource
+                new_resource = Resource()
+                new_resource.event = room.event
+                new_resource.res_type = f
+                new_resource.name = f.name + ' for ' + self.cleaned_data['room_number']
+                new_resource.group_id = room.group_id
+                new_resource.save()
+                f.new_resource = new_resource
+
+            # Delete furnishings that we don't have any more
+            for f in Resource.objects.filter(group_id=room.group_id).exclude(id=room.id).exclude(res_type__in=furnishings):
+                f.delete()

@@ -69,16 +69,29 @@ class AdminVitals(ProgramModuleObj):
         vitals['classrejected'] = classes.filter(status=-10)
 
         proganchor = self.program_anchor_cached()
-
-        vitals['teachernum'] = self.program.teachers().items()
-#        vitals['teachernum'].append(('total', # students_union generates a stupidly expensive query; need something better, possibly "all Students with a UserBit Q inside this program"
-                                     # self.program.teachers_union()))
-        vitals['studentnum'] = self.program.students().items()
-#        vitals['studentnum'].append(('total', # students_union generates a stupidly expensive query; need something better, possibly "all Students with a UserBit Q inside this program"
-                                     # self.program.students_union()))
         
+        #   Display pretty labels for teacher and student numbers
+        teacher_labels_dict = {}
+        for module in self.program.getModules():
+            teacher_labels_dict.update(module.teacherDesc())
+        vitals['teachernum'] = []
+        for key in self.program.teachers().keys():
+            if key in teacher_labels_dict:
+                vitals['teachernum'].append((teacher_labels_dict[key], self.program.teachers()[key]))
+            else:
+                vitals['teachernum'].append((key, self.program.teachers()[key]))
+                
+        student_labels_dict = {}
+        for module in self.program.getModules():
+            student_labels_dict.update(module.studentDesc())      
+        vitals['studentnum'] = []
+        for key in self.program.students().keys():
+            if key in student_labels_dict:
+                vitals['studentnum'].append((student_labels_dict[key], self.program.students()[key]))
+            else:
+                vitals['studentnum'].append((key, self.program.students()[key]))
+                
         timeslots = self.program.getTimeSlots()
-
         vitals['timeslots'] = []
         
         for timeslot in timeslots:

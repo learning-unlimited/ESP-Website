@@ -37,6 +37,7 @@ from esp.datatree.models  import *
 from django.http          import HttpResponseRedirect, Http404
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
+from datetime             import datetime
 
 @login_required
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
@@ -96,17 +97,10 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             progbio.save()
             # save the image
             if form.cleaned_data['picture'] is not None:
-                try:
-                    picture = form.cleaned_data['picture']
-                    picture.seek(0)
-                    progbio.picture.save(picture.name, ContentFile(picture.read()))
-                except:
-                    #   If you run into a problem processing the image, just ignore it.
-                    progbio.picture = lastbio.picture
-                    progbio.save()
+                progbio.picture = form.cleaned_data['picture']
             else:
                 progbio.picture = lastbio.picture
-                progbio.save()
+            progbio.save()
             if external:
                 return True
             return HttpResponseRedirect(progbio.url())
@@ -157,10 +151,25 @@ def bio_user(request, founduser):
     if teacherbio.bio is None or len(teacherbio.bio.strip()) == 0:
         teacherbio.bio     = 'Not Available.'
 
+    now = datetime.now()
 
-    classes = ArchiveClass.getForUser(founduser)
+    # Only show classes that were approved and that have already run
+    # If we show classes that are yet to run, it's possible that
+    # the corresponding course catalog isn't up yet, in which case
+    # the teacher-bio pages leak information.
+    # Also, sort by the order of the corresponding program's DataTree node.
+    # This should roughly order by program date; at the least, it will
+    # cluster listed classes by program.
+    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=datetime.now()).filter(sections__resourceassignment__resource__res_type__name="Classroom").order_by('-anchor__parent__parent__id')
 
-    return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'), {'biouser': founduser,
-                                               'bio': teacherbio,
-                                               'classes': classes})
+    # Ignore archived classes where we still have a log of the original class
+    # Archives lose information; so, display the original form if we still have it
+    cls_ids = [x.id for x in recent_classes]
+    classes = ArchiveClass.getForUser(founduser).exclude(original_id__in=cls_ids)
+
+    return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'),
+                              {'biouser': founduser,
+                               'bio': teacherbio,
+                               'classes': classes,
+                               'recent_classes': recent_classes})
 

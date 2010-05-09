@@ -30,6 +30,7 @@ class ClassManageForm(ManagementForm):
     reg_status = forms.ChoiceField(required=False, choices=())
     min_grade = forms.ChoiceField(choices=())
     max_grade = forms.ChoiceField(choices=())
+    class_size = forms.IntegerField(label='Max. number of students')
     progress = forms.MultipleChoiceField(required=False, label='Checklist', widget=forms.CheckboxSelectMultiple, choices=())
     notes = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': 60, 'rows': 8}))
 
@@ -51,6 +52,7 @@ class ClassManageForm(ManagementForm):
             prefix+'min_grade': cls.grade_min, 
             prefix+'max_grade': cls.grade_max,
             prefix+'notes': cls.directors_notes,
+            prefix+'class_size': cls.class_size_max,
             prefix+'clsid': cls.id,
             prefix+'progress': [cm.id for cm in cls.checklist_progress.all()]}
         return self.initial
@@ -63,9 +65,13 @@ class ClassManageForm(ManagementForm):
                 sec.status = self.cleaned_data['status']
             if self.cleaned_data['reg_status']:
                 sec.registration_status = self.cleaned_data['reg_status']
+            #   Give the section a new capacity if the size of the class has been changed on the form.
+            if self.cleaned_data['class_size'] != cls.class_size_max:
+                sec.max_class_capacity = self.cleaned_data['class_size']
             sec.save()
         cls.grade_min = self.cleaned_data['min_grade']
         cls.grade_max = self.cleaned_data['max_grade']
+        cls.class_size_max = self.cleaned_data['class_size']
         cls.directors_notes = self.cleaned_data['notes']
         cls.checklist_progress.clear()
 
@@ -86,6 +92,7 @@ class SectionManageForm(ManagementForm):
     room = forms.MultipleChoiceField(required=False, choices=())
     resources = forms.MultipleChoiceField(label='Floating Resources', required=False, choices=())
     status = forms.ChoiceField(choices=())
+    class_size = forms.IntegerField(label='Max. number of students')
     reg_status = forms.ChoiceField(required=False, choices=())
     progress = forms.MultipleChoiceField(required=False, label='Checklist', widget=forms.CheckboxSelectMultiple, choices=())
 
@@ -106,6 +113,7 @@ class SectionManageForm(ManagementForm):
             prefix+'reg_status': sec.registration_status,
             prefix+'progress': [cm.id for cm in sec.checklist_progress.all()],
             prefix+'secid': sec.id,
+            prefix+'class_size': sec.capacity,
             prefix+'times': [ts.id for ts in sec.meeting_times.all()]}
         ir = sec.initial_rooms()
         self.initial[prefix+'room'] = [r.name for r in ir]
@@ -136,4 +144,5 @@ class SectionManageForm(ManagementForm):
         for r in self.cleaned_data['resources']:
             for ts in sec.meeting_times.all():
                 sec.parent_program.getFloatingResources(timeslot=ts, queryset=True).filter(name=r)[0].assign_to_section(sec)
+        sec.max_class_capacity = self.cleaned_data['class_size']
         sec.save()
