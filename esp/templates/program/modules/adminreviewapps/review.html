@@ -40,7 +40,7 @@ Added your class: {{ student.added_class|date:"m/d/Y @ h:i:s" }}
 </tbody>
 </table>
 <br />
-<form action="{{ request.path }}" method="post" name="review">
+<form action="{{ request.path }}" method="post" name="review">{% csrf_token %}
 <input type="hidden" name="student" value="{{student.id}}" />
 <table>
 <thead>

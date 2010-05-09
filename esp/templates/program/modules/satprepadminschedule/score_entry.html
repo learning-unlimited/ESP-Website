@@ -86,7 +86,7 @@ Please save the spreadsheet in a comma-separated variable (CSV) format and uploa
 <br />
 
 <div id="program_form">
-<form method="post" action="/manage/{{ prog.getUrlBase }}/enter_scores/" enctype="multipart/form-data">
+<form method="post" action="/manage/{{ prog.getUrlBase }}/enter_scores/" enctype="multipart/form-data">{% csrf_token %}
 <table align="center" width="400">
 <tr>
     <th colspan="2">Diagnostic Score Entry for {{ prog.niceName }}</th>

@@ -39,6 +39,7 @@ from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.db import models
+from django.db.models.base import ModelState
 from django.db.models.query import Q, QuerySet
 from django.http import HttpRequest
 from django.template import Context, loader
@@ -118,6 +119,9 @@ class ESPUser(User, AnonymousUser):
     # this will allow a casting from User to ESPUser:
     #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
     def __init__(self, userObj=None, *args, **kwargs):
+        # Set up the storage for instance state
+        self._state = ModelState()
+    
         if isinstance(userObj, ESPUser):
             self.__olduser = userObj.getOld()
             self.__dict__.update(self.__olduser.__dict__)

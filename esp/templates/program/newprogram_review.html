@@ -73,7 +73,7 @@ x</div>
 <div class="info"><b>Warning</b>: it is difficult to undo the changes made by this function.  If you would like to change anything, please go back and re-submit.</div>
 
 <div id="program_form">
-<form method="POST" action="{{ request.path }}?checked=1">
+<form method="POST" action="{{ request.path }}?checked=1">{% csrf_token %}
 <input type="submit" class="button" value="Make Program Happen">
 </form>
 </div>

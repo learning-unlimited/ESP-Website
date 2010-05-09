@@ -24,7 +24,7 @@ Welcome to student check-in for {{module.student.name}}.  Make sure that the stu
 </ul>
 <br />
 <br />
-<form name="checkin" method="POST" action="{{request.path}}">
+<form name="checkin" method="POST" action="{{request.path}}">{% csrf_token %}
 <input type="hidden" name="Attended" id="attended" value="True">
 <input type="hidden" name="MedicalFiled" id="medical" value="True">
 <input type="hidden" name="LiabilityFiled" id="liability" value="True">
@@ -35,7 +35,7 @@ Welcome to student check-in for {{module.student.name}}.  Make sure that the stu
 Welcome to the student check-in for {{module.student.name}}. Please checkoff that the following has been completed:
 </p>
 <br />
-<form name="checkin" method="POST" action="{{request.path}}">
+<form name="checkin" method="POST" action="{{request.path}}">{% csrf_token %}
 <label for="attended"><strong>Attending? (i.e. here right now?)</strong></label> &nbsp;&nbsp;
    <input type="checkbox" name="Attended" id="attended" {% if module.hasAttended %}checked="checked"{% endif %} />
   <br />

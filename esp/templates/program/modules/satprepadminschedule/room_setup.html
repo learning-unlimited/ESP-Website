@@ -26,7 +26,7 @@
 <p>Then, click "Submit" and wait.  It will take some time (a few minutes) for all of the rooms and their student lists to be saved.  You will be taken to a confirmation page showing which students were assigned to each section.  You may also want to print the <a href="/manage/{{ prog.getUrlBase }}/classchecklists/">class checklists</a> for all confirmed students.</p>
 
 <div id="program_form">
-<form method="post" action="/manage/{{ prog.getUrlBase }}/create_rooms/">
+<form method="post" action="/manage/{{ prog.getUrlBase }}/create_rooms/">{% csrf_token %}
 <table align="center" width="350">
 <tr>
     <th colspan="2">Diagnostic Setup for {{ prog.niceName }}</th>

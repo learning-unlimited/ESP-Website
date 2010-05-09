@@ -27,7 +27,7 @@ sections of the
 same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div>
 </p>
 
-<form action="{{request.path}}" id="clsform" name="clsform" method="post">
+<form action="{{request.path}}" id="clsform" name="clsform" method="post">{% csrf_token %}
 
 <div id="program_form">
 <center>

@@ -21,7 +21,7 @@
  The ESP 50th anniversary event will be on September 14-15, 2007.  Fill out this form to inform ESP of your status as an alumni.  What do you remember about ESP, and how would you like to be involved in the future? <br /> <br />
 </p>
 
-<form action="{{ request.path }}" method="post">
+<form action="{{ request.path }}" method="post">{% csrf_token %}
 <table class="contact" align="center" width="500">
 <thead>
 <tr>

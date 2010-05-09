@@ -17,7 +17,7 @@
 </p>
 <hr/>
 
-<form action='login.html' method="post">
+<form action='login.html' method="post">{% csrf_token %}
 <input type='hidden' name='op' value='register'>
 <table width='65%' cellpadding='2' align='center' border='0'>
 

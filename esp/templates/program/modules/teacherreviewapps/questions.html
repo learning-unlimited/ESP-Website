@@ -24,7 +24,7 @@ If you do not want to use the maximum number of questions, feel free to leave so
 <br />
 
 <div id="program_form">
-<form method="post" action="{{ request.path }}">
+<form method="post" action="{{ request.path }}">{% csrf_token %}
 <table align="center" width="500">
 {% for f in forms %}
     <th colspan="2">App Question for {{ f.app_question.subject }}</th>

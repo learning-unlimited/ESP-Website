@@ -51,7 +51,7 @@ border = 1
 
 {% include "users/student_schedule.html" %}
 
-<form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">
+<form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">{% csrf_token %}
 <p style="text-align: center">
 <input type="submit" value="Save!">
 </p>

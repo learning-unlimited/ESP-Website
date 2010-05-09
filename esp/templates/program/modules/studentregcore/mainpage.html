@@ -72,7 +72,7 @@
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentreg" request.user %}
 
-<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
+<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">{% csrf_token %}
 
 {% for module in modules %}
 {% if module.useTemplate %}
@@ -107,13 +107,13 @@
     <a name="confirmreg"></a>
     {% if program.isFull and program.program_allow_waitlist and not isConfirmed %}
         </form>
-        <form action="/learn/{{one}}/{{two}}/waitlist_subscribe" method="post">
+        <form action="/learn/{{one}}/{{two}}/waitlist_subscribe" method="post">{% csrf_token %}
         <input class="button" type="submit" value="Join Waiting List"/>
         </form>
     {% else %}
         <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull and not canRegToFullProgram and not isConfirmed %}disabled{% endif %}/></form>
         {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}
-           <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
+           <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >{% csrf_token %}
            <input id="cancelbutton" class="button" type="submit" value="{{ scrmi.cancel_button_text }}" />
             </form>
         {% endif %}{% endif %}

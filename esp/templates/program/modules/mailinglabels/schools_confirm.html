@@ -19,7 +19,7 @@ According to our records, there are <strong style="font-size: 140%;">{{ num }}
   </strong> schools that
  match your request.
 </p>
-<form name="confirmform" action="{{ request.path }}" method="post">
+<form name="confirmform" action="{{ request.path }}" method="post">{% csrf_token %}
 <p>
   Would you like to <a href="javascript:history.go(-1);">go back</a> or
   <input type="submit" value="continue" />?

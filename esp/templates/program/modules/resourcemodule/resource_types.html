@@ -14,7 +14,7 @@
 <p>The following types of resources will be available for teachers to select on the teacher registration page.  Don't feel obligated to give them every possible option - we do ask teachers to make special requests in the "Message for Directors" that gets e-mailed to you.  However, covering the most commonly needed things would be a good idea.</p>
 
 <div id="program_form">
-<form method="post" action="/manage/{{ prog.url }}/resources/restype">
+<form method="post" action="/manage/{{ prog.url }}/resources/restype">{% csrf_token %}
 <input type="hidden" name="command" value="addedit" />
 <table align="center" cellpadding="0" cellspacing="0" width="550">
     <tr><th colspan="2">Resource Types for {{ prog.niceName }}</th></tr>

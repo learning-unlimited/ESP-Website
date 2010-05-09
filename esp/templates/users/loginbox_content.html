@@ -23,7 +23,7 @@
 {% else %}
 
 <div id="divnav">
-  <form name="loginform" id="loginform" method="post" action="/myesp/login/">
+  <form name="loginform" id="loginform" method="post" action="/myesp/login/">{% csrf_token %}
     <input type="hidden" name="next" value="{{ request.path }}" />
     <table summary=" ">
       <tr>

@@ -32,7 +32,7 @@
 
 <br />
 
-<form action="" method="post">
+<form action="" method="post">{% csrf_token %}
 <center>
 <table width="400" cellpadding="2" cellspacing="0">
 <tr><th colspan="{% if select_qty %}4{% else %}3{% endif %}">Additional Items for {{ program.niceName }}</th></tr>

@@ -14,7 +14,7 @@
 <p>Resources may be grouped or may remain floating.  For example, an LCD projector built into the classroom would be grouped with that classroom, whereas one of the projectors that we can carry around would not be grouped with anything.  When you create a classroom, please select the types of resources that it has built in.  These resources will be created and grouped with the classroom itself.</p>
 
 <div id="program_form">
-<form method="post" action="/manage/{{ prog.url }}/resources/classroom">
+<form method="post" action="/manage/{{ prog.url }}/resources/classroom">{% csrf_token %}
 <input type="hidden" name="command" value="addedit" />
 <table align="center" cellpadding="0" cellspacing="0" width="550">
     <tr><th colspan="2">Classrooms for {{ prog.niceName }}</th></tr>

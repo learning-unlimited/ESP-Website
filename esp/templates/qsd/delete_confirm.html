@@ -36,12 +36,12 @@
 
 <tr>
     <td colspan="2" align="center">
-        <form method="post" action="{{ request.path }}?cmd=delete&id={{ qsd.id }}">
+        <form method="post" action="{{ request.path }}?cmd=delete&id={{ qsd.id }}">{% csrf_token %}
         <input type="hidden" name="sure" value="False" />
         <input class="fancybutton" type="submit" value="Return" />
         </form>
         &nbsp;&nbsp;&nbsp;&nbsp;
-        <form method="post" action="{{ request.path }}?cmd=delete&id={{ qsd.id }}">
+        <form method="post" action="{{ request.path }}?cmd=delete&id={{ qsd.id }}">{% csrf_token %}
         <input type="hidden" name="sure" value="True" />
         <input class="fancybutton" type="submit" value="Delete Page" />
         </form>

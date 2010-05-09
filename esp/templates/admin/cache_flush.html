@@ -20,7 +20,7 @@
 {% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
 {% if success %}<p><font color="blue">{{ success }}</font></p>{% endif %}
 <p>
-<form action="." method="POST">
+<form action="." method="POST">{% csrf_token %}
 <textarea name="reason">?</textarea>
 <input type="submit" value="Flush Cache" />
 </form>

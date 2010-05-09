@@ -28,7 +28,7 @@ Please search for a user: <br />
 {% endif %}
 
 <div id="program_form">
-<form action="{{ request.path }}" method="get">
+<form action="{{ request.path }}" method="get">{% csrf_token %}
 <table cellpadding="0" cellspacing="0" width="450" align="center">
 
 <tr><th align="center" colspan="2">User Search Options</th></tr>

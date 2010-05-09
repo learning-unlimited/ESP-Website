@@ -161,7 +161,7 @@
 
 <h3>Edit Deadlines</h3>
 
-<form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_form">
+<form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_form">{% csrf_token %}
 {% autoescape off %}
 {{ manage_form }}
 {% for bit in bits %}

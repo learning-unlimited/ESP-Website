@@ -27,7 +27,7 @@ With the form below, you can reassign those components in order to move the page
 </p>
 
 <div id="program_form">
-<form method="post" action="{{ request.path }}?cmd=bulk_move">
+<form method="post" action="{{ request.path }}?cmd=bulk_move">{% csrf_token %}
 <input type="hidden" name="confirm" value="True" />
 <table align="center" cellpadding="0" cellspacing="0" width="450"> 
     <tr><th colspan="2">Options for bulk move</th></tr>

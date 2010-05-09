@@ -56,7 +56,7 @@
 <td colspan='2'>
 
 
-<form action='/learn/{{one}}/{{two}}/addclass/' method='post'>
+<form action='/learn/{{one}}/{{two}}/addclass/' method='post'>{% csrf_token %}
 <input type='hidden' name='class' value='{{aclass.id}}'>
 <center><input type='submit' value='Add This Class!'></center><hr />
 </form>
