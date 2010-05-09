@@ -91,7 +91,7 @@ function switchnot(not, title) {
 <h2>Step 1:</h2>
 
 
-<form action="/manage/{{program.getUrlBase}}/commstep2" method="post" name="comm">
+<form action="/manage/{{program.getUrlBase}}/commstep2" method="post" name="comm">{% csrf_token %}
 <p>
 <em>(If you feel there's a list omitted from this list or this interface is too hard to use, please email <tt>chicago-websupport@lists.learningu.org</tt> with questions!)</em>
 <br />

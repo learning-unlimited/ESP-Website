@@ -15,7 +15,7 @@
 <p>Enter attendance for {% if is_program %}{{ prog }}{% else %}{{ cls }}{% endif %} (enter either usernames or user ID's, one per line):</p>
 
 <p>
-<form action="" method="POST">
+<form action="" method="POST">{% csrf_token %}
 <input type="hidden" name="class_id" value="{% if is_program %}program{% else %}{{ class_id }}{% endif %}" />
 <textarea name="ids_to_enter" rows="30" cols="15">
 {% for stu in registered_students %}{{ stu.username }}

@@ -30,7 +30,7 @@ Please complete the form to update your biography:
 {% endif %}
 
 
-<form enctype="multipart/form-data" action="{{request.path}}" method="post">
+<form enctype="multipart/form-data" action="{{request.path}}" method="post">{% csrf_token %}
 <table cellpadding="2" align="center" border="0">
 
 <tr>

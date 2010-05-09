@@ -21,7 +21,7 @@ First, you need to create an account. After you do this and give us some basic i
 </p>
 {% end_inline_qsd_block %}
 <div id="program_form">
-<form action="{{ request.path }}" method="post" name="newuser_form">
+<form action="{{ request.path }}" method="post" name="newuser_form">{% csrf_token %}
 <table>
 <thead>
 <tr>

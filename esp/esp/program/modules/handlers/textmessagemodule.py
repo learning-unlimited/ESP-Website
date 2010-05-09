@@ -50,15 +50,25 @@ class TextMessageModule(ProgramModuleObj):
 
     def prepare(self, context):
         context['textmessage_form'] = TextMessageForm()
+
+        profile = RegistrationProfile.getLastForProgram(self.user, self.program)
+        if profile.text_reminder is True:
+            if profile.contact_user:
+                context['textmessage_form'] = TextMessageForm(initial={'phone_number': profile.contact_user.phone_cell})
+
         return context
 
     def onConfirm(self, request):
         form = TextMessageForm(request.POST)
         student = request.user
-        if form.is_valid():
+        if form.is_valid() and len(form.cleaned_data['phone_number']) > 0:
             profile = RegistrationProfile.getLastForProgram(student, self.program)
             profile.text_reminder = True
             profile.save()
             profile.contact_user.phone_cell = form.cleaned_data['phone_number']
             profile.contact_user.save()
-
+        else:
+            profile = RegistrationProfile.getLastForProgram(student, self.program)
+            profile.text_reminder = False
+            profile.save()
+            

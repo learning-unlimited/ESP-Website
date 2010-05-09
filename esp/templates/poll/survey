@@ -1,4 +1,4 @@
-<form action="post" target="{{ postback }}">
+<form action="post" target="{{ postback }}">{% csrf_token %}
 <p><table>
 <tr><td><h1>{{ survey.title }}</h1></td></tr>
 {% for q in survey.question_set.all %}

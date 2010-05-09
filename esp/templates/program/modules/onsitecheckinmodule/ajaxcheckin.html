@@ -28,7 +28,7 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
 <p align="center">{{ message }}</p>
 {% endif %}
 
-<form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
+<form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">{% csrf_token %}
 <table>
 <tr>
     <th colspan="2">

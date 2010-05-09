@@ -101,7 +101,12 @@ class CommModule(ProgramModuleObj):
         except:
             raise ESPError(), "You seem to be trying to email 0 people!  Please go back, edit your search, and try again."
 
-        htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
+        #   If they were trying to use HTML, don't sanitize the content.
+        if '<html>' not in body:
+            htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
+        else:
+            htmlbody = body
+            
         renderedtext = Template(htmlbody).render(Context({'user': ActionHandler(ESPUser(firstuser), ESPUser(firstuser)), 'program': ActionHandler(self.program, ESPUser(firstuser))})).replace('\n', '<br />')
 
         return render_to_response(self.baseDir()+'preview.html', request,

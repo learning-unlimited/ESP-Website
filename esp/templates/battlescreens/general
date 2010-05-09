@@ -99,7 +99,7 @@ Welcome, {{ request.user.first_name }}
 <div class="admin_options">
 
 {% if i.3 %}
-<form method="post" action="{{ i.4 }}">
+<form method="post" action="{{ i.4 }}">{% csrf_token %}
 <input type="hidden" name="command" value="{{ i.3 }}">
 <input class="button" type="submit" value="{{ i.2 }}">
 </form>
@@ -121,7 +121,7 @@ Welcome, {{ request.user.first_name }}
 
 {% for i in s.input_items %}
 
-<form name="battlescreen_{{ i.0 }}" action="{{ i.3 }}" method="post">
+<form name="battlescreen_{{ i.0 }}" action="{{ i.3 }}" method="post">{% csrf_token %}
 <tr><td width="325">
 <div class="class_stuff">{{ i.0 }}: <input name="{{ i.1 }}" type="text" class="text" size="32"></div>
 </td>

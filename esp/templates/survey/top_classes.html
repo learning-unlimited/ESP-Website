@@ -83,7 +83,7 @@
 
 <div id="filterform">
 <h2>Filter results</h2>
-<form action="" method="get">
+<form action="" method="get">{% csrf_token %}
     <div><input type="text" size="3" name="rating_cut" id="rating_cut" value="{{ rating_cut }}" /><label for="rating_cut"> Minimum rating</label></div>
     <div><input type="text" size="3" name="num_cut" id="num_cut" value="{{ num_cut }}" /><label for="num_cut"> Minimum number of ratings</label></div>
     <div><input type="submit" value="Filter" /></div>
@@ -92,7 +92,7 @@
 
 <div id="catsform">
 <h2>Show categories</h2>
-<form action="#" method="get">
+<form action="#" method="get">{% csrf_token %}
     {% for cat in categories %}
         <div><input type="checkbox" name="cat_{{ cat.symbol }}" id="cat_{{ cat.symbol }}" checked="checked" onchange="togglecat(&quot;{{ cat.symbol }}&quot;, this.checked)" /><label for="cat_{{ cat.symbol }}">{{ cat }}</label></div>
     {% endfor %}

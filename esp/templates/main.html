@@ -2,6 +2,7 @@
 
 {% block javascript %}
     {{ block.super }}
+    <script type="text/javascript" src="{{ MEDIA_URL }}scripts/match_heights.js"></script>
     {% comment %}{% if request.user.is_authenticated %}{% endcomment %}
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/yahoo/yahoo-min.js"></script>
         <script type="text/javascript" src="{{ MEDIA_URL }}scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
@@ -18,6 +19,7 @@
 {% block stylesheets %}
     <link rel="stylesheet" href="{{ MEDIA_URL }}styles/level3.css" type="text/css" media="screen" />
     <link rel="stylesheet" href="{{ MEDIA_URL }}styles/uchicago_main.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.3/dijit/themes/tundra/tundra.css" />
 {% endblock %}
 
 {% block body %}
@@ -71,6 +73,12 @@ body {
 </div>
 
 <div id="main"><div id="main_content">{% block content %}{% endblock %}</div></div>
+
+<script type="text/javascript">
+<!--
+    match_heights(['main_content', 'navbar']);
+-->
+</script>
 
 </div>
 {% endblock %}

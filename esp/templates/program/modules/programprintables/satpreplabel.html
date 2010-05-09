@@ -1,6 +1,12 @@
 <div class="label">
   <div class="marginize"> 
 
+<table>
+<tr>
+<td>
+<image src="https://esp.scripts.mit.edu/barcodegen/html/image.php?code=ean8&o=1&t=30&r=1&text={{ student.id|stringformat:"07d" }}&f1=Arial.ttf&f2=8&a1=&a2=&a3="> &nbsp; &nbsp; 
+</td>
+<td>
  <h2>{{program.niceName}}</h2><br />
    <span>ID Label for: <strong>{{student.first_name }} {{student.last_name }}</strong><br />
    DOB: {{student.getLastProfile.student_info.dob|date:"m/d/Y"}} <br/>
@@ -8,5 +14,7 @@
    ESP Student ID: <strong>{{student.id }}</strong> <br />
    ESP UserName: <strong>{{student.username }}</strong> <br />
    </span>
+</td>
+</table>
 </div>
 </div>

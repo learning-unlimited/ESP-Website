@@ -27,7 +27,7 @@ With the form below, you can reassign those components in order to move the page
 </p>
 
 <div id="program_form">
-<form method="post" action="{{ request.path }}?cmd=move&id={{ qsd.id }}">
+<form method="post" action="{{ request.path }}?cmd=move&id={{ qsd.id }}">{% csrf_token %}
 <table align="center" cellpadding="0" cellspacing="0" width="450"> 
     <tr><th colspan="2">Options for {{ qsd.url }}</th></tr>
     {{ form }}

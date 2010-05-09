@@ -68,7 +68,7 @@
 <h1>Survey for {{ program.niceName }} </h1>
 
 <div id="program_form">
-<form method="post" action="{{ request.path }}">
+<form method="post" action="{{ request.path }}">{% csrf_token %}
 
 {% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
 
@@ -89,7 +89,7 @@
                 <select name="attendance_{{ ts.id }}" id="id_attendance_{{ ts.id }}">
                     <option value="0">[None]</option>
                     {% for sec in ts.classsections %}
-                        <option value="{{ sec.parent_class.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
+                        <option value="{{ sec.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
                     {% endfor %}
                 </select>
             </td>
@@ -102,14 +102,14 @@
         </div>
     {% endfor %}
 {% else %}
-    {% for class in classes %}
+    {% for sec in sections %}
         <table width="600">
         <tr>
-            <th>Questions for {{ class.emailcode }}: {{ class.title }}</th>
+            <th>Questions for {{ sec.emailcode }}: {{ sec.title }}</th>
         </tr>
         </table>
         {% for question in perclass_questions %}
-            {{ question.render|substitute:class }}
+            {{ question.render|substitute:sec }}
         {% endfor %}
     {% endfor %}
 {% endif %}

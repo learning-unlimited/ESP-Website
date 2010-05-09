@@ -52,7 +52,7 @@ Viewing classes for: {{ timeslot.friendly_name }};
 <b>Enrollment:</b> {{aclass.class.num_students}} (max {{aclass.class.class_size_max}})</td></tr></table><br />
 
 {% if can_edit_classes or can_approve_classes %}
-<form name="edit_class" method="post" action=".">
+<form name="edit_class" method="post" action=".">{% csrf_token %}
 <input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
 {% if can_edit_classes %}
 <input type="submit" name="action" value="Edit" />
@@ -81,7 +81,7 @@ selected
 {% if aclass.isFull %}
 	Class is full
 {% else %}
-	<form name="prereg_class" method="post" action="{{ prereg_url }}">
+	<form name="prereg_class" method="post" action="{{ prereg_url }}">{% csrf_token %}
 	<input type="hidden" name="class_id" value="{{ aclass.class.id }}" />
 	<input type="submit" name="action" value="Pre-register" />
 	</form>

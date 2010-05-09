@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Register for Splash!{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% load subsection %}
 {% block subsection %}
@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block content %}
-<h1>Register for Splash!</h1>
+<h1>Registration</h1>
 
 {% if next %}
 
@@ -24,7 +24,7 @@ After logging in below, you will return to <tt>{{ next }}</tt>.<br />
 
 
 <div id="login_form">
-<form action="{{ action }}" method="post">
+<form action="{{ action }}" method="post">{% csrf_token %}
 {% if preset_username %}
 <input type="hidden" name="username" value="{{ preset_username }}">
 {% endif %}

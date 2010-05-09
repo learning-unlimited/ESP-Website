@@ -18,7 +18,7 @@
 <div id="program_form">
 
 <center>
-<form method="post" action="{{ request.path }}?cmd=bulk_move">
+<form method="post" action="{{ request.path }}?cmd=bulk_move">{% csrf_token %}
 <table class="fullwidth" style="table-layout: fixed;">
 <tr>
     <th colspan="6">List of Pages</th>

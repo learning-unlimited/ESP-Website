@@ -28,7 +28,7 @@
 {% if form.has_errors %}
 <p class="error">Hey - There was a problem with your registration.  Please try again, errors displayed below.</p>
 {% endif %}
-<form action='/myesp/finish/' method="post">
+<form action='/myesp/finish/' method="post">{% csrf_token %}
 <input type='hidden' name='op' value='register'>
 <table width='65%' cellpadding='2' align='center' border='0'>
 

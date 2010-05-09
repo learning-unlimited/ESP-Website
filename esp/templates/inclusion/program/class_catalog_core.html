@@ -1,12 +1,24 @@
 {% load latex %}
 {% load smartypants %}
-    <tr onclick="swap_visible('{{ class.id }}_details');swap_visible('{{ class.id }}_content');" style="cursor: pointer;">
+    <tr onclick="swap_visible('{{ class.id }}_details');swap_visible('{{ class.id }}_content');swap_visible('{{ class.id }}_regbuttons');" style="cursor: pointer;">
       <th colspan="2" style="padding: 5px; width: 70%;{{ colorstring }}">
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
            {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}
           {% endif %}
+	 
+	 {% ifnotequal class.hardness_rating "Normal"  %} <br />
+	   <font style="font-size:10px">Difficulty:
+	   {% ifequal class.hardness_rating "Hard" %}
+	     Hard - This class may be exceptionally difficult
+	   {% endifequal %}
+	   {% ifequal class.hardness_rating "Easy" %}
+	     Easy - Even an elementary school student could take this class
+	   {% endifequal %}
+	   </font>
+	 {% endifnotequal %}
+
       </th>
       <th style="padding: 5px; width: 30%;{{ colorstring }}">
        <span class="teachers">
@@ -17,7 +29,7 @@
        </span>
        </th>
      </tr>
-     <tr id="{{ class.id }}_content">
+     <tr id="{{ class.id }}_content" class="classcontent">
        <td colspan="3" class="info">
         {% autoescape off %}
          {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
@@ -31,7 +43,7 @@
        {% endif %}
        </td>
      </tr>
-    <tr id="{{ class.id }}_details">
+    <tr id="{{ class.id }}_details" class="classdetails">
       <td style="width: 50%;" valign="top">
         {% if show_meeting_times %}
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
@@ -45,13 +57,13 @@
 
       <td style="width: 50%;" colspan="2">
 {% comment %}         <strong>Grades:</strong>
-           {{ class.grade_min }}-{{ class.grade_max }}<br />
+           <span class="gradelisting grademin" id="{{ class.id }}_grade_min">{{ class.grade_min }}</span>-<span class="gradelisting grademax" id="{{ class.id }}_grade_max">{{ class.grade_max }}</span><br />
          {% if show_enrollment %} 
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}
               {% with sec.isRegClosed as is_closed %}
               {% if is_closed %}<font color="#999999">(Closed) {% endif %}
-              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% endif %} (max {{ sec.capacity }})<br />{% endif %}
+              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull or is_closed %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% if sec.num_apps %} ({{ sec.num_apps }} applied){% endif %}{% endif %} (max {{ sec.capacity }})<br />{% endif %} 
               {% if is_closed %}</font>{% endif %}
               {% endwith %}
            {% endfor %}
@@ -61,7 +73,7 @@
       </td>
     </tr>
     {% if class.media_count %}
-    <tr>
+    <tr id="{{ cls.id }}_media" class="classmedia">
       <th colspan="3" class="materials">
        <b>Materials for this class include:</b>
 	<span class="doclist">
@@ -74,11 +86,11 @@
      </tr>
     {% endif %}
 
-    {% with class.numStudentAppQuestions as num_questions %}
+    {% with class.studentappquestion_set.count as num_questions %}
     {% if num_questions %}
     <tr>
       <th colspan="3" class="materials">
-       This class has {{ num_questions }} application question{{ num_questions|pluralize }}.
+       This class has {{ class.studentappquestion_set.count }} application question{% ifnotequal num_questions 1 %}s{% endifnotequal %}.
       </th>
      </tr>
     {% endif %}

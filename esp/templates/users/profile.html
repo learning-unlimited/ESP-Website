@@ -24,16 +24,16 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 <h1>Basic Information</h1>
 {% load render_qsd %}
 {% inline_qsd_block Q/Web/myesp account_creation_basic_info request.user %}
-<p>First, please tell us a bit about yourself!  (The fields bordered in green are required.)</p>
+<p>First, please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
 
-<p>After you have filled out everything below, click the "Save and Continue!" button at the bottom of the page to continue on to picking your classes.</p>
+<p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
 {% end_inline_qsd_block %}
 {% if form.errors %}
 <h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h2><br />
 {% endif %}
 
 <div id="program_form">
-<form action="{{request.path}}" method="post">
+<form action="{{request.path}}" method="post">{% csrf_token %}
 <input type="hidden" name="profile_page" value="true" />
 <input type="hidden" name="current_role" value="{{ profiletype }}" />
 <table cellpadding="0" cellspacing="0" align="center" border="0">

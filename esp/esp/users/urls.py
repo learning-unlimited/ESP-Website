@@ -20,3 +20,7 @@ urlpatterns = patterns('esp.users.views',
                        (r'^login/bybday/new/?$',   'login_by_bday.login_by_bday_new',),
                        (r'^disableaccount/?$', 'disable_account'),
                        )
+
+urlpatterns += patterns('esp.web.views.main',
+                        (r'^redirect/?$', 'registration_redirect',),
+                       )

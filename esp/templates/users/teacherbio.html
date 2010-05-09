@@ -42,9 +42,6 @@ img.biophoto { border: 1px solid black; }
   <strong>Major:</strong> {{biouser.getLastProfile.teacher_info.major|default:"Not available."}} <br /><br />
   <strong>College:</strong> {{biouser.getLastProfile.teacher_info.college|default:"Not available."}} <br /><br />
   <strong>Year of Graduation:</strong> {{biouser.getLastProfile.teacher_info.graduation_year|default:"Not available."}} <br /><br />
-  {% load mask_email %}
-  <strong>Email Address:</strong> <tt style="text-size: 130%;">{{biouser.username|mask_email_concat:"uchicago-splash.mit.edu"}}</tt>
-      
 
   </td>
   <td>
@@ -66,13 +63,26 @@ img.biophoto { border: 1px solid black; }
   <br />
   <br />
   <br />
-  {% if classes|length_is:0 %}
+  {% if classes|length_is:0 %}{% if recent_classes|length_is:0 %}
    None found.
-  {% else %}
+  {% endif %}{% endif %}
+
+  {# Archive Classes get auto-HTML-ized quite nicely; but we have to render regular classes on our own #}
+
+  {% for cls in recent_classes %}
+  <u>{{ cls.title }}</u> in {{ cls.parent_program.niceName }}
+<br />
+<div style="font-size: 80%; font-style: italic; margin: 0 0 0 20px;">
+{{ cls.class_info }}
+</div>
+<br /><br />
+  {% endfor %}
+
+ 
   {% autoescape off %}
   {{ classes|join:"<br /><br />" }}
   {% endautoescape %}
-  {% endif %}
+
   <br />  <br />  <br />  <br />
 
   </td>

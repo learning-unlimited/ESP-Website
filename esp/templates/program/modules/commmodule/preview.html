@@ -65,7 +65,7 @@ users to whom you are sending this email.
 
 <br />
 <br />
-<form action="/manage/{{program.getUrlBase}}/maincomm2" method="post" name="mainback">
+<form action="/manage/{{program.getUrlBase}}/maincomm2" method="post" name="mainback">{% csrf_token %}
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="from" value="{{from}}" />
 <input type="hidden" name="replyto" value="{{replyto}}" />
@@ -74,7 +74,7 @@ users to whom you are sending this email.
 <input type="hidden" name="listcount" value="{{listcount}}" />
 <input type="submit" value="Edit Your Email" id="submitform" />
 </form>
-<form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="mainback">
+<form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="mainback">{% csrf_token %}
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="from" value="{{from}}" />
 <input type="hidden" name="replyto" value="{{replyto}}" />

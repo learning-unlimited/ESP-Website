@@ -83,7 +83,7 @@ class QuerySetPrepared(QuerySet):
         #assert False, self.query.as_sql()
         try:
             #select, sql, params = self._get_sql_clause()
-            sql, params = self.query.as_sql()
+            sql, params = self.query.get_compiler(using='default').as_sql()
         except EmptyResultSet:
             raise StopIteration
 
@@ -112,7 +112,7 @@ class QuerySetPrepared(QuerySet):
                                         as_clause,
                                         where_clause),
                         proc_params+list(params))
-
+        
         model_keys = [f.column for f in self.model._meta.fields]
 
         while 1:

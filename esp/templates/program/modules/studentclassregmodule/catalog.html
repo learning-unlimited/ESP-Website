@@ -32,6 +32,80 @@ function swap_visible(div_id) {
 		div.style.display = 'none';
 	}
 }
+
+var student_grade = "{{ user.getGrade }}"; {% comment %} Convert from int to string to int in case user.getGrade returns null or errors {% endcomment %}
+
+if (student_grade != "") {
+  student_grade = parseInt(student_grade);
+}
+
+function hideClassesOutOfGradeRange(stu_grade) {
+  if (student_grade == "") {
+    return;
+  }
+
+  mins = {};
+  maxes = {};
+
+  var grade;
+  var clsid;
+  var arr;
+  arr = document.getElementsByClassName("grademin");
+  for (var grademin in arr) {
+    var grademin_node = arr[grademin];
+    if (grademin_node.id) {
+      grade = parseInt(grademin_node.innerHTML);
+      clsid = grademin_node.id.split("_")[0];
+      mins[clsid] = grade;
+    }
+  }
+
+  arr = document.getElementsByClassName("grademax");
+  for (var grademax in arr) {
+    grademax_node = arr[grademax];
+    if (grademax_node.id) {
+      grade = parseInt(grademax_node.innerHTML);
+      clsid = grademax_node.id.split("_")[0];
+      maxes[clsid] = grade;
+    }
+  }
+
+  arr = document.getElementsByClassName("classcontent");
+  for (var clsnum in arr) {
+    cls = arr[clsnum];
+    if (cls.id) {
+      clsid = cls.id.split("_")[0];
+      if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
+        cls.style.display = 'none';
+      }
+    }
+  }
+
+  arr = document.getElementsByClassName("classdetails");
+  for (var clsnum in arr) {
+    cls = arr[clsnum];
+    if (cls.id) {
+      clsid = cls.id.split("_")[0];
+      if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
+        cls.style.display = 'none';
+      }
+    }
+  }
+
+  arr = document.getElementsByClassName("classregbuttons");
+  for (var clsnum in arr) {
+    cls = arr[clsnum];
+    if (cls.id) {
+      clsid = cls.id.split("_")[0];
+      if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
+        cls.style.display = 'none';
+      }
+    }
+  }
+
+  return [mins, maxes];
+}
+
 </script>
 {% endblock %}
 
@@ -130,5 +204,9 @@ Viewing classes for: {{ timeslot.short_description }}
 <br />
 {% endfor %}
 </div>
+
+<script language="JavaScript">
+hideClassesOutOfGradeRange(student_grade);
+</script>
 
 {% endblock %}

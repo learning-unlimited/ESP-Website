@@ -5,7 +5,6 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}
 
 {% load subsection %}
@@ -14,7 +13,6 @@
 {% endblock %}
 
 {% block content %}
-{% load survey %}
 
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
@@ -32,41 +30,9 @@
     </tr>
     </table>
     {% for q in s.display_data.questions %}
-        {% if q.question.question_type.is_countable %}
-        <table width="600">
-        <tr>
-            <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
-            <td>
-                {% if not q.answers|length_is:0 %}
-                    {{ q.answers|unpack_answers|histogram:"html"|safe }}
-                    {% with q.question.get_params as params %}
-                        {% if params.lower_text %}
-                        <div style="font-weight:bold; font-size:0.8em; width:216px;">
-                            <div style="float:left;">1 = {{ params.lower_text }}</div>
-                            <div style="float:right;">{{ params.upper_text }} = {{ params.number_of_ratings }}</div>
-                            <div style="text-align:center;">{{ params.middle_text }}</div>
-                        </div>
-                        {% endif %}
-                    {% endwith %}
-                {% else %} 
-                    There are no responses to this question.
-                {% endif %}
-            </td>
-            <td>
-                <b>Statistics:</b>
-                <ul>
-                    <li>Number of responses: {{ q.answers|length }}/{{ s.num_participants }}</li>
-                    {% if q.question.question_type.is_numeric %}
-                    <li>Average: {{ q.answers|unpack_answers|average }}</li>
-                    <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
-                    {% endif %}
-                </ul>
-            </td>
-        </tr>
-        </table>
-        {% else %}
-            {{ q.question.dump|uselist:q.answers }}
-        {% endif %}
+        {% with s.num_participants as num_participants %}
+            {% include "survey/answers.html" %}
+        {% endwith %}
     {% endfor %}
 {% endfor %}
 
@@ -78,43 +44,9 @@
     </tr>
     </table>
     {% for q in c.questions %}
-        {% if q.question.question_type.is_countable %}
-        <table width="600">
-        <tr>
-            <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
-            <td>
-                {% if not q.answers|length_is:0 %}
-                    {{ q.answers|unpack_answers|histogram:"html"|safe }} 
-                    {% with q.question.get_params as params %}
-                        {% if params.lower_text %}
-                        <div style="font-weight:bold; font-size:0.8em; width:216px;">
-                            {# I have moral qualms about fixing this width in pixels; hopefully someone will find a better way. -ageng 2008-10-20 #}
-                            <div style="float:left;">1 = {{ params.lower_text }}</div>
-                            <div style="float:right;">{{ params.upper_text }} = {{ params.number_of_ratings }}</div>
-                            <div style="text-align:center;">{{ params.middle_text }}</div>
-                        </div>
-                        {% endif %}
-                    {% endwith %}
-                {% else %} 
-                    There are no responses to this question.
-                {% endif %}
-            </td>
-            <td>
-                <b>Statistics:</b>
-                <ul>
-                    <li>Number of responses: {{ q.answers|length }}/{{ c.class.num_students }}</li>
-                    {% if q.question.question_type.is_numeric %}
-                    <li>Average: {{ q.answers|unpack_answers|average }}</li>
-                    <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
-                    <li>Average for all classes: {{ q.question.global_average }}</li>
-                    {% endif %}
-                </ul>
-            </td>
-        </tr>
-        </table>
-        {% else %}
-            {{ q.question.dump|uselist:q.answers }}
-        {% endif %}
+        {% with c.class.num_students as num_participants %}
+            {% include "survey/answers.html" %}
+        {% endwith %}
     {% endfor %}
 {% endfor %}
 {% endif %}

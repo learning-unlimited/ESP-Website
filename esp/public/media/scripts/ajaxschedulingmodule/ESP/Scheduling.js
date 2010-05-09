@@ -249,8 +249,23 @@ $j(function(){
 		}
 	    };
 	};
+	var ajax_retry = function(name) {
+	    return function(xhtr, textStatus, errorThrown) {
+		if (textStatus == "timeout" || textStatus == "error") {
+		    setTimeout(function() {
+			    $j.ajax({url: 'ajax_' + name, dataType: 'json', success: ajax_verify(name), error: ajax_retry(name)});
+			}, 1000);
+		} else if (textStatus == "parsererror") {
+		    alert("Error:  Invalid JSON data from '" + name + "'!");
+		} else if (textStatus == "notmodified") {
+		    console.log("textStatus == 'notmodified'.  What, this actually happens?");
+		} else {
+		    alert("Server reported unknown error condition: " + textStatus);
+		}
+	    }
+	}
 	for (var i = 0; i < files.length; i++) {
-	    $j.getJSON('ajax_' + files[i], ajax_verify(files[i]));
+	    $j.ajax({url: 'ajax_' + files[i], dataType: 'json', success: ajax_verify(files[i]), error: ajax_retry(files[i])});
 	}
 
 

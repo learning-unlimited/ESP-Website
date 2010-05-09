@@ -139,8 +139,8 @@ function testCreditCard() {
 <h1>Credit Card Payment for {{ program.niceName }} </h1>
 <br />
 <p>Required fields are boxed in a red border and marked with an asterisk.</p>
-<form onsubmit="return formTest();" action="https://shopmit.mit.edu/payment/esp_form" method="post" autocomplete="off"> 
-<!--<form onsubmit="return formTest();" action="https://shopmit.mit.edu/bin/cgiemail2/esp/www/creditcard_email.txt" method="post" autocomplete="off">-->
+<form onsubmit="return formTest();" action="https://shopmit.mit.edu/payment/esp_form" method="post" autocomplete="off">{% csrf_token %} 
+<!--<form onsubmit="return formTest();" action="https://shopmit.mit.edu/bin/cgiemail2/esp/www/creditcard_email.txt" method="post" autocomplete="off">-->{% csrf_token %}
 <input type="hidden" name="OrderComments" value="ESP__{{program.id }}-{{module.payment.id}}" />
 
 <!-- Defaults -->

@@ -1,12 +1,19 @@
-<!-- (removed for Cascade -rye 1-7-09)
+
 <p>
-Below is your class schedule for {{ program.niceName }}.  Keep in mind that some classes fill more than one class block,
-so some blocks will be filled in automatically as you pick classes.  Please use the links in the right-hand column to select classes to fill each time slot. Click
-<a target="_blank" href='/learn/{{one}}/{{two}}/catalog/'>here</a> to view a list of all the classes offered, in a separate window.
-</p>-->
-<!-- (removed for Cascade -rye 1-7-09)
-<p>  <b>Please note</b>: Your classes are saved immediately when you click the "Add this Class!" button.  You do not need to confirm or save your entire registration to save your spot in classes. 
-</p> -->
+{% load render_qsd %}
+{% inline_qsd_block program.anchor class_schedule_header_text request.user %}
+Below is your class schedule for {{ program.niceName }}.  You can
+<a href="/learn/{{one}}/{{two}}/catalog">click here</a> to view the full 
+catalog, or you can use the course listing below.
+</p>
+
+<p>  <b>Please note</b>: Your space in a class is saved immediately when it
+appears in the schedule below.  However, please do
+click the "Confirm" button below to mark your registration as complete and
+receive instructions on how to get to the program and what to do when
+you arrive. 
+</p>
+{% end_inline_qsd_block %}
 
 {% if not module.deadline_met %}
     <center>
@@ -20,7 +27,7 @@ so some blocks will be filled in automatically as you pick classes.  Please use 
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 
 <div id="program_form">
-<table cellpadding="3" style="width: 600px; margin: auto" border=0>
+<table cellpadding="3" style="width: 600px; margin: auto" border=1>
 <tr>
     <th colspan="3">
     Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
@@ -28,11 +35,11 @@ so some blocks will be filled in automatically as you pick classes.  Please use 
 </tr>
 {% for timeslot in timeslots %}
     {% ifchanged timeslot.0.start.day %}
-        <tr><th class="small" colspan="3" height="3" style="text-align: center;">{{ timeslot.0.start|date:"l, F j" }}</th></tr>
+        <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th></tr>
     {% endifchanged %}
-{% comment %}    {% ifchanged timeslot.2 %}
+    {% ifchanged timeslot.2 %}
         <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
-    {% endifchanged %}{% endcomment %}
+    {% endifchanged %}
     {% ifequal timeslot.0.event_type.description "Compulsory" %}
     <tr>
         <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>

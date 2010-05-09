@@ -17,7 +17,7 @@ the text box below, each separated by a newline.<br />
 
 <br />
 
-<form action="./bulkapproval" method="post" />
+<form action="./bulkapproval" method="post" />{% csrf_token %}
 <textarea name="clslist" rows="20" cols="50"></textarea><br />
 <br />
 <input type="submit" value="Submit List" />

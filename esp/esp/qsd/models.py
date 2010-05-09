@@ -115,20 +115,6 @@ class QuasiStaticData(models.Model):
         self.author = request.user
         self.create_date = datetime.now()
 
-    def save(self, user=None, *args, **kwargs):
-        # Invalidate the file cache of the render_qsd template tag
-        from esp.qsd.templatetags.render_qsd import cache_key as cache_key_func, render_qsd_cache
-        render_qsd_cache.delete(cache_key_func(self))
-
-        # Invalidate per user cache entry --- really, we should do this for
-        # all users, but just this one is easy and almost as good
-        render_qsd_cache.delete(cache_key_func(self, user))
-
-        retVal = super(QuasiStaticData, self).save(*args, **kwargs)
-        QuasiStaticData.objects.obj_to_file(self)
-        
-        return retVal
-
     # Really, I think the correct solution here is to key it by path.get_uri and name
     # is_descendant_of is slightly more expensive, but whatever.
     @cache_function
@@ -174,8 +160,10 @@ class QuasiStaticData(models.Model):
     def __unicode__(self):
         return (self.path.full_name() + ':' + self.name + '.html' )
 
+    @cache_function
     def html(self):
         return markdown(self.content)
+    html.depend_on_row(lambda:QuasiStaticData, 'self')
 
     @staticmethod
     def find_by_url_parts(base, parts):

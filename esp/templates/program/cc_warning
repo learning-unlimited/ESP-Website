@@ -14,6 +14,6 @@ please close this window to return to registration.
 <br/><br/>
 Be sure to only submit the form only once!
 <br/>
-<form action="cardpay.html" method="get">
+<form action="cardpay.html" method="get">{% csrf_token %}
 <input type="submit" value="Continue --&gt;">
 {% endblock %}

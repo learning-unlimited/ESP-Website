@@ -40,7 +40,20 @@ Back to teacher reg
 <li><b>Room</b>: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}
 <li><b>Time</b>: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}
 <li><b>Capacity</b>: {{ sec.num_students }} / {{ sec.capacity }} students
+{% if has_app_module %}
 <li><b>Student applications:</b> <a href="/teach/{{ program.getUrlBase }}/review_students/{{ sec.parent_class.id }}">Click here</a> to review your students (if applicable).
+{% endif %}
+<li><b>Application questions:</b>
+{% with sec.parent_class.studentappquestion_set.all as questions %}
+{% if questions %}
+{% for q in questions %}
+<br />
+{{ q.question }} <i>{{ q.directions }}</i>
+{% endfor %}
+{% else %}
+<i>none</i>
+{% endif %}
+{% endwith %}
 </ul>
 </p>
 <p>
@@ -52,7 +65,7 @@ Back to teacher reg
 </ul>
 </p>
 <div id="program_form">
-<form method="POST" action="/teach/{{ prog.getUrlBase }}/select_students/{{ sec.id }}">
+<form method="POST" action="/teach/{{ prog.getUrlBase }}/select_students/{{ sec.id }}">{% csrf_token %}
 <table class="roster">
 <thead>
 <tr>

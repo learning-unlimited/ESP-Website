@@ -27,7 +27,7 @@ You must include enough times (in contiguous blocks) for all of the classes that
 
 <br />
 
-<form method="post" action="{{ request.path }}">
+<form method="post" action="{{ request.path }}">{% csrf_token %}
 <table cellpadding="4" cellspacing="0" align="center" width="300">
     <tr>
         <th colspan="2" align="center">Time Slots for {{ prog.niceName }}</th>

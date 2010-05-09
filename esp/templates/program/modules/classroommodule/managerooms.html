@@ -21,7 +21,7 @@ Using this tool you can add rooms for use in your program.
 </p>
 
 <br />
-<form action="./addroom" method="post">
+<form action="./addroom" method="post">{% csrf_token %}
 <fieldset>
 <label for="name"><strong>Long Name:</strong></label>
 <input type="text" name="name" value="" size="30" />

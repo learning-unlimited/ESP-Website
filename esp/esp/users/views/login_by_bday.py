@@ -4,11 +4,11 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.utils.forms import SizedCharField, FormWithRequiredCss
 from esp.utils.widgets import BlankSelectWidget
 from esp.web.util.main import render_to_response
+from esp.web.views.main import registration_redirect
 from esp.users.models import ESPUser, K12School
 from esp.users.views.login_byschool import StudentSelectForm, BarePasswordForm
+from esp.settings import DEFAULT_REDIRECT
 from django.db.models.query import Q
-
-REGISTER_URL = '/learn/Cascade/2010_Winter/studentreg'
 
 month_choices = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 month_choices = [('', '')] + [(i + 1, month_choices[i]) for i in range(len(month_choices))]
@@ -23,8 +23,9 @@ def login_by_bday(request, *args, **kwargs):
     """ Let a student pick their school. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect(REGISTER_URL)
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, REGISTER_URL)
+        return registration_redirect(request)
+        
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
@@ -45,8 +46,9 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
     """ Let a student pick their name. """
     
     if request.user.is_authenticated():
-        return HttpResponseRedirect(REGISTER_URL)
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, REGISTER_URL)
+        return registration_redirect(request)
+        
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
@@ -58,6 +60,10 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
         form = BarePasswordForm()
         action = '/myesp/login/'
     else:
+        #   Add the birthday information to the user's session
+        request.session['birth_month'] = month
+        request.session['birth_day'] = day
+        
         # Prepare a new student-select box
         user_filter = Q(registrationprofile__student_info__dob__month=month, registrationprofile__student_info__dob__day=day)
         candidate_users = ESPUser.objects.filter(is_active=True).filter(user_filter).distinct().order_by('first_name', 'id')

@@ -8,7 +8,7 @@
 
 <h1>Filter List of Paid Students</h1>
 
-<form method="get" action="paid_list">
+<form method="get" action="paid_list">{% csrf_token %}
 <p>
 <select multiple size="{{ lineitemtypes.count }}" name="filter">
 {% for lineitemtype in lineitemtypes %}

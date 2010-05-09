@@ -17,8 +17,8 @@
 {% endfor %}
 
 {% if canpost %}
-<form action='/blog/{{ webnode }}/post.scm' method='post'>
-<form method="POST" action="the-plan.html">
+<form action='/blog/{{ webnode }}/post.scm' method='post'>{% csrf_token %}
+<form method="POST" action="the-plan.html">{% csrf_token %}
   <h1>Title</h1>
   <input type="text" name="title" value="New Blog Entry" size="64" /><br><br>
   <h1>Content</h1>

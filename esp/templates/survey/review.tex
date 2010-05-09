@@ -1,0 +1,61 @@
+{% extends "outlines/review_base.tex" %}
+
+{% block content %}
+{{ block.super }}
+{% load survey %}
+
+{\bf {\underline {\Large Survey Reviews for {{ user.name }}} \hspace{1in} }
+\vspace*{0.1in}
+
+\normalsize {{ program.niceName }}: {{ program.date_range }} } \\
+
+\vspace{0.3in}
+
+{% if not surveys|length_is:0 %}
+Students from {{ prog.niceName }} filled out an online survey asking some questions about the program as a whole.  Their responses are summarized below.
+{% endif %}
+
+{% for s in surveys %}
+\vspace{0.25in}
+{% if not forloop.first %}\clearpage{% endif %}
+    \begin{center}
+    \begin{longtable}{|l|l|} \hline
+    \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\
+    \multicolumn{2}{|c|}{\cellcolor{esphead} \Large {Responses for {{ s.name }}} } \\ 
+    \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\\hline
+    {% for q in s.display_data.questions %}
+        {% with s.num_participants as num_participants %}
+            {% include "survey/answers.tex" %}
+        {% endwith %}
+    {% endfor %}
+    \end{longtable}
+    \end{center}
+{% endfor %}
+
+
+{% if perclass_data %}
+
+Students were also asked a few questions about each of their classes.  The results for your classes are shown below.
+
+\vspace{0.25in}
+
+{% for c in perclass_data %}
+{% if not forloop.first %}\clearpage{% endif %}
+    \begin{center}
+    \begin{longtable}{|l|l|} \hline
+    \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\
+    \multicolumn{2}{|c|}{\cellcolor{esphead} \Large {Responses for {{ c.class.emailcode }}: {{ c.class.title|texescape }}} } \\ 
+    \multicolumn{2}{|c|}{\cellcolor{esphead} ~ } \\\hline
+    \multicolumn{2}{|c|}{Teachers: {{ c.class.parent_class.getTeacherNames|join:", "|texescape }} } \\ \hline
+    {% for q in c.questions %}
+        {% with c.class.num_students as num_participants %}
+            {% include "survey/answers.tex" %}
+        {% endwith %}
+    {% endfor %}
+    \end{longtable}
+    \end{center}
+{% endfor %}
+{% endif %}
+
+{% endblock %}
+

@@ -33,6 +33,7 @@ from operator import add
 from time import time
 from django.db import connection
 from django.views.decorators.vary import vary_on_headers
+import unicodedata
 
 try:
     import cPickle as pickle
@@ -99,7 +100,7 @@ class StatsMiddleware(object):
             sqlcontent = ''.join("\n"+'%s:&nbsp;&nbsp;%s<br />' % \
                               (q['time'], q['sql']) for q in connection.queries)
 
-            sqlcontent = str(sqlcontent)
+            sqlcontent = unicodedata.normalize('NFKD', unicode(sqlcontent)).encode('ascii', 'ignore')
             
             if '</body>' in response.content.lower():
                 pos = response.content.find('</body>')

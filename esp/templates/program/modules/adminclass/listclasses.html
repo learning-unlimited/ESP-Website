@@ -112,9 +112,8 @@ function manage_class(clsid) {
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 <style type="text/css">
   .unapproved { 
-      text-decoration: underline;
-      text-style: italic;
-      color: #009;
+      font-style: italic;
+      color: #900;
    }
 .class_checkitem { 
    padding:0 !important;
@@ -293,7 +292,7 @@ function manage_class(clsid) {
 <div id="classmanager">
 <div class="hd">Please enter your information</div>
   <div class="bd">
-    <form method="POST" action="../assets/post.php">
+    <form method="POST" action="../assets/post.php">{% csrf_token %}
     </form>
   </div>
 </div>

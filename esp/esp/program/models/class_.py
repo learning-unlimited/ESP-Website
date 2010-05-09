@@ -31,6 +31,7 @@ Email: web@esp.mit.edu
 import datetime
 import time
 from collections import defaultdict
+from esp.utils.property import PropertyDict
 
 # django Util
 from django.db import models
@@ -43,6 +44,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.db.cache import GenericCacheHelper
 from esp.tagdict.models import Tag
+from esp.utils.property import PropertyDict
 
 # django models
 from django.contrib.auth.models import User
@@ -54,7 +56,6 @@ from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
-from esp.utils.property import PropertyDict
 from esp.middleware              import ESPError
 from esp.program.models          import Program
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -325,18 +326,23 @@ class ClassSection(models.Model):
 
     @cache_function
     def _get_capacity(self, ignore_changes=False):
-
+    
+        ans = None
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
 
         rooms = self.initial_rooms()
         if len(rooms) == 0:
-            ans = self.parent_class.class_size_max
+            if not ans:
+                ans = self.parent_class.class_size_max
         else:
             rc = 0
             for r in rooms:
                 rc += r.num_students
-            ans = min(self.parent_class.class_size_max, rc)
+            if ans:
+                ans = min(ans, rc)
+            else:
+                ans = min(self.parent_class.class_size_max, rc)
             
         #   Apply dynamic capacity rule
         if not ignore_changes:
@@ -348,6 +354,7 @@ class ClassSection(models.Model):
     _get_capacity.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
     _get_capacity.depend_on_model(lambda:ClassSubject)
     _get_capacity.depend_on_model(lambda: Resource)
+    _get_capacity.depend_on_row(lambda:ClassSection, 'self')
     _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
     _get_capacity.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
 
@@ -749,19 +756,16 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
-
-        # Test any scheduling constraints based on this class
-        relevantFilters = ScheduleTestSectionList.filter_by_section(self)
-        #relevantConstraints = ScheduleConstraint.objects.filter(Q(requirement__booleantoken__in=relevantFilters) | Q(condition__booleantoken__in=relevantFilters))
-
-        relevantConstraints = ScheduleConstraint.objects.filter(program=self.parent_program)
+        # Test any scheduling constraints
+        relevantConstraints = self.parent_program.getScheduleConstraints()
+        
         # Set up a ScheduleMap; fake-insert this class into it
         sm = ScheduleMap(user, self.parent_program)
         sm.add_section(self)
         
         for exp in relevantConstraints:
             if not exp.evaluate(sm):
-                return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title, exp.requirement.label)
+                return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title(), exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if scrmi.use_priority:
@@ -778,6 +782,12 @@ class ClassSection(models.Model):
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
             return 'Registration for this section is not currently open.'
+
+        # check to make sure they haven't already registered for too many classes in this section
+        if scrmi.use_priority:
+            priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
+            if priority > scrmi.priority_limit:
+                return 'You are only allowed to select up to %s top classes' % (scrmi.priority_limit)
 
         # this user *can* add this class!
         return False
@@ -864,7 +874,7 @@ class ClassSection(models.Model):
             if cmpresult != 0:
                 return cmpresult
 
-        return cmp(self.title, other.title)
+        return cmp(self.title(), other.title())
 
 
     def firstBlockEvent(self):
@@ -906,15 +916,8 @@ class ClassSection(models.Model):
                     self._count_students = retVal
                     return retVal
 
-
-        qs = UserBit.objects.none()
-        for verb_str in verbs:
-            v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            # NOTE: This assumes that no user can be both Enrolled and Rejected
-            # from the same class. Otherwise, this is pretty silly.
-            new_qs = UserBit.objects.filter(qsc=self.anchor, verb=v)
-            new_qs = new_qs.filter(enddate__gte=datetime.datetime.now())
-            qs = qs | new_qs
+        v = [ DataTree.get_by_uri('V/Flags/Registration' + verb_str) for verb_str in verbs ]
+        qs = User.objects.filter(userbit__qsc=self.anchor, userbit__verb__in=v, userbit__enddate__gte=datetime.datetime.now()).distinct()
         
         retVal = qs.count()
 
@@ -1046,9 +1049,7 @@ class ClassSection(models.Model):
             blank_responses.delete()
         
         # update the students cache
-        students = list(self.students())
-        students = [ student for student in students
-                     if student.id != user.id ]
+        students = [x for x in self.students() if x.id != user.id]
         self.cache['students'] = students
         self.update_cache_students()
 
@@ -1057,10 +1058,7 @@ class ClassSection(models.Model):
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     
         prereg_verb_base = scrmi.signup_verb
-        
-        #   Override the registration verb if the class has application questions
-        if self.parent_class.studentappquestion_set.count() > 0:
-            prereg_verb_base = GetNode('V/Flags/Registration/Applied')
+
         
         if scrmi.use_priority:
             prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
@@ -1132,6 +1130,7 @@ class ClassSubject(models.Model):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)
+    hardness_rating = models.TextField()
     class_size_max = models.IntegerField()
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
@@ -1153,7 +1152,7 @@ class ClassSubject(models.Model):
     meeting_times = models.ManyToManyField(Event, blank=True)
 
     def get_sections(self):
-        if not hasattr(self, "_sections"):
+        if not hasattr(self, "_sections") or self._sections is None:
             self._sections = self.sections.all()
 
         return self._sections
@@ -1262,10 +1261,15 @@ class ClassSubject(models.Model):
         else:
             return sec_qs[0]
 
-    def add_section(self, duration=0.0, status=0):
+    def add_section(self, duration=None, status=None):
         """ Add a ClassSection belonging to this class. Can be run multiple times. """
         
         section_index = self.sections.count() + 1
+
+        if duration is None:
+            duration = self.duration
+        if status is None:
+            status = self.status
         
         new_section = ClassSection()
         new_section.parent_class = self
@@ -1274,6 +1278,8 @@ class ClassSubject(models.Model):
         new_section.status = status
         new_section.save()
         self.sections.add(new_section)
+        
+        self._sections = None
         
         return new_section
 
@@ -1538,7 +1544,7 @@ class ClassSubject(models.Model):
                     return 'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
-        if user.getEnrolledClasses(self.parent_program, request).count() == 0:
+        if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
             return False
 
         for section in self.sections.all():
@@ -1776,7 +1782,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         if self.prereqs and len(self.prereqs) > 0:
             result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
         result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.teachers()]) + '|'
-        all_students = self.students() + self.students_old()
+        all_students = self.students()
         result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
         result.original_id = self.id
         
@@ -1785,7 +1791,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         
         return result
         
-    def archive(self):
+    def archive(self, delete=False):
         """ Archive a class to reduce the size of the database. """
         from esp.resources.models import ResourceRequest, ResourceAssignment
         
@@ -1794,12 +1800,13 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         
         #   Delete user bits and resource stuff associated with the class.
         #   (Currently leaving ResourceAssignments alone so that schedules can be viewed.)
-        UserBit.objects.filter(qsc=self.anchor).delete()
-        ResourceRequest.objects.filter(target_subj=self).delete()
-        #   ResourceAssignment.objects.filter(target_subj=self).delete()
-        for s in self.sections.all():
-            ResourceRequest.objects.filter(target=s).delete()
-            #   ResourceAssignment.objects.filter(target=s).delete()
+        if delete:
+            UserBit.objects.filter(qsc=self.anchor).delete()
+            ResourceRequest.objects.filter(target_subj=self).delete()
+            #   ResourceAssignment.objects.filter(target_subj=self).delete()
+            for s in self.sections.all():
+                ResourceRequest.objects.filter(target=s).delete()
+                #   ResourceAssignment.objects.filter(target=s).delete()
         
         #   This function leaves the actual ClassSubject object, its ClassSections,
         #   and the QSD pages alone.

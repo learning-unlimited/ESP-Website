@@ -67,9 +67,9 @@ class LineItemType(models.Model):
     objects = LineItemTypeManager()
     
     def __unicode__(self):
-        if self.anchor: url = self.anchor.get_uri()
-        else: url = 'NULL'
-        return "LineItemType: %s (%.02f or %.02f for %s)" % (self.text, self.amount, self.finaid_amount, url)
+        #if self.anchor: url = self.anchor.get_uri()
+        #else: url = 'NULL'
+        return "LIType:%s" % (self.id)
 
 class Balance(models.Model):
     """ A posted balance for an account.  This serves the purpose of keeping
