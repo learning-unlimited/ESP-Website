@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Interactive Profiler</title>
+  <script type="text/javascript" src="/media/scripts/jquery.js"></script>
+  <script type="text/javascript"><!--
+
+      var refreshing = false;
+      var sortnum = {{sortnum}};
+      var magic = '{{magic}}';
+      var refreshtime = 500;
+      var refresh_pending = false;
+      var groupbyval = 'function';
+
+      function ajax_cmd(cmd) {
+          $('#msg').html('Please hold...');
+          var ajaxconf = { async: true,
+                           cache: false, 
+                           dataType: 'html',
+                           error: function() { },
+                           success: function(data,msg,req) { $('#msg').html(data); ajax_refresh(); },
+                           type: 'GET',
+                           url: '/iprof/?'+magic+'&'+cmd };
+          $.ajax(ajaxconf);
+      }
+      function ajax_timer() {
+          window.setTimeout('ajax_timer()', refreshtime);
+
+          if (refreshing) {
+            ajax_refresh();
+          }
+      }
+      function ajax_refresh() {
+          if (refresh_pending) return;
+
+          refresh_pending = true;
+          var ajaxconf = { async: true,
+                           cache: false, 
+                           dataType: 'html',
+                           error: ajax_error, 
+                           complete: ajax_error,
+                           success: ajax_success,
+                           type: 'GET',
+                           url: '/iprof/?sort='+sortnum+'&'+magic+'&ajax&group_by_'+groupbyval };
+          $.ajax(ajaxconf);
+      }
+      function ajax_success(data,msg,req) {
+          $('#nicedata').html(data);
+          var sorti = $('#sort'+sortnum);
+          sorti.html('^' + sorti.html() + '^');
+          refresh_pending = false;
+      }
+      function ajax_error(req,msg,err) {
+          refresh_pending = false;
+      }
+
+      function really_ready() {
+        $('#groupby').change(function() { 
+          groupbyval = $('#groupby').val();
+          ajax_refresh();
+        });
+        $('#install').click(function() { ajax_cmd('install'); });
+        $('#auto_refresh').click(function()
+        {
+          refreshing = !refreshing;
+          if (refreshing) ajax_refresh();
+          $('#auto_refresh').html('Auto-Refresh is ' + (refreshing ? 'ON' : 'OFF'));
+        });
+        $('#one_refresh').click(function() { ajax_refresh(); });
+        $('#clear').click(function() { ajax_cmd('clear'); });
+        $('#uninstall').click(function() { ajax_cmd('uninstall'); });
+        ajax_timer();
+      }
+
+
+      function sort1() { sortnum=1; ajax_refresh(); }
+      function sort2() { sortnum=2; ajax_refresh(); }
+      function sort3() { sortnum=3; ajax_refresh(); }
+      function sort4() { sortnum=4; ajax_refresh(); }
+      function sort5() { sortnum=5; ajax_refresh(); }
+      function sort6() { sortnum=6; ajax_refresh(); }
+      function sort7() { sortnum=7; ajax_refresh(); }
+
+      $(document).ready(really_ready);
+  //--></script>
+
+ </head>
+ <body>
+
+ <h1 style="text-align: center">Interactive Profiler</h1>
+ <h1 id="msg" style="color:red; text-align: center">{{ msg }}</h1>
+
+ <center>
+ <table width="60%">
+ <tr><td><button id="install" type="button">Install Profiler</button></td>
+     <td><button id="clear" type="button">Clear Counts</button></td>
+     <td><button id="one_refresh" type="button">Refresh</button></td>
+     <td><button id="auto_refresh" type="button">Auto-Refresh is OFF</button></td>
+     <td><button id="uninstall" type="button">Un-install Profiler</button></td>
+ </tr>
+ <tr>
+     <td colspan="5" style="text-align: center">Group By:
+         <select id="groupby">
+           <option value="function">Function</option>
+           <option value="module">Module</option>
+         </select>
+     </td>
+ </tr>
+ </table>
+ </center>
+ <br/>
+
+ <table id="nicedata" style="width: 100%">
+   {% autoescape off %}
+   {{ nicedata_table }}
+   {% endautoescape %}
+ </table>
+</body>
+</html>
