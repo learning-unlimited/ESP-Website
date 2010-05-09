@@ -52,7 +52,7 @@ This thread was originally created on {{ thread.timestamp|date:"M. j, Y" }}.
 
 <br />
 <div id="alumniform">
-  <form action="{{ request.path }}" method="post">
+  <form action="{{ request.path }}" method="post">{% csrf_token %}
   <table class="contact" align="center" width="500">
   <thead>
     <tr>

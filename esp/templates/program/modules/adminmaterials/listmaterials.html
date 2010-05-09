@@ -55,7 +55,7 @@ From this page, you can view documents related to the program (in the first sect
 	<tr>
             <td class="class_stuff"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
-			<form method="post" action="/manage/{{ prog.url }}/get_materials">
+			<form method="post" action="/manage/{{ prog.url }}/get_materials">{% csrf_token %}
 				<input type="hidden" name="docid" value="{{ doc.id }}">
 				<input type="hidden" name="command" value="delete">
 				<input class="button" type="submit" value="Delete">
@@ -81,7 +81,7 @@ From this page, you can view documents related to the program (in the first sect
 			<tr>
 				<td class="class_stuff"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
 				<td class="clsmiddle">
-					<form method="post" action="/manage/{{ program.url }}/get_materials">
+					<form method="post" action="/manage/{{ program.url }}/get_materials">{% csrf_token %}
 						<input type="hidden" name="docid" value="{{ doc.id }}">
 						<input type="hidden" name="command" value="delete">
 						<input class="button" type="submit" value="Delete">
@@ -96,7 +96,7 @@ From this page, you can view documents related to the program (in the first sect
 <br />
 <br />
 
-<form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">
+<form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">{% csrf_token %}
 <input type="hidden" name="command" value="add">
 <table cellpadding="12" cellspacing="0" align="center" width="450">
 	<tr>

@@ -23,7 +23,7 @@ Transaction Type: {{ transaction.payment_type }}
 Transaction Amount: {{ transaction.amount }}
 </pre>
 
-<form action="{{ request.path }}" method="get" name="payer_info">
+<form action="{{ request.path }}" method="get" name="payer_info">{% csrf_token %}
 <table>
 {{ form }}
 <input type="hidden" name="payer_post" value="true" />

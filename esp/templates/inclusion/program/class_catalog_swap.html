@@ -1,0 +1,33 @@
+{% if show_class %}
+{% load latex %}
+{% load smartypants %}
+{% load class_render %}
+<div class="show_class">
+  <table cellpadding="5" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
+{% render_class_core class %}
+{% if prereg_url %}
+    <tr>
+      <td colspan="3" style="text-align: center; padding:0;" align="center" valign="center" class="add_class">
+     {% if errormsg %}
+<span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
+{% if user.onsite_local %}
+<br />
+<form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">{% csrf_token %}
+	  <input type="hidden" name="class_id" value="{{ class.id }}" />
+  	  <input type="submit" class="addbutton" name="action" value="Switch into this class anyway!"
+                 id="submitbutton{{ class.id }}" />
+</form>
+{% endif %}
+
+{% else %}
+	<form name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">{% csrf_token %}
+	  <input type="hidden" name="class_id" value="{{ class.id }}" />
+  	  <input type="submit" class="addbutton" name="action" value="Switch into this class"
+                 id="submitbutton{{ class.id }}" />
+	</form>{% endif %}
+      </td>
+     </tr>{% endif %}
+</table>
+
+</div>
+{% endif %}

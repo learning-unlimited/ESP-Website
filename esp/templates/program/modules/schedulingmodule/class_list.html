@@ -17,7 +17,7 @@
 </ol>
 </p>
 
-<form method="post" action="{{ request.path }}">
+<form method="post" action="{{ request.path }}">{% csrf_token %}
 <table cellpadding="2" cellspacing="0" align="center">
 <tr>
     <th colspan="8">Class Schedule List for {{ prog.niceName }}</th>

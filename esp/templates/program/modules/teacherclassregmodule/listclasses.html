@@ -69,12 +69,12 @@ If you have any questions regarding the program, <br /> please email the
       </span>
     </td>
     <td class="clsmiddle bordertop2">
-       <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
+       <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">{% csrf_token %}
          <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
        </form>
     </td>
     <td class="clsmiddle bordertop2">
-       <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
+       <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">{% csrf_token %}
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
 {% if can_edit %}
          <input class="button" type="submit" value="Edit">
@@ -84,7 +84,7 @@ If you have any questions regarding the program, <br /> please email the
        </form>
     </td>
    <td class="clsmiddle bordertop2">
-      <form method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
+      <form method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">{% csrf_token %}
          <input class="button" type="submit" value="View Status" />
       </form>
    </td>
@@ -121,7 +121,7 @@ If you have any questions regarding the program, <br /> please email the
     <td class="clsleft"><b>(Co-)Teachers: </b></td>
     <td class="clsmiddle" colspan="4">{% for t in cls.teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
     <td class="clsright">
-       <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
+       <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">{% csrf_token %}
          <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
 	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
          <input class="button" type="submit" value="Modify Coteachers">

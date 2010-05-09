@@ -28,7 +28,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 {% endif %}
 
 
-<form action="{{request.path}}" method="post">
+<form action="{{request.path}}" method="post">{% csrf_token %}
 <table cellpadding="2" align="center" border="0">
 
 <tr>

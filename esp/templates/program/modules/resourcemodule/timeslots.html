@@ -16,7 +16,7 @@
 <p>Keep in mind that classes generally begin 5 minutes after the hour (or half hour) and end 5 minuts before the hour (or half hour), allowing 10 minutes between classes.  So, for example, a 9 - 10 AM time block really should start at 09:05 and be 50 minutes long.  Please put the approximate time in the 'name' field (i.e. 9 - 10 AM) and the exact times in the 'description' field (i.e. 9:05 - 9:55 AM).</p>
 
 <div id="program_form">
-<form method="post" action="/manage/{{ prog.url }}/resources/timeslot">
+<form method="post" action="/manage/{{ prog.url }}/resources/timeslot">{% csrf_token %}
 <input type="hidden" name="command" value="addedit" />
 <table align="center" cellpadding="0" cellspacing="0" width="450"> 
     <tr><th colspan="2">Timeslots for {{ prog.niceName }}</th></tr>

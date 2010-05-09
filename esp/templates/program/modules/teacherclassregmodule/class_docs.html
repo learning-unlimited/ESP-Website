@@ -48,7 +48,7 @@ We would like you, as a teacher, to upload all documents and other materials rel
 	<tr>
 		<td class="clsmiddle"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
-			<form method="post" action="./{{ cls.id }}">
+			<form method="post" action="./{{ cls.id }}">{% csrf_token %}
 				<input type="hidden" name="docid" value="{{ doc.id }}">
 				<input type="hidden" name="command" value="delete">
 				<input class="button" type="submit" value="Delete">
@@ -61,7 +61,7 @@ We would like you, as a teacher, to upload all documents and other materials rel
 <br />
 <br />
 
-<form method="post" action="./{{ cls.id }}" enctype="multipart/form-data">
+<form method="post" action="./{{ cls.id }}" enctype="multipart/form-data">{% csrf_token %}
 <input type="hidden" name="command" value="add">
 <table cellpadding="12" cellspacing="0" align="center" width="450">
 	<tr>

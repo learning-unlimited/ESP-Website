@@ -21,7 +21,7 @@ Comment by {{ comment.author.first_name }} {{ comment.author.last_name }} &mdash
 {% if request.user.is_authenticated %}
 <div id="form_spacing">&nbsp;</div>
 
-<form action="{{ request.path }}" method="post" name="comments">
+<form action="{{ request.path }}" method="post" name="comments">{% csrf_token %}
 <table>
 <thead>
 <tr>

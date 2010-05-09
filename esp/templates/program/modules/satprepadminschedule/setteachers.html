@@ -26,7 +26,7 @@ Please assign each teacher to the appropriate section below:
 </p>
 
 <div id="program_form">
-<form action="{{ request.path }}" method="post" name="teachersections">
+<form action="{{ request.path }}" method="post" name="teachersections">{% csrf_token %}
 <table cellspacing="0" cellpadding="2" width="300" >
 <thead>
 <tr>

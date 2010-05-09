@@ -13,7 +13,7 @@ Student:&nbsp;&nbsp; {{student.first_name}} {{student.last_name}}
 
 <br/>
 <h1 style="text-align: center">Card Information</h1>
-<form action="https://shopmit.mit.edu/payment/esp_form" method="post">
+<form action="https://shopmit.mit.edu/payment/esp_form" method="post">{% csrf_token %}
 <input type="hidden" name="OrderComments" value="{{credit_name}}">
 <input type="hidden" name="ChargeAmount" value="{{amount}}.00">
 

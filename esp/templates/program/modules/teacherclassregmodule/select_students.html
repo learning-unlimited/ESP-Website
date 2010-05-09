@@ -65,7 +65,7 @@ Back to teacher reg
 </ul>
 </p>
 <div id="program_form">
-<form method="POST" action="/teach/{{ prog.getUrlBase }}/select_students/{{ sec.id }}">
+<form method="POST" action="/teach/{{ prog.getUrlBase }}/select_students/{{ sec.id }}">{% csrf_token %}
 <table class="roster">
 <thead>
 <tr>

@@ -20,7 +20,7 @@
 Please enter the information for the new student:
 </p>
 <br />
-<form autocomplete="off" name="reg" method="POST" action="{{request.path}}">
+<form autocomplete="off" name="reg" method="POST" action="{{request.path}}">{% csrf_token %}
 <table cellpadding="2" align="center" border="0">
 
 <tr>

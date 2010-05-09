@@ -13,7 +13,7 @@
             <div class="error" style="font-size: 16px;">{{ errormsg }}</span> 
             {% if user.onsite_local %}
                 <br />
-                <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ section.id }}');" method="post" action="{{ prereg_url }}">
+                <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ section.id }}');" method="post" action="{{ prereg_url }}">{% csrf_token %}
                     <input type="hidden" name="class_id" value="{{ class.id }}" />
                     <input type="hidden" name="section_id" value="{{ section.id }}" />
                     <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
@@ -23,7 +23,7 @@
         {% else %}
             {% if section %}
                 {% if not section.isRegClosed %}
-                <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}">
+                <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}">{% csrf_token %}
                   <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ section.id }}" />
                       {% if not section.isFull %}
@@ -37,7 +37,7 @@
             {% else %}
                 {% for sec in class.get_sections %}
                     {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
-                    <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}">
+                    <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}">{% csrf_token %}
                       <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ sec.id }}" />
                       <div id="addbutton_catalog_sec{{ sec.id }}">

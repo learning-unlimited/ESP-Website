@@ -22,7 +22,7 @@
 Please check off the users you'd like to be included in your list:
 </p>
 
-<form action="{{ request.path }}" method="post" name="checklist">
+<form action="{{ request.path }}" method="post" name="checklist">{% csrf_token %}
 
 <table>
 {% for user in users %}
