@@ -21,7 +21,7 @@ to reset your password. You will need to have access to the email address
 you entered when you signed up.
 </p>
 
-<form action="{{ request.path }}" method="post" name="passreset_form">
+<form action="{{ request.path }}" method="post" name="passreset_form">{% csrf_token %}
 <table>
 <thead>
 <tr>

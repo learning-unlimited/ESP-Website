@@ -13,7 +13,7 @@
 <br /><br />
 {% endif %}
 
-<form method="post" action=".">
+<form method="post" action=".">{% csrf_token %}
 
 <p>
     <label for="id_amount">Amount Paid:</label> {{ form.amount }}

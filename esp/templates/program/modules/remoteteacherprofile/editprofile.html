@@ -21,7 +21,7 @@ Please fill out the form below to help us better organize {{ program.niceName }}
 
 <br />
 
-<form action="{{request.path}}" name="profileform" method="post">
+<form action="{{request.path}}" name="profileform" method="post">{% csrf_token %}
 <div id="catalog">
 <table align="center" width="500">
 <tr>

@@ -84,7 +84,7 @@ function preparePage() {
 
 
 <div id="login_form">
-<form id="login_form_form" action="{{ action }}" method="post">
+<form id="login_form_form" action="{{ action }}" method="post">{% csrf_token %}
 <table cellpadding="2" align="center">
 <thead>
 <tr>

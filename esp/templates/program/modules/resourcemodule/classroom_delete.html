@@ -20,7 +20,7 @@ You have chosen to delete the classroom: {{ classroom }}.  Please confirm this b
 </p>
 
 <div id="program_form">
-<form method="post" action="{{ request.path }}">
+<form method="post" action="{{ request.path }}">{% csrf_token %}
 <input type="hidden" name="command" value="reallyremove" />
 <input type="hidden" name="id" value="{{ classroom.id }}" />
 <table align="center" width="550" cellpadding="4" cellspacing="0">

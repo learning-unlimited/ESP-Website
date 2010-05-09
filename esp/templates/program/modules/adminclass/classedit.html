@@ -20,7 +20,7 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.
 <h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
 {% endif %}
 
-<form action="{{request.path}}" name="clsform" method="post">
+<form action="{{request.path}}" name="clsform" method="post">{% csrf_token %}
 
 <label for="id_title" class="header">
 Course Title:

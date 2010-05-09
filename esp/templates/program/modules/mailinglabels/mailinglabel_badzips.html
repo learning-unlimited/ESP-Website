@@ -24,7 +24,7 @@ For example:
 </pre>
 </p>
 
-<form action="{{ request.path }}" method="post">
+<form action="{{ request.path }}" method="post">{% csrf_token %}
 <table>
 {{ form }}
 <tr>

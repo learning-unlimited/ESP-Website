@@ -12,7 +12,7 @@
 <span class="error" style="font-size: 16px;">{{ errormsg }}</span> 
 {% if user.onsite_local %}
 <br />
-<form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+<form name="prereg_submitform" onsubmit="return submit_override_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">{% csrf_token %}
 	  <input type="hidden" name="class_id" value="{{ class.id }}" />
   	  <input type="submit" class="addbutton" name="action" value="Switch into this class anyway!"
                  id="submitbutton{{ class.id }}" />
@@ -20,7 +20,7 @@
 {% endif %}
 
 {% else %}
-	<form name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">
+	<form name="prereg_submitform" onsubmit="return submit_prereg('{{ class.id }}');" method="post" action="{{ prereg_url }}">{% csrf_token %}
 	  <input type="hidden" name="class_id" value="{{ class.id }}" />
   	  <input type="submit" class="addbutton" name="action" value="Switch into this class"
                  id="submitbutton{{ class.id }}" />

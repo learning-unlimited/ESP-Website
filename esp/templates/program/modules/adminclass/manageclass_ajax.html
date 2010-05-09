@@ -1,4 +1,4 @@
-<form name="classmanage" action="/manage/{{program.getUrlBase}}/manageclass_ajaxpost/" method="POST">
+<form name="classmanage" action="/manage/{{program.getUrlBase}}/manageclass_ajaxpost/" method="POST">{% csrf_token %}
 <input type="hidden" name="manage_post" value="" />
 <input type="hidden" name="clsid" value="{{class.id}}" />
 <input type="hidden" name="ajax" value="true" />

@@ -21,7 +21,7 @@ Please review the student's biographical information and responses to our questi
 </p>
 
 <div id="program_form">
-<form action="{{ request.path }}" method="post" name="review">
+<form action="{{ request.path }}" method="post" name="review">{% csrf_token %}
 <table class="application" width="600">
 <tr>
   <th colspan="2">Student Application for {{ student.name }}</th>
