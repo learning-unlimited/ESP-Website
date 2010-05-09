@@ -2,6 +2,7 @@
 
 \usepackage{multicol}
 \usepackage{fullpage}
+\usepackage{setspace}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
 \usepackage{fancyhdr}
 \usepackage[left=.5in,top=1cm,right=.5in]{geometry}
@@ -43,10 +44,15 @@
 {% autoescape off %}
 \textbf{% templatetag openbrace %}{{cls.emailcode}}: {{ cls.title|texescape }} } \\
 \textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
-{{ cls.class_info|texescape }} \\
+\begin{footnotesize}
+\setstretch{0.8}
+\setlength\parsep{1ex}
+\setlength\itemsep{1ex}
+{{ cls.ascii_info|texescape }} \\
+\end{footnotesize}
 \textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
 \textit{Maximum Size: {{cls.class_size_max }} } \\
-\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\ \textbf{" }} } \\
+\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\\\ \\textbf{" }} } \\
 {% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}
 {% endautoescape %}
 %\end{tabular}

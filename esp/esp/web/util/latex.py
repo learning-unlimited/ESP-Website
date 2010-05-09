@@ -72,7 +72,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
 def gen_latex(texcode, type='pdf'):
     """ Generate the latex code. """
 
-    remove_files = True
+    remove_files = False
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
     if type == 'tex':

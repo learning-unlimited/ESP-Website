@@ -640,16 +640,20 @@ class ESPUser(User, AnonymousUser):
     #   Invalidate cache when any of the user's financial aid requests are changed
     appliedFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
-    @cache_function
+    #@cache_function
     def hasFinancialAid(self, anchor):
         from esp.program.models import Program, FinancialAidRequest
-        progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
-        apps = FinancialAidRequest.objects.filter(user=self, program__in=progs)
+        if isinstance(anchor, Program):
+            apps = FinancialAidRequest.objects.filter(user=self, program=anchor)
+        else:
+            progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
+            apps = FinancialAidRequest.objects.filter(user=self, program__in=progs)
+
         for a in apps:
-            if a.approved:
+            if a.reduced_lunch or a.extra_explaination:
                 return True
         return False
-    hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
+    #hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
     def paymentStatus(self, anchor=None):
         """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate

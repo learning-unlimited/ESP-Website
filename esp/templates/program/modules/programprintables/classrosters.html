@@ -27,7 +27,70 @@ body { font-family: georgia; }
 {% for item in scheditems %}
 {% if not forloop.first %}
 {% endif %}
-{% include "program/modules/programprintables/classroster.html" %}
+
+
+<div style="page-break-after: always;">&nbsp;</div>
+<div class="classroster">
+  <div class="classtitle">{{ item.cls }}</div>
+  {% autoescape off %}
+  <table align="center" cellspacing="0" cellpadding="0">
+  <tr>
+   <td>
+      <div class="blocks">{{ item.cls.friendly_times|join:"<br />" }}</div>
+   </td>
+   <td>
+      <div class="classroom">{{ item.cls.prettyrooms|join:"<br />" }}</div>
+   </td>
+  </tr>
+  </table>
+  <br />
+  <div class="teachername"><span>{{ item.teacher.name }}</span></div>
+  <br />
+  <div class="teachername">Class Email: <tt>{{ item.cls.emailcode }}-class@stanfordesp.org</tt><br />
+Students Email: <tt>{{ item.cls.emailcode }}-students@stanfordesp.org</tt>
+  </div>
+  <br />
+  <br />
+
+  <table align="center" class="pretty" cellspacing="0" cellpadding="3px" style="font-size: 12px; ">
+    <tr>
+      <th colspan="4" align="center">Students</th>
+      <th style="border-style: none">&nbsp;</th>
+      <th colspan="4" align="center">Students</th>
+    </tr>
+    <tr>
+      <th>#</th>
+      <th>Student ID</th>
+      <th>Student Name</th>
+      <th>Grade</th>
+      <th style="border-style: none">&nbsp;</th>
+      <th>#</th>
+      <th>Student ID</th>
+      <th>Student Name</th>
+      <th>Grade</th>
+    </tr>
+
+  {% for student in item.cls.students %}
+
+    {% if forloop.counter0|startsblock:"2" %}<tr>{% endif %}
+    {% if forloop.counter0|endsblock:"2" %}<td style="border-style: none"> &nbsp; </td> {% endif %}
+      <td align="right">{{ forloop.counter }}</td>
+      <td>{{ student.id }}</td>
+      <td>{{ student.name }}</td>
+      <td>
+          {{ student.getGrade }}</td>
+    {% if forloop.counter0|endsblock:"2" or forloop.last %}</tr>{% endif %}
+
+  {% endfor %}
+
+  </table>
+
+
+  {% endautoescape %}
+</div>
+
+<br />
+
 {% endfor %}
 
 </body>

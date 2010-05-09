@@ -1,10 +1,11 @@
-{% autoescape off %}\documentclass[letterpaper,9pt]{article}
+{% autoescape off %}\documentclass[letterpaper,8pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{multicol}
 \usepackage{fullpage}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
 \usepackage{fancyhdr}
 \usepackage{amsfonts}
+\usepackage{setspace}
 \usepackage[left=.5in,top=1cm,right=.5in]{geometry}
 
 \pagestyle{fancy}
@@ -24,25 +25,32 @@
 \begin{document}
 \begin{multicols}{2}
 \vspace{.05in}
-{% for cls in classes %}
+{% for sec in sections %}
+  {% with sec.parent_class as cls %}
   {% ifchanged %}
 \end{multicols}
 \newpage
 \begin{multicols}{2} 
  {%endifchanged %}
-\rhead{% templatetag openbrace %}{{cls.category.category|texescape }} }
+\rhead{% templatetag openbrace %}{{sec.start_time|texescape }} }
 %\begin{tabular}{p{.45\textwidth} }
 {% autoescape off %}
 \textbf{% templatetag openbrace %}{{cls.emailcode}}: {{ cls.title|texescape }} } \\
 \textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
+\begin{footnotesize}
+\setstretch{0.8}
+\setlength\parsep{1ex}
+\setlength\itemsep{1ex}
 {{ cls.ascii_info|texescape }} \\
+\end{footnotesize}
 \textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
 \textit{Maximum Size: {{cls.class_size_max }} } \\
-\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\ \textbf{" }} } \\
-{% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}
+\textbf{% templatetag openbrace %}{{ sec.friendly_times|join:"} \\ \textbf{" }} } 
+{% if sec.isFull %}\textbf{(FULL)} {% endif %} \\
 {% endautoescape %}
 %\end{tabular}
 \vspace{.1in}
+{% endwith %}
 {% endfor %}
 \end{multicols}
 \end{document}

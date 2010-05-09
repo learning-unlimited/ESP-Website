@@ -237,14 +237,17 @@ class ProgramPrintables(ProgramModuleObj):
 
         classes.sort(ClassSubject.catalog_sort)
 
-        if request.GET.has_key('clsids'):
-            clsids = request.GET['clsids'].split(',')
-            cls_dict = {}
-            for cls in classes:
-                cls_dict[str(cls.id)] = cls
-            classes = [cls_dict[clsid] for clsid in clsids if cls_dict.has_key(clsid)]
+        #if request.GET.has_key('clsids'):
+        #    clsids = request.GET['clsids'].split(',')
+        #    cls_dict = {}
+        #    for cls in classes:
+        #        cls_dict[str(cls.id)] = cls
+        #    classes = [cls_dict[clsid] for clsid in clsids if cls_dict.has_key(clsid)]
+        sections = ClassSection.objects.filter(parent_class__in = classes)
+        sections = [sec for sec in sections if sec.isAccepted() and sec.start_time() is not None ]
+        sections.sort(ClassSection.catalog_sort)
 
-        context = {'classes': classes, 'program': self.program}
+        context = {'classes': classes, 'sections': sections, 'program': self.program}
 
         if extra is None or len(str(extra).strip()) == 0:
             extra = 'pdf'
@@ -597,7 +600,7 @@ class ProgramPrintables(ProgramModuleObj):
             # get list of valid classes
             classes = [ cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
-                    and cls.isAccepted()                       ]
+                    and cls.isAccepted() and cls.start_time() ]
             # now we sort them by time/title
             classes.sort()
             for cls in classes:
@@ -838,9 +841,10 @@ Student schedule for %s:
 
             if not found:
                 return filterObj
-
+            print "---> Getting distinct list"
             students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
+        print "---> Sorting"
         students.sort()
 
         scheditems = []
@@ -852,14 +856,17 @@ Student schedule for %s:
             parent_program_students = parent_program.students()
             if parent_program_students.has_key('classreg'):
                 parent_program_students_classreg = parent_program_students['classreg']
-
+        ccc = 0
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
             classes = [ cls for cls in student.getEnrolledSections()
-                                if cls.parent_program == self.program and cls.isAccepted()                       ]
+                                if cls.parent_program == self.program and cls.isAccepted() 
+                                   and cls.start_time() ]
             # now we sort them by time/title
             classes.sort()
+            print "---> Handling student ", student.id, " (Count ", ccc, ")"
+            ccc += 1
 
             # note whether student is in parent program
             student.in_parent_program = False
@@ -879,14 +886,14 @@ Student schedule for %s:
 
             student.itemizedcosttotal = cost
 
-            student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
+            student.has_financial_aid = student.hasFinancialAid(self.program)
             if student.has_financial_aid:
                 student.itemizedcosttotal = 0
             student.has_paid = ( student.itemizedcosttotal == 0 )
 
             student.payment_info = True
             student.classes = classes
-            student.splashinfo = SplashInfo.getForUser(student)
+            student.splashinfo = splashinfo
 
         context['students'] = students
         context['program'] = self.program
@@ -1232,7 +1239,7 @@ Student schedule for %s:
 
         for teacher in teachers:
             for cls in teacher.getTaughtSections(self.program):
-                if cls.isAccepted():
+                if cls.isAccepted() and cls.start_time():
                     scheditems.append({'teacher': teacher,
                                        'cls'    : cls})
 

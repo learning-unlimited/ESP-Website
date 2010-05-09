@@ -20,7 +20,11 @@ Students Email: <tt>{{ item.cls.emailcode }}-students@stanfordesp.org</tt>
   </div>
   <br />
   <br />
-  <table align="center" class="pretty" cellspacing="0" cellpadding="3px" style="font-size: 12px">
+
+  {% for student in item.cls.students %}
+
+  {% if forloop.counter % 20 == 0 %}
+    <table align="center" class="pretty" cellspacing="0" cellpadding="3px" style="font-size: 12px">
     <tr>
       <th colspan="4" align="center">Students</th>
     </tr>
@@ -29,7 +33,9 @@ Students Email: <tt>{{ item.cls.emailcode }}-students@stanfordesp.org</tt>
       <th>Student ID</th>
       <th>Student Name</th>
       <th>Grade</th>
-    </tr>{% for student in item.cls.students %}
+    </tr>
+  {% endif %}
+
     <tr>
       <td align="right">{{ forloop.counter }}</td>
       <td>{{ student.id }}</td>
@@ -37,8 +43,12 @@ Students Email: <tt>{{ item.cls.emailcode }}-students@stanfordesp.org</tt>
       <td>
           {{ student.getGrade }}</td>
     </tr>
+
+  {% if forloop.counter % 20 == 19 %}
+    </table>
+  {% endif %}
+
     {% endfor %}
-  </table>
   {% endautoescape %}
 </div>
 

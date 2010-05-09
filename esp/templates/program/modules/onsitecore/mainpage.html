@@ -23,12 +23,12 @@ Please select from the option below to continue.
 
 <br />
 <strong>Your Options:</strong>
-<ul>
+<ul style="font-size: 14pt">
 
 {% for module in modules %}
 {% if module.isStep %}
   {% if not module.useTemplate %}
-    <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
+    <li style="padding-bottom: 10px">{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
   {% else %}
     <li><em>{{ module.module.link_title }} (below)</em></li>
   {% endif %}

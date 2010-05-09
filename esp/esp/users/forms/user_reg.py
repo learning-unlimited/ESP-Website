@@ -84,7 +84,8 @@ class UserRegForm(forms.Form):
         return self.cleaned_data['confirm_password']
 
 
-class EmailUserForm(CaptchaForm):
+#class EmailUserForm(CaptchaForm):
+class EmailUserForm(forms.Form):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
 
 

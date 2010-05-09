@@ -70,7 +70,7 @@ font-size: 1.7em;
 <title>On-site Class List for {{ prog.niceName }}</title>
 </head>
 
-<body bgcolor="#FFFFFF" onload="reset();">
+<body bgcolor="#FFFFFF" {% comment %}onload="reset();"{% endcomment %}>
 
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
 
@@ -84,11 +84,13 @@ font-size: 1.7em;
 <td width="65%" valign="top">
   <table cellpadding="2" cellspacing="0" width="100%">
     <tr>
-        <th style="font-size: 2.0em" colspan="2">{{ prog.niceName }}: Open classes for the upcoming hour: starting at {{ current_time.start|date:"D P" }}</th>
+        <th style="font-size: 2.0em" colspan="2">{{ prog.niceName }}<br/>
+          Open classes starting at {{ current_time.start|date:"D P" }}
+        </th>
     </tr>
     <tr>
-        <th style="font-size: 1.7em" class="materials">Code</th>
-        <th style="font-size: 1.7em" class="materials">Class Title</th>
+        <th style="font-size: 1.5em" class="materials">Code</th>
+        <th style="font-size: 1.5em" class="materials">Class Title</th>
     </tr>
     {% for class in classes %}
         {% ifequal class.start_time current_time %}
@@ -99,8 +101,15 @@ font-size: 1.7em;
         {% endif %}
         {% endifequal %}
     {% endfor %}
+    <tr>
+      <td colspan="2" style="text-align: center">
+          Last updated: {{ time_now|date:"D P" }}
+      </td>
+    </tr>
 </table>
 </td>
+
+{% comment %}
 <Td valign="top">
   <div id="scroller_top" onclick="reset();">
     {% include "program/modules/onsiteclasslist/allclass_fragment.html" %}
@@ -110,6 +119,8 @@ font-size: 1.7em;
     {% include "program/modules/onsiteclasslist/allclass_fragment.html" %}
     </div>
 </td>
+{% endcomment %}
+
 </tr>
 </table>
 </div>

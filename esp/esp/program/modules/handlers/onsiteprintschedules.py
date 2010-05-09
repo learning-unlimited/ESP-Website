@@ -78,16 +78,18 @@ class OnsitePrintSchedules(ProgramModuleObj):
         
         ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')[:1]
         
-        for ubit in ubits:
-            ubit.enddate = datetime.now()
-            ubit.save()
+        #for ubit in ubits:
+        #    ubit.enddate = datetime.now()
+        #    ubit.save()
 
         # get students
-        old_students = set([ ESPUser(ubit.user) for ubit in ubits ])
+        #old_students = set([ ESPUser(ubit.user) for ubit in ubits ])
 
         students = []
 
-        for student in old_students:
+        for ubit in ubits:
+
+            student = ESPUser(ubit.user)
             student.updateOnsite(request)
             # get list of valid classes
             classes = [ cls for cls in student.getEnrolledSections()
@@ -119,6 +121,10 @@ class OnsitePrintSchedules(ProgramModuleObj):
             student.splashinfo = SplashInfo.getForUser(student)
 
             students.append(student)
+            ubit.enddate = datetime.now()
+            ubit.save()
+            break
+
 
         if len(students) == 0:
             response = HttpResponse('')

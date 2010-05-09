@@ -514,6 +514,41 @@ class ClassSection(models.Model):
     def emailcode(self):
         return self.parent_class.emailcode() + 's' + str(self.index())
 
+    @staticmethod
+    def sort_by_timeblock(one, other):
+        s1 = one.start_time()
+        s2 = other.start_time()
+        if not s1 and not s2:
+            return 0
+        elif s1 and not s2:
+            return -1
+        elif not s1 and s2:
+            return 1
+        else:
+            return cmp(s1, s2)
+
+    @staticmethod
+    def sort_by_title(one, other):
+        return cmp(one.title(), other.title())
+
+    @staticmethod
+    def sort_by_category(one, other):
+        return cmp(one.category.category, other.category.category)
+
+    @staticmethod
+    def catalog_sort(one, other):
+        comp = ClassSection.sort_by_timeblock(one, other)
+        if comp != 0:
+            return comp
+        comp = ClassSection.sort_by_category(one, other)
+        if comp != 0:
+            return comp
+        comp = ClassSection.sort_by_title(one, other)
+        if comp != 0:
+            return comp
+        return cmp(one, other)
+
+
     def starts_soon(self):
         #   Return true if the class's start time is less than 50 minutes after the current time
         #   and less than 10 minutes before the current time.
@@ -935,7 +970,10 @@ class ClassSection(models.Model):
             if cmpresult != 0:
                 return cmpresult
 
-        return cmp(self.title, other.title)
+        title1 = self.title() if hasattr(self.title, '__call__') else self.title
+        title2 = other.title() if hasattr(other.title, '__call__') else other.title
+
+        return cmp(title1, title2)
 
 
     def firstBlockEvent(self):

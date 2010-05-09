@@ -6,6 +6,11 @@
 function printself() {
    self.focus();
    window.print();
+   setTimeout(redo, 1000);
+}
+
+function redo() {
+  window.location.reload();
 }
 
 function refreshimg() {
@@ -22,6 +27,6 @@ setTimeout(refreshimg, 2000);
 </script>
 </head>
 <body>
-<img id="auto_reload_img" src="printschedules?gen_img" onload="javascript:printself();" />
+<img id="auto_reload_img" src="printschedules?gen_img" onload="javascript:printself()" />
 </body>
 </html>

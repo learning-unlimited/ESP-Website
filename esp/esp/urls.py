@@ -112,6 +112,10 @@ urlpatterns += patterns('',
                         (r'^',  include('esp.survey.urls')),
                         )
 
+urlpatterns += patterns('esp.web.views.iprof',
+                         (r'^iprof/?$', 'iprof'));
+
+
 urlpatterns += patterns('esp.web.views.json',
 
      # JSON

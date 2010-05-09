@@ -64,24 +64,27 @@ User ID: {{ student.id }} \\
 \end{multicols}
 
 \begin{center}
-
-\vspace{1cm}
-
+\vspace{.75cm}
 For help finding your classrooms, please consult map on reverse side. \\
 If you have any questions or would like to switch classes, please go to the registration desk. \\
-
-\vspace{1cm}
-
+\vspace{.75cm}
 {\large \textbf{Schedule} \\}
 
 \vspace{0.25cm}
-
-\begin{tabularx}{18cm}{|l|p{1.2in}|lX|X|}
-\hline
-\textbf{Time} & \textbf{Room} & \textbf{Class} & & \textbf{Teacher(s)} \\
-{% for cls in student.classes %}\hline
+% COMMENT
 % {{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} }:& {{ cls.title|truncatewords:5|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\
-{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.awesomeroom|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} }:& {{ cls.title|truncatewords:5|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\
+% COMMENT
+% \begin{tabularx}{18cm}{|l|p{1.0in}|lX|X|}
+\begin{tabularx}{18cm}{|X|X|p{0.5in}|}
+\hline
+% \textbf{Time} & \textbf{Room} & \textbf{Class} & \textbf{Teacher(s)} \\
+\textbf{Time and Room} & \textbf{Class and Teacher} & \textbf{Code} \\
+{% for cls in student.classes %}\hline
+{% if cls.friendly_times|length_is:"0" %}N/A{% endif %}{{ cls.friendly_times|join:", " }} \newline
+\footnotesize{ {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.awesomeroom|texescape }}{% endif %} } & 
+{% if cls.title|length_is:"0" %}N/A{% endif %} {{ cls.title|truncatewords:5|texescape }} \newline
+\footnotesize{ {{ cls.parent_class.getTeacherNames|join:", "|texescape }} }  &
+\texttt{ {{ cls.emailcode }} } \\
 {% endfor %}\hline
 \end{tabularx}
 

@@ -57,15 +57,15 @@ class OnSiteClassList(ProgramModuleObj):
     def classList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """
         context = {}
-        defaults = {'refresh': 300, 'scrollspeed': 3}
+        defaults = {'refresh': 60, 'scrollspeed': 3}
         for key_option in defaults.keys():
             if request.GET.has_key(key_option):
                 context[key_option] = request.GET[key_option]
             else:
                 context[key_option] = defaults[key_option]
 
-        time_now = datetime.now()
-        window_start = time_now + timedelta(-1, 85200)
+        time_now = datetime.now() + timedelta(0, 0, 0, 0, 7, -3) # Minus 3 hours, Plus 5 minutes
+        window_start = time_now + timedelta(0, 0, 0, 0, -20)   # Minus 20 minutes
         curtime = Event.objects.filter(start__gte=window_start).order_by('start')
         if curtime:
             curtime = curtime[0]
@@ -77,7 +77,7 @@ class OnSiteClassList(ProgramModuleObj):
             curtime = None
             classes = []
         
-        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
+        context.update({'prog': prog, 'time_now': time_now, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
         
         return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), context)
 
