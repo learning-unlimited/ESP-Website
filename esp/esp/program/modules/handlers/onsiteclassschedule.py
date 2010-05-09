@@ -89,7 +89,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
         """ Redirect to student registration, having morphed into the desired
         student. """
 
-        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False))
+        user, found = search_for_user(request)
         if not found:
             return user
         

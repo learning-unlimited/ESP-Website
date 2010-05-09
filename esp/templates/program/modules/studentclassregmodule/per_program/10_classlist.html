@@ -9,7 +9,7 @@
 {% include "users/per_program/10_student_schedule.html" %}
 {% if request.user.onsite_local %}
 <center>
-<a target="_new" href="/onsite/{{program.getUrlBase}}/printschedules?gen_img&img_format=pdf">Get Student Schedule</a>
+<a target="_new" href="/onsite/{{program.getUrlBase}}/printschedules?gen_img&img_format=pdf&force_current_user=true">Get Student Schedule</a>
 <br />
 {% if printers %}
 {% for printer in printers %}
