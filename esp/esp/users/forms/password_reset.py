@@ -22,6 +22,7 @@ class PasswordResetForm(forms.Form):
         top_errors = self.non_field_errors() # Errors that should be displayed above all fields.
         output, hidden_fields = [], []
         first = True
+        
         for name, field in self.fields.items():
             if not first:
                 output.append(error_row % '<span class="or">- or -</span>')
@@ -34,6 +35,11 @@ class PasswordResetForm(forms.Form):
                     top_errors.extend(['(Hidden field %s) %s' % (name, e) for e in bf_errors])
                 hidden_fields.append(unicode(bf))
             else:
+                html_class_attr = ''
+                css_classes = bf.css_classes()
+                if css_classes:
+                    html_class_attr = ' class="%s"' % css_classes
+            
                 if errors_on_separate_row and bf_errors:
                     output.append(error_row % bf_errors)
                 if bf.label:
@@ -48,7 +54,7 @@ class PasswordResetForm(forms.Form):
                     help_text = help_text_html % field.help_text
                 else:
                     help_text = u''
-                output.append(normal_row % {'errors': bf_errors, 'label': label, 'field': unicode(bf), 'help_text': help_text})
+                output.append(normal_row % {'html_class_attr': html_class_attr, 'errors': bf_errors, 'label': label, 'field': unicode(bf), 'help_text': help_text})
         if top_errors:
             output.insert(0, error_row % top_errors)
         if hidden_fields: # Insert any hidden fields in the last row.
