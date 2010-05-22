@@ -118,8 +118,12 @@ DEFAULT_CACHE_TIMEOUT = 86400
 SITE_ID = 1
 
 TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.load_template_source',
-    'django.template.loaders.app_directories.load_template_source',
+    ('django.template.loaders.cached.Loader',
+        ('esp.utils.template.Loader',
+         'django.template.loaders.filesystem.Loader',
+         'django.template.loaders.app_directories.Loader',
+        )
+    ),
 )
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
