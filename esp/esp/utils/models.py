@@ -1,4 +1,6 @@
 from django.db import models
+from django.template.loaders.cached import Loader as CachedLoader
+from django.template.loader import find_template
 
 """ A template override model that stores the contents of a template in the database. """
 class TemplateOverride(models.Model):
@@ -21,9 +23,21 @@ class TemplateOverride(models.Model):
             return 1
     
     def save(self, *args, **kwargs):
+        #   Try finding a template in order to make sure Django has loaded the template loaders.
+        (source, origin) = find_template('main.html')
+        
+        #   Then grab the template loaders.
+        from django.template.loader import template_source_loaders
+    
         #   Never overwrite; save a new copy with the version incremented.
         self.id = None
         self.version = self.next_version()
         super(TemplateOverride, self).save(True, *args, **kwargs)
+        
+        #   Reset any cached template loaders.
+        for loader in template_source_loaders:
+            if isinstance(loader, CachedLoader):
+                loader.reset()
+        
     
     
