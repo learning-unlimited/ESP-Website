@@ -30,7 +30,7 @@ ESP.declare('ESP.Scheduling.Resources',function(){
 	    set: function(key, value){
 		    var old_value = this.get(key);
 		    this.__set__(key, value);
-		    ESP.Utilities.EventManager.fire("property-changed", {
+		    ESP.Utilities.evm.fire("property-changed", {
 			    target: this,
 				name: key,
 				action: "set",
@@ -43,7 +43,7 @@ ESP.declare('ESP.Scheduling.Resources',function(){
 		},
 	    append: function(key, value){
 		    if (!this.__append__(key, value)) return;
-		    ESP.Utilities.EventManager.fire("property-changed", {
+		    ESP.Utilities.evm.fire("property-changed", {
 			    target: this,
 				name: key,
 				action: "append",
@@ -65,7 +65,7 @@ ESP.declare('ESP.Scheduling.Resources',function(){
 		},
 	    remove: function(key, value){
 		    if (!this.__remove__(key, value)) return;
-		    ESP.Utilities.EventManager.fire("property-changed", {
+		    ESP.Utilities.evm.fire("property-changed", {
 			    target: this,
 				name: key,
 				action: "append",
