@@ -3,6 +3,9 @@
  */
 ESP.Scheduling = function(){
     function init(test_data_set){
+	// ensure event manager is empty before we begin setting up
+	ESP.Utilities.evm.unbind();
+	
 	var pd = this.data = process_data(test_data_set);
 	this._status = new ESP.Scheduling.Widgets.StatusBar('#statusbar');
 	this.status = this._status.setStatus.bind(this._status);
