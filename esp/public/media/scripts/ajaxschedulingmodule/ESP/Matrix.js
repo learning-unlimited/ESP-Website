@@ -91,16 +91,21 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			}
 		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
-			if (!(data.nowriteback) && data.blocks.length > 0) {
-			    var req = { action: 'assignreg',
-					cls: data.section.uid,
-					block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
+			if (!(data.nowriteback)) {
+			    if (data.blocks.length > 0) {
+				var req = { action: 'assignreg',
+					    cls: data.section.uid,
+					    block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
 
-			    $j.post('ajax_schedule_class', req, function(data, status) {
-				    if (status == "success") {
-					ESP.version_uuid = data.val;
-				    }
-			        }, "json");
+				$j.post('ajax_schedule_class', req, function(data, status) {
+					if (status == "success") {
+					    ESP.version_uuid = data.val;
+					    ESP.Utilities.evm.fire('block_section_assignment_success', data);
+					}
+				    }, "json");
+			    } else {
+				ESP.Utilities.evm.fire('block_section_assignment_success', data);
+			    }
 			}
 		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {

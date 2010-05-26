@@ -56,6 +56,13 @@ ESP.Scheduling = function(){
 
 	apply_existing_classes(this.data.schedule_assignments, this.data)
 	this.directory.filter();
+	
+	// make sure to refresh when sections get scheduled/unscheduled
+	// it's here at the end to avoid needless work while the matrix is being set up
+	var dir = this.directory;
+	ESP.Utilities.evm.bind('block_section_assignment_success', function(event, data){
+	    dir.filter();
+	});
     };
     
     // process data
