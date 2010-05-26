@@ -44,7 +44,7 @@
 <h2>Student Info</h2>
 <table>
 <tr><td class="key">School</td><td>{{ profile.student_info.school }}</td></tr>
-<tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }}</td></tr>
+<tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }} ({{ user.getGrade }}th Grade)</td></tr>
 <tr><td class="key">Date of Birth</td><td>{{ profile.student_info.dob|date }}</td></tr>
 <tr><td class="key">Applied to be Student Rep?</td><td>{% if profile.student_info.studentrep %}<span class="yes"><a class="tooltip">Yes<span>{{ profile.student_info.studentrep_expl }}</span></a></span>{% else %}<span class="no">No</span>{% endif %}</td></tr>
 <tr><td class="key">How Heard About ESP?</td><td>{% ifnotequal profile.student_info.heardofesp "" %}<a class="tooltip">(mouseover to see)<span>{{ profile.student_info.heardofesp }}</span></a>{% else %}(blank){% endifnotequal %}</td><tr>
