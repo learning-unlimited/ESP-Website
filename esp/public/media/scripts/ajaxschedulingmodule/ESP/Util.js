@@ -47,3 +47,6 @@ if (!Array.prototype.contains) {
 	return $j.inArray(value, this) != -1;
     };
 }
+function cmp(one,two) {
+    return one === two ? 0 : ( one > two ? 1 : -1 );
+}

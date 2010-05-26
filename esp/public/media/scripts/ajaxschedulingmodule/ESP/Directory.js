@@ -47,31 +47,37 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 		    get: function(x){ return x.block_contents; },
 		    //css: 'text-align:center; text-decoration:underline; font-weight:bold;',
 		    sort: function(x,y){
-			return x.section.id - y.section.id;
+			// use code instead of emailcode; that's how Scheduling.process_data names it
+			var diff = x.section.class_id - y.section.class_id;
+			return diff == 0 ? cmp(x.section.code, y.section.code) : diff;
 		    },
 		    css: 'width:100px;'
 		},
 		'Title': {
 		    get: function(x){ return x.text; },
+		    sort: function(x,y){
+			return cmp(x.section.text, y.section.text);
+		    },
 		    css: 'width:400px;'
 		},
 		'Category': {
 		    get: function(x){ return x.category; },
 		    sort: function(x,y){
-			return x.section.category == y.section.category ? this.properties['ID'].sort(x,y) :
-			x.section.category > y.section.category ? 1 : -1;
+			return cmp(x.section.category, y.section.category);
 		    },
 		    css: 'width:100px;'
 		},
 		'Teacher': {
 		    get: function(x) { return ""+x.teachers.map(function(x){return x.block_contents;}); },
+		    sort: function(x,y){
+			return cmp(""+x.section.teachers.map(function(z){return z.text;}), ""+y.section.teachers.map(function(z){return z.text;}));
+		    },
 		    css: 'width:200px;'
 		},
 		'Length': {
 		    get: function(x) { return x.length_hr; },
 		    sort: function(x,y) {
-			var diff = x.section.length - y.section.length;
-			return diff == 0 ? this.properties['ID'].sort(x,y) : diff;
+			return x.section.length - y.section.length;
 		    },
 		    css: 'width:50px;'
 		}
