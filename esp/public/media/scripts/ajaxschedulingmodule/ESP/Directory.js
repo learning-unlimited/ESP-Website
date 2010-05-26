@@ -113,7 +113,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 			    }
 			}.bind(this));
 		} else {
-		    if (x.status == 10) { // skip non-Approved classes
+		    if (entry.status == 10) { // skip non-Approved classes
 			this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, entry));
 		    }
 		}
