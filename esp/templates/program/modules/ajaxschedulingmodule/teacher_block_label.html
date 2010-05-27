@@ -3,6 +3,6 @@
 <b>Available times:</b><br />
 {% if available_times|length_is:0 %}None{% else %}
 {% for t in available_times %}
-- {{ t }} <br />
+&bull; {{ t }} <br />
 {% endfor %}{% endif %}
 </span></a>

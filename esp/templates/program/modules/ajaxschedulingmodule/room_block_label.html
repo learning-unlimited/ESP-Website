@@ -1,4 +1,5 @@
 <a class="tooltip">{{ room_name }}
 <span><b>Size:</b> {{ room_num_students }}<br />
-<b>Resources:</b><br /> {% for ar in room_associated_resources %}- {{ ar }}<br />{% endfor %}
+<b>Resources:</b><br />
+{% for ar in room_associated_resources %}&bull; {{ ar }}<br />{% endfor %}
 </a>
