@@ -7,9 +7,11 @@ ESP.Scheduling = function(){
 	ESP.Utilities.evm.unbind();
 	
 	var pd = this.data = process_data(test_data_set);
-	this._status = new ESP.Scheduling.Widgets.StatusBar('#statusbar');
-	this.status = this._status.setStatus.bind(this._status);
-	this.status('success','Welcome to the scheduling app!');
+	if (!this.status) {
+	    this._status = new ESP.Scheduling.Widgets.StatusBar('#statusbar');
+	    this.status = this._status.setStatus.bind(this._status);
+	    this.status('success','Welcome to the scheduling app!');
+	}
 	this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
 	$j('#matrix-target').text('');
 	$j('#matrix-target').append((new Date()).getMilliseconds());
