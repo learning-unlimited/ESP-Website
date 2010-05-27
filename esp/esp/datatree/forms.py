@@ -19,7 +19,7 @@ class AjaxTreeSelectorWidget(forms.Widget):
             initial_node = None
             
         try:            
-            root = DataTree.objects.get(id=self.attrs['root'])
+            root = DataTree.get_by_uri(self.attrs['root_uri'], create=False)
         except:
             root = None
         
@@ -45,8 +45,8 @@ class AjaxTreeField(forms.IntegerField):
         
         return node
     
-    def __init__(self, root=DataTree.root(), max_depth=None, *args, **kwargs):
-        self.root = root
+    def __init__(self, root_uri='', max_depth=None, *args, **kwargs):
+        self.root_uri = root_uri
         self.max_depth = max_depth
         super(AjaxTreeField, self).__init__(*args, **kwargs)
-        self.widget.attrs['root'] = self.root
+        self.widget.attrs['root_uri'] = self.root_uri

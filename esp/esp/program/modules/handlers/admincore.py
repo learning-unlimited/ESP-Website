@@ -51,7 +51,7 @@ class EditUserbitForm(forms.Form):
     id = forms.IntegerField(required=True, widget=forms.HiddenInput)
 
 class NewUserbitForm(forms.Form):
-    verb = AjaxTreeField(label='Activity', root=GetNode("V/Deadline/Registration").id)
+    verb = AjaxTreeField(label='Activity', root_uri="V/Deadline/Registration")
     startdate = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget())
     enddate = forms.DateTimeField(label='Closing date/time', initial=datetime(9999, 01, 01), widget=DateTimeWidget(), required=False)
     recursive = forms.ChoiceField(label='Scope', choices=((True, 'Recursive'), (False, 'Individual')), initial=False, widget=forms.RadioSelect, required=False) 
