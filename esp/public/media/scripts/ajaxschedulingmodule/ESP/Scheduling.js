@@ -37,7 +37,7 @@ ESP.Scheduling = function(){
 
 		for (var i = 0; i < data.blocks.length; i++) {
 		    if (!ESP.Scheduling.validate_block_assignment(data.blocks[i], data.section)) {
-			console.log("Error:  Conflict when adding block " + data.blocks[i].uid + "(" + data.blocks[i].text + ") to section " + data.section.emailcode);
+			console.log("Error:  Conflict when adding block " + data.blocks[i].room.text + " (" + data.blocks[i].time.text + ") to section " + data.section.code);
 		    }
 		}
 
