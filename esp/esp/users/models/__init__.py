@@ -395,7 +395,6 @@ class ESPUser(User, AnonymousUser):
     def getAvailableTimes(self, program, ignore_classes=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
-        from esp.resources.models import Resource
         from esp.cal.models import Event
 
         valid_events = Event.objects.filter(useravailability__user=self, anchor=program.anchor).order_by('start')

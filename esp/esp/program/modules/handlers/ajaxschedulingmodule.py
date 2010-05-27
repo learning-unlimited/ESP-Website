@@ -119,6 +119,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         simplejson.dump(sections_dicts, response)
         return response
     ajax_sections_cached.get_or_create_token(('prog',))
+    ajax_sections_cached.depend_on_model(lambda: ClassSubject)
     ajax_sections_cached.depend_on_model(lambda: ClassSection)
     ajax_sections_cached.depend_on_model(lambda: ResourceRequest)
     ajax_sections_cached.depend_on_model(lambda: UserBit)
@@ -185,7 +186,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return response
     ajax_teachers_cached.get_or_create_token(('prog',))
     ajax_teachers_cached.depend_on_model(UserBit)
-    ajax_teachers_cached.depend_on_model(Resource)
+    ajax_teachers_cached.depend_on_model(UserAvailability)
     
 
     @aux_call
@@ -349,6 +350,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_schedule_last_changed_cached.depend_on_model(lambda: Event)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: UserBit)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSection)
+    ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSubject)
+    ajax_schedule_last_changed_cached.depend_on_model(lambda: UserAvailability)
 
     
     @aux_call
