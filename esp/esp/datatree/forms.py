@@ -15,12 +15,12 @@ class AjaxTreeSelectorWidget(forms.Widget):
         
         try:
             initial_node = DataTree.objects.get(id=int(value))
-        except:
+        except (ValueError, TypeError, DataTree.DoesNotExist):
             initial_node = None
             
         try:            
             root = DataTree.get_by_uri(self.attrs['root_uri'], create=False)
-        except:
+        except DataTree.DoesNotExist:
             root = None
         
         context = {'field_name': name, 'initial_node': initial_node, 'root': root}
