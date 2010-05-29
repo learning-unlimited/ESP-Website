@@ -179,12 +179,18 @@ class TeacherInfoForm(FormWithRequiredCss):
     """ Extra teacher-specific information """
 
     from esp.users.models import shirt_sizes, shirt_types
+    reimbursement_choices = [(False, 'I will pick up my reimbursement.'),
+                             (True,  'Please mail me my reimbursement.')]
 
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
+    full_legal_name = SizedCharField(length=24, max_length=128, required=False)
+    university_email = forms.EmailField(required=False)
+    student_id = SizedCharField(length=24, max_length=128, required=False)
+    mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 
     def clean_graduation_year(self):
         gy = self.cleaned_data['graduation_year'].strip()
@@ -194,6 +200,18 @@ class TeacherInfoForm(FormWithRequiredCss):
             if gy != 'G':
                 gy = 'N/A'
         return gy
+
+    def __init__(self, *args, **kwargs):
+        def remove_field(field_name):
+            del self.fields[field_name]
+            
+        super(TeacherInfoForm, self).__init__(*args, **kwargs)
+            
+        if not Tag.getTag('teacherinfo_reimbursement_options'):
+            remove_field('full_legal_name')
+            remove_field('university_email')
+            remove_field('student_id')
+            remove_field('mail_reimbursement')
 
 class EducatorInfoForm(FormWithRequiredCss):
     """ Extra educator-specific information """
