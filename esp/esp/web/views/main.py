@@ -45,6 +45,8 @@ from esp.web.views.myesp import myesp_handlers
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
 from esp.web.forms.contact_form import ContactForm, email_addresses
+from esp.tagdict.models import Tag
+
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 
@@ -269,22 +271,23 @@ def registration_redirect(request):
     ctxt['userrole'] = userrole
     ctxt['navnode'] = GetNode('Q/Web/myesp')
 
-    progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=curUser, verb=regverb))
+    progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=user, verb=regverb))
     progs_tag = list(t.target \
             for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
             if isinstance(t.target, Program) \
-                and (set(curUser.getUserTypes()) & set(t.value.split(","))))
+                and (set(user.getUserTypes()) & set(t.value.split(","))))
     progs = set(progs_userbit + progs_tag)
     print progs
         
     nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
+    progs = list(progs)
     if len(progs) == 1:
-        progs = list(progs)
         ctxt['prog'] = progs[0]
         ctxt['navnode'] = progs[0].anchor
         return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
-        ctxt['prog'] = prog
+        if len(progs) > 0:
+            ctxt['prog'] = progs[0]
         ctxt['nextreg'] = list(nextreg)
-        return render_to_response('users/profile_complete.html', request, navnode, ctxt)		    
+        return render_to_response('users/profile_complete.html', request, GetNode('Q/Web'), ctxt)		    
     
