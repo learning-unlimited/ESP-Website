@@ -102,7 +102,7 @@ class GuardContactForm(FormUnrestrictedOtherUser):
 class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
     from esp.users.models import ESPUser
-    from esp.users.models import shirt_sizes, shirt_types
+    from esp.users.models import shirt_sizes, shirt_types, food_choices
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='k12school_shadow', required=False, label='School')
@@ -111,8 +111,9 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     heard_about = forms.CharField(required=False)
-#    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
-#    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
+    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
+    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
+    food_preference = forms.ChoiceField(choices=([('','')]+list(food_choices)), required=False)
 
     studentrep_error = True
 
@@ -148,8 +149,25 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     def __init__(self, *args, **kwargs):
         from esp.users.models import K12School
+
+        def remove_field(field_name):
+            del self.fields[field_name]
+
+        def hide_field(field, default=None):
+            field.widget = forms.HiddenInput()
+            if default is not None:
+                field.initial = default
+        
         super(StudentInfoForm, self).__init__(*args, **kwargs)
+        
         self.fields['k12school'].set_field(StudentInfo._meta.get_field_by_name('k12school')[0])
+        
+        #   Hide unused fields
+        if not Tag.getTag('studentinfo_shirt_options'):
+            remove_field('shirt_size')
+            remove_field('shirt_type')
+        if not Tag.getTag('studentinfo_food_options'):
+            remove_field('food_preference')
         
 StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
 StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()

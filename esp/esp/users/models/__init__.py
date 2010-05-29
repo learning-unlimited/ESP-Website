@@ -51,6 +51,7 @@ from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
+from esp.tagdict.models import Tag
 from esp.middleware import ESPError
 
 
@@ -876,6 +877,8 @@ ESPUser.create_membership_methods()
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
+food_choices = ('Anything', 'Vegetarian', 'Vegan')
+food_choices = zip(food_choices, food_choices)
 
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
@@ -887,9 +890,9 @@ class StudentInfo(models.Model):
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
-# removing shirt information, because this confused people.
-#    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-#    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    food_preference = models.CharField(max_length=256,blank=True,null=True)
+    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
+    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
     class Meta:
         app_label = 'users'
@@ -927,8 +930,11 @@ class StudentInfo(models.Model):
         form_dict['k12school']       = self.k12school_id
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
-#        form_dict['shirt_size']      = self.shirt_size
-#        form_dict['shirt_type']      = self.shirt_type
+        if Tag.getTag('studentinfo_shirt_options'):
+            form_dict['shirt_size']      = self.shirt_size
+            form_dict['shirt_type']      = self.shirt_type
+        if Tag.getTag('studentinfo_food_options'):
+            form_dict['food_preference'] = self.food_preference
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
         form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
@@ -953,8 +959,11 @@ class StudentInfo(models.Model):
         studentInfo.school          = new_data['school']
         studentInfo.dob             = new_data['dob']
         studentInfo.heard_about      = new_data['heard_about']
-#        studentInfo.shirt_size      = new_data['shirt_size']
-#        studentInfo.shirt_type      = new_data['shirt_type']
+        if Tag.getTag('studentinfo_shirt_options'):
+            studentInfo.shirt_size      = new_data['shirt_size']
+            studentInfo.shirt_type      = new_data['shirt_type']
+        if Tag.getTag('studentinfo_food_options'):
+            studentInfo.food_preference      = new_data['food_preference']
         studentInfo.studentrep_expl = new_data['studentrep_expl']
         studentInfo.save()
         if new_data['studentrep']:
