@@ -1,7 +1,9 @@
 from django import forms
 from esp.tagdict.models import Tag
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues
+from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
+from esp.users.models import K12School, StudentInfo
 import re
 
 # SRC: esp/program/manipulators.py
@@ -103,6 +105,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     from esp.users.models import shirt_sizes, shirt_types
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
+    k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='k12school_shadow', required=False, label='School')
     school = forms.CharField(max_length=128, required=False)
     dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
@@ -121,6 +124,33 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
             raise forms.ValidationError("Please enter an explanation above.")
         return expl
+        
+    def clean_k12school(self):
+        #   Add text for the hidden school field if an unrecognized school or 'Other' is selected in the k12school field
+        from esp.users.models import K12School
+        result = self.cleaned_data['k12school']
+        if result is None or result.name == 'Other':
+            self.cleaned_data['k12school_shadow'] = str(self.data['k12school_shadow'])
+        print 'clean_k12school(): Resulting k12school = %s k12school_shadow = %s' % (self.cleaned_data['k12school'], self.cleaned_data['k12school_shadow'])
+        return result
+
+    def clean(self):
+        from esp.users.models import K12School
+
+        cleaned_data = self.cleaned_data
+        if cleaned_data.has_key('k12school') and cleaned_data.has_key('school'):
+            if cleaned_data['k12school'] == unicode(K12School.objects.other().id) and not cleaned_data['school']:
+                self._errors['k12school'] = forms.util.ErrorList(['Please specify the name of your school.'])
+        if 'k12school_shadow' in cleaned_data and len(cleaned_data['school'].strip()) == 0:
+            cleaned_data['school'] = cleaned_data['k12school_shadow']
+        print 'clean(): Resulting k12school = %s school = %s' % (self.cleaned_data['k12school'], self.cleaned_data['school'])
+        return cleaned_data
+
+    def __init__(self, *args, **kwargs):
+        from esp.users.models import K12School
+        super(StudentInfoForm, self).__init__(*args, **kwargs)
+        self.fields['k12school'].set_field(StudentInfo._meta.get_field_by_name('k12school')[0])
+        
 StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
 StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8

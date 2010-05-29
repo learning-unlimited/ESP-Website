@@ -25,13 +25,13 @@
 </tr>
 
 <tr>
- <td><label for="id_school">School Name:<br /><small>(or &quot;home-schooled&quot;)</small></label></td>
- <td>{{ form.school }} {% if form.school.errors %}
-   <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
+ <td><label for="id_k12school">School:</label>
+ <br /><span style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school if it comes up.)</span></td>
+ <td>{{ form.k12school }} {% if form.k12school.errors %}
+   <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
-
 
 <tr>
  <td><label for="id_heardofesp">How did you hear of ESP?</label></td>

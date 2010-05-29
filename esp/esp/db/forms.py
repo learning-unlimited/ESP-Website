@@ -101,6 +101,20 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
           fn, fn, fn, model_module, model_name, self.ajax_func or 'ajax_autocomplete',
           fn, fn, fn, fn, fn, fn, fn, fn, fn, fn, fn, fn, fn)
 
+        if self.shadow_field:
+            javascript += """
+<script type="text/javascript">
+<!--
+    YAHOO.util.Event.addListener(window, "load", function (e) {
+    //  YAHOO.util.Event.addListener(document.getElementById("id_%s"), "onchange", function (e) {
+        document.getElementById("id_%s").onchange = function (e) {
+            document.getElementById("id_%s").value = document.getElementById("id_%s").value;
+            console.log("Updated to " + document.getElementById("id_%s").value);
+        };
+    });
+// -->
+</script>""" % (fn, fn, self.shadow_field, fn, fn) # (fn, self.shadow_field, fn, fn)
+
         css = """
 <style type="text/css">
     /* Taken from Yahoo... */
@@ -138,6 +152,10 @@ YAHOO.util.Event.addListener(window, "load", function (e) {
 </div>
 """ % (fn,fn,fn,self.field.blank and ' required' or '',addslashes(data or ''),fn,
        fn,old_init_val)
+       
+        #   Add HTML for shadow field if desired
+        if self.shadow_field:
+            html += '<input type="hidden" id="id_%s" name="%s" value="%s"/>' % (self.shadow_field, self.shadow_field, old_init_val)
 
         return mark_safe(css + html + javascript)
     
@@ -160,6 +178,11 @@ class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
 
         if attrs.has_key('ajax_func'):
             self.ajax_func = attrs["ajax_func"]
+            
+        if attrs.has_key('shadow_field'):
+            self.shadow_field = attrs['shadow_field']
+        else:
+            self.shadow_field = None
 
     #   render function is provided by AjaxForeignKeyFieldBase    
     
@@ -173,7 +196,8 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
     def __init__(self, field_name='', field=None, key_type=None, to_field=None,
                  to_field_name=None, required=True, label='', localize=False, initial=None,
                  widget=None, help_text='', ajax_func=None, queryset=None,
-                 error_messages=None, show_hidden_initial=False, *args, **kwargs):
+                 error_messages=None, show_hidden_initial=False, shadow_field_name=None,
+                 *args, **kwargs):
 
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'
@@ -195,11 +219,11 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         # ---
         
         if field:
-            self.widget = AjaxForeignKeyWidget(attrs={'field': field, 'width': 35, 'ajax_func': ajax_func})
+            self.widget = AjaxForeignKeyWidget(attrs={'field': field, 'width': 35, 'ajax_func': ajax_func, 'shadow_field': shadow_field_name})
         elif key_type:
-            self.widget = AjaxForeignKeyWidget(attrs={'type': key_type, 'width': 35, 'ajax_func': ajax_func})
+            self.widget = AjaxForeignKeyWidget(attrs={'type': key_type, 'width': 35, 'ajax_func': ajax_func, 'shadow_field': shadow_field_name})
         else:
-            raise NotImplementedException
+            raise NotImplementedError
 
         if isinstance(self.widget, type):
             self.widget = self.widget()
@@ -221,7 +245,11 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         else:
             self.label = label
         if field is not None: # Note: DO NOT use "!=" here!  It will get translated to field.__cmp__(None); field.__cmp__ assumes that its only argument is another field.
-            self.field = field
+            self.set_field(field)
+            
+    def set_field(self, field):
+        self.field = field
+        self.widget.field = field
             
     def clean(self, value):
         if (value is None or value == '') and not self.required:
@@ -249,6 +277,7 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
                 if len( objs ) == 1:
                     id = objs[0]['id']
             # Finally, grab the object.
-            return self.field.rel.to.objects.get(id=id)
+            if id:
+                return self.field.rel.to.objects.get(id=id)
 
         return id

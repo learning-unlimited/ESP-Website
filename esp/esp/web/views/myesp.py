@@ -322,11 +322,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             if new_data.has_key('dietary_restrictions') and new_data['dietary_restrictions']:
                 regProf.dietary_restrictions = new_data['dietary_restrictions']
 
-            # Deal with school entry.
-            if new_data.has_key('k12school'):
-                if new_data['k12school'] != unicode(K12School.objects.other().id):
-                    new_data['school'] = ''
-
             if role == 'student':
                 regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
                 regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
