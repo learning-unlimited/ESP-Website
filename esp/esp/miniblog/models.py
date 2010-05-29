@@ -59,6 +59,9 @@ class AnnouncementLink(models.Model):
     def makeTitle(self):
         return self.title
 
+    def content(self):
+        return '<a href="%s">Click Here</a> for details' % self.href
+
     @staticmethod
     def find_posts_by_perms(user, verb, qsc=None):
         """ Fetch a list of relevant posts for a given user and verb """
