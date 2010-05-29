@@ -1437,8 +1437,8 @@ class ClassSubject(models.Model):
     
     @cache_function
     def title(self):
-        print 'recomputing title for cls#%d' % self.id
         return self.anchor.friendly_name
+        
     def title_selector(node):
         print 'checking title; %s' % node.classsubject_set.all()
         if node.classsubject_set.all().count == 1:
