@@ -377,7 +377,12 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         if request.session.has_key('school_id'):
             new_data['k12school'] = request.session['school_id']
 
-        form = FormClass(curUser, initial=new_data)
+        #   Set default values for state fields
+        state_fields = ['address_state', 'emerg_address_state']
+        state_tag_map = {}
+        for field in state_fields:
+            state_tag_map[field] = 'local_state'
+        form = FormClass(curUser, initial=new_data, tag_map=state_tag_map)
 
     context['request'] = request
     context['form'] = form

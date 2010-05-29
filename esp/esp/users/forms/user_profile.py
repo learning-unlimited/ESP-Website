@@ -1,6 +1,6 @@
 from django import forms
 from esp.tagdict.models import Tag
-from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues
 from esp.utils.widgets import SplitDateWidget
 import re
 
@@ -46,7 +46,7 @@ class PhoneNumberField(forms.CharField):
 
 
 # TODO: Try to adapt some of these for ModelForm?
-class UserContactForm(FormUnrestrictedOtherUser):
+class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     """ Base for contact form """
 
     first_name = SizedCharField(length=25, max_length=64)
