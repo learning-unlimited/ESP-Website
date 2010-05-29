@@ -5,7 +5,7 @@
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
-           {{ class.emailcode }}: {{ class.title|escape|teximages:150|smartypants }} {% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% endif %}
+           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }} {% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% endif %}
           {% endif %}
 	 
 	 {% ifnotequal class.hardness_rating "Normal"  %} <br />

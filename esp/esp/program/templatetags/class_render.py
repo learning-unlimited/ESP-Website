@@ -72,6 +72,7 @@ def render_class_core(cls):
             'isfull': (cls.isFull()),
             'colorstring': colorstring,
             'show_enrollment': scrmi.visible_enrollments,
+            'show_emailcodes': scrmi.show_emailcodes,
             'show_meeting_times': scrmi.visible_meeting_times}
             
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
