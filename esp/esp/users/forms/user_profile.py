@@ -1,4 +1,5 @@
 from django import forms
+from esp.tagdict.models import Tag
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import SplitDateWidget
 import re
@@ -15,7 +16,10 @@ class PhoneNumberField(forms.CharField):
     def __init__(self, length=12, max_length=14, local_areacode = None, *args, **kwargs):
         forms.CharField.__init__(self, max_length=max_length, *args, **kwargs)
         self.widget.attrs['size'] = length
-        self.areacode = local_areacode
+        if local_areacode:
+            self.areacode = local_areacode
+        else:
+            self.areacode = None
 
     def clean(self, value):
         if value is None or value == '':
@@ -25,6 +29,12 @@ class PhoneNumberField(forms.CharField):
             numbers = m.groups()
             value = "".join(numbers[:3]) + '-' + "".join(numbers[3:6]) + '-' + "".join(numbers[6:])
             return value
+
+        #   Check for a Tag containing the default area code.
+        if self.areacode is None:
+            tag_areacode = Tag.getTag('local_areacode')
+            if tag_areacode:
+                self.areacode = tag_areacode
 
         if self.areacode is not None:
             m = _localphone_re.match(value)
@@ -42,8 +52,8 @@ class UserContactForm(FormUnrestrictedOtherUser):
     first_name = SizedCharField(length=25, max_length=64)
     last_name = SizedCharField(length=30, max_length=64)
     e_mail = forms.EmailField()
-    phone_day = PhoneNumberField(local_areacode='617', required=False)
-    phone_cell = PhoneNumberField(local_areacode='617', required=False)
+    phone_day = PhoneNumberField(required=False)
+    phone_cell = PhoneNumberField(required=False)
     address_street = SizedCharField(length=40, max_length=100)
     address_city = SizedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=zip(_states,_states))
@@ -60,8 +70,8 @@ class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
 
     # Require both phone numbers for teachers.
-    phone_day = PhoneNumberField(local_areacode='617')
-    phone_cell = PhoneNumberField(local_areacode='617')
+    phone_day = PhoneNumberField()
+    phone_cell = PhoneNumberField()
     
 class EmergContactForm(FormUnrestrictedOtherUser):
     """ Contact form for emergency contacts """
@@ -69,8 +79,8 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_first_name = SizedCharField(length=25, max_length=64)
     emerg_last_name = SizedCharField(length=30, max_length=64)
     emerg_e_mail = forms.EmailField(required=False)
-    emerg_phone_day = PhoneNumberField(local_areacode='617')
-    emerg_phone_cell = PhoneNumberField(local_areacode='617', required=False)
+    emerg_phone_day = PhoneNumberField()
+    emerg_phone_cell = PhoneNumberField(required=False)
     emerg_address_street = SizedCharField(length=40, max_length=100)
     emerg_address_city = SizedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=zip(_states,_states))
@@ -84,8 +94,8 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_first_name = SizedCharField(length=25, max_length=64)
     guard_last_name = SizedCharField(length=30, max_length=64)
     guard_e_mail = forms.EmailField(required=False)
-    guard_phone_day = PhoneNumberField(local_areacode='617')
-    guard_phone_cell = PhoneNumberField(local_areacode='617', required=False)
+    guard_phone_day = PhoneNumberField()
+    guard_phone_cell = PhoneNumberField(required=False)
 
 class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
