@@ -119,7 +119,8 @@ class ClassManager(ProcedureManager):
         else:
             for cls in catalog:
                 for sec in cls.get_sections():
-                    del sec._count_students
+                    if hasattr(sec, '_count_students'):
+                        del sec._count_students
 
         return catalog
 
