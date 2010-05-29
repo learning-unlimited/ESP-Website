@@ -36,6 +36,7 @@ from django.utils.html import escape, mark_safe
 from django.template import loader
 from django.core.mail import send_mail
 
+from esp.tagdict.models import Tag
 from esp.utils.widgets import CaptchaWidget
 
 class EmailModelForm(forms.ModelForm):
@@ -81,6 +82,31 @@ class FormWithRequiredCss(forms.Form):
         for field in self.fields.itervalues():
             if field.required:
                 field.widget.attrs['class'] = 'required'
+
+class FormWithTagInitialValues(forms.Form):
+    def __init__(self, *args, **kwargs):
+    
+        #   Get tag data in the form of a dictionary: 
+        #     field name -> tag to look up for initial value
+        if 'tag_map' in kwargs:
+            tag_map = kwargs['tag_map']
+            tag_defaults = {}
+            for field_name in tag_map:
+                #   Check for existence of tag
+                tag_data = Tag.getTag(tag_map[field_name])
+                #   Use tag data as initial value if the tag was found
+                if tag_data:
+                    tag_defaults[field_name] = tag_data
+            if 'initial' not in kwargs:
+                kwargs['initial'] = {}
+            #   Apply defaults to form quietly (don't override provided values)
+            for key in tag_defaults:
+                if key not in kwargs['initial']:
+                    kwargs['initial'][key] = tag_defaults[key]
+            #   Remove the tag_map so as not to confuse other functions
+            del kwargs['tag_map']
+    
+        super(FormWithTagInitialValues, self).__init__(*args, **kwargs)
 
 class FormUnrestrictedOtherUser(FormWithRequiredCss):
     """ Form that implements makeRequired for the old form --- disables required fields at in some cases. """
