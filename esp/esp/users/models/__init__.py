@@ -886,7 +886,7 @@ class StudentInfo(models.Model):
     dob = models.DateField(blank=True, null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
-    heardofesp = models.TextField(blank=True, null=True)
+    heard_about = models.TextField(blank=True, null=True)
 # removing shirt information, because this confused people.
 #    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
 #    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
@@ -928,7 +928,7 @@ class StudentInfo(models.Model):
         form_dict['dob']             = self.dob
 #        form_dict['shirt_size']      = self.shirt_size
 #        form_dict['shirt_type']      = self.shirt_type
-        form_dict['heardofesp']      = self.heardofesp
+        form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
         form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
                                                             qsc  = STUDREP_QSC,
@@ -950,7 +950,7 @@ class StudentInfo(models.Model):
         studentInfo.graduation_year = new_data['graduation_year']
         studentInfo.school          = new_data['school']
         studentInfo.dob             = new_data['dob']
-        studentInfo.heardofesp      = new_data['heardofesp']
+        studentInfo.heard_about      = new_data['heard_about']
 #        studentInfo.shirt_size      = new_data['shirt_size']
 #        studentInfo.shirt_type      = new_data['shirt_type']
         studentInfo.studentrep_expl = new_data['studentrep_expl']
