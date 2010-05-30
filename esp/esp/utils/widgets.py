@@ -81,7 +81,7 @@ class SplitDateWidget(forms.MultiWidget):
         year_choices = range(datetime.now().year - 70,
                              datetime.now().year - 10)
         year_choices.reverse()
-        month_choices = ['%02d' % x for x in range(1, 13)]
+        month_choices = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         day_choices   = ['%02d' % x for x in range(1, 32)]
         choices = {'year' : [('',' ')] + zip(year_choices, year_choices),
                    'month': [('',' ')] + zip(range(1, 13), month_choices),
