@@ -156,7 +156,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if self.class_other_sizes and len(self.class_other_sizes) > 0:
             other_sizes = [int(x) for x in self.class_other_sizes.split(',')]
 
-        ret_range = range(min_size, max_size + 1, size_step) + other_sizes
+        ret_range = sorted(range(min_size, max_size + 1, size_step) + other_sizes)
 
         return ret_range
 
