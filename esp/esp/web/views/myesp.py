@@ -41,10 +41,7 @@ import datetime
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.web.util.main import render_to_response
-from esp.users.forms.user_profile import StudentProfileForm, TeacherProfileForm, GuardianProfileForm, EducatorProfileForm, UserContactForm, MinimalUserInfo
 from django.db.models.query import Q
-
-
 
 @login_required
 def myesp_passwd(request, module):
@@ -277,17 +274,19 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     curUser = ESPUser(curUser)
     curUser.updateOnsite(request)
 
-    FormClass = {'': UserContactForm,
-        'student': StudentProfileForm,
-        'teacher': TeacherProfileForm,
-        'guardian': GuardianProfileForm,
-        'educator': EducatorProfileForm,
-        'Student': StudentProfileForm,
-        'Teacher': TeacherProfileForm,
-        'Guardian': GuardianProfileForm,
-        'Educator': EducatorProfileForm,
-        'Administrator': MinimalUserInfo,
-        }[role]
+    #   Get the profile form from the user's type, although we need to handle 
+    #   a couple of extra possibilities for the 'role' variable.
+    user_types = ESPUser.getAllUserTypes()
+    additional_types = {'': {'label': 'Not specified', 'profile_form': 'UserContactForm'},
+                        'Administrator': {'label': 'Administrator', 'profile_form': 'UserContactForm'},
+                       }
+    #   Handle all-lowercase versions of role being passed in by calling title()
+    if role.title() in user_types:
+        target_type = user_types[role.title()]
+    else:
+        target_type = additional_types[role.title()]
+    mod = __import__('esp.users.forms.user_profile', (), (), target_type['profile_form'])
+    FormClass = getattr(mod, target_type['profile_form'])
 
     context['profiletype'] = role
 

@@ -3,13 +3,7 @@ from django import forms
 from django.contrib.auth.models import User
 
 from esp.utils.forms import CaptchaForm
-
-role_choices = (
-    ('Student', 'Student (up through 12th grade)'),
-    ('Teacher', 'Volunteer Teacher'),
-    ('Guardian', 'Guardian of Student'),
-    ('Educator', 'K-12 Educator'),
-    )
+from esp.users.models import ESPUser
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
@@ -53,7 +47,8 @@ class UserRegForm(forms.Form):
     confirm_password = forms.CharField(widget = forms.PasswordInput(),
                                        min_length=5)
 
-    initial_role = forms.ChoiceField(choices = role_choices)
+    #   The choices for this field will be set later in __init__()
+    initial_role = forms.ChoiceField(choices = [])
 
     email = ValidHostEmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75)
 
@@ -87,6 +82,15 @@ class UserRegForm(forms.Form):
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
         return self.cleaned_data['confirm_password']
 
+    def __init__(self, *args, **kwargs):
+        #   Set up the default form
+        super(UserRegForm, self).__init__(*args, **kwargs)
+        
+        #   Adjust initial_role choices
+        user_types = ESPUser.getAllUserTypes()
+        role_choices = [(key, user_types[key]['label']) for key in user_types]
+        self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
+        
 
 class EmailUserForm(CaptchaForm):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')

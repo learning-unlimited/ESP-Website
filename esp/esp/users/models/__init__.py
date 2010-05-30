@@ -54,12 +54,19 @@ from esp.dblog.models import error
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
 
+import simplejson as json
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
+DEFAULT_USER_TYPES = {
+    'Student': {'label': 'Student (up through 12th grade)', 'profile_form': 'StudentProfileForm'},
+    'Teacher': {'label': 'Volunteer Teacher', 'profile_form': 'TeacherProfileForm'},
+    'Guardian': {'label': 'Guardian of Student', 'profile_form': 'GuardianProfileForm'},
+    'Educator': {'label': 'K-12 Educator', 'profile_form': 'EducatorProfileForm'},
+}
 
 def user_get_key(user):
     """ Returns the key of the user, regardless of anything about the user object. """
@@ -772,6 +779,14 @@ class ESPUser(User, AnonymousUser):
             return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
 
     isAdmin = isAdministrator
+
+    @staticmethod
+    def getAllUserTypes():
+        tag_data = Tag.getTag('user_types')
+        result = DEFAULT_USER_TYPES
+        if tag_data:
+            result.update(json.loads(tag_data))
+        return result
 
     def getUserTypes(self):
         """ Return the set of types for this user """

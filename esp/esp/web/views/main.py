@@ -258,6 +258,7 @@ def registration_redirect(request):
     # prepare the rendered page so it points them to open student/teacher reg's
     ctxt = {}
     userrole = {}
+    regverb = None
     if user.isStudent():
         userrole['name'] = 'Student'
         userrole['base'] = 'learn'
@@ -268,10 +269,19 @@ def registration_redirect(request):
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
         regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
+    else:
+        #   Default to student registration (this will only show if the program
+        #   is found via the 'allowed_student_types' Tag)
+        userrole['name'] = user.getUserTypes()[0]
+        userrole['base'] = 'learn'
+        userrole['reg'] = 'studentreg'
     ctxt['userrole'] = userrole
     ctxt['navnode'] = GetNode('Q/Web/myesp')
-
-    progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=user, verb=regverb))
+    
+    if regverb:
+        progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=user, verb=regverb))
+    else:
+        progs_userbit = []
     progs_tag = list(t.target \
             for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
             if isinstance(t.target, Program) \
