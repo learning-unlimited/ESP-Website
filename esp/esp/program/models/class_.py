@@ -175,16 +175,13 @@ class ClassManager(ProcedureManager):
         program_sort_fields = Tag.getTag('catalog_sort_fields', target=program)
         if program_sort_fields:
             #   If you found one, use it.
-            print 'Found custom sort fields for %s: %s' % (program, program_sort_fields)
             order_args = program_sort_fields.split(',')
         else:
             #   If there is none, check for a global tag.  If one is found, use it.
             global_sort_fields = Tag.getTag('catalog_sort_fields')
             if global_sort_fields:
-                print 'Found custom global sort fields: %s' % global_sort_fields
                 order_args = global_sort_fields.split(',')
         #   Order the QuerySet using the specified list.
-        print 'Ordering classes by: %s' % order_args
         classes = classes.order_by(*order_args)
         
         classes = classes.distinct()
