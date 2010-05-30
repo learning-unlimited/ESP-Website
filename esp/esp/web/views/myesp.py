@@ -92,25 +92,25 @@ def myesp_switchback(request, module):
 @login_required
 def edit_profile(request, module):
 
+    curUser = ESPUser(request.user)
 
-	curUser = ESPUser(request.user)
+    dummyProgram = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
 
-	dummyProgram = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
-	
-	if curUser.isStudent():
-		return profile_editor(request, None, True, 'student')
-	
-	elif curUser.isTeacher():
-		return profile_editor(request, None, True, 'teacher')
-	
-	elif curUser.isGuardian():
-		return profile_editor(request, None, True, 'guardian')
-	
-	elif curUser.isEducator():
-		return profile_editor(request, None, True, 'educator')	
+    if curUser.isStudent():
+        return profile_editor(request, None, True, 'student')
 
-	else:
-		return profile_editor(request, None, True, '')
+    elif curUser.isTeacher():
+        return profile_editor(request, None, True, 'teacher')
+
+    elif curUser.isGuardian():
+        return profile_editor(request, None, True, 'guardian')
+
+    elif curUser.isEducator():
+        return profile_editor(request, None, True, 'educator')	
+
+    else:
+        user_types = UserBit.valid_objects().filter(verb__parent=GetNode("V/Flags/UserRole")).select_related().order_by('-id')
+        return profile_editor(request, None, True, user_types[0].verb.name if user_types else '')
 
 @login_required
 def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
