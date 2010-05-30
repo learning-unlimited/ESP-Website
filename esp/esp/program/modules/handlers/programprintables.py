@@ -39,6 +39,8 @@ from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
+from esp.tagdict.models import Tag
+from esp.cal.models import Event
 from esp.middleware import ESPError
 from django.template.loader import select_template
 
@@ -860,6 +862,7 @@ Student schedule for %s:
             if parent_program_students.has_key('classreg'):
                 parent_program_students_classreg = parent_program_students['classreg']
         
+        all_events = Event.objects.filter(anchor=self.program.anchor).order_by('start')
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -867,6 +870,30 @@ Student schedule for %s:
                                 if cls.parent_program == self.program and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
+            
+            if Tag.getTag('studentschedule_show_empty_blocks', target=self.program):
+                # Insert an entry for every block that isn't taken by a class
+                all_class_events = []
+                for cls in classes:
+                    for t in cls.meeting_times.all():
+                        if t.id not in all_class_events:
+                            all_class_events.append(t.id)
+                ts = all_events.exclude(id__in=all_class_events)
+                for t in ts:
+                    after_end = True
+                    for i in range(0, len(classes)):
+                        if type(classes[i]) == ClassSection and classes[i].start_time().start >= t.end:
+                            classes.insert(i, t)
+                            after_end = False
+                            break
+                        if type(classes[i]) == ClassSection and classes[i].meeting_times.order_by('-end')[0].end > t.end:
+                            after_end = False
+                    if after_end:
+                        classes.append(t)
+                
+                print student
+                for c in classes:
+                    print c
             
             # note whether student is in parent program
             student.in_parent_program = False

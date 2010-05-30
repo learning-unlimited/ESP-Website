@@ -13,7 +13,7 @@
 \graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
 
 \pagestyle{fancy}
-\fancyhead[C]{\includegraphics[scale = 1]{header-top}\includegraphics[scale = 1]{header-line}}
+\fancyhead[C]{ {{ program.niceName }} \\ \rule{6.5in}{0.25pt} }
 \setlength\headheight{80pt}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt} 
@@ -79,7 +79,15 @@ If you have any questions or would like to switch classes, please go to the prog
 \hline
 \textbf{Time} & \textbf{Room} & \textbf{Class} & & \textbf{Teacher(s)} \\
 {% for cls in student.classes %}\hline
-{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} } : & {{ cls.title|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\ 
+{% if cls.event_type.description == "Compulsory" %}
+    \multicolumn{5}{|c|}{ \textbf{\textit{ {{ cls.description }} } } } \\
+{% else %}
+    {% if cls.event_type.description == "Class" %}
+        {{ cls.short_time }} & N/A & & [ No Class ] & N/A \\
+    {% else %}
+        {{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & \texttt{ {{ cls.emailcode }} } : & {{ cls.title|texescape }} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }} \\ 
+    {% endif %}
+{% endif %}
 {% endfor %}\hline
 \end{tabularx}
 
