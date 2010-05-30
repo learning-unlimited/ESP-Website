@@ -37,6 +37,7 @@ from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit
 from esp.program.models import ClassCategories, ClassSubject, ClassSection
 from esp.cal.models import Event
+from esp.tagdict.models import Tag
 from datetime import datetime, timedelta
 
 class TeacherClassRegForm(FormWithRequiredCss):
@@ -171,6 +172,19 @@ class TeacherClassRegForm(FormWithRequiredCss):
         for field in resource_fields:
             self.fields[field].widget = forms.HiddenInput()
         
+        #   Modify help text on these fields if necessary.
+        custom_helptext_fields = ['requested_room', 'message_for_directors', 'purchase_requests']
+        for field in custom_helptext_fields:
+            tag_data = Tag.getTag('teacherreg_label_%s' % field)
+            if tag_data:
+                self.fields[field].help_text = tag_data
+                
+        #   Hide fields as desired.
+        tag_data = Tag.getTag('teacherreg_hide_fields')
+        if tag_data:
+            for field_name in tag_data.split(','):
+                hide_field(self.fields[field_name])
+
         # plus subprogram section wizard
     
     def clean(self):
