@@ -453,7 +453,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         is_onsite = user.isOnsite(self.program)
         
         #   Override both grade limits and size limits during onsite registration
-        if is_onsite:
+        #   ... or when the appropriate Tag is set
+        if is_onsite or Tag.getTag('disable_fillslot_filter', target=self.program):
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
