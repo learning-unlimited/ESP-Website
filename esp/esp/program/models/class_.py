@@ -1457,7 +1457,6 @@ class ClassSubject(models.Model):
         return self.anchor.friendly_name
         
     def title_selector(node):
-        print 'checking title; %s' % node.classsubject_set.all()
         if node.classsubject_set.all().count == 1:
             return {'self': node.classsubject_set.all()[0]}
         return {}
@@ -1836,6 +1835,12 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         cmp1 = cmp(one.category.category, other.category.category)
         if cmp1 != 0:
             return cmp1
+        cmp2 = ClassSubject.class_sort_by_timeblock(one, other)
+        if cmp2 != 0:
+            return cmp2
+        cmp3 = ClassSubject.class_sort_by_title(one, other)
+        if cmp3 != 0:
+            return cmp3
         return cmp(one, other)
     
     @staticmethod
