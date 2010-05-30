@@ -37,6 +37,7 @@ from esp.users.models    import ESPUser, UserBit, User
 from django.db.models.query       import Q
 from django.template.loader import get_template
 from esp.program.models  import FinancialAidRequest
+from esp.tagdict.models import Tag
 from django              import forms
 
 
@@ -81,13 +82,16 @@ class FinancialAidAppModule(ProgramModuleObj):
     def finaid(self,request, tl, one, two, module, extra, prog):
         """
         Student financial aid requests.
-        This template will redirect the person to an HTTPS address.
+        This template will redirect the person to an HTTPS address 
+        if the appropriate tag is set.
         """
-
-        return render_to_response(self.baseDir()+'aid_direct.html',
-                                  request,
-                                  (self.program, tl),
-                                  {})
+        if Tag.getTag('finaid_directions_step'):
+            return render_to_response(self.baseDir()+'aid_direct.html',
+                                      request,
+                                      (self.program, tl),
+                                      {})
+        else:
+            return self.finaid_app(request, tl, one, two, module, extra, prog)
 
     @aux_call
     @needs_student
