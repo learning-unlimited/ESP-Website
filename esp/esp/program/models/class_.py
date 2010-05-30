@@ -170,7 +170,7 @@ class ClassManager(ProcedureManager):
         
         #   Allow customized orderings for the catalog.
         #   These are the default ordering fields in descending order of priority.
-        order_args = ['category', '_num_students', 'id']
+        order_args = ['category__seq', '_num_students', 'id']
         #   First check if there is an ordering specified for the program.
         program_sort_fields = Tag.getTag('catalog_sort_fields', target=program)
         if program_sort_fields:
@@ -1976,6 +1976,7 @@ class ClassCategories(models.Model):
     
     category = models.TextField(blank=False)
     symbol = models.CharField(max_length=1, default='?', blank=False)
+    seq = models.IntegerField(default=0)
     
     class Meta:
         verbose_name_plural = 'Class Categories'
