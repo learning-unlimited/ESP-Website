@@ -110,6 +110,9 @@ class FinancialAidAppModule(ProgramModuleObj):
         class Form(forms.ModelForm):
             class Meta:
                 model = FinancialAidRequest
+                tag_data = Tag.getTag('finaid_form_fields')
+                if tag_data:
+                    fields = tuple(tag_data.split(','))
       
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
@@ -124,7 +127,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                     raise ESPError(), "Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'."
                 
                 app.save()
-   
+    
                 # Automatically accept apps for people with subsidized lunches
                 if app.reduced_lunch:
                     app.approved = datetime.now()
