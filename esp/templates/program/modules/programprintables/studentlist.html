@@ -45,7 +45,8 @@ table.sortable thead {
    <th>Email</th>
    <th>DOB</th>
    <th>Grade</th>
-   <th>Parent's Cellphone</th>
+   <th>Parent's Home Phone</th>
+   <th>Parent's Cell Phone</th>
    <th>ID</th>
    <th>Shirt Size</th>
    <th>Shirt Type</th>
@@ -57,7 +58,8 @@ table.sortable thead {
    <td>{{ student.email}}</td>
    <td>{{ student.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
    <td>{{ student.getGrade }}</td>
-   <td>{{ student.getLastProfile.contact_guardian.phone_cell }}&nbsp;</td>
+   <td>{{ student.getLastProfile.contact_emergency.phone_day }}&nbsp;</td>
+   <td>{{ student.getLastProfile.contact_emergency.phone_cell }}&nbsp;</td>
    <td>{{ student.id }}</td>
    <td>{{ student.getLastProfile.student_info.shirt_size }}</td>
    <td>{{ student.getLastProfile.student_info.shirt_type }}</td>

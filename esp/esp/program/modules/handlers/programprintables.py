@@ -418,17 +418,25 @@ class ProgramPrintables(ProgramModuleObj):
             # now we sort them by time/title
             classes.sort()
 
-            # aseering 9-29-2007, 1:30am: There must be a better way to do this...
-            ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
-            if ci.count() > 0:
-                phone_cell = ci[0].phone_cell
+            #   Make some effort to get contact information
+            ci = teacher.getLastProfile().contact_user
+            if ci is None:
+                try:
+                    ci = teacher.contactinfo_set.all().order_by('-id')[0]
+                except:
+                    ci = None
+            if ci is not None:
+                phone_day = ci.phone_day or 'N/A'
+                phone_cell = ci.phone_cell or 'N/A'
             else:
+                phone_day = 'N/A'
                 phone_cell = 'N/A'
 
             if len(classes) > 0:
                 scheditems.append({'name': teacher.name(),
                                'user': teacher,
-                               'phonenum': phone_cell,
+                               'phone_day': phone_day,
+                               'phone_cell': phone_cell,
                                'cls' : classes[0]})
         
         scheditems = filter(filt_exp, scheditems)
