@@ -99,6 +99,8 @@ DEFAULT_EMAIL_ADDRESSES = {
 }
 # A 'slug' used in e-mail titles, like 'ESP' or 'Splash'
 ORGANIZATION_SHORT_NAME = 'ESP'
+# The host for ESP site-supported e-mail lists.
+EMAIL_HOST = 'yoursite.learningu.org'
 
 #################################
 # Default localization settings #

@@ -31,6 +31,7 @@ Email: web@esp.mit.edu
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
+
 email_choices = (
     ('esp','Unknown'),
     ('general','General ESP'),
@@ -100,9 +101,6 @@ class ContactForm(forms.Form):
     hear_about   = forms.ChoiceField(choices = hear_about, label="How did you hear about us?")
     topic   = forms.ChoiceField(choices = email_choices, label=_("Topic"),
                                 help_text = "(This determines who gets the message.)")
-    
-
-    
 
     subject = forms.CharField(max_length=100, label=_("Subject"))
 

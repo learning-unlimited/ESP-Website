@@ -91,7 +91,7 @@ This thread was originally created on {{ thread.timestamp|date:"M. j, Y" }}.
 {% else %}
 
 <p>
-Invalid thread ID specified.  If you followed a real link, please bug the <a href="mailto:web@esp.mit.edu">webmasters.</a>
+Invalid thread ID specified.  If you followed a real link, please bug the <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">webmasters.</a>
 </p>
 
 {% endif %}
