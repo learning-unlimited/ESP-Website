@@ -8,15 +8,6 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding model 'AdLogEntry'
-        db.create_table('shortterm_adlogentry', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('ts', self.gf('django.db.models.fields.DateTimeField')()),
-            ('ipaddr', self.gf('django.db.models.fields.CharField')(max_length=32)),
-            ('agent', self.gf('django.db.models.fields.CharField')(max_length=256)),
-        ))
-        db.send_create_signal('shortterm', ['AdLogEntry'])
-
         # Adding model 'VolunteerRegistration'
         db.create_table('shortterm_volunteerregistration', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -48,9 +39,6 @@ class Migration(SchemaMigration):
 
     def backwards(self, orm):
         
-        # Deleting model 'AdLogEntry'
-        db.delete_table('shortterm_adlogentry')
-
         # Deleting model 'VolunteerRegistration'
         db.delete_table('shortterm_volunteerregistration')
 
@@ -59,13 +47,6 @@ class Migration(SchemaMigration):
 
 
     models = {
-        'shortterm.adlogentry': {
-            'Meta': {'object_name': 'AdLogEntry'},
-            'agent': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'ipaddr': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
-            'ts': ('django.db.models.fields.DateTimeField', [], {})
-        },
         'shortterm.responseform': {
             'Meta': {'object_name': 'ResponseForm'},
             'bulk_financial_aid_application': ('django.db.models.fields.files.FileField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
