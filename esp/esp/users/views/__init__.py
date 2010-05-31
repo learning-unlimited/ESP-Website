@@ -8,10 +8,32 @@ from esp.web.util.main import render_to_response
 from django.contrib.auth.views import login
 from django.contrib.auth.decorators import login_required
 
+from esp.tagdict.models import Tag
+
+def filter_username(username, password):
+    #   Allow login by e-mail address if so specified
+    if username and '@' in username and Tag.getTag('login_by_email'):
+        accounts = User.objects.filter(email = username)
+        matches = []
+        for u in accounts:
+            if u.check_password(password):
+                matches.append(u)
+        if len(matches) > 0:
+            username = matches[0].username
+            
+    return username
+
 def login_checked(request, *args, **kwargs):
     if request.user.is_authenticated():
         return HttpResponseRedirect('/')
 
+    #   Run the username through the filter_username function in
+    #   case it has any alternatives to suggest.
+    if request.method == 'POST':
+        new_post = request.POST.copy()
+        new_post['username'] = filter_username(request.POST['username'], request.POST['password'])
+        request.POST = new_post
+        
     return login(request, *args, **kwargs)
 
 def ajax_login(request, *args, **kwargs):
@@ -24,6 +46,8 @@ def ajax_login(request, *args, **kwargs):
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
+
+    username = filter_username(username, password)
 
     user = authenticate(username=username, password=password)
     if user is not None:
