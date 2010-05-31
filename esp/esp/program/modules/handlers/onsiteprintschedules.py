@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 from django.http      import HttpResponse
 from esp.users.views  import search_for_user
+from esp.program.models import SplashInfo
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
@@ -115,6 +116,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
             student.has_paid = ( student.itemizedcosttotal == 0 )
             
             student.payment_info = True
+            student.splashinfo = SplashInfo.getForUser(student, self.program)
             student.classes = classes
 
             students.append(student)

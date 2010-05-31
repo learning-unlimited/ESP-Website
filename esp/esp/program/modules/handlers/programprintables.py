@@ -34,7 +34,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
-from esp.program.models  import ClassSubject, ClassSection
+from esp.program.models  import ClassSubject, ClassSection, SplashInfo
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
@@ -920,6 +920,7 @@ Student schedule for %s:
             
             student.payment_info = True
             student.classes = classes
+            student.splashinfo = SplashInfo.getForUser(student, self.program)
             
         context['students'] = students
         context['program'] = self.program
