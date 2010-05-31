@@ -1764,8 +1764,13 @@ class DBList(object):
     def __unicode__(self):
         return self.key
 
-
-
+class EmailPref(models.Model):
+    email = models.EmailField(max_length=64, blank=True, null=True, unique=True)
+    email_opt_in = models.BooleanField(default = True)
+    first_name = models.CharField(max_length=64)
+    last_name = models.CharField(max_length=64)
+    sms_number = PhoneNumberField(blank=True, null=True)
+    sms_opt_in = models.BooleanField(default = False)
 
 def install():
     """
