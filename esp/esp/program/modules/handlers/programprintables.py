@@ -1250,7 +1250,7 @@ Student schedule for %s:
                 if invoice.cost() == 0:
                     paid_symbol = 'X'
 
-            studentList.append({'user': student, 'paid': paid_symbol})
+            studentList.append({'user': student, 'paid': paid_symbol, 'finaid': finaid_status})
 
         context['students'] = students
         context['studentList'] = studentList
