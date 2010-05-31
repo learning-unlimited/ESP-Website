@@ -85,68 +85,12 @@ class OnsitePrintSchedules(ProgramModuleObj):
 
         # get students
         old_students = set([ ESPUser(ubit.user) for ubit in ubits ])
-
-        students = []
-
-        for student in old_students:
-            student.updateOnsite(request)
-            # get list of valid classes
-            classes = [ cls for cls in student.getEnrolledSections()
-                        if cls.parent_program == self.program
-                        and cls.isAccepted()                       ]
-            # now we sort them by time/title
-            classes.sort()
-                
-
-            # get payment information
-            li_types = prog.getLineItemTypes(student)
-            try:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
-            except MultipleDocumentError:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
-            
-            # attach payment information to student
-            student.invoice_id = invoice.locator
-            student.itemizedcosts = invoice.get_items()
-            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')
-            student.itemizedcosttotal = invoice.cost()
-            student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
-            if student.has_financial_aid:
-                student.itemizedcosttotal = 0
-            student.has_paid = ( student.itemizedcosttotal == 0 )
-            
-            student.payment_info = True
-            student.splashinfo = SplashInfo.getForUser(student, self.program)
-            student.classes = classes
-
-            students.append(student)
-
-        if len(students) == 0:
-            response = HttpResponse('')
-        else:
-            from django.conf import settings
-            from esp.web.util.latex import render_to_latex
-
-            if request.GET.has_key('img_format'):
-                img_format = request.GET['img_format']
-            else:
-                img_format = 'png'
-
-            schedule_template = select_template([self.baseDir()+'../programprintables/program_custom_schedules/%s_studentschedule.tex' %(self.program.id), self.baseDir()+'../programprintables/studentschedule.tex'])
-
-            response = render_to_latex(schedule_template, {'students': students, 'module': self, 'PROJECT_ROOT': settings.PROJECT_ROOT}, img_format)
-            # set the refresh rate
-            #response['Refresh'] = '2'
-
+        
+        response = ProgramPrintables.get_student_schedules(request, list(old_students), prog, onsite=True)       
+        # set the refresh rate
+        #response['Refresh'] = '2'
+        
         return response
-
-        
-    
-        
-        
-
-            
-            
         
     def studentschedule(self, request, *args, **kwargs):
         request.GET = {'extra': str(285), 'op':'usersearch',
@@ -158,6 +102,5 @@ class OnsitePrintSchedules(ProgramModuleObj):
         module.user = self.user
         module.program = self.program
         return module.studentschedules(request, *args, **kwargs)
-
-        
+      
 
