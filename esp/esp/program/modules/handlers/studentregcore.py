@@ -166,7 +166,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         context['itemizedcosts'] = invoice.get_items()
 
-        context['finaid'] = ESPUser(request.user).hasFinancialAid(prog.anchor)
+        user = ESPUser(request.user)
+        context['finaid'] = user.hasFinancialAid(prog.anchor)
         if user.appliedFinancialAid(prog):
             context['finaid_app'] = user.financialaidrequest_set.filter(program=prog).order_by('-id')[0]
         else:
@@ -179,7 +180,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             
         context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
-        if prog.isFull() and not ESPUser(request.user).canRegToFullProgram(prog) and not self.program.isConfirmed(self.user):
+        if prog.isFull() and not user.canRegToFullProgram(prog) and not self.program.isConfirmed(user):
             raise ESPError(log = False), "This program has filled!  It can't accept any more students.  Please try again next session."
 
         modules = prog.getModules(self.user, tl)
@@ -193,14 +194,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         
         if completedAll:
             if new_reg:
-                bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+                bit = UserBit.objects.create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
         else:
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
 
         options = prog.getModuleExtension('StudentClassRegModuleInfo')
 
         ## Get or create a userbit indicating whether or not email's been sent.
-        confbit, created = UserBit.objects.get_or_create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode())+"/ConfEmail"))
+        confbit, created = UserBit.objects.get_or_create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode())+"/ConfEmail"))
         print confbit, created
         if created and options.send_confirmation:
             # Email has not been sent before, send an email
