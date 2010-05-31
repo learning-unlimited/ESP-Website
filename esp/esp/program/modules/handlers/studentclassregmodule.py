@@ -173,7 +173,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     def studentDesc(self):
         #   Label these heading nicely like the user registration form
-        from esp.users.forms.user_reg import role_choices
+        role_choices = ESPUser.getAllUserTypes()
         role_dict = {}
         for item in role_choices:
             role_dict[item[0]] = item[1]
