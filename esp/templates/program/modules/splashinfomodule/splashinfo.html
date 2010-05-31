@@ -1,0 +1,86 @@
+{% extends "main.html" %}
+
+{% block title %}Lunch Preferences & Tuition{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block subsection_name %}Lunch Preferences & Tuition{% endblock %}
+
+{% block content %}
+<br /><br />
+<h1>Lunch Preferences and Tuition </h1>
+<br />
+
+<div id="program_form">
+
+{% if form.errors or missing_siblingname %}<p align="center" style="color: red;">Please correct the form below before continuing. <br />{{ form.errors }}</p>{% endif %}
+
+<h2>Lunch Preferences</h2>
+<p>Select your lunch preference below.
+<b>All meals come with chips or fruit and drink.</b>
+</p>
+
+<form action="{{request.path}}" method="post">
+<table cellpadding="1" align="center" border="0">
+<tr>
+ <td>Would you like a catered lunch on SATURDAY?<br/>
+     {{ form.lunchsat }}
+ </td>
+</tr>
+</table>
+<br/>
+<table cellpadding="1" align="center" border="0">
+<tr>
+ <td>Would you like a catered lunch on SUNDAY?<br/>
+     {{ form.lunchsun }}
+ </td>
+</tr>
+</table>
+
+<br />
+<hr/>
+<h2>Sibling Discount </h2>
+<p>
+We are offering a special discount to households with more than one attendee regardless of family income.
+</p>
+
+<table cellpadding="1" align="center" border="0">
+    <tr>
+        <td colspan="2">
+            {{ form.siblingdiscount }}
+        </td>
+    </tr>
+    <tr>
+        <td>
+        Please enter his/her name here:
+        </td>
+        <td>
+        {{ form.siblingname }} 
+        </td>
+    </tr>
+    {% if missing_siblingname %}
+    <tr>
+        <td colspan="2" align="center">
+            <span style="color: red;">Please specify your sibling's name above!</span>
+        </td>
+    </tr>
+    {% endif %}
+</table>
+
+<hr/>
+<h2>Financial Aid</h2>
+<p>
+Full financial aid is available to any students who need it. If you require financial aid, please fill out a quick request by clicking the "Financial Aid Application (optional)" link on the next page.  Please e-mail us if you have any questions.
+</p>
+
+<center><input type="submit" class="button" value="Save and Continue"></center>
+
+</form>
+
+</div>
+
+
+{% endblock %}

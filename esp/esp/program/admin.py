@@ -33,7 +33,7 @@ from django.db.models import ManyToManyField
 
 from esp.program.models import ProgramModule, ArchiveClass, Program, BusSchedule
 from esp.program.models import TeacherParticipationProfile, SATPrepRegInfo, RegistrationProfile
-from esp.program.models import TeacherBio, FinancialAidRequest
+from esp.program.models import TeacherBio, FinancialAidRequest, SplashInfo
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
@@ -86,6 +86,7 @@ class TeacherBioAdmin(admin.ModelAdmin):
 admin.site.register(TeacherBio, TeacherBioAdmin)
     
 admin.site.register(FinancialAidRequest)
+admin.site.register(SplashInfo)
 
 ## Schedule stuff (wish it was schedule_.py)
 

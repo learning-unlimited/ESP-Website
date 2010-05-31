@@ -41,6 +41,9 @@ from django.db.models import Q
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.cache import cache_function
+from esp.tagdict.models import Tag
+
+import simplejson as json
 
 #   A function to lazily import models that is occasionally needed for cache dependencies.
 def get_model(module_name, model_name):
@@ -946,6 +949,69 @@ class TeacherParticipationProfile(models.Model):
     def __unicode__(self):
         return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
     
+class SplashInfo(models.Model):
+    """ A model that can be used to track additional student preferences specific to
+        a program.  Stanford has used this for lunch selection and a sibling discount.
+        The data is manipulated by a separate program module, SplashInfoModule,
+        which produces an additional registration step if enabled.
+    """
+    student = AjaxForeignKey(User)
+    #   Program field may be empty for backwards compatibility with Stanford data
+    program = AjaxForeignKey(Program, null=True)
+    lunchsat = models.CharField(max_length=32, blank=True, null=True)
+    lunchsun = models.CharField(max_length=32, blank=True, null=True)
+    siblingdiscount = models.NullBooleanField(default=False, blank=True)
+    siblingname = models.CharField(max_length=64, blank=True, null=True)
+    submitted = models.NullBooleanField(default=False, blank=True)
+
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_splashinfo'
+
+    def __unicode__(self):
+        return 'Lunch/sibling info for %s at %s' % (self.student, self.program)
+
+    @staticmethod
+    def hasForUser(user, program=None):
+        if program:
+            q = SplashInfo.objects.filter(student=user, program=program)
+        else:
+            q = SplashInfo.objects.filter(student=user)
+        return (q.count() > 0) and q[0].submitted
+
+    @staticmethod
+    def getForUser(user, program=None):
+        if program:
+            q = SplashInfo.objects.filter(student=user, program=program)
+        else:
+            q = SplashInfo.objects.filter(student=user)
+        if q.count() > 0:
+            return q[0]
+        else:
+            n = SplashInfo(student=user, program=program)
+            n.save()
+            return n    
+            
+    def pretty_version(self, attr_name):
+        #   Look up choices
+        tag_data = Tag.getTag('splashinfo_choices', target=self.program)
+        if not tag_data: tag_data = Tag.getTag('splashinfo_choices')
+        
+        #   Check for matching item in list of choices
+        if tag_data:
+            tag_struct = json.loads(tag_data)
+            for item in tag_struct[attr_name]:
+                if item[0] == getattr(self, attr_name):
+                    return item[1]
+                    
+        return 'N/A'
+    
+    def pretty_satlunch(self):
+        return self.pretty_version('lunchsat')
+
+    def pretty_sunlunch(self):
+        return self.pretty_version('lunchsun')
+
 
 class SATPrepRegInfo(models.Model):
     """ SATPrep Registration Info """
