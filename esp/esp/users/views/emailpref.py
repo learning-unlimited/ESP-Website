@@ -1,0 +1,72 @@
+__author__    = "MIT ESP"
+__date__      = "$DATE$"
+__rev__       = "$REV$"
+__license__   = "GPL v.2"
+__copyright__ = """
+This file is part of the ESP Web Site
+Copyright (c) 2007 MIT ESP
+
+The ESP Web Site is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+Contact Us:
+ESP Web Group
+MIT Educational Studies Program,
+84 Massachusetts Ave W20-467, Cambridge, MA 02139
+Phone: 617-253-4882
+Email: web@esp.mit.edu
+"""
+
+from esp.users.models import EmailPref
+from esp.users.forms.user_reg import EmailPrefForm
+from esp.web.util.main import render_to_response
+from django.shortcuts import redirect
+
+__all__ = ['emailpref']
+
+#
+# Email Preferences Page
+#
+# If called without arguments, show form to let user sign up for mailing list & SMS.
+#
+# If called with arguments, changes existing settings for an email address
+
+def emailpref(request, success = None):
+
+    if success:
+        return render_to_response('users/emailpref_success.html',
+                                  request,
+                                  request.get_node('Q/Web/myesp'), {})
+
+    if request.method == 'POST':
+        form = EmailPrefForm(request.POST)
+
+        if form.is_valid():
+            ep, created = EmailPref.objects.get_or_create(email = form.cleaned_data['email'])
+
+            ep.email_opt_in = True
+	    ep.first_name = form.cleaned_data['first_name']
+            ep.last_name = form.cleaned_data['last_name']
+            ep.sms_number = form.cleaned_data['sms_number']
+            ep.sms_opt_in = True if ep.sms_number else False
+            ep.save()
+            return redirect('/myesp/emailpref/success')
+    else:
+        form = EmailPrefForm()
+
+    return render_to_response('users/emailpref.html',
+                              request,
+                              request.get_node('Q/Web/myesp'),
+                              {'form': form})
+

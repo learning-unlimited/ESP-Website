@@ -5,6 +5,9 @@ from django.contrib.auth.models import User
 from esp.utils.forms import CaptchaForm
 from esp.users.models import ESPUser
 
+from esp.utils.forms import CaptchaForm, SizedCharField
+from esp.users.forms.user_profile import PhoneNumberField
+
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
 
@@ -95,3 +98,10 @@ class UserRegForm(forms.Form):
 class EmailUserForm(CaptchaForm):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
 
+class EmailPrefForm(forms.Form):
+    email = ValidHostEmailField(label='E-Mail Address', required = True)
+    first_name = SizedCharField(label='First Name', length=30, max_length=64, required=True)
+    last_name = SizedCharField(label='Last Name', length=30, max_length=64, required=True)
+    sms_number = PhoneNumberField(label='Cell Phone', required = False,
+                                  help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
+#    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)

@@ -19,6 +19,8 @@ urlpatterns = patterns('esp.users.views',
                        (r'^login/bybday/([0-9]+)/([0-9]+)/?$',   'login_by_bday.login_by_bday_pickname',),
                        (r'^login/bybday/new/?$',   'login_by_bday.login_by_bday_new',),
                        (r'^disableaccount/?$', 'disable_account'),
+                       (r'^emailpref/?$', 'emailpref'),
+                       (r'^emailpref/(success)?/?$', 'emailpref'),
                        )
 
 urlpatterns += patterns('esp.web.views.main',

@@ -1,0 +1,48 @@
+{% extends "main.html" %}
+
+{% block title %}Communication Preferences{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Email Preferences"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Sign up to receive Splash Updates!</h1>
+
+<p>
+We'll send you a reminder before registration opens!
+</p>
+
+<form action="{{ request.path }}" method="post" name="emailpref_form">
+<table>
+<tbody>
+{% if form.errors %}
+<tr>
+<td colspan="2">
+<div class="errors">
+There {% if form.errors|length_is:1 %}is an error{% else %}are errors{% endif %} 
+in the below form. Please fix and resubmit.<br />
+Note: If you are experiencing difficulties, please <a href="/contact/contact/esp-web/"
+title="Contact Form">contact us</a>.
+</div>
+</td>
+</tr>
+{% endif %}
+
+{{ form|safe }}
+<tr>
+  <th colspan="2" class="submit">
+    <input type="submit" value="Subscribe!" name="submit" />
+  </th>
+</tr>
+</tbody>
+</table>
+</form>
+
+{% endblock %}
