@@ -185,6 +185,7 @@ class TeacherInfoForm(FormWithRequiredCss):
                              (True,  'Please mail me my reimbursement.')]
 
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
+    is_graduate_student = forms.BooleanField(required=False, label='Graduate student?')
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
@@ -193,15 +194,6 @@ class TeacherInfoForm(FormWithRequiredCss):
     university_email = forms.EmailField(required=False)
     student_id = SizedCharField(length=24, max_length=128, required=False)
     mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
-
-    def clean_graduation_year(self):
-        gy = self.cleaned_data['graduation_year'].strip()
-        try:
-            gy = str(abs(int(gy)))
-        except:
-            if gy != 'G':
-                gy = 'N/A'
-        return gy
 
     def __init__(self, *args, **kwargs):
         def remove_field(field_name):

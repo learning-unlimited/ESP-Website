@@ -13,9 +13,18 @@
 </tr>
 
 <tr>
- <td><label for="id_school">Graduation Year:</label><br /><div style="font-size: 0.8em">(Enter 'G' if you're a graduate student)</div></td>
- <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
+ <td><label for="id_school">Graduation Year:</label><br /></td>
+ <td>{{ form.graduation_year }} <div style="font-size: 0.8em">For your current or most recent degree.  Make a guess or leave it empty if you're not sure.</div> 
+    {% if form.graduation_year.errors %}
    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_school">Are you a graduate student or graduate alum?</label><br /></td>
+ <td>{{ form.is_graduate_student }} {% if form.is_graduate_student.errors %}
+   <br /><span class="form_error">{{ form.is_graduate_student.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

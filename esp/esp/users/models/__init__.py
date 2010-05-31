@@ -1020,7 +1020,8 @@ class StudentInfo(models.Model):
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
-    graduation_year_int = models.IntegerField(help_text='Enter 1 for a grad student, or 0 if not applicable.')
+    graduation_year = models.CharField(max_length=4, blank=True, null=True)
+    is_graduate_student = models.NullBooleanField(blank=True, null=True)
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -1031,25 +1032,6 @@ class TeacherInfo(models.Model):
     university_email = models.EmailField(blank=True, null=True)
     student_id = models.CharField(max_length=128, blank=True, null=True)
     mail_reimbursement = models.NullBooleanField(blank=True, null=True)
-
-    @staticmethod
-    def _graduation_year_pretty(gy_int):
-        if gy_int == 0:
-            return u'N/A'
-        if gy_int == 1:
-            return u'G'
-        return unicode(gy_int)
-    def _graduation_year_get(self):
-        return TeacherInfo._graduation_year_pretty(self.graduation_year_int)
-    def _graduation_year_set(self, value):
-        if value.strip() == 'G':
-            self.graduation_year_int = 1
-        else:
-            try:
-                self.graduation_year_int = abs(int(value))
-            except:
-                self.graduation_year_int = 0
-    graduation_year = property( _graduation_year_get, _graduation_year_set )
 
     class Meta:
         app_label = 'users'
@@ -1068,12 +1050,11 @@ class TeacherInfo(models.Model):
                 query_set = query_set.filter(user__first_name__istartswith = first.strip())
 
         query_set = query_set[:10]
-        values = query_set.values('user', 'college', 'graduation_year_int', 'id')
-        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year_int', 'id')
+        values = query_set.values('user', 'college', 'graduation_year', 'id')
+        #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year', 'id')
 
         for value in values:
             value['user'] = User.objects.get(id=value['user'])
-            value['graduation_year'] = cls._graduation_year_pretty( value['graduation_year_int'] )
             value['ajax_str'] = u'%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
         return values
 
@@ -1082,6 +1063,7 @@ class TeacherInfo(models.Model):
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
+        form_dict['is_graduate_student'] = self.is_graduate_student
         form_dict['school']          = self.college
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
@@ -1103,6 +1085,7 @@ class TeacherInfo(models.Model):
         else:
             teacherInfo = regProfile.teacher_info
         teacherInfo.graduation_year = new_data['graduation_year']
+        teacherInfo.is_graduate_student = new_data['is_graduate_student']
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
         teacherInfo.shirt_size      = new_data['shirt_size']
