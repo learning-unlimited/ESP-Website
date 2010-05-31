@@ -839,8 +839,7 @@ Student schedule for %s:
     @aux_call
     @needs_onsite_no_switchback
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
-        """ generate student schedules """
-        
+            
         context = {'module': self }
 
         if onsite:
@@ -855,6 +854,14 @@ Student schedule for %s:
 
         students.sort()
         
+        return ProgramPrintables.get_student_schedules(request, students, prog, onsite)
+
+    @staticmethod
+    def get_student_schedules(request, students, prog, extra='', onsite=False):
+        """ generate student schedules """
+ 
+        context = {}
+ 
         scheditems = []
         
         # get the list of students who are in the parent program.
@@ -865,16 +872,16 @@ Student schedule for %s:
             if parent_program_students.has_key('classreg'):
                 parent_program_students_classreg = parent_program_students['classreg']
         
-        all_events = Event.objects.filter(anchor=self.program.anchor).order_by('start')
+        all_events = Event.objects.filter(anchor=prog.anchor).order_by('start')
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
             classes = [ cls for cls in student.getEnrolledSections()
-                                if cls.parent_program == self.program and cls.isAccepted()                       ]
+                                if cls.parent_program == prog and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
             
-            if Tag.getTag('studentschedule_show_empty_blocks', target=self.program):
+            if Tag.getTag('studentschedule_show_empty_blocks', target=prog):
                 # Insert an entry for every block that isn't taken by a class
                 all_class_events = []
                 for cls in classes:
@@ -907,9 +914,9 @@ Student schedule for %s:
             # get payment information
             li_types = prog.getLineItemTypes(student)
             try:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+                invoice = Document.get_invoice(student, prog.anchor, li_types, dont_duplicate=True, get_complete=True)
             except MultipleDocumentError:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+                invoice = Document.get_invoice(student, prog.anchor, li_types, dont_duplicate=True)
             
             # attach payment information to student
             student.invoice_id = invoice.locator
@@ -918,8 +925,8 @@ Student schedule for %s:
             student.itemizedcosttotal = invoice.cost()
             
             # add cost/credit information from SplashInfo (looks in JSON Tag: splashinfo_costs)
-            student.splashinfo = SplashInfo.getForUser(student, self.program)
-            tag_data = Tag.getTag('splashinfo_costs', target=self.program)
+            student.splashinfo = SplashInfo.getForUser(student, prog)
+            tag_data = Tag.getTag('splashinfo_costs', target=prog)
             if not tag_data: tag_data = Tag.getTag('splashinfo_costs')
             if tag_data:
                 tag_struct = json.loads(tag_data)
@@ -932,17 +939,16 @@ Student schedule for %s:
                         student.itemizedcosttotal += Decimal(str(tag_struct[key][val]))
             
             # check financial aid
-            student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
+            student.has_financial_aid = student.hasFinancialAid(prog.anchor)
             if student.has_financial_aid:
                 student.itemizedcosttotal = 0
             student.has_paid = ( student.itemizedcosttotal == 0 )
 
             student.payment_info = True
             student.classes = classes
-            
-            
+
         context['students'] = students
-        context['program'] = self.program
+        context['program'] = prog
         
         if extra:
             file_type = extra.strip()
@@ -951,12 +957,14 @@ Student schedule for %s:
 
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
-            
+
+        #   Hack to allow this to be done in a static method
+        basedir = 'program/modules/'+ProgramPrintables.__name__.lower()+'/'
         if file_type == 'html':
-            return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+            return render_to_response(basedir+'studentschedule.html', request, (prog, tl), context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
-            schedule_template = select_template([self.baseDir()+'program_custom_schedules/%s_studentschedule.tex' %(self.program.id), self.baseDir()+'studentschedule.tex'])
+            schedule_template = select_template([basedir+'program_custom_schedules/%s_studentschedule.tex' %(prog.id), basedir+'studentschedule.tex'])
             return render_to_latex(schedule_template, context, file_type)
 
     @aux_call
