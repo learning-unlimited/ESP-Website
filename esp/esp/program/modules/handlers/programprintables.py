@@ -44,6 +44,9 @@ from esp.cal.models import Event
 from esp.middleware import ESPError
 from django.template.loader import select_template
 
+from decimal import Decimal
+import simplejson as json
+
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
     Things from checklists to rosters to attendance sheets can be found here. """
@@ -913,14 +916,30 @@ Student schedule for %s:
             student.itemizedcosts = invoice.get_items()
             student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')  # not just meals, but all BuyOne LineItems (for Spark 2009, included t-shirt, photo, etc)
             student.itemizedcosttotal = invoice.cost()
+            
+            # add cost/credit information from SplashInfo (looks in JSON Tag: splashinfo_costs)
+            student.splashinfo = SplashInfo.getForUser(student, self.program)
+            tag_data = Tag.getTag('splashinfo_costs', target=self.program)
+            if not tag_data: tag_data = Tag.getTag('splashinfo_costs')
+            if tag_data:
+                tag_struct = json.loads(tag_data)
+                print 'Found Splashinfo costs: %s' % tag_struct
+                for key in tag_struct:
+                    val = getattr(student.splashinfo, key)
+                    print 'Got Splashinfo value: %s=%s' % (key, val)
+                    if val in tag_struct[key]:
+                        print 'Adding cost to invoice: %s' % tag_struct[key][val]
+                        student.itemizedcosttotal += Decimal(str(tag_struct[key][val]))
+            
+            # check financial aid
             student.has_financial_aid = student.hasFinancialAid(self.program_anchor_cached())
             if student.has_financial_aid:
                 student.itemizedcosttotal = 0
             student.has_paid = ( student.itemizedcosttotal == 0 )
-            
+
             student.payment_info = True
             student.classes = classes
-            student.splashinfo = SplashInfo.getForUser(student, self.program)
+            
             
         context['students'] = students
         context['program'] = self.program
