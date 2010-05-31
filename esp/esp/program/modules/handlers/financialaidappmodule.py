@@ -38,6 +38,7 @@ from django.db.models.query       import Q
 from django.template.loader import get_template
 from esp.program.models  import FinancialAidRequest
 from esp.tagdict.models import Tag
+from esp.settings import DEFAULT_HOST, SERVER_EMAIL
 from django              import forms
 
 
@@ -176,9 +177,9 @@ This request can be (re)viewed at:
     str(app.household_income),
     str(app.student_prepare),
     app.extra_explaination,
-    SITE_INFO[1], # server hostname
+    DEFAULT_HOST, # server hostname
     str(app.id)), 
-                            'web@esp.mit.edu',
+                            SERVER_EMAIL,
                             [ prog.director_email ] )
                               
                 return self.goToCore(tl)

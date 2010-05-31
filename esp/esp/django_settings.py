@@ -74,14 +74,12 @@ INTERNAL_IPS = (
     '127.0.0.1',
 )
 
-
 ##################
 # Default admins #
 ##################
 ADMINS = (
     ('LU Web Team','serverlog@lists.learningu.org'),
 )
-
 
 ##########################
 # Default email settings #
@@ -91,12 +89,16 @@ EMAIL_PORT   = '25'
 SERVER_EMAIL = 'server@diogenes.learningu.org'
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 
-# Default addresses to send archive/bounce info to
+# Default addresses to send archive/bounce info to - should probably be overridden in local_settings
 DEFAULT_EMAIL_ADDRESSES = {
     'archive': 'learninguarchive@gmail.com',
-    'bounces': 'learningubounces@gmail.com'
+    'bounces': 'learningubounces@gmail.com',
+    'support': 'websupport@lists.learningu.org',
+    'membership': 'info@learningu.org',
+    'default': 'info@learningu.org',
 }
-
+# A 'slug' used in e-mail titles, like 'ESP' or 'Splash'
+ORGANIZATION_SHORT_NAME = 'ESP'
 
 #################################
 # Default localization settings #
