@@ -53,6 +53,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
+from esp.settings import SITE_INFO
 
 import simplejson as json
 
@@ -269,6 +270,11 @@ class ESPUser(User, AnonymousUser):
             return ESPUser(otheruser).name()
         elif key == 'username':
             return otheruser.username
+        elif key == 'recover_url':
+            return 'http://%s/myesp/recoveremail/?code=%s' % \
+                         (SITE_INFO[1], otheruser.password)
+        elif key == 'recover_query':
+            return "?code=%s" % otheruser.password
         return ''
 
     def getTaughtClasses(self, program = None):
