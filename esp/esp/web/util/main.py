@@ -32,10 +32,12 @@ from esp.users.models import ESPUser
 from django.template import Context, Template, loader, RequestContext
 import django.shortcuts
 from django.conf import settings
+from django import http
 from django.http import HttpResponse
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
 from esp.middleware import ESPError
+from esp.settings import DEFAULT_EMAIL_ADDRESSES, EMAIL_HOST
 
 def get_from_id(id, module, strtype = 'object', error = True):
     """ This function will get an object from its id, and return an appropriate error if need be. """
@@ -76,7 +78,10 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
 
     # if there are only two arguments
     if context is None and prog is None:
-        return django.shortcuts.render_to_response(template, requestOrContext, Context({'navbar_list': []}))
+        context = {'navbar_list': []}
+        context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
+        context['EMAIL_HOST'] = EMAIL_HOST
+        return django.shortcuts.render_to_response(template, requestOrContext, Context(context))
     
     if context is not None:
         request = requestOrContext
@@ -86,6 +91,10 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
         if type(prog) == tuple:
             section = prog[1]
             prog = prog[0]
+            
+        #   Add e-mail addresses
+        context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
+        context['EMAIL_HOST'] = EMAIL_HOST
 
         if not context.has_key('program'):  
             if type(prog) == Program:
@@ -102,8 +111,21 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
                 context['navbar_list'] = makeNavBar(request.user, prog.anchor, section, category)
             else:
                 context['navbar_list'] = makeNavBar(request.user, prog, section, category)
-
         return render_response(request, template, context)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
 
+""" Override Django error views to provide some context info. """
+def error404(request, template_name='404.html'):
+    context = {'request_path': request.path}
+    context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
+    context['EMAIL_HOST'] = EMAIL_HOST
+    t = loader.get_template(template_name) # You need to create a 404.html template.
+    return http.HttpResponseNotFound(t.render(RequestContext(request, context)))
+
+def error500(request, template_name='500.html'):
+    context = {}
+    context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
+    context['EMAIL_HOST'] = EMAIL_HOST
+    t = loader.get_template(template_name) # You need to create a 500.html template.
+    return http.HttpResponseServerError(t.render(Context(context)))

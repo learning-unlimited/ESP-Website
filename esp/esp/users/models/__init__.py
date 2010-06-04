@@ -53,7 +53,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
-from esp.settings import SITE_INFO
+from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME
 
 import simplejson as json
 
@@ -272,7 +272,7 @@ class ESPUser(User, AnonymousUser):
             return otheruser.username
         elif key == 'recover_url':
             return 'http://%s/myesp/recoveremail/?code=%s' % \
-                         (SITE_INFO[1], otheruser.password)
+                         (DEFAULT_HOST, otheruser.password)
         elif key == 'recover_query':
             return "?code=%s" % otheruser.password
         return ''
@@ -989,9 +989,9 @@ class StudentInfo(models.Model):
         studentInfo.save()
         if new_data['studentrep']:
             #   E-mail membership notifying them of the student rep request.
-            subj = '[ESP Membership] Student Rep Request: ' + curUser.first_name + ' ' + curUser.last_name
-            to_email = ['esp-membership@mit.edu']
-            from_email = 'ESP Profile Editor <regprofile@esp.mit.edu>'
+            subj = '[%s Membership] Student Rep Request: %s %s' % (ORGANIZATION_SHORT_NAME, curUser.first_name, curUser.last_name)
+            to_email = [DEFAULT_EMAIL_ADDRESSES['membership']]
+            from_email = 'ESP Profile Editor <regprofile@%s>' % DEFAULT_HOST
             t = loader.get_template('email/studentreprequest')
             msgtext = t.render(Context({'user': curUser, 'info': studentInfo, 'prog': regProfile.program}))
             send_mail(subj, msgtext, from_email, to_email, fail_silently = True)

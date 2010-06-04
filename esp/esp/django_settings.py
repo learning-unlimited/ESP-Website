@@ -74,14 +74,12 @@ INTERNAL_IPS = (
     '127.0.0.1',
 )
 
-
 ##################
 # Default admins #
 ##################
 ADMINS = (
     ('LU Web Team','serverlog@lists.learningu.org'),
 )
-
 
 ##########################
 # Default email settings #
@@ -91,12 +89,18 @@ EMAIL_PORT   = '25'
 SERVER_EMAIL = 'server@diogenes.learningu.org'
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 
-# Default addresses to send archive/bounce info to
+# Default addresses to send archive/bounce info to - should probably be overridden in local_settings
 DEFAULT_EMAIL_ADDRESSES = {
     'archive': 'learninguarchive@gmail.com',
-    'bounces': 'learningubounces@gmail.com'
+    'bounces': 'learningubounces@gmail.com',
+    'support': 'websupport@lists.learningu.org',
+    'membership': 'info@learningu.org',
+    'default': 'info@learningu.org',
 }
-
+# A 'slug' used in e-mail titles, like 'ESP' or 'Splash'
+ORGANIZATION_SHORT_NAME = 'ESP'
+# The host for ESP site-supported e-mail lists.
+EMAIL_HOST = 'yoursite.learningu.org'
 
 #################################
 # Default localization settings #
@@ -137,6 +141,7 @@ MIDDLEWARE_GLOBAL = [
    #( 800, 'esp.middleware.esp_sessions.SessionMiddleware'),  # DEPRECATED -- Relies on mem_db, which is currently nonfunctional
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
     (1000, 'esp.middleware.ESPAuthMiddleware'),
+    (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
     (1200, 'django.middleware.gzip.GZipMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),

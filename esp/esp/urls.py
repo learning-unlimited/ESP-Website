@@ -35,6 +35,10 @@ admin.autodiscover()
 
 from esp.section_data import section_redirect_keys, section_prefix_keys
 
+# Override error pages
+handler404 = 'esp.web.util.main.error404'
+handler500 = 'esp.web.util.main.error500'
+
 # Static media
 urlpatterns = patterns('django.views.static',
                        (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),

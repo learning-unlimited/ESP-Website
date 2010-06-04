@@ -42,6 +42,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.cache import cache_function
 from esp.tagdict.models import Tag
+from esp.settings import DEFAULT_HOST
 
 import simplejson as json
 
@@ -1322,8 +1323,8 @@ class FinancialAidRequest(models.Model):
             explanation = explanation[:40] + "..."
 
 
-        string = "%s (%s@esp.mit.edu) for %s (%s, %s) %s"%\
-                 (ESPUser(self.user).name(), self.user.username, self.program.niceName(), self.household_income, explanation, reducedlunch)
+        string = "%s (%s@%s) for %s (%s, %s) %s"%\
+                 (ESPUser(self.user).name(), self.user.username, DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
             string = "Finished: [" + string + "]"

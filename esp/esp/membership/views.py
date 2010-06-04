@@ -42,6 +42,7 @@ from esp.membership.models import AlumniInfo, AlumniRSVP, AlumniContact, AlumniM
 from esp.users.models import ContactInfo
 
 from esp.middleware import ESPError
+from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME
 
 def alumnihome(request):
     """
@@ -148,9 +149,9 @@ def alumnilookup(request):
                 new_info.save()
                 
                 #   Send an e-mail to esp-membership with details.
-                SUBJECT_PREPEND = '[ESP Alumni] Information Submitted:'
-                to_email = ['esp-membership@mit.edu']
-                from_email = 'alumniform@esp.mit.edu'
+                SUBJECT_PREPEND = '[%s Alumni] Information Submitted:' % ORGANIZATION_SHORT_NAME
+                to_email = [DEFAULT_EMAIL_ADDRESSES['membership']]
+                from_email = 'alumniform@%s' % DEFAULT_HOST
                 
                 t = loader.get_template('email/alumniinfo')
         
@@ -199,9 +200,9 @@ def alumnirsvp(request):
             new_rsvp = form.save()
             
             #   Send an e-mail to esp-membership with details.
-            SUBJECT_PREPEND = '[ESP Alumni] RSVP From:'
-            to_email = ['esp-membership@mit.edu']
-            from_email = 'alumnirsvp@esp.mit.edu'
+            SUBJECT_PREPEND = '[%s Alumni] RSVP From:' % ORGANIZATION_SHORT_NAME
+            to_email = [DEFAULT_EMAIL_ADDRESSES['membership']]
+            from_email = 'alumnirsvp@%s' % DEFAULT_HOST
             
             t = loader.get_template('email/alumnirsvp')
     

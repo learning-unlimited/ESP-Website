@@ -62,9 +62,9 @@
     <tr>
         <th class="smaller">E-mail addresses: </th>
         <td>
-            Whole Class: <a href="mailto:{{ class.emailcode }}-class@esp.mit.edu">{{ class.emailcode }}-class@esp.mit.edu</a><br />
-            Teachers: <a href="mailto:{{ class.emailcode }}-teachers@esp.mit.edu">{{ class.emailcode }}-teachers@esp.mit.edu</a><br />
-            Students: <a href="mailto:{{ class.emailcode }}-students@esp.mit.edu">{{ class.emailcode }}-students@esp.mit.edu</a>
+            Whole Class: <a href="mailto:{{ class.emailcode }}-class@{{ EMAIL_HOST }}">{{ class.emailcode }}-class@{{ EMAIL_HOST }}</a><br />
+            Teachers: <a href="mailto:{{ class.emailcode }}-teachers@{{ EMAIL_HOST }}">{{ class.emailcode }}-teachers@{{ EMAIL_HOST }}</a><br />
+            Students: <a href="mailto:{{ class.emailcode }}-students@{{ EMAIL_HOST }}">{{ class.emailcode }}-students@{{ EMAIL_HOST }}</a>
         </td>
     </tr>
     <tr>
