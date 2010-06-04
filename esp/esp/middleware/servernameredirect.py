@@ -16,7 +16,7 @@ class ServerNameRedirect(object):
         serverName = request.META['SERVER_NAME']
         requestURI = request.META['REQUEST_URI']
         if serverName.lower() != siteName.lower():
-            return redirect('http://' + siteName + requestURI)
+            return redirect(('http://' if not request.is_secure() else 'https://') + siteName + requestURI)
 
         return None
 
