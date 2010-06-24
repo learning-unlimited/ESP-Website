@@ -61,6 +61,7 @@ LOG_FILE = '/path/to/website/log'
 # Plugin settings #
 ###################
 USE_MAILMAN = True
+MAILMAN_PATH = '/usr/lib/mailman/bin/'
 SOUTH_TESTS_MIGRATE = False
 
 ###################

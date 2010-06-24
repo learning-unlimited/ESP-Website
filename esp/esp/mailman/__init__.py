@@ -10,11 +10,11 @@ from django.db.models import Q
 
 
 if USE_MAILMAN:
+    from esp.settings import MAILMAN_PATH as MM_PATH
     from esp.database_settings import MAILMAN_PASSWORD
 else:
     MAILMAN_PASSWORD = ''
-
-MM_PATH = "/usr/sbin/"
+    MM_PATH = "/usr/sbin/"
 
 ## Functions for Mailman interop
 
