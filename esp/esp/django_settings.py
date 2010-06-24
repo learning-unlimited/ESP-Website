@@ -222,4 +222,7 @@ FORCE_SCRIPT_NAME = ''
 # (Could be '/' for example)
 DEFAULT_REDIRECT = '/myesp/redirect'
 
+USE_MAILMAN = False
+MAILMAN_PATH = '/usr/lib/mailman/bin/'
+
 TEST_RUNNER = 'esp.utils.custom_test_runner.custom_test_runner'
