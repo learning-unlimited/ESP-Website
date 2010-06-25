@@ -78,11 +78,12 @@ def find_user(userstr):
 
     # Third, try e-mail?
     if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
-        try:
-            found_user = ESPUser.objects.get(email=userstr)
-            return found_user
-        except ESPUser.DoesNotExist:
-            pass # Well, not a username either.  Oh well.
+        found_users = ESPUser.objects.filter(email=userstr)
+        if len(found_users) == 1:
+            return found_users[0]
+        elif len(found_users) > 1:
+            return found_users
+        # else, not an e-mail either.  Oh well.
 
     # Maybe it's a name?
     # Let's do some playing.
