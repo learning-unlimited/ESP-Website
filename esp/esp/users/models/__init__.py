@@ -146,7 +146,12 @@ class ESPUser(User, AnonymousUser):
         else:
             User.__init__(self, *args, **kwargs)
 
+        self._is_anonymous = isinstance(userObj, AnonymousUser)
+
         self.other_user = False
+
+    def is_anonymous(self):
+        return self._is_anonymous
 
     @classmethod
     def ajax_autocomplete(cls, data):
