@@ -21,15 +21,9 @@
 </tr>
 
 <tr>
-<<<<<<< HEAD
- <td><label for="id_school">Graduation Year:</label><br /></td>
- <td>{{ form.graduation_year }} <div style="font-size: 0.8em">For your current or most recent degree.  Make a guess or leave it empty if you're not sure.</div> 
-    {% if form.graduation_year.errors %}
-=======
- <td><label for="id_graduation_year">Graduation Year:</label><br /><div style="font-size: 0.8em">(Enter 'G' if you're a graduate student)</div></td>
+<td><label for="id_graduation_year">Graduation Year:</label><br /><div style="font-size: 0.8em">(Enter 'G' if you're a graduate student)</div></td>
  <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
->>>>>>> mit-working
-   <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
+  <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

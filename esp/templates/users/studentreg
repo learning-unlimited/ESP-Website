@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 {% extends "main.html" %}
 
 {% block title %}{{program}} Registration{% endblock %}
@@ -63,70 +62,4 @@ Please note that you can come back and change your class selections later, up un
 </i>
 
 
-=======
-{% extends "outlines/theme.html" %}
-
-{% block title %}{{program}} Registration{% endblock %}
-
-{% block subsection_name %}Register for {{program}} classes.{% endblock %}
-
-{% block content %}
-<br /><br />
-<h2 style="text-align: center">Welcome!</h2><br />
-<p style="text-align: center"><b>Student registration for {{program}} </b></p>
-
-<p style="text-align: center">Please complete the following steps so that you are fully registered for {{program}}.</p>
-
-<center><table style="text-align: center">
-<tr><th>What to do?</th><th>Done?</th></tr>
-{% if using_profile %}
-<tr>
- <td><a href="/learn/{{one}}/{{two}}/profile/">Update Contact Info</a></td>
- <td style="text-align: center"><img src="/media/images/{{profile_graphic}}.gif"
-{% ifequal profile_graphic "nocheckmark" %}
-border = 1
-{% endifequal %}
-></td>
-</tr>
-{% endif %}
-
-<tr>
- <td><a href="/learn/{{one}}/{{two}}/studentreg/">Select Your Classes</a></td>
- <td style="text-align: center"><img src="/media/images/{{select_graphic}}.gif"
-{% ifequal select_graphic "nocheckmark" %}
-border = 1
-{% endifequal %}
->&nbsp; </td>
-</tr>
-
-{% if using_online_payments %}
-<tr>
- <td><a href="/learn/{{one}}/{{two}}/startpay/">Pay Online</a> (Optional)</td>
- <td style="text-align: center"><img src="/media/images/{{pay_graphic}}.gif"
-{% ifequal payment_graphic "nocheckmark" %}
-border = 1
-{% endifequal %}
-></td>
-</tr>
-{% endif %}
-
-</table></center>
-<br /><hr><br />
-
-<p style='font-family: arial; font-size:130%; margin-left:10px; text-align: center'><b>Select Your {{one}} Classes</p></b></center>
-
-{% include "users/student_schedule.html" %}
-
-<form action="/learn/{{one}}/{{two}}/finishedStudent" method="post">
-<p style="text-align: center">
-<input type="submit" value="Save!">
-</p>
-</form>
-
-<i style="text-align: center">
-Please note that you can come back and change your class selections later, up until 2 days before {{program}} begins!
-</i>
-
-
->>>>>>> mit-working
 {% endblock %}

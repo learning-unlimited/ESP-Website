@@ -16,11 +16,7 @@
 {% block xtrajs %}{% endblock %}
 
 </head>
-<<<<<<< HEAD
 <body class="tundra" onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
-=======
-<body>
->>>>>>> mit-working
 
 {% block body %}{% endblock %}
 

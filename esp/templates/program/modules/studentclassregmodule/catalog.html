@@ -35,14 +35,6 @@ function swap_visible(div_id) {
 	}
 }
 
-<<<<<<< HEAD
-var student_grade = "{{ user.getGrade }}"; {% comment %} Convert from int to string to int in case user.getGrade returns null or errors {% endcomment %}
-
-if (student_grade != "") {
-  student_grade = parseInt(student_grade);
-}
-
-=======
 var student_grade = esp_user.cur_grade;
 
 if (student_grade != "" and student_grade != null) {
@@ -67,7 +59,6 @@ document.getElementsByClassName = function(class_name) {
 }//eof annonymous function
 }
 
->>>>>>> mit-working
 function hideClassesOutOfGradeRange(stu_grade) {
   if (student_grade == "") {
     return;
