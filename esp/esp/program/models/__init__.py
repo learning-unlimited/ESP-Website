@@ -667,7 +667,7 @@ class Program(models.Model):
         if include_classroom:
             exclude_types = []
         else:
-        exclude_types = [ResourceType.get_or_create('Classroom')]
+            exclude_types = [ResourceType.get_or_create('Classroom')]
         
         Q_filters = Q(program=self) | Q(program__isnull=True)
         

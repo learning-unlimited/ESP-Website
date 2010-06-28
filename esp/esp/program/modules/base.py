@@ -607,7 +607,7 @@ def needs_student(method):
             allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
             matching_user_types = UserBit.valid_objects().filter(user=moduleObj.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
             if not matching_user_types:
-            return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
+                return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkStudent        
