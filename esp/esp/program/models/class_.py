@@ -120,7 +120,7 @@ class ClassManager(ProcedureManager):
             for cls in catalog:
                 for sec in cls.get_sections():
                     if hasattr(sec, '_count_students'):
-                    del sec._count_students
+                        del sec._count_students
 
         return catalog
 
@@ -354,7 +354,7 @@ class ClassSection(models.Model):
         rooms = self.initial_rooms()
         if len(rooms) == 0:
             if not ans:
-            ans = self.parent_class.class_size_max
+                ans = self.parent_class.class_size_max
         else:
             ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
             
@@ -1575,12 +1575,12 @@ class ClassSubject(models.Model):
             verb_override = GetNode('V/Flags/Registration/GradeOverride')
 
         if not Tag.getTag("allowed_student_types", target=self.parent_program):
-        if user.getGrade() < self.grade_min or \
-               user.getGrade() > self.grade_max:
-            if not UserBit.UserHasPerms(user = user,
-                                        qsc  = self.anchor,
-                                        verb = verb_override):
-                return 'You are not in the requested grade range for this class.'
+            if user.getGrade() < self.grade_min or \
+                   user.getGrade() > self.grade_max:
+                if not UserBit.UserHasPerms(user = user,
+                                            qsc  = self.anchor,
+                                            verb = verb_override):
+                    return 'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
         if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:

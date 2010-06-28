@@ -22,7 +22,7 @@ class PhoneNumberField(forms.CharField):
         forms.CharField.__init__(self, max_length=max_length, *args, **kwargs)
         self.widget.attrs['size'] = length
         if local_areacode:
-        self.areacode = local_areacode
+            self.areacode = local_areacode
         else:
             self.areacode = None
 
