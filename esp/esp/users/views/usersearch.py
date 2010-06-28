@@ -33,6 +33,7 @@ from esp.middleware   import ESPError
 from django.db.models.query    import Q
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User, ZipCode
 from esp.web.util     import render_to_response
+from esp.settings import USE_MAILMAN
 import pickle
 
 def get_user_list(request, listDict2, extra=''):
@@ -199,7 +200,7 @@ def get_user_list(request, listDict2, extra=''):
             return (getUser, False)
 
 
-    if request.GET.has_key('advanced'):
+    if request.GET.has_key('advanced') or not USE_MAILMAN:
         # we're going to prepare a list to send out.
         arrLists = []
 
