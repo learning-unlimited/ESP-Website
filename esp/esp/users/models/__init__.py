@@ -133,20 +133,21 @@ class ESPUser(User, AnonymousUser):
         if isinstance(userObj, ESPUser):
             self.__olduser = userObj.getOld()
             self.__dict__.update(self.__olduser.__dict__)
+            self._is_anonymous = userObj.is_anonymous()
 
         elif isinstance(userObj, (User, AnonymousUser)):
             self.__dict__ = userObj.__dict__
             self.__olduser = userObj
+            self._is_anonymous = userObj.is_anonymous()
 
         elif userObj is not None or len(args) > 0:
             # Initializing a model using non-keyworded args is a horrible idea.
             # No clue why you'd do it, but I won't stop you. -ageng 2009-05-10
             User.__init__(self, userObj, *args, **kwargs)
-
+            self._is_anonymous = False
         else:
             User.__init__(self, *args, **kwargs)
-
-        self._is_anonymous = isinstance(userObj, AnonymousUser)
+            self._is_anonymous = False
 
         if not hasattr(self, "_state"):
             ## Django doesn't properly insert this field on proxy models, apparently?
