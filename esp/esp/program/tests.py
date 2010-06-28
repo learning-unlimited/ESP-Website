@@ -152,8 +152,8 @@ class ProfileTest(TestCase):
         self.u.groups.add(self.group)
         self.assertEquals(User.objects.get(username='bjones'), self.u)
         self.assertEquals(Group.objects.get(name='Test Group'), self.group)
-        print self.u.__dict__
-        print self.u.groups.all()
+        #print self.u.__dict__
+        #print self.u.groups.all()
 
 
 class ProgramHappenTest(TestCase):
@@ -329,11 +329,12 @@ class ProgramHappenTest(TestCase):
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
+            'hardness_rating': "Easy",
         }
         self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
         
         # Check that stuff went through correctly
-
+        
         # check prog.classes
         classes = self.prog.classes()
         self.assertEqual( classes.count(), 1, 'Classes failing to show up in program' )
