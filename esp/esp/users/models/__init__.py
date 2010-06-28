@@ -148,6 +148,13 @@ class ESPUser(User, AnonymousUser):
 
         self._is_anonymous = isinstance(userObj, AnonymousUser)
 
+        if not hasattr(self, "_state"):
+            ## Django doesn't properly insert this field on proxy models, apparently?
+            ## So, fake it. -- aseering 6/28/2010
+            class FakeState(object):
+                db = None
+            self._state = FakeState()
+
         self.other_user = False
 
     def is_anonymous(self):
