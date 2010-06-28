@@ -124,7 +124,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
         self.fields['grade_max'].choices = class_grades
         # class_size_max: module.getClassSizes
         self.fields['class_size_max'].choices = class_sizes
-        self.fields['class_size_optimal'].choices = class_sizes
+
+        if Tag.getTag('use_class_size_optimal', default=False):
+            self.fields['class_size_optimal'].choices = class_sizes
+        else:
+            del self.fields['class_size_optimal']
+            
         # global_resources: module.getResourceTypes(is_global=True)
         self.fields['global_resources'].choices = module.getResourceTypes(is_global=True)
         # resources: module.getResourceTypes(is_global=False)
