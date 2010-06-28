@@ -14,10 +14,8 @@ class UserEmail(BaseHandler):
 
         user = ESPUser(user)
 
-        if user.isTeacher() or (self.message['List-Id'] and (".esp.mit.edu" in self.message['List-Id'])):
-            #self.recipients = ['%s <%s>' % (user.name(),
-            #                                user.email)]
-
+        # DIRTY HACK to allow mailing aliases to still work for local Mailman messages
+        if user.isTeacher() or self.message['List-Id']:
             del(self.message['to'])
             self.message['to'] = user.email
             self.direct_send = True

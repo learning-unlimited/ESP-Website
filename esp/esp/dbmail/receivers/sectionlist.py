@@ -4,13 +4,47 @@ from esp.program.models import Program, ClassSubject, ClassSection
 from esp.mailman import create_list, load_list_settings, add_list_member, set_list_moderator_password, apply_list_settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from esp.settings import USE_MAILMAN
 
 DEBUG=True
 DEBUG=False
 
 class SectionList(BaseHandler):
 
-    def process(self, user, class_id, section_num, user_type):
+    def process(self, user, class_id, user_type):
+        if USE_MAILMAN:
+            self.process_mailman(user, class_id, user_type)
+        else:
+            self.process_nomailman(user, class_id, user_type)
+
+    def process_nomailman(self, user, class_id, section_num, user_type):
+        try:
+            cls = ClassSubject.objects.get(id=int(class_id))
+            section = filter(lambda s: s.index() == int(section_num), cls.sections.all())[0]
+        except:
+            return
+
+        program = cls.parent_program
+        self.recipients = ['%s Directors <%s>' % (program.niceName(), program.director_email)]
+
+        user_type = user_type.strip().lower()
+
+        if user_type in ('teachers','class'):
+            self.recipients += ['%s %s <%s>' % (user.first_name,
+                                                user.last_name,
+                                                user.email)
+                                for user in section.parent_class.teachers()     ]
+
+        if user_type in ('students','class'):
+            self.recipients += ['%s %s <%s>' % (user.first_name,
+                                                user.last_name,
+                                                user.email)
+                                for user in section.students()     ]
+
+        if len(self.recipients) > 0:
+            self.send = True
+
+    def process_mailman(self, user, class_id, section_num, user_type):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
             section = filter(lambda s: s.index() == int(section_num), cls.sections.all())[0]
