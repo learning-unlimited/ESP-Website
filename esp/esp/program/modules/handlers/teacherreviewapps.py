@@ -38,6 +38,7 @@ from django.contrib.auth.decorators import login_required
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from datetime import datetime
+from django.views.decorators.cache import never_cache
 
 __all__ = ['TeacherReviewApps']
 
@@ -55,6 +56,7 @@ class TeacherReviewApps(ProgramModuleObj):
     @aux_call
     @meets_deadline("/AppReview")
     @needs_teacher
+    @never_cache
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
             cls = ClassSubject.objects.get(id = extra)
