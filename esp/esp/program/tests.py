@@ -767,26 +767,27 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         sec.save()
         
         #   Check that initially the capacity is correct
+        sec.parent_class._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
         #   Check that multiplier works
         options.class_cap_multiplier = str(mult_test)
         options.save()
-        ClassSection._get_capacity.delete([sec])
+        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, int(initial_capacity * mult_test))
         #   Check that multiplier and offset work
         options.class_cap_offset = offset_test
         options.save()
-        ClassSection._get_capacity.delete([sec])
-        self.assertEqual(sec.capacity, int(initial_capacity * mult_test + offset_test))
+        sec.parent_program._moduleExtension = {}
+        self.assertEqual(sec._get_capacity(), int(initial_capacity * mult_test + offset_test))
         #   Check that offset only works
         options.class_cap_multiplier = '1.0'
         options.save()
-        ClassSection._get_capacity.delete([sec])
+        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, int(initial_capacity + offset_test))
         #   Check that we can go back to normal
         options.class_cap_offset = 0
         options.save()
-        ClassSection._get_capacity.delete([sec])
+        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
 
 from esp.program.modules.tests import *
