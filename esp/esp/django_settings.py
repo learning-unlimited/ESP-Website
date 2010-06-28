@@ -221,3 +221,5 @@ FORCE_SCRIPT_NAME = ''
 # Page to redirect people to when they log in
 # (Could be '/' for example)
 DEFAULT_REDIRECT = '/myesp/redirect'
+
+TEST_RUNNER = 'esp.utils.custom_test_runner.custom_test_runner'

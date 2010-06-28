@@ -61,6 +61,7 @@ LOG_FILE = '/path/to/website/log'
 # Plugin settings #
 ###################
 USE_MAILMAN = True
+SOUTH_TESTS_MIGRATE = False
 
 ###################
 # Debug settings  #

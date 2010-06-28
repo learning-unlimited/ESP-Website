@@ -32,6 +32,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from django.db import models, connection, transaction
+from esp.datatree.sql.set_isolation_level import *
 
 try:
     from functools import wraps
@@ -53,7 +54,7 @@ def serializable(func):
         except:
             pass
         self.cursor = None
-        connection.connection.set_isolation_level(2)
+        set_isolation_level(connection, 2)
         isolation_levels.append(2)
         try:
             return func(self, *args, **kwargs)
@@ -63,9 +64,9 @@ def serializable(func):
             except:
                 pass
             if len(isolation_levels) < 2:
-                connection.connection.set_isolation_level(1)
+                set_isolation_level(connection, 1)
             else:
                 level = isolation_levels.pop()
                 old_level = isolation_levels[-1]
-                connection.connection.set_isolation_level(old_level)
+                set_isolation_level(connection, old_level)
     return wraps(func)(_serializable)

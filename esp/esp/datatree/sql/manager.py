@@ -35,6 +35,7 @@ Email: web@esp.mit.edu
 from django.db import models, connection, transaction, DatabaseError
 
 from esp.datatree.sql.query_utils import *
+from esp.datatree.sql.set_isolation_level import *
 from esp.datatree.sql.constants import *
 from esp.datatree.sql.transaction import *
 
@@ -98,7 +99,7 @@ class DataTreeManager(models.Manager):
                 return self._get_by_uri(uri=uri, create=create)
         return super(DataTreeManager, self).get(*args, **kwargs)
 
-    @transaction.commit_manually
+    @commit_manually
     @serializable
     def create(self, name, parent, id=None, uri=None, start_size=None, friendly_name=None):
         """
@@ -136,7 +137,7 @@ class DataTreeManager(models.Manager):
 
         transaction.commit()
 
-        connection.connection.set_isolation_level(1)
+        set_isolation_level(connection, 1)
         node = self.get(id = id)
 
         if created:
@@ -152,7 +153,7 @@ class DataTreeManager(models.Manager):
         # TODO: Implement this cleaner.
         return self.model.root()
 
-    @transaction.commit_manually
+    @commit_manually
     @serializable
     def new_ranges(self, parent, size=None, get_ranges=True):
         """

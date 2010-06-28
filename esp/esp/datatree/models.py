@@ -42,6 +42,7 @@ from django.db import transaction
 from django.core.cache import cache
 from esp.db.fields import AjaxForeignKey
 from esp.datatree.sql.query_utils import *
+from esp.datatree.sql.set_isolation_level import commit_manually
 from esp.datatree.sql.manager import DataTreeManager
 from esp.cache import cache_function
 
@@ -713,7 +714,7 @@ class DataTree(models.Model):
         
         return DataTree.objects.filter(Q_violating)
 
-    @transaction.commit_manually
+    @commit_manually
     def expire_uri(self, commit_wait = False):
         " Expire the URIs on all descendants of this node. "
 
