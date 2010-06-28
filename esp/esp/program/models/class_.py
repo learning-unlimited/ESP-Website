@@ -346,17 +346,16 @@ class ClassSection(models.Model):
 
     @cache_function
     def _get_capacity(self, ignore_changes=False):
-    
         ans = None
         if self.max_class_capacity is not None:
-            return self.max_class_capacity
-
-        rooms = self.initial_rooms()
-        if len(rooms) == 0:
-            if not ans:
-                ans = self.parent_class.class_size_max
+            ans = self.max_class_capacity
         else:
-            ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
+            rooms = self.initial_rooms()
+            if len(rooms) == 0:
+                if not ans:
+                    ans = self.parent_class.class_size_max
+            else:
+                ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
             
         #   Apply dynamic capacity rule
         if not ignore_changes:
@@ -372,6 +371,10 @@ class ClassSection(models.Model):
     _get_capacity.depend_on_row(lambda:ClassSection, 'self')
     _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
     _get_capacity.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
+    def __get_studentclassregmoduleinfo():
+        from esp.program.modules.module_ext import StudentClassRegModuleInfo
+        return StudentClassRegModuleInfo
+    _get_capacity.depend_on_model(__get_studentclassregmoduleinfo)
 
        
     capacity = property(_get_capacity)
