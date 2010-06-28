@@ -127,5 +127,6 @@ def error500(request, template_name='500.html'):
     context = {}
     context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST'] = EMAIL_HOST
+    context['request'] = request
     t = loader.get_template(template_name) # You need to create a 500.html template.
     return http.HttpResponseServerError(t.render(Context(context)))

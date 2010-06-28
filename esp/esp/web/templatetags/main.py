@@ -17,8 +17,11 @@ def split(str,splitter):
 
 @register.filter
 def index(arr,index):
-    return arr[index]
-
+    try:
+        return arr[index]
+    except IndexError:
+        return ''
+    
 @register.filter
 def concat(str,text):
     return str + text
