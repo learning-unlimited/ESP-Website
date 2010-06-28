@@ -4,6 +4,8 @@
 //  - Handle background submission of forms
 //  - Handle responses that rewrite DOM nodes by supplying a key of [NODENAME]_html in JSON
 
+dojo.require("dojo._base.xhr");
+
 //  Define an array for registered forms if they do not exist
 if (!registered_forms)
 {
@@ -96,7 +98,7 @@ var apply_fragment_changes = function(data)
             matching_node = dojo.byId(re_match[1])
             if (matching_node)
             {
-                console.log("Rewriting HTML for element: " + re_match[1])
+                // console.log("Rewriting HTML for element: " + re_match[1])
                 matching_node.innerHTML = data[key];
             }
         }

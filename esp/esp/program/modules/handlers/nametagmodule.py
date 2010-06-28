@@ -97,7 +97,7 @@ class NameTagModule(ProgramModuleObj):
         if idtype == 'students':
             student_dict = self.program.students(QObjects = True)
             if 'classreg' in student_dict:
-                students = User.objects.filter(student_dict['classreg'] | student_dict['confirmed']).distinct()
+                students = User.objects.filter(student_dict['classreg']).distinct()
             else:
                 students = User.objects.filter(student_dict['confirmed']).distinct()
 

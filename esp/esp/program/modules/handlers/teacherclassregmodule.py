@@ -32,7 +32,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_d
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django.template.loader      import render_to_string
@@ -48,6 +48,8 @@ from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
 from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeFormSet
 from datetime                    import timedelta
+from esp.mailman                 import add_list_member
+from django.http                 import HttpResponseRedirect
 import simplejson as json
 
 class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
@@ -289,7 +291,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 student.enrolled = True
             elif bits.filter(verb__name='Rejected').count() > 0:
                 student.rejected = True
-                
+
         #   Detect if there is an application module
         from esp.program.modules.handlers.studentjunctionappmodule import StudentJunctionAppModule
         has_app_module = False
@@ -298,7 +300,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 has_app_module = True
 
         return render_to_response(self.baseDir()+'select_students.html', request, (prog, tl), {'has_app_module': has_app_module, 'prog': prog, 'sec': sec, 'students_list': students_list})
-
+        
     @aux_call
     @needs_teacher
     @meets_deadline('/Classes')
@@ -412,6 +414,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             coteachers = [ x for x in coteachers if x != '' ]
             coteachers = [ ESPUser(User.objects.get(id=userid))
                            for userid in coteachers                ]
+            add_list_member("%s_%s-teachers" % (prog.anchor.parent.name, prog.anchor.name), coteachers)
 
         op = ''
         if request.POST.has_key('op'):
@@ -608,11 +611,14 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
+
+        do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
         
         new_data = MultiValueDict()
         context = {'module': self}
         
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
+            add_list_member("%s_%s-teachers" % (prog.anchor.parent.name, prog.anchor.name), request.user)
             if not self.deadline_met():
                 return self.goToCore(tl)
             
@@ -827,6 +833,21 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category']).category
                 mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
 
+                # Provide information about whether or not teacher's from MIT.
+                last_profile = self.user.getLastProfile()
+                if last_profile.teacher_info != None:
+                    mail_ctxt['from_mit'] = last_profile.teacher_info.from_mit
+                    mail_ctxt['college'] = last_profile.teacher_info.college
+                else: # This teacher never filled out their teacher profile!
+                    mail_ctxt['from_mit'] = "[Teacher hasn't filled out teacher profile!]"
+                    mail_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
+
+                # Get a list of the programs this person has taught for in the past, if any.
+                taught_programs = Program.objects.filter(anchor__child_set__child_set__userbit_qsc__user=self.user, \
+                                                         anchor__child_set__child_set__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'), \
+                                                         anchor__child_set__child_set__userbit_qsc__qsc__classsubject__status=10).distinct().exclude(id=self.program.id)
+                mail_ctxt['taught_programs'] = taught_programs
+                    
                 # send mail to directors
                 if newclass_newmessage and self.program.director_email:
                     send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
@@ -885,6 +906,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 class_requests = ResourceRequest.objects.filter(target=ds)
                 resource_formset = ResourceRequestFormSet(initial=[{'resource_type': x.res_type, 'desired_value': x.desired_value} for x in class_requests], resource_type=[x.res_type for x in class_requests], prefix='request')
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
+
             else:
                 reg_form = TeacherClassRegForm(self)
                 type_labels = ['Classroom', 'A/V']
@@ -911,7 +933,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                                                     'section_duration_field': context['form']['section_duration_' + subprogram_string]})
         else:
             context['addoredit'] = 'Edit'
-            
+
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 

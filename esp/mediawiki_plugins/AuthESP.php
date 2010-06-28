@@ -37,6 +37,13 @@ class AuthESP extends AuthPlugin {
 
     proc_close($process);
 
+<<<<<<< HEAD
+=======
+#    $fh = fopen("/tmp/testfile.txt", "w");
+#    fwrite($fh, $return_value);
+#    fwrite($fh, ($return_value == "true"));
+
+>>>>>>> mit-working
     return ($return_value == "true");
   }
  
@@ -57,10 +64,13 @@ class AuthESP extends AuthPlugin {
 
     proc_close($process);
 
+<<<<<<< HEAD
     $fh = fopen("/tmp/testfile.txt", "w");
     fwrite($fh, $return_value);
     fwrite($fh, ($return_value == "true"));
 
+=======
+>>>>>>> mit-working
     return ($return_value == "true");
   }
  

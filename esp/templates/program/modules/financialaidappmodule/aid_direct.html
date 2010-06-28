@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}{{program.niceName}} Financial Aid Request{% endblock %}
 
@@ -8,15 +8,8 @@
 <h1>Financial Aid Request For {{ program.niceName }} </h1>
 
 <p>
-In order to proceed to the Financial Aid Request form, please follow the link below.
+In order to proceed to the Financial Aid Request form, please follow the link below.  It will make sure that you are using a secure connection to our server, if you are not already.
 </p>
-<br />
-<div class="info">
-<p><b>Note</b>: You may be warned that the page's certificate is not signed by a trusted authority. This untrusted authority is MIT.</p>
-<p>To convince your computer to trust MIT, <a href="http://ca.mit.edu/mitca.crt" title="Download MIT Certificate Authority">get the MIT CA (Certificate Authority)</a>.
-</p>
-</div>
-
 <br />
 
 <p style="font-size: 1.2em">
@@ -26,6 +19,11 @@ In order to proceed to the Financial Aid Request form, please follow the link be
 <p>
 <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">Return to main registration page</a>
 </p>
+
+</div>
+
+<br />
+
 
 {% endblock %}
 

@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}{{ title }} - EDIT{% endblock %}
 
@@ -25,6 +25,7 @@
 .wikitoolbar a:hover img {
    border: 2px solid #cc9;
 }
+
 </style>
 {% endblock %}
 
@@ -48,9 +49,9 @@
 
   <h2>Metadata</h2>
   <p>
-    <strong>Keywords</strong><input type="text" name="keywords" value="{{ keywords|default_if_none:""|escape }}" size="128" /> <br />
+    <strong>Keywords</strong><input type="text" name="keywords" class="wide" value="{{ keywords|default_if_none:""|escape }}"/> <br />
     <strong>Description</strong><br />
-    <textarea name="description" rows="5" cols="85">{{ description|default_if_none:""|escape }}</textarea><br />
+    <textarea class="wide" name="description" rows="5">{{ description|default_if_none:""|escape }}</textarea><br />
     <strong>Navigation Category: </strong>
     <select name="nav_category" value="{{ nav_category }}"/>
     {% for category in nav_categories %}
@@ -63,7 +64,7 @@
   <p>Please use <a href="http://daringfireball.net/projects/markdown/syntax">
      Markdown</a> whenever possible. (Although HTML will work.)
   </p>
-  <p><textarea name="content" class="markdown" rows="50" cols="85">{{ content|escape }}</textarea></p>
+  <p><textarea class="wide" name="content" class="markdown" rows="50">{{ content|escape }}</textarea></p>
   {% for file in missing_files %}
   <p><label target="{{ file }}">File: {{ file }}</label> &nbsp; <input type="file" name="{{ file }}" /></p>
   {% endfor %}

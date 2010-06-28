@@ -5,10 +5,12 @@ Test cases for Django-ESP utilities
 import unittest
 import doctest
 import subprocess
+
 try:
     import pylibmc as memcache
 except:
     import memcache
+
 import os
 import sys
 from utils.memcached_multihost import CacheClass as MultihostCacheClass
@@ -307,7 +309,7 @@ class MultihostCacheClassTest(MemcachedTestCase):
         self.cacheclass.incr('test_math')
         self.cacheclass.incr('test_math')
         self.assertEqual(3, self.cacheclass.get('test_math'))
-
+        
 
 class DefaultclassTestCase(unittest.TestCase):
     def testDefaultclass(self):

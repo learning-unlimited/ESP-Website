@@ -48,6 +48,7 @@ from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType, CompletedTransactionException
+from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
 
 import pickle
 import operator
@@ -300,6 +301,25 @@ def newprogram(request):
             new_prog.getModules()
             
             manage_url = '/manage/' + new_prog.url() + '/resources'
+
+            # While we're at it, create the program's mailing list
+            mailing_list_name = "%s_%s" % (new_prog.anchor.parent.name, new_prog.anchor.name)
+            teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
+            students_list_name = "%s-%s" % (mailing_list_name, "students")
+
+            create_list(students_list_name, "esp-moderators@mit.edu")
+            create_list(teachers_list_name, "esp-moderators@mit.edu")
+
+            load_list_settings(teachers_list_name, "lists/program_mailman.config")
+            load_list_settings(students_list_name, "lists/program_mailman.config")
+        
+            apply_list_settings(teachers_list_name, {'owner': ['esp-moderators@mit.edu', new_prog.director_email]})
+            apply_list_settings(students_list_name, {'owner': ['esp-moderators@mit.edu', new_prog.director_email]})
+
+            add_list_member(students_list_name, [new_prog.director_email, "esparchive@gmail.com"])
+            add_list_member(teachers_list_name, [new_prog.director_email, "esparchive@gmail.com"])
+            
+
             return HttpResponseRedirect(manage_url)
         else:
             raise ESPError(False), "Improper form data submitted."
@@ -352,7 +372,9 @@ def submit_transaction(request):
             recipient_list = [contact[1] for contact in settings.ADMINS]
             refs = 'Cybersource request ID: %s' % post_id
             if cc_receipts:
-                recipient_list.append('esp-treasurer@mit.edu')
+                #recipient_list.append('esp-treasurer@mit.edu')
+                #recipient_list.append('ageng@mit.edu') # Because I want to play space invaders too!
+                recipient_list.append('esp-credit-cards@mit.edu') 
                 subject = 'DUPLICATE PAYMENT'
                 refs += '\n\nPrevious payments\' Cybersource IDs: ' + ( u', '.join([x.cc_ref for x in cc_receipts]) )
             else:
@@ -365,7 +387,7 @@ def submit_transaction(request):
             # Get the document that would've been created instead
             document = invoice.docs_next.all()[0]
         except:
-            raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:esp-webmasters@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
+            raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:esp-web@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
 
         one = document.anchor.parent.name
         two = document.anchor.name

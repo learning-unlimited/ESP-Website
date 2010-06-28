@@ -1,0 +1,133 @@
+
+#page {
+width: 706px; margin: 60px auto;
+height: 470px;
+background: #fff url(/media/images/theme/splash.png) no-repeat 0% 0% scroll;
+position: relative;
+}
+
+#student, #teacher {
+background: transparent;
+color: transparent;
+border: none;
+cursor: pointer;
+}
+
+#student {
+position: absolute;
+left: 5px; top: 65px;
+width: 180px; height: 180px;
+}
+
+#about {
+position: absolute;
+left: 230px; top: 30px;
+width: 250px; height: 250px;
+}
+
+#whoarewe {
+font-variant: small-caps;
+font-family: sans-serif;
+color: white;
+text-decoration: none;
+text-align: center;
+padding: 15px 15px;
+position: absolute;
+right: 140px; top: 27px;
+width: 45px; height: 45px;
+}
+
+#teacher {
+position: absolute;
+right: 5px; top: 110px;
+width: 180px; height: 180px;
+}
+
+#remember {
+position: absolute;
+top: 311px; left: 275px;
+}
+
+#remember_label {
+position: absolute;
+top: 310px; left: 300px;
+color: #3f7a00;
+}
+
+#orbox {
+position: absolute;
+top: 343px; left: 340px;
+/*color: #3f7a00;*/
+}
+
+#login_box {
+position: absolute;
+top: 380px; left: 220px;
+width: 265px; height: 70px;
+background: #56a900;
+padding: 6px;
+}
+
+
+#login_box .corners div {
+position: absolute;
+width: 6px;
+height: 6px;
+background-image: url(/media/images/theme/corners_6_gw.png);
+}
+
+.corners .ul { left: 0;  top: 0; background-position: 0px 0px; }
+.corners .ur { right: 0; top: 0; background-position: 0px 12px; }
+.corners .dl { left: 0;  bottom: 0; background-position: 0px 18px; }
+.corners .dr { right: 0; bottom: 0; background-position: 0px 6px; }
+
+#login_div {
+position: relative;
+width: 100%;
+height: 100%;
+background: #88cf00;
+}
+
+#login_user {
+position: absolute;
+top: 12px; left: 8px;
+/*border: 1px #88cf00 inset;*/
+}
+
+#login_pswd {
+position: absolute;
+top: 37px; left: 8px;
+/*border: 1px #88cf00 inset;*/
+}
+
+#login_submit {
+position: absolute;
+top: 12px; right: 48px;
+height: 21px; width: 50px;
+
+background: #fff url(/media/images/theme/gen/yg_login.png) no-repeat 0% 0% scroll;
+color: transparent;
+border: none;
+cursor: pointer;
+}
+
+#login_signup {
+position: absolute;
+position: absolute;
+top: 12px; right: 8px;
+height: 21px; width: 40px;
+
+background: #fff url(/media/images/theme/gen/yg_signup.png) no-repeat 0% 0% scroll;
+color: transparent;
+border: none;
+}
+
+#login_help {
+position: absolute;
+top: 37px; right: 25px;
+font-size: smaller;
+}
+
+#login_box a {
+color: #3f7a00;
+}

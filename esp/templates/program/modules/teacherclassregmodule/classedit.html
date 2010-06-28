@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}Teacher Registration{% endblock %}
 
@@ -28,6 +28,12 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
 </p>
 
 <form action="{{request.path}}" id="clsform" name="clsform" method="post">{% csrf_token %}
+
+{% if form.errors %}
+<p align="center">
+<font color="red" size="+1">Please fix the errors in the form below.</font>
+</p>
+{% endif %}
 
 <div id="program_form">
 <center>

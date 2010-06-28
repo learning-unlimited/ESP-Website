@@ -196,7 +196,7 @@ class Document(models.Model):
     get_completed.depend_on_row(lambda: Document, lambda doc: {'user': doc.user})
     get_completed.depend_on_row(lambda: LineItem, lambda item: {'user': item.user})
     get_completed = staticmethod(get_completed)
-    
+
     @staticmethod
     def get_by_locator(loc):
         return Document.objects.get(locator=loc)

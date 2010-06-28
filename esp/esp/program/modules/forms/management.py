@@ -49,7 +49,7 @@ class ClassManageForm(ManagementForm):
     def load_data(self, cls, prefix=''):
         self.initial = {prefix+'status': cls.status,
             prefix+'reg_status': None,
-            prefix+'min_grade': cls.grade_min, 
+            prefix+'min_grade': cls.grade_min,
             prefix+'max_grade': cls.grade_max,
             prefix+'notes': cls.directors_notes,
             prefix+'class_size': cls.class_size_max,
@@ -111,7 +111,7 @@ class SectionManageForm(ManagementForm):
     def load_data(self, sec, prefix=''):
         self.initial = {prefix+'status': sec.status,
             prefix+'reg_status': sec.registration_status,
-            prefix+'progress': [cm.id for cm in sec.checklist_progress.all()],
+            prefix+'progress': sec.checklist_progress.all().values_list('id', flat=True),
             prefix+'secid': sec.id,
             prefix+'class_size': sec.capacity,
             prefix+'times': [ts.id for ts in sec.meeting_times.all()]}

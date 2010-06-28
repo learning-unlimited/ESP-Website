@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}Manage Scores for {{ prog.niceName }}{% endblock %}
 
@@ -19,7 +19,7 @@
 {% if not errors|length_is:0 %}
 <p>The following lines caused problems (i.e. could not find student in the program, etc.).  Please fix them and upload again, or use the <a href="/teach/{{ prog.getUrlBase }}/satprepuserdiagnostic">individual score entry interface</a>.  You may also copy the text below, paste it into the text entry box below, and fix the errors before submitting again.
 
-<table width="600">
+<table class="fullwidth">
 <tr>
     <th class="small">Problem lines</th>
     <th class="small">Error</th>

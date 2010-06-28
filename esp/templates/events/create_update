@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends "main.html" %}
 
 {% block title %}Create an Event{% endblock %}
@@ -22,4 +23,30 @@
 <p><input type="submit" /></p>
 </form>
 
+=======
+{% extends "outlines/theme.html" %}
+
+{% block title %}Create an Event{% endblock %}
+
+{% block subsection_name %}Event{% endblock %}
+
+{% block content %}
+<script type="text/javascript" src="/admin/jsi18n/"></script>
+<script type="text/javascript" src="/admin/media/js/core.js"></script>
+<script type="text/javascript" src="/admin/media/js/admin/RelatedObjectLookups.js"></script>
+<script type="text/javascript" src="/admin/media/js/calendar.js"></script>
+<script type="text/javascript" src="/admin/media/js/admin/DateTimeShortcuts.js"></script>
+
+<h1>Create an Event:</h1>
+
+{% if form.errors %}
+<h2>Please correct the error(s) in the form.</h2>
+{% endif %}
+
+<form method="post" action=".">
+    {{ form.as_p }}
+<p><input type="submit" /></p>
+</form>
+
+>>>>>>> mit-working
 {% endblock %}

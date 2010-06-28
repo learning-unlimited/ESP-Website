@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends "main.html" %}
 
 {% block stylesheets %}
@@ -175,3 +176,182 @@ This is your ESP <em>battle screen</em> where you can sign up to teach, modify y
 </p>
 
 {% endblock %}
+=======
+{% extends "outlines/theme.html" %}
+
+{% block stylesheets %}
+{{block.super}}
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+{% endblock %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<div id="battlescreen">
+
+<table class="welcomebox" cellpadding="0" cellspacing="0" align="center">
+<thead>
+  <tr class="welcomebox">
+    <th align="center" class="welcomebox">
+        Welcome, {{ request.user.first_name }}!
+    </th>
+  </tr>
+</thead>
+<tbody>
+  <tr class="welcomebox">
+    <td bgcolor="#FFFFFF" class="welcomebox">
+This is your ESP <em>battle screen</em> where you can sign up to teach, modify your class information, get in touch with your students, and review your history of interactions with ESP.
+    </td>
+  </tr>
+</tbody>
+
+</table>
+
+
+<br />
+
+<br />
+{% if admin_details %}
+<h3>Programs you are an Administrator of:</h3>
+<br />
+{% for program in admPrograms %}
+<a href="/manage/{{program.getUrlBase}}/main"
+  title="Administer {{program.niceName}}"> 
+  {{program.niceName}}
+</a>
+   <br />
+{% endfor %}
+<br />
+<b><a href="/manage/newprogram" title="Create a New Program">
+   Create a New Program...
+</a></b>
+<br />
+{% endif %}
+
+<br />
+{% if not admin_details %}
+<br />
+<table cellpadding="4px" cellspacing="0" align="center">
+<tbody>
+  <tr>
+    <th colspan="4">Your Announcements</th>
+  </tr>
+<tr style="borderTop">
+  <td colspan="4">
+    <strong>Recent Announcements</strong>
+    <div class="announcementBullets">
+{% for announce in announcements.announcementList %}
+       <a href="{{ announce.makeUrl }}" title="{{ announce.makeTitle }}">
+                {{ announce.makeTitle }}
+       </a>
+       <br />
+{% endfor %}
+
+     {% if announcements.overflowed %}
+     {{ announcements.total }} total ...
+     <a href="/blog/announcements" title="See all announcements!">
+        see all
+     </a>
+     {% endif %}
+      {% for bullet in announcementSection.items %}
+      {{ bullet.0 }}
+      <br />
+      {% endfor %}
+    </div>
+  </td>
+</tr>    
+
+  <tr>
+    <th colspan="4">
+       Manage Your Classes
+    </th>
+  </tr>
+
+{% for progDict in progList %}
+  <tr>
+    <td class="borderTop" colspan="2">
+      <span style="position:relative;left:10px;" class="progTitle">
+             {{progDict.prog}}
+      </span>
+    <td class="borderTopRight" colspan="2">
+      <span class="progLinks">
+        <a href="/learn/{{ progDict.prog.url }}/index.html">Info</a>
+	|
+	<a href="/learn/{{ progDict.prog.url }}/catalog">Catalog</a>
+	|
+	<a href="/learn/{{ progDict.prog.url }}/studentreg">Sign Up!</a>
+	|
+	<a href="/learn/{{ progDict.prog.url }}/survey/">Survey</a>
+      </span>
+    </td>
+  </tr>
+  {% for cls in progDict.clslist %}
+  <tr>
+    <td class="clsleft classname">
+      <span title="Class">
+      {{ cls|truncatewords:6 }}
+      </span>
+    </td>
+    <td class="clsmiddle classname">
+      {% if admin_details %}
+      <span title="Teacher Names">
+      {% for t in cls.getTeacherNames %}
+      {{ t }}
+      {% endfor %}
+      </span>
+      {% endif %}
+    </td>
+    <td class="clsmiddle">
+       {% if student_version %}{% else %}
+       <form method="post" action="{{request.path}}">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}">
+         <input class="button" type="submit" value="Edit">
+       </form>
+       {% endif %}
+    </td>
+    <td class="clsright">
+      {% if cls.pageExists %}
+      <a href="/learn/{{cls.getUrlBase}}/index.html"
+         title="{{ cls }}...">Visit web page</a>
+      {% else %}
+		{% if student_version %} {% else %} 
+		  <a href="/learn/{{cls.getUrlBase}}/index.edit.html"
+			 title="Create `{{ cls }}'...">Create web page</a>
+		{% endif %}
+      {% endif %}
+     </td>
+   </tr>
+   {% endfor %}
+   <tr>
+     <td colspan="3" style="font-weight: bold;">
+    {% if student_version %}{% else %}
+     {% if progDict.shortened %}
+     {{ progDict.totalclsnum }} total.... 
+     <a href="/teach/{{progDict.prog.getUrlBase}}/selectclass"
+        title="Select from all your editable classes">
+	     see all
+     </a>
+     {% endif %}
+     <br />
+     <span style="position:relative; left: 4px;" class="addclass">
+     <a href="/teach/{{progDict.prog.getUrlBase}}/teacherreg"
+        title="Teach for ESP!" class="addclass">
+	    Add New Class for {{progDict.prog}}
+     </a>
+     </span> 
+     <br /><br />
+     {% endif %}
+     </td>
+    </tr>
+{% endfor %}
+</table>
+
+{% endif %}
+<p style="height: .5in;">
+  <!-- v-space -->
+  &nbsp;
+</p>
+
+{% endblock %}
+>>>>>>> mit-working

@@ -2,13 +2,13 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>ESP - {% block title %}{% endblock %}</title>
+<title>MIT ESP - {% block title %}{% endblock %}</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="description" content="{% block description %}{% endblock %}" />
 <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
-
+<meta http-equiv="X-UA-Compatible" content="chrome=1">
+<!-- Copyright (C) 2005 Massachusetts Institute of Technology -->
 {% block javascript %}
-<script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
 {% endblock %}
 {% block stylesheets %}
 {% endblock %}
@@ -16,11 +16,28 @@
 {% block xtrajs %}{% endblock %}
 
 </head>
+<<<<<<< HEAD
 <body class="tundra" onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
+=======
+<body>
+>>>>>>> mit-working
 
 {% block body %}{% endblock %}
 
 {% block counter %}
+<div class="offscreen">
+<!-- Web Reporting -->
+<!-- Disabled
+  <img src="http://counter.mit.edu/tally" width="1" height="1" alt="" />
+-->
+<script src="https://ssl.google-analytics.com/urchin.js" type="text/javascript">
+</script>
+<script type="text/javascript">
+_uacct = "UA-1901567-1";
+urchinTracker();
+</script>
+<!-- End Web Reporting -->
+</div>
 {% endblock %}
 </body>
 </html>

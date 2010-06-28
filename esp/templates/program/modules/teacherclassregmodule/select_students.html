@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}Student selection for {{ sec }}{% endblock %}
 
@@ -42,7 +42,10 @@ Back to teacher reg
 <li><b>Capacity</b>: {{ sec.num_students }} / {{ sec.capacity }} students
 {% if has_app_module %}
 <li><b>Student applications:</b> <a href="/teach/{{ program.getUrlBase }}/review_students/{{ sec.parent_class.id }}">Click here</a> to review your students (if applicable).
+<<<<<<< HEAD
 {% endif %}
+=======
+>>>>>>> mit-working
 <li><b>Application questions:</b>
 {% with sec.parent_class.studentappquestion_set.all as questions %}
 {% if questions %}

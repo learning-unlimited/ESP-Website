@@ -639,17 +639,7 @@ class Program(models.Model):
         else:
             return list(self.getTimeSlots(exclude_types=[]))
     getTimeSlotList.depend_on_model(lambda: Event)
-    
-    #   In situations where you just want a list of all time slots in the program,
-    #   that can be cached.
-    @cache_function
-    def getTimeSlotList(self, exclude_compulsory=True):
-        if exclude_compulsory:
-            return list(self.getTimeSlots(exclude_types=['Compulsory']))
-        else:
-            return list(self.getTimeSlots(exclude_types=[]))
-    getTimeSlotList.depend_on_model(lambda: Event)
-    
+
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
         ts_list = Event.collapse(list(self.getTimeSlots()), tol=timedelta(minutes=15))
@@ -677,7 +667,7 @@ class Program(models.Model):
         if include_classroom:
             exclude_types = []
         else:
-            exclude_types = [ResourceType.get_or_create('Classroom')]
+        exclude_types = [ResourceType.get_or_create('Classroom')]
         
         Q_filters = Q(program=self) | Q(program__isnull=True)
         
@@ -1413,7 +1403,7 @@ class BooleanToken(models.Model):
                 # - direct boolean value
                 # Pass along arguments
                 value = token.boolean_value(*args, **kwargs)
-
+                
         return (value, stack)
 
     """ This function is meant to take extra arguments so subclasses can use additional
@@ -1450,6 +1440,7 @@ class BooleanExpression(models.Model):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
+            print 'Adding duplicate of token %s, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
             new_token = token_type()
             #   Copy over fields that don't describe relations
             for item in new_token._meta.fields:

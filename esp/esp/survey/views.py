@@ -184,7 +184,7 @@ def display_survey(user, prog, surveys, request, tl, format):
         surveys = list(surveys)
         for s in surveys:
             questions = s.questions.filter(anchor = prog.anchor).order_by('seq')
-            s.display_data = {'questions': [ { 'question': y, 'answers': Answer.objects.filter(question=y) } for y in questions ]}
+            s.display_data = {'questions': [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]}
             questions2 = s.questions.filter(anchor__parent = prog.anchor, question_type__is_numeric = True).order_by('seq')
             s.display_data['questions'].extend([{ 'question': y, 'answers': Answer.objects.filter(question=y) } for y in questions2])
     else:

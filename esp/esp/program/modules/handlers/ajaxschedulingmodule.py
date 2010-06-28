@@ -215,7 +215,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_resources_cached(self, prog):
-        resources = Resource.objects.filter(event__anchor=self.program_anchor_cached()).exclude(res_type__name__in=["Classroom"])
+        resources = Resource.objects.filter(event__anchor=self.program_anchor_cached()).exclude(res_type__name__in=["Classroom", "Teacher Availability"])
 
         resources_grouped = defaultdict(list)
 

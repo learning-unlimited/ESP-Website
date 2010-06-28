@@ -1,8 +1,11 @@
 from django.test import TestCase
 from django import forms
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserBit
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.program.tests import ProgramFrameworkTest
+from esp.datatree.models import GetNode
+from django.contrib.auth import logout, login, authenticate
+from esp.middleware import ESPError
 
 class ESPUserTest(TestCase):
     def testInit(self):
@@ -11,6 +14,7 @@ class ESPUserTest(TestCase):
         three = ESPUser(two)
         four = ESPUser(three)
         self.failUnless( three.__dict__ == four.__dict__ )
+
     def testDelete(self):
         from esp.datatree.models import GetNode
         from esp.users.models import UserBit
@@ -24,6 +28,55 @@ class ESPUserTest(TestCase):
         self.failUnless( User.objects.filter(id=uid).count() == 0 )
         self.failUnless( ESPUser.objects.filter(id=uid).count() == 0 )
         self.failUnless( UserBit.objects.filter(user=uid).count() == 0 )
+
+    def testMorph(self):
+        class scratchCls(object):
+            pass
+        class scratchDict(dict):
+            def cycle_key(self):
+                pass
+            def flush(self):
+                for i in self.keys():
+                    del self[i]
+
+        # Make up a fake request object
+        # This definitely doesn't meet the spec of the real request object;
+        # if tests fail as a result in the future, it'll need to be fixed.
+        request = scratchCls()
+
+        request.backend = 'django.contrib.auth.backends.ModelBackend'
+        request.user = None
+        request.session = scratchDict()
+
+        # Create a couple users and a userbit
+        self.user, created = User.objects.get_or_create(username='forgetful')
+        self.userbit = UserBit.objects.get_or_create(user=self.user, verb=GetNode('V/Administer'), qsc=GetNode('Q'))
+
+        self.basic_user, created = User.objects.get_or_create(username='simple_student')
+        self.userbit = UserBit.objects.get_or_create(user=self.basic_user, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'))
+
+        self.user.backend = request.backend
+        self.basic_user.backend = request.backend
+
+        login(request, self.user)
+        self.assertEqual(request.user, self.user, "Failed to log in as '%s'" % self.user)
+
+        ESPUser(request.user).switch_to_user(request, self.basic_user, None, None)
+        self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
+
+        ESPUser(request.user).switch_back(request)
+        self.assertEqual(request.user, self.user, "Failed to morph back into '%s'" % self.user)        
+        
+
+        blocked_illegal_morph = True
+        try:
+            ESPUser(request.user).switch_to_user(request, self.basic_user, None, None)
+            self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
+        except ESPError():
+            blocked_illegal_morph = True
+
+        self.assertTrue(blocked_illegal_morph, "User '%s' was allowed to morph into an admin!")
+
 
 class PasswordRecoveryTicketTest(TestCase):
     def setUp(self):
@@ -82,6 +135,7 @@ class TeacherInfo__validationtest(TestCase):
             'major': 'Underwater Basket Weaving',
             'shirt_size': 'XXL',
             'shirt_type': 'M',
+            'from_mit': 'True'
         }
 
     def useData(self, data):
@@ -92,10 +146,27 @@ class TeacherInfo__validationtest(TestCase):
         self.failUnless(tif.is_valid())
         # Check that form data copies correctly into the model
         ti = TeacherInfo.addOrUpdate(self.user, self.user.getLastProfile(), tif.cleaned_data)
-        self.failUnless(ti.graduation_year == tif.cleaned_data['graduation_year'])
+
+        def is_int(i):
+            try:
+                int(i)
+                return True
+            except:
+                return False
+            
+        # There's some data-cleaning going on here, so
+        # ti.graduation_year may have been edited to drop
+        # invalid values.
+        self.failUnless(ti.graduation_year.strip() == tif.cleaned_data['graduation_year'].strip()
+                        or (ti.graduation_year.strip() == "N/A"
+                            and not (is_int(tif.cleaned_data['graduation_year'].strip())
+                                 or tif.cleaned_data['graduation_year'].strip() == 'G')))
+        
         # Check that model data copies correctly back to the form
         tifnew = TeacherInfoForm(ti.updateForm({}))
         self.failUnless(tifnew.is_valid())
+
+        # This one should be an exact match
         self.failUnless(tifnew.cleaned_data['graduation_year'] == ti.graduation_year)
 
     def testUndergrad(self):

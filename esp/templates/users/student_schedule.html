@@ -1,4 +1,10 @@
-
+{% comment %} <hr>
+<p><font style="font-size: 18pt;"><center>
+<a href="/learn/{{one}}/{{two}}/catalog">Click Here</a> to select your
+classes!</center></font>
+</p>
+<hr>
+<br /> {% endcomment %}
 <p>
 {% load render_qsd %}
 {% inline_qsd_block program.anchor class_schedule_header_text request.user %}
@@ -27,7 +33,7 @@ you arrive.
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 
 <div id="program_form">
-<table cellpadding="3" style="width: 600px; margin: auto" border=1>
+<table cellpadding="3" class="fullwidth">
 <tr>
     <th colspan="3">
     Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
@@ -41,11 +47,11 @@ you arrive.
         <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
     {% endifchanged %}
     {% ifequal timeslot.0.event_type.description "Compulsory" %}
-    <tr>
         <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
         <td colspan="2" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
     </tr>
     {% else %}
+    <tr>
     <tr>
         <td width="25%" valign="top" align="center">{{ timeslot.0.short_description }}</td>
         
@@ -71,6 +77,9 @@ you arrive.
         {% if not timeslot.1|length_is:0 %}
             {% if module.deadline_met %}
             <td width='25%' align='center' style="vertical-align: top !important;">
+          {% comment %} <input type="button" value="Edit My Schedule"
+            onclick="window.location='/learn/{{one}}/{{two}}/catalog';">
+          <br />Or: {% endcomment %} 
             {% for cls in timeslot.1 %}
                 <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a>
                 {% if cls.changeable %}
@@ -98,6 +107,9 @@ you arrive.
         {% else %}
             {% if module.deadline_met %}
                 <td width='20%' align='center'>
+          {% comment %} <input type="button" value="Edit My Schedule"
+          onclick="window.location='/learn/{{one}}/{{two}}/catalog';">
+          <br />Or: {% endcomment %}
                 <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
                 </td>
             {% endif %}	
@@ -107,4 +119,5 @@ you arrive.
 {% endfor %}
 </table> 
 </div>
+
 <br/>

@@ -414,6 +414,13 @@ class ProgramPrintables(ProgramModuleObj):
                 setattr(t, key, extra_dict[key])
         teachers.sort()
 
+        if extra == 'secondday':
+            from django.db.models import Min
+
+            allclasses = prog.sections().filter(status=10, parent_class__status=10, meeting_times__isnull=False)
+            first_timeblock_dict = allclasses.aggregate(Min('meeting_times__start'))
+
+
         scheditems = []
 
         for teacher in teachers:
@@ -423,16 +430,24 @@ class ProgramPrintables(ProgramModuleObj):
             # now we sort them by time/title
             classes.sort()
 
-            #   Make some effort to get contact information
-            ci = teacher.getLastProfile().contact_user
-            if ci is None:
-                try:
-                    ci = teacher.contactinfo_set.all().order_by('-id')[0]
-                except:
-                    ci = None
-            if ci is not None:
-                phone_day = ci.phone_day or 'N/A'
-                phone_cell = ci.phone_cell or 'N/A'
+            if extra == 'secondday':
+                new_classes = []
+                first_timeblock = first_timeblock_dict['meeting_times__start__min']
+
+                for cls in classes:
+                    starttime = cls.meeting_times.all().order_by('start')[0]
+                    if (starttime.start.month, starttime.start.day) != \
+                       (first_timeblock.month, first_timeblock.day):
+                        new_classes.append(cls)
+
+                classes = new_classes
+
+                
+
+            # aseering 9-29-2007, 1:30am: There must be a better way to do this...
+            ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
+            if ci.count() > 0:
+                phone_cell = ci[0].phone_cell
             else:
                 phone_day = 'N/A'
                 phone_cell = 'N/A'
@@ -789,7 +804,7 @@ Student schedule for %s:
             else:
                 rooms = ' ' + ", ".join(rooms)
                 
-            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title).ljust(40), rooms)
                
         return schedule
 
@@ -839,7 +854,7 @@ Student schedule for %s:
     @aux_call
     @needs_onsite_no_switchback
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
-            
+        
         context = {'module': self }
 
         if onsite:
@@ -921,7 +936,9 @@ Student schedule for %s:
             # attach payment information to student
             student.invoice_id = invoice.locator
             student.itemizedcosts = invoice.get_items()
-            student.meals = student.itemizedcosts.filter(li_type__anchor__name='BuyOne')  # not just meals, but all BuyOne LineItems (for Spark 2009, included t-shirt, photo, etc)
+            student.meals = student.itemizedcosts.filter(li_type__anchor__parent__name='Optional').distinct()  # catch everything that's not admission to the program.
+            student.admission = student.itemizedcosts.filter(li_type__anchor__name='Required').distinct()  # Program admission
+            student.paid_online = student.itemizedcosts.filter(anchor__parent__name='Receivable').distinct()  # LineItems for having paid online.
             student.itemizedcosttotal = invoice.cost()
             
             # add cost/credit information from SplashInfo (looks in JSON Tag: splashinfo_costs)
@@ -943,12 +960,12 @@ Student schedule for %s:
             if student.has_financial_aid:
                 student.itemizedcosttotal = 0
             student.has_paid = ( student.itemizedcosttotal == 0 )
-
+            
             student.payment_info = True
             student.classes = classes
-
+            
         context['students'] = students
-        context['program'] = prog
+        context['program'] = self.program
         
         if extra:
             file_type = extra.strip()
@@ -957,14 +974,12 @@ Student schedule for %s:
 
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
-
-        #   Hack to allow this to be done in a static method
-        basedir = 'program/modules/'+ProgramPrintables.__name__.lower()+'/'
+            
         if file_type == 'html':
-            return render_to_response(basedir+'studentschedule.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
-            schedule_template = select_template([basedir+'program_custom_schedules/%s_studentschedule.tex' %(prog.id), basedir+'studentschedule.tex'])
+            schedule_template = select_template([self.baseDir()+'program_custom_schedules/%s_studentschedule.tex' %(self.program.id), self.baseDir()+'studentschedule.tex'])
             return render_to_latex(schedule_template, context, file_type)
 
     @aux_call
@@ -1034,7 +1049,7 @@ Student schedule for %s:
                 
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
         
     @aux_call
     @needs_admin
@@ -1453,7 +1468,8 @@ Student schedule for %s:
 
         # header row, naming each column
         write_csv.writerow([''] + ['Teachers'] + ['Projector?'] + \
-                           ['Computer Lab?'] + ['Max Size'] + \
+                           ['Computer Lab?'] + ['Optimal Size'] + \
+                           ['Max Size'] + \
                            ['Grade Levels'] + ['Comments to Director'] + \
                            [str(time) for time in times])
 
@@ -1463,6 +1479,7 @@ Student schedule for %s:
                                [section.parent_class.pretty_teachers()] + \
                                [needs_resource('LCD Projector', section)] + \
                                [needs_resource('Computer Lab', section)] + \
+                               [section.parent_class.class_size_optimal] + \
                                [section.parent_class.class_size_max] + \
                                ['%d--%d' %(section.parent_class.grade_min, section.parent_class.grade_max)] +\
                                [section.parent_class.message_for_directors] + \

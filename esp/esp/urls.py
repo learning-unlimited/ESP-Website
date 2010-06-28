@@ -61,15 +61,16 @@ urlpatterns += patterns('',
                         (r'^', include('esp.shortterm.urls'),),
                         )
 
+urlpatterns += patterns('esp.web.views',
+                        (r'^$', 'index',{'template':'splash.html'}), # index
+                        )
+
 # generic stuff
-urlpatterns += patterns('esp.web.views.main',
-                        (r'^$', 'home'), # index
-                        # The line below causes a problem with the admin interface under /admin/web.  
-                        # Hopefully it's alright to discontinue this redirect.   -Michael P, 9/10/2009
-                        # (r'^web/?', 'home'), # index
-                        (r'^web$', 'home'), # index                        
-                        (r'^esp_web', 'home'), # index
-                        (r'.php$', 'home'), # index                        
+urlpatterns += patterns('django.views.generic',
+                        (r'^web/?', 'simple.direct_to_template',{'template':'splash.html'}), # index
+                        (r'^web$', 'simple.direct_to_template',{'template':'splash.html'}), # index                        
+                        (r'^esp_web', 'simple.direct_to_template',{'template':'splash.html'}), # index
+                        (r'.php$', 'simple.direct_to_template',{'template':'splash.html'}), # index                        
                         )
 
 # program stuff

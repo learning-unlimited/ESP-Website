@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}{{ program.niceName }} Survey Responses{% endblock %}
 
@@ -26,7 +26,7 @@
 <center>
     
     {% if not classes_only %}
-        <table width="600">
+        <table class="fullwidth">
         <tr>
             <th>Responses for: {{ response.survey.name }}</th>
         </tr>
@@ -35,13 +35,13 @@
     
     {% for answer in answers %}
         {% ifchanged answer.anchor %}{% if not forloop.first or classes_only %}
-            <table width="600">
+            <table class="fullwidth">
             <tr>
                 <th>Responses for Class {{ answer.anchor.name }}: {{ answer.anchor.parent.friendly_name }} {{ answer.anchor.friendly_name }}</th>
             </tr>
             </table>
         {% endif %}{% endifchanged %}
-        <table width="600">
+        <table class="fullwidth">
         <tr>
             <td width="35%" valign="top"><b>{{ answer.question.name }}</b></td>
             <td><ul>{{ answer|answer_to_list|unordered_list }}</ul></td>

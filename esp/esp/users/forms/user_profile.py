@@ -6,6 +6,7 @@ from esp.utils.widgets import SplitDateWidget
 from esp.users.models import K12School, StudentInfo
 from esp.utils.defaultclass import defaultclass
 from datetime import datetime
+from esp.program.models import RegistrationProfile
 import re
 
 # SRC: esp/program/manipulators.py
@@ -21,7 +22,7 @@ class PhoneNumberField(forms.CharField):
         forms.CharField.__init__(self, max_length=max_length, *args, **kwargs)
         self.widget.attrs['size'] = length
         if local_areacode:
-            self.areacode = local_areacode
+        self.areacode = local_areacode
         else:
             self.areacode = None
 
@@ -119,6 +120,20 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     studentrep_error = True
 
+    def __init__(self, user=None, *args, **kwargs):
+        super(StudentInfoForm, self).__init__(user, *args, **kwargs)
+
+        if kwargs.has_key('initial'):
+            initial_data = kwargs['initial']
+
+            # Disable the age and grade fields if they already exist.
+            if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
+                self.fields['graduation_year'].widget.attrs['disabled'] = "true"
+                self.fields['dob'].widget.attrs['disabled'] = "true"
+
+        self._user = user
+
+
     def repress_studentrep_expl_error(self):
         self.studentrep_error = False
 
@@ -127,50 +142,41 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
             raise forms.ValidationError("Please enter an explanation above.")
         return expl
-        
-    def clean_k12school(self):
-        #   Add text for the hidden school field if an unrecognized school or 'Other' is selected in the k12school field
-        from esp.users.models import K12School
-        result = self.cleaned_data['k12school']
-        if result is None or result.name == 'Other':
-            self.cleaned_data['k12school_shadow'] = str(self.data['k12school_shadow'])
-        print 'clean_k12school(): Resulting k12school = %s k12school_shadow = %s' % (self.cleaned_data['k12school'], self.cleaned_data['k12school_shadow'])
-        return result
+
+    def clean_graduation_year(self):
+        gy = self.cleaned_data['graduation_year'].strip()
+        try:
+            gy = str(abs(int(gy)))
+        except:
+            if gy != 'G':
+                gy = 'N/A'
+        return gy
+            
 
     def clean(self):
-        from esp.users.models import K12School
-
         cleaned_data = self.cleaned_data
-        if cleaned_data.has_key('k12school') and cleaned_data.has_key('school'):
-            if cleaned_data['k12school'] == unicode(K12School.objects.other().id) and not cleaned_data['school']:
-                self._errors['k12school'] = forms.util.ErrorList(['Please specify the name of your school.'])
-        if 'k12school_shadow' in cleaned_data and len(cleaned_data['school'].strip()) == 0:
-            cleaned_data['school'] = cleaned_data['k12school_shadow']
-        print 'clean(): Resulting k12school = %s school = %s' % (self.cleaned_data['k12school'], self.cleaned_data['school'])
+        user = self._user
+
+        orig_prof = RegistrationProfile.getLastProfile(user)
+
+        # If graduation year and dob were disabled, get old data.
+        if (orig_prof.id is not None) and (orig_prof.student_info is not None):
+
+            if not cleaned_data.has_key('graduation_year'):
+                # Get rid of the error saying this is missing
+                del self.errors['graduation_year']
+
+            if not cleaned_data.has_key('dob'):
+                del self.errors['dob']
+
+            # Always use the old birthdate if it exists, so that people can't
+            # use something like Firebug to change their age/grade
+            cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
+            cleaned_data['dob'] = orig_prof.student_info.dob
+
         return cleaned_data
-
-    def __init__(self, *args, **kwargs):
-        from esp.users.models import K12School
-
-        def remove_field(field_name):
-            del self.fields[field_name]
-
-        def hide_field(field, default=None):
-            field.widget = forms.HiddenInput()
-            if default is not None:
-                field.initial = default
         
-        super(StudentInfoForm, self).__init__(*args, **kwargs)
-        
-        self.fields['k12school'].set_field(StudentInfo._meta.get_field_by_name('k12school')[0])
-        
-        #   Hide unused fields
-        if not Tag.getTag('studentinfo_shirt_options'):
-            remove_field('shirt_size')
-            remove_field('shirt_type')
-        if not Tag.getTag('studentinfo_food_options'):
-            remove_field('food_preference')
-        
+    
 StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
 StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
@@ -183,9 +189,11 @@ class TeacherInfoForm(FormWithRequiredCss):
     from esp.users.models import shirt_sizes, shirt_types
     reimbursement_choices = [(False, 'I will pick up my reimbursement.'),
                              (True,  'Please mail me my reimbursement.')]
+    from_mit_answers = [ (True, "Yes"), (False, "No") ]
 
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     is_graduate_student = forms.BooleanField(required=False, label='Graduate student?')
+    from_mit = forms.ChoiceField(choices=from_mit_answers, widget = forms.RadioSelect() )
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
@@ -195,17 +203,23 @@ class TeacherInfoForm(FormWithRequiredCss):
     student_id = SizedCharField(length=24, max_length=128, required=False)
     mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 
-    def __init__(self, *args, **kwargs):
-        def remove_field(field_name):
-            del self.fields[field_name]
-            
-        super(TeacherInfoForm, self).__init__(*args, **kwargs)
-            
-        if not Tag.getTag('teacherinfo_reimbursement_options'):
-            remove_field('full_legal_name')
-            remove_field('university_email')
-            remove_field('student_id')
-            remove_field('mail_reimbursement')
+    def clean(self):
+        cleaned_data = self.cleaned_data
+
+        # If teacher is not from MIT, make sure they've filled in the next box
+        from_mit = cleaned_data.get('from_mit')
+        school = cleaned_data.get('school')
+
+        if from_mit == "False" and school == "":
+            msg = u'Please enter your affiliation if you are not from MIT.'
+            self._errors['school'] = forms.util.ErrorList([msg])
+            del cleaned_data['from_mit']
+            del cleaned_data['school']
+
+        return cleaned_data
+
+TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
+TeacherInfoForm.base_fields['graduation_year'].widget.attrs['maxlength'] = 4
 
 class EducatorInfoForm(FormWithRequiredCss):
     """ Extra educator-specific information """

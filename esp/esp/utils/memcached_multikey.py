@@ -1,8 +1,10 @@
 "Memcached cache backend"
 from django.core.cache.backends.base import BaseCache
-from django.core.cache.backends.memcached import CacheClass as MemcacheCacheClass
+from esp.utils.pylibcmd import CacheClass as PylibmcCacheClass
 from esp import settings
+from esp.utils.try_multi import try_multi
 import urllib
+import hashlib
 
 try:
     import cPickle as pickle
@@ -14,6 +16,9 @@ FAILFAST = getattr(settings, "DEBUG", True)
 # Is there any way to introspect this?
 CACHE_WARNING_SIZE = 1 * 1024**2
 CACHE_SIZE = 2 * 1024**2
+MAX_KEY_LENGTH = 251
+NO_HASH_PREFIX = "NH_"
+HASH_PREFIX = "H_"
 
 class CacheClass(BaseCache):
     idebug = False
@@ -21,15 +26,17 @@ class CacheClass(BaseCache):
 
     def __init__(self, server, params):
         BaseCache.__init__(self, params)
-        self._wrapped_cache = MemcacheCacheClass(server, params)
+        self._wrapped_cache = PylibmcCacheClass(server, params)
         if not hasattr(settings, 'CACHE_PREFIX'):
             settings.CACHE_PREFIX = ''
 
     def make_key(self, key):
-        return urllib.quote_plus( settings.CACHE_PREFIX + key )
-    def unmake_key(self, key):
-        key = urllib.unquote_plus(key)
-        return key[len(settings.CACHE_PREFIX):]
+        rawkey = urllib.quote_plus( NO_HASH_PREFIX + settings.CACHE_PREFIX + key )
+        if len(rawkey) <= MAX_KEY_LENGTH:
+            return rawkey
+        else: # We have an oversized key; hash it
+            hashkey = HASH_PREFIX + hashlib.md5(key).hexdigest()
+            return hashkey + '_' + rawkey[ : MAX_KEY_LENGTH - len(hashkey) - 1 ]
 
     def _failfast_test(self, key, value):
         if FAILFAST:
@@ -38,39 +45,44 @@ class CacheClass(BaseCache):
                 assert False, "Data size for key '%s' too large: %d bytes" % (key, data_size)
             elif data_size > CACHE_WARNING_SIZE:
                 print "Data size for key '%s' is dangerously large: %d bytes" % (key, data_size)
-    
+
+    @try_multi(8)
     def add(self, key, value, timeout=0):
-        if self.idebug: self._idebuglog("add", key, value)
         self._failfast_test(key, value)
         return self._wrapped_cache.add(self.make_key(key), value, timeout=timeout)
 
+    @try_multi(8)
     def get(self, key, default=None):
         val = self._wrapped_cache.get(self.make_key(key), default=default)
         if self.idebug: self._idebuglog("get", key, val)
         return val
 
+    @try_multi(8)
     def set(self, key, value, timeout=0):
-        if self.idebug: self._idebuglog("set", key, value)
         self._failfast_test(key, value)
         return self._wrapped_cache.set(self.make_key(key), value, timeout=timeout)
 
+    @try_multi(8)
     def delete(self, key):
         if self.idebug: self._idebuglog("delete", key, None)
         return self._wrapped_cache.delete(self.make_key(key))
 
+    @try_multi(8)
     def get_many(self, keys):
-        if self.idebug: self._idebuglog("get_many", keys)
-        wrapped_ans = self._wrapped_cache.get_many([self.make_key(key) for key in keys])
+        keys_dict = dict((self.make_key(key), key) for key in keys)
+        wrapped_ans = self._wrapped_cache.get_many(keys_dict.keys())
         ans = {}
         for k,v in wrapped_ans.items():
-            ans[self.unmake_key(k)] = v
+            ans[keys_dict[k]] = v
         return ans
 
     # Django 1.1 feature
+    # Don't try_multi, that could be all kinds of bad...
     def incr(self, key, delta=1):
         return self._wrapped_cache.incr(self.make_key(key), delta)
 
     # Django 1.1 feature
+    # Don't try_multi, that could be all kinds of bad...
     def decr(self, key, delta=1):
         return self._wrapped_cache.decr(self.make_key(key), delta)
 

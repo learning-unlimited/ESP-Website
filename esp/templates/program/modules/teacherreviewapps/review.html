@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}Review Student {{ student.name }}{% endblock %}
 
@@ -21,8 +21,13 @@ Please review the student's biographical information and responses to our questi
 </p>
 
 <div id="program_form">
+<<<<<<< HEAD
 <form action="{{ request.path }}" method="post" name="review">{% csrf_token %}
 <table class="application" width="600">
+=======
+<form action="{{ request.path }}" method="post" name="review">
+<table class="application" class="fullwidth">
+>>>>>>> mit-working
 <tr>
   <th colspan="2">Student Application for {{ student.name }}</th>
 </tr>
@@ -38,11 +43,24 @@ Please review the student's biographical information and responses to our questi
     <td>Added your class: </td>
     <td>{{ student.added_class|date:"m/d/Y @ h:i:s" }}</td>
 </tr>
+<tr>
+  <td>Existing reviews:</td>
+  <td>
+    <ul>
+    {% for rev in reviews %}
+    <li><b>Comments:</b> {{ rev.comments }}<br />
+        <b>Score:</b> {{ rev.score }} <br />
+    {% endfor %}
+    </ul>
+    </td>
+</tr>
 {% for response in student.app.responses.all %}
+{% ifequal class response.question.subject %}
 <tr>
   <th><label>{{ response.question.question }}</label></th>
   <td>{{ response.response }}</td>
 </tr>
+{% endifequal %}
 {% endfor %}
 </table>
 <br />

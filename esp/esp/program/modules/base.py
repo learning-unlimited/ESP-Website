@@ -174,6 +174,9 @@ class ProgramModuleObj(models.Model):
 
         if len(modules) == 0:
             modules = ProgramModule.objects.filter(aux_calls__contains = call_txt, module_type = tl).select_related()
+            for module in modules:
+                if call_txt in module.aux_calls.strip().split(','):
+                    return ProgramModuleObj.getFromProgModule(prog, module)
         else:
             module = modules[0]
             return ProgramModuleObj.getFromProgModule(prog, module)
@@ -233,6 +236,7 @@ class ProgramModuleObj(models.Model):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
 
         raise Http404
+
     @staticmethod
     def getFromProgModule(prog, mod):
         import esp.program.modules.models
@@ -603,7 +607,7 @@ def needs_student(method):
             allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
             matching_user_types = UserBit.valid_objects().filter(user=moduleObj.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
             if not matching_user_types:
-                return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
+            return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
 
     return _checkStudent        

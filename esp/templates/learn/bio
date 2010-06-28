@@ -1,5 +1,5 @@
 
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}{{ name }}{% endblock %}
 

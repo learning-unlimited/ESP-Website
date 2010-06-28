@@ -129,6 +129,7 @@ class Migration:
             ('remoteprofile', models.ForeignKey(orm.RemoteProfile, null=False)),
             ('datatree', models.ForeignKey(orm['datatree.DataTree'], null=False))
         ))
+        
     
     
     def backwards(self, orm):
@@ -282,7 +283,6 @@ class Migration:
             'num_divisions': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'})
         },
         'modules.satprepteachermoduleinfo': {
-            'Meta': {'unique_together': "(('user', 'program'),)"},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'mitid': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
             'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True', 'blank': 'True'}),

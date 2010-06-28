@@ -1,0 +1,97 @@
+{% extends "elements/html" %}
+
+{% block title %}Home{% endblock %}
+{% block stylesheets %}
+{% comment %}
+{% if request.user.is_authenticated %}
+{% if request.user.isTeacher %}
+<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/teach/index.html">
+{% else %}
+<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/learn/index.html">
+{% endif %}
+{% endif %}
+{% endcomment %}
+<meta name="author" content="Tony Valderrama, Vincent Lee, and others" />
+<link rel="stylesheet" type="text/css" href="/media/styles/splash.css" media="all" />
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript">
+window.onload = function(){
+
+// create behavior wrapper
+var wrap = function(target, label) {
+  var flag = false;
+  target.onfocus = function(){
+    if (flag) {
+      target.value = '';
+      target.style.color = '#000000';
+    }
+  };
+  target.onblur = function(){
+    if (flag = (target.value == '')) {
+      target.value = label;
+      target.style.color = '#999999';
+    }
+  };
+  target.onblur();
+};
+
+// set behavior on Username, Password, and Search fields
+wrap(document.getElementById('login_user'),'Username');
+wrap(document.getElementById('login_pswd'),'Password');
+
+};
+
+function set_teachlearn(tl) {
+if (document.getElementById('remember').checked) {
+document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025").toGMTString() + '; path=/';
+}
+}
+</script>
+{% endblock %}
+
+{% block body %}
+<div id="page">
+<!--
+<form name="select_type" method="get" action"#">
+  <input type="submit" href="student.html" id="student" name="student" value="true" />
+  <input type="submit" href="teacher.html" id="teacher" name="teacher" value="true" />
+-->
+  <a id="student" href="learn/index.html" onclick="javascript:set_teachlearn('learn');"></a>
+  <a id="teacher" href="teach/index.html" onclick="javascript:set_teachlearn('teach');"></a>
+  <a id="about" href="about/welcome.html"></a>
+  <a id="whoarewe" href="about/welcome.html">Who Are We?</a>
+  <input type="checkbox" id="remember" name="remember" />
+  <label for="remember" id="remember_label">Remember my choice</label>
+<!--</form>-->
+<span id="orbox">- or -</span>
+
+{% block login %}
+<div id="login_box">
+<div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
+<div id="login_div">
+{% if not request.user.is_authenticated %}
+<!-- login -->
+<form name="login_form" id="login_form" method="post" action="/myesp/login/">
+  <input type="hidden" name="next" value="/" />
+  <input type="text" id="login_user" name="username"/>
+  <input type="password" id="login_pswd" name="password" />
+  <input type="submit" id="login_submit" name="login_submit" value="" />
+  <a href="/myesp/register" id="login_signup"></a>
+  <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
+</form>
+
+{% else %}
+<!-- logout -->
+  Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
+  (<a href="/myesp/signout/">Logout</a>)
+{% endif %}
+
+</div>
+</div>
+{% endblock %}
+
+</div>
+{% endblock %}

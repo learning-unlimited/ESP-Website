@@ -1,0 +1,37 @@
+/* style overrides for "Take a Class" level 3 */
+
+
+
+/* BACKGROUNDS AT TOP OF PAGE */
+
+#divbkg1 {
+  background-image: url(/media/images/takeaclass/lev3/bkg1.jpg);
+}
+#divbkg2 {
+  background-image: url(/media/images/takeaclass/lev3/bkg2.gif);
+}
+#divbkg3 {
+  background-image: url(/media/images/takeaclass/lev3/bkg3.gif);
+}
+#divbkg4 {
+  background-image: url(/media/images/takeaclass/lev3/bkg4.gif);
+}
+
+
+
+/* SITE TITLE */
+
+#divtitle {
+  left: 188px;
+  top: 37px;
+}
+
+
+
+/* SECTION NAME */
+/* position varies by section */
+
+#divsectionname {
+  left: 64px;
+  top: 161px;
+}

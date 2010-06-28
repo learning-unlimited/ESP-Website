@@ -1,0 +1,597 @@
+/* styles for ESP levels 2 and 3 */
+/* for home page see home.css */
+
+
+
+/* GENERAL */
+
+html, body {
+  background-color: #e8f0f7;
+  margin: 0px;
+}
+/* for div containing skip links and other content that should never be seen by visual browsers */
+.offscreen {
+  position: absolute;
+  left: 0px; top: -9999px;
+  width: 1px; height: 1px;
+  overflow: hidden;
+}
+
+/* default link characteristics */
+a,
+a:link {
+  color: #3366cc;
+  text-decoration: none;
+}
+a:visited {
+  color: #993399;
+  text-decoration: none;
+}
+a:active,
+a:hover {
+  color: #3366cc;
+  text-decoration: underline;
+}
+
+
+/* remove space around forms */
+form {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+
+.paper {
+  background-color: #ffffff;
+}
+.rightalign {
+  text-align: right;
+}
+
+
+
+/* BACKGROUNDS AT TOP OF PAGE */
+
+#divbkg1 {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 100%;
+  height: 152px;
+  background-repeat: no-repeat;
+  z-index: 4;
+}
+#divbkg2 {
+  position: absolute;
+  left: 0px;
+  top: 152px;
+  width: 199px;
+  height: 400px;
+  background-repeat: no-repeat;
+  z-index: 4;
+}
+#divbkg3 {
+  position: absolute;
+  left: 199px;
+  top: 152px;
+  width: 603px;
+  height: 85px;
+  background-repeat: no-repeat;
+  z-index: 4;
+}
+#divbkg4 {
+  position: absolute;
+  left: 199px;
+  top: 237px;
+  width: 88px;
+  height: 315px;
+  background-repeat: no-repeat;
+  z-index: 4;
+}
+
+
+
+/* SITE TITLE */
+
+#divtitle {
+  position: absolute;
+  left: 163px;
+  top: 24px;
+  z-index: 6;
+}
+
+
+
+/* PRIMARY NAVIGATION */
+
+#divnavh {
+  position: absolute;
+  left: 0px;
+  top: 84px;
+  z-index: 10;
+}
+#divnav1 {
+  position: absolute;
+  left: 107px;
+  top: 84px;
+  z-index: 10;
+}
+#divnav2 {
+  position: absolute;
+  left: 201px;
+  top: 84px;
+  z-index: 10;
+}
+#divnav3 {
+  position: absolute;
+  left: 297px;
+  top: 84px;
+  z-index: 10;
+}
+#divnav4 {
+  position: absolute;
+  left: 396px;
+  top: 83px;
+  z-index: 10;
+}
+#divnav5 {
+  position: absolute;
+  left: 496px;
+  top: 83px;
+  z-index: 10;
+}
+#divnav6 {
+  position: absolute;
+  left: 589px;
+  top: 83px;
+  z-index: 10;
+}
+#divnav7 {
+  position: absolute;
+  left: 690px;
+  top: 83px;
+  z-index: 10;
+}
+
+
+
+/* SECTION NAME */
+
+#divsectionname {
+  position: absolute;
+  left: 82px;
+  top: 164px;
+  z-index: 6;
+}
+
+
+
+/* SECONDARY NAVIGATION */
+
+#divsecondarynav {
+  width: 199px;
+  position: absolute;
+  left: 0px;
+  top: 223px;
+  z-index: 10;
+}
+
+/* secondary navigation link */
+.divsecondarynavlink {
+  background-image: url(/media/images/dashedline.gif);
+  background-repeat: no-repeat;
+  padding: 6px 20px 5px 36px;
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.75em;
+  color: #3366cc;
+  line-height: 133%;
+  margin: 0px;
+}
+/* outdent 'bullet' in secondary nav */
+.divsecondarynavlink .bullet {
+  margin-left: -8px;
+}
+/* tertiary navigation */
+.divtertiarynav {
+  padding: 0px 20px 4px 56px;
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.75em;
+  color: #3366cc;
+  line-height: 133%;
+  margin: 0px;
+}
+.divtertiarynav ul {
+  padding: 0px;
+  margin: 0px;
+  list-style-type: none;
+}
+.divtertiarynav ul li {
+  padding: 0px 0px 4px 0px;
+  margin: 0px;
+}
+
+#divsecondarynav p {
+  margin: 0px;
+}
+
+/* link characteristics */
+#divsecondarynav a,
+#divsecondarynav a:link {
+  font-weight: bold;
+  color: #3366cc;
+  text-decoration: none;
+}
+#divsecondarynav a:visited {
+  font-weight: bold;
+  color: #993399;
+  text-decoration: none;
+}
+#divsecondarynav a:active,
+#divsecondarynav a:hover,
+#divsecondarynav a:focus {
+  font-weight: bold;
+  color: #3366cc;
+  text-decoration: underline;
+}
+
+/* nav to current page */
+#divsecondarynav p.current,
+#divsecondarynav p.current a,
+#divsecondarynav p.current a:link,
+#divsecondarynav p.current a:visited,
+#divsecondarynav p.current a:active,
+#divsecondarynav p.current a:hover,
+#divsecondarynav p.current a:focus,
+#divsecondarynav .divtertiarynav li.current a,
+#divsecondarynav .divtertiarynav li.current a:link,
+#divsecondarynav .divtertiarynav li.current a:visited,
+#divsecondarynav .divtertiarynav li.current a:active,
+#divsecondarynav .divtertiarynav li.current a:hover,
+#divsecondarynav .divtertiarynav li.current a:focus {
+  color: #666666;
+}
+
+
+
+/* SEARCH/LOGIN/LOGOUT FORMS */
+
+#divsearch {
+  position: absolute;
+  left: 380px;
+  top: 54px;
+  z-index: 8;
+  width: 360px;
+}
+
+#divlogin {
+  position: absolute;
+  left: 380px;
+  top: 160px;
+  z-index: 8;
+  width: 360px;
+}
+
+#divlogout {
+  position: absolute;
+  left: 344px;
+  top: 194px;
+  z-index: 8;
+}
+
+/* columns in form tables */
+.divformcol1, .divformcol2, .divformcol3, .divformcol4, .divformcol5 {
+  padding: 0px 6px 10px 0px;
+
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.75em;
+  color: #000000;
+  line-height: 100%;
+  margin: 0px;
+  white-space: nowrap;
+}
+#divlogout p {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.75em;
+  color: #000000;
+  line-height: 100%;
+  margin: 0px;
+  white-space: nowrap;
+}
+
+/* input box */
+.inputbox {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.75em;
+  width: 92px;
+  border: solid 2px #000000;
+  margin: 0px;
+  padding: 1px;
+}
+/* select box */
+.selectbox {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 12px;
+  width: 92px;
+}
+
+
+
+/* QUICKLINKS FORM */
+
+#divquicklinks {
+  position: absolute;
+  left: 580px;
+  top: 190px;
+  z-index: 9;
+  width: 160px;
+}
+
+
+
+/* SUBSECTION NAME */
+
+#divsubsectionname {
+  position: absolute;
+  left: 210px;
+  top: 227px;
+  z-index: 6;
+}
+
+
+
+/* MAIN CONTENT AREA */
+
+/* skip row 1 - no longer needed */
+#divmain {
+  position: absolute;
+  left: 0px;
+  top: 152px;
+  z-index: 2;
+}
+
+/* struts for main table */
+#maintable div.row1 {
+  height: 152px;
+}
+#maintable div.row2 {
+  height: 85px;
+}
+#maintable div.row3 {
+  height: 370px;
+}
+#maintable div.row4 {
+  height: 100px;
+}
+#maintable div.col1 {
+  width: 199px;
+}
+#maintable div.col2 {
+  width: 88px;
+}
+#maintable div.col3 {
+  width: 485px;
+}
+#maintable div.col4 {
+  width: 154px;
+}
+#maintable div.col5 {
+  width: 10px;
+}
+
+
+
+/* MAIN TEXT */
+
+#divmaintext {
+  padding: 0px 66px 20px 0px;
+}
+#divmaintext p, #divmaintext li {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.75em;
+  line-height: 160%;
+  color: #000000;
+  margin-top: 0px;
+}
+#divmaintext h1 {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.90em;
+  font-weight: bold;
+  color: #3366cc;
+  margin-top: 0px;
+}
+#divmaintext h2 {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.90em;
+  font-weight: bold;
+  color: #000000;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+#divmaintext h3 {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.75em;
+  font-weight: bold;
+  color: #000000;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+#divmaintext h4 {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.75em;
+  font-weight: bold;
+  font-style: italic;
+  color: #000000;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+#divmaintext a,
+#divmaintext a:link {
+  color: #3366cc;
+  text-decoration: underline;
+}
+#divmaintext a:visited {
+  color: #993399;
+  text-decoration: underline;
+}
+#divmaintext a:active,
+#divmaintext a:hover,
+#divmaintext a:focus {
+  color: #3366cc;
+  text-decoration: underline;
+}
+
+/* forms within content area */
+#divmaintext form {
+  display: block;
+  margin-bottom: 1em;
+}
+#divmaintext form table {
+  border: solid 0px #ffffff;
+  margin-bottom: 1em;
+}
+#divmaintext form table td {
+  padding-bottom: 0.5em;
+  padding-right: 2.0em;
+  text-align: left;
+  vertical-align: top;
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.75em;
+  font-weight: bold;
+  color: #000000;
+  white-space: nowrap;
+}
+#divmaintext form table td input.textfield,
+#divmaintext form table td textarea {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  width: 100%;
+  color: #000000;
+}
+#divmaintext form table td textarea {
+  height: 6.0em;
+}
+
+
+
+/* QUOTES */
+
+#divquotelarge {
+  width: 154px;
+  height: 370px;
+  background-image: url(/media/images/quote/large/top.gif);
+  background-repeat: no-repeat;
+}
+#divquotelarge td {
+  height: 370px;
+  vertical-align: bottom;
+}
+#divquotelargebot {
+  width: 154px;
+  height: 100px;
+  background-image: url(/media/images/quote/large/bot.gif);
+  background-repeat: no-repeat;
+}
+#divquotemedium {
+  width: 154px;
+  height: 370px;
+  background-image: url(/media/images/quote/medium/top.gif);
+  background-repeat: no-repeat;
+}
+#divquotemedium td {
+  height: 370px;
+  vertical-align: bottom;
+}
+#divquotemediumbot {
+  width: 154px;
+  height: 100px;
+  background-image: url(/media/images/quote/medium/bot.gif);
+  background-repeat: no-repeat;
+}
+#divquotesmall {
+  width: 154px;
+  height: 370px;
+  background-image: url(/media/images/quote/small/top.gif);
+  background-repeat: no-repeat;
+}
+#divquotesmall td {
+  height: 370px;
+  vertical-align: bottom;
+}
+#divquotesmallbot {
+  width: 154px;
+  height: 100px;
+  background-image: url(/media/images/quote/small/bot.gif);
+  background-repeat: no-repeat;
+}
+#divquotenone {
+  width: 154px;
+  height: 370px;
+}
+#divquotenone {
+  width: 154px;
+  height: 100px;
+}
+
+#divquotetext {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 1.0em;
+  line-height: 125%;
+  font-weight: bold;
+  margin: 0px;
+  color: #ff5500;
+  padding: 0px 44px 0px 6px;
+}
+#divquotetext .quoteauthor {
+  font-size: 0.75em;
+  font-weight: normal;
+  color: #666666;
+}
+
+
+
+/* FOOTER */
+
+#divfooter {
+  width: 772px;
+  height: 100px;
+  background-image: url(/media/images/bandaid3.gif);
+  background-repeat: no-repeat;
+}
+#divfooter table {
+  margin: 30px 0px 20px 170px;
+}
+#divfooter p {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.70em;
+  color: #000000;
+  line-height: 135%;
+  margin: 0px;
+  white-space: nowrap;
+}
+
+#divfooter td {
+  vertical-align: top;
+}
+#divfootercol1 {
+  position: relative;
+  width: 77px;
+  padding-right: 10px;
+}
+#divfootercol2 {
+  position: relative;
+  width: 141px;
+  padding-right: 10px;
+}
+#divfootercol3 {
+  position: relative;
+  width: 241px;
+  padding-right: 10px;
+}
+#divfootercol4 {
+  position: relative;
+  padding-right: 6px;
+}
+#divfootercol5 {
+  position: relative;
+  top: -8px;
+}

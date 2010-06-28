@@ -161,6 +161,7 @@ class ESPErrorMiddleware(object):
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
                           'cur_retTitle': ret_title,
                           'cur_admin': ESPUser(user).isAdministrator() and '1' or '0',
+                          'cur_grade': ESPUser(user).getGrade(),
                           }
 
             for key, value in new_values.iteritems():

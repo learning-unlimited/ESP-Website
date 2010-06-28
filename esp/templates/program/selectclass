@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends "main.html" %}
 
 {% block title %}Teacher Signup{% endblock %}
@@ -26,3 +27,33 @@
 </form></div>
 
 {% endblock %}
+=======
+{% extends "outlines/theme.html" %}
+
+{% block title %}Teacher Signup{% endblock %}
+
+{% block subsection_name %}Teach for {{one}}{% endblock %}
+
+{% block content %}
+	<br /><br />
+       <div id="divmaintext">	
+	<h2>Hi {{teacher.first_name}}!</h2>
+	<h2>Thank you for teaching for {{one}}!</h2> 
+	<br /><br />
+
+	{% if oops %}
+<h2 style="color:red">Please make sure to fill in all the fields.  Thanks! </h2>
+{% endif %}
+
+	<form action='/teach/{{one}}/{{two}}/teacherreg/' method="post">
+
+ <b>Please choose a course to edit:</b><br />
+<input type="radio" name="cname" value="CatherineIsLazy"><b>Create a new class</b><br/>
+{% for class in classes %}
+	<input type="radio" name="cname" value="{{class.id}}"> {{class}}<br/>
+{% endfor %}
+<center><input type='submit' value='Continue'></center><br>
+</form></div>
+
+{% endblock %}
+>>>>>>> mit-working

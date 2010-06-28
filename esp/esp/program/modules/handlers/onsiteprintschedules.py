@@ -85,13 +85,13 @@ class OnsitePrintSchedules(ProgramModuleObj):
 
         # get students
         old_students = set([ ESPUser(ubit.user) for ubit in ubits ])
-        
+
         response = ProgramPrintables.get_student_schedules(request, list(old_students), prog, onsite=True)       
         # set the refresh rate
         #response['Refresh'] = '2'
-        
+
         return response
-        
+
     def studentschedule(self, request, *args, **kwargs):
         request.GET = {'extra': str(285), 'op':'usersearch',
                        'userid': str(self.user.id) }
@@ -102,5 +102,5 @@ class OnsitePrintSchedules(ProgramModuleObj):
         module.user = self.user
         module.program = self.program
         return module.studentschedules(request, *args, **kwargs)
-      
 
+        

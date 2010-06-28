@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}{{ program.niceName }} Survey Responses{% endblock %}
 
@@ -24,7 +24,7 @@
 <center>
 
 {% for s in surveys %}
-    <table width="600">
+    <table class="fullwidth">
     <tr>
         <th>Responses for: {{ s.name }}</th>
     </tr>
@@ -38,7 +38,7 @@
 
 {% if perclass_data %}
 {% for c in perclass_data %}
-    <table width="600">
+    <table class="fullwidth">
     <tr>
         <th class="small">Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
     </tr>

@@ -29,3 +29,22 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+from django.views.generic.simple import direct_to_template
+from django.http import HttpResponseRedirect
+from esp.users.models import ESPUser
+
+def index(request, *args, **kwargs):
+    """ Render the front (splash) page """
+    if request.COOKIES.has_key('teachlearn'):
+        if request.COOKIES['teachlearn'] == 'teach':
+            return HttpResponseRedirect('/teach/index.html')
+        if request.COOKIES['teachlearn'] == 'learn':
+            return HttpResponseRedirect('/learn/index.html')
+
+    if request.user.is_authenticated():
+        if ESPUser(request.user).isTeacher():
+            return HttpResponseRedirect('/teach/index.html')
+        else:
+            return HttpResponseRedirect('/learn/index.html')
+
+    return direct_to_template(request, *args, **kwargs)

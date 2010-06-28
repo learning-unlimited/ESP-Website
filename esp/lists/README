@@ -1,0 +1,16 @@
+To use the list management stuff in this directory:
+
+Install listadmin: sudo aptitude install listadmin
+Save the password: echo 'password "password"' > listadmin.ini.local
+
+When necessary, remove the cached list of lists: rm esp-lists.txt
+When necessary, run listadmin: make
+
+make will automatically download the current list of Mailman lists
+from the server if you don't already have that list saved. (Note 
+that this runs ls appropriately on esp.mit.edu using ssh, so you'll
+either need your esp.mit.edu password, or have public keys or Kerberos
+authentication set up.)
+
+make will then run listadmin with a suitable configuration file.
+Any changes you make will be logged into listadmin.log.

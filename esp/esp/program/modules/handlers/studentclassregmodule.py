@@ -37,6 +37,7 @@ from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLo
 from esp.users.models    import ESPUser, UserBit, User
 from esp.tagdict.models  import Tag
 from django.db.models.query import Q
+from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
 from django.http import HttpResponse
 from django.views.decorators.cache import cache_control
@@ -138,12 +139,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
         Reg = QTree(userbit__verb__below = verb_base)
         Unexpired = Q(userbit__enddate__gte=now, userbit__startdate__lte=now) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
-
+        
         if QObject:
             retVal = {'classreg': self.getQForUser(Par & Unexpired & Reg)}
         else:
             retVal = {'classreg': User.objects.filter(Par & Unexpired & Reg).distinct()}
-            
+
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
@@ -177,7 +178,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         role_dict = {}
         for item in role_choices:
             role_dict[item[0]] = item[1]
-
+    
         result = {'classreg': """Students who have have signed up for at least one class."""}
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
@@ -190,7 +191,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     
     def isCompleted(self):
-        return (Tag.getTag("allow_confirm_without_classreg", target=self.program)) or (len(self.user.getSectionsFromProgram(self.program)[:1]) > 0)
+        return (len(self.user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -215,6 +216,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             
         is_onsite = user.isOnsite(self.program)
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        # Hack, to hide the Saturday night timeslots from grades 7-8
+        if not is_onsite and not user.getGrade() > 8:
+            timeslots = [x for x in timeslots if x.start.hour < 19]
         
         schedule = []
         timeslot_dict = {}
@@ -265,27 +269,40 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
         import simplejson as json
         from django.template.loader import render_to_string
+        user_sections = self.user.getSections(self.program)
         context = self.prepare({})
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
-        context['num_classes'] = self.user.getSections(self.program).count()
+        context['num_classes'] = user_sections.count()
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}
         
+        #   Look at the 'extra' data and act appropriately:
+        #   -   List, query set, or comma-separated ID list of class sections:
+        #       Add the buttons for those class sections to the returned data.
+        #   -   String 'all':
+        #       Add the buttons for all of the student's class sections to the returned data
+        #   -   Anything else:
+        #       Don't do anything.
         #   Rewrite registration button if a particular section was named.  (It will be in extra).
-        sec_id = None
-        try:
-            sec_id = int(extra)
-        except:
-            pass
+        sec_ids = []
+        if extra == 'all':
+            sec_ids = user_sections.values_list('id', flat=True)
+        elif isinstance(extra, list) or isinstance(extra, QuerySet):
+            sec_ids = list(extra)
+        else:
+            try:
+                sec_ids = [int(x) for x in extra.split(',')]
+            except:
+                pass
             
-        if sec_id:
+        for sec_id in sec_ids:
             try:
                 section = ClassSection.objects.get(id=sec_id)
                 cls = section.parent_class
-                button_context = {'section': section, 'cls': cls}
+                button_context = {'sec': section, 'cls': cls}
                 if section in self.user.getEnrolledSections(self.program):
                     button_context['label'] = 'Registered!'
                     button_context['disabled'] = True
@@ -346,7 +363,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             error = section.cannotAdd(self.user,self.enforce_max,use_cache=False)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False)
+            error = cobj.cannotAdd(self.user,self.enforce_max,use_cache=False) or section.cannotAdd(self.user, self.enforce_max, use_cache=False)
 
         if scrmi.use_priority:
             priority = self.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -453,11 +470,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         is_onsite = user.isOnsite(self.program)
         
         #   Override both grade limits and size limits during onsite registration
-        #   ... or when the appropriate Tag is set
-        if is_onsite or Tag.getTag('disable_fillslot_filter', target=self.program):
+        if is_onsite and not request.GET.has_key('filter'):
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = list(ClassSubject.objects.catalog(self.program, ts))
+            classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
             classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             if user_grade != 0:
                 classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
@@ -581,11 +597,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     # This function gets called and branches off to the two above depending on the user's role
     @aux_call
-    @cache_control(public=True, max_age=180)
-    @vary_on_cookie
+    @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
-        
         user = ESPUser(request.user)
         if user.isTeacher() or user.isAdmin(self.program.anchor):
             return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
@@ -643,7 +657,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             for implication in ClassImplication.objects.filter(cls=cls, enforce=True):
                 for auto_class in ClassSubject.objects.filter(id__in=implication.member_id_ints):
                     auto_class.unpreregister_student(self.user)
-                        
+            
         #   Return the ID of classes that were removed.
         return oldclasses.values_list('id', flat=True)
 

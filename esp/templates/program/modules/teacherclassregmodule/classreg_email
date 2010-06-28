@@ -1,5 +1,11 @@
 {% autoescape off %}Teacher Registration Notification
 ---------------------------------
+{% if not from_mit %}
+*** This teacher is not from MIT. ***
+Teacher's school/employer: {{ college }} {% endif %}
+
+{% if not taught_programs %}*** This teacher is a first-time teacher. ***
+{% else %}Programs this teacher has taught in: {% for prog in taught_programs %}{{ prog.niceName }}, {% endfor %}{% endif %}
 
 Class Title: {{ title }}
 
@@ -19,9 +25,17 @@ Grade range: {{ grade_min }}-{{ grade_max }}
 
 Maximum class size: {{ class_size_max }}
 
+Optimal class size: {{ class_size_optimal }}
+
 Have own space? {{ has_own_space }}
 
 Room request: {{ requested_room }}
+
+Equipment/resource requests:{% for res in global_resources %}
+{{ res.name }}{% endfor %}
+
+Special Resources:
+{{ requested_special_resources }}
 
 Planned purchases:
 {{ purchase_requests }}

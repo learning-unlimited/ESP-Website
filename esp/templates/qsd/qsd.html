@@ -1,7 +1,8 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 {% load subsection %}
 
 {% block title %}{{ title }}{% endblock %}
+{% block content_title %}{{ title }}{% endblock %}
 
 {% block keywords %}{{ qsdrec.keywords|default_if_none:"esp,mit esp,mit,education,educational studies program,learn,teach,high school"|escape }}{% endblock %}
 {% block description %}{{ qsdrec.description|default_if_none:""|escape }}{% endblock %}
@@ -13,5 +14,4 @@
 {% load render_qsd %}
 {% autoescape off %}{% render_qsd qsdrec request.user %}{% endautoescape %}
 
-{% if have_edit %}<a href="{{ edit_url }}">Edit this page</a><br />{% endif %}{% endblock %}
-{% if request.user.is_administrator %}<a href="/manage/pages">Move and Edit Pages</a><br />{% endif %}
+{% if have_edit %}<a href="{{ edit_url }}">Edit this page</a>{% endif %}{% endblock %}

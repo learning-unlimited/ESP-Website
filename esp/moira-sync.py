@@ -21,15 +21,18 @@ from datetime import datetime, timedelta
 
 blanche_exec_template = "blanche -r -u -n %(email_name)s 2>/dev/null && blanche -r -k -n %(email_name)s 2>/dev/null"
 blanche_nonrecursive_exec_template = "blanche -u -n %(email_name)s 2>/dev/null && blanche -k -n %(email_name)s 2>/dev/null"
-blanche_espofficers_espexec = "%s && %s" % (blanche_exec_template % { 'email_name': 'esp-exec' }, blanche_nonrecursive_exec_template % { 'email_name': 'esp-officers' }) 
+blanche_espofficers_espexec = "%s && %s" % (blanche_exec_template % { 'email_name': 'esp-exec' }, blanche_nonrecursive_exec_template % { 'email_name': 'esp-actives' }) 
 admin_node = GetNode("V/Administer")
 admin_role_node = GetNode("V/Flags/UserRole/Administrator")
 root_qsc_node = GetNode("Q")
 web_qsc_node = GetNode("Q/Web")
+wiki_qsc_node = GetNode("Q/Wiki")
 program_qsc_node = GetNode("Q/Programs")
-custom_prog_email_mappings = { "Q/Programs": ("esp-officers", blanche_espofficers_espexec),
+custom_prog_email_mappings = { "Q/Programs": ("esp-actives", blanche_espofficers_espexec, True),
                                "Q/Programs/SplashOnWheels": "splash-on-wheels",
-                               "Q/Programs/ProveIt": "proveit" }
+                               "Q/Programs/ProveIt": "proveit",
+                               "Q/Wiki": ("esp-admin", blanche_exec_template, False),
+                               }
 
 ####################
 # Begin Code
@@ -48,14 +51,14 @@ def clean(str):
 
 def dekrb(str):
     """ If we're given a "KERBEROS:username@ATHENA.MIT.EDU" string (which blanche returns if someone has added their Kerberos instance to a list but not themselves), strip the "KERBEROS:" and the "@ATHENA.MIT.EDU".  Then return the input string. """
-    if str[:9] == "KERBEROS:" and st[-15:] == "@ATHENA.MIT.EDU":
+    if str[:9] == "KERBEROS:" and str[-15:] == "@ATHENA.MIT.EDU":
         return str[9:-15]
     else:
         return str
 
 # Iterate through all programs, to add bits
 # Also scan through "esp-officers@".  Doing this within this loop has introduced several hacks, maybe more than it's worth...
-for prog_node in list(program_qsc_node.children()) + [program_qsc_node]:
+for prog_node in list(program_qsc_node.children()) + [program_qsc_node, wiki_qsc_node]:
 
     # Most e-mail addresses are "$PROGRAM-admin@".  Some aren't.
     # Also, we want to grant bits on most to all people recursively on the list, but on some, we only want to grant bits to users directly on the list.
@@ -65,13 +68,16 @@ for prog_node in list(program_qsc_node.children()) + [program_qsc_node]:
         if type(uri_mapping) == str:
             email_name = uri_mapping
             blanche_exec = blanche_exec_template
+            add_admin = True
         else:
             email_name = uri_mapping[0]
             blanche_exec = uri_mapping[1]
+            add_admin = uri_mapping[2]
     # and the "Most" cases here
     else:
         email_name = clean( prog_node.name.lower() + "-admin" )
         blanche_exec = blanche_exec_template
+        add_admin = True
 
     # Ask blanche who is on each list.  Note that we don't have Kerberos
     # tickets, so this only works for public lists
@@ -83,6 +89,7 @@ for prog_node in list(program_qsc_node.children()) + [program_qsc_node]:
     print blanche_exec % { 'email_name': email_name }
 
     for username in users_list:
+        print "Adding user '%s' to program '%s'" % (username, prog_node.name)
         # This only works for people who add their @mit.edu address to the list,
         # _AND_ use their @mit.edu address for their esp.mit.edu account.
         # I don't know of a way that I trust that I'm unlazy enough 
@@ -99,21 +106,25 @@ for prog_node in list(program_qsc_node.children()) + [program_qsc_node]:
             # There are several fundamental problems; most revolving around the userbit__uniquetest constraint in the db and the fact that, while there may be no _valid_ bit for a given operation, there can be expired bits.
             # Also, UserBit Implications may trip things up, if they fail to save due to constraint violation.
             if not UserBit.UserHasPerms(user, prog_node, admin_node):
-                ub, created = UserBit.objects.get_or_create(user=user, qsc=prog_node, verb=admin_node, defaults = { 'enddate': datetime.now() + timedelta(365) })
+                ub, created = UserBit.objects.get_or_create(user=user, qsc=prog_node, verb=admin_node, enddate__gte=datetime.now(), defaults = { 'enddate': datetime.now() + timedelta(365) })
+                print (ub, created)
                 if not created:
                     ub.enddate = datetime.now() + timedelta(365)
                     ub.save()
 
             # Grant bits to the website, if needed
             if not UserBit.UserHasPerms(user, web_qsc_node, admin_node):
-                ub, created = UserBit.objects.get_or_create(user=user, qsc=web_qsc_node, verb=admin_node, defaults = { 'enddate': datetime.now() + timedelta(365) })
+                ub, created = UserBit.objects.get_or_create(user=user, qsc=web_qsc_node, verb=admin_node, enddate__gte=datetime.now(), defaults = { 'enddate': datetime.now() + timedelta(365) })
+                print (ub, created)
                 if not created:
                     ub.enddate = datetime.now() + timedelta(365)
                     ub.save()
             
             # Grant Administrator UserRole (for the "make program happen" page)
-            if not UserBit.UserHasPerms(user, root_qsc_node, admin_role_node):
-                ub, created = UserBit.objects.get_or_create(user=user, qsc=root_qsc_node, verb=admin_role_node, defaults = { 'enddate': datetime.now() + timedelta(365) })
-                if not created:
-                    ub.enddate = datetime.now() + timedelta(365)
-                    ub.save()
+            if add_admin:
+                if not UserBit.UserHasPerms(user, root_qsc_node, admin_role_node):
+                    ub, created = UserBit.objects.get_or_create(user=user, qsc=root_qsc_node, verb=admin_role_node, enddate__gte=datetime.now(), defaults = { 'enddate': datetime.now() + timedelta(365) })
+                    print (ub, created)
+                    if not created:
+                        ub.enddate = datetime.now() + timedelta(365)
+                        ub.save()

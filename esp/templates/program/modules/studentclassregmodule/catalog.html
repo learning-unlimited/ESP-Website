@@ -1,11 +1,13 @@
 
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}{{program.niceName}}{% endblock %}
 
 {% block xtrajs %}
 {{ block.super }}
-<script type="text/javascript">
+<script language="javascript" src="/media/scripts/ajax_tools.js"></script>
+
+<script language="javascript">
 <!--
   function submit_prereg(clsid) {
      // prereg for a class
@@ -33,12 +35,39 @@ function swap_visible(div_id) {
 	}
 }
 
+<<<<<<< HEAD
 var student_grade = "{{ user.getGrade }}"; {% comment %} Convert from int to string to int in case user.getGrade returns null or errors {% endcomment %}
 
 if (student_grade != "") {
   student_grade = parseInt(student_grade);
 }
 
+=======
+var student_grade = esp_user.cur_grade;
+
+if (student_grade != "" and student_grade != null) {
+  student_grade = parseInt(student_grade);
+}
+
+if (document.getElementsByClassName == null) {
+// Alternate implementation from http://lawrence.ecorp.net/inet/samples/js-getelementsbyclassname.shtml
+document.getElementsByClassName = function(class_name) {
+    var docList = this.all || this.getElementsByTagName('*');
+    var matchArray = new Array();
+
+    /*Create a regular expression object for class*/
+    var re = new RegExp("(?:^|\\s)"+class_name+"(?:\\s|$)");
+    for (var i = 0; i < docList.length; i++) {
+        if (re.test(docList[i].className) ) {
+            matchArray[matchArray.length] = docList[i];
+        }
+    }
+
+			return matchArray;
+}//eof annonymous function
+}
+
+>>>>>>> mit-working
 function hideClassesOutOfGradeRange(stu_grade) {
   if (student_grade == "") {
     return;
@@ -133,18 +162,6 @@ function hideClassesOutOfGradeRange(stu_grade) {
 Viewing classes for: {{ timeslot.friendly_name }}
 </h2>
 {% endif %}
-{% if request.user.onsite_local %}
-
-{% if not request.GET.filter %}
-<h2 style="text-align: center;">
-<a href="{{request.path}}?filter=True">Filter out invalid classes</a>
-</h2>
-{% else %}
-<h2 style="text-align: center;">
-<a href="{{request.path}}">Show all classes</a>
-</h2>
-{% endif %}
-{% endif %}
 
 <div id="catalog">
 
@@ -175,6 +192,12 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:catalog" request.user %}
 
+<script language="javascript">
+<!--
+register_fragment({id: "student_schedule_html", url: "/learn/Spark/2010/ajax_schedule"});
+-->
+</script>
+
 {% load class_render %}
 {% for class in classes %}
 
@@ -184,22 +207,11 @@ Viewing classes for: {{ timeslot.friendly_name }}
       <p style="font-size: 1.2em;" class="category">
          {{ class.category.category }}
       </p>
-{% if request.user.onsite_local %}
-{% if not request.GET.filter %}
-<h2 style="text-align: center;">
-<a href="{{request.path}}?filter=True">Filter out invalid classes</a>
-</h2>
-{% else %}
-<h2 style="text-align: center;">
-<a href="{{request.path}}">Show all classes</a>
-</h2>
-{% endif %}
-{% endif %}
       <p class="linktop">
          <a href="#top">[ Return to Category List ]</a>
       </p> {% endifchanged %}
 
-{% render_class class request.user prereg_url request.GET.filter timeslot request %}
+{% render_class class None prereg_url request.GET.filter timeslot request %}
 
 <br />
 {% endfor %}

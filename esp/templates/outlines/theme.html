@@ -1,0 +1,384 @@
+{% extends "elements/html" %}
+
+{% load main %} {# helpful functions #}
+
+{% block title %}Home{% endblock %}
+{% block stylesheets %}
+<meta name="author" content="Tony Valderrama, Vincent Lee, and others" />
+<link rel="stylesheet" type="text/css" href="/media/styles/theme.css" media="all" />
+<link rel="stylesheet" type="text/css" href="/media/styles/theme-gen.css" media="all" />
+<!--[if lte IE 6]>
+<style type="text/css">
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+#body {
+  position: absolute;
+  left: 0px;
+  top: 40px;
+}
+#ie6_warning {
+  color: blue;
+  font-size: 0.83em;
+}
+#ie6_warning p {
+  position: relative;
+  left: 10px;
+}
+#search_box {
+  top: -28px;
+  border: 0px;
+  border-bottom: 0;
+  margin: 0;
+}
+#submenu {
+  width: 600px;
+
+}
+#submenu li {
+  display: inline;
+}
+</style>
+<![endif]-->
+<!--[if gt IE 6]>
+<style type="text/css">
+#body {
+  position: absolute;
+  left: 136px;
+  top: 55px;
+}
+#sidebar {
+  position: absolute;
+  left: 136px;
+  top: 55px;
+}
+#submenu li {
+  display: inline;
+}
+</style>
+<![endif]-->
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<!--[if lt IE 9]>
+<script src="http://ie7-js.googlecode.com/svn/version/2.1(beta1)/IE9.js"></script>
+<![endif]-->
+    <script type="text/javascript" src="/media/scripts/dojo-release-1.3.0/dojo/dojo.js" djConfig="parseOnLoad:true, isDebug:false"></script>
+    {# general dependencies on YUI #}
+    <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script> 
+    {% if request.user.is_authenticated %}
+        {# navbar depends on YUI #}
+        <script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
+        <script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/calendar/calendar-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/container/container-min.js"></script> 
+        <script type="text/javascript" src="/media/scripts/yui/menu/menu-min.js"></script>
+
+        <script type="text/javascript" src="/media/scripts/json.js"></script>
+        <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
+    {% endif %}
+
+<script type="text/javascript" src="/media/scripts/jquery.js"> </script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
+<script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+
+<style type="text/css">
+.admin_hidden {
+  display: none;
+}
+.logged_in_hidden {
+  display: none;
+}
+.not_logged_in_hidden {
+  display: none;
+}
+</style>
+
+<script language="JavaScript">
+$(document).ready(function() {
+  if (esp_user.cur_admin == "1") {
+    $(".admin").removeClass("admin_hidden");
+  }
+
+  if (esp_user.cur_username != null) {
+    $(".not_logged_in").addClass("not_logged_in_hidden");
+    $(".logged_in").removeClass("logged_in_hidden");
+  }
+});
+</script>
+
+<script type="text/javascript">
+YAHOO.util.Event.on(window, "load", function(){
+
+// create behavior wrapper
+var wrap = function(target, label) {
+  if (!target) return;
+  var flag = false;
+  target.onfocus = function(){
+    if (flag) {
+      target.value = '';
+      target.style.color = '#000000';
+    }
+  };
+  target.onblur = function(){
+    if (flag = (target.value == '')) {
+      target.value = label;
+      target.style.color = '#999999';
+    }
+  };
+  target.onblur();
+};
+
+// set behavior on Username, Password, and Search fields
+wrap(document.getElementById('login_user'),'Username');
+wrap(document.getElementById('login_pswd'),'Password');
+wrap(document.getElementById('search_field'),'Enter search term');
+
+/*$('#menu li').each(function(i, item) {
+  var item = $(item);
+  item.bind('mouseover', function(){
+    $('#page').removeClass().addClass(item.attr('className'));
+  });
+});*/
+
+});
+
+</script>
+
+{% endblock %}
+
+{% block body %}
+
+<div class="admin admin_hidden">
+<div id="adminbar">
+  <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
+  <div id="adminbar_content"></div>
+</div>
+<script type="text/javascript">
+ESP = (function(){
+  var loaded = false;
+  var queued_modules = [];
+  var adminbar = document.getElementById('adminbar_content');
+  
+  YAHOO.util.Event.on(window, "load", function(){
+    loaded = true;
+    for (var i = 0; i < queued_modules.length; i++) {
+      ESP.registerAdminModule(queued_modules[i]);
+    }
+  });
+  
+  return {
+    toggleDisplay: function(id) {
+      var el = document.getElementById(id);
+      if (el.style.display == "none") {
+        el.style.display = "block";
+      } else {
+        el.style.display = "none";
+      }
+    },
+    registerAdminModule: function(module) {
+      if (loaded) {
+        var module_wrap = document.createElement("div");
+        var module_class = "adminbar_" + module.name;
+        module_wrap.className = module_class;
+        module_wrap.innerHTML =
+	    "<div class='title' onclick='ESP.toggleDisplay(\""+module_class+"_content"+"\");'>" + module.name + "</div>";
+        var module_content = document.createElement("div");
+	module_content.id = module_class+"_content";
+	module_content.className = "content";
+        if (module.content_html) {
+	    module_content.innerHTML = module.content_html;
+	} else {
+	    module_content.appendChild(document.getElementById(module.content_target));
+	}
+        module_wrap.appendChild(module_content);
+	
+        adminbar.appendChild(module_wrap);
+      } else {
+        queued_modules.push(module);
+      }
+    }
+  };
+})();
+
+ESP.registerAdminModule({
+content_html:
+'    <form id="user_search_form" name="user_search_form" method="get" action="/manage/usersearch">' +
+'      <input type="text" id="user_search_field" name="userstr" />' +
+'      <input type="submit" id="user_search_submit" name="search_submit" value="Find User"/>' +
+'    </form>',
+name: 'User Search'
+});
+</script>
+</div>
+
+<div id="page" class="{{ request.path|extract_theme }}">
+  <div id="sidebar">
+      <ul id="menu">
+	{% with request.path|split:"/"|index:1 as split_url %}
+	{% with split_url|notequal:"learn"|bool_and:request.user.isTeacher as default_flag %}
+	{% if split_url|equal:"teach"|bool_or:default_flag %}
+	<li id="tab_logo" class="yellowgreen" ><a href="/teach/index.html"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
+	<li id="tab_splash" class="blue" ><a href="/teach/Splash/index.html">SPLASH</a></li>
+	<li id="tab_spark" class="purple" ><a href="/teach/Spark/index.html">SPARK</a></li>
+	<li id="tab_hssp" class="red" ><a href="/teach/HSSP/index.html">HSSP</a></li>
+	<li id="tab_satprep" class="orange" ><a href="/teach/SATPrep/index.html">SATPrep</a></li>
+	<li id="tab_junction" class="yellow" ><a href="/teach/Junction/index.html">JUNCTION</a></li>
+	<li id="tab_delve" class="lightgreen" ><a href="/teach/Delve/index.html">DELVE</a></li>
+	<li id="tab_proveit" class="darkgreen" ><a href="/teach/ProveIt/index.html">ProveIt</a></li>
+	{% else %}
+	<li id="tab_logo" class="yellowgreen" ><a href="/learn/index.html"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
+	<li id="tab_splash" class="blue" ><a href="/learn/Splash/index.html">SPLASH</a></li>
+	<li id="tab_spark" class="purple" ><a href="/learn/Spark/index.html">SPARK</a></li>
+	<li id="tab_hssp" class="red" ><a href="/learn/HSSP/index.html">HSSP</a></li>
+	<li id="tab_satprep" class="orange" ><a href="/learn/SATPrep/index.html">SATPrep</a></li>
+	<li id="tab_junction" class="yellow" ><a href="/learn/Junction/index.html">JUNCTION</a></li>
+	<li id="tab_delve" class="lightgreen" ><a href="/learn/Delve/index.html">DELVE</a></li>
+	<li id="tab_proveit" class="darkgreen" ><a href="/learn/ProveIt/index.html">ProveIt</a></li>
+	<li id="tab_parents" class="grey" ><a href="/learn/parents/index.html">PARENTS</a></li>
+	{% endif %}
+	{% endwith %}
+	{% endwith %}
+{% with request.path|split:"/"|index:1 as split_url %}{% ifequal split_url "teach" %}
+	<li id="tab_logistics" class="grey"><a href="/teach/logistics/index.html">LOGISTICS</a></li>
+{% endifequal %}{% endwith %}
+<div class="admin admin_hidden">
+	<li id="tab_admin" class="black" ><a href="/manage/programs/">ADMIN</a></li>
+</div>
+
+      </ul>
+  </div>
+  <div id="body">
+    <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
+    <div id="header">
+      <div id="cross_link">
+	{% with request.path|split:"/"|index:1 as split_url %}
+	{% if split_url|notequal:"teach" %}
+	<span class="teach inactive"><a href="{{ request.path|mux_tl:"teach" }}">Teach</a></span>
+	{% else %}
+	<span class="teach"><a href="{{ request.path|mux_tl:"teach" }}">Teach</a></span>
+	{% endif %}
+	{% if split_url|notequal:"learn" %}
+	<span class="learn inactive"><a href="{{ request.path|mux_tl:"learn" }}">Learn</a></span>
+	{% else %}
+	<span class="learn"><a href="{{ request.path|mux_tl:"learn" }}">Learn</a></span>
+	{% endif %}
+	{% if split_url|notequal:"volunteer" %}
+	<span class="volunteer inactive"><a href="/volunteer/index.html">Volunteer</a></span>
+	{% else %}
+	<span class="volunteer"><a href="/volunteer/index.html">Volunteer</a></span>
+	{% endif %}
+	{% endwith %}
+      </div>
+      <div id="search_box">
+	<form name="search_form" method="get" action="https://search.mit.edu/search">
+	 <input type='hidden' name='site' value='mit' />
+	 <input type='hidden' name='client' value='mit' />
+	 <input type='hidden' name='proxystylesheet' value='mit' />
+	 <input type='hidden' name='output' value='xml_no_dtd' />
+	 <input type='hidden' name='as_dt' value='i' />
+	 <input type='hidden' name='as_sitesearch' value='esp.mit.edu' />
+	  <input type="text" id="search_field" name="q" />
+	  <input type="submit" id="search_submit" name="search_submit" value="" />
+	</form>
+      </div>
+      <div id="contact_info">
+	<span class="title accentcolor">MIT Educational Studies Program</span>
+      <span class="normal">84 Massachusetts Avenue, Room W20-467</span>
+      <span class="normal">Cambridge, MA 02139</span>
+      <span class="normal">E-mail: <a href="mailto:esp@mit.edu">esp@mit.edu</a></span>
+      <span class="normal"><a href="/contact.html">contact us</a></span>
+      <span class="normal"><a href="/faq.html">FAQ</a></span>
+      </div>
+{% block login %}
+<div id="login_box">
+
+<!-- login -->
+<div class="not_logged_in">
+<form name="login_form" id="login_form" method="post" action="/myesp/login/">
+  <input type="hidden" name="next" value="{{ request.path }}" />
+  <input type="text" id="login_user" name="username" />
+  <input type="password" id="login_pswd" name="password" />
+  <input type="submit" id="login_submit" name="login_submit" value="" />
+  <a href="/myesp/register" id="login_signup"></a>
+  <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
+</form>
+</div>
+<div class="logged_in logged_in_hidden">
+  Hello, <script language="JavaScript">document.write(esp_user.cur_first_name + " " + esp_user.cur_last_name);</script>!<br />
+  <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage.html">My Profile</a></span>
+</div>
+
+</div>
+{% endblock %}
+    </div>
+    <div id="main">
+      <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
+{% block content_header %}
+<div id="content_header">
+<div class="corners"><div class="ul"></div><div class="ur"></div></div>
+{% if request.path|equal:"/teach/index.html" or request.path|equal:"/learn/index.html" %}
+
+{# announcements #}
+<div id="divannouncements">
+<ul>
+{% load preview %}
+{% if request.path|equal:"/teach/index.html" %}
+    {% miniblog_for_user AnonymousUser as announcements teach 3 %}
+{% else %}
+    {% miniblog_for_user AnonymousUser as announcements learn 3 %}
+{% endif %}
+{% for announce in announcements.announcementList %}
+       <li>
+	<a href="{{ announce.get_absolute_url }}" title="{{ announce.makeTitle }}">
+	  <h1>{{ announce.category|default:"Uncategorized" }}</h1>
+                {{ announce.makeTitle }}
+       </a></li>
+{% endfor %}
+     </ul>
+</div>
+
+<!-- more announcements -->
+{% if announcements.overflowed %}
+<div id="divannouncemore">
+  <a href="/myesp/home/">more announcements...</a></div>
+{% endif %}
+{% else %}
+<h1 class="title">{% block content_title %}&nbsp;{% endblock %}</h1>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block secondary_nav %}
+{% load navbar %}
+{% navbar_gen %}
+{% endblock %}
+
+      <div id="content">
+{% block content %}{% endblock %}
+      </div>
+      <!--[if lte IE 6]>
+	  <div id="ie6_warning">
+<p>You're using a really old Web browser!  This site'll look a lot better if you <a href="http://www.microsoft.com/windows/internet-explorer/">upgrade</a>.</p>
+	  </div>
+      <![endif]-->
+      {% with request.path|split:"/"|index:1 as split_url %}
+      {% if program and split_url|notequal:"manage" and request.user.isAdministrator %}
+      <div id="admin_link">
+	<a href="/manage/{{ program.anchor.parent.name }}/{{ program.anchor.name }}/dashboard">Administer this program</a>
+      </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+    <div id="footer">
+      &copy; MIT Educational Studies Program, 2010
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -23,7 +23,12 @@
         {% else %}
             {% if section %}
                 {% if not section.isRegClosed %}
+<<<<<<< HEAD
                 <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}">{% csrf_token %}
+=======
+                {% if not section.friendly_times|length_is:0 %}
+                <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}">
+>>>>>>> mit-working
                   <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ section.id }}" />
                       {% if not section.isFull %}
@@ -33,6 +38,7 @@
                       <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ sec.id }}" disabled />
                       {% endif %}
                 </form>
+                {% endif %}
                 {% endif %}
             {% else %}
                 {% for sec in class.get_sections %}
@@ -59,19 +65,34 @@
     function initialize_prereg_{{ class.id }}() 
     {
         {% if section %}
+<<<<<<< HEAD
     // Section provided
         {% comment %} This code would allow fillslot pages to use Ajax too.  But we don't want that yet.  -Michael P 
+=======
+            //  Section defined!
+>>>>>>> mit-working
             {% if not section.isRegClosed %}
+                {% if not sec.friendly_times|length_is:0 %}
         register_form({id: "prereg_{{ section.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
         register_fragment({id: "addbutton_fillslot_sec{{ section.id }}_html", url: ""});
+                {% endif %}
             {% endif %}
-        {% endcomment %}
         {% else %}
+<<<<<<< HEAD
             {% for sec in class.sections.all %}
 // Hi! {{ sec }}
                 {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
+=======
+            //  Section not defined!
+            {% for sec in class.get_sections %}
+                {% if not sec.isRegClosed %}
+                    {% if sec.isAccepted %}
+                        {% if not sec.friendly_times|length_is:0 %}
+>>>>>>> mit-working
         register_form({id: "prereg_{{ sec.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
         register_fragment({id: "addbutton_catalog_sec{{ sec.id }}_html", url: ""});
+                        {% endif %}
+                    {% endif %}
                 {% endif %}
             {% endfor %}
         {% endif %}

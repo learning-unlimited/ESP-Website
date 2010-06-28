@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -94,6 +93,9 @@ class UserAvailability(models.Model):
     event = models.ForeignKey(Event)
     role = AjaxForeignKey(DataTree)
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
+    class Meta:
+        db_table = 'users_useravailability'
+
     class Meta:
         db_table = 'users_useravailability'
 
@@ -232,6 +234,13 @@ class ESPUser(User, AnonymousUser):
 
         if type(user) == ESPUser:
             user = user.getOld()
+
+        if ESPUser(user).isAdministrator():
+            # Disallow morphing into Administrators.
+            # It's too broken, from a security perspective.
+            # -- aseering 1/29/2010
+            raise ESPError(), "User '%s' is an administrator; morphing into administrators is not permitted." % user.username
+
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         login(request, user)
@@ -291,7 +300,13 @@ class ESPUser(User, AnonymousUser):
         
         #   Why is it that we had a find_by_anchor_perms function again?
         tr_node = GetNode('V/Flags/Registration/Teacher')
-        all_classes = ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
+        when = datetime.now()
+        all_classes = ClassSubject.objects.filter(
+            anchor__userbit_qsc__verb__id=tr_node.id,
+            anchor__userbit_qsc__user=self,
+            anchor__userbit_qsc__startdate__lte=when,
+            anchor__userbit_qsc__enddate__gte=when,
+        ).distinct()
 
         if type(program) != Program: # if we did not receive a program
             error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
@@ -309,7 +324,13 @@ class ESPUser(User, AnonymousUser):
         
         #   Why is it that we had a find_by_anchor_perms function again?
         tr_node = GetNode('V/Flags/Registration/Teacher')
-        return ClassSubject.objects.filter(anchor__userbit_qsc__verb__id=tr_node.id, anchor__userbit_qsc__user=self).distinct()
+        when = datetime.now()
+        return ClassSubject.objects.filter(
+            anchor__userbit_qsc__verb__id=tr_node.id,
+            anchor__userbit_qsc__user=self,
+            anchor__userbit_qsc__startdate__lte=when,
+            anchor__userbit_qsc__enddate__gte=when,
+        ).distinct()
     getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
                                                       lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                   bit.qsc.parent.name == 'Classes' and
@@ -484,7 +505,7 @@ class ESPUser(User, AnonymousUser):
             verb_list = ['/Applied']
             
         return self.getClasses(program, verbs=verb_list)
-       
+
     def getEnrolledClasses(self, program=None, request=None):
         if program is None:
             return self.getEnrolledClassesAll()
@@ -540,7 +561,6 @@ class ESPUser(User, AnonymousUser):
     #   This should be less conservative but there's no easy way to filter the bits as they are saved
     #   (since we would need to check for all verbs under 'V/Flags/Registration')
     getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user})
-
 
     def getEnrolledSections(self, program=None):
         if program is None:
@@ -915,6 +935,13 @@ class StudentInfo(models.Model):
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
+
+    def save(self, *args, **kwargs):
+        super(StudentInfo, self).save(*args, **kwargs)
+        from esp.mailman import add_list_member
+        add_list_member('students', self.user)
+        add_list_member('announcements', self.user)
+
     class Meta:
         app_label = 'users'
         db_table = 'users_studentinfo'
@@ -1020,18 +1047,38 @@ class StudentInfo(models.Model):
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
-    graduation_year = models.CharField(max_length=4, blank=True, null=True)
-    is_graduate_student = models.NullBooleanField(blank=True, null=True)
+    graduation_year_int = models.IntegerField(help_text='Enter 1 for a grad student, or 0 if not applicable.')
+    from_mit = models.NullBooleanField(null=True)
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
-    
-    full_legal_name = models.CharField(max_length=128, blank=True, null=True)
-    university_email = models.EmailField(blank=True, null=True)
-    student_id = models.CharField(max_length=128, blank=True, null=True)
-    mail_reimbursement = models.NullBooleanField(blank=True, null=True)
+
+    @staticmethod
+    def _graduation_year_pretty(gy_int):
+        if gy_int == 0:
+            return u'N/A'
+        if gy_int == 1:
+            return u'G'
+        return unicode(gy_int)
+    def _graduation_year_get(self):
+        return TeacherInfo._graduation_year_pretty(self.graduation_year_int)
+    def _graduation_year_set(self, value):
+        if value.strip() == 'G':
+            self.graduation_year_int = 1
+        else:
+            try:
+                self.graduation_year_int = abs(int(value))
+            except:
+                self.graduation_year_int = 0
+    graduation_year = property( _graduation_year_get, _graduation_year_set )
+
+    def save(self, *args, **kwargs):
+        super(TeacherInfo, self).save(*args, **kwargs)
+        from esp.mailman import add_list_member
+        add_list_member('teachers', self.user)
+
 
     class Meta:
         app_label = 'users'
@@ -1063,7 +1110,7 @@ class TeacherInfo(models.Model):
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
-        form_dict['is_graduate_student'] = self.is_graduate_student
+        form_dict['from_mit']        = self.from_mit
         form_dict['school']          = self.college
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
@@ -1085,7 +1132,7 @@ class TeacherInfo(models.Model):
         else:
             teacherInfo = regProfile.teacher_info
         teacherInfo.graduation_year = new_data['graduation_year']
-        teacherInfo.is_graduate_student = new_data['is_graduate_student']
+        teacherInfo.from_mit        = (new_data['from_mit'] == "True")
         teacherInfo.college         = new_data['school']
         teacherInfo.major           = new_data['major']
         teacherInfo.shirt_size      = new_data['shirt_size']
@@ -1116,6 +1163,11 @@ class GuardianInfo(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_guardianinfo'
+
+    def save(self, *args, **kwargs):
+        super(GuardianInfo, self).save(*args, **kwargs)
+        from esp.mailman import add_list_member
+        add_list_member('announcements', self.user)
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -1180,6 +1232,11 @@ class EducatorInfo(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_educatorinfo'
+
+    def save(self, *args, **kwargs):
+        super(EducatorInfo, self).save(*args, **kwargs)
+        from esp.mailman import add_list_member
+        add_list_member('announcements', self.user)
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -1411,7 +1468,15 @@ class ContactInfo(models.Model):
         if self.address_postal != None:
             self.address_postal = str(self.address_postal)
 
+        if self._distance_from("02139") < 50:
+            from esp.mailman import add_list_member
+            try:
+                add_list_member("announcements_local", self.e_mail)
+            except:
+                pass
+            
         super(ContactInfo, self).save(*args, **kwargs)
+
 
     def __unicode__(self):
         username = ""

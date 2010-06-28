@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "outlines/theme.html" %}
 
 {% block title %}Alumni: Share Your Experiences{% endblock %}
 
@@ -41,8 +41,13 @@ Use the following form to create a discussion thread, then (if you want) you can
 {% endif %}
 
 <div id="alumni_form">
+<<<<<<< HEAD
   <form action="{{ request.path }}" method="post">{% csrf_token %}
   <table align="center" width="600">
+=======
+  <form action="{{ request.path }}" method="post">
+  <table align="center" class="fullwidth">
+>>>>>>> mit-working
 
   <thead>
     <tr>

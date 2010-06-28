@@ -31,7 +31,6 @@ Email: web@esp.mit.edu
 import datetime
 import time
 from collections import defaultdict
-from esp.utils.property import PropertyDict
 
 # django Util
 from django.db import models
@@ -45,6 +44,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.db.cache import GenericCacheHelper
 from esp.utils.property import PropertyDict
 from esp.tagdict.models import Tag
+from esp.mailman import add_list_member, remove_list_member
 
 # django models
 from django.contrib.auth.models import User
@@ -120,7 +120,7 @@ class ClassManager(ProcedureManager):
             for cls in catalog:
                 for sec in cls.get_sections():
                     if hasattr(sec, '_count_students'):
-                        del sec._count_students
+                    del sec._count_students
 
         return catalog
 
@@ -148,7 +148,8 @@ class ClassManager(ProcedureManager):
         classes = classes.select_related('anchor',
                                          'category')
         
-        classes = classes.filter(parent_program = program)
+        if program != None:
+            classes = classes.filter(parent_program = program)
 
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
@@ -204,7 +205,10 @@ class ClassManager(ProcedureManager):
         
         # We got classes.  Now get teachers...
 
-        teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+        if program != None:
+            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+        else:
+            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
 
         teachers_by_id = {}
         for t in teachers:            
@@ -329,7 +333,7 @@ class ClassSection(models.Model):
     def _get_title(self):
         return self.parent_class.title()
     title = property(_get_title)
-    
+
     def _get_room_capacity(self, rooms = None):
         if rooms == None:
             rooms = self.initial_rooms()
@@ -350,7 +354,7 @@ class ClassSection(models.Model):
         rooms = self.initial_rooms()
         if len(rooms) == 0:
             if not ans:
-                ans = self.parent_class.class_size_max
+            ans = self.parent_class.class_size_max
         else:
             ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
             
@@ -429,7 +433,8 @@ class ClassSection(models.Model):
         """   Get all assignments pertaining to floating resources like projectors. """
         from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
-        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype)
+        ta_restype = ResourceType.get_or_create('Teacher Availability')
+        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
     
     def classrooms(self):
         """ Returns the list of classroom resources assigned to this class."""
@@ -667,7 +672,10 @@ class ClassSection(models.Model):
             return base_list
 
         teachers = self.parent_class.teachers()
-        num_teachers = len(teachers)
+        try:
+            num_teachers = teachers.count()
+        except:
+            num_teachers = len(teachers)
 
         timeslot_list = []
         for t in teachers:
@@ -769,7 +777,7 @@ class ClassSection(models.Model):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
-        
+        #   relevantConstraints = ScheduleConstraint.objects.none()
         # Set up a ScheduleMap; fake-insert this class into it
         sm = ScheduleMap(user, self.parent_program)
         sm.add_section(self)
@@ -783,6 +791,11 @@ class ClassSection(models.Model):
             verbs = ['/Enrolled']
         else:
             verbs = ['/' + scrmi.signup_verb.name]
+        
+        # Disallow joining a no-app class that conflicts with an app class
+        # For HSSP Harvard Spring 2010
+        #if self.parent_class.studentappquestion_set.count() == 0:
+        #    verbs += ['/Applied']
         
         # check to see if there's a conflict:
         for sec in user.getSections(self.parent_program, verbs=verbs):
@@ -814,7 +827,7 @@ class ClassSection(models.Model):
                 for time in sec.meeting_times.all():
                     if self.meeting_times.filter(id = time.id).count() > 0:
                         return True
-		
+
 		return False
 
     def students_dict(self):
@@ -1061,6 +1074,12 @@ class ClassSection(models.Model):
         
         # update the students cache
         students = [x for x in self.students() if x.id != user.id]
+        # Remove the student from any existing class mailing lists
+        list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
+        for list_name in list_names:
+            remove_list_member(list_name, user.email)
+
+
         self.cache['students'] = students
         self.update_cache_students()
 
@@ -1069,7 +1088,10 @@ class ClassSection(models.Model):
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     
         prereg_verb_base = scrmi.signup_verb
-
+        
+        #   Override the registration verb if the class has application questions
+        #if self.parent_class.studentappquestion_set.count() > 0:
+        #    prereg_verb_base = GetNode('V/Flags/Registration/Applied')
         
         if scrmi.use_priority:
             prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
@@ -1103,7 +1125,13 @@ class ClassSection(models.Model):
                 if app.questions.count() > 0:
                     app.done = False
                     app.save()
-                
+
+            #   Add the student to the class mailing lists, if they exist
+            list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
+            for list_name in list_names:
+                add_list_member(list_name, user.email)
+            add_list_member("%s_%s-students" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name), user.email)
+
             return True
         else:
             #    Pre-registration failed because the class is full.
@@ -1138,6 +1166,7 @@ class ClassSubject(models.Model):
     class_info = models.TextField(blank=True)
     allow_lateness = models.BooleanField(default=False)
     message_for_directors = models.TextField(blank=True)
+    class_size_optimal = models.IntegerField(blank=True, null=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)
@@ -1276,7 +1305,7 @@ class ClassSubject(models.Model):
         """ Add a ClassSection belonging to this class. Can be run multiple times. """
         
         section_index = self.sections.count() + 1
-
+        
         if duration is None:
             duration = self.duration
         if status is None:
@@ -1456,7 +1485,7 @@ class ClassSubject(models.Model):
             return {'self': node.classsubject_set.all()[0]}
         return {}
     title.depend_on_row(lambda: DataTree, title_selector)
-    
+
     @cache_function
     def teachers(self):
         """ Return a queryset of all teachers of this class. """
@@ -1524,7 +1553,7 @@ class ClassSubject(models.Model):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
             return 'You are not a student!'
-
+        
         blocked_student_types = Tag.getTag("blocked_student_types", target=self)
         if blocked_student_types and not (set(user.getUserTypes()) & set(blocked_student_types.split(","))):
             return "Cannot accept more users of your account type!"
@@ -1546,12 +1575,12 @@ class ClassSubject(models.Model):
             verb_override = GetNode('V/Flags/Registration/GradeOverride')
 
         if not Tag.getTag("allowed_student_types", target=self.parent_program):
-            if user.getGrade() < self.grade_min or \
-                    user.getGrade() > self.grade_max:
-                if not UserBit.UserHasPerms(user = user,
-                                            qsc  = self.anchor,
-                                            verb = verb_override):
-                    return 'You are not in the requested grade range for this class.'
+        if user.getGrade() < self.grade_min or \
+               user.getGrade() > self.grade_max:
+            if not UserBit.UserHasPerms(user = user,
+                                        qsc  = self.anchor,
+                                        verb = verb_override):
+                return 'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
         if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
@@ -1884,6 +1913,15 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def save(self, *args, **kwargs):
         super(ClassSubject, self).save(*args, **kwargs)
         self.update_cache()
+        if self.status < 0:
+            # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
+            teachers = self.teachers()
+            for t in teachers:
+                if ESPUser(t).getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
+                    from esp.mailman import remove_list_member
+                    mailing_list_name = "%s_%s" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name)
+                    teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
+                    remove_list_member(teachers_list_name, t.email)
 
     class Meta:
         db_table = 'program_class'

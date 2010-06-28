@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 {% block xtrajs %}
 <script type="text/javascript">
@@ -160,3 +161,157 @@ If you have any questions regarding the program, <br /> please email the
    {% endif %}
 </table>
 
+=======
+
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+
+function deleteClass() {
+    if (confirm('Are you sure you would like to delete this class?')) {
+       return true;
+    }
+    return false;
+}
+
+//-->
+</script>
+{% endblock %}
+
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+
+<br />
+<br />
+
+{% if not module.deadline_met %}
+<div class="info">
+<b>Note:</b> Class registration is closed. 
+You are welcome to use this page to view your classes' status and upload documents related to it.
+
+{% if module.classRegInfo.director_email %}<br />
+If you have any questions regarding the program, <br /> please email the 
+<a href="mailto:{{module.classRegInfo.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{module.classRegInfo.director_email }}</span>).
+{% endif %}
+</div>
+{% endif %}
+
+<div id="battlescreen">
+
+<table cellpadding="4" cellspacing="0" align="center">
+  <tr>
+    <th colspan="7">
+       Manage Your Classes
+    </th>
+  </tr>
+  {% if teacherclsmodule.noclasses %}
+  <tr>
+    <td class="clsleft classname">
+      <em>(None available)</em>
+    </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+   </tr>
+  {% endif %}
+  <tr>
+    <td colspan="6">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; e-mail the directors if you believe there is a problem with your time or room assignment.  Also, e-mail the directors immediately if you need to cancel a class.</td>
+   </tr>
+  {% for cls in teacherclsmodule.clslist %}
+  <tr>
+    <td class="clsleft classname bordertop2">
+      <span title="{{cls}}">
+      {{ cls|truncatewords:6 }}
+      <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
+      </span>
+    </td>
+    <td class="clsmiddle bordertop2">
+       <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
+         <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
+       </form>
+    </td>
+    <td class="clsmiddle bordertop2">
+       <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}">
+{% if module.deadline_met %}
+         <input class="button" type="submit" value="Edit">
+{% else %}
+         <input class="button" type="submit" value="View">
+{% endif %}
+       </form>
+    </td>
+   <td class="clsmiddle bordertop2">
+      <form method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
+         <input class="button" type="submit" value="View Status" />
+      </form>
+   </td>
+   <td class="clsmiddle bordertop2">
+      <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
+        title="View Class' Students" class="abutton">
+       View Students
+      </a>
+   </td>
+   <td class="clsright bordertop2">
+      {% if cls.pageExists %}
+      <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.html"
+         title="{{ cls }}...">Visit web page</a>
+      {% else %}
+      <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.edit.html"
+	 title="Create `{{ cls }}'...">Create web page</a>
+      {% endif %}
+     </td>
+   </tr>
+
+   <tr>
+    <td class="clsleft" colspan="5">
+	<b>Document uploads</b>: There are {{ cls.anchor.media_set.count }} documents associated with this class.
+    </td>
+   <td class="clsright" colspan="1">
+	<a href="/teach/{{ one }}/{{ two }}/class_docs/{{cls.id}}" title="Upload/manage files" class="abutton">Manage Documents</a>
+     </td>
+   </tr>
+
+    {% if teacherclsmodule.allow_coteach %}
+    <tr>
+    <td class="clsleft"><b>(Co-)Teachers: </b></td>
+    <td class="clsmiddle" colspan="4">{% for t in cls.teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+    <td class="clsright">
+       <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
+         <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
+	 <input type="hidden" name="clsid"   value="{{cls.id }}" />
+         <input class="button" type="submit" value="Modify Coteachers">
+       </form>
+    </td>
+    </tr>
+    {% endif %}
+
+    {% for sec in cls.sections.all %}
+    <tr>
+        <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
+            Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
+            <span style="font-weight: bold; color: #0C0;">Accepted</span>
+            {% else %}
+            <span style="font-weight: bold; color: #C00;">Rejected</span>
+            {% endif %}
+            {% else %}
+            <span style="font-weight: bold; color: #00C;">Unreviewed</span>
+            {% endif %}
+        </td>
+        <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}</td>
+        <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
+            <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>) <!--(<a href="/teach/{{ one }}/{{ two }}/select_students/{{ sec.id }}">enroll/reject</a>)--></td>
+        <td class="clsright" valign="top"><a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ request.META.HTTP_HOST }}">E-mail students</a></td>
+    </tr>
+    {% endfor %}
+
+   {% endfor %}
+   {% if module.deadline_met %}
+   <tr>
+   <td colspan="6" class="clsleft bordertop2"><b>Registration form:</b>
+     <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
+       Add a new class for {{ program.niceName }}!
+     </a>
+   </td>
+   </tr>
+   {% endif %}
+</table>
+>>>>>>> mit-working

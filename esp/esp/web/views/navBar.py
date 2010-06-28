@@ -63,7 +63,7 @@ def nav_category(node, section=''):
     
     #   If all else fails, make something up.
     return NavBarCategory.default()
-    
+
 
 def qsd_tree_program(qsdTree, node, section, user):
     """
@@ -297,7 +297,7 @@ def navBarNew(request, navbar, node, section):
 
     
 def navBarDelete(request, navbar, node, section):
-    if not UserBit.UserHasPerms(request.user, navbar.path, GetNode(EDIT_VERB_STRING)):
+    if not UserBit.UserHasPerms(request.user, navbar.path or GetNode('Q'), GetNode(EDIT_VERB_STRING)):
         raise PermissionDenied, "You don't have permission to do that!"
 
     navbar.delete()
