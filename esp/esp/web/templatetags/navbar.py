@@ -1,5 +1,5 @@
 from django import template
-from urllib import quote as urlencode
+from django.utils.http import urlquote as urlencode
 from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
 
@@ -10,9 +10,9 @@ def cache_key(context, navbar_type='left'):
         return None
 
     if not request.user.is_authenticated():
-        return ('NAVBAR',"%sBAR__%s" % (navbar_type.upper(), urlencode(str(request.path))))
+        return ('NAVBAR',"%sBAR__%s" % (navbar_type.upper(), urlencode(request.path)))
 
-    return ('NAVBAR','%sBAR__%s__%s' % (navbar_type.upper(), urlencode(str(request.path)),
+    return ('NAVBAR','%sBAR__%s__%s' % (navbar_type.upper(), urlencode(request.path),
                                 request.user.id))
 
 

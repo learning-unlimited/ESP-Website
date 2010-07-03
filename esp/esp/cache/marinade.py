@@ -33,6 +33,7 @@ from django.db.models import Model
 from django.db.models.query import QuerySet
 from django.contrib.auth.models import AnonymousUser
 
+from esp.utils import force_str
 from esp.cache.function import describe_class
 
 def marinade_dish(arg):
@@ -52,7 +53,7 @@ def marinade_dish(arg):
         return describe_class(arg)
     if hasattr(arg, '__marinade__'):
         return arg.__marinade__()
-    return str(arg)
+    return force_str(arg)
 
 def incorporate_given(argspec, args, kwargs):
     if argspec[0] is None:

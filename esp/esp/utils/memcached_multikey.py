@@ -3,7 +3,7 @@ from django.core.cache.backends.base import BaseCache
 from esp.utils.pylibcmd import CacheClass as PylibmcCacheClass
 from esp import settings
 from esp.utils.try_multi import try_multi
-import urllib
+from esp.utils import ascii
 import hashlib
 
 try:
@@ -31,7 +31,7 @@ class CacheClass(BaseCache):
             settings.CACHE_PREFIX = ''
 
     def make_key(self, key):
-        rawkey = urllib.quote_plus( NO_HASH_PREFIX + settings.CACHE_PREFIX + key )
+        rawkey = ascii( NO_HASH_PREFIX + settings.CACHE_PREFIX + key )
         if len(rawkey) <= MAX_KEY_LENGTH:
             return rawkey
         else: # We have an oversized key; hash it
