@@ -10,6 +10,7 @@ from django.contrib.auth.views import login
 from django.contrib.auth.decorators import login_required
 
 from esp.tagdict.models import Tag
+from esp.users.models.forwarder import UserForwarder
 
 def filter_username(username, password):
     #   Allow login by e-mail address if so specified
@@ -57,8 +58,11 @@ def ajax_login(request, *args, **kwargs):
     user = authenticate(username=username, password=password)
     if user is not None:
         if user.is_active:
-            auth_login(request, user)
             result_str = 'Login successful'
+            user, forwarded = UserForwarder.follow(user)
+            if forwarded:
+                result_str = 'Logged in as "%s" ("%s" is marked as a duplicate account)' % (user.username, username)
+            auth_login(request, user)
         else:
             result_str = 'Account disabled'
     else:
