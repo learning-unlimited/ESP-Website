@@ -589,6 +589,9 @@ class AdminClass(ProgramModuleObj):
         if request.POST.has_key('clslist'):
             clsids = request.POST['clslist'].split('\n')
             clsids = [id.strip() for id in clsids if id.strip() != ""]
+            # Ignore the class category symbols. We don't need to read them,
+            # and half the time people are probably going to get them wrong.
+            clsids = [''.join(c for c in id if c in '0123456789') for id in clsids]
 
             cls_subjects = ClassSubject.objects.filter(id__in=clsids, parent_program=prog)
             cls_subjects.update(status=10)
