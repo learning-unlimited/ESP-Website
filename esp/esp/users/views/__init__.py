@@ -6,6 +6,7 @@ from esp.users.models import ESPUser
 
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.web.util.main import render_to_response
+from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.views import login
 from django.contrib.auth.decorators import login_required
 
@@ -31,6 +32,26 @@ def login_checked(request, *args, **kwargs):
 
     reply = login(request, *args, **kwargs)
 
+    # Check for user forwarders
+    if request.user.is_authenticated():
+        old_username = request.user.username
+        user, forwarded = UserForwarder.follow(request.user)
+        if forwarded:
+            auth_logout(request)
+            auth_login(request, user)
+            # Try to display a friendly error message
+            next_uri = reply.get('Location', '').strip()
+            if next_uri:
+                context = {
+                    'request': request,
+                    'old_username': old_username,
+                    'next_uri': next_uri,
+                    'next_title': next_uri,
+                }
+                if next_uri == '/':
+                    context['next_title'] = 'the home page'
+                return render_to_response('users/login_duplicate_warning.html', request, request.get_node('Q/Web/myesp'), context)
+
     if reply.get('Location', '') == '/':
         # We're getting redirected to the homepage.
         # Let's try to do something smarter.
@@ -44,7 +65,7 @@ def login_checked(request, *args, **kwargs):
 
 def ajax_login(request, *args, **kwargs):
     import simplejson as json
-    from django.contrib.auth import authenticate, login as auth_login
+    from django.contrib.auth import authenticate
     from django.template.loader import render_to_string
 
     username = None

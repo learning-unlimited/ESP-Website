@@ -1,0 +1,29 @@
+{% extends "main.html" %}
+
+{% block title %}Login successful, but...{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Logged in"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block content %}
+<h1>Login successful, but...</h1>
+
+<p>
+  You have successfully logged in! However, the username you gave
+  (<b>{{ old_username }}</b>) has been marked as a duplicate.
+  You've been automatically transferred to the account with username
+  <b>{{ request.user.username }}</b>
+  and are encouraged to log in with that username in the future.
+</p>
+
+<p style="font-weight: bold; text-align: center;"><a href="{{ next_uri }}">Proceed to {{ next_title }}</a></p>
+
+<h2>Other actions</h2>
+<ul>
+  <li><a href="/contact/contact/">Contact us if you think we're wrong</a></li>
+  <li><a href="/myesp/passwdrecover/">Recover the password for this account</a></li>
+</ul>
+
+{% endblock %}
