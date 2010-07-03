@@ -16,16 +16,17 @@ def echo( *args, **kwargs ):
     echo( *args, quiet=False )
     
     A print function that attempts to discard encoding errors.
-    Unrecognized characters become question marks.
+    Unrepresentable characters become question marks.
+    Raw bytestrings (str) get escaped.
+
     Pass quiet=True to make it nop.
-    
+
     >>> echo( 123 )
     123
     >>> echo( u'One \xc3\x85ngstrom' ) #doctest: +ELLIPSIS
     One ...ngstrom
-    >>> echo( '\xc3\x85ngstrom' )
-    Traceback (most recent call last):
-    UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 0: ordinal not in range(128)
+    >>> echo( 'One \xc3\x85ngstrom' ) #doctest: +ELLIPSIS
+    One ...ngstrom
     >>> echo( echo ) #doctest: +ELLIPSIS
     <function echo at ...>
     """
@@ -35,6 +36,8 @@ def echo( *args, **kwargs ):
         encoding = 'ascii'
         if hasattr( sys.stdout, 'encoding' ):
             encoding = sys.stdout.encoding
+        if isinstance(x, str):
+            x = x.encode('string_escape')
         print unicode(x).encode( encoding, 'replace' )
 
 def force_str(x):
