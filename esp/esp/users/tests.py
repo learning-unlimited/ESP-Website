@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django import forms
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserBit
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserBit, UserForwarder
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.program.tests import ProgramFrameworkTest
 from esp.datatree.models import GetNode
@@ -195,6 +195,36 @@ class ValidHostEmailFieldTest(TestCase):
         except forms.ValidationError:
             pass
 
+class UserForwarderTest(TestCase):
+    def setUp(self):
+        self.ua, created = User.objects.get_or_create(username='forward_a')
+        self.ub, created = User.objects.get_or_create(username='forward_b')
+        self.uc, created = User.objects.get_or_create(username='forward_c')
+        self.users = [self.ua, self.ub, self.uc]
+    def runTest(self):
+        def fwd_info(user):
+            return '%s forwards by: %s' % (user.username, user.forwarders_out.all())
+        # Ensure that users have no forwarders by default
+        for user in self.users:
+            self.assertTrue(UserForwarder.follow(user) == (user, False), fwd_info(user))
+        # Try forwarding B --> C
+        # Expect (A), (B --> C)
+        UserForwarder.forward(self.ub, self.uc)
+        self.assertTrue(UserForwarder.follow(self.ua) == (self.ua, False), fwd_info(self.ua))
+        self.assertTrue(UserForwarder.follow(self.ub) == (self.uc, True), fwd_info(self.ub))
+        self.assertTrue(UserForwarder.follow(self.uc) == (self.uc, False), fwd_info(self.uc))
+        # Try forwarding A --> B
+        # Expect (A --> C), (B --> C)
+        UserForwarder.forward(self.ua, self.ub)
+        self.assertTrue(UserForwarder.follow(self.ua) == (self.uc, True), fwd_info(self.ua))
+        self.assertTrue(UserForwarder.follow(self.ub) == (self.uc, True), fwd_info(self.ub))
+        self.assertTrue(UserForwarder.follow(self.uc) == (self.uc, False), fwd_info(self.uc))
+        # Try forwarding C --> B
+        # Expect (A --> B), (C --> B)
+        UserForwarder.forward(self.uc, self.ub)
+        self.assertTrue(UserForwarder.follow(self.ua) == (self.ub, True), fwd_info(self.ua))
+        self.assertTrue(UserForwarder.follow(self.ub) == (self.ub, False), fwd_info(self.ub))
+        self.assertTrue(UserForwarder.follow(self.uc) == (self.ub, True), fwd_info(self.uc))
 
 class AjaxExistenceChecker(TestCase):
     """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
