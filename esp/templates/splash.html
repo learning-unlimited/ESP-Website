@@ -75,6 +75,7 @@ document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025"
 {% if not request.user.is_authenticated %}
 <!-- login -->
 <form name="login_form" id="login_form" method="post" action="/myesp/login/">
+  {% csrf_token %}
   <input type="hidden" name="next" value="/" />
   <input type="text" id="login_user" name="username"/>
   <input type="password" id="login_pswd" name="password" />
