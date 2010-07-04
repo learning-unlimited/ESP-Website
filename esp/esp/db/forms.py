@@ -35,7 +35,7 @@ class AjaxForeignKeyFieldBase:
         else:
             data = init_val = ''
 
-        fn = str(self.field.name)
+        fn = str(self.field_name)
         
         related_model = self.field.rel.to
         # espuser hack
@@ -222,6 +222,7 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             self.widget = AjaxForeignKeyWidget(attrs={'field': field, 'width': 35, 'ajax_func': ajax_func, 'shadow_field': shadow_field_name})
         elif key_type:
             self.widget = AjaxForeignKeyWidget(attrs={'type': key_type, 'width': 35, 'ajax_func': ajax_func, 'shadow_field': shadow_field_name})
+            self.key_type = key_type
         else:
             raise NotImplementedError
 
@@ -279,5 +280,8 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
             # Finally, grab the object.
             if id:
                 return self.field.rel.to.objects.get(id=id)
+
+        elif hasattr(self, 'key_type') and id is not None:
+            return self.key_type.objects.get(id=id)
 
         return id
