@@ -93,8 +93,6 @@ class UserAvailability(models.Model):
     event = models.ForeignKey(Event)
     role = AjaxForeignKey(DataTree)
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
-    class Meta:
-        db_table = 'users_useravailability'
 
     class Meta:
         db_table = 'users_useravailability'
