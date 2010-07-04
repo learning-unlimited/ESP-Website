@@ -49,6 +49,7 @@ from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType, CompletedTransactionException
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
+from esp.settings import SITE_INFO
 
 import pickle
 import operator
@@ -182,7 +183,7 @@ def userview(request):
     if not teacherbio.picture:
         teacherbio.picture = 'uploaded/not-available.jpg'
     
-    return render_to_response("users/userview.html", request, GetNode("Q/Web"), { 'user': user, 'teacherbio': teacherbio } )
+    return render_to_response("users/userview.html", request, GetNode("Q/Web"), { 'user': user, 'teacherbio': teacherbio, 'domain': SITE_INFO[1] } )
     
 def programTemplateEditor(request):
     """ Generate and display a listing of all QSD pages in the Programs template
