@@ -3,6 +3,7 @@
 from django import forms
 from esp.shortterm.models import ResponseForm, VolunteerRegistration
 from django.http import HttpResponseRedirect, HttpResponse
+from django.contrib.auth.decorators import login_required
 from esp.web.util.main import render_to_response
 from esp.utils.forms import EmailModelForm
 from esp.datatree.models import *
