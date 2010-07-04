@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django import forms
+from django.db import models
 from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School
 
@@ -26,15 +27,12 @@ admin.site.register(UserAvailability)
 
 class K12SchoolAdmin(admin.ModelAdmin):
     list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
-    
+    formfield_overrides = {
+        models.TextField: {'widget': forms.TextInput(attrs={'size':'50',}),},
+    }
+
     def contact_name(self, obj):
         return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
     contact_name.short_description = 'Contact name'
-    
-    # Override a special function to customize the form. This feels unholy...
-    def formfield_for_dbfield(self, db_field, **kwargs):
-        if db_field.name != 'contact':
-            kwargs['widget'] = forms.TextInput(attrs={'size':'50'})
-        return super(K12SchoolAdmin,self).formfield_for_dbfield(db_field,**kwargs)
 
 admin.site.register(K12School, K12SchoolAdmin)
