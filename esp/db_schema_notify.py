@@ -81,6 +81,13 @@ if not manifest:
     print '    No schema changes found.'
     exit(0)
 
+# Build a list of commits
+commits = []
+for line in manifest:
+    fname = ' '.join( line.split(' ')[4:] )
+    c = pipelines( 'git log --pretty=format:%%H -- %s' % fname )[0]
+    if c not in commits:
+        commits.append(c)
 
 print """%s===============================
 %sWARNING: DATABASE SCHEMA CHANGE
@@ -91,31 +98,33 @@ print """%s===============================
 
 """ % ( color(31, 1), color(37, 1), color(31, 1), color(0) )
 
-# Grab the change log for existing files start tweaking it.
-changelog_raw = pipelines( 'git --no-pager whatchanged -m %s esp/db_schema' % commits_str )
-for line in changelog_raw:
-    words = line.split()
-    
-    # Grr, stupid empty lines
-    if not line.strip():
-        print color(0)
-        continue
-    
-    # Colorize commits if we can.
-    if words[0] == 'commit':
-        print color(33, 1) + line + color(33, 0)
-        continue
-    
-    # Check out the file listing
-    if line[0] == ':':
-        # Dump text files attached to each commit.
-        if words[-1][-4:] == '.txt':
-            fname = words[-1]
-            print '%s%s:%s' % ( color(32, 0), fname, color(0) )
-            os.system( 'cat %s' % fname )
-    else:
-        # Dump ordinary lines.
-        print line
+# Grab a summary of each commit.
+# (There's gotta be a better way than using git-whatchanged.)
+for c in commits:
+    changelog_raw = pipelines( 'git --no-pager whatchanged -m %s^..%s esp/db_schema' % (c, c) )
+    for line in changelog_raw:
+        words = line.split()
+
+        # Grr, stupid empty lines
+        if not line.strip():
+            print color(0)
+            continue
+
+        # Colorize commits if we can.
+        if words[0] == 'commit':
+            print color(33, 1) + line + color(33, 0)
+            continue
+
+        # Check out the file listing
+        if line[0] == ':':
+            # Dump text files attached to each commit.
+            if words[-1][-4:] == '.txt':
+                fname = words[-1]
+                print '%s%s:%s' % ( color(32, 0), fname, color(0) )
+                os.system( 'cat %s' % fname )
+        else:
+            # Dump ordinary lines.
+            print line
 
 if slony_needs_update:
     print """
