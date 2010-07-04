@@ -1705,6 +1705,9 @@ class PasswordRecoveryTicket(models.Model):
     recover_key = models.CharField(max_length=RECOVER_KEY_LEN)
     expire = models.DateTimeField(null=True)
 
+    class Meta:
+        app_label = 'users'
+
     def __unicode__(self):
         return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
 
