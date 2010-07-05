@@ -2,6 +2,8 @@
 
 import sys
 import os
+import datetime
+import traceback
 
 if __name__ == '__main__':
     cur_file = os.path.abspath(__file__)
@@ -37,7 +39,7 @@ def server(socket_path):
     server_sock.listen(2)
     while True:
         try:
-            print "accept()"
+            print ">>> accept()", datetime.datetime.now()
             conn, address = server_sock.accept()
             data = conn.makefile().read()
             args = data.strip().split('\n')
@@ -46,8 +48,8 @@ def server(socket_path):
                 funcs[func](conn, *args)
             else:
                 return_('ERROR_Unknown_Action', conn=conn, )
-        except socket.error, e:
-            print "Error:", e
+        except Exception:
+            traceback.print_exc()
 
 def user_exists(conn, username, *args):
     if len(ESPUser.objects.filter(username__iexact=username)[:1]) > 0:
@@ -57,7 +59,12 @@ def user_exists(conn, username, *args):
 
 def authenticate(conn, username, password, *args):
     from django.contrib.auth import authenticate
+    print ">> Running (authenticate '%s' '[redacted]')" % (username, )
     user = authenticate(username=username, password=password)
+    if user is None:
+        print "> Result: %s" % (user, )
+    else:
+        print "> Result: '%s' ('%s')" % (user, user.__dict__, )
 
     if user:
         return_(True, conn=conn,)
@@ -66,6 +73,7 @@ def authenticate(conn, username, password, *args):
 
 def check_userbit(conn, username, qnode, vnode, *args):
     from esp.users.models import UserBit, GetNode
+    print ">> Running (check_userbit '%s' '%s')" % (username, vnode, )
     user = ESPUser.objects.get(username=username)
     if UserBit.UserHasPerms(user, GetNode(qnode), GetNode(vnode), recursive_required=True):
         return_(True, conn=conn, )
@@ -74,6 +82,7 @@ def check_userbit(conn, username, qnode, vnode, *args):
 
 def finger(conn, username):
     from esp.users.models import UserBit, GetNode
+    print ">> Running (finger '%s')" % (username, )
     user = ESPUser.objects.get(username=username)
     ret = "%s\n%s\n%s" % (user.first_name, user.last_name, user.email, )
     return_(ret, conn=conn, )
