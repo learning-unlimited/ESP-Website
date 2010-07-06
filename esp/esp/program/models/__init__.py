@@ -1113,14 +1113,17 @@ class RegistrationProfile(models.Model):
                     regProf.save()
             else:
                 regProf = RegistrationProfile.getLastProfile(user)
-                if (datetime.now() - regProf.last_ts).days > 5:
-                    regProf = RegistrationProfile()
-                    regProf.user = user
                 regProf.program = program
+                if regProf.id is not None:
+                    regProf.id = None
+                    if (datetime.now() - regProf.last_ts).days <= 5:
+                        regProf.save()
         else:
             regProf = regProfList[0]
         return regProf
-    getLastForProgram.depend_on_row(lambda: RegistrationProfile, lambda rp: {'user': rp.user, 'program': rp.program})
+    # Thanks to our attempts to be smart and steal profiles from other programs,
+    # the cache can't depend only on profiles with the same (user, program).
+    getLastForProgram.depend_on_row(lambda: RegistrationProfile, lambda rp: {'user': rp.user})
     getLastForProgram = staticmethod(getLastForProgram)
             
     def __unicode__(self):

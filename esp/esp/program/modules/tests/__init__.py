@@ -30,3 +30,4 @@ Email: web@esp.mit.edu
 """
 
 from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
+from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest

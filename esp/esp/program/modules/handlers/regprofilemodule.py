@@ -100,8 +100,6 @@ class RegProfileModule(ProgramModuleObj):
             regProf = RegistrationProfile.getLastProfile(request.user)
         else:
             regProf = RegistrationProfile.getLastForProgram(request.user, prog)
-        if regProf.id is None:
-            regProf = RegistrationProfile.getLastProfile(request.user)
 
         # aseering 8/20/2007: It is possible for a user to not have a
         # contact_user associated with their registration profile.
