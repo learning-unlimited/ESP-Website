@@ -1064,7 +1064,7 @@ class RegistrationProfile(models.Model):
     def getLastProfile(user):
         regProf = None
         
-        if isinstance(user.id, int):
+        if isinstance(user.id, (int, long)):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except:
