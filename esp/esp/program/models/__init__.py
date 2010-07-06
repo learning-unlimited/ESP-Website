@@ -1137,9 +1137,9 @@ class RegistrationProfile(models.Model):
             
     def __unicode__(self):
         if self.program is None:
-            return '<Registration for '+str(self.user)+'>'
+            return '<Registration for %s>' % unicode(self.user)
         if self.user is not None:
-            return '<Registration for ' + str(self.user) + ' in ' + str(self.program) + '>'
+            return '<Registration for %s in %s>' % (unicode(self.user), unicode(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
