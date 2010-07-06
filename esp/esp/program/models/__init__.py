@@ -1136,7 +1136,7 @@ class RegistrationProfile(models.Model):
     getLastForProgram = staticmethod(getLastForProgram)
             
     def __unicode__(self):
-        if self.program is None:
+        if self.program_id == None:
             return '<Registration for %s>' % unicode(self.user)
         if self.user is not None:
             return '<Registration for %s in %s>' % (unicode(self.user), unicode(self.program))
