@@ -15,7 +15,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         m = ProgramModule.objects.get(handler='RegProfileModule', module_type='learn')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
-        self.dummyprog = Program.objects.get(anchor = GetNode("Q/Programs/Dummy_Programs/Profile_Storage"))
+        self.dummyprog = Program.getDummy()
 
     def runTest(self):
         from esp.program.models import RegistrationProfile

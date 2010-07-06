@@ -284,6 +284,15 @@ class Program(models.Model):
         db_table = 'program_program'
 
     @cache_function
+    def getDummy():
+        try:
+            return Program.objects.get(anchor = GetNode("Q/Programs/Dummy_Programs/Profile_Storage"))
+        except:
+            raise ESPError(), 'Error: There needs to exist an administrive program anchored at Q/Programs/Dummy_Programs/Profile_Storage.'
+    getDummy.depend_on_model(lambda: Program)
+    getDummy = staticmethod(getDummy)
+
+    @cache_function
     def checkitems_all_cached(self):
         """  The main Manage page requests checkitems.all() O(n) times in
         the number of classes in the program.  Minimize the number of these
@@ -1188,11 +1197,7 @@ class TeacherBio(models.Model):
         """ update the timestamp """
         self.last_ts = datetime.now()
         if self.program_id is None:
-            try:
-                self.program = Program.objects.get(anchor = GetNode("Q/Programs/Dummy_Programs/Profile_Storage"))
-            except:
-                raise ESPError(), 'Error: There needs to exist an administrive program anchored at Q/Programs/Dummy_Programs/Profile_Storage.'
-
+            self.program = Program.getDummy()
         super(TeacherBio, self).save(*args, **kwargs)
 
     def url(self):

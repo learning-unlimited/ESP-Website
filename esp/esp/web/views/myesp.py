@@ -122,7 +122,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
 
     if prog_input is None:
-        prog = Program.objects.get(anchor = GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
+        prog = Program.getDummy()
         navnode = GetNode('Q/Web/myesp')
     else:
         prog = prog_input
