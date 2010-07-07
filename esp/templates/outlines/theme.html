@@ -97,6 +97,9 @@
 .not_logged_in_hidden {
   display: none;
 }
+.morphed_hidden {
+  display: none;
+}
 </style>
 
 <script language="JavaScript">
@@ -108,6 +111,10 @@ $(document).ready(function() {
   if (esp_user.cur_username != null) {
     $(".not_logged_in").addClass("not_logged_in_hidden");
     $(".logged_in").removeClass("logged_in_hidden");
+  }
+
+  if (esp_user.cur_other_user != 0) {
+    $(".morphed").removeClass("morphed_hidden");
   }
 });
 </script>
@@ -312,6 +319,8 @@ name: 'User Search'
 <div class="logged_in logged_in_hidden">
   Hello, <script language="JavaScript">document.write(esp_user.cur_first_name + " " + esp_user.cur_last_name);</script>!<br />
   <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage.html">My Profile</a></span>
+  <div class="morphed morphed_hidden"><span class="accentcolor"><a href="/myesp/switchback/">Go back to
+    <script type="text/javascript">document.write(esp_user.cur_retTitle)</script></a></span></div>
 </div>
 
 </div>

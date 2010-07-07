@@ -52,6 +52,7 @@ class ESPLazyUser(LazyUser):
                     from django.contrib.auth import get_user
                     from esp.users.models import ESPUser
                 request._cached_user = ESPUser(get_user(request))
+                request._cached_user.updateOnsite(request)
                 if CACHE_KEY:
                     cache.add(CACHE_KEY, request._cached_user)
             else:

@@ -143,7 +143,7 @@ class ESPErrorMiddleware(object):
                 expires = datetime.datetime.strftime(datetime.datetime.utcnow() + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE), "%a, %d-%b-%Y %H:%M:%S GMT")
             ret_title = ''
             try:
-                ret_title = request.session['user_morth']['retTitle']
+                ret_title = request.session['user_morph']['retTitle']
             except KeyError:
                 pass
 

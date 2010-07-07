@@ -17,6 +17,9 @@
     {% if request.user.isAdministrator %}
         <a href="/manage/programs/">Manage Programs</a> <br />
     {% endif %}
+    {% if request.user.other_user %}
+        <a href="/myesp/switchback/">Go back to {{ request.session.user_morph.retTitle }}</a> <br />
+    {% endif %}
     <a href="/myesp/signout/">Logout</a>
   </p>
 </div>
