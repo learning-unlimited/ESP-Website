@@ -6,7 +6,7 @@ def mux_tl(str,type):
     splitstr = str.split("/") # String should be of the format "/learn/foo/bar/index.html"
     if len(splitstr) < 2 or splitstr[0] != "":
         return str
-    elif splitstr[1] in ("teach", "learn", "manage", "onsite"):
+    elif splitstr[1] in ("teach", "learn", "manage", "onsite", "volunteer"):
         return ("/%s/" % type) + "/".join(splitstr[2:])
     else:
         return str
