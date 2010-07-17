@@ -131,8 +131,17 @@
 {% endfor %}
 {% endif %}{% endwith %}
 
+{% with user.getEnrolledSections as classes %}{% if classes %}
+<h2>Classes Enrolled In (currently or previously):</h2>
+{% for class in classes %}
+{% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
+<li>{{ class }}</li>
+{% if forloop.last %}</ul>{% endif %}
+{% endfor %}
+{% endif %}{% endwith %}
+
 {% with user.getSections as classes %}{% if classes %}
-<h2>Classes Taken (or signed up to take)</h2>
+<h2>Classes Taken Or Applied For:</h2>
 {% for class in classes %}
 {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
 <li>{{ class }}</li>
