@@ -66,7 +66,7 @@ def json_encode(obj):
                  'directors_notes': obj.directors_notes,
                  'requested_room': obj.requested_room,
                  'session_count': obj.session_count,
-                 'num_students': obj._num_students,
+                 'num_students': obj.num_students(),
                  'teachers': obj._teachers,
                  'get_sections': obj._sections,                         
                  }
@@ -76,7 +76,7 @@ def json_encode(obj):
                  'status': obj.status,
                  'duration': obj.duration,
                  'get_meeting_times': obj._events,
-                 'num_students': obj._count_students,
+                 'num_students': obj.num_students(),
                  'capacity': obj.capacity
                  }
     elif isinstance(obj, ClassCategories):
