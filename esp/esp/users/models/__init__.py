@@ -874,7 +874,12 @@ class ESPUser(User, AnonymousUser):
     def current_schoolyear():
         now = datetime.now()
         curyear = now.year
-        if datetime(curyear, 6, 1) > now:
+        # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
+        # - Michael P 5/24/2010
+        # Changed from 5/1 to 7/31 rollover to as to neither affect registration starts nor occur prior to graduation.
+        # Adam S 8/1/2010
+        #if datetime(curyear, 6, 1) > now:
+        if datetime(curyear, 7, 31) > now:
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
