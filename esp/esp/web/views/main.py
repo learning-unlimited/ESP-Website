@@ -139,7 +139,6 @@ def redirect(request, url, subsection = None, filename = "", section_redirect_ke
 	return renderer(request, branch, section, qsd_name, qsd_verb, root_url)
 	
 @vary_on_headers('Cookie')
-@cache_control(private=True)
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
         from esp.program.models import Program
