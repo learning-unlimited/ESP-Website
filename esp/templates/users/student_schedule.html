@@ -1,3 +1,18 @@
+<style type="text/css">
+
+.Enrolled
+  {
+    color: red;
+    font-weight: bold;
+  }
+
+.NotAccepted
+ {
+   color: red;
+ }
+
+</style>
+
 {% comment %} <hr>
 <p><font style="font-size: 18pt;"><center>
 <a href="/learn/{{one}}/{{two}}/catalog">Click Here</a> to select your
@@ -59,7 +74,7 @@ you arrive.
         {% for cls in timeslot.1 %}
 	{% comment %}{% if use_priority %}{% endcomment %}
             {% if not cls.section.verbs|length_is:0 %}
-                <i>{% for v in cls.section.verbs %}{{ v.friendly_name }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
+                <i>{% for v in cls.section.verbs %}<span class="{{ v.friendly_name }}">{{ v.friendly_name }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
 	{% comment %}{% endif %}{% endcomment %}
 	{{ cls.section.title }} 
