@@ -4,12 +4,19 @@
   <table class="bottom">
   <tr>
      <td class="left">
-        <img src="/media/images/beaver_small.png"
-         class="beaverimg" />
+        <!--To change this image go to our dropbox, standard login-->
+        <img src="http://dl.dropbox.com/u/8034911/espimg.png"
+         class="espimg" />
      </td>
-     <td class="right url">{% if user.id %}
-      <span class="studentid">{{user.username}}</span>
-      <br />{% endif  %}       http://esp.mit.edu
+     <td class="right">
+        <div class="espinfo">
+        http://esp.mit.edu
+        617.253.4882
+        </div>
+     </td>
+     <td class="right url">
+      <span class="studentid"></span>
+      <br />       http://esp.mit.edu
      </td>
   </tr>
   </table>
@@ -17,18 +24,19 @@
   <div class="restdiv">
     <table class="top">
     <tr>
-      <td class="left company">
-         MIT Educational Studies Program
+      <td class="left programname">
+         <!--To change this image go to our dropbox, standard login-->
+         <img src="http://dl.dropbox.com/u/8034911/programimg.png"
+         class="programimg" />
       </td>
-      <td class="right phone">(617)253-4882</td>
     </tr>
     </table>
+    <br>
     <div class="firstspace">&nbsp;</div>
-    <span class="programtitle">{{ programname }}</span>
-    <div class="title">{{ user.title }}</div>
-    <hr />
     <div class="name">{{ user.name }}</div>
+    <div class="title">{{ user.title }}</div>
   </div>
 </div>
 </div>
 <!-- End ID //-->
+
