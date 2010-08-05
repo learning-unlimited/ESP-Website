@@ -61,8 +61,13 @@ urlpatterns += patterns('',
                         (r'^', include('esp.shortterm.urls'),),
                         )
 
-urlpatterns += patterns('esp.web.views',
-                        (r'^$', 'index',{'template':'splash.html'}), # index
+
+# generic stuff
+urlpatterns += patterns('esp.web.views.main',
+                        (r'^$', 'home'), # index
+                        (r'^web$', 'home'), # index
+                        (r'^esp_web', 'home'), # index
+                        (r'.php$', 'home'), # index
                         )
 
 # generic stuff
