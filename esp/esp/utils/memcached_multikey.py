@@ -1,6 +1,9 @@
 "Memcached cache backend"
 from django.core.cache.backends.base import BaseCache
-from esp.utils.pylibcmd import CacheClass as PylibmcCacheClass
+try:
+	from esp.utils.pylibcmd import CacheClass as PylibmcCacheClass
+except:
+	from django.core.cache.backends.memcached import CacheClass as PylibmcCacheClass
 from esp import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
