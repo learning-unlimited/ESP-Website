@@ -1,7 +1,7 @@
 {% autoescape off %}Teacher Registration Notification
 ---------------------------------
-{% if not from_mit %}
-*** This teacher is not from MIT. ***
+{% if not from_here %}
+*** This teacher is not from this university. ***
 Teacher's school/employer: {{ college }} {% endif %}
 
 {% if not taught_programs %}*** This teacher is a first-time teacher. ***

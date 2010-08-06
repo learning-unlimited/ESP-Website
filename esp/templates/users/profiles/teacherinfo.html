@@ -5,9 +5,9 @@
 </tr>
 
 <tr>
-<td><label for="id_from_mit">Are you currently an undergraduate, graduate student, faculty, or staff at MIT?</label></td>
-<td>{{ form.from_mit }} {% if form.from_mit.errors %}
-  <br /><span class="form_error">{{ form.from_mit.errors|join:", " }}</span>
+<td><label for="id_from_here">Are you currently an undergraduate, graduate student, faculty, or staff at the university sponsoring this program?</label></td>
+<td>{{ form.from_here }} {% if form.from_here.errors %}
+  <br /><span class="form_error">{{ form.from_here.errors|join:", " }}</span>
   {% endif %}
 </td>
 </tr>
