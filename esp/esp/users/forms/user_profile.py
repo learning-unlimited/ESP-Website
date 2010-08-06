@@ -189,11 +189,11 @@ class TeacherInfoForm(FormWithRequiredCss):
     from esp.users.models import shirt_sizes, shirt_types
     reimbursement_choices = [(False, 'I will pick up my reimbursement.'),
                              (True,  'Please mail me my reimbursement.')]
-    from_mit_answers = [ (True, "Yes"), (False, "No") ]
+    from_here_answers = [ (True, "Yes"), (False, "No") ]
 
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     is_graduate_student = forms.BooleanField(required=False, label='Graduate student?')
-    from_mit = forms.ChoiceField(choices=from_mit_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at the university running this program?')
+    from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at the university running this program?')
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
@@ -207,13 +207,13 @@ class TeacherInfoForm(FormWithRequiredCss):
         cleaned_data = self.cleaned_data
 
         # If teacher is not from MIT, make sure they've filled in the next box
-        from_mit = cleaned_data.get('from_mit')
+        from_here = cleaned_data.get('from_here')
         school = cleaned_data.get('school')
 
-        if from_mit == "False" and school == "":
+        if from_here == "False" and school == "":
             msg = u'Please enter your affiliation if you are not from MIT.'
             self._errors['school'] = forms.util.ErrorList([msg])
-            del cleaned_data['from_mit']
+            del cleaned_data['from_here']
             del cleaned_data['school']
 
         return cleaned_data

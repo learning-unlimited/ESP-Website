@@ -836,10 +836,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # Provide information about whether or not teacher's from MIT.
                 last_profile = self.user.getLastProfile()
                 if last_profile.teacher_info != None:
-                    mail_ctxt['from_mit'] = last_profile.teacher_info.from_mit
+                    mail_ctxt['from_here'] = last_profile.teacher_info.from_here
                     mail_ctxt['college'] = last_profile.teacher_info.college
                 else: # This teacher never filled out their teacher profile!
-                    mail_ctxt['from_mit'] = "[Teacher hasn't filled out teacher profile!]"
+                    mail_ctxt['from_here'] = "[Teacher hasn't filled out teacher profile!]"
                     mail_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
 
                 # Get a list of the programs this person has taught for in the past, if any.
