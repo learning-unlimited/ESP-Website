@@ -34,6 +34,8 @@ from django_settings import *
 # Import system-specific settings
 from local_settings import *
 
+SERVER_EMAIL = 'server@%s' % EMAIL_HOST
+
 ############################################
 
 # compute some derived settings
