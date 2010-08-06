@@ -268,7 +268,7 @@ class MinimalUserInfo(FormUnrestrictedOtherUser):
 
 _grad_years = range(datetime.now().year, datetime.now().year + 6)
 
-class UofCProfileForm(MinimalUserInfo):
+class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
     graduation_year = forms.ChoiceField(choices=zip(_grad_years, _grad_years))
     major = SizedCharField(length=30, max_length=32, required=False)
 
