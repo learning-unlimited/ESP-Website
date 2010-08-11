@@ -143,6 +143,7 @@ MIDDLEWARE_GLOBAL = [
     (1000, 'esp.middleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
+    (1150, 'sslauth.middleware.SSLAuthMiddleware'),
     (1200, 'django.middleware.gzip.GZipMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
@@ -189,6 +190,7 @@ INSTALLED_APPS = (
     'esp.tagdict',
     'django_extensions',
     'south',
+    'sslauth',
 )
 import os
 for app in ('django_evolution', 'django_command_extensions'):
@@ -226,3 +228,24 @@ USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
 TEST_RUNNER = 'esp.utils.custom_test_runner.custom_test_runner'
+
+if False:
+    import logging
+    logging.basicConfig(
+        level = logging.DEBUG,
+        format = '%(asctime)s %(levelname)s %(message)s',
+        filename = '/tmp/mit-esp.log',
+        filemode = 'w'
+    )
+
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'sslauth.backends.SSLAuthBackend',
+    )
+
+SSLAUTH_USE_COOKIE = True
+SSLAUTH_CREATE_USER = True
+
+from esp.utils.sslauth_create_user import find_ssl_user    
+SSLAUTH_CREATE_USERNAME_CALLBACK = find_ssl_user

@@ -7,7 +7,7 @@ esp/esp/local_settings.py
 esp/public/media/subsection_images/*
 esp/public/media/latex/*
 esp/public/media/email_images/*
-esp/public/media/uploaded/bio_pictures/*
+esp/public/media/uploaded/*
 esp/file_cache/*
 esp/file_db/*
 esp/esp/database_settings.py.chicago
