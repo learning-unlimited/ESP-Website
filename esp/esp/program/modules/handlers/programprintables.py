@@ -1397,6 +1397,7 @@ Student schedule for %s:
     def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
         import csv
         from django.http import HttpResponse
+        from django.utils.encoding import smart_str
 
         response = HttpResponse(mimetype="text/csv")
         write_cvs = csv.writer(response)
@@ -1406,14 +1407,14 @@ Student schedule for %s:
             write_cvs.writerow(
                 (cls.id,
                  ", ".join([t.name() for t in cls.teachers()]),
-                cls.title(),
+                 smart_str(cls.title()),
                  cls.prettyDuration(),
                  cls.grade_min,
                  cls.grade_max,
                  cls.class_size_min,
                  cls.class_size_max,
                  cls.category,
-                 cls.class_info,
+                 smart_str(cls.class_info),
                  cls.message_for_directors,
                  cls.prereqs,
                  cls.directors_notes,
