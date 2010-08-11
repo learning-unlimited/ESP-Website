@@ -83,7 +83,7 @@ def user_registration(request):
 
             user.set_password(form.cleaned_data['password'])
             userkey = random.randint(0,2**31 - 1)
-            user.password += "$%d" % userkey
+            user.password += "_%d" % userkey
             user.is_active = False
 
             user.save()
@@ -128,10 +128,10 @@ def activate_account(request):
     except:
         raise ESPError(), "Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 
-    if not u.password.endswith("$%s" % request.GET['key']):
+    if not u.password.endswith("_%s" % request.GET['key']):
         raise ESPError(), "Invalid account activation key.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 
-    u.password = u.password[:-(len("$%s" % request.GET['key']))]
+    u.password = u.password[:-(len("_%s" % request.GET['key']))]
     u.is_active = True
     u.save()
 
