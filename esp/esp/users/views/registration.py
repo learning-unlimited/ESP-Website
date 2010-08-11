@@ -129,7 +129,7 @@ def activate_account(request):
     if not u.password.endswith("$%s" % request.GET['key']):
         raise ESPError(), "Invalid account activation key.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 
-    u.password = u.password[:(len("$%s" % request.GET['key']))]
+    u.password = u.password[:-(len("$%s" % request.GET['key']))]
     u.is_active = True
     u.save()
 
