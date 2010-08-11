@@ -44,7 +44,7 @@ click "Submit" again below.)
     <input type="hidden" name="next" value="/myesp/profile/" />
     <input type="submit" value="Try logging in" />
   </form>
-  <form action="/myesp/passwdrecover" method="post">
+  <form action="/myesp/passwdrecover/" method="post">
     <input type="hidden" name="email" value="{{ u.email }}" />
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="submit" value="I forgot my password!" />
