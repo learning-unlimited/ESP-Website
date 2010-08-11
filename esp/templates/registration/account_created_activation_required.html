@@ -1,0 +1,20 @@
+{% extends "outlines/theme.html" %}
+
+{% block title %}Create a new user account{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Create an account"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Create a new account</h1>
+
+You have successfully registered a new account!  Before you can use your new account, however, you will have to activate it.  An e-mail has been sent to your address with activation instructions.  Please follow those instructions in order to continue with program registration.
+
+{% endblock %}

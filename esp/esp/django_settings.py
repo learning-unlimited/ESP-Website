@@ -247,5 +247,9 @@ AUTHENTICATION_BACKENDS = (
 SSLAUTH_USE_COOKIE = True
 SSLAUTH_CREATE_USER = True
 
-from esp.utils.sslauth_create_user import find_ssl_user    
+try:
+    from esp.utils.sslauth_create_user import find_ssl_user    
+except ImportError:
+    ## Django hasn't done its sys.path-hacking yet at this point
+    from utils.sslauth_create_user import find_ssl_user
 SSLAUTH_CREATE_USERNAME_CALLBACK = find_ssl_user

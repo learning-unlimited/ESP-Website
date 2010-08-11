@@ -1,0 +1,10 @@
+{% autoescape off %}
+Thank you for creating an account on {{ site }}!  To activate your new account, please click on the following link:
+
+http://{{ site }}/myesp/activate/?username={{ user.username }}&key={{ activation_key }}
+
+Once you've clicked on the link, your account will be activated and you'll be asked to type in your username and password as confirmation, and to fill out the rest of your profile information.
+
+If you did not intend to create an account, feel free to ignore this e-mail.
+{% endautoescape %}
+
