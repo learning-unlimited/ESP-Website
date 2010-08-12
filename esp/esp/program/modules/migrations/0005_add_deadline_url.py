@@ -13,7 +13,10 @@ class Migration:
         print 'Added /manage/[program]/[instance]/deadlines/ alias for deadline management page'
 
     def backwards(self, orm):
-        raise RuntimeError("Cannot reverse this migration.  But you shouldn't care.")
+        pass
+        #from esp.program.models import ProgramModule
+        #ProgramModule.objects.filter(handler='AdminCore').delete()
+        #raise RuntimeError("Cannot reverse this migration.  But you shouldn't care.")
     
     
     models = {
