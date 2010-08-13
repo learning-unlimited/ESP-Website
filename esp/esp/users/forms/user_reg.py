@@ -74,7 +74,7 @@ class UserRegForm(forms.Form):
         if not(good_chars & set_of_data == set_of_data):
             raise forms.ValidationError('Username contains invalid characters.')
 
-        if User.objects.filter(username__iexact = data).count() > 0:
+        if User.objects.filter(username__iexact = data, is_active = True).exclude(password = 'emailuser').count() > 0:
             raise forms.ValidationError('Username already in use.')
 
         data = data.strip()

@@ -75,7 +75,16 @@ def user_registration(request):
                 user = User.objects.get(email=form.cleaned_data['email'],
                                         password = 'emailuser')
             except User.DoesNotExist:
-                user = User(email = form.cleaned_data['email'])
+                try:
+                    user = User.objects.filter(username = form.cleaned_data['username'],
+                                               email=form.cleaned_data['email'],
+                                               is_active = False).latest('date_joined')
+
+                    if '_' not in user.password.split('$')[-1]:
+                        raise User.DoesNotExist  ## This user account is already activated; no clobbering it!
+                    user.is_active = True  ## Reset this to its default value
+                except User.DoesNotExist:
+                    user = User(email = form.cleaned_data['email'])
 
             user.username   = form.cleaned_data['username']
             user.last_name  = form.cleaned_data['last_name']
@@ -110,7 +119,7 @@ def user_registration(request):
 
                 return render_to_response('registration/account_created_activation_required.html',
                                           request, request.get_node('Q/Web/myesp'),
-                                          {'user': user})
+                                          {'user': user, 'site': Site.objects.get_current()})
     else:
         form = UserRegForm()
 
