@@ -35,7 +35,8 @@ from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser, User
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
-from django.template import Context, Template
+from django.template import Template
+from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
 class CommModule(ProgramModuleObj):

@@ -33,7 +33,9 @@ from django.core.exceptions import PermissionDenied
 from esp.datatree.models import *
 from esp.users.models import GetNodeOrNoBits
 from django.http import Http404, HttpResponseRedirect
-from django.template import loader, Context
+from django.template import loader
+from esp.middleware.threadlocalrequest import AutoRequestContext as Context
+
 #from icalendar import Calendar, Event as CalEvent, UTC
 
 import datetime

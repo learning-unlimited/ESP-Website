@@ -43,7 +43,8 @@ from decimal import Decimal
 from datetime import datetime
 from django.db import models
 from django.contrib import admin
-from django.template import Context, Template
+from django.template import Template
+from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from django.http import HttpResponse
 from django.core.mail import send_mail
 from django.template.loader import render_to_string, get_template, select_template

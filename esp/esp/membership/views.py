@@ -34,7 +34,8 @@ from esp.datatree.models import *
 from esp.qsd.models import QuasiStaticData
 from esp.web.util.main import render_to_response
 from django.core.mail import send_mail
-from django.template import loader, Context
+from django.template import loader
+from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from django.http import HttpResponseRedirect
 
 # model dependencies

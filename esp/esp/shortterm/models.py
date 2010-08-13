@@ -1,5 +1,6 @@
 from django.db import models
-from django.template import loader, Context
+from django.template import loader
+from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from django.core.mail import send_mail
 
 # Create your models here.

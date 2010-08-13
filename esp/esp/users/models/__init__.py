@@ -41,7 +41,8 @@ from django.db import models
 from django.db.models.base import ModelState
 from django.db.models.query import Q, QuerySet
 from django.http import HttpRequest
-from django.template import Context, loader
+from django.template import loader
+from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from django.template.defaultfilters import urlencode
 
 from esp.cal.models import Event

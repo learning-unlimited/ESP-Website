@@ -84,7 +84,7 @@ class EmailVerifyModule(ProgramModuleObj):
         import random
         from esp.users.models import PersistentQueryFilter
         from esp.dbmail.models import MessageRequest
-        from django.template import loader, Context
+        from django.template import loader
         
         
         symbols = string.ascii_uppercase + string.digits

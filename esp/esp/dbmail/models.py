@@ -38,6 +38,7 @@ from esp.datatree.models import *
 from esp.users.models import PersistentQueryFilter, ESPUser #, UserBit
 from django.template import Template #, VariableNode, TextNode
 
+
 from django.conf import settings
 
 from django.core.mail import SMTPConnection
@@ -315,7 +316,7 @@ class MessageVars(models.Model):
     @staticmethod
     def getContext(msgrequest, user):
         """ Get a context-like dictionary for template rendering. """
-        from django.template import Context
+        from django.template import Context  ## aseering 8-13-2010 -- Yes, this is supposed to be 'Context', not 'RequestContext'.
 
         context = {}
         msgvars = msgrequest.messagevars_set.all()

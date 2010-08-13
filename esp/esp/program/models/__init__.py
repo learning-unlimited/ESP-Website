@@ -203,7 +203,7 @@ class ArchiveClass(models.Model):
         return self.description
 
     def __unicode__(self):
-        from django.template import loader, Context
+        from esp.middleware.threadlocalrequest import AutoRequestContext as Context
         t = loader.get_template('models/ArchiveClass.html')
         return t.render(Context({'class': self}, autoescape=True))
 

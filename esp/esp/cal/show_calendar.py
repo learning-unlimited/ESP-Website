@@ -29,8 +29,8 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from datetime import datetime, timedelta
-from django.template import Context, loader
-
+from django.template import loader
+from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
 def day_after(date):
     """ Return the date + 1 day """

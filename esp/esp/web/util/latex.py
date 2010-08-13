@@ -45,7 +45,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf', landscape=None)
     """ Render some tex source to latex. This will run the latex
         interpreter and generate the necessary file type
         (either pdf, tex, ps, dvi, or a log file)   """
-    from django.template import Context, Template, loader
+    from django.template import Context, Template, loader ## aseering 8-19-2010: Yes, this should be Context, not RequestContext
     from django.conf import settings
 
     if context_dict is None: context_dict = {}

@@ -31,6 +31,7 @@ Email: web@esp.mit.edu
 
 from django.core.cache import cache
 from django import template
+from esp.middleware.threadlocalrequest import AutoRequestContext
 from django.utils.functional import curry
 import random
 
@@ -46,7 +47,7 @@ class Disabled_Cache(object):
 
 DISABLED = Disabled_Cache()
 
-def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=99999, context_class=template.Context,  takes_context=False, cache_obj=cache):
+def cache_inclusion_tag(register, file_name, cache_key_func=None, cache_time=99999, context_class=AutoRequestContext,  takes_context=False, cache_obj=cache):
     """
     This function will cache the rendering and output of a inclusion tag for cache_time seconds.
 

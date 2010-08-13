@@ -654,7 +654,8 @@ class ProgramPrintables(ProgramModuleObj):
         
         if key == 'receipt':
             #   Take the user's most recent registration profile.
-            from django.template import Context, Template
+            from django.template import Template
+            from esp.middleware.threadlocalrequest import AutoRequestContext as Context
             from django.template.loader import find_template_source
             from esp.settings import TEMPLATE_DIRS
                 
@@ -765,7 +766,8 @@ class ProgramPrintables(ProgramModuleObj):
 
     @staticmethod
     def getTranscript(program, student, format='text'):
-        from django.template import Template, Context
+        from django.template import Template
+        from esp.middleware.threadlocalrequest import AutoRequestContext as Context
         from django.template.loader import get_template
 
         template_keys = {   'text': 'program/modules/programprintables/transcript.txt',
