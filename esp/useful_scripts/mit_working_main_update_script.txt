@@ -257,14 +257,14 @@ main_text = """
 </style>
 
 <script language="JavaScript">
-$(document).ready(function() {
+\$(document).ready(function() {
   if (esp_user.cur_admin == "1") {
-    $(".admin").removeClass("admin_hidden");
+    \$(".admin").removeClass("admin_hidden");
   }
 
   if (esp_user.cur_username != null) {
-    $(".not_logged_in").addClass("not_logged_in_hidden");
-    $(".logged_in").removeClass("logged_in_hidden");
+    \$(".not_logged_in").addClass("not_logged_in_hidden");
+    \$(".logged_in").removeClass("logged_in_hidden");
   }
 });
 </script>
@@ -296,10 +296,10 @@ wrap(document.getElementById('login_user'),'Username');
 wrap(document.getElementById('login_pswd'),'Password');
 wrap(document.getElementById('search_field'),'Enter search term');
 
-/*$('#menu li').each(function(i, item) {
-  var item = $(item);
+/*\$('#menu li').each(function(i, item) {
+  var item = \$(item);
   item.bind('mouseover', function(){
-    $('#page').removeClass().addClass(item.attr('className'));
+    \$('#page').removeClass().addClass(item.attr('className'));
   });
 });*/
 
@@ -599,7 +599,7 @@ main_static_text = """
 
 <script type="text/javascript" src="/media/scripts/jquery.js"> </script>
 <script type="text/javascript">
-$(function(){
+\$(function(){
 
 // create behavior wrapper
 var wrap = function(target, label) {
@@ -636,12 +636,12 @@ if (item.nodeType == 1) {
 var showadmin = function(){
   this.innerHTML = '-';
   this.onclick = hideadmin;
-  $('#adminbar_content').show();
+  \$('#adminbar_content').show();
 };
 var hideadmin = function(){
   this.innerHTML = '+';
   this.onclick = showadmin;
-  $('#adminbar_content').hide();
+  \$('#adminbar_content').hide();
 };
 
 document.getElementById('adminbar_toggle').onclick = hideadmin;
