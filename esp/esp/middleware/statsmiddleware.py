@@ -67,6 +67,8 @@ class StatsMiddleware(object):
             }
 
         if debug:
+            if not hasattr(request, "_num_queries"):
+                request._num_queries = 0
             # compute the db time for the queries just run
             queries = len(connection.queries) - request._num_queries
             if queries:
