@@ -6,6 +6,7 @@ from esp.web.util.main import render_to_response
 from esp.datatree.models import GetNode
 from esp.mailman import add_list_member
 from esp.middleware.esperrormiddleware import ESPError
+from esp.tagdict.models import Tag
 from django.contrib.auth import login, authenticate
 from django.http import HttpResponseRedirect
 from django.template import loader, Context
@@ -63,8 +64,8 @@ def user_registration(request):
 
         if form.is_valid():         
             ## First, check to see if we have any users with the same e-mail
-            if not 'do_reg_no_really' in request.POST:
-                existing_accounts = User.objects.filter(email=form.cleaned_data['email']).exclude(password='emailuser')
+            if not 'do_reg_no_really' in request.POST and Tag.getTag('ask_about_duplicate_accounts', default='False') == 'True':
+                existing_accounts = User.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
                 if len(existing_accounts) != 0:
                     return render_to_response('registration/newuser.html',
                                               request, request.get_node('Q/Web/myesp'),
@@ -95,20 +96,21 @@ def user_registration(request):
                                                qsc  = request.get_node('Q'),
                                                recursive = False)
 
-            #user = authenticate(username=form.cleaned_data['username'],
-            #                    password=form.cleaned_data['password'])
-            #
-            #login(request, user)
-            #return HttpResponseRedirect('/myesp/profile/')
+            if Tag.getTag('require_email_validation', default='False') == 'False':
+                user = authenticate(username=form.cleaned_data['username'],
+                                    password=form.cleaned_data['password'])
+                
+                login(request, user)
+                return HttpResponseRedirect('/myesp/profile/')
+            else:
+                t = loader.get_template('registration/activation_email.txt')
+                c = Context({'user': user, 'activation_key': userkey, 'site': Site.objects.get_current()})
 
-            t = loader.get_template('registration/activation_email.txt')
-            c = Context({'user': user, 'activation_key': userkey, 'site': Site.objects.get_current()})
+                send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently = False)
 
-            send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently = False)
-
-            return render_to_response('registration/account_created_activation_required.html',
-                                      request, request.get_node('Q/Web/myesp'),
-                                      {'user': user, 'activation_key': hashlib.md5(user.username).hexdigest()})
+                return render_to_response('registration/account_created_activation_required.html',
+                                          request, request.get_node('Q/Web/myesp'),
+                                          {'user': user, 'activation_key': hashlib.md5(user.username).hexdigest()})
     else:
         form = UserRegForm()
 
