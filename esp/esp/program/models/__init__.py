@@ -1052,7 +1052,7 @@ class SATPrepRegInfo(models.Model):
 class RegistrationProfile(models.Model):
     """ A student registration form """
     user = AjaxForeignKey(User)
-    program = models.ForeignKey(Program)
+    program = models.ForeignKey(Program, null=True)
     contact_user = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_user')
     contact_guardian = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian')
     contact_emergency = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency')
@@ -1064,6 +1064,7 @@ class RegistrationProfile(models.Model):
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True)
     text_reminder = models.NullBooleanField()
+    most_recent_profile = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'program'
@@ -1104,6 +1105,8 @@ class RegistrationProfile(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
+        RegistrationProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
+        self.most_recent_profile = True
         super(RegistrationProfile, self).save(*args, **kwargs)
         
     @cache_function

@@ -321,28 +321,30 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                     zipcodes_exclude = zipc.close_zipcodes(request.GET['zipdistance_exclude'])
                     zipcodes = [ zipcode for zipcode in zipcodes if zipcode not in zipcodes_exclude ]
                 if len(zipcodes) > 0:
-                    Q_include &= Q(registrationprofile__contact_user__address_zip__in = zipcodes)
+                    Q_include &= Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
                     update = True
 
             if request.GET.has_key('states') and len(request.GET['states'].strip()) > 0:
                 state_codes = request.GET['states'].strip().upper().split(',')
                 if request.GET.has_key('states__not'):
-                    Q_exclude &= Q(registrationprofile__contact_user__address_state__in = state_codes)
+                    Q_exclude &= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
                 else:
-                    Q_include &= Q(registrationprofile__contact_user__address_state__in = state_codes)
+                    Q_include &= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
                 update = True
 
             if request.GET.has_key('grade_min'):
                 yog = ESPUser.YOGFromGrade(request.GET['grade_min'])
                 if yog != 0:
+                    print "YOG filtering; grade_min:", yog
                     update = True
-                    Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog)
+                    Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog, registrationprofile__most_recent_profile=True)
 
             if request.GET.has_key('grade_max'):
                 yog = ESPUser.YOGFromGrade(request.GET['grade_max'])
                 if yog != 0:
+                    print "YOG filtering; grade_max:", yog
                     update = True                    
-                    Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog)
+                    Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog, registrationprofile__most_recent_profile=True)
         
         if not update:
             users = None
