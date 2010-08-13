@@ -110,7 +110,7 @@ def user_registration(request):
 
                 return render_to_response('registration/account_created_activation_required.html',
                                           request, request.get_node('Q/Web/myesp'),
-                                          {'user': user, 'activation_key': hashlib.md5(user.username).hexdigest()})
+                                          {'user': user})
     else:
         form = UserRegForm()
 
