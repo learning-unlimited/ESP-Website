@@ -3,7 +3,7 @@
 echo "Backing everything up"
 echo "(may require password for PostgreSQL user 'esp', for taking a database dump)"
 
-cp -R ../.. ~/esp.pre-migration-backup
+cp -a ../.. ~/esp.pre-migration-backup
 pg_dump -U esp django | bzip2 > ~/django-pre-migration-backup.sql.bz2
 
 echo "Switching to the main branch"
@@ -13,7 +13,7 @@ git pull
 echo "Restoring uploads and media"
 echo "(may require password for PostgreSQL user 'esp', for loading custom schema changes)"
 mv ../public/media ../public/media.orig
-cp -R ~/esp.pre-migration-backup/esp/public/media ../public/media
+cp -a ~/esp.pre-migration-backup/esp/public/media ../public/media
 
 echo "Doing schema-migration and associated hacks"
 ./manage.py migrate --fake users 0001_initial
