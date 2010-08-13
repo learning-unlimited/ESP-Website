@@ -35,7 +35,6 @@ ALTER TABLE users_teacherinfo ADD COLUMN mail_reimbursement BOOLEAN;
 ALTER TABLE users_studentinfo ADD COLUMN food_preference VARCHAR(256);
 ALTER TABLE users_educatorinfo ADD COLUMN k12school_id INTEGER;
 ALTER TABLE "users_educatorinfo" ADD CONSTRAINT "k12school_id_refs_id_2633cab9" FOREIGN KEY ("k12school_id") REFERENCES "users_k12school" ("id") DEFERRABLE INITIALLY DEFERRED;
-EOF
 ALTER TABLE modules_studentclassregmoduleinfo ADD COLUMN force_show_required_modules BOOLEAN NOT NULL DEFAULT false;
 EOF
 
@@ -43,6 +42,8 @@ psql -U esp -f /tmp/mit_working_main_migration.sql django
 
 echo "Adding MIT-specific settings to DB"
 cat > /tmp/mit_working_main_configurer.py <<EOF
+import sys
+sys.path.append("`pwd`")
 from django.core.management import setup_environ
 import settings
 
@@ -738,7 +739,7 @@ TemplateOverride.objects.get_or_create(name="main_static.html", content=main_sta
 EOF
 
 chmod +x /tmp/mit_working_main_configurer.py
-/tmp/mit_working_main_configurer.py
+python /tmp/mit_working_main_configurer.py
 
 echo "Kicking Apache"
 touch ../public/esp.wsgi
