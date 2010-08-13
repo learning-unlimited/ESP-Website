@@ -34,8 +34,11 @@ ALTER TABLE users_teacherinfo ADD COLUMN student_id VARCHAR(128);
 ALTER TABLE users_teacherinfo ADD COLUMN mail_reimbursement BOOLEAN;
 ALTER TABLE users_studentinfo ADD COLUMN food_preference VARCHAR(256);
 ALTER TABLE users_educatorinfo ADD COLUMN k12school_id INTEGER;
+ALTER TABLE users_studentinfo ADD COLUMN k12school_id INTEGER;
+ALTER TABLE users_studentinfo ADD COLUMN heard_about TEXT;
 ALTER TABLE "users_educatorinfo" ADD CONSTRAINT "k12school_id_refs_id_2633cab9" FOREIGN KEY ("k12school_id") REFERENCES "users_k12school" ("id") DEFERRABLE INITIALLY DEFERRED;
 -- ALTER TABLE modules_studentclassregmoduleinfo ADD COLUMN force_show_required_modules BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE program_classcategories ADD COLUMN seq INTEGER NOT NULL DEFAULT 0;
 EOF
 
 psql -U esp -f /tmp/mit_working_main_migration.sql django
@@ -740,6 +743,19 @@ EOFF
 
 chmod +x /tmp/mit_working_main_configurer.py
 python /tmp/mit_working_main_configurer.py
+
+echo "Setting MIT e-mail addresses in local_settings.py"
+cat >>local_settings.py <<EOF
+DEFAULT_EMAIL_ADDRESSES = {
+    'archive': 'esparchive@gmail.com',
+    'bounces': 'esp-bounces@mit.edu',
+    'support': 'web@esp.mit.edu',
+    'membership': 'esp@mit.edu',
+    'default': 'esp@mit.edu',
+}
+
+MIDDLEWARE_LOCAL += [ ( 150, 'django.middleware.csrf.CsrfResponseMiddleware'), ]
+EOF
 
 echo "Kicking Apache"
 touch ../public/esp.wsgi
