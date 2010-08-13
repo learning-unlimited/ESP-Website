@@ -32,7 +32,8 @@ class TemplateOverride(models.Model):
         #   Never overwrite; save a new copy with the version incremented.
         self.id = None
         self.version = self.next_version()
-        super(TemplateOverride, self).save(True, *args, **kwargs)
+        kwargs['force_insert'] = True
+        super(TemplateOverride, self).save(*args, **kwargs)
         
         #   Reset any cached template loaders.
         for loader in template_source_loaders:
