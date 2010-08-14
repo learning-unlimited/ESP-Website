@@ -113,8 +113,9 @@ def user_registration(request):
                 login(request, user)
                 return HttpResponseRedirect('/myesp/profile/')
             else:
+                from django.template import Context as RawContext
                 t = loader.get_template('registration/activation_email.txt')
-                c = Context({'user': user, 'activation_key': userkey, 'site': Site.objects.get_current()})
+                c = RawContext({'user': user, 'activation_key': userkey, 'site': Site.objects.get_current()})
 
                 send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently = False)
 
