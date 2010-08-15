@@ -259,8 +259,11 @@ class ESPUser(User, AnonymousUser):
 
         request.session['user_morph'] = user_morph
 
+    def is_morphed(self, request):
+        return 'user_morph' in request.session
+
     def get_old(self, request):
-        if not 'user_morph' in request.session:
+        if not self.is_morphed():
             return False
         return ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
 

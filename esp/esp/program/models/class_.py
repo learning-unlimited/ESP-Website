@@ -62,6 +62,8 @@ from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstrain
 from esp.resources.models        import ResourceType, Resource, ResourceRequest, ResourceAssignment
 from esp.cache                   import cache_function
 
+from esp.middleware.threadlocalrequest import get_current_request
+
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
 
 class ProgramCheckItem(models.Model):
@@ -1105,9 +1107,17 @@ class ClassSection(models.Model):
         
         if overridefull or not self.isFull():
             #    Then, create the userbit denoting preregistration for this class.
+            now = datetime.datetime.now()
             if not UserBit.objects.UserHasPerms(user, self.anchor, prereg_verb):
                 UserBit.objects.get_or_create(user = user, qsc = self.anchor,
-                                              verb = prereg_verb, startdate = datetime.datetime.now(), recursive = False)
+                                              verb = prereg_verb, startdate = now, recursive = False)
+
+                # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
+                onsite_verb = GetNode("V/Flags/Registration/OnSite/ChangedClasses")
+                request = get_current_request()
+                if request and request.user and isinstance(request.user, ESPUser) and request.user.is_morphed(request):
+                    UserBit.objects.get_or_create(user = user, qsc = self.anchor, verb = onsite_verb, defaults = { 'recursive': False, 'startdate': now })
+            
             # Set a userbit for auto-registered classes (i.e. Spark sections of HSSP classes)
             if automatic:
                 if not UserBit.objects.UserHasPerms(user, self.anchor, auto_verb):
