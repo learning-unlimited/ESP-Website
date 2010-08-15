@@ -597,6 +597,16 @@ class ArgCacheDecorator(ArgCache):
 
     def __init__(self, func, *args, **kwargs):
         """ Wrap func in a ArgCache. """
+
+        ## Keep the original function's name and docstring
+        ## If the original function has any more-complicated attrs,
+        ## don't bother to maintain them; we have our own attrs,
+        ## and merging custom stuff could be dangerous.
+        if hasattr(func, '__name__'):
+            self.__name__ = func.__name__
+        if hasattr(func, '__doc__'):
+            self.__doc__ = func.__doc__
+        
         import inspect
 
         self.argspec = inspect.getargspec(func)
