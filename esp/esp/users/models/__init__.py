@@ -42,7 +42,7 @@ from django.db.models.base import ModelState
 from django.db.models.query import Q, QuerySet
 from django.http import HttpRequest
 from django.template import loader
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
+from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from django.template.defaultfilters import urlencode
 
 from esp.cal.models import Event
@@ -259,11 +259,13 @@ class ESPUser(User, AnonymousUser):
 
         request.session['user_morph'] = user_morph
 
-    def is_morphed(self, request):
+    def is_morphed(self, request=None):
+        if not request:
+            request = get_current_request()
         return 'user_morph' in request.session
 
     def get_old(self, request):
-        if not self.is_morphed():
+        if not self.is_morphed(request):
             return False
         return ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
 
@@ -273,11 +275,18 @@ class ESPUser(User, AnonymousUser):
 
         retUrl   = request.session['user_morph']['retUrl']
         new_user = self.get_old(request)
+
+        if not new_user:
+            return retUrl
+
         del request.session['user_morph']
         logout(request)
 
         if type(new_user) == ESPUser:
             old_user = new_user.getOld()
+        else:
+            old_user = new_user
+
         old_user.backend = 'django.contrib.auth.backends.ModelBackend'
         
         login(request, old_user)
