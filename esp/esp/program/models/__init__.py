@@ -431,9 +431,9 @@ class Program(models.Model):
         # This technically has a bug because of copy-on-write, but the other code has it too, and
         # our copy-on-write system isn't good enough yet to make checking duplicates feasible
         lists['all_current_students'] = {'description': 'Current students in all of ESP',
-                'list': students_Q & Q(registrationprofile__student_info__graduation_year__gte = yog_12)}
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__gte = yog_12, registrationprofile__most_recent_profile = True)}
         lists['all_former_students'] = {'description': 'Former students in all of ESP',
-                'list': students_Q & Q(registrationprofile__student_info__graduation_year__lt = yog_12)}
+                'list': students_Q & Q(registrationprofile__student_info__graduation_year__lt = yog_12, registrationprofile__most_recent_profile = True)}
 
         lists['emaillist'] = {'description':
                       """All users in our mailing list without an account.""",
