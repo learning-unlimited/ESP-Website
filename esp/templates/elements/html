@@ -13,6 +13,9 @@
 {% block stylesheets %}
 {% endblock %}
 
+<script language="JavaScript">
+var csrfmiddlewaretoken = "{{ csrf_token }}";
+</script>
 {% block xtrajs %}{% endblock %}
 
 </head>
