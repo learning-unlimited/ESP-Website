@@ -113,7 +113,7 @@ DROP FUNCTION add_list_aggregate();
 
 -- DROP FUNCTION class__get_enrolled(integer, integer);
 
-CREATE OR REPLACE FUNCTION class__get_enrolled(user_id integer, program_id integer)
+CREATE OR REPLACE FUNCTION class__get_enrolled(in_user_id integer, in_program_id integer)
   RETURNS SETOF program_class AS
 $BODY$DECLARE
    verb_confirm_rec RECORD;
@@ -130,7 +130,7 @@ BEGIN
     -- get the program anchor node
     SELECT INTO program_anchor_rec "datatree_datatree".id, rangestart, rangeend FROM "datatree_datatree"
       INNER JOIN "program_program" ON "program_program"."anchor_id" = "datatree_datatree"."id"
-      WHERE "program_program"."id" = program_id LIMIT 1;
+      WHERE "program_program"."id" = in_program_id LIMIT 1;
 
     FOR output IN
     SELECT DISTINCT
@@ -154,7 +154,7 @@ BEGIN
       ("program_class__anchor".rangestart >= program_anchor_rec.rangestart AND
        "program_class__anchor".rangeend   <= program_anchor_rec.rangeend)
       AND
-      ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
+      ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = in_user_id) 
       AND
       ("users_userbit"."startdate" <= now())
       AND
@@ -199,14 +199,14 @@ END;$BODY$
 
 -- DROP FUNCTION userbit__bits_get_qsc(integer, integer, timestamp with time zone, timestamp with time zone);
 
-CREATE OR REPLACE FUNCTION userbit__bits_get_qsc(user_id integer, verb_id integer, start_ts timestamp with time zone, end_ts timestamp with time zone)
+CREATE OR REPLACE FUNCTION userbit__bits_get_qsc(in_user_id integer, in_verb_id integer, in_start_ts timestamp with time zone, in_end_ts timestamp with time zone)
   RETURNS SETOF users_userbit AS
 $BODY$DECLARE
    verb_rec RECORD;
    output RECORD;
 BEGIN
     -- Select verb
-    SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = verb_id;
+    SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_verb_id;
 
     FOR output IN
     SELECT DISTINCT
@@ -222,11 +222,11 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = in_user_id) 
         AND
-        ("users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= in_start_ts)
         AND
-        ("users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= in_end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -234,7 +234,7 @@ BEGIN
            "users_userbit__verb"."rangeend" >= verb_rec.rangeend
           )
           OR
-          "users_userbit"."verb_id" = verb_id
+          "users_userbit"."verb_id" = in_verb_id
         )
       )
     ) LOOP
@@ -247,7 +247,7 @@ END;$BODY$
 
 -- DROP FUNCTION userbit__bits_get_qsc_root(integer, integer, timestamp with time zone, timestamp with time zone, integer);
 
-CREATE OR REPLACE FUNCTION userbit__bits_get_qsc_root(user_id integer, verb_id integer, start_ts timestamp with time zone, end_ts timestamp with time zone, qscroot_id integer)
+CREATE OR REPLACE FUNCTION userbit__bits_get_qsc_root(in_user_id integer, in_verb_id integer, in_start_ts timestamp with time zone, in_end_ts timestamp with time zone, in_qscroot_id integer)
   RETURNS SETOF users_userbit AS
 $BODY$DECLARE
    verb_rec RECORD;
@@ -255,10 +255,10 @@ $BODY$DECLARE
    output RECORD;
 BEGIN
     -- Select verb
-    SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = verb_id;
+    SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_verb_id;
 
     -- Select qsc root
-    SELECT INTO qscroot_rec rangestart, rangeend FROM datatree_datatree WHERE id = qscroot_id;
+    SELECT INTO qscroot_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_qscroot_id;
 
     FOR output IN
     SELECT DISTINCT
@@ -277,9 +277,9 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = in_user_id) 
         AND
-        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" IS NULL OR "users_userbit"."startdate" <= in_start_ts)
         AND
         ("users_userbit"."enddate" >= end_ts)
         AND
@@ -289,7 +289,7 @@ BEGIN
            "users_userbit__verb"."rangeend" >= verb_rec.rangeend
           )
           OR
-          "users_userbit"."verb_id" = verb_id
+          "users_userbit"."verb_id" = in_verb_id
         )
         AND
         (
@@ -297,7 +297,7 @@ BEGIN
            "users_userbit__qsc"."rangeend" <= qscroot_rec.rangeend
           )
           OR
-          "users_userbit"."qsc_id" = qscroot_id
+          "users_userbit"."qsc_id" = in_qscroot_id
         )
       )
     ) LOOP
@@ -310,7 +310,7 @@ END;$BODY$
 
 -- DROP FUNCTION userbit__bits_get_user(integer, integer, timestamp with time zone, timestamp with time zone);
 
-CREATE OR REPLACE FUNCTION userbit__bits_get_user(qsc_id integer, verb_id integer, start_ts timestamp with time zone, end_ts timestamp with time zone)
+CREATE OR REPLACE FUNCTION userbit__bits_get_user(in_qsc_id integer, in_verb_id integer, in_start_ts timestamp with time zone, in_end_ts timestamp with time zone)
   RETURNS SETOF users_userbit AS
 $BODY$DECLARE
     verb_rec RECORD;
@@ -318,10 +318,10 @@ $BODY$DECLARE
     output RECORD;
 BEGIN
     -- Select verb
-    SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = verb_id;
+    SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_verb_id;
 
     -- Select qsc
-    SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = qsc_id;
+    SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_qsc_id;
 
     FOR output IN
     SELECT DISTINCT 
@@ -339,9 +339,9 @@ BEGIN
     WHERE
     (
       (
-        ("users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= in_start_ts)
         AND
-        ("users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= in_end_ts)
       )
       AND
       (
@@ -351,7 +351,7 @@ BEGIN
          "users_userbit__qsc"."rangestart" <= qsc_rec.rangestart AND
          "users_userbit"."recursive" = True)
         OR
-        ("users_userbit"."verb_id" = verb_id AND "users_userbit"."qsc_id" = qsc_id)
+        ("users_userbit"."verb_id" = verb_id AND "users_userbit"."qsc_id" = in_qsc_id)
       )
     ) LOOP
     RETURN NEXT output;
@@ -363,7 +363,7 @@ END;$BODY$
 
 -- DROP FUNCTION userbit__bits_get_user_real(integer, integer, timestamp with time zone, timestamp with time zone);
 
-CREATE OR REPLACE FUNCTION userbit__bits_get_user_real(qsc_id integer, verb_id integer, start_ts timestamp with time zone, end_ts timestamp with time zone)
+CREATE OR REPLACE FUNCTION userbit__bits_get_user_real(in_qsc_id integer, in_verb_id integer, in_start_ts timestamp with time zone, in_end_ts timestamp with time zone)
   RETURNS SETOF auth_user AS
 $BODY$DECLARE
     verb_rec RECORD;
@@ -371,10 +371,10 @@ $BODY$DECLARE
     output RECORD;
 BEGIN
     -- Select verb
-    SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = verb_id;
+    SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_verb_id;
 
     -- Select qsc
-    SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = qsc_id;
+    SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_qsc_id;
 
     FOR output IN
     SELECT DISTINCT
@@ -396,9 +396,9 @@ BEGIN
     WHERE
     (
       (
-        ("users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= in_start_ts)
         AND
-        ("users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= in_end_ts)
       )
       AND
       (
@@ -420,14 +420,14 @@ END;$BODY$
 
 -- DROP FUNCTION userbit__bits_get_verb(integer, integer, timestamp with time zone, timestamp with time zone);
 
-CREATE OR REPLACE FUNCTION userbit__bits_get_verb(user_id integer, qsc_id integer, start_ts timestamp with time zone, end_ts timestamp with time zone)
+CREATE OR REPLACE FUNCTION userbit__bits_get_verb(in_user_id integer, in_qsc_id integer, in_start_ts timestamp with time zone, in_end_ts timestamp with time zone)
   RETURNS SETOF users_userbit AS
 $BODY$DECLARE
    qsc_rec RECORD;
    output RECORD;
 BEGIN
     -- Select qsc
-    SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = qsc_id;
+    SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_qsc_id;
 
     FOR output IN
     SELECT DISTINCT
@@ -445,9 +445,9 @@ BEGIN
       (
         ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
         AND
-        ("users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= in_start_ts)
         AND
-        ("users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= in_end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -455,7 +455,7 @@ BEGIN
            "users_userbit__qsc"."rangeend" >= qsc_rec.rangeend
           )
           OR
-          "users_userbit"."qsc_id" = qsc_id
+          "users_userbit"."qsc_id" = in_qsc_id
         )
       )
     ) LOOP
@@ -468,14 +468,14 @@ END;$BODY$
 
 -- DROP FUNCTION userbit__bits_get_verb_root(integer, integer, timestamp with time zone, timestamp with time zone, integer);
 
-CREATE OR REPLACE FUNCTION userbit__bits_get_verb_root(user_id integer, qsc_id integer, start_ts timestamp with time zone, end_ts timestamp with time zone, verbroot_id integer)
+CREATE OR REPLACE FUNCTION userbit__bits_get_verb_root(in_user_id integer, in_qsc_id integer, in_start_ts timestamp with time zone, in_end_ts timestamp with time zone, in_verbroot_id integer)
   RETURNS SETOF users_userbit AS
 $BODY$DECLARE
    qsc_rec RECORD;
    output RECORD;
 BEGIN
     -- Select qsc
-    SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = qsc_id;
+    SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_qsc_id;
 
     FOR output IN
     SELECT DISTINCT
@@ -491,11 +491,11 @@ BEGIN
 
     (
       (
-        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id) 
+        ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = in_user_id) 
         AND
-        ("users_userbit"."startdate" <= start_ts)
+        ("users_userbit"."startdate" <= in_start_ts)
         AND
-        ("users_userbit"."enddate" >= end_ts)
+        ("users_userbit"."enddate" >= in_end_ts)
         AND
         (
           ("users_userbit"."recursive" = True AND
@@ -503,7 +503,7 @@ BEGIN
            "users_userbit__qsc"."rangeend" >= qsc_rec.rangeend
           )
           OR
-          "users_userbit"."qsc_id" = qsc_id
+          "users_userbit"."qsc_id" = in_qsc_id
         )
       )
     ) LOOP
@@ -516,20 +516,20 @@ END;$BODY$
 
 -- DROP FUNCTION userbit__user_has_perms(integer, integer, integer, timestamp with time zone, boolean);
 
-CREATE OR REPLACE FUNCTION userbit__user_has_perms(user_id integer, qsc_id integer, verb_id integer, now_ts timestamp with time zone, recursive_required boolean)
+CREATE OR REPLACE FUNCTION userbit__user_has_perms(in_user_id integer, in_qsc_id integer, in_verb_id integer, in_now_ts timestamp with time zone, in_recursive_required boolean)
   RETURNS boolean AS
 $BODY$DECLARE
    qsc_rec RECORD;
    verb_rec RECORD;
    userbit_id RECORD;
 BEGIN
-    IF recursive_required THEN
+    IF in_recursive_required THEN
         -- Now we have to use verb recursion
         -- Select qsc
-        SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = qsc_id;
+        SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_qsc_id;
 
         -- Select verb
-        SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = verb_id;
+        SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_verb_id;
 
         SELECT INTO userbit_id "users_userbit"."id" FROM "users_userbit"
 
@@ -541,12 +541,12 @@ BEGIN
         WHERE
         (
           (
-             ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
+             ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = in_user_id)
              AND 
              (
-               ("users_userbit"."startdate" <= now_ts)
+               ("users_userbit"."startdate" <= in_now_ts)
                AND
-               ("users_userbit"."enddate" > now_ts)
+               ("users_userbit"."enddate" > in_now_ts)
              )
           )
           AND
@@ -572,26 +572,26 @@ BEGIN
         WHERE
         (
           (
-             ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
+             ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = in_user_id)
              AND 
              (
-               ("users_userbit"."startdate" <= now_ts)
+               ("users_userbit"."startdate" <= in_now_ts)
                AND
-               ("users_userbit"."enddate" > now_ts)
+               ("users_userbit"."enddate" > in_now_ts)
              )
           )
           AND
-            ("users_userbit"."verb_id" = verb_id AND "users_userbit"."qsc_id" = qsc_id)
+            ("users_userbit"."verb_id" = verb_id AND "users_userbit"."qsc_id" = in_qsc_id)
         )
         LIMIT 1;
     
         IF NOT FOUND THEN
             -- Now we have to use verb recursion
             -- Select qsc
-            SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = qsc_id;
+            SELECT INTO qsc_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_qsc_id;
 
             -- Select verb
-            SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = verb_id;
+            SELECT INTO verb_rec rangestart, rangeend FROM datatree_datatree WHERE id = in_verb_id;
 
             SELECT INTO userbit_id "users_userbit"."id" FROM "users_userbit"
 
@@ -603,12 +603,12 @@ BEGIN
             WHERE
             (
               (
-                 ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = user_id)
+                 ("users_userbit"."user_id" IS NULL OR "users_userbit"."user_id" = in_user_id)
                  AND 
                  (
-                   ("users_userbit"."startdate" <= now_ts)
+                   ("users_userbit"."startdate" <= in_now_ts)
                    AND
-                   ("users_userbit"."enddate" > now_ts)
+                   ("users_userbit"."enddate" > in_now_ts)
                  )
               )
               AND
