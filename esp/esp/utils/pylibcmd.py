@@ -16,7 +16,7 @@ class CacheClass(BaseCache):
     def __init__(self, server, params):
         super(CacheClass, self).__init__(params)
         mc = pylibmc.Client(server.split(';'))
-        mc.behaviors = {"tcp_nodelay": True}
+        mc.behaviors = {"tcp_nodelay": True,}
         self._cache = mc
         self._pool = pylibmc.ThreadMappedPool(mc)
 

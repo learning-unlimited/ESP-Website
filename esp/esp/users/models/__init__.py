@@ -964,6 +964,9 @@ class StudentInfo(models.Model):
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
+    post_hs = models.TextField(default='')
+    transportation = models.TextField(default='')
+    
 
     def save(self, *args, **kwargs):
         super(StudentInfo, self).save(*args, **kwargs)
@@ -1017,11 +1020,16 @@ class StudentInfo(models.Model):
         form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
                                                             qsc  = STUDREP_QSC,
                                                             verb = STUDREP_VERB)
+        form_dict['post_hs'] = self.post_hs
+        form_dict['transportation'] = self.transportation
         return form_dict
 
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
+
+        print new_data
+        
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
 
@@ -1032,18 +1040,33 @@ class StudentInfo(models.Model):
             studentInfo = regProfile.student_info
 
         studentInfo.graduation_year = new_data['graduation_year']
-        studentInfo.k12school       = new_data['k12school']
-        studentInfo.school          = new_data['school']
+        try:
+            studentInfo.k12school       = K12School.objects.get(id=int(new_data['k12school']))
+        except K12School.DoesNotExist:
+            pass
+        except TypeError:
+            pass
+        studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data['dob']
-        studentInfo.heard_about      = new_data['heard_about']
-        if Tag.getTag('studentinfo_shirt_options'):
+        
+        studentInfo.heard_about      = new_data.get('heard_about', '')
+
+        if 'shirt_size' in new_data and 'shirt_type' in new_data:
             studentInfo.shirt_size      = new_data['shirt_size']
             studentInfo.shirt_type      = new_data['shirt_type']
-        if Tag.getTag('studentinfo_food_options'):
+
+        if 'food_preference' in new_data:
             studentInfo.food_preference      = new_data['food_preference']
-        studentInfo.studentrep_expl = new_data['studentrep_expl']
+
+        
+        studentInfo.studentrep = new_data.get('studentrep', False)    
+        studentInfo.studentrep_expl = new_data.get('studentrep_expl', '')
+
+        studentInfo.post_hs = new_data.get('post_hs', '')
+
+        studentInfo.transportation = new_data.get('transportation', '')        
         studentInfo.save()
-        if new_data['studentrep']:
+        if new_data.get('studentrep', False):
             #   E-mail membership notifying them of the student rep request.
             subj = '[%s Membership] Student Rep Request: %s %s' % (ORGANIZATION_SHORT_NAME, curUser.first_name, curUser.last_name)
             to_email = [DEFAULT_EMAIL_ADDRESSES['membership']]
@@ -1393,6 +1416,7 @@ class ContactInfo(models.Model):
     e_mail = models.EmailField('E-mail address', blank=True, null=True)
     phone_day = PhoneNumberField('Home phone',blank=True, null=True)
     phone_cell = PhoneNumberField('Cell phone',blank=True, null=True)
+    receive_txt_message = models.BooleanField(default=False)
     phone_even = PhoneNumberField('Alternate phone',blank=True, null=True)
     address_street = models.CharField('Street address',max_length=100,blank=True, null=True)
     address_city = models.CharField('City',max_length=50,blank=True, null=True)

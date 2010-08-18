@@ -1,6 +1,6 @@
 <!-- Begin Student Info Portion -->
 <tr>
- <th colspan="2">Student Information</th>
+ <th colspan="2">Student Information</th> {{ form.errors }}
 </tr>
 
 <tr>
@@ -11,17 +11,17 @@ After you click "Update Your Information!" below, or if you've already
 done so in the past, you will not be able to change your age or grade level. 
 <br /> <br />
 Please fill out your current age and grade accurately and honestly.
-MIT ESP trusts its students to represent themselves honestly, but
+We trust our students to represent themselves honestly, but
 students have abused this trust in the past to circumvent grade
 requirements for higher-level classes.  Lying about your age is fraud
 and is extremely frustrating for our teachers, who set these grade
 requirements with full knowledge of the outstanding students in the
-program.  Please be honest and support the ESP community. 
+program.  Please be honest and support the community. 
 <br /> <br />
 Your grade level updates automatically every August; if you skip a grade or 
 take a year off, please email us and we will fix your grade. For a more 
 detailed explanation of our age and grade level policy, please click 
-<a href="http://esp.mit.edu/learn/parents/agelimit.html">here</a>.
+<a href="/learn/parents/agelimit.html">here</a>.
 </div>
 </td>
 </tr>
@@ -36,11 +36,7 @@ detailed explanation of our age and grade level policy, please click
 </tr>
 
 <tr>
- <td><label for="id_graduation_year">Your Grade:<br />
-<em>(As of September 15, 
-      <strong>{{request.user.currentSchoolYear}}</strong>)
-      </em>
-</label></td>
+ <td><label for="id_graduation_year">Grade / Graduation Year:</label></td>
  <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
    {% endif %}
@@ -57,16 +53,16 @@ detailed explanation of our age and grade level policy, please click
 </tr>
 
 <tr>
- <td><label for="id_heardofesp">How did you hear of ESP?</label></td>
+ <td><label for="id_heardofesp">How did you hear of this program?</label></td>
  <td>{{ form.heard_about }} {% if form.heard_about.errors %}
    <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
-<tr>
+{% if form.fields.studentrep %}<tr>
  <td>
-<label for="id_studentrep">I want to be an <a href="/getinvolved/studentreps.html">ESP Student Rep</a>:</label></td>
+<label for="id_studentrep">I want to be a <a href="/getinvolved/studentreps.html">Student Rep</a>:</label></td>
  <td>
    {{ form.studentrep }} 
 {% if form.studentrep.errors %}
@@ -83,7 +79,7 @@ contact you soon! <br />
    <br /><span class="form_error">{{ form.studentrep_expl.errors|join:", " }}</span>
 {% endif %}
  </td>
-</tr>
+</tr>{% endif %}
 
 {% if form.food_preference %}
 <tr>
@@ -114,6 +110,22 @@ contact you soon! <br />
  <td><label for="id_shirt_type">Shirt type:</label></td>
  <td>{{ form.shirt_type }} {% if form.shirt_type.errors %}
    <br /><span class="form_error">{{ form.shirt_type.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_post_hs">What are your plans after you graduate from high school?</label></td>
+ <td>{{ form.post_hs }} {% if form.post_hs.errors %}
+   <br /><span class="form_error">{{ form.post_hs.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+
+<tr>
+ <td><label for="id_transportation">How do you plan to get to/from the program?</label></td>
+ <td>{{ form.transportation }} {% if form.transportation.errors %}
+   <br /><span class="form_error">{{ form.transportation.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

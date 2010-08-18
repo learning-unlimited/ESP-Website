@@ -86,15 +86,23 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     e_mail = forms.EmailField()
     phone_day = PhoneNumberField(required=False)
     phone_cell = PhoneNumberField(required=False)
+    receive_txt_message = forms.BooleanField(required=False)
     address_street = SizedCharField(length=40, max_length=100)
     address_city = SizedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=zip(_states,_states))
     address_zip = SizedCharField(length=5, max_length=5)
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
+    def __init__(self, *args, **kwargs):
+        super(UserContactForm, self).__init__(*args, **kwargs)
+        if not Tag.getTag('text_messages_to_students'):
+            del self.fields['receive_txt_message']
+
     def clean_phone_cell(self):
         if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
+        if self.cleaned_data.get('receive_txt_message', False) and self.cleaned_data.get('phone_cell','') == '':
+            raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages")
         return self.cleaned_data['phone_cell']
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
 
@@ -129,26 +137,88 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_phone_day = PhoneNumberField()
     guard_phone_cell = PhoneNumberField(required=False)
 
+HeardAboutESPChoices = (
+    'Other...',
+    'Teacher or Counselor',
+    'Splash representative visited my school',
+    'Parents',
+    'Friends',
+    'Poster at school',
+    'Poster somewhere in Chicago',
+    'Facebook',
+    'Newspaper or magazine',
+    'Radio or TV',
+    'I attended another program',
+    'I came last year',
+    )
+
+WhatToDoAfterHS = (
+    'Other...',
+    "I don't know yet",
+    'Get a job',
+    'Go to community college',
+    'Go to a 4-year college or university',
+    'Go to a trade school',
+    'Take the year off',
+    )
+
+HowToGetToProgram = (
+    'Other...',
+    'I will ask my teachers and counselors to arrange for a bus for me and my peers',
+    'My parent/guardian will drive me',
+    'I will take mass transit (bus, train/subway, etc)',
+    'I will drive myself',
+    "I will get a ride with my friends' parents/guardians",
+    'I will walk or ride my bike, skateboard, etc',
+    )
+
 class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
     from esp.users.models import ESPUser
     from esp.users.models import shirt_sizes, shirt_types, food_choices
 
     graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
-    k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='k12school_shadow', required=False, label='School')
+    k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     school = forms.CharField(max_length=128, required=False)
     dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
-    heard_about = forms.CharField(required=False)
+    heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HeardAboutESPChoices, HeardAboutESPChoices)))#forms.CharField(required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
     food_preference = forms.ChoiceField(choices=([('','')]+list(food_choices)), required=False)
+
+    post_hs = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(WhatToDoAfterHS, WhatToDoAfterHS)))
+    transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HowToGetToProgram, HowToGetToProgram)))
 
     studentrep_error = True
 
     def __init__(self, user=None, *args, **kwargs):
         super(StudentInfoForm, self).__init__(user, *args, **kwargs)
+
+        ## All of these Tags may someday want to be made per-program somehow.
+        ## We don't know the current program right now, though...
+        if not Tag.getTag('show_studentrep_application'):
+            ## Only enable the Student Rep form optionally.
+            del self.fields['studentrep']
+            del self.fields['studentrep_expl']
+
+        if not Tag.getTag('show_student_tshirt_size_options'):
+            del self.fields['shirt_size']
+            del self.fields['shirt_type']
+
+        if not Tag.getTag('show_student_vegetarianism_options'):
+            del self.fields['food_preference']
+
+        if not Tag.getTag('show_student_graduation_years_not_grades', default=True):
+            current_grad_year = self.ESPUser.current_schoolyear()
+            self.fields['graduation_year'].widget.choices = [(str(12 - (x - current_grad_year)), "%d (%dth grade)" % (x, 12 - (x - current_grad_year))) for x in xrange(current_grad_year, current_grad_year + 6)]
+
+        if not Tag.getTag('ask_student_about_post_hs_plans'):
+            del self.fields['post_hs']
+
+        if not Tag.getTag('ask_student_about_transportation_to_program'):
+            del self.fields['transportation']
 
         if kwargs.has_key('initial'):
             initial_data = kwargs['initial']
@@ -178,7 +248,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             if gy != 'G':
                 gy = 'N/A'
         return gy
-            
+
+    def clean_heard_about(self):
+        if self.cleaned_data['heard_about'] == 'Other...:':
+            raise forms.ValidationError("If 'Other...', please provide details")
 
     def clean(self):
         cleaned_data = self.cleaned_data
