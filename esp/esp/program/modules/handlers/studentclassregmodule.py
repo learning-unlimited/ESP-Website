@@ -36,6 +36,7 @@ from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, UserBit, User
 from esp.tagdict.models  import Tag
+from esp.cache           import cache_function
 from django.db.models.query import Q
 from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
@@ -43,9 +44,17 @@ from django.http import HttpResponse
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from esp.cal.models import Event, EventType
+from django.core.cache import cache
 from datetime import datetime
 from decimal import Decimal
 import simplejson
+
+@cache_function
+def sections_in_program_by_id(prog):
+    return [int(x) for x in ClassSection.objects.filter(parent_class__parent_program=prog).distinct().values_list('id', flat=True)]
+sections_in_program_by_id.depend_on_model(ClassSection)
+sections_in_program_by_id.depend_on_model(ClassSubject)
+
 
 def json_encode(obj):
     if isinstance(obj, ClassSubject):
@@ -588,6 +597,35 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         return resp
 
+    @cache_control(public=True, max_age=10)
+    def catalog_student_count_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        section_ids = sections_in_program_by_id(prog)
+        class_cachekey = "class_size_counter_%d"
+        counts = cache.get_many([class_cachekey % x for x in section_ids])
+
+        clean_counts = {}
+        missing_secs = set()
+
+        for section_id in section_ids:
+            clean_count = counts.get(class_cachekey % section_id, None)
+            if not clean_count:
+                missing_secs.add(section_id)
+            clean_counts[section_id] = clean_count
+
+        if len(missing_secs) != 0:
+            print "Doing catalog stuff...", [(repr(x), type(x)) for x in missing_secs]
+            
+            initial_catalog_queryset = ClassSubject.objects.filter(sections__in=missing_secs)
+            catalog = ClassSubject.objects.catalog(prog, initial_queryset = initial_catalog_queryset)
+            for subject in catalog:
+                for section in subject.get_sections():
+                    if int(section.id) in missing_secs:
+                        clean_counts[section.id] = section.num_students()  ## Also repopulates the cache.  Magic!
+
+        resp = HttpResponse(mimetype='application/json')
+        simplejson.dump(clean_counts, resp)
+        return resp
+            
     
     # This function exists only to apply the @meets_deadline decorator.
     @meets_deadline('/Catalog')

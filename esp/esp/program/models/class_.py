@@ -62,6 +62,9 @@ from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstrain
 from esp.resources.models        import ResourceType, Resource, ResourceRequest, ResourceAssignment
 from esp.cache                   import cache_function
 
+from django.core.cache import cache  ## Yep, we do have to do some raw cache-management for performance.  Try to minimize it, though.
+from pylibmc import NotFound as CacheNotFound
+
 from esp.middleware.threadlocalrequest import get_current_request
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
@@ -931,6 +934,9 @@ class ClassSection(models.Model):
         if defaults:
             # If we got this from a previous query, just return it
             if hasattr(self, "_count_students"):
+                # Increment the students-registered counter for this class
+                class_cachekey = "class_size_counter_%d" % self.id
+                cache.set(class_cachekey, self._count_students, 1200)  ## Fully refresh every 20min
                 return self._count_students
             
             retVal = self.cache['num_students']
@@ -1067,6 +1073,13 @@ class ClassSection(models.Model):
         for ub in UserBit.objects.filter(QTree(verb__below=prereg_verb_base), user=user, qsc=self.anchor_id):
             if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
                 ub.expire()
+
+        # Increment the students-registered counter for this class
+        class_cachekey = "class_size_counter_%d" % self.id
+        try:
+            cache.decr(class_cachekey)
+        except CacheNotFound:
+            cache.set(class_cachekey, self.num_students(), 1200)  ## Fully refresh every 20min
         
         #   If the student had blank application question responses for this class, remove them.
         app = ESPUser(user).getApplication(self.parent_program, create=False)
@@ -1112,6 +1125,13 @@ class ClassSection(models.Model):
                 UserBit.objects.get_or_create(user = user, qsc = self.anchor,
                                               verb = prereg_verb, startdate = now, recursive = False)
 
+                # Increment the students-registered counter for this class
+                class_cachekey = "class_size_counter_%d" % self.id
+                try:
+                    cache.incr(class_cachekey)
+                except CacheNotFound:
+                    cache.set(class_cachekey, self.num_students(), 1200)  ## Fully refresh every 20min
+                    
                 # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
                 onsite_verb = GetNode("V/Flags/Registration/OnSite/ChangedClasses")
                 request = get_current_request()
