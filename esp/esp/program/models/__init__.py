@@ -1064,8 +1064,27 @@ class RegistrationProfile(models.Model):
     last_ts = models.DateTimeField(default=datetime.now())
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True)
-    text_reminder = models.NullBooleanField()
     most_recent_profile = models.BooleanField(default=False)
+
+    old_text_reminder = models.NullBooleanField(db_column='text_reminder')  ## Kept around for database-migration purposes
+
+    ## Oops, I didn't see this field, and I reimplemented its functionality...
+    ## Wrap it for backwards compatibility. -- aseering 8/18/2010
+    def _get_text_reminder(self):
+        if not self.contact_user:
+            return None
+        return self.contact_user.receive_txt_message
+    def _set_text_reminder(self, val):
+        if not self.contact_user:
+            contact_user = ContactInfo()
+            contact_user.first_name = self.user.first_name
+            contact_user.last_name = self.user.last_name
+            contact_user.save()
+            self.contact_user = contact_user
+            self.save()
+        self.contact_user.receive_txt_message = val
+        self.contact_user.save()
+    text_reminder = property(_get_text_reminder, _set_text_reminder)
 
     class Meta:
         app_label = 'program'
