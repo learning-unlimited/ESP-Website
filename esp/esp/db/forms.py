@@ -184,6 +184,10 @@ class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
         else:
             self.shadow_field = None
 
+        if attrs.has_key('field_name'):
+            self.field_name = attrs['field_name']
+            self.field.name = attrs['field_name']
+
     #   render function is provided by AjaxForeignKeyFieldBase    
     
 class AjaxForeignKeyNewformField(forms.IntegerField):
@@ -221,7 +225,7 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         if field:
             self.widget = AjaxForeignKeyWidget(attrs={'field': field, 'width': 35, 'ajax_func': ajax_func, 'shadow_field': shadow_field_name})
         elif key_type:
-            self.widget = AjaxForeignKeyWidget(attrs={'type': key_type, 'width': 35, 'ajax_func': ajax_func, 'shadow_field': shadow_field_name})
+            self.widget = AjaxForeignKeyWidget(attrs={'type': key_type, 'width': 35, 'ajax_func': ajax_func, 'shadow_field': shadow_field_name, 'field_name': field_name})
         else:
             raise NotImplementedError
 
