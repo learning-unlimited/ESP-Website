@@ -63,7 +63,7 @@ from esp.resources.models        import ResourceType, Resource, ResourceRequest,
 from esp.cache                   import cache_function
 
 from django.core.cache import cache  ## Yep, we do have to do some raw cache-management for performance.  Try to minimize it, though.
-from pylibmc import NotFound as CacheNotFound
+#from pylibmc import NotFound as CacheNotFound
 
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -1078,7 +1078,7 @@ class ClassSection(models.Model):
         class_cachekey = "class_size_counter_%d" % self.id
         try:
             cache.decr(class_cachekey)
-        except CacheNotFound:
+        except:# CacheNotFound:
             cache.set(class_cachekey, self.num_students(), 1200)  ## Fully refresh every 20min
         
         #   If the student had blank application question responses for this class, remove them.
@@ -1129,7 +1129,7 @@ class ClassSection(models.Model):
                 class_cachekey = "class_size_counter_%d" % self.id
                 try:
                     cache.incr(class_cachekey)
-                except CacheNotFound:
+                except:# CacheNotFound:
                     cache.set(class_cachekey, self.num_students(), 1200)  ## Fully refresh every 20min
                     
                 # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
