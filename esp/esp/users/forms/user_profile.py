@@ -144,7 +144,7 @@ HeardAboutESPChoices = (
     'Parents',
     'Friends',
     'Poster at school',
-    'Poster somewhere in Chicago',
+    'Poster in some other public place',
     'Facebook',
     'Newspaper or magazine',
     'Radio or TV',
