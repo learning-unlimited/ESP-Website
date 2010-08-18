@@ -49,6 +49,33 @@ class PhoneNumberField(forms.CharField):
                 return value
         raise forms.ValidationError('Phone numbers must be a valid US number. "%s" is invalid.' % value)
 
+class DropdownOtherWidget(forms.MultiWidget):
+    """
+    A widget that presents a dropdown list of choices, as well as an 'Other...' textbox
+    """
+    def __init__(self, choices, use_textarea = False, attrs=None):
+        widgets = (forms.Select(attrs=attrs, choices=choices),
+                   forms.Textarea(attrs=attrs) if use_textarea else forms.TextInput(attrs=attrs))
+        super(DropdownOtherWidget, self).__init__(widgets, attrs)
+
+    def decompress(self, value):
+        if not value:
+            return ['', '']
+        retVal = value.split(':')
+        if len(retVal) != 2:
+            return ['','']
+        return retVal
+
+class DropdownOtherField(forms.MultiValueField):
+    def compress(self, data_list):
+        if data_list:
+            return ':'.join(data_list)
+        return ''
+
+    def __init__(self, *args, **kwargs):
+        super(DropdownOtherField, self).__init__(*args, **kwargs)
+        self.fields = (forms.CharField(), forms.CharField(required=False),)
+
 
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
