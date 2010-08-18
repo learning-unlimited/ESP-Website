@@ -591,7 +591,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)        
 
-        resp = HttpResponse()
+        resp = HttpResponse(mimetype='application/json')
         
         simplejson.dump(list(classes), resp, default=json_encode)
         
