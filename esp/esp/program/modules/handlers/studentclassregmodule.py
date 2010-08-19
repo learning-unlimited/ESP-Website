@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.datatree.models import *
+from esp.datatree.sql.query_utils import QTree
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
@@ -47,6 +48,7 @@ from esp.cal.models import Event, EventType
 from django.core.cache import cache
 from datetime import datetime
 from decimal import Decimal
+from collections import defaultdict
 import simplejson
 
 @cache_function
@@ -597,7 +599,21 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         return resp
 
-    @cache_control(public=True, max_age=10)
+
+    @cache_control(public=True, max_age=3600)
+    def catalog_allowed_reg_verbs(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        signup_verb_uri = scrmi.signup_verb.get_uri().replace('V/Flags/Registration/', '')
+
+        if scrmi.use_priority:
+            verb_list = [ "%s/%d" % (signup_verb_uri, x) for x in xrange(1, scrmi.priority_limit+1) ]
+        else:
+            verb_list = [ signup_verb_uri ]
+
+        resp = HttpResponse(mimetype='application/json')
+        simplejson.dump(verb_list, resp)
+        return resp
+
     def catalog_student_count_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         section_ids = sections_in_program_by_id(prog)
         class_cachekey = "class_size_counter_%d"
@@ -625,7 +641,30 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         resp = HttpResponse(mimetype='application/json')
         simplejson.dump(clean_counts, resp)
         return resp
-            
+
+    @cache_control(public=True, max_age=10)
+    def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        now = datetime.now()
+        bits = UserBit.objects.filter(user=request.user, startdate__lte=now, enddate__gte=now).filter(QTree(verb__below=GetNode("V/Flags/Registration"), qsc__below=prog.anchor['Classes'])).distinct().select_related('qsc', 'verb')
+        sections = ClassSection.objects.filter(anchor__in=[b.qsc for b in bits]).distinct()
+
+        status_dict = defaultdict(list)
+        sections_dict = {}
+
+        for b in bits:
+            status_dict[b.qsc.id].append(b.verb.get_uri().replace('V/Flags/Registration/', ''))
+
+        for sec in sections:
+            sections_dict[sec.anchor.id] = sec
+
+        section_statuses = {}
+
+        for sec_anchor in sections_dict.keys():
+            section_statuses[sec_anchor] = status_dict[sec_anchor]
+        
+        resp = HttpResponse(mimetype='application/json')
+        simplejson.dump(section_statuses, resp)
+        return resp
     
     # This function exists only to apply the @meets_deadline decorator.
     @meets_deadline('/Catalog')
