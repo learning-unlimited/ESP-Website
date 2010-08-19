@@ -964,8 +964,8 @@ class StudentInfo(models.Model):
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
-    post_hs = models.TextField(default='')
-    transportation = models.TextField(default='')
+    post_hs = models.TextField(default='', blank=True)
+    transportation = models.TextField(default='', blank=True)
     
 
     def save(self, *args, **kwargs):
