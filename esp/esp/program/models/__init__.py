@@ -851,14 +851,14 @@ class Program(models.Model):
 
         if module_id:
             try:
-                extension = ext_cls.objects.filter(module__id=module_id)[0]
+                extension = ext_cls.objects.filter(module__id=module_id).select_related()[0]
             except:
                 extension = ext_cls()
                 extension.module_id = module_id
                 extension.save()
         else:
             try:
-                extension = ext_cls.objects.filter(module__program__id=self.id)[0]
+                extension = ext_cls.objects.filter(module__program__id=self.id).select_related()[0]
             except:
                 extension = None
                 
