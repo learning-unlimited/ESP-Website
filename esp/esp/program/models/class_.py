@@ -1112,7 +1112,7 @@ class ClassSection(models.Model):
         #if self.parent_class.studentappquestion_set.count() > 0:
         #    prereg_verb_base = GetNode('V/Flags/Registration/Applied')
 
-        if prereg_verb != None:
+        if prereg_verb == None:
             if scrmi.use_priority:
                 prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
             else:
