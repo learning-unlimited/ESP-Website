@@ -333,6 +333,21 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         """
         reg_verb = GetNode('V/Deadline/Registration/Student/Classes')
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+
+        if 'prereg_verb' in request.POST:
+            proposed_verb = "V/Flags/Registration/%s" % request.POST['prereg_verb']
+            if scrmi.use_priority:
+                available_verbs = ["%s/%d" % (scrmi.signup_verb.get_uri(), x) for x in xrange(1, scrmi.priority_limit+1)]
+            else:
+                available_verbs = [scrmi.signup_verb.get_uri()]
+
+            if proposed_verb in available_verbs:
+                prereg_verb = proposed_verb
+            else:
+                prereg_verb = None
+                
+        else:
+            prereg_verb = None
         
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(self.user, "onsite_local"):
@@ -395,7 +410,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                         blocked_class = cls
                         cannotadd_error = sec.cannotAdd(self.user, checkFull=False, use_cache=False)
                     else:
-                        if sec.preregister_student(self.user, overridefull=True, automatic=True, priority=priority):
+                        if sec.preregister_student(self.user, overridefull=True, automatic=True, priority=priority, prereg_verb = prereg_verb):
                             auto_classes.append(sec)
                             if implication.operation != 'AND':
                                 break
@@ -405,7 +420,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                         break
                 if implication.fails_implication(self.user):
                     for sec in auto_classes:
-                        sec.unpreregister_student(self.user)
+                        sec.unpreregister_student(self.user, prereg_verb = prereg_verb)
                     if blocked_class is not None:
                         raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
                     else:
@@ -415,7 +430,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             raise ESPError(False), error
         
         #   Desired priority level is 1 above current max
-        if section.preregister_student(self.user, self.user.onsite_local, False, priority):
+        if section.preregister_student(self.user, self.user.onsite_local, False, priority, prereg_verb = prereg_verb):
             bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
             if bits.count() == 0:
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
@@ -440,6 +455,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             return self.addclass(request, tl, one, two, module, extra, prog)
         try:
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+            if 'no_schedule' in request.POST:
+                resp = HttpResponse(mimetype='application/json')
+                simplejson.dump({'status': success}, resp)
+                return resp
             if success:
                 try:
                     #   Rewrite the registration button if possible.  This requires telling
@@ -756,6 +775,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             return self.clearslot(request, tl, one, two, module, extra, prog)
         
         cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+
+        if 'no_schedule' in request.POST:
+            resp = HttpResponse(mimetype='application/json')
+            simplejson.dump({'status': True, 'cleared_ids': cleared_ids}, resp)
+            return resp
+        
         if len(cleared_ids) > 0:
             #   The 'extra' value should be the ID list
             return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)

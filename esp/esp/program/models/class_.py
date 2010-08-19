@@ -1065,13 +1065,14 @@ class ClassSection(models.Model):
         """ Get the list of verbs that a student has within this class's anchor. """
         return [u.verb for u in self.getRegBits(user)]
 
-    def unpreregister_student(self, user):
+    def unpreregister_student(self, user, prereg_verb = None):
         from esp.program.models.app_ import StudentAppQuestion
 
         prereg_verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
-        for ub in UserBit.objects.filter(QTree(verb__below=prereg_verb_base), user=user, qsc=self.anchor_id):
-            if (ub.enddate is None) or ub.enddate > datetime.datetime.now():
+        for ub in UserBit.objects.filter(QTree(verb__below=prereg_verb_base), user=user, qsc=self.anchor_id).select_related('verb'):
+            if ((ub.enddate is None) or ub.enddate > datetime.datetime.now()) \
+                   and ((prereg_verb is None) or ub.verb == prereg_verb):
                 ub.expire()
 
         # Increment the students-registered counter for this class
@@ -1101,7 +1102,7 @@ class ClassSection(models.Model):
         self.cache['students'] = students
         self.update_cache_students()
 
-    def preregister_student(self, user, overridefull=False, automatic=False, priority=1):
+    def preregister_student(self, user, overridefull=False, automatic=False, priority=1, prereg_verb = None):
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     
@@ -1110,11 +1111,12 @@ class ClassSection(models.Model):
         #   Override the registration verb if the class has application questions
         #if self.parent_class.studentappquestion_set.count() > 0:
         #    prereg_verb_base = GetNode('V/Flags/Registration/Applied')
-        
-        if scrmi.use_priority:
-            prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
-        else:
-            prereg_verb = prereg_verb_base
+
+        if prereg_verb != None:
+            if scrmi.use_priority:
+                prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
+            else:
+                prereg_verb = prereg_verb_base
             
         auto_verb = DataTree.get_by_uri(prereg_verb.get_uri() + '/Automatic', create=True)
         
