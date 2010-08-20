@@ -11,11 +11,11 @@ DEBUG=False
 
 class SectionList(BaseHandler):
 
-    def process(self, user, class_id, user_type):
+    def process(self, user, class_id, section_num, user_type):
         if USE_MAILMAN:
-            self.process_mailman(user, class_id, user_type)
+            self.process_mailman(user, class_id, section_num, user_type)
         else:
-            self.process_nomailman(user, class_id, user_type)
+            self.process_nomailman(user, class_id, section_num, user_type)
 
     def process_nomailman(self, user, class_id, section_num, user_type):
         try:
