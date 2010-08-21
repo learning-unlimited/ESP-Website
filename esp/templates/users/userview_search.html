@@ -47,8 +47,7 @@
     {% with user.getUserTypes as types %}
     {% if types %}
     {% for type in user.getUserTypes %}
-    <span class="{{ type }}">{{ type }}</span>
-    {% if not forloop.last %}, {% endif %}
+    <span class="{{ type }}">{{ type }}</span>{% if not forloop.last %}, {% endif %}
     {% endfor %}
     {% else %}
     <span class="no_usertype">None</span>
