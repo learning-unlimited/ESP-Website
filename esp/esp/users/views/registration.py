@@ -78,7 +78,6 @@ def user_registration(request):
             except User.DoesNotExist:
                 try:
                     user = User.objects.filter(username = form.cleaned_data['username'],
-                                               email=form.cleaned_data['email'],
                                                is_active = False).latest('date_joined')
 
                     if '_' not in user.password.split('$')[-1]:
