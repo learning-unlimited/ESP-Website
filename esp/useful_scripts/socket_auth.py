@@ -13,7 +13,6 @@ if __name__ == '__main__':
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
-from esp import cache_loader
 import esp.manage
 from esp.users.models import ESPUser
 
