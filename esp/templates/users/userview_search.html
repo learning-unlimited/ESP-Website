@@ -37,7 +37,25 @@
 <table>
 <tr><th>Name</th><th>Username</th><th>E-mail</th><th>User Type</th></tr>
 {% for user in found_users %}
-<tr><td><a href="/manage/userview?username={{ user.username|urlencode }}">{{ user.name }}</a></td><td>{{ user.username }}</td><td>{{ user.email }}</td><td>{% if user.isStudent %}<span class="student">Student</span>{% endif %}{% if user.isTeacher %}<span class="teacher">Teacher</span>{% endif %}{% if user.isGuardian %}<span class="guardian">Parent/Guardian</span>{% endif %}{% if user.isEducator %}<span class="educator">Educator</span>{% endif %}{% if user.isAdministrator %}<span class="administrator">Admin</span>{% endif %}</td></tr>
+<tr>
+  <td>
+    <a href="/manage/userview?username={{ user.username|urlencode }}">{{ user.name }}</a>
+  </td>
+  <td>{{ user.username }}</td>
+  <td>{{ user.email }}</td>
+  <td>
+    {% with user.getUserTypes as types %}
+    {% if types %}
+    {% for type in user.getUserTypes %}
+    <span class="{{ type }}">{{ type }}</span>
+    {% if not forloop.last %}, {% endif %}
+    {% endfor %}
+    {% else %}
+    <span class="no_usertype">None</span>
+    {% endif %}
+    {% endwith %}
+  </td>
+</tr>
 {% endfor %}
 </table>
 
