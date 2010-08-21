@@ -840,7 +840,12 @@ class ESPUser(User, AnonymousUser):
 
     def getUserTypes(self):
         """ Return the set of types for this user """
-        return UserBit.valid_objects().filter(user=self, verb__parent=GetNode("V/Flags/UserRole")).values_list('verb__name', flat=True).distinct()
+        retVal = UserBit.valid_objects().filter(user=self, verb__parent=GetNode("V/Flags/UserRole")).values_list('verb__name', flat=True).distinct()
+        if len(retVal) == 0:
+            UserBit.objects.create(user=self, verb=GetNode("V/Flags/UserRole/Student"), qsc=GetNode("Q"))
+            retVal = UserBit.valid_objects().filter(user=self, verb__parent=GetNode("V/Flags/UserRole")).values_list('verb__name', flat=True).distinct()
+            
+        return retVal
         
     @classmethod
     def create_membership_methods(cls):
