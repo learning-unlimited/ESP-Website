@@ -65,3 +65,6 @@ class CacheClass(BaseCache):
 
     def decr(self, key, delta=1):
         return self._call('decr', key, delta)
+
+    def flush_all(self):
+        return self._call('flush_all')
