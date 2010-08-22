@@ -2,9 +2,17 @@
 from south.db import db
 from django.db import models
 from esp.program.modules.models import *
+from esp.datatree.models import *
+
+signup_verb_pk = GetNode('V/Flags/Registration/Enrolled').id
 
 class Migration:
-    
+
+    #   Dependency for fetching Datatree verb needed for default in ORM
+    depends_on = (
+        ("datatree", "0001_initial"),
+    )
+
     def forwards(self, orm):
         
         # Adding field 'StudentClassRegModuleInfo.force_show_required_modules'
@@ -162,7 +170,7 @@ class Migration:
             'send_confirmation': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'show_emailcodes': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
             'show_unscheduled_classes': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'signup_verb': ('django.db.models.fields.related.ForeignKey', [], {'default': "orm['datatree.DataTree'].objects.get(pk=30043)", 'to': "orm['datatree.DataTree']"}),
+            'signup_verb': ('django.db.models.fields.related.ForeignKey', [], {'default': "orm['datatree.DataTree'].objects.get(pk=%s)" % signup_verb_pk, 'to': "orm['datatree.DataTree']"}),
             'temporarily_full_text': ('django.db.models.fields.CharField', [], {'default': "'Class temporarily full; please check back later'", 'max_length': '255'}),
             'use_priority': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'view_button_text': ('django.db.models.fields.CharField', [], {'default': "'View Receipt'", 'max_length': '80'}),
