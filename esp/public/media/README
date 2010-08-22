@@ -1,0 +1,16 @@
+Media setup instructions
+------------------------
+
+This directory contains all media files required for a generic ESP Web site.  However, in order to facilitate the use of shared filesystems (e.g. Dropbox, SVN) for storing customized media files, the 'images' and 'styles' directories have been moved to 'default_images' and 'default_styles' respectively.  You may copy or link these to the names 'images' and 'styles' in order to use the generic media files.
+
+Learning Unlimited hosts several sites, each having their own set of customized media files, as follows:
+
+1. A Dropbox instance runs somewhere outside the Web site repository checkout on the server.
+   Example: 
+   - Install Dropbox by typing 'HOME=/lu/dropboxes/[sitename] /lu/software/dropbox/dropbox start -i &' and following directions
+   - Add 'HOME=/lu/dropboxes/[sitename] /lu/software/dropbox/dropboxd &' to /etc/rc.local
+2. Media directories from the Dropbox are linked into the appropriate locations in the working copy.
+   Example:
+   - ln -s /lu/dropboxes/[sitename]/My Dropbox/media/images /lu/sites/[sitename]/esp/public/media/images
+   - ln -s /lu/dropboxes/[sitename]/My Dropbox/media/styles /lu/sites/[sitename]/esp/public/media/styles
+

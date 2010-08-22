@@ -7,6 +7,7 @@ modified:
     2007-04-04 (axiak)
     2008-11-25 (davidben)
     2009-04-21 (price)
+    2010-08-22 (price)
     
 You have presumably downloaded the source code for ESP's web site.
 Here are the steps to get the site operational on your computer:
@@ -66,6 +67,11 @@ We include two Python libraries that you can install: iCalendar and
 python-memcached.  These are located in the /esp/3rdparty directory.  
 Please unzip them and follow their respective installation instructions.
 
+Another Python library, sslauth, is used by default to allow HTTPS
+certificate authentication.  It is located in the /esp/3rdparty directory.
+To install it, add [path to working copy]/esp/3rdparty to your PYTHONPATH
+environment variable or copy the sslauth directory to someplace that is on
+the PYTHONPATH (e.g. /usr/local/lib/python2.6/dist-packages).
 
 2) Set up your database.
 
@@ -131,12 +137,31 @@ $ ./manage.py syncdb
 Django will ask you to add a super user.  Please do this so that you
 have administrative access when you start using the site.
 
-d) Make admin interface pretty
+d) Set up media files
 
-You will need to add a symbolic link for the images and stylesheets used by
-the Django admin interface (/admin):
+If your organization has already customized the look and feel of their site,
+you will want to add their images and stylesheets to your working copy.  
+Often these are stored in a shared filesystem such as a Dropbox.  Obtain
+a copy of these files and then link them into the publicly served media
+directory as follows:
 
 $ cd ./public/media
+$ ln -s [path to Dropbox]/media/images images
+$ ln -s [path to Dropbox]/media/styles styles
+
+If, instead, you are starting from scratch, copy the provided generic images
+and stylesheets to the active folders:
+
+$ cd ./public/media
+$ ln -s default_images images
+$ ln -s default_styles styles
+
+e) Make admin interface pretty
+
+You will need to add a symbolic link for the images and stylesheets used by
+the Django admin interface (/admin).  From the same directory (/public/media)
+as above:
+
 $ ln -s /var/lib/python-support/python2.5/django/contrib/admin/media admin
 
 
