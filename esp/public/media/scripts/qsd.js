@@ -28,6 +28,7 @@ function qsd_inline_edit(qsd_id)
 
 function qsd_send_command(qsd_id, postdata)
 {
+    postdata.csrfmiddlewaretoken = csrfmiddlewaretoken;
     var request = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("MSXML2.XMLHTTP.3.0");
     request.open("POST", "/admin/ajax_qsd/", true);
     request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
