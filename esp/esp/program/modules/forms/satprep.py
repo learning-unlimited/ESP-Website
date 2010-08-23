@@ -12,7 +12,7 @@ class SATScoreField(forms.IntegerField):
 	forms.IntegerField.__init__(self,
 		min_value = 200, max_value = 800,
 		widget = forms.TextInput({'size':3, 'maxlength':3}),
-		error_messages = {'min_value':'The lowest SAT score is %s.', 'max_value':'The highest SAT score is %s.'},
+                error_messages = {'min_value':'The lowest SAT score is %(limit_value)s.', 'max_value':'The highest SAT score is %(limit_value)s.'},
 		*args, **kwargs)
 
 
