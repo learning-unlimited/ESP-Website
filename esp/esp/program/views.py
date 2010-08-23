@@ -41,6 +41,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 from django.core.mail import mail_admins
 from django.core.cache import cache
+from django.views.decorators.csrf import csrf_exempt
 
 from esp.program.models import Program, TeacherBio
 from esp.program.forms import ProgramCreationForm
@@ -351,6 +352,7 @@ def newprogram(request):
 
     return render_to_response('program/newprogram.html', request, GetNode('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('-id')})
 
+@csrf_exempt
 @login_required
 def submit_transaction(request):
     #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
