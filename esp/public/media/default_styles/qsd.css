@@ -1,4 +1,17 @@
 
+.admin_hidden {
+  display: none;
+}
+.logged_in_hidden {
+  display: none;
+}
+.not_logged_in_hidden {
+  display: none;
+}
+.morphed_hidden {
+  display: none;
+}
+
 textarea.qsd_editor {
     width: 550px;
     overflow: auto;
