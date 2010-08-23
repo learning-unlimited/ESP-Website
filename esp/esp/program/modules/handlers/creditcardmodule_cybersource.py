@@ -63,6 +63,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
             parent_program = self.program.getParentProgram()
             if parent_program is not None:
                 return ( len(Document.get_completed(self.user, parent_program.anchor)) > 0 )
+        return False
     
     have_paid = isCompleted
 
