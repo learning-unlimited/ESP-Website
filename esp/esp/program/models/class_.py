@@ -807,6 +807,8 @@ class ClassSection(models.Model):
         
         # check to see if there's a conflict:
         for sec in user.getSections(self.parent_program, verbs=verbs):
+            if sec.parent_class == self.parent_class:
+                return 'You are already signed up for a section of this class!'
             for time in sec.meeting_times.all():
                 if len(self.meeting_times.filter(id = time.id)) > 0:
                     return 'This section conflicts with your schedule--check out the other sections!'
