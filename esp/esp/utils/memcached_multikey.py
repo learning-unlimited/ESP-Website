@@ -19,7 +19,7 @@ FAILFAST = getattr(settings, "DEBUG", True)
 # Is there any way to introspect this?
 CACHE_WARNING_SIZE = 1 * 1024**2
 CACHE_SIZE = 2 * 1024**2
-MAX_KEY_LENGTH = 251
+MAX_KEY_LENGTH = 250
 NO_HASH_PREFIX = "NH_"
 HASH_PREFIX = "H_"
 

@@ -18,6 +18,8 @@ from utils.defaultclass import defaultclass
 from esp import utils
 from esp import settings
 
+from django.test import TestCase as DjangoTestCase
+
 # Code from <http://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
 # though I've had trouble finding documentation to clarify this.
@@ -132,6 +134,12 @@ class MemcachedTestCase(unittest.TestCase):
             for server in self.servers:
                 server.wait()       # After we've told all the servers to terminate, wait for them to all actually stop.
 
+
+class MemcachedKeyLengthTestCase(DjangoTestCase):
+    """ Grab a ridiculous URL and make sure the status code isn't 500. """
+    def runTest(self):
+        response = self.client.get('/l' + 'o'*256 + 'ngurl.html')
+        self.failUnless(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
 
 class MultihostCacheClassTest(MemcachedTestCase):
     """

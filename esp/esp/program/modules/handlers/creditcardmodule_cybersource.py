@@ -57,12 +57,13 @@ class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        if ( len(Document.get_completed(self.user, self.program_anchor_cached)) > 0 ):
+        if ( len(Document.get_completed(self.user, self.program_anchor_cached())) > 0 ):
             return True
         else:
             parent_program = self.program.getParentProgram()
             if parent_program is not None:
                 return ( len(Document.get_completed(self.user, parent_program.anchor)) > 0 )
+        return False
     
     have_paid = isCompleted
 
