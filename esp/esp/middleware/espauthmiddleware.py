@@ -29,32 +29,33 @@ Email: web@esp.mit.edu
 """
 
 from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
-from django.core.cache import cache
+from esp.utils.get_user import get_user
 
 __all__ = ('ESPAuthMiddleware',)
 
-get_user = None
 ESPUser = None
+get_user_django = None
 
 class ESPLazyUser(LazyUser):
     def __get__(self, request, obj_type=None):
-        global get_user, ESPUser
+        global get_user_django, ESPUser
         if not hasattr(request, '_cached_user'):
+            if get_user is None or ESPUser is None:                
+                from django.contrib.auth import get_user as get_user_django
+                from esp.users.models import ESPUser
+
             SESSION_KEY = '_auth_user_id'
-            user = None
-            CACHE_KEY = None
+
             if request.session.has_key(SESSION_KEY):
                 user_id = request.session[SESSION_KEY]
-                CACHE_KEY = "CACHED_USER_OBJ__%s" % user_id
-                user = cache.get(CACHE_KEY)
+                try:
+                    user = get_user(user_id)
+                except ESPUser.DoesNotExist:
+                    pass
+                
             if not user:                
-                if get_user is None or ESPUser is None:                
-                    from django.contrib.auth import get_user
-                    from esp.users.models import ESPUser
-                request._cached_user = ESPUser(get_user(request))
+                request._cached_user = ESPUser(get_user_django(request))
                 request._cached_user.updateOnsite(request)
-                if CACHE_KEY:
-                    cache.add(CACHE_KEY, request._cached_user)
             else:
                 request._cached_user = user
 
