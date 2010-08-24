@@ -581,7 +581,7 @@ BEGIN
              )
           )
           AND
-            ("users_userbit"."verb_id" = verb_id AND "users_userbit"."qsc_id" = in_qsc_id)
+            ("users_userbit"."verb_id" = in_verb_id AND "users_userbit"."qsc_id" = in_qsc_id)
         )
         LIMIT 1;
     
