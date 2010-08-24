@@ -79,10 +79,6 @@ def user_registration(request):
                 try:
                     user = User.objects.filter(username = form.cleaned_data['username'],
                                                is_active = False).latest('date_joined')
-
-                    if '_' not in user.password.split('$')[-1]:
-                        raise User.DoesNotExist  ## This user account is already activated; no clobbering it!
-                    user.is_active = True  ## Reset this to its default value
                 except User.DoesNotExist:
                     user = User(email = form.cleaned_data['email'])
 
@@ -91,9 +87,12 @@ def user_registration(request):
             user.first_name = form.cleaned_data['first_name']
 
             user.set_password(form.cleaned_data['password'])
-            userkey = random.randint(0,2**31 - 1)
-            user.password += "_%d" % userkey
-            user.is_active = False
+            
+            #   Append key to password and disable until activation if desired
+            if Tag.getTag('ask_about_duplicate_accounts', default='False') == 'True':
+                userkey = random.randint(0,2**31 - 1)
+                user.password += "_%d" % userkey
+                user.is_active = False
 
             user.save()
             ESPUser_Profile.objects.get_or_create(user = user)
