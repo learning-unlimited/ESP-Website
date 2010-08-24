@@ -88,6 +88,10 @@ def admin_required(func):
         return func(request, *args, **kwargs)
     return wrapped
 
+#   Class to substitute for Django ModelState when necessary
+#   (see end of ESPUser.__init__ for usage)
+class FakeState(object):
+    db = None
 
 class UserAvailability(models.Model):
     user = AjaxForeignKey(User)
@@ -151,8 +155,6 @@ class ESPUser(User, AnonymousUser):
         if not hasattr(self, "_state"):
             ## Django doesn't properly insert this field on proxy models, apparently?
             ## So, fake it. -- aseering 6/28/2010
-            class FakeState(object):
-                db = None
             self._state = FakeState()
 
         self.other_user = False
