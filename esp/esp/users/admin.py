@@ -16,14 +16,22 @@ class UserBitImplicationAdmin(admin.ModelAdmin):
 
 admin.site.register(UserBitImplication, UserBitImplicationAdmin)
 
-admin.site.register(ContactInfo)
-admin.site.register(StudentInfo)
 admin.site.register(TeacherInfo)
 admin.site.register(GuardianInfo)
 admin.site.register(EducatorInfo)
 admin.site.register(ZipCode)
 admin.site.register(ZipCodeSearches)
 admin.site.register(UserAvailability)
+
+class ContactInfoAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'e_mail']
+admin.site.register(ContactInfo, ContactInfoAdmin)
+
+class StudentInfoAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'graduation_year', 'k12school', 'school']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email']
+admin.site.register(StudentInfo, StudentInfoAdmin)
 
 class K12SchoolAdmin(admin.ModelAdmin):
     list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']

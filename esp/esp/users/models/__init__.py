@@ -1094,6 +1094,15 @@ class StudentInfo(models.Model):
                                    qsc  = STUDREP_QSC).delete()
         return studentInfo
 
+    def getSchool(self):
+        """ Obtain a string representation of the student's school  """ 
+        if self.k12school:
+            return self.k12school
+        elif self.school:
+            return self.school
+        else:
+            return None
+
     def __unicode__(self):
         username = "N/A"
         if self.user != None:

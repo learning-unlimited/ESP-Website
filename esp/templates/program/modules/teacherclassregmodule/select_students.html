@@ -35,6 +35,11 @@ Back to teacher reg
 </a>
 </p>
 <p>
+<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">
+Student list (with school) sorted by registration status
+</a>
+</p>
+<p>
 <b>About your class:</b>
 <ul>
 <li><b>Room</b>: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}

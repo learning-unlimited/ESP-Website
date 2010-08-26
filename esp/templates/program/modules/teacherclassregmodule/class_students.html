@@ -36,18 +36,22 @@ Here are your class' students.  Only those who have enrolled will show up on you
  <th>
   Student Grade
  </th>
+  <th>
+  School
+ </th>
 </tr>
 </thead>
 <tbody>
 {% for kv in cls.students_dict.flatten %}
     <tr>
-        <th colspan="3" class="small">Registration status: {{ kv.key }}</th>
+        <th colspan="4" class="small">Registration status: {{ kv.key }}</th>
     </tr>
     {% for student in kv.value %}
     <tr>
         <th class="small">{{ forloop.counter }}</th>
         <td>{{ student.name }}</td>
         <td>{{ student.getGrade }}</td>
+        <td>{{ student.getLastProfile.student_info.getSchool }}</td>
     </tr>
     {% endfor %}
 {% endfor %}
