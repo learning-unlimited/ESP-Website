@@ -5,8 +5,9 @@
 ## import that one file and that one file tries to import someone
 
 from esp.cache import cache_function
-from esp.users.models import ESPUser
 from django.contrib.auth.models import User
+
+ESPUser = None
 
 @cache_function
 def get_user(user_id):
