@@ -28,6 +28,7 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 
+from django.conf import settings
 from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
 from esp.utils.get_user import get_user
 
@@ -68,3 +69,52 @@ class ESPAuthMiddleware(object):
         assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
         request.__class__.user = ESPLazyUser()
         return None
+
+    def process_response(self, request, response):
+        from esp.users.models import ESPUser
+
+        user = getattr(request, '_cached_user', None)
+            
+        if user and user.id:
+            if settings.SESSION_EXPIRE_AT_BROWSER_CLOSE:
+                max_age = None
+                expires = None
+            else:
+                max_age = settings.SESSION_COOKIE_AGE
+                expires = datetime.datetime.strftime(datetime.datetime.utcnow() + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE), "%a, %d-%b-%Y %H:%M:%S GMT")
+            ret_title = ''
+            try:
+                ret_title = request.session['user_morph']['retTitle']
+            except KeyError:
+                pass
+
+            # URL-encode some data since cookies don't like funny characters. They
+            # make the chocolate chips nervous.
+            # : see public/media/scripts/content/user_data.js
+            import urllib
+            encoding = request.encoding
+            if encoding is None:
+                encoding = settings.DEFAULT_CHARSET
+            new_values = {'cur_username': user.username,
+                          'cur_email': urllib.quote(user.email.encode(encoding)),
+                          'cur_first_name': urllib.quote(user.first_name.encode(encoding)),
+                          'cur_last_name': urllib.quote(user.last_name.encode(encoding)),
+                          'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
+                          'cur_retTitle': ret_title,
+                          'cur_admin': ESPUser(user).isAdministrator() and '1' or '0',
+                          'cur_grade': ESPUser(user).getGrade(),
+                          }
+
+            for key, value in new_values.iteritems():
+                response.set_cookie(key, value, max_age=max_age, expires=expires,
+                                    domain=settings.SESSION_COOKIE_DOMAIN,
+                                    secure=settings.SESSION_COOKIE_SECURE or None)
+
+        else:
+            map(response.delete_cookie, ('cur_username','cur_email',
+                                         'cur_first_name','cur_last_name',
+                                         'cur_other_user','cur_retTitle',
+                                         'cur_admin'))
+        return response
+
+        
