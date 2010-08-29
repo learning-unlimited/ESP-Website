@@ -255,6 +255,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     def clean_heard_about(self):
         if self.cleaned_data['heard_about'] == 'Other...:':
             raise forms.ValidationError("If 'Other...', please provide details")
+        return self.cleaned_data['heard_about']
 
     def clean(self):
         cleaned_data = self.cleaned_data
