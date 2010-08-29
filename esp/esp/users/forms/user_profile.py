@@ -198,9 +198,11 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         ## All of these Tags may someday want to be made per-program somehow.
         ## We don't know the current program right now, though...
-        if not Tag.getTag('show_studentrep_application'):
+        show_studentrep_application = Tag.getTag('show_studentrep_application')
+        if not show_studentrep_application:
             ## Only enable the Student Rep form optionally.
             del self.fields['studentrep']
+        if (not show_studentrep_application) or show_studentrep_application == "no_expl":
             del self.fields['studentrep_expl']
 
         if not Tag.getTag('show_student_tshirt_size_options'):
@@ -210,7 +212,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getTag('show_student_vegetarianism_options'):
             del self.fields['food_preference']
 
-        if not Tag.getTag('show_student_graduation_years_not_grades', default=True):
+        if not Tag.getTag('show_student_graduation_years_not_grades', default=True):            
             current_grad_year = self.ESPUser.current_schoolyear()
             self.fields['graduation_year'].widget.choices = [(str(12 - (x - current_grad_year)), "%d (%dth grade)" % (x, 12 - (x - current_grad_year))) for x in xrange(current_grad_year, current_grad_year + 6)]
 

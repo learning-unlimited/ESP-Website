@@ -69,7 +69,7 @@ detailed explanation of our age and grade level policy, please click
    <br /><span class="form_error">{{ form.studentrep.errors|join:", " }}</span>
    {% endif %}
 </td></tr>
-<tr><td><i>For new student reps:</i></td>
+{% if form.fields.studentrep_expl %}<tr><td><i>For new student reps:</i></td>
 <td>Please enter a short explanation of why you would <br />
 like to be a student representative and any ideas you <br />
 may have for ESP.  Our membership coordinator will <br />
@@ -79,7 +79,7 @@ contact you soon! <br />
    <br /><span class="form_error">{{ form.studentrep_expl.errors|join:", " }}</span>
 {% endif %}
  </td>
-</tr>{% endif %}
+</tr>{% endif %}{% endif %}
 
 {% if form.food_preference %}
 <tr>
