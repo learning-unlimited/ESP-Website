@@ -34,7 +34,7 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect, Http404
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits, admin_required
+from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits, admin_required, ZipCode
 
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -42,9 +42,11 @@ from django.db.models.query import Q
 from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
+from django.template.loader import render_to_string
 
+from esp.datatree.sql.query_utils import QTree
 from esp.program.models import Program, TeacherBio
-from esp.program.forms import ProgramCreationForm
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
@@ -471,7 +473,7 @@ def manage_pages(request):
     qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
     qsd_list.sort(key=lambda q: q.url())
     return render_to_response('qsd/list.html', request, DataTree.get_by_uri('Q/Web'), {'qsd_list': qsd_list})
-
+    
 @admin_required
 def flushcache(request):
     context = {}
@@ -492,3 +494,78 @@ def flushcache(request):
 
     return render_to_response('admin/cache_flush.html', request, DataTree.get_by_uri('Q/Web'), context)
                          
+
+@admin_required
+def statistics(request, program=None):
+
+    if request.method == 'POST':
+        form = StatisticsQueryForm(request.POST, program=program)
+        if form.is_valid():
+            #   A dictionary for template rendering the results of this query
+            result_dict = {}
+            #   A dictionary for template rendering the final response
+            context = {}
+            
+            #   Get list of programs the query applies to
+            programs = Program.objects.all()
+            if not form.cleaned_data['program_type_all']:
+                programs = programs.filter(anchor__parent__name=form.cleaned_data['program_type'])
+            if not form.cleaned_data['program_instance_all']:
+                programs = programs.filter(anchor__name__in=form.cleaned_data['program_instances'])
+            result_dict['programs'] = programs
+            
+            #   Get list of students the query applies to
+            students_q = Q()
+            for program in programs:
+                for reg_type in form.cleaned_data['reg_types']:
+                    students_q = students_q | program.students(QObjects=True)[reg_type]
+                    
+            #   Narrow down by school (perhaps not ideal results, but faster)
+            if form.cleaned_data['school_query_type'] == 'name':
+                students_q = students_q & (Q(studentinfo__school__icontains=form.cleaned_data['school_name']) | Q(studentinfo__k12school__name__icontains=form.cleaned_data['school_name']))
+            elif form.cleaned_data['school_query_type'] == 'list':
+                k12school_ids = []
+                school_names = []
+                for item in form.cleaned_data['school_multisel']:
+                    if item.startswith('K12:'):
+                        k12school_ids.append(int(item[4:]))
+                    elif item.startwith('Sch:'):
+                        school_names.append(item[4:])
+                students_q = students_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
+            
+            #   Narrow down by Zip code, simply using the latest profile
+            #   Note: it would be harder to track students better (i.e. zip code A in fall 2008, zip code B in fall 2009)
+            if form.cleaned_data['zip_query_type'] == 'exact':
+                students_q = students_q & Q(registrationprofile__contact_user__address_zip=form.cleaned_data['zip_code'], registrationprofile__most_recent_profile=True)
+            elif form.cleaned_data['zip_query_type'] == 'partial':
+                students_q = students_q & Q(registrationprofile__contact_user__address_zip__startswith=form.cleaned_data['zip_code_partial'], registrationprofile__most_recent_profile=True)
+            elif form.cleaned_data['zip_query_type'] == 'distance':
+                zipc = ZipCode.objects.get(zip_code=form.cleaned_data['zip_code'])
+                zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
+                students_q = students_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
+                
+            students = ESPUser.objects.filter(students_q).distinct()
+            result_dict['num_students'] = students.count()
+            profiles = [student.getLastProfile() for student in students]
+            
+            #   Accumulate desired information for selected query
+            from esp.program import statistics as statistics_functions
+            if hasattr(statistics_functions, form.cleaned_data['query']):
+                context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, students, profiles, result_dict)
+            else:
+                context['result'] = 'Unsupported query'
+                
+            #   Generate response
+            if request.is_ajax():
+                return HttpResponse(json.dumps(context), mimetype='application/json')
+            else:
+                context['form'] = form
+                return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+            
+    else:
+        form = StatisticsQueryForm(program=program)
+    context = {'form': form}
+    if request.is_ajax():
+        return HttpResponse(json.dumps(context), mimetype='application/json')
+    else:
+        return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)

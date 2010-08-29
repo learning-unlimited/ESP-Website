@@ -1,0 +1,35 @@
+<h2>Aggregrate Demographic Info</h2>
+
+<p>Ages and grades are reported as birth years and graduation years to allow aggregating results from multiple programs.</p>
+
+<ul>
+<li>{{ num_students }} students selected by query</li>
+<li>Program stats (from all registered students)
+    <ul>
+    <li>{{ num_classes }} class subjects; total of {{ num_sections }} class sections</li>
+    <li>{{ num_class_hours }} class-hours</li>
+    <li>{{ num_student_class_hours }} student-class-hours (based on pre-registration)</li>
+    </ul>
+</li>
+<li>Age distribution
+    <ul>
+    {% for pair in birthyear_data %}
+        <li>Born in {{ pair.0 }}: {{ pair.1 }} students
+    {% endfor %}
+    </ul>
+</li>
+<li>Grade distribution
+    <ul>
+    {% for pair in gradyear_data %}
+        <li>Graduating in {{ pair.0 }}: {{ pair.1 }} students
+    {% endfor %}
+    </ul>
+</li>
+<li>Financial aid information
+    <ul>
+        <li>{{ finaid_applied }} applications for financial aid</li>
+        <li>{{ finaid_lunch }} students claimed free/reduced lunch</li>
+        <li>{{ finaid_approved }} students received financial aid</li>
+    </ul>
+</li>
+</ul>

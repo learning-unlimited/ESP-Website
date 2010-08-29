@@ -1,0 +1,25 @@
+<h2>Student Participation Time</h2>
+<p>The distribution of student class hours are shown below for each program. These are measured in timeslots; if all timeslots are 2 hr long, double these numbers to get the distribution of hours spent in class.  (Most Splash programs are run with 1 hr timeslots, so the timeslots and class hours are equivalent.)</p>
+<p>{{ num_students }} matched by query.</p>
+<ul>
+{% for prog in hours_data %}
+    <li>{{ prog.0 }}: {{ prog.3 }} students matched
+    <ul>
+        <li>Students' number of timeslots of class
+            <ul>
+            {% for pair in prog.1 %}
+            <li>{{ pair.0 }} timeslots: {{ pair.1 }} students</li>
+            {% endfor %}
+            </ul>
+        </li>
+        <li>Number of students taking class during each timeslot
+            <ul>
+            {% for pair in prog.2 %}
+            <li>{{ pair.0 }}: {{ pair.1 }} students</li>
+            {% endfor %}
+            </ul>
+        </li>
+    </ul>
+    </li>
+{% endfor %}
+</ul>
