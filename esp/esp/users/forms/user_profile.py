@@ -220,13 +220,14 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getTag('ask_student_about_transportation_to_program'):
             del self.fields['transportation']
 
-        if kwargs.has_key('initial'):
-            initial_data = kwargs['initial']
+        if not Tag.getTag('allow_change_grade_level'):
+            if kwargs.has_key('initial'):
+                initial_data = kwargs['initial']
 
-            # Disable the age and grade fields if they already exist.
-            if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
-                self.fields['graduation_year'].widget.attrs['disabled'] = "true"
-                self.fields['dob'].widget.attrs['disabled'] = "true"
+                # Disable the age and grade fields if they already exist.
+                if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
+                    self.fields['graduation_year'].widget.attrs['disabled'] = "true"
+                    self.fields['dob'].widget.attrs['disabled'] = "true"
 
         self._user = user
 
@@ -255,24 +256,26 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     def clean(self):
         cleaned_data = self.cleaned_data
-        user = self._user
 
-        orig_prof = RegistrationProfile.getLastProfile(user)
+        if not Tag.getTag('allow_change_grade_level'):
+            user = self._user
 
-        # If graduation year and dob were disabled, get old data.
-        if (orig_prof.id is not None) and (orig_prof.student_info is not None):
+            orig_prof = RegistrationProfile.getLastProfile(user)
 
-            if not cleaned_data.has_key('graduation_year'):
-                # Get rid of the error saying this is missing
-                del self.errors['graduation_year']
+            # If graduation year and dob were disabled, get old data.
+            if (orig_prof.id is not None) and (orig_prof.student_info is not None):
 
-            if not cleaned_data.has_key('dob'):
-                del self.errors['dob']
+                if not cleaned_data.has_key('graduation_year'):
+                    # Get rid of the error saying this is missing
+                    del self.errors['graduation_year']
 
-            # Always use the old birthdate if it exists, so that people can't
-            # use something like Firebug to change their age/grade
-            cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
-            cleaned_data['dob'] = orig_prof.student_info.dob
+                if not cleaned_data.has_key('dob'):
+                    del self.errors['dob']
+
+                # Always use the old birthdate if it exists, so that people can't
+                # use something like Firebug to change their age/grade
+                cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
+                cleaned_data['dob'] = orig_prof.student_info.dob
 
         return cleaned_data
         
