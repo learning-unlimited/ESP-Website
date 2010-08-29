@@ -101,7 +101,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     def clean_phone_cell(self):
         if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
-        if self.cleaned_data.get('receive_txt_message', False) and self.cleaned_data.get('phone_cell','') == '':
+        if self.cleaned_data.get('receive_txt_message', '') == '' and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages")
         return self.cleaned_data['phone_cell']
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
