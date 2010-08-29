@@ -127,6 +127,11 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_zip = SizedCharField(length=5, max_length=5)
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
+    def clean_emerg_phone_cell(self):
+        if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
+            raise forms.ValidationError("Please provide either a day phone or cell phone.")
+        return self.cleaned_data['phone_cell']
+
 
 class GuardContactForm(FormUnrestrictedOtherUser):
     """ Contact form for guardians """
@@ -136,6 +141,11 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_e_mail = forms.EmailField(required=False)
     guard_phone_day = PhoneNumberField()
     guard_phone_cell = PhoneNumberField(required=False)
+
+    def clean_guard_phone_cell(self):
+        if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
+            raise forms.ValidationError("Please provide either a day phone or cell phone.")
+        return self.cleaned_data['phone_cell']
 
 HeardAboutESPChoices = (
     'Other...',
