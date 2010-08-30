@@ -807,7 +807,7 @@ class ESPUser(User, AnonymousUser):
 
         # email subject
         domainname = Site.objects.get_current().domain
-        subject = '[ESP] Your Password Recovery For '+domainname
+        subject = '[%s] Your Password Recovery For %s ' % (ORGANIZATION_SHORT_NAME, domainname)
 
         # generate the email text
         t = loader.get_template('email/password_recover')
