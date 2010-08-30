@@ -381,7 +381,7 @@ class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
                 gy = 'N/A'
         return gy
     
-class AlumProfileForm(MinimalUserInfo):
+class AlumProfileForm(MinimalUserInfo, FormWithTagInitialValues):
     """ This is the visiting-teacher contact form as used by UChicago's Ripple program """
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
@@ -395,9 +395,9 @@ class AlumProfileForm(MinimalUserInfo):
                 gy = 'N/A'
         return gy
 
-class UofCProfForm(MinimalUserInfo):
+class UofCProfForm(MinimalUserInfo, FormWithTagInitialValues):
     major = SizedCharField(length=30, max_length=32, label="Department", required=False)
 
-class VisitingGenericUserProfileForm(MinimalUserInfo):
+class VisitingGenericUserProfileForm(MinimalUserInfo, FormWithTagInitialValues):
     """ This is a form for a generic visitor user """
     major = SizedCharField(length=30, max_length=32, label="Profession", required=False)
