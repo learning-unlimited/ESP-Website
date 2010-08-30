@@ -95,15 +95,19 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
 
     def __init__(self, *args, **kwargs):
         super(UserContactForm, self).__init__(*args, **kwargs)
+        if Tag.getTag('request_student_phonenum', default='True') == 'False':
+            del self.fields['phone_day']
         if not Tag.getTag('text_messages_to_students'):
             del self.fields['receive_txt_message']
 
-    def clean_phone_cell(self):
-        if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
-            raise forms.ValidationError("Please provide either a day phone or cell phone.")
+    def clean(self):
+        if Tag.getTag('request_student_phonenum', default='True') != 'False':
+            if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
+                raise forms.ValidationError("Please provide either a day phone or cell phone.")
         if self.cleaned_data.get('receive_txt_message', False) and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages")
-        return self.cleaned_data['phone_cell']
+        return self.cleaned_data
+        
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
 
 class TeacherContactForm(UserContactForm):
@@ -127,10 +131,10 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_zip = SizedCharField(length=5, max_length=5)
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
-    def clean_emerg_phone_cell(self):
+    def clean(self):
         if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
-        return self.cleaned_data['emerg_phone_cell']
+        return self.cleaned_data
 
 
 class GuardContactForm(FormUnrestrictedOtherUser):
@@ -142,10 +146,10 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_phone_day = PhoneNumberField()
     guard_phone_cell = PhoneNumberField(required=False)
 
-    def clean_guard_phone_cell(self):
+    def clean(self):
         if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
-        return self.cleaned_data['guard_phone_cell']
+        return self.cleaned_data
 
 HeardAboutESPChoices = (
     'Other...',
@@ -243,15 +247,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         self._user = user
 
-
     def repress_studentrep_expl_error(self):
         self.studentrep_error = False
-
-    def clean_studentrep_expl(self):
-        expl = self.cleaned_data['studentrep_expl'].strip()
-        if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
-            raise forms.ValidationError("Please enter an explanation above.")
-        return expl
 
     def clean_graduation_year(self):
         gy = self.cleaned_data['graduation_year'].strip()
@@ -269,6 +266,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     def clean(self):
         cleaned_data = self.cleaned_data
+
+        expl = self.cleaned_data['studentrep_expl'].strip()
+        if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
+            raise forms.ValidationError("Please enter an explanation if you would like to become a student rep.")
 
         if not Tag.getTag('allow_change_grade_level'):
             user = self._user

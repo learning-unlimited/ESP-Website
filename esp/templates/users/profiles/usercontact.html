@@ -90,6 +90,7 @@
  <td>&nbsp;</td>
 </tr>
 
+{% if form.phone_day %}
 <tr>
  <td align='right'><small><i><label for="id_phone_day">home</label></i></small></td>
  <td>{{ form.phone_day }} {% if form.phone_day.errors %}
@@ -97,7 +98,9 @@
    {% endif %}
  </td>
 </tr>
+{% endif %}
 
+{% if form.phone_cell %}
 <tr>
  <td align='right'><small><i><label for="id_phone_cell">cell</label></i></small></td>
  <td>{{ form.phone_cell }} {% if form.phone_cell.errors %}
@@ -105,6 +108,7 @@
    {% endif %}
  </td>
 </tr>
+{% endif %}
 
 {% if form.receive_txt_message %}<tr>
  <td align='right'><small><i><label = "id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small></td>
