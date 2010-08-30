@@ -272,9 +272,11 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         cleaned_data = self.cleaned_data
 
-        expl = self.cleaned_data['studentrep_expl'].strip()
-        if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
-            raise forms.ValidationError("Please enter an explanation if you would like to become a student rep.")
+        show_studentrep_application = Tag.getTag('show_studentrep_application')
+        if show_studentrep_application and show_studentrep_application != "no_expl":
+            expl = self.cleaned_data['studentrep_expl'].strip()
+            if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
+                raise forms.ValidationError("Please enter an explanation if you would like to become a student rep.")
 
         if not Tag.getTag('allow_change_grade_level'):
             user = self._user
