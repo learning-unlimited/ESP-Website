@@ -101,6 +101,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             del self.fields['receive_txt_message']
 
     def clean(self):
+        super(UserContactForm, self).clean()
         if Tag.getTag('request_student_phonenum', default='True') != 'False':
             if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone.")
@@ -132,6 +133,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
+        super(EmergContactForm, self).clean()
         if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
         return self.cleaned_data
@@ -147,6 +149,7 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_phone_cell = PhoneNumberField(required=False)
 
     def clean(self):
+        super(GuardContactForm, self).clean()
         if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
         return self.cleaned_data
@@ -265,6 +268,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         return self.cleaned_data['heard_about']
 
     def clean(self):
+        super(StudentInfoForm, self).clean()
+
         cleaned_data = self.cleaned_data
 
         expl = self.cleaned_data['studentrep_expl'].strip()
@@ -321,6 +326,7 @@ class TeacherInfoForm(FormWithRequiredCss):
     mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 
     def clean(self):
+        super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
 
         # If teacher is not from MIT, make sure they've filled in the next box
