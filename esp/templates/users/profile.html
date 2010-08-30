@@ -36,7 +36,9 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 <h3 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h3>
 <ul>
 {% for error in form.errors.items %}
-{{ error.1 }}
+{% if error.0 == "__all__" %}
+    {{ error.1 }}
+{% endif %}
 {% endfor %}
 </ul>
 {% endif %}

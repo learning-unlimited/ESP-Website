@@ -144,9 +144,28 @@ class GuardContactForm(FormUnrestrictedOtherUser):
 
     guard_first_name = SizedCharField(length=25, max_length=64)
     guard_last_name = SizedCharField(length=30, max_length=64)
+    guard_no_e_mail = forms.BooleanField(required=False)
     guard_e_mail = forms.EmailField(required=False)
     guard_phone_day = PhoneNumberField()
     guard_phone_cell = PhoneNumberField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(GuardContactForm, self).__init__(*args, **kwargs)
+    
+        if not Tag.getTag('allow_guardian_no_email'):
+            if Tag.getTag('require_guardian_email'):
+                self.fields['guard_e_mail'].required = True
+            del self.fields['guard_no_e_mail']
+
+    def clean_guard_e_mail(self):
+        if 'guard_e_mail' not in self.cleaned_data or len(self.cleaned_data['guard_e_mail']) < 3:
+            if Tag.getTag('require_guardian_email') and not self.cleaned_data['guard_no_e_mail']:
+                if Tag.getTag('allow_guardian_no_email'):
+                    raise forms.ValidationError("Please enter the e-mail address of your parent/guardian.  If they do not have access to e-mail, check the appropriate box.")
+                else:
+                    raise forms.ValidationError("Please enter the e-mail address of your parent/guardian.")
+        else:
+            return self.cleaned_data['guard_e_mail']
 
     def clean(self):
         super(GuardContactForm, self).clean()

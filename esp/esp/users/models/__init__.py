@@ -1498,6 +1498,12 @@ class ContactInfo(models.Model):
         for key, val in newkey.items():
             if val and key != 'id':
                 form_data[prepend+key] = val
+        #   Hack: If the 'no guardian e-mail' Tag is on, check the box for 
+        #   "my parent/guardian doesn't have e-mail" if the e-mail field is blank.
+        if Tag.getTag('allow_guardian_no_email') and prepend == 'guard_':
+            print 'Testing: %s' % self.e_mail
+            if not self.e_mail or len(self.e_mail) < 3:
+                form_data['guard_no_e_mail'] = True
         return form_data
 
     def save(self, *args, **kwargs):
