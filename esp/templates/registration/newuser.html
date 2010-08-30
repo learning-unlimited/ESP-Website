@@ -83,7 +83,7 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 <tr>
   <th colspan="2" class="submit">
-    <input type="submit" value="Create account, proceed to profile creation" name="submit" />
+    <input type="submit" value="{% if accounts %}Confirm: Create another account for this e-mail{% else %}Create account, proceed to profile creation{% endif %}" name="submit" />
   </th>
 </tr>
 </tbody>

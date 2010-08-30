@@ -1034,9 +1034,6 @@ class StudentInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
-
-        print new_data
-        
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
 

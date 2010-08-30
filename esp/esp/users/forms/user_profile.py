@@ -101,7 +101,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     def clean_phone_cell(self):
         if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please provide either a day phone or cell phone.")
-        if self.cleaned_data.get('receive_txt_message', False) and self.cleaned_data.get('phone_cell','') == '':
+        if self.cleaned_data.get('receive_txt_message', '') == '' and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages")
         return self.cleaned_data['phone_cell']
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
@@ -127,6 +127,11 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_zip = SizedCharField(length=5, max_length=5)
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
+    def clean_emerg_phone_cell(self):
+        if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
+            raise forms.ValidationError("Please provide either a day phone or cell phone.")
+        return self.cleaned_data['phone_cell']
+
 
 class GuardContactForm(FormUnrestrictedOtherUser):
     """ Contact form for guardians """
@@ -136,6 +141,11 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_e_mail = forms.EmailField(required=False)
     guard_phone_day = PhoneNumberField()
     guard_phone_cell = PhoneNumberField(required=False)
+
+    def clean_guard_phone_cell(self):
+        if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
+            raise forms.ValidationError("Please provide either a day phone or cell phone.")
+        return self.cleaned_data['phone_cell']
 
 HeardAboutESPChoices = (
     'Other...',
@@ -198,9 +208,11 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         ## All of these Tags may someday want to be made per-program somehow.
         ## We don't know the current program right now, though...
-        if not Tag.getTag('show_studentrep_application'):
+        show_studentrep_application = Tag.getTag('show_studentrep_application')
+        if not show_studentrep_application:
             ## Only enable the Student Rep form optionally.
             del self.fields['studentrep']
+        if (not show_studentrep_application) or show_studentrep_application == "no_expl":
             del self.fields['studentrep_expl']
 
         if not Tag.getTag('show_student_tshirt_size_options'):
@@ -210,7 +222,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getTag('show_student_vegetarianism_options'):
             del self.fields['food_preference']
 
-        if not Tag.getTag('show_student_graduation_years_not_grades', default=True):
+        if not Tag.getTag('show_student_graduation_years_not_grades', default=True):            
             current_grad_year = self.ESPUser.current_schoolyear()
             self.fields['graduation_year'].widget.choices = [(str(12 - (x - current_grad_year)), "%d (%dth grade)" % (x, 12 - (x - current_grad_year))) for x in xrange(current_grad_year, current_grad_year + 6)]
 
@@ -220,13 +232,14 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getTag('ask_student_about_transportation_to_program'):
             del self.fields['transportation']
 
-        if kwargs.has_key('initial'):
-            initial_data = kwargs['initial']
+        if not Tag.getTag('allow_change_grade_level'):
+            if kwargs.has_key('initial'):
+                initial_data = kwargs['initial']
 
-            # Disable the age and grade fields if they already exist.
-            if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
-                self.fields['graduation_year'].widget.attrs['disabled'] = "true"
-                self.fields['dob'].widget.attrs['disabled'] = "true"
+                # Disable the age and grade fields if they already exist.
+                if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
+                    self.fields['graduation_year'].widget.attrs['disabled'] = "true"
+                    self.fields['dob'].widget.attrs['disabled'] = "true"
 
         self._user = user
 
@@ -252,27 +265,30 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     def clean_heard_about(self):
         if self.cleaned_data['heard_about'] == 'Other...:':
             raise forms.ValidationError("If 'Other...', please provide details")
+        return self.cleaned_data['heard_about']
 
     def clean(self):
         cleaned_data = self.cleaned_data
-        user = self._user
 
-        orig_prof = RegistrationProfile.getLastProfile(user)
+        if not Tag.getTag('allow_change_grade_level'):
+            user = self._user
 
-        # If graduation year and dob were disabled, get old data.
-        if (orig_prof.id is not None) and (orig_prof.student_info is not None):
+            orig_prof = RegistrationProfile.getLastProfile(user)
 
-            if not cleaned_data.has_key('graduation_year'):
-                # Get rid of the error saying this is missing
-                del self.errors['graduation_year']
+            # If graduation year and dob were disabled, get old data.
+            if (orig_prof.id is not None) and (orig_prof.student_info is not None):
 
-            if not cleaned_data.has_key('dob'):
-                del self.errors['dob']
+                if not cleaned_data.has_key('graduation_year'):
+                    # Get rid of the error saying this is missing
+                    del self.errors['graduation_year']
 
-            # Always use the old birthdate if it exists, so that people can't
-            # use something like Firebug to change their age/grade
-            cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
-            cleaned_data['dob'] = orig_prof.student_info.dob
+                if not cleaned_data.has_key('dob'):
+                    del self.errors['dob']
+
+                # Always use the old birthdate if it exists, so that people can't
+                # use something like Firebug to change their age/grade
+                cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
+                cleaned_data['dob'] = orig_prof.student_info.dob
 
         return cleaned_data
         

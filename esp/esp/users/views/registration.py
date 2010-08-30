@@ -138,7 +138,7 @@ def activate_account(request):
         raise ESPError(), "Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 
     if not u.password.endswith("_%s" % request.GET['key']):
-        raise ESPError(), "Your account has already been activated!  Feel free to log in; or reset your password if you have forgotten it, using the links at the top of this page."
+        return HttpResponseRedirect('/myesp/profile/')
 
     u.password = u.password[:-(len("_%s" % request.GET['key']))]
     u.is_active = True
