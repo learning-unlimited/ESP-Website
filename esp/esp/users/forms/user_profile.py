@@ -106,7 +106,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone.")
         if self.cleaned_data.get('receive_txt_message', False) and self.cleaned_data.get('phone_cell','') == '':
-            raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages")
+            raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
         return self.cleaned_data
         
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
@@ -135,7 +135,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     def clean(self):
         super(EmergContactForm, self).clean()
         if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
-            raise forms.ValidationError("Please provide either a day phone or cell phone.")
+            raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
         return self.cleaned_data
 
 
@@ -151,7 +151,7 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     def clean(self):
         super(GuardContactForm, self).clean()
         if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
-            raise forms.ValidationError("Please provide either a day phone or cell phone.")
+            raise forms.ValidationError("Please provide either a day phone or cell phone for your parent/guardian.")
         return self.cleaned_data
 
 HeardAboutESPChoices = (
