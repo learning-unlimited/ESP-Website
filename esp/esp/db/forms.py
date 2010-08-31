@@ -32,6 +32,8 @@ class AjaxForeignKeyFieldBase:
                     old_init_val = unicode(obj)
                 else:
                     old_init_val = init_val = unicode(obj) + " (%s)" % data
+        elif isinstance(data, str) or isinstance(data, unicode):
+            pass
         else:
             data = init_val = ''
 

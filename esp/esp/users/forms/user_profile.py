@@ -317,6 +317,11 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
                 cleaned_data['dob'] = orig_prof.student_info.dob
 
+        
+        if Tag.getTag('require_school_field'):
+            if not cleaned_data['k12school'] and (not cleaned_data['school'] or cleaned_data['school'] == 'None'):
+                raise forms.ValidationError("Please enter your school.  If you see the name of your school come up as you're typing, please click on it.  Otherwise, simply type the full name of your school.")
+
         return cleaned_data
         
     

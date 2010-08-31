@@ -1014,7 +1014,11 @@ class StudentInfo(models.Model):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
-        form_dict['k12school']       = self.k12school_id
+        #   Display data from school field in the k12school box if there's no k12school data.
+        if self.k12school:
+            form_dict['k12school']       = self.k12school_id
+        else:
+            form_dict['k12school']   = self.school
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         if Tag.getTag('studentinfo_shirt_options'):
@@ -1047,9 +1051,9 @@ class StudentInfo(models.Model):
         try:
             studentInfo.k12school       = K12School.objects.get(id=int(new_data['k12school']))
         except K12School.DoesNotExist:
-            pass
+            studentInfo.k12school = None
         except TypeError:
-            pass
+            studentInfo.k12school = None
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data['dob']
         
