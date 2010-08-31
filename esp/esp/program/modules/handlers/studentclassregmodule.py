@@ -504,7 +504,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
-            classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
+            if Tag.getTag('hide_full_classes', default='False') != 'False':
+                classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             if user_grade != 0:
                 classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
