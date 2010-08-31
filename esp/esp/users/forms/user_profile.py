@@ -232,6 +232,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     def __init__(self, user=None, *args, **kwargs):
         super(StudentInfoForm, self).__init__(user, *args, **kwargs)
 
+        self.allow_change_grade_level = Tag.getTag('allow_change_grade_level')
+
         ## All of these Tags may someday want to be made per-program somehow.
         ## We don't know the current program right now, though...
         show_studentrep_application = Tag.getTag('show_studentrep_application')
