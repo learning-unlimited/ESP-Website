@@ -200,6 +200,7 @@ WhatToDoAfterHS = (
 
 HowToGetToProgram = (
     'Other...',
+    'My school has already arranged for a bus',
     'I will ask my teachers and counselors to arrange for a bus for me and my peers',
     'My parent/guardian will drive me',
     'I will take mass transit (bus, train/subway, etc)',
