@@ -192,6 +192,26 @@ class ClassManager(ProcedureManager):
         
         classes = classes.distinct()
         classes = list(classes)
+        
+        #   Filter out duplicates by ID.  This is necessary because Django's ORM
+        #   adds the related fields (e.g. sections__meeting_times) to the SQL
+        #   SELECT statement and doesn't include them in the result.
+        #   See http://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
+        counter = 0
+        index = 0
+        max_count = len(classes)
+        id_list = []
+        while counter < max_count:
+            cls = classes[index]
+            cls._temp_index = counter
+            if cls.id not in id_list:
+                id_list.append(cls.id)
+                print 'Added ID %d to list' % cls.id
+                index += 1
+            else:
+                print 'Removed duplicate ID %d' % cls.id
+                classes.remove(cls)
+            counter += 1
 
         # All class ID's; used by later query ugliness:
         class_ids = map(lambda x: x.id, classes)
