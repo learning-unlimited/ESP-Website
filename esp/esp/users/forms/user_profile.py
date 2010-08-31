@@ -286,6 +286,16 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             raise forms.ValidationError("If 'Other...', please provide details")
         return self.cleaned_data['heard_about']
 
+    def clean_post_hs(self):
+        if self.cleaned_data['post_hs'] == 'Other...:':
+            raise forms.ValidationError("If 'Other...', please provide details")
+        return self.cleaned_data['post_hs']
+
+    def clean_transportation(self):
+        if self.cleaned_data['transportation'] == 'Other...:':
+            raise forms.ValidationError("If 'Other...', please provide details")
+        return self.cleaned_data['transportation']
+
     def clean(self):
         super(StudentInfoForm, self).clean()
 

@@ -113,7 +113,9 @@ contact you soon! <br />
    {% endif %}
  </td>
 </tr>
+{% endif %}
 
+{% if form.post_hs %}
 <tr>
  <td><label for="id_post_hs">What are your plans after you graduate from high school?</label></td>
  <td>{{ form.post_hs }} {% if form.post_hs.errors %}
@@ -121,7 +123,9 @@ contact you soon! <br />
    {% endif %}
  </td>
 </tr>
+{% endif %}
 
+{% if form.transportation %}
 <tr>
  <td><label for="id_transportation">How do you plan to get to/from the program?</label></td>
  <td>{{ form.transportation }} {% if form.transportation.errors %}
