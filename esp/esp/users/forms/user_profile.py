@@ -105,7 +105,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
         if Tag.getTag('request_student_phonenum', default='True') != 'False':
             if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone.")
-        if self.cleaned_data.get('receive_txt_message', '') != '' and self.cleaned_data.get('phone_cell','') == '':
+        if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
         return self.cleaned_data
         
