@@ -206,10 +206,8 @@ class ClassManager(ProcedureManager):
             cls._temp_index = counter
             if cls.id not in id_list:
                 id_list.append(cls.id)
-                print 'Added ID %d to list' % cls.id
                 index += 1
             else:
-                print 'Removed duplicate ID %d' % cls.id
                 classes.remove(cls)
             counter += 1
 
