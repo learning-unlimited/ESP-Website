@@ -604,12 +604,15 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
-        return self.makeaclass(request, tl, one, two, module, extra, prog, cls)
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls)
 
     @aux_call
     @meets_deadline('/Classes/Create')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
+        self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
+
+    def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None):
         do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
 
         do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
