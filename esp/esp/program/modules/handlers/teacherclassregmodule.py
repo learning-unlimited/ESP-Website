@@ -554,7 +554,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @meets_deadline('/Classes/Create')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
-        self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
 
     def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None):
         do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
