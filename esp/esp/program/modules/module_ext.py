@@ -244,6 +244,64 @@ class ClassRegModuleInfo(models.Model):
         self.session_counts = ",".join([ str(n) for n in value ])
     
     session_counts_ints = property( session_counts_ints_get, session_counts_ints_set )
+
+    def getClassSizes(self):
+        #   Default values
+        min_size = 0
+        max_size = 30
+        size_step = 1
+        other_sizes = range(40, 210, 10)
+
+        if self.class_max_size:
+            max_size = self.class_max_size
+            other_sizes = []
+        if self.class_size_step:
+            size_step = self.class_size_step
+            other_sizes = []
+        if self.class_min_cap:
+            min_size = self.class_min_cap
+            other_sizes = []
+        if self.class_other_sizes and len(self.class_other_sizes) > 0:
+            other_sizes = [int(x) for x in self.class_other_sizes.split(',')]
+
+        ret_range = sorted(range(min_size, max_size + 1, size_step) + other_sizes)
+
+        return ret_range
+
+    def getClassGrades(self):
+        min_grade, max_grade = (6, 12)
+        if self.module.program.grade_min:
+            min_grade = self.program.grade_min
+        if self.module.program.grade_max:
+            max_grade = self.program.grade_max
+
+        return range(min_grade, max_grade+1)
+
+    def getTimes(self):
+        times = self.module.program.getTimeSlots()
+        return [(str(x.id),x.short_description) for x in times]
+
+    def getDurations(self):
+        return self.module.program.getDurations()
+
+    def getResources(self):
+        resources = self.module.program.getResources()
+        return [(str(x.id), x.name) for x in resources]
+   
+    def getResourceTypes(self, is_global=None):
+        #   Get a list of all resource types, excluding the fundamental ones.
+        base_types = self.module.program.getResourceTypes().filter(priority_default__gt=0)
+        
+        if is_global is True:
+            res_types = base_types.filter(program__isnull=True)
+        elif is_global is False:
+            res_types = base_types.filter(program__isnull=False)
+        else:
+            res_types = base_types
+            
+        return [(str(x.id), x.name) for x in res_types]
+
+    
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
     
