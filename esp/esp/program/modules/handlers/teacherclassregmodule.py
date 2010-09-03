@@ -133,7 +133,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         tmpModule = ProgramModuleObj()
         tmpModule.__dict__ = self.__dict__
-        return tmpModule.deadline_met('/Classes/Create')
+        return tmpModule.deadline_met('/Classes/Create') or tmpModule.deadline_met('/Classes/Edit')
     
     def clslist(self):
         return [cls for cls in self.user.getTaughtClasses()
