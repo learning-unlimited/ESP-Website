@@ -39,7 +39,7 @@ get_user = None
 
 class ESPLazyUser(LazyUser):
     def __get__(self, request, obj_type=None):
-        global get_user_django, ESPUser
+        global get_user_django, ESPUser, get_user
         if not hasattr(request, '_cached_user'):
             if get_user is None or ESPUser is None or get_user_django is None:                
                 from django.contrib.auth import get_user as get_user_django
