@@ -30,21 +30,20 @@ Email: web@esp.mit.edu
 
 from django.conf import settings
 from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
+from esp.utils.get_user import get_user
 
 __all__ = ('ESPAuthMiddleware',)
 
 ESPUser = None
 get_user_django = None
-get_user = None
 
 class ESPLazyUser(LazyUser):
     def __get__(self, request, obj_type=None):
         global get_user_django, ESPUser
         if not hasattr(request, '_cached_user'):
-            if get_user is None or ESPUser is None or get_user_django is None:                
+            if get_user is None or ESPUser is None:                
                 from django.contrib.auth import get_user as get_user_django
                 from esp.users.models import ESPUser
-                from esp.utils.get_user import get_user
 
             SESSION_KEY = '_auth_user_id'
 
